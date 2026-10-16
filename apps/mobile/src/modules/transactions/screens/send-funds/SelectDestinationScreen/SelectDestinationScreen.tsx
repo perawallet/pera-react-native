@@ -27,6 +27,7 @@ export const SelectDestinationScreen = () => {
 
     const {
         selectedAsset,
+        scope,
         handleSelected,
         isCheckingExternalOptIn,
         isAutoAdvancing,
@@ -90,7 +91,7 @@ export const SelectDestinationScreen = () => {
         >
             <AddressSearchView
                 onSelected={handleSelected}
-                chainFamily='algorand'
+                scope={scope}
                 showClipboardPaste
             />
         </PWScreen>

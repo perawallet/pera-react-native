@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountChainId,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useOnrampScope } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
@@ -19,14 +23,23 @@ import { useSwapScope } from '@perawallet/wallet-core-swaps'
 export type UseAssetActionButtonsResult = {
     canSwap: boolean
     canBuy: boolean
+    canSend: boolean
 }
 
 export const useAssetActionButtons = (
     account: Nullable<WalletAccount> | undefined,
     chainId: ChainId,
-): UseAssetActionButtonsResult => ({
+): UseAssetActionButtonsResult => {
     // The account's scope can resolve to another of its chains; the action
     // only belongs on this screen when it runs on the asset's own chain.
-    canSwap: useSwapScope(account ?? null)?.chainId === chainId,
-    canBuy: useOnrampScope(account?.chains ?? null)?.chainId === chainId,
-})
+    const swapChainId = useSwapScope(account ?? null)?.chainId
+    const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
+    // Send runs on the account's own chain, which must also be the asset's.
+    const canSendOnChain = useChainCapability(chainId, 'send')
+    const accountChainId = useAccountChainId(account, chainId)
+    return {
+        canSwap: swapChainId === chainId,
+        canBuy: onrampChainId === chainId,
+        canSend: canSendOnChain && accountChainId === chainId,
+    }
+}

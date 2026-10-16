@@ -719,8 +719,59 @@ describe('useTransactionSendFlow', () => {
             })
         })
 
-        it('refuses a normal send when no adapter is registered for the chain', async () => {
+        it('builds a normal send through the transfer adapter when the chain has no send-flow adapter', async () => {
             sendFlowChainAdapters.reset()
+            const build = vi.fn().mockResolvedValue([TXN])
+            transferChainAdapters.reset()
+            transferChainAdapters.register({
+                chainId: 'ethereum',
+                build,
+                getFeeEstimate: vi.fn(),
+                spendableBalance: vi.fn(),
+            })
+            const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+            const { result } = renderHook(() => useTransactionSendFlow(scope))
+
+            await act(async () => {
+                const id = await result.current.execute({
+                    params: {
+                        sendMode: 'normal',
+                        sender: {
+                            ...SENDER_ACCOUNT,
+                            chains: {
+                                ethereum: { address: '0xA', keyPairId: 'k' },
+                            },
+                        },
+                        receiver: '0xB',
+                        asset: { assetId: 'native', decimals: 18 } as any,
+                        amount: new Decimal('0.5'),
+                        note: 'memo',
+                        feePreset: 'fast',
+                    },
+                })
+                expect(id).toBe('tx1')
+            })
+
+            expect(build).toHaveBeenCalledWith(
+                {
+                    kind: 'transfer',
+                    from: '0xA',
+                    to: '0xB',
+                    assetRef: { chainId: 'ethereum', assetId: 'native' },
+                    amount: new Decimal('500000000000000000'),
+                    note: 'memo',
+                },
+                { scope, feePreset: 'fast' },
+            )
+            expect(mockSubmit).toHaveBeenCalledWith(
+                expect.objectContaining({ scope, unsignedTxs: [TXN] }),
+            )
+            expect(mockBuildTransfer).not.toHaveBeenCalled()
+        })
+
+        it('refuses a normal send when the chain has neither adapter', async () => {
+            sendFlowChainAdapters.reset()
+            transferChainAdapters.reset()
             const { result } = renderHook(() =>
                 useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
             )

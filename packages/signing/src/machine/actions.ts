@@ -20,9 +20,11 @@ import {
     transactionPlanners,
     type ChainId,
     type ChainScope,
+    type SignedTransaction,
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isKeyedByPlanner,
     isUnsignedTransactionsData,
@@ -37,6 +39,7 @@ import {
     HardwareWalletError,
     InvalidSignableDataError,
     SigningError,
+    TransportError,
 } from '../pipeline/errors'
 import { plannerAdapterForScope, plannerChainAdapters } from '../chain-adapter'
 import { isPlannerSigned } from './utils/isPlannerSigned'
@@ -104,6 +107,23 @@ export const buildGroupSignerMap = (
     return map
 }
 
+// A chain with no signing planner signs only through its transaction planner,
+// whose result already holds the wire-encoded transactions.
+const signedTransactionsOf = (
+    result: SigningResult,
+    scope: ChainScope,
+): Nullable<SignedTransaction>[] => {
+    if (plannerChainAdapters.has(scope.chainId)) {
+        return plannerAdapterForScope(scope).signedTransactionsOf(result, scope)
+    }
+    if (result.signedData.type !== 'signed-transactions') {
+        throw new TransportError(
+            `Expected signed transactions, got ${result.signedData.type}`,
+        )
+    }
+    return result.signedData.signed
+}
+
 // A chain-neutral request's `approve` gets its chain's wire-encoded signed
 // transactions, whichever signer produced them.
 const transactionApproveOf = (
@@ -115,13 +135,7 @@ const transactionApproveOf = (
         return (
             approve &&
             (async (result, submission) => {
-                await approve(
-                    plannerAdapterForScope(scope).signedTransactionsOf(
-                        result,
-                        scope,
-                    ),
-                    submission,
-                )
+                await approve(signedTransactionsOf(result, scope), submission)
             })
         )
     }
@@ -167,7 +181,9 @@ const buildSourceMetadata = (
     const isLocalAlgod =
         sourceType === 'local' && request.transport !== 'callback'
 
-    if (isLocalAlgod) {
+    // A self-submitted local request carries callbacks only when its caller
+    // waits on the submitted ids, which the chain's submit transport answers.
+    if (isLocalAlgod && !request.approve) {
         return { type: 'local' }
     }
 

@@ -44,8 +44,9 @@ export const TransactionConfirmationScreen = () => {
         destination,
         selectedAccount,
         selectedAssetId,
-        chainId,
+        scope,
         feeAmount,
+        feePresets,
         isFeePending,
         feePreset,
         setFeePreset,
@@ -53,6 +54,7 @@ export const TransactionConfirmationScreen = () => {
         currentBalance,
         currentBalancePending,
         note,
+        canAddNote,
         openNote,
         handleConfirm,
         isCollectible,
@@ -101,6 +103,7 @@ export const TransactionConfirmationScreen = () => {
                             style={styles.secondaryAmount}
                             sourceAmount={amount}
                             sourceAssetId={selectedAssetId ?? ''}
+                            scope={scope}
                             showSymbol
                             ignorePrivacyMode
                         />
@@ -119,14 +122,16 @@ export const TransactionConfirmationScreen = () => {
                     <KeyValueRow title={t('send_funds.confirmation.to')}>
                         <AddressDisplay
                             address={destination}
+                            scope={scope}
                             showCopy={false}
                             showSecondaryAddress
                         />
                     </KeyValueRow>
                 )}
                 <FeeRow
-                    chainId={chainId}
+                    chainId={scope.chainId}
                     amount={feeAmount}
+                    presets={feePresets}
                     isLoading={isFeePending}
                     selectedPreset={feePreset}
                     onPresetChange={setFeePreset}
@@ -149,38 +154,41 @@ export const TransactionConfirmationScreen = () => {
                             <PreferredAmount
                                 sourceAmount={currentBalance.amount}
                                 sourceAssetId={selectedAssetId ?? ''}
+                                scope={scope}
                                 showSymbol
                                 style={styles.secondaryAmount}
                             />
                         )}
                     </KeyValueRow>
                 )}
-                <PWDivider />
-                <KeyValueRow title={t('send_funds.confirmation.note')}>
-                    {!!note && <PWText>{note}</PWText>}
-                    {!!note && (
-                        <PWTouchableOpacity
-                            onPress={openNote}
-                            style={styles.linkContainer}
-                        >
-                            <PWIcon
-                                name='edit-pen'
-                                variant='link'
-                                size='sm'
-                            />
-                            <PWText style={styles.link}>
-                                {t('send_funds.confirmation.edit')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                    {!note && (
-                        <PWTouchableOpacity onPress={openNote}>
-                            <PWText style={styles.link}>
-                                {t('send_funds.add_note.button')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                </KeyValueRow>
+                {canAddNote && <PWDivider />}
+                {canAddNote && (
+                    <KeyValueRow title={t('send_funds.confirmation.note')}>
+                        {!!note && <PWText>{note}</PWText>}
+                        {!!note && (
+                            <PWTouchableOpacity
+                                onPress={openNote}
+                                style={styles.linkContainer}
+                            >
+                                <PWIcon
+                                    name='edit-pen'
+                                    variant='link'
+                                    size='sm'
+                                />
+                                <PWText style={styles.link}>
+                                    {t('send_funds.confirmation.edit')}
+                                </PWText>
+                            </PWTouchableOpacity>
+                        )}
+                        {!note && (
+                            <PWTouchableOpacity onPress={openNote}>
+                                <PWText style={styles.link}>
+                                    {t('send_funds.add_note.button')}
+                                </PWText>
+                            </PWTouchableOpacity>
+                        )}
+                    </KeyValueRow>
+                )}
             </PWView>
         </PWScreen>
     )

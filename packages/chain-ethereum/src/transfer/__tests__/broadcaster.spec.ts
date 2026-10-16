@@ -131,6 +131,36 @@ describe('Ethereum broadcaster adapter', () => {
             ])
         })
 
+        it('answers a caller waiting on the submitted ids', async () => {
+            useRpc()
+            const approve = vi.fn(async () => undefined)
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, { ...SOURCE, callbacks: { approve } })
+
+            expect(approve).toHaveBeenCalledWith(signedTransactions, {
+                txIds: [HASH],
+            })
+            expect(result).toEqual({
+                type: 'submitted-and-answered',
+                txIds: [HASH],
+            })
+        })
+
+        it('still reports the submission when the answer fails', async () => {
+            useRpc()
+            const approve = vi.fn(async () => {
+                throw new Error('caller gone')
+            })
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, { ...SOURCE, callbacks: { approve } })
+
+            expect(result).toEqual({ type: 'submitted', txIds: [HASH] })
+        })
+
         it('records the history entry with the most the transaction can be charged', async () => {
             useRpc()
 

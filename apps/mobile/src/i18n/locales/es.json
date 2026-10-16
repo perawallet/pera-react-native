@@ -2706,7 +2706,9 @@
             "nfd_mismatch_title": "El nombre no coincide en la cadena",
             "nfd_mismatch_body": "El contrato NFD de {{name}} no incluye esta dirección. Pega la dirección directamente si confías en ella.",
             "nfd_unavailable_title": "No se pudo verificar {{name}}",
-            "nfd_unavailable_body": "No se pudo contactar con el registro NFD para comprobar este nombre. Inténtalo de nuevo o pega la dirección directamente."
+            "nfd_unavailable_body": "No se pudo contactar con el registro NFD para comprobar este nombre. Inténtalo de nuevo o pega la dirección directamente.",
+            "invalid_address_title": "Dirección no válida",
+            "invalid_address_body": "Esta no es una dirección válida de {{chain}}."
         },
         "fee": {
             "slow": "Lenta",

@@ -422,4 +422,74 @@ describe('transportActor', () => {
         await expect(toPromise(actor)).rejects.toBeInstanceOf(CannotSignError)
         expect(createTransport).not.toHaveBeenCalled()
     })
+
+    describe('on a chain without a signing planner', () => {
+        const SECOND_SCOPE: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        }
+        const ETH_SIGNER = '0xSIGNER'
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: ETH_SIGNER, keyPairId: 'k' } },
+        }
+        const plannedResult: SigningResult = {
+            signedData: {
+                type: 'signed-transactions',
+                signed: [],
+                historyEntries: [],
+            },
+            signers: [{ address: ETH_SIGNER }],
+        }
+        const plannerlessInput = (
+            signingResults: SigningResult[],
+            send: ReturnType<typeof vi.fn>,
+        ): TransportActorInput => ({
+            signingResults,
+            source: { type: 'local' },
+            signerAddress: ETH_SIGNER,
+            isKeyedByPlanner: true,
+            allAccounts: [ethAccount],
+            createTransport: () => ({ send }),
+            scope: SECOND_SCOPE,
+        })
+
+        beforeEach(() => plannerChainAdapters.reset())
+
+        it('delivers its one signing result as is', async () => {
+            const send = vi
+                .fn()
+                .mockResolvedValue({ type: 'submitted', txIds: ['0xhash'] })
+
+            const actor = createActor(transportActor, {
+                input: plannerlessInput([plannedResult], send),
+            })
+            actor.start()
+
+            await expect(toPromise(actor)).resolves.toEqual({
+                type: 'submitted',
+                txIds: ['0xhash'],
+            })
+            expect(send).toHaveBeenCalledWith(
+                plannedResult,
+                { type: 'local' },
+                ETH_SIGNER,
+            )
+        })
+
+        it('refuses more than one result, having no group order to restore', async () => {
+            const send = vi.fn()
+
+            const actor = createActor(transportActor, {
+                input: plannerlessInput([plannedResult, plannedResult], send),
+            })
+            actor.start()
+
+            await expect(toPromise(actor)).rejects.toThrow(
+                /delivers one signing result/,
+            )
+            expect(send).not.toHaveBeenCalled()
+        })
+    })
 })

@@ -49,17 +49,22 @@ describe('useAssetActionButtons', () => {
         registerAlgorandRampAdapter()
     })
 
-    it('offers both actions at the Algorand defaults', () => {
+    it('offers every action at the Algorand defaults', () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(account, 'algorand'),
         )
 
-        expect(result.current).toEqual({ canSwap: true, canBuy: true })
+        expect(result.current).toEqual({
+            canSwap: true,
+            canBuy: true,
+            canSend: true,
+        })
     })
 
     it.each([
-        ['swap', { canSwap: false, canBuy: true }],
-        ['onramp', { canSwap: true, canBuy: false }],
+        ['swap', { canSwap: false, canBuy: true, canSend: true }],
+        ['onramp', { canSwap: true, canBuy: false, canSend: true }],
+        ['send', { canSwap: true, canBuy: true, canSend: false }],
     ] as const)(
         'drops only the action whose %s capability is off',
         (capability, expected) => {
@@ -87,7 +92,27 @@ describe('useAssetActionButtons', () => {
             ),
         )
 
-        expect(result.current).toEqual({ canSwap: false, canBuy: false })
+        expect(result.current).toEqual({
+            canSwap: false,
+            canBuy: false,
+            canSend: false,
+        })
+    })
+
+    it("offers send on an Ethereum asset from the account's own Ethereum chain", () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly, 'ethereum'),
+        )
+
+        expect(result.current.canSend).toBe(true)
+    })
+
+    it('drops send when the asset is on another chain than the account', () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly, 'algorand'),
+        )
+
+        expect(result.current.canSend).toBe(false)
     })
 
     it('drops swap for an account with no address on a swap chain', () => {

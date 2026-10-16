@@ -15,6 +15,7 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import type {
     ChainScope,
+    FeePreset,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -43,7 +44,7 @@ import {
     toBigInt,
 } from '@perawallet/wallet-core-shared'
 import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
-import { holdingReserveOf } from '../transfer-adapter'
+import { holdingReserveOf, transferChainAdapters } from '../transfer-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
@@ -59,6 +60,8 @@ type SendTransactionParams = BaseSendParams & {
     sendMode: 'normal' | 'express' | 'sendArc59'
     note?: string
     isCloseAccount?: boolean
+    /** The speed a gas-priced chain builds at; a flat-fee chain ignores it. */
+    feePreset?: FeePreset
     /** The inbox quote the send was confirmed against; the chain adapter validates it. */
     arc59Summary?: unknown
 }
@@ -202,15 +205,31 @@ export const useTransactionSendFlow = (
                 throw new InvalidSendParamsError()
             }
 
-            const assetDecimals = params.asset?.decimals ?? 0
-            const amountInBaseUnits = BigInt(
-                displayUnitsToBaseUnits(
-                    params.amount,
-                    assetDecimals,
-                ).toString(),
+            const amountInBaseUnits = displayUnitsToBaseUnits(
+                params.amount,
+                params.asset.decimals ?? 0,
             )
-
             const senderAddress = senderAddressOn(params.sender, scope)
+
+            // A chain with no send-flow adapter has no close-out or per-signer
+            // fee, so its transfer adapter builds and prices the whole send.
+            if (!sendFlowChainAdapters.has(scope.chainId)) {
+                return transferChainAdapters.get(scope.chainId).build(
+                    {
+                        kind: 'transfer',
+                        from: senderAddress,
+                        to: params.receiver,
+                        assetRef: {
+                            chainId: scope.chainId,
+                            assetId: params.asset.assetId,
+                        },
+                        amount: amountInBaseUnits,
+                        note: params.note,
+                    },
+                    { scope, feePreset: params.feePreset },
+                )
+            }
+
             const suggestedMinFee = await fetchSuggestedMinFee()
             const resolvedFee = resolveMinFeeForSender(scope.chainId, {
                 senderAddress,
@@ -224,7 +243,7 @@ export const useTransactionSendFlow = (
                 sender: senderAddress,
                 receiver: params.receiver,
                 assetId: params.asset.assetId,
-                amount: amountInBaseUnits,
+                amount: toBigInt(amountInBaseUnits),
                 note: params.note,
                 isCloseAccount: params.isCloseAccount,
                 fee: resolvedFee > suggestedMinFee ? resolvedFee : undefined,
@@ -267,14 +286,13 @@ export const useTransactionSendFlow = (
                     assetDecimals,
                 ).toString(),
             )
-            const assetId = BigInt(params.asset.assetId)
 
             switch (params.sendMode) {
                 case 'express': {
                     const unsignedTxs = await buildExpressTxs({
                         sender: senderAddress,
                         receiver: params.receiver,
-                        assetId,
+                        assetId: BigInt(params.asset.assetId),
                         amount: amountInBaseUnits,
                     })
                     const result = await submit({
@@ -301,7 +319,7 @@ export const useTransactionSendFlow = (
                         scope: scope,
                         sender: senderAddress,
                         receiver: params.receiver,
-                        assetId,
+                        assetId: BigInt(params.asset.assetId),
                         amount: amountInBaseUnits,
                         summary: params.arc59Summary,
                         senderMinFee,

@@ -14,10 +14,9 @@ import { PWInput, PWSheetLayout, PWText } from '@components/core'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useNoteSchema } from './useNoteSchema'
 
@@ -26,7 +25,7 @@ export const AddNoteContent = () => {
     const [isEdit] = useState(!!note)
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult()
-    const noteSchema = useNoteSchema(LEGACY_CHAIN_ID)
+    const noteSchema = useNoteSchema(useSendScope().chainId)
 
     const {
         control,

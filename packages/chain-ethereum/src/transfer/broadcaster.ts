@@ -16,7 +16,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
-import { toError } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     SubmissionError,
     TransportError,
@@ -69,7 +69,7 @@ export const createEthereumBroadcasterAdapter = (
             )
         },
         createSubmitTransport: (capturedScope): DataTransport => ({
-            send: async result => {
+            send: async (result, source) => {
                 const { signedData } = result
                 if (signedData.type !== 'signed-transactions') {
                     throw new TransportError(
@@ -77,8 +77,9 @@ export const createEthereumBroadcasterAdapter = (
                     )
                 }
                 assertScopeUnchanged(capturedScope)
+                let txIds: string[]
                 try {
-                    const txIds = await submitAndRecordEthereumTransactions({
+                    txIds = await submitAndRecordEthereumTransactions({
                         client: clientFor(capturedScope),
                         scope: capturedScope,
                         signedTransactions: signedData.signed.map(
@@ -87,7 +88,6 @@ export const createEthereumBroadcasterAdapter = (
                         historyEntries: signedData.historyEntries,
                         flow: 'pipeline',
                     })
-                    return { type: 'submitted', txIds }
                 } catch (error) {
                     // Keeps the classification: wrapping would make a node
                     // refusal look retryable.
@@ -95,6 +95,20 @@ export const createEthereumBroadcasterAdapter = (
                     const cause = toError(error)
                     throw new TransportError(cause.message, cause)
                 }
+                // An in-app send waits on the ids. The transactions are already
+                // out, so a failing answer must not fail the submission.
+                if (source.callbacks?.approve) {
+                    try {
+                        await source.callbacks.approve(result, { txIds })
+                        return { type: 'submitted-and-answered', txIds }
+                    } catch (error) {
+                        logger.error(
+                            'Ethereum transport: approve callback failed after submission',
+                            { error },
+                        )
+                    }
+                }
+                return { type: 'submitted', txIds }
             },
         }),
         submitAndAutoRefresh: () =>

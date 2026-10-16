@@ -25,6 +25,7 @@ const mockDismiss = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
+    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

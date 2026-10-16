@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCallback, useEffect, useState, useRef } from 'react'
@@ -78,7 +76,7 @@ export const useSelectDestinationScreen = () => {
     // A name's address comes from Pera's backend. It only becomes the
     // destination once the chain itself vouches for it; nothing here
     // trusts the search result or a cache.
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSendScope()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
@@ -141,6 +139,7 @@ export const useSelectDestinationScreen = () => {
     return {
         selectedAsset,
         selectedAccount,
+        scope,
         handleSelected,
         isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
         isAutoAdvancing,

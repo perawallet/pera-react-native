@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
     type AssetWithAccountBalance,
     useAccountBalancesQuery,
+    useAccountScope,
     useSelectedAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -21,7 +22,6 @@ import {
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
@@ -42,8 +42,9 @@ export const useAccountAssetSelectionList = ({
     excludeAssetId,
     filterAsset,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAccount = useSelectedAccount()
+    // The selected account's holdings live on its own chain.
+    const scope = useAccountScope(selectedAccount, LEGACY_CHAIN_ID)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined

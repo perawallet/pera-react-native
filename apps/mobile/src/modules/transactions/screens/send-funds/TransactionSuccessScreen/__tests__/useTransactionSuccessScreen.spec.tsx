@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionSuccessScreen } from '../useTransactionSuccessScreen'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useWebView } from '@modules/webview'
 
 const mockOnFinished = vi.fn()
@@ -37,6 +37,7 @@ vi.mock('@react-navigation/native', () => ({
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
     useClaimAssets: vi.fn(),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -49,7 +50,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: vi.fn(),
+    getChainDescriptor: vi.fn(),
 }))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
@@ -71,9 +72,12 @@ describe('useTransactionSuccessScreen', () => {
             onFinished: undefined,
             accountAddress: null,
         })
-        ;(useNetwork as Mock).mockReturnValue({
-            networkConfig: {
-                explorerUrl: 'https://explorer.perawallet.app',
+        ;(getChainDescriptor as Mock).mockReturnValue({
+            explorer: {
+                transactionUrl: (networkId: string, txId: string) =>
+                    networkId === 'mainnet'
+                        ? `https://explorer.perawallet.app/tx/${txId}`
+                        : undefined,
             },
         })
         ;(useWebView as Mock).mockReturnValue({
@@ -91,8 +95,10 @@ describe('useTransactionSuccessScreen', () => {
         expect(mockOnFinished).toHaveBeenCalledTimes(1)
     })
 
-    it('should call pushWebView with correct URL when handleViewInExplorer is called', () => {
+    it("opens the send chain's explorer for the transaction", () => {
         const { result } = renderHook(() => useTransactionSuccessScreen())
+
+        expect(getChainDescriptor).toHaveBeenCalledWith('algorand')
 
         act(() => {
             result.current.handleViewInExplorer?.()
@@ -105,11 +111,8 @@ describe('useTransactionSuccessScreen', () => {
     })
 
     it('offers no explorer action on a network with no explorer', () => {
-        // `custom` has explorerUrl: '' by design. Interpolating it yields the
-        // schemeless relative path '/tx/TX_ID_123', which the webview would
-        // resolve against nothing — so the CTA has to be absent, not broken.
-        ;(useNetwork as Mock).mockReturnValue({
-            networkConfig: { explorerUrl: '' },
+        ;(getChainDescriptor as Mock).mockReturnValue({
+            explorer: { transactionUrl: () => undefined },
         })
 
         const { result } = renderHook(() => useTransactionSuccessScreen())

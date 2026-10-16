@@ -25,6 +25,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../broadcaster'
+import { plannerChainAdapters } from '../chain-adapter'
 import type { UnsignedTransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
@@ -87,6 +88,34 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 return Promise.resolve({ txIds: [] })
             }
             return new Promise((resolve, reject) => {
+                const callbacks = {
+                    reject: async () => {
+                        reject(new UserRejectedSigningError())
+                    },
+                    error: async (err: Error) => {
+                        reject(err)
+                    },
+                }
+
+                // A chain without Algorand's signing planner submits through
+                // its own broadcaster's transport, which records the send on
+                // the submission ledger with its history entry.
+                if (!plannerChainAdapters.has(scope.chainId)) {
+                    addSignRequest({
+                        id: generateOrderedUniqueId(),
+                        type: 'transactions',
+                        transport: 'algod',
+                        sourceType: 'local',
+                        txs: unsignedTxs,
+                        sourceMetadata: source,
+                        approve: async (_signed, submission) => {
+                            resolve({ txIds: submission?.txIds ?? [] })
+                        },
+                        ...callbacks,
+                    })
+                    return
+                }
+
                 const request: UnsignedTransactionSignRequest = {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
@@ -124,12 +153,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             throw error
                         }
                     },
-                    reject: async () => {
-                        reject(new UserRejectedSigningError())
-                    },
-                    error: async (err: Error) => {
-                        reject(err)
-                    },
+                    ...callbacks,
                 }
                 addSignRequest(request)
             })

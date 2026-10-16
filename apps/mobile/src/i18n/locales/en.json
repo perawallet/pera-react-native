@@ -2706,7 +2706,9 @@
             "nfd_mismatch_title": "Name doesn't match on-chain",
             "nfd_mismatch_body": "The NFD contract for {{name}} doesn't list this address. Paste the address directly if you trust it.",
             "nfd_unavailable_title": "Couldn't verify {{name}}",
-            "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly."
+            "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly.",
+            "invalid_address_title": "Invalid address",
+            "invalid_address_body": "This isn't a valid {{chain}} address."
         },
         "fee": {
             "slow": "Slow",

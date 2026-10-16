@@ -2698,7 +2698,9 @@
             "nfd_mismatch_title": "Name stimmt nicht mit der Chain überein",
             "nfd_mismatch_body": "Der NFD-Vertrag für {{name}} führt diese Adresse nicht. Füge die Adresse direkt ein, wenn du ihr vertraust.",
             "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
-            "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein."
+            "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
+            "invalid_address_title": "Ungültige Adresse",
+            "invalid_address_body": "Das ist keine gültige {{chain}}-Adresse."
         },
         "fee": {
             "slow": "Langsam",

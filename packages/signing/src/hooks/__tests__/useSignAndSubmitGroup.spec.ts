@@ -252,4 +252,55 @@ describe('useSignAndSubmitGroup', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
+
+    it("self-submits through the chain's transport on a chain without a signing planner", async () => {
+        const ethereumScope: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        }
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                scope: ethereumScope,
+                unsignedTxs: [{ ...fakeTxn, scope: ethereumScope }],
+                source: { name: 'send', description: 'test' },
+            }),
+        )
+        await captured?.approve?.([], { txIds: ['0xhash'] })
+
+        await expect(promise).resolves.toEqual({ txIds: ['0xhash'] })
+        expect(captured?.transport).toBe('algod')
+        expect(captured?.sourceType).toBe('local')
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('rejects a self-submitted send the user declines', async () => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                unsignedTxs: [fakeTxn],
+                source: { name: 'send', description: 'test' },
+            }),
+        )
+        await captured?.reject?.()
+
+        await expect(promise).rejects.toBeInstanceOf(UserRejectedSigningError)
+    })
 })

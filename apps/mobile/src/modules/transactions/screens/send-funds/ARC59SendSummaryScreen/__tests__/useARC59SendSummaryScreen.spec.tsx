@@ -140,6 +140,7 @@ vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 // Base units of ALGO.

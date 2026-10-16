@@ -21,6 +21,7 @@ const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,

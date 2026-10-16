@@ -2722,7 +2722,9 @@
             "nfd_mismatch_title": "O nome não corresponde na cadeia",
             "nfd_mismatch_body": "O contrato NFD de {{name}} não lista este endereço. Cole o endereço diretamente se confiar nele.",
             "nfd_unavailable_title": "Não foi possível verificar {{name}}",
-            "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente."
+            "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente.",
+            "invalid_address_title": "Endereço inválido",
+            "invalid_address_body": "Este não é um endereço válido de {{chain}}."
         },
         "fee": {
             "slow": "Lenta",

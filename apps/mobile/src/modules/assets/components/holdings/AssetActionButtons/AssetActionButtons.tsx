@@ -63,7 +63,7 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const { canSwap, canBuy } = useAssetActionButtons(account, chainId)
+    const { canSwap, canBuy, canSend } = useAssetActionButtons(account, chainId)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -183,16 +183,18 @@ export const AssetActionButtons = ({
                     testID='asset_detail_buy_button'
                 />
             )}
-            <RoundButton
-                title={t('asset_details.action_buttons.send')}
-                icon='outflow'
-                variant='secondary'
-                onPress={handleSend}
-                disabled={isFrozen}
-                badgeIcon={isFrozen ? 'snowflake' : undefined}
-                style={styles.buttonFour}
-                testID='asset_detail_send_button'
-            />
+            {canSend && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.send')}
+                    icon='outflow'
+                    variant='secondary'
+                    onPress={handleSend}
+                    disabled={isFrozen}
+                    badgeIcon={isFrozen ? 'snowflake' : undefined}
+                    style={styles.buttonFour}
+                    testID='asset_detail_send_button'
+                />
+            )}
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'

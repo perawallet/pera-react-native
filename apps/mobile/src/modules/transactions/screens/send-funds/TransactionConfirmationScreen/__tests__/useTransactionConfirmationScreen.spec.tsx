@@ -31,9 +31,12 @@ import {
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useToast } from '@hooks/useToast'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFee, useSendFunds } from '@modules/transactions/hooks'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
@@ -130,6 +133,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useSelectedScope: vi.fn(),
+    getChainDescriptor: vi.fn(() => ({ protocol: { maxNoteBytes: 1024 } })),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -152,9 +156,42 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@modules/transactions/hooks', () => ({
-    useSendFunds: vi.fn(),
-}))
+// useSendFee's own branching is pinned in its spec; here it stands on the
+// planner fee, as it does on Algorand.
+vi.mock('@modules/transactions/hooks', async () => {
+    const { useMinFeeForSender } =
+        await import('@perawallet/wallet-core-signing')
+    const { useSelectedScope } =
+        await import('@perawallet/wallet-core-chain-shared')
+    return {
+        useSendFunds: vi.fn(),
+        useSendScope: () => useSelectedScope('algorand'),
+        useSendFee: vi.fn(
+            ({
+                senderAddress,
+                scope,
+            }: {
+                senderAddress?: string
+                scope: { chainId: 'algorand' }
+            }) => {
+                const { minFee, isPending } = useMinFeeForSender(
+                    senderAddress,
+                    scope.chainId,
+                )
+                const fee =
+                    minFee !== undefined
+                        ? new Decimal(minFee.toString())
+                        : undefined
+                return {
+                    feeAmount: fee,
+                    maxFeeAmount: fee,
+                    presets: undefined,
+                    isPending,
+                }
+            },
+        ),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useRecipientWarningQuery: vi.fn(),
@@ -513,6 +550,26 @@ describe('useTransactionConfirmationScreen', () => {
     })
 
     describe('note state', () => {
+        it('offers a note on a chain whose transactions carry one', () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.canAddNote).toBe(true)
+        })
+
+        it('offers no note on a chain without a note field', () => {
+            ;(getChainDescriptor as Mock).mockReturnValueOnce({
+                protocol: {},
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.canAddNote).toBe(false)
+        })
+
         it('opens the note sheet when openNote is called', () => {
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
@@ -685,7 +742,7 @@ describe('useTransactionConfirmationScreen', () => {
     })
 
     describe('fee row inputs', () => {
-        it("prices the fee on the selected scope's chain", () => {
+        it("prices the fee on the send scope's chain", () => {
             ;(useSelectedScope as Mock).mockReturnValue({
                 chainId: 'otherchain',
                 networkId: 'mainnet',
@@ -695,7 +752,53 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.chainId).toBe('otherchain')
+            expect(result.current.scope.chainId).toBe('otherchain')
+        })
+
+        it('prices the send to its receiver at its base-unit amount and preset', () => {
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([[mockSelectedAssetId, mockAsset]]),
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+                amount: new Decimal('1.5'),
+                destination: 'RECEIVER',
+                feePreset: 'fast',
+            })
+
+            renderHook(() => useTransactionConfirmationScreen())
+
+            expect(useSendFee).toHaveBeenLastCalledWith({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                senderAddress: 'TEST_ADDRESS',
+                assetId: mockSelectedAssetId,
+                recipient: 'RECEIVER',
+                amount: new Decimal(1_500_000),
+                feePreset: 'fast',
+            })
+        })
+
+        it("passes the chain's fee presets through to the fee row", () => {
+            const presets = {
+                slow: { amount: new Decimal(1), maxAmount: new Decimal(2) },
+                normal: { amount: new Decimal(3), maxAmount: new Decimal(4) },
+                fast: { amount: new Decimal(5), maxAmount: new Decimal(6) },
+            }
+            ;(useSendFee as Mock).mockReturnValueOnce({
+                feeAmount: new Decimal(3),
+                maxFeeAmount: new Decimal(4),
+                presets,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.feePresets).toBe(presets)
+            expect(result.current.feeAmount).toEqual(new Decimal(3))
         })
 
         it('passes the fee preset and its setter through from the send flow', () => {

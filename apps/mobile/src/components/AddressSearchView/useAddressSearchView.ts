@@ -13,12 +13,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
-    type ChainFamily,
+    type ChainScope,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
     addressOn,
@@ -50,8 +49,11 @@ export type AddressSearchItem =
     | { type: 'paste'; address: string; key: string }
 
 type UseAddressSearchViewProps = {
-    /** Only contacts holding an address in this family are offered. */
-    chainFamily: ChainFamily
+    /**
+     * The chain the address is entered for: only its addresses validate, only
+     * accounts on it and contacts holding an address in its family are offered.
+     */
+    scope: ChainScope
     excludeAddress?: string
     /** Only accounts passing this predicate are offered. */
     accountFilter?: (account: WalletAccount) => boolean
@@ -74,7 +76,7 @@ type UseAddressSearchViewResult = {
 }
 
 export const useAddressSearchView = ({
-    chainFamily,
+    scope,
     excludeAddress,
     accountFilter,
     showAllContactsWhenEmpty = false,
@@ -86,7 +88,7 @@ export const useAddressSearchView = ({
     const { findContacts } = useContacts()
     const { readText } = useClipboard()
     const allAccounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const chainFamily = getChainDescriptor(scope.chainId).family
     const { accountValueTotals } = useAccountValueTotalsQuery(
         allAccounts,
         scope,
@@ -140,8 +142,9 @@ export const useAddressSearchView = ({
             addressIsValid
                 ? []
                 : accounts.filter(a => {
-                      const address = addressOn(a, scope) ?? ''
+                      const address = addressOn(a, scope)
                       return (
+                          !!address &&
                           address !== excludeAddress &&
                           (!accountFilter || accountFilter(a)) &&
                           (!value?.length ||

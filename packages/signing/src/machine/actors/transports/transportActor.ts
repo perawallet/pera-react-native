@@ -23,9 +23,30 @@ import type {
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
-import { plannerAdapterForScope } from '../../../chain-adapter'
-import { CannotSignError } from '../../../pipeline/errors'
+import {
+    plannerAdapterForScope,
+    plannerChainAdapters,
+} from '../../../chain-adapter'
+import { CannotSignError, TransportError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
+
+// A chain without a signing planner has no atomic groups, so a request it
+// signs comes back as one result and there is no group order to restore.
+const mergeSigningResults = (
+    scope: ChainScope,
+    signingResults: SigningResult[],
+): SigningResult => {
+    if (plannerChainAdapters.has(scope.chainId)) {
+        return plannerAdapterForScope(scope).mergeSigningResults(signingResults)
+    }
+    const [result] = signingResults
+    if (signingResults.length !== 1 || !result) {
+        throw new TransportError(
+            `Chain ${scope.chainId} delivers one signing result, got ${signingResults.length}`,
+        )
+    }
+    return result
+}
 
 export type TransportActorInput = {
     signingResults: SigningResult[]
@@ -103,8 +124,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         }
 
         const transport = createTransport(source, authAccount)
-        const merged =
-            plannerAdapterForScope(scope).mergeSigningResults(signingResults)
+        const merged = mergeSigningResults(scope, signingResults)
 
         return transport.send(merged, source, authAddress)
     },

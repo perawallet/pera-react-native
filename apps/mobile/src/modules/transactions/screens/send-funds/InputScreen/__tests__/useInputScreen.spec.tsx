@@ -10,9 +10,18 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useInputScreen } from '../useInputScreen'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { Decimal } from 'decimal.js'
 
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
@@ -20,7 +29,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     useSpendableBalanceQuery,
@@ -111,6 +120,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useSpendableBalanceQuery: vi.fn(),
+    // Algorand routes opt-in sends through its send-flow adapter.
+    sendFlowChainAdapters: { has: () => true },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -144,9 +155,38 @@ const mockSendFundsState = {
     reset: vi.fn(),
 }
 
-vi.mock('@modules/transactions/hooks', () => ({
-    useSendFunds: vi.fn(() => mockSendFundsState),
-}))
+// useSendFee's own branching is pinned in its spec; here it stands on the
+// planner fee, as it does on Algorand.
+vi.mock('@modules/transactions/hooks', async () => {
+    const { useMinFeeForSender } =
+        await import('@perawallet/wallet-core-signing')
+    return {
+        useSendFunds: vi.fn(() => mockSendFundsState),
+        useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+        useSendFee: ({
+            senderAddress,
+            scope,
+        }: {
+            senderAddress?: string
+            scope: { chainId: 'algorand' }
+        }) => {
+            const { minFee, isPending } = useMinFeeForSender(
+                senderAddress,
+                scope.chainId,
+            )
+            const fee =
+                minFee !== undefined
+                    ? new Decimal(minFee.toString())
+                    : undefined
+            return {
+                feeAmount: fee,
+                maxFeeAmount: fee,
+                presets: undefined,
+                isPending,
+            }
+        },
+    }
+})
 
 const RESERVE_NOTICE: ChainNotice = {
     title: { key: i18nKey('send_funds.input.min_balance_title') },
@@ -209,6 +249,19 @@ const spendableOf = ({
 
 const sheetProps = (call = 0) =>
     mockRequestBottomSheet.mock.calls[call][0].contents.props
+
+// Every receiver these tests route is a valid address on the send chain.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: 'algorand',
+        isValid: () => true,
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('useInputScreen', () => {
     const mockShowToast = vi.fn()

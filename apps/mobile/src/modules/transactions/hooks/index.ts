@@ -11,6 +11,8 @@
  */
 
 export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
+export { useSendScope } from './send-funds/useSendScope'
+export { useSendFee, type UseSendFeeResult } from './send-funds/useSendFee'
 export {
     useClaimAssetsStore,
     useClaimAssets,

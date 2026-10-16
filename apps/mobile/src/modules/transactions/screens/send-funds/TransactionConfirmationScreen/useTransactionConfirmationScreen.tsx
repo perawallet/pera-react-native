@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountAssetBalanceQuery,
@@ -26,19 +26,18 @@ import {
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     type Maybe,
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-    type FeePreset,
+import type {
+    ChainScope,
+    FeeEstimate,
+    FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     useRecipientWarningQuery,
     type ChainNotice,
@@ -46,7 +45,11 @@ import {
 import { bottomSheetNotifier } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
-import { useSendFunds } from '@modules/transactions/hooks'
+import {
+    useSendFee,
+    useSendFunds,
+    useSendScope,
+} from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
@@ -60,9 +63,10 @@ type useTransactionConfirmationScreenResult = {
     destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
-    chainId: ChainId
+    scope: ChainScope
     /** Base units of the chain's native asset. */
     feeAmount: Optional<Decimal>
+    feePresets: FeeEstimate['presets']
     isFeePending: boolean
     feePreset: FeePreset
     setFeePreset: (preset: FeePreset) => void
@@ -70,6 +74,8 @@ type useTransactionConfirmationScreenResult = {
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
     note: Optional<string>
+    /** False on a chain whose transactions have no note field. */
+    canAddNote: boolean
     openNote: () => void
     handleConfirm: () => void
     isCollectible: boolean
@@ -82,7 +88,7 @@ type useTransactionConfirmationScreenResult = {
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSendScope()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -113,17 +119,28 @@ export const useTransactionConfirmationScreen =
         const selectedAddress = selectedAccount
             ? chainAccountOf(selectedAccount, scope.chainId)?.address
             : undefined
-        const { minFee, isPending: isFeePending } = useMinFeeForSender(
-            selectedAddress,
-            scope.chainId,
-        )
-        const feeAmount = useMemo(
+        const baseUnitAmount = useMemo(
             () =>
-                minFee !== undefined
-                    ? new Decimal(minFee.toString())
+                amount && asset
+                    ? displayUnitsToBaseUnits(amount, asset.decimals)
                     : undefined,
-            [minFee],
+            [amount, asset],
         )
+        const {
+            feeAmount,
+            presets: feePresets,
+            isPending: isFeePending,
+        } = useSendFee({
+            scope,
+            senderAddress: selectedAddress,
+            assetId: selectedAssetId,
+            recipient: destination,
+            amount: baseUnitAmount,
+            feePreset,
+        })
+        const canAddNote =
+            getChainDescriptor(scope.chainId).protocol.maxNoteBytes !==
+            undefined
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
@@ -156,21 +173,18 @@ export const useTransactionConfirmationScreen =
 
         const recipientInput = useMemo(
             () =>
-                destination && amount && asset && selectedAssetId
+                destination && baseUnitAmount && selectedAssetId
                     ? {
                           recipient: destination,
                           asset: {
                               chainId: scope.chainId,
                               assetId: selectedAssetId,
                           },
-                          amount: displayUnitsToBaseUnits(
-                              amount,
-                              asset.decimals,
-                          ),
+                          amount: baseUnitAmount,
                           scope,
                       }
                     : undefined,
-            [destination, amount, asset, selectedAssetId, scope],
+            [destination, baseUnitAmount, selectedAssetId, scope],
         )
         const { data: recipientWarning, isPending: isRecipientInfoPending } =
             useRecipientWarningQuery(recipientInput)
@@ -249,8 +263,9 @@ export const useTransactionConfirmationScreen =
             destination,
             selectedAccount,
             selectedAssetId,
-            chainId: scope.chainId,
+            scope,
             feeAmount,
+            feePresets,
             isFeePending,
             feePreset,
             setFeePreset,
@@ -258,6 +273,7 @@ export const useTransactionConfirmationScreen =
             currentBalance,
             currentBalancePending,
             note,
+            canAddNote,
             openNote,
             handleConfirm,
             isCollectible: isCollectibleAsset,
