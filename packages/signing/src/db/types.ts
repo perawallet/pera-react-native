@@ -12,6 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type {
+    ChainSubmissionData,
     ChainTransactionData,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
@@ -42,8 +43,8 @@ export const SUBMISSION_HISTORY_ENTRY_VERSION = 1
  * - `unknown` — the POST failed without a node verdict; the group may still
  *   land. Open — the reconciler settles it.
  * - `confirmed` — definitively on chain. Terminal.
- * - `failed` — definitively not on chain (node rejection, or lastValid
- *   expired without landing). Terminal.
+ * - `failed` — definitively not on chain (node rejection, or its chain bound
+ *   passed without landing). Terminal.
  * - `replaced` — another transaction was mined at this attempt's account
  *   sequence number, so its bytes can never land. Terminal.
  */
@@ -70,8 +71,8 @@ export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
 ]
 
 /**
- * Age past which an *unevaluatable* open row — one with no decodable
- * `lastValid`, which the reconciler can therefore never prove either way —
+ * Age past which an *unevaluatable* open row — one with no chain data,
+ * which the reconciler can therefore never prove either way —
  * stops blocking new activity, so it cannot wedge a flow for the life of the
  * install.
  *
@@ -79,7 +80,7 @@ export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
  * rounds is ~47 min on mainnet but exceeds an hour on any network with
  * slower blocks (Custom/fetch-from-node), so ageing out a row that still
  * carries a live validity window would re-open the double-spend window this
- * ledger exists to close. A row with a `lastValid` is one the reconciler
+ * ledger exists to close. A row with chain data is one the reconciler
  * will settle on its own and is never dropped here.
  */
 export const STALE_OPEN_ATTEMPT_MS = 60 * 60 * 1000
@@ -105,15 +106,15 @@ export type IntentKey =
 
 export type SubmissionAttempt = {
     id: string
-    /** Raw column value, a scope key. Decode with scopeFromNetworkColumn. */
+    /** Raw column value, a scope key. Decode with parseScopeKey. */
     network: string
     txIds: string[]
     intentKey: IntentKey | null
     flow: SubmissionFlow
     sender: string | null
     status: SubmissionStatus
-    /** Validity window of the decoded txn, in rounds. */
-    lastValid: number | null
+    /** What the chain's reconciler bounds the attempt by; null when nothing. */
+    chainData: ChainSubmissionData | null
     /**
      * The account sequence number the transaction consumes, on chains that
      * order an account's transactions by one; null otherwise.

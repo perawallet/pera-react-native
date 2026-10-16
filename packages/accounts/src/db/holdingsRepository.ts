@@ -60,7 +60,7 @@ export async function refreshAccountHoldings({
     holdings,
     scope,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const now = Date.now()
 
     const existingRows = await db
@@ -73,7 +73,7 @@ export async function refreshAccountHoldings({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -111,7 +111,7 @@ export async function refreshAccountHoldings({
                             AccountAssetHoldingsSchema.accountAddress,
                             accountAddress,
                         ),
-                        eq(AccountAssetHoldingsSchema.network, network),
+                        eq(AccountAssetHoldingsSchema.scope, scopeKey),
                         inArray(AccountAssetHoldingsSchema.assetId, chunk),
                     ),
                 )
@@ -123,7 +123,7 @@ export async function refreshAccountHoldings({
         const rows = changed.map(h => ({
             accountAddress,
             assetId: h.assetId,
-            network,
+            scope: scopeKey,
             amount: h.amount,
             native: h.native ?? null,
             updatedAt: now,
@@ -136,7 +136,7 @@ export async function refreshAccountHoldings({
                     target: [
                         AccountAssetHoldingsSchema.accountAddress,
                         AccountAssetHoldingsSchema.assetId,
-                        AccountAssetHoldingsSchema.network,
+                        AccountAssetHoldingsSchema.scope,
                     ],
                     set: {
                         amount: sql`excluded.amount`,
@@ -169,13 +169,13 @@ export async function insertAssetHolding({
     amount,
     native,
 }: InsertAssetHoldingParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     await db
         .insert(AccountAssetHoldingsSchema)
         .values({
             accountAddress,
             assetId,
-            network,
+            scope: scopeKey,
             amount: amount ?? new Decimal(0),
             native: native ?? null,
             updatedAt: Date.now(),
@@ -206,10 +206,10 @@ export async function addToAssetHolding({
     scope,
     amount,
 }: AddToAssetHoldingParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const conditions = and(
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AccountAssetHoldingsSchema.scope, scopeKey),
         eq(AccountAssetHoldingsSchema.assetId, assetId),
     )
 
@@ -264,7 +264,7 @@ export async function getAccountHoldings({
     hideZeroBalanceNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideZeroBalanceNfts === true ||
@@ -272,7 +272,7 @@ export async function getAccountHoldings({
 
     const baseConditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AccountAssetHoldingsSchema.scope, scopeKey),
     ]
 
     if (hideZeroBalance) {
@@ -346,10 +346,7 @@ export async function getAccountHoldings({
                     AccountAssetHoldingsSchema.assetId,
                     AssetsPeraSchema.assetId,
                 ),
-                eq(
-                    AccountAssetHoldingsSchema.network,
-                    AssetsPeraSchema.network,
-                ),
+                eq(AccountAssetHoldingsSchema.scope, AssetsPeraSchema.scope),
             ),
         )
         .where(and(...joinConditions))
@@ -385,14 +382,14 @@ export async function getHoldingRestriction({
     assetId,
     scope,
 }: GetHoldingRestrictionParams): Promise<Nullable<HoldingRestriction>> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({ native: AccountAssetHoldingsSchema.native })
         .from(AccountAssetHoldingsSchema)
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.scope, scopeKey),
                 eq(AccountAssetHoldingsSchema.assetId, assetId),
             ),
         )
@@ -414,7 +411,7 @@ export async function deleteAssetHoldings({
     assetIds,
     scope,
 }: DeleteAssetHoldingsParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     await db
@@ -422,7 +419,7 @@ export async function deleteAssetHoldings({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.scope, scopeKey),
                 inArray(AccountAssetHoldingsSchema.assetId, assetIds),
             ),
         )
@@ -438,13 +435,13 @@ export async function getAllHeldAssetIdsForNetwork({
     db = getDatabase(),
     scope,
 }: GetAllHeldAssetIdsForNetworkParams): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .selectDistinct({
             assetId: AccountAssetHoldingsSchema.assetId,
         })
         .from(AccountAssetHoldingsSchema)
-        .where(eq(AccountAssetHoldingsSchema.network, network))
+        .where(eq(AccountAssetHoldingsSchema.scope, scopeKey))
         // Stable order matters: the price syncer slices this list into fixed
         // batches, so an unspecified DISTINCT order re-shuffles batch
         // membership between sync ticks.
@@ -470,7 +467,7 @@ export async function getAssetHolderAddresses({
     assetId,
     scope,
 }: GetAssetHolderAddressesParams): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountAssetHoldingsSchema.accountAddress,
@@ -480,7 +477,7 @@ export async function getAssetHolderAddresses({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.assetId, assetId),
-                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.scope, scopeKey),
             ),
         )
         .orderBy(AccountAssetHoldingsSchema.accountAddress)
@@ -517,7 +514,7 @@ export async function getHeldAssetIdsByAccount({
     const rows = await db
         .selectDistinct({
             assetId: AccountAssetHoldingsSchema.assetId,
-            network: AccountAssetHoldingsSchema.network,
+            network: AccountAssetHoldingsSchema.scope,
         })
         .from(AccountAssetHoldingsSchema)
         .where(eq(AccountAssetHoldingsSchema.accountAddress, accountAddress))

@@ -82,10 +82,10 @@ async function queryHoldingRows({
     limit,
     offset,
 }: GetAccountHoldingsPageParams) {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const conditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AccountAssetHoldingsSchema.scope, scopeKey),
     ]
 
     if (hideZeroBalance) {
@@ -196,7 +196,7 @@ export async function getAccountHoldingsPage(
         assetId: r.assetId,
         amount: r.amount,
         native: r.native,
-        asset: peraAssetFromJoinRow(r),
+        asset: peraAssetFromJoinRow(r, params.scope.chainId),
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
         isFavorited: !!r.isFavorited,
     }))
@@ -241,7 +241,7 @@ export const assetFromHoldingLiteRow = (
     row: PeraAssetJoinRow,
     chainId: ChainId,
 ): Nullable<PeraAsset> =>
-    peraAssetFromJoinRow(row) ??
+    peraAssetFromJoinRow(row, chainId) ??
     (isNativeAssetId(chainId, row.assetId) ? nativeAssetFor(chainId) : null)
 
 /** SQL-expressible collectible orders. Acquisition order is applied by the caller. */
@@ -287,7 +287,7 @@ export async function getAccountCollectiblesLite({
     search,
     includeZeroBalance = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     // Built here, not at module scope: a top-level `sql` template dereferences
     // the imported schema at import time, which breaks every consumer that
     // mocks the assets package.
@@ -314,7 +314,7 @@ export async function getAccountCollectiblesLite({
 
     const conditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AccountAssetHoldingsSchema.scope, scopeKey),
         eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
     ]
 
@@ -377,10 +377,7 @@ export async function getAccountCollectiblesLite({
                     AccountAssetHoldingsSchema.assetId,
                     AssetsPeraSchema.assetId,
                 ),
-                eq(
-                    AccountAssetHoldingsSchema.network,
-                    AssetsPeraSchema.network,
-                ),
+                eq(AccountAssetHoldingsSchema.scope, AssetsPeraSchema.scope),
             ),
         )
         // Inner too: the old path resolved assets through `assets_node`, so a
@@ -393,10 +390,7 @@ export async function getAccountCollectiblesLite({
                     AccountAssetHoldingsSchema.assetId,
                     AssetsNodeSchema.assetId,
                 ),
-                eq(
-                    AccountAssetHoldingsSchema.network,
-                    AssetsNodeSchema.network,
-                ),
+                eq(AccountAssetHoldingsSchema.scope, AssetsNodeSchema.scope),
             ),
         )
         .where(and(...conditions))

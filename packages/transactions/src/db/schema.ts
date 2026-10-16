@@ -28,7 +28,7 @@ export const TransactionsSchema = sqliteTable(
     'transactions',
     {
         id: text('id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         txType: text('tx_type').notNull(),
         sender: text('sender').notNull(),
         assetSender: text('asset_sender'),
@@ -46,8 +46,8 @@ export const TransactionsSchema = sqliteTable(
         updatedAt: integer('updated_at').notNull(),
     },
     table => [
-        primaryKey({ columns: [table.network, table.id] }),
-        index('transactions_network_idx').on(table.network),
+        primaryKey({ columns: [table.scope, table.id] }),
+        index('transactions_scope_idx').on(table.scope),
     ],
 )
 
@@ -56,13 +56,13 @@ export const AccountTransactionsSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         transactionId: text('transaction_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         assetId: text('asset_id'),
         roundTime: integer('round_time'),
     },
     table => [
         primaryKey({
-            columns: [table.accountAddress, table.transactionId, table.network],
+            columns: [table.accountAddress, table.transactionId, table.scope],
         }),
     ],
 )

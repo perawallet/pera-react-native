@@ -65,7 +65,7 @@ export async function getAccountPortfolioTotals({
     accountAddress: string
     scope: ChainScope
 }): Promise<AccountPortfolioTotals> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const native = nativeAssetFor(scope.chainId)
     const rows = await db
         .select({
@@ -99,7 +99,7 @@ export async function getAccountPortfolioTotals({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -138,13 +138,13 @@ export async function getAccountFundedNetworks({
     chainId: ChainId
 }): Promise<string[]> {
     const rows = await db
-        .select({ network: AccountAssetHoldingsSchema.network })
+        .select({ network: AccountAssetHoldingsSchema.scope })
         .from(AccountAssetHoldingsSchema)
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 // Another chain's native id could equal this one's.
-                like(AccountAssetHoldingsSchema.network, `${chainId}/%`),
+                like(AccountAssetHoldingsSchema.scope, `${chainId}/%`),
                 eq(
                     AccountAssetHoldingsSchema.assetId,
                     nativeAssetFor(chainId).assetId,

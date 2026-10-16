@@ -14,6 +14,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
+    type ChainSubmissionData,
     type SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -51,8 +52,7 @@ export type StaleGroupReason = 'already-on-chain' | 'expired'
 
 export type DerivedSubmissionAttempt = {
     txIds: string[]
-    /** Highest lastValid in the group, in rounds. */
-    lastValid?: number
+    chainData?: ChainSubmissionData
 }
 
 /**

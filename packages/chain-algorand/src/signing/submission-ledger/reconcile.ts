@@ -12,7 +12,7 @@
 
 import { getAlgorandClient } from '../../blockchain'
 import {
-    scopeFromNetworkColumn,
+    parseScopeKey,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNetworkOf } from '../../legacy-network'
+import { lastValidOf } from './chain-data'
 import { getSubmissionSettledHandler } from './settle-registry'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
@@ -131,7 +132,7 @@ export const reconcileOpenSubmissions = async ({
 
     for (const attempt of open) {
         try {
-            const scope = scopeFromNetworkColumn(attempt.network)
+            const scope = parseScopeKey(attempt.network)
             // Throws for a non-Algorand scope, so the row is left open.
             const network = algorandNetworkOf(scope)
             const scopeKey = toScopeKey(scope)
@@ -219,14 +220,15 @@ export const probeSubmissionAttempt = async (
         // unreachable indexer is exactly the false report this ledger exists
         // to prevent — leave the row open for the next pass instead.
         if (!isNotFoundError(error)) return null
-        if (attempt.lastValid === null) return null
+        const lastValid = lastValidOf(attempt)
+        if (lastValid === null) return null
         // The 404 only proves absence for rounds the indexer has actually
         // processed. Reading algod's round here would let a lagging indexer
         // (or one mid-migration) condemn a group that did land — the false
         // report this ledger exists to prevent — so the proof is gated on
         // the indexer's own round.
         const indexerRound = await readIndexerRound(client)
-        if (indexerRound === null || indexerRound <= attempt.lastValid) {
+        if (indexerRound === null || indexerRound <= lastValid) {
             return null
         }
         return 'failed'

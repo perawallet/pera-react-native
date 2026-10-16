@@ -70,6 +70,27 @@ export type ChainHoldingNative = {
     isFrozen: boolean
 }
 
+/**
+ * Asset data only its own chain reads, persisted on the asset's node row. A
+ * chain package adds its member, discriminated by `family`.
+ */
+export type ChainAssetData = {
+    family: 'algorand'
+    creatorAddress: string
+}
+
+/**
+ * Attempt data only its own chain reads, persisted on the submission attempt.
+ * A chain package adds its member, discriminated by `family`. Record it only
+ * when the chain's reconciler can settle the attempt by it: an attempt carrying
+ * it never ages out of the ledger's guards.
+ */
+export type ChainSubmissionData = {
+    family: 'algorand'
+    /** A last-valid round of the group; the group can't land after any member's. */
+    lastValid: number
+}
+
 export type AccountChainState =
     | {
           family: 'algorand'

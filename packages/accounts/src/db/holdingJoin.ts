@@ -30,5 +30,5 @@ export const holdingJoin = (
 ) =>
     and(
         eq(AccountAssetHoldingsSchema.assetId, table.assetId),
-        eq(AccountAssetHoldingsSchema.network, table.network),
+        eq(AccountAssetHoldingsSchema.scope, table.scope),
     )

@@ -14,11 +14,14 @@ import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
+    type ChainAssetData,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     forEachWriteChunk,
     getDatabase,
+    parseDecimalJson,
     type Database,
 } from '@perawallet/wallet-core-database'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -27,6 +30,7 @@ import {
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
+import { decodeAssetChainData, encodeAssetChainData } from '../chain-adapter'
 import { AssetsNodeSchema, AssetsPeraSchema } from './schema'
 
 // The held-assets list re-reads every row on each holdings/asset/price
@@ -58,17 +62,20 @@ function parsePeraMetadata(json: string): PeraAssetMetadata {
  * Exported so other packages (e.g. the accounts holdings-page read) can enrich
  * a joined row without going through `getAssetsByIds` and its `IN (…)` list.
  */
-export function peraAssetFromColumns(row: {
-    assetId: string
-    decimals: number
-    creatorAddress: string
-    totalSupply: Decimal
-    name: Nullable<string>
-    unitName: Nullable<string>
-    url: Nullable<string>
-    metadata: Nullable<string>
-    peraMetadataJson: Nullable<string>
-}): PeraAsset {
+export function peraAssetFromColumns(
+    row: {
+        assetId: string
+        decimals: number
+        chainData: Nullable<ChainAssetData>
+        totalSupply: Decimal
+        name: Nullable<string>
+        unitName: Nullable<string>
+        url: Nullable<string>
+        metadata: Nullable<string>
+        peraMetadataJson: Nullable<string>
+    },
+    chainId: ChainId,
+): PeraAsset {
     const peraMetadata: Optional<PeraAssetMetadata> = row.peraMetadataJson
         ? parsePeraMetadata(row.peraMetadataJson)
         : undefined
@@ -76,7 +83,7 @@ export function peraAssetFromColumns(row: {
     return {
         assetId: row.assetId,
         decimals: row.decimals,
-        creator: { address: row.creatorAddress },
+        ...decodeAssetChainData(chainId, row.chainData),
         totalSupply: row.totalSupply,
         name: row.name ?? undefined,
         unitName: row.unitName ?? undefined,
@@ -94,9 +101,9 @@ export function peraAssetFromColumns(row: {
  */
 export const peraAssetJoinColumns = () => ({
     decimals: AssetsNodeSchema.decimals,
-    creatorAddress: AssetsNodeSchema.creatorAddress,
-    // Raw TEXT: the caller wraps it in a Decimal only for rows it renders.
+    // Both raw TEXT: the caller parses them only for rows it renders.
     totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
+    chainData: sql<Nullable<string>>`${AssetsNodeSchema.chainData}`,
     name: AssetsNodeSchema.name,
     unitName: AssetsNodeSchema.unitName,
     url: AssetsNodeSchema.url,
@@ -107,8 +114,9 @@ export const peraAssetJoinColumns = () => ({
 export type PeraAssetJoinRow = {
     assetId: string
     decimals: Nullable<number>
-    creatorAddress: Nullable<string>
     totalSupply: Nullable<string>
+    /** Raw JSON text of the asset's chain data. */
+    chainData: Nullable<string>
     name: Nullable<string>
     unitName: Nullable<string>
     url: Nullable<string>
@@ -119,20 +127,26 @@ export type PeraAssetJoinRow = {
 /** Null until the asset's decimals and total supply have synced. */
 export function peraAssetFromJoinRow(
     row: PeraAssetJoinRow,
+    chainId: ChainId,
 ): Nullable<PeraAsset> {
     if (row.decimals === null || row.totalSupply === null) return null
 
-    return peraAssetFromColumns({
-        assetId: row.assetId,
-        decimals: row.decimals,
-        creatorAddress: row.creatorAddress ?? '',
-        totalSupply: new Decimal(row.totalSupply),
-        name: row.name,
-        unitName: row.unitName,
-        url: row.url,
-        metadata: row.metadata,
-        peraMetadataJson: row.peraMetadataJson,
-    })
+    return peraAssetFromColumns(
+        {
+            assetId: row.assetId,
+            decimals: row.decimals,
+            chainData: row.chainData
+                ? parseDecimalJson<ChainAssetData>(row.chainData)
+                : null,
+            totalSupply: new Decimal(row.totalSupply),
+            name: row.name,
+            unitName: row.unitName,
+            url: row.url,
+            metadata: row.metadata,
+            peraMetadataJson: row.peraMetadataJson,
+        },
+        chainId,
+    )
 }
 
 type UpsertNodeAssetsParams = {
@@ -146,20 +160,20 @@ export async function upsertNodeAssets({
     items,
     scope,
 }: UpsertNodeAssetsParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
     const rows = items.map(item => ({
         assetId: item.assetId,
-        network,
+        scope: scopeKey,
         decimals: item.decimals,
-        creatorAddress: item.creator.address,
         totalSupply: item.totalSupply,
         name: item.name ?? null,
         unitName: item.unitName ?? null,
         url: item.url ?? null,
         metadata: item.metadata ?? null,
+        chainData: encodeAssetChainData(scope.chainId, item),
         updatedAt: now,
     }))
 
@@ -168,10 +182,10 @@ export async function upsertNodeAssets({
             .insert(AssetsNodeSchema)
             .values(chunk)
             .onConflictDoUpdate({
-                target: [AssetsNodeSchema.assetId, AssetsNodeSchema.network],
+                target: [AssetsNodeSchema.assetId, AssetsNodeSchema.scope],
                 set: {
                     decimals: sql`excluded.decimals`,
-                    creatorAddress: sql`excluded.creator_address`,
+                    chainData: sql`excluded.chain_data`,
                     totalSupply: sql`excluded.total_supply`,
                     name: sql`excluded.name`,
                     unitName: sql`excluded.unit_name`,
@@ -199,7 +213,7 @@ export async function upsertPeraAssets({
     items,
     scope,
 }: UpsertPeraAssetsParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -221,7 +235,7 @@ export async function upsertPeraAssets({
                     AssetsPeraSchema.assetId,
                     items.map(i => i.assetId),
                 ),
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -254,7 +268,7 @@ export async function upsertPeraAssets({
 
         return {
             assetId: item.assetId,
-            network,
+            scope: scopeKey,
             verificationTier: meta?.verificationTier ?? 'unverified',
             isDeleted: meta?.isDeleted ?? false,
             isFavorited: mergedMeta?.isFavorited ?? false,
@@ -270,7 +284,7 @@ export async function upsertPeraAssets({
             .insert(AssetsPeraSchema)
             .values(chunk)
             .onConflictDoUpdate({
-                target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
+                target: [AssetsPeraSchema.assetId, AssetsPeraSchema.scope],
                 set: {
                     verificationTier: sql`excluded.verification_tier`,
                     isDeleted: sql`excluded.is_deleted`,
@@ -312,14 +326,14 @@ export async function getAssetsByIds({
     assetIds,
     scope,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const rows = await db
         .select({
             assetId: AssetsNodeSchema.assetId,
             decimals: AssetsNodeSchema.decimals,
-            creatorAddress: AssetsNodeSchema.creatorAddress,
+            chainData: AssetsNodeSchema.chainData,
             totalSupply: AssetsNodeSchema.totalSupply,
             name: AssetsNodeSchema.name,
             unitName: AssetsNodeSchema.unitName,
@@ -332,18 +346,18 @@ export async function getAssetsByIds({
             AssetsPeraSchema,
             and(
                 eq(AssetsNodeSchema.assetId, AssetsPeraSchema.assetId),
-                eq(AssetsNodeSchema.network, AssetsPeraSchema.network),
+                eq(AssetsNodeSchema.scope, AssetsPeraSchema.scope),
             ),
         )
         .where(
             and(
                 inArray(AssetsNodeSchema.assetId, assetIds),
-                eq(AssetsNodeSchema.network, network),
+                eq(AssetsNodeSchema.scope, scopeKey),
             ),
         )
         .all()
 
-    return rows.map(row => peraAssetFromColumns(row))
+    return rows.map(row => peraAssetFromColumns(row, scope.chainId))
 }
 
 type GetAssetByIdParams = {
@@ -372,14 +386,14 @@ export async function getAssetPeraMetadata({
     assetId,
     scope,
 }: GetAssetPeraMetadataParams): Promise<Nullable<PeraAssetMetadata>> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
         .from(AssetsPeraSchema)
         .where(
             and(
                 eq(AssetsPeraSchema.assetId, assetId),
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -401,7 +415,7 @@ export async function updateAssetPeraMetadata({
     scope,
     updates,
 }: UpdateAssetPeraMetadataParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const now = Date.now()
 
     const rows = await db
@@ -410,7 +424,7 @@ export async function updateAssetPeraMetadata({
         .where(
             and(
                 eq(AssetsPeraSchema.assetId, assetId),
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -430,7 +444,7 @@ export async function updateAssetPeraMetadata({
         .insert(AssetsPeraSchema)
         .values({
             assetId,
-            network,
+            scope: scopeKey,
             verificationTier: merged.verificationTier,
             isDeleted: merged.isDeleted,
             isFavorited: merged.isFavorited,
@@ -441,7 +455,7 @@ export async function updateAssetPeraMetadata({
             firstSeenAt: now,
         })
         .onConflictDoUpdate({
-            target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
+            target: [AssetsPeraSchema.assetId, AssetsPeraSchema.scope],
             set: {
                 isFavorited: merged.isFavorited,
                 peraMetadataJson: metaJson,
@@ -463,7 +477,7 @@ export async function deleteAssets({
     assetIds,
     scope,
 }: DeleteAssetsParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     await forEachWriteChunk(assetIds, async chunk => {
@@ -472,7 +486,7 @@ export async function deleteAssets({
             .where(
                 and(
                     inArray(AssetsNodeSchema.assetId, chunk),
-                    eq(AssetsNodeSchema.network, network),
+                    eq(AssetsNodeSchema.scope, scopeKey),
                 ),
             )
             .run()
@@ -481,7 +495,7 @@ export async function deleteAssets({
             .where(
                 and(
                     inArray(AssetsPeraSchema.assetId, chunk),
-                    eq(AssetsPeraSchema.network, network),
+                    eq(AssetsPeraSchema.scope, scopeKey),
                 ),
             )
             .run()
