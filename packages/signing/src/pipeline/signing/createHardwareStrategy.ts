@@ -322,6 +322,7 @@ export const createHardwareStrategy = (
                     group.data.metadata,
                     {
                         registry: hardwareWalletRegistry,
+                        chainId,
                         authDataSigner,
                         getAllAccounts,
                         callbacks,
@@ -342,6 +343,7 @@ export const createHardwareStrategy = (
                 data.indicesToSign,
                 {
                     registry: hardwareWalletRegistry,
+                    chainId,
                     encodeTransaction,
                     planner: plannerChainAdapters.get(chainId),
                     callbacks,

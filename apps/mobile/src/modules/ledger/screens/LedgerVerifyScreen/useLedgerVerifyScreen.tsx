@@ -148,7 +148,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 )
             }
 
-            const connectPromise = provider.connect(deviceId)
+            const connectPromise = provider.connect(deviceId, LEGACY_CHAIN_ID)
             try {
                 transport = await withLedgerConnectionTimeout(
                     connectPromise,

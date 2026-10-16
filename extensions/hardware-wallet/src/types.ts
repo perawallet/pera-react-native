@@ -33,7 +33,7 @@ export type HardwareWalletDevice = {
 
 export type HardwareWalletDerivedAccount = {
     address: string
-    /** Raw 32-byte Ed25519 public key. */
+    /** The public key in the encoding of the chain's signing scheme. */
     publicKey: Uint8Array
     /** Sequential index on the device (0, 1, 2...). */
     accountIndex: number
@@ -98,12 +98,13 @@ export type HardwareWalletTransport = {
     ) => Promise<HardwareWalletDerivedAccount>
 
     /**
-     * Blocks on physical confirmation. `txnBytes` is msgpack-encoded; resolves
-     * to the Ed25519 signature.
+     * Blocks on physical confirmation. `payload` is the bytes the chain's
+     * device app signs, which it hashes on-device. Resolves to the chain's
+     * signature bytes, in the encoding its planner's `assemble` takes.
      */
     signTransaction: (
         accountIndex: number,
-        txnBytes: Uint8Array,
+        payload: Uint8Array,
     ) => Promise<Uint8Array>
 
     /**
@@ -150,8 +151,15 @@ export type HardwareWalletTransportProvider = {
      * stable handles (Android USB reassigns descriptors on replug and loses
      * them on app restart) — those implementations connect to whatever is
      * currently attached.
+     *
+     * `chainId` (a chain-contract `ChainId`) picks the device app the
+     * transport speaks. Rejects before opening a link when no app driver
+     * serves that chain.
      */
-    connect: (deviceId: string) => Promise<HardwareWalletTransport>
+    connect: (
+        deviceId: string,
+        chainId: string,
+    ) => Promise<HardwareWalletTransport>
 
     /** Check if this transport type is supported on the current platform. */
     isSupported: () => Promise<boolean>

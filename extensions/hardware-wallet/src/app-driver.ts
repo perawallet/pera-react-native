@@ -47,14 +47,10 @@ export interface LedgerAppDriver {
 }
 
 export class LedgerAppDriverNotRegisteredError extends Error {
-    readonly chainId?: string
+    readonly chainId: string
 
-    constructor(chainId?: string) {
-        super(
-            chainId
-                ? `No Ledger app driver is registered for chain "${chainId}"`
-                : 'No Ledger app driver is registered',
-        )
+    constructor(chainId: string) {
+        super(`No Ledger app driver is registered for chain "${chainId}"`)
         this.name = 'LedgerAppDriverNotRegisteredError'
         this.chainId = chainId
     }
@@ -72,29 +68,10 @@ export class DuplicateLedgerAppDriverError extends Error {
     }
 }
 
-export class AmbiguousLedgerAppDriverError extends Error {
-    readonly chainIds: string[]
-
-    constructor(chainIds: string[]) {
-        super(
-            `Ledger app drivers are registered for ${chainIds.join(', ')}; pass the chain to open`,
-        )
-        this.name = 'AmbiguousLedgerAppDriverError'
-        this.chainIds = chainIds
-    }
-}
-
 export interface LedgerAppDriverRegistry {
     register(driver: LedgerAppDriver): void
-    /**
-     * Without a `chainId`, returns the only registered driver: a transport's
-     * `connect` has no account context to pick a chain from, and one chain
-     * ships today. Once a second registers, callers must pass the chain.
-     *
-     * @throws LedgerAppDriverNotRegisteredError
-     * @throws AmbiguousLedgerAppDriverError when `chainId` is omitted and more than one is registered
-     */
-    resolve(chainId?: string): LedgerAppDriver
+    /** @throws LedgerAppDriverNotRegisteredError */
+    resolve(chainId: string): LedgerAppDriver
     has(chainId: string): boolean
     /** Test-only: drops every registration. */
     reset(): void
@@ -120,21 +97,11 @@ export const createLedgerAppDriverRegistry = (): LedgerAppDriverRegistry => {
             drivers.set(driver.chainId, driver)
         },
         resolve: chainId => {
-            if (chainId !== undefined) {
-                const driver = drivers.get(chainId)
-                if (!driver) {
-                    throw new LedgerAppDriverNotRegisteredError(chainId)
-                }
-                return driver
+            const driver = drivers.get(chainId)
+            if (!driver) {
+                throw new LedgerAppDriverNotRegisteredError(chainId)
             }
-            const [only, ...rest] = drivers.values()
-            if (!only) {
-                throw new LedgerAppDriverNotRegisteredError()
-            }
-            if (rest.length > 0) {
-                throw new AmbiguousLedgerAppDriverError([...drivers.keys()])
-            }
-            return only
+            return driver
         },
         has: chainId => drivers.has(chainId),
         reset: () => {

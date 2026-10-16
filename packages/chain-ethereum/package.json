@@ -19,6 +19,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@ledgerhq/hw-app-eth": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
@@ -31,6 +32,8 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",
+    "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
+    "@perawallet/wallet-extension-ledger-shared": "workspace:*",
     "decimal.js": "catalog:",
     "viem": "catalog:",
     "zod": "catalog:"

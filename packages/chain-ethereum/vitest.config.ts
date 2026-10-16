@@ -68,6 +68,11 @@ export default defineConfig({
                 __dirname,
                 '../transactions/src/__tests__/testing.ts',
             ),
+            '@perawallet/wallet-extension-hardware-wallet/testing':
+                path.resolve(
+                    __dirname,
+                    '../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts',
+                ),
             '@perawallet/wallet-core-kms/constants': path.resolve(
                 __dirname,
                 '../kms/src/constants.ts',

@@ -12,7 +12,6 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-    AmbiguousLedgerAppDriverError,
     createLedgerAppDriverRegistry,
     DuplicateLedgerAppDriverError,
     LedgerAppDriverNotRegisteredError,
@@ -37,21 +36,9 @@ describe('createLedgerAppDriverRegistry', () => {
         expect(registry.resolve('algorand')).toBe(driver)
     })
 
-    it('resolves the only registered driver when no chain is given', () => {
-        const registry = createLedgerAppDriverRegistry()
-        const driver = makeDriver('algorand')
-
-        registry.register(driver)
-
-        expect(registry.resolve()).toBe(driver)
-    })
-
     it('throws when no driver is registered', () => {
         const registry = createLedgerAppDriverRegistry()
 
-        expect(() => registry.resolve()).toThrow(
-            LedgerAppDriverNotRegisteredError,
-        )
         expect(() => registry.resolve('algorand')).toThrow(
             LedgerAppDriverNotRegisteredError,
         )
@@ -66,14 +53,28 @@ describe('createLedgerAppDriverRegistry', () => {
         )
     })
 
-    it('refuses to guess between several drivers', () => {
+    it('resolves each chain to its own driver when several are registered', () => {
         const registry = createLedgerAppDriverRegistry()
         const algorand = makeDriver('algorand')
+        const ethereum = makeDriver('ethereum')
         registry.register(algorand)
-        registry.register(makeDriver('ethereum'))
+        registry.register(ethereum)
 
-        expect(() => registry.resolve()).toThrow(AmbiguousLedgerAppDriverError)
         expect(registry.resolve('algorand')).toBe(algorand)
+        expect(registry.resolve('ethereum')).toBe(ethereum)
+    })
+
+    it('names the missing chain on the error', () => {
+        const registry = createLedgerAppDriverRegistry()
+
+        expect.assertions(1)
+        try {
+            registry.resolve('ethereum')
+        } catch (error) {
+            expect((error as LedgerAppDriverNotRegisteredError).chainId).toBe(
+                'ethereum',
+            )
+        }
     })
 
     it('ignores the same instance registered twice', () => {
@@ -83,7 +84,7 @@ describe('createLedgerAppDriverRegistry', () => {
         registry.register(driver)
 
         expect(() => registry.register(driver)).not.toThrow()
-        expect(registry.resolve()).toBe(driver)
+        expect(registry.resolve('algorand')).toBe(driver)
     })
 
     it('rejects a different driver for a registered chain', () => {

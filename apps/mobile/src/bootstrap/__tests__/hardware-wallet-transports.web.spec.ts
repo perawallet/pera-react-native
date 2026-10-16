@@ -68,7 +68,9 @@ describe('registerHardwareWalletTransports (web)', () => {
         registerHardwareWalletTransports(registry)
 
         await expect(
-            registry.getProvider('ledger', 'ble')?.connect('paired-elsewhere'),
+            registry
+                .getProvider('ledger', 'ble')
+                ?.connect('paired-elsewhere', 'test'),
         ).rejects.toBeInstanceOf(LedgerDevicePickerUnavailableError)
     })
 })

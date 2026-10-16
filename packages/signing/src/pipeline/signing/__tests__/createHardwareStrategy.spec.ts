@@ -204,6 +204,10 @@ describe('createHardwareStrategy', () => {
             )
 
             expect(assembleSignedTransaction).toHaveBeenCalledTimes(1)
+            expect(mockProvider.connect).toHaveBeenCalledWith(
+                expect.any(String),
+                'ethereum',
+            )
         })
 
         it('signs transactions sequentially and returns result', async () => {
@@ -495,7 +499,10 @@ describe('createHardwareStrategy', () => {
 
             await strategy.sign(group, usbAccount)
 
-            expect(usbProvider.connect).toHaveBeenCalledWith('usb-dev-1')
+            expect(usbProvider.connect).toHaveBeenCalledWith(
+                'usb-dev-1',
+                'algorand',
+            )
         })
 
         it('calls onSigningStart before signing loop', async () => {

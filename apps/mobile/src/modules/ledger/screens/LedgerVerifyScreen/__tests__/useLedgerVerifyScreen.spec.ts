@@ -215,6 +215,7 @@ describe('useLedgerVerifyScreen', () => {
         await waitFor(() => expect(result.current.areAllVerified).toBe(true))
         expect(mockVerify).toHaveBeenCalledTimes(1)
         expect(mockVerify).toHaveBeenCalledWith(expect.anything(), 0)
+        expect(mockConnect).toHaveBeenCalledWith('dev', 'algorand')
         expect(result.current.verifyTargets).toEqual([
             {
                 address: 'LEDGER0',

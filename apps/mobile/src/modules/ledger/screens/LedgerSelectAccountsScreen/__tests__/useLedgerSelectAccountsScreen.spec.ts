@@ -222,7 +222,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockConnect).toHaveBeenCalledTimes(1)
-        expect(mockConnect).toHaveBeenCalledWith('device-1')
+        expect(mockConnect).toHaveBeenCalledWith('device-1', 'algorand')
         expect(mockGetAddress).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenCalledWith(2, true)
         const derived = derivedAccounts(result.current)

@@ -20,6 +20,9 @@ catalog:
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
+  # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
+  # so a range would drift the Ledger transport copies out from under it.
+  "@ledgerhq/hw-app-eth": 7.10.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
@@ -324,6 +327,10 @@ overrides:
   # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
   # Stay on the 0.8 line — 0.9 changed the package's API surface.
   '@xmldom/xmldom': 0.8.15
+  # hw-app-eth 7.10.0 pins axios 1.13.5, which carries GHSA-3pq3-5fj3-cg6v and
+  # GHSA-542g-h47m-68v8, fixed only in 1.20.0. Drop once hw-app-eth resolves
+  # 1.20.0 itself.
+  axios@<1.20.0: 1.20.0
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
