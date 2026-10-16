@@ -40,6 +40,7 @@ vi.mock('../usePromptContainer', () => ({
     }),
 }))
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: crash regression in the navigation-ref provider, logic is inline
 describe('PromptContainer', () => {
     it('gives prompts the navigation container ref they cannot get from context', () => {
         render(<PromptContainer />)

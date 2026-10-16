@@ -134,6 +134,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     ],
 ]
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: asserts what the user sees before signing, the security boundary of the review
 describe('TransactionDetailBody', () => {
     beforeEach(() => {
         mockNetworkConfig.explorerUrl = 'https://explorer.test'

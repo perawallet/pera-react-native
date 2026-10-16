@@ -97,6 +97,7 @@ beforeEach(() => {
     mockStepVersionsHook.mockReturnValue(idleStepVersions())
 })
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: loading, error and empty precedence is inline
 describe('SettingsDeveloperMigrationViewerScreen', () => {
     it('renders a loading state while data is being fetched', () => {
         mockScreenHook.mockReturnValue(idleScreen({ isLoading: true }))

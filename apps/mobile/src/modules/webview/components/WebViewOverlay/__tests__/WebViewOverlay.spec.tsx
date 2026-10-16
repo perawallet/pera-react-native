@@ -39,6 +39,7 @@ vi.mock('../../../hooks', () => ({
 
 import { WebViewOverlay } from '../WebViewOverlay'
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: keyboard-avoidance regression, logic is inline
 describe('WebViewOverlay', () => {
     beforeEach(() => {
         mocks.request.mockClear()

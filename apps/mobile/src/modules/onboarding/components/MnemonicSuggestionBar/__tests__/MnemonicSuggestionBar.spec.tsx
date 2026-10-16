@@ -16,6 +16,7 @@ import { fireEvent, render, screen } from '@test-utils/render'
 
 import { MnemonicSuggestionBar } from '../MnemonicSuggestionBar'
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: keyboard-stays-up regression, logic is inline
 describe('MnemonicSuggestionBar', () => {
     it('renders nothing when there are no suggestions', () => {
         render(

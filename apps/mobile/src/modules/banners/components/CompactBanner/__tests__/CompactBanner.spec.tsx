@@ -27,6 +27,7 @@ const banner: Banner = {
     backgroundImageUrl: null,
 }
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: title, subtitle and label fallback logic is inline
 describe('CompactBanner', () => {
     it('falls back to subtitle when no title is present', () => {
         render(

@@ -17,6 +17,7 @@ import { Text } from 'react-native'
 import { PWView } from '../PWView'
 
 describe('PWView', () => {
+    // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
     it('renders children correctly', () => {
         render(
             <PWView>

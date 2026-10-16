@@ -48,6 +48,10 @@ The pyramid for this repo, from most to least invested in:
 - Re-test React Native primitives on every wrapper (`renders children`, `forwards testID`).
 - Use snapshots.
 
+`pnpm lint` enforces the checks a path or a name can decide: `pera/no-module-component-specs`,
+`pera/no-primitive-retest`, `pera/no-assertionless-test` and `pera/no-snapshot-tests`. A spec kept
+deliberately takes a `lanekeep-ignore-next-line` with a reason.
+
 ### Coverage
 
 `pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions. The

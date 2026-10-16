@@ -97,6 +97,7 @@ const natives = {} as Record<EthereumDisplayFixtureKind, TransactionNative>
 
 const textOf = (testID: string) => screen.getByTestId(testID).textContent ?? ''
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: asserts what the user sees before signing, the security boundary of the review
 describe('Ethereum transaction bodies', () => {
     beforeAll(async () => {
         registerEthereumChain()

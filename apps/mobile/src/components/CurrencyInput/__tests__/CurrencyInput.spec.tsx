@@ -27,6 +27,7 @@ vi.mock('react-native-advanced-input-mask', async () => {
 })
 
 describe('CurrencyInput', () => {
+    // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
     it('renders correctly', () => {
         render(
             <CurrencyInput

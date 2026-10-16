@@ -111,6 +111,7 @@ beforeEach(() => {
     useRemoteConfigStore.getState().resetState()
 })
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: covers the webview bridge's security behaviour, which has no hook to move to
 describe('PWWebView.web', () => {
     it('renders an iframe whose src carries the bridge token param', () => {
         const { container } = renderDiscover()
