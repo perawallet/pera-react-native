@@ -43,7 +43,7 @@ export const useRecipientWarningQuery = (
                   input.recipient,
                   input.asset,
                   input.scope,
-                  input.amount.toString(),
+                  input.amount,
               )
             : [MODULE_PREFIX, 'recipient-warning'],
         // TanStack rejects `undefined` data, so "no warning" travels as null.

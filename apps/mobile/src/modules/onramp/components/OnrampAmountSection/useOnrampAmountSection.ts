@@ -37,11 +37,13 @@ const RECEIVE_FALLBACK_DECIMALS = 2
 type UseOnrampAmountSectionParams = {
     variant: 'pay' | 'receive'
     token: Nullable<RampToken>
-    /** Pay: the raw input string; receive: the quoted destination Decimal. */
-    amount: string | Nullable<Decimal>
+    /** Pay variant only: the raw text of the input. */
+    amountText: string
+    /** Receive variant only: the quoted destination amount, in display units. */
+    amount: Nullable<Decimal>
     /** Receive variant only: a quote is in flight. */
     isLoading?: boolean
-    onAmountChange?: (value: string) => void
+    onAmountTextChange?: (text: string) => void
 }
 
 type UseOnrampAmountSectionResult = {
@@ -81,25 +83,21 @@ export const sanitizeAmountInput = (
     return `${integerPart}.${fractionPart}`
 }
 
-// Token-unit amount for the fiat (preferred-currency) row. Empty, invalid, or
-// non-positive input computes as zero so the row shows a "0.00" placeholder
+// Token-unit amount for the fiat (preferred-currency) row. A missing or
+// non-positive amount computes as zero so the row shows a "0.00" placeholder
 // (matching the web AssetInput) instead of CurrencyAmount's "---".
-export const getFiatBaseAmount = (
-    amount: string | Nullable<Decimal>,
-): Decimal => {
-    const parsed = typeof amount === 'string' ? parseRampAmount(amount) : amount
-    return parsed?.greaterThan(0) ? parsed : ZERO_DECIMAL
-}
+export const getFiatBaseAmount = (amount: Nullable<Decimal>): Decimal =>
+    amount?.greaterThan(0) ? amount : ZERO_DECIMAL
 
-// The form holds the source amount as a raw string (it is fed straight to the
-// quote request), so this hook only sanitizes and forwards the string — no
-// Decimal round-trip that would re-format mid-edit.
+// The pay field binds the raw text and only sanitizes and forwards it: a
+// Decimal round-trip would re-format the field mid-edit ("12." → "12").
 export const useOnrampAmountSection = ({
     variant,
     token,
+    amountText,
     amount,
     isLoading = false,
-    onAmountChange,
+    onAmountTextChange,
 }: UseOnrampAmountSectionParams): UseOnrampAmountSectionResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
@@ -108,10 +106,8 @@ export const useOnrampAmountSection = ({
     const { preferredCurrency } = useCurrency(scope)
     const shouldUseUsdFallback = preferredCurrency === nativeAsset.unitName
 
-    // Pay holds a raw string; receive holds a Decimal. Split them out once so
-    // the input value and the formatted receive value are each well-typed.
-    const inputValue = typeof amount === 'string' ? amount : ''
-    const receiveAmount = typeof amount === 'string' ? null : (amount ?? null)
+    const inputValue = isPay ? amountText : ''
+    const receiveAmount = isPay ? null : amount
 
     const receiveValue = receiveAmount
         ? receiveAmount.toFixed(
@@ -126,7 +122,10 @@ export const useOnrampAmountSection = ({
         ? getCircleFlagUrl(token.countryCode)
         : (token?.logo ?? undefined)
 
-    const fiatBaseAmount = useMemo(() => getFiatBaseAmount(amount), [amount])
+    const fiatBaseAmount = useMemo(
+        () => getFiatBaseAmount(isPay ? parseRampAmount(amountText) : amount),
+        [isPay, amountText, amount],
+    )
 
     // Fraction-digit cap for the pay field, resolved from the source currency
     // and any remote-config overrides (fiat → 2, known crypto → its decimals,
@@ -147,10 +146,10 @@ export const useOnrampAmountSection = ({
 
     const handleTextChange = useCallback(
         (text: string) => {
-            if (!isPay || !onAmountChange) return
-            onAmountChange(sanitizeAmountInput(text, maxFractionDigits))
+            if (!isPay || !onAmountTextChange) return
+            onAmountTextChange(sanitizeAmountInput(text, maxFractionDigits))
         },
-        [isPay, onAmountChange, maxFractionDigits],
+        [isPay, onAmountTextChange, maxFractionDigits],
     )
 
     return {

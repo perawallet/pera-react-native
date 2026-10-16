@@ -351,14 +351,6 @@ describe('utils', () => {
             expect(result).toBe('100.00 TOKEN')
         })
 
-        test('formats string input', () => {
-            const result = formatAssetAmount('5000000', {
-                decimals: 6,
-                unitName: 'ALGO',
-            })
-            expect(result).toBe('5.00 ALGO')
-        })
-
         test('formats fractional amounts with minimum 2 decimal places', () => {
             const result = formatAssetAmount(new Decimal(1500000), {
                 decimals: 6,

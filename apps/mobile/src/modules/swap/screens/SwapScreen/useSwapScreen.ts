@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
+import { Decimal } from 'decimal.js'
 import {
     useSwapScope,
     useSwapSigningAccounts,
@@ -79,7 +80,7 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const initialPayAmount = useMemo(
         () =>
             payAmount && assetInId
-                ? { assetId: assetInId, amount: payAmount }
+                ? { assetId: assetInId, amount: new Decimal(payAmount) }
                 : undefined,
         [payAmount, assetInId],
     )

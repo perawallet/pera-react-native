@@ -212,13 +212,13 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
         await insertAssetHolding({
             accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_2_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         server.use(

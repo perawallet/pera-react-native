@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { HTTPError } from 'ky'
+import { Decimal } from 'decimal.js'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
@@ -190,7 +191,7 @@ describe.each([
             const result = await withdrawWalletBalance({
                 kind,
                 scope: ALGORAND_MAINNET,
-                amount: '10.5',
+                amount: new Decimal('10.5'),
             })
 
             expect(request).toHaveBeenCalledWith(
@@ -208,6 +209,23 @@ describe.each([
             })
         })
 
+        // Decimal's toString switches to exponent notation for small values.
+        it('sends the amount in plain notation', async () => {
+            request.mockResolvedValue({
+                data: { txHash: '0xabc', network: 'linea', confirmed: true },
+            })
+
+            await withdrawWalletBalance({
+                kind,
+                scope: ALGORAND_MAINNET,
+                amount: new Decimal('0.0000001'),
+            })
+
+            expect(request).toHaveBeenCalledWith(
+                expect.objectContaining({ data: { amount: '0.0000001' } }),
+            )
+        })
+
         it('rejects on a malformed response', async () => {
             request.mockResolvedValue({ data: {} })
 
@@ -215,7 +233,7 @@ describe.each([
                 withdrawWalletBalance({
                     kind,
                     scope: ALGORAND_MAINNET,
-                    amount: '1',
+                    amount: new Decimal('1'),
                 }),
             ).rejects.toThrow()
         })

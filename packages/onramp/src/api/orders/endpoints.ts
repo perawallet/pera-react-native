@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 
@@ -24,7 +25,8 @@ import { transformRampOrder } from './transformers'
 
 export type CreateRampOrderParams = {
     quote: string
-    sourceAmount: string
+    /** Display units. */
+    sourceAmount: Decimal
     sourceAddress: Nullable<string>
 }
 
@@ -40,7 +42,7 @@ export const createRampOrder = async (
         url: `/v1/ramp/orders/`,
         data: {
             quote: params.quote,
-            source_amount: params.sourceAmount,
+            source_amount: params.sourceAmount.toFixed(),
             source_address: params.sourceAddress,
         },
         signal,

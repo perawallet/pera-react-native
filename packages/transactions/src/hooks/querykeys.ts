@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
+import type { Decimal } from 'decimal.js'
 import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -58,30 +59,33 @@ export const transactionQueryKeys = {
             { accountAddress, scope, url },
         ] as const,
 
-    /** `fee` is the base-unit fee as a string, so the key stays serialisable. */
+    /**
+     * `fee` is in base units. The key carries it as plain text so it stays
+     * serialisable; `toFixed` because `toString` switches to exponent form.
+     */
     spendableBalance: (
         address: string,
         asset: AssetRef,
         scope: ChainScope,
-        fee: string,
+        fee: Decimal,
     ) =>
         [
             MODULE_PREFIX,
             'spendable-balance',
-            { accountAddress: address, asset, scope, fee },
+            { accountAddress: address, asset, scope, fee: fee.toFixed() },
         ] as const,
 
-    /** `amount` is the base-unit amount as a string. */
+    /** `amount` is in base units, carried as plain text like `fee` above. */
     recipientWarning: (
         recipient: string,
         asset: AssetRef,
         scope: ChainScope,
-        amount: string,
+        amount: Decimal,
     ) =>
         [
             MODULE_PREFIX,
             'recipient-warning',
-            { recipient, asset, scope, amount },
+            { recipient, asset, scope, amount: amount.toFixed() },
         ] as const,
 }
 

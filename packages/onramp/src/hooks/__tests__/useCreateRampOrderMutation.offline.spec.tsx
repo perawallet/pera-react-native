@@ -12,6 +12,7 @@
 
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 import {
     onlineManager,
     QueryClient,
@@ -63,7 +64,7 @@ describe('onramp/useCreateRampOrderMutation (offline fail-fast)', () => {
             result.current.mutate({
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 quote: 'quote-1',
-                sourceAmount: '100',
+                sourceAmount: new Decimal(100),
                 sourceAddress: 'SOURCE_ADDRESS',
             })
         })
@@ -78,7 +79,7 @@ describe('onramp/useCreateRampOrderMutation (offline fail-fast)', () => {
         expect(createRampOrder).toHaveBeenCalledWith(
             {
                 quote: 'quote-1',
-                sourceAmount: '100',
+                sourceAmount: new Decimal(100),
                 sourceAddress: 'SOURCE_ADDRESS',
             },
             { chainId: 'algorand', networkId: 'mainnet' },

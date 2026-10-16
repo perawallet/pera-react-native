@@ -158,13 +158,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             accountAddress: addressOf(ACCOUNT_A),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
-            amount: '10000000', // 10 ALGO
+            amount: new Decimal('10000000'), // 10 ALGO
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
-            amount: '4000000', // 4 ALGO
+            amount: new Decimal('4000000'), // 4 ALGO
         })
 
         // ASA holdings — both accounts hold USDC. Amounts are in base
@@ -173,13 +173,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             accountAddress: addressOf(ACCOUNT_A),
             assetId: USDC_ASSET.assetId,
             scope: scopeForLegacyNetwork(NETWORK),
-            amount: '50000000', // 50 USDC
+            amount: new Decimal('50000000'), // 50 USDC
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: USDC_ASSET.assetId,
             scope: scopeForLegacyNetwork(NETWORK),
-            amount: '20000000', // 20 USDC
+            amount: new Decimal('20000000'), // 20 USDC
         })
 
         // Prices: USDC at $1, ALGO at... whatever — the per-asset
@@ -332,7 +332,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 accountAddress: addressOf(ACCOUNT_A),
                 assetId: '0',
                 scope,
-                amount: '10000000',
+                amount: new Decimal('10000000'),
             })
             await upsertAssetPrices({
                 prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],

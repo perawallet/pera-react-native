@@ -173,7 +173,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             accountAddress: addressOf(account),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         useAccountsStore.getState().setAccounts([account])

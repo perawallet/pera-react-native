@@ -407,7 +407,7 @@ describe('Flow: Opt out of an asset', () => {
             accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '0',
+            amount: new Decimal(0),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(sender),

@@ -123,7 +123,7 @@ export const useARC59SendSummaryScreen =
                     nativeAsset,
                 )
                 navigation.replace('InsufficientBalance', {
-                    requiredBalance: formatCurrency(
+                    requiredBalanceLabel: formatCurrency(
                         requiredAlgo,
                         nativeAsset.decimals,
                         ALGO_ASSET_NAME,

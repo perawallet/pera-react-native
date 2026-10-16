@@ -11,6 +11,7 @@
  */
 
 import { isHTTPError } from 'ky'
+import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
@@ -74,8 +75,8 @@ export const fetchWalletBalance = async (
 }
 
 export type WithdrawWalletBalanceParams = WalletParams & {
-    /** Decimal string in display units (e.g. "10.5"). */
-    amount: string
+    /** Display units. */
+    amount: Decimal
 }
 export const withdrawWalletBalance = async (
     params: WithdrawWalletBalanceParams,
@@ -85,7 +86,7 @@ export const withdrawWalletBalance = async (
         method: 'POST',
         path: `${walletPath(params.kind)}/withdraw`,
         authenticated: true,
-        data: { amount: params.amount },
+        data: { amount: params.amount.toFixed() },
         signal: params.signal,
     })
     return transformWalletWithdraw(

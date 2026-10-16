@@ -290,7 +290,7 @@ describe('account holdings queries', () => {
                 accountAddress: 'ADDR1',
                 assetId: '999',
                 scope: MAINNET_SCOPE,
-                amount: '1',
+                amount: new Decimal(1),
             })
 
             const rows = await getAccountCollectiblesLite({

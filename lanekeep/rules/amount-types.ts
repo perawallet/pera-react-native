@@ -37,9 +37,7 @@ export default {
         ],
     }),
     id: 'pera/amount-types',
-    // Existing string amounts in the onramp form, card withdrawal and a few
-    // display props need a typed migration of their own before this can block.
-    severity: 'warn',
+    severity: 'error',
     gates: productionSource({
         pathNotMatches: [
             ...TEST_SUPPORT,

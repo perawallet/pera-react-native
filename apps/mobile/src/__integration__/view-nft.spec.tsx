@@ -146,7 +146,7 @@ describe('Flow: View NFT collectible detail', () => {
             accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
@@ -266,7 +266,7 @@ describe('Flow: View NFT collectible detail', () => {
             accountAddress: addressOf(holder),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         // The bottom-sheet entry on CollectibleDetailScreen pushes

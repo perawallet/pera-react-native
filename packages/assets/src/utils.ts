@@ -79,7 +79,7 @@ export const formatCollectibleAmount = (
 
 /** Base units in, e.g. "1,234.56 ALGO" out. */
 export const formatAssetAmount = (
-    amount: Decimal | string,
+    amount: Decimal,
     asset: Pick<MinimalAsset, 'decimals' | 'unitName'>,
 ): string => {
     const decimals = asset.decimals ?? 0
