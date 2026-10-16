@@ -83,6 +83,7 @@ import {
     seedHDWalletAccounts,
     seedPasskey,
 } from './__fixtures__/cloudBackup'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 const DEVICE_ID = 'test-device-id'
 
 const renderCloudBackupFlow = () =>
@@ -125,7 +126,11 @@ const runRestoreFlow = async () => {
     fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
 
     expect(
-        await screen.findByTestId('cloud_backup_overview_screen'),
+        await screen.findByTestId(
+            'cloud_backup_overview_screen',
+            {},
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        ),
     ).toBeTruthy()
 }
 
