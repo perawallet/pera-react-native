@@ -683,6 +683,66 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
             expect(approve).toHaveBeenCalledWith([signed, null], submission)
         })
 
+        it("hands approve the planner's own signed transactions on a chain without a signing planner", async () => {
+            const result = {
+                signedData: {
+                    type: 'signed-transactions',
+                    signed: [signed],
+                    historyEntries: [],
+                },
+                signers: [],
+            } as never
+            const submission = { txIds: ['tx-id'] }
+
+            await sourceOf().callbacks?.approve?.(result, submission)
+
+            expect(approve).toHaveBeenCalledWith([signed], submission)
+        })
+
+        it('carries no callbacks on a local algod request, whatever callbacks it holds', () => {
+            const base = input([makeUnsignedTransaction(OURS)])
+            const source = resolveInitialContext({
+                ...base,
+                request: {
+                    ...base.request,
+                    sourceType: 'local',
+                    transport: 'algod',
+                    approve,
+                },
+            }).signableGroups![0].source
+
+            expect(source).toEqual({ type: 'local' })
+        })
+
+        it('wires approve on a local submit-and-answer request', async () => {
+            const base = input([makeUnsignedTransaction(OURS)])
+            const source = resolveInitialContext({
+                ...base,
+                request: {
+                    ...base.request,
+                    sourceType: 'local',
+                    transport: 'submit-and-answer',
+                    approve,
+                },
+            }).signableGroups![0].source
+            const submission = { txIds: ['tx-id'] }
+
+            await source.callbacks?.approve?.(
+                {
+                    signedData: {
+                        type: 'signed-transactions',
+                        signed: [signed],
+                        historyEntries: [],
+                    },
+                    signers: [],
+                } as never,
+                submission,
+            )
+
+            expect(source.type).toBe('local')
+            expect(approve).toHaveBeenCalledWith([signed], submission)
+        })
+
         it('forwards the byte and proposal callbacks it carries', () => {
             const { callbacks } = sourceOf()
 

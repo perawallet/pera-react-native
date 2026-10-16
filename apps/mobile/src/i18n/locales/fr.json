@@ -2707,7 +2707,9 @@
             "nfd_mismatch_title": "Le nom ne correspond pas à la chaîne",
             "nfd_mismatch_body": "Le contrat NFD de {{name}} ne répertorie pas cette adresse. Collez l'adresse directement si vous lui faites confiance.",
             "nfd_unavailable_title": "Impossible de vérifier {{name}}",
-            "nfd_unavailable_body": "Le registre NFD est injoignable pour vérifier ce nom. Réessayez ou collez l'adresse directement."
+            "nfd_unavailable_body": "Le registre NFD est injoignable pour vérifier ce nom. Réessayez ou collez l'adresse directement.",
+            "invalid_address_title": "Adresse invalide",
+            "invalid_address_body": "Il ne s’agit pas d’une adresse {{chain}} valide."
         },
         "fee": {
             "slow": "Lente",
@@ -2727,6 +2729,14 @@
             "recipient_below_mbr": {
                 "title": "Montant inférieur au minimum du destinataire",
                 "body": "Le destinataire doit disposer d’au moins {{min}} ALGO après cette transaction pour respecter le solde minimum requis par Algorand."
+            },
+            "fee_shortfall": {
+                "title": "Pas assez de {{symbol}} pour les frais",
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+            },
+            "fee_unavailable": {
+                "title": "Impossible d’estimer les frais",
+                "body": "Vérifiez votre connexion et réessayez."
             }
         },
         "processing": {

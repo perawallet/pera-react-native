@@ -12,11 +12,12 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
+import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useSendFundsStore } from '@modules/transactions'
 
 export type SendFundsDeeplinkPrefill = {
-    assetId?: string
+    asset?: AssetRef
     destination?: string
     /**
      * Display-units amount, set by callers that already have it. Lands on
@@ -48,7 +49,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
 
     return useCallback(
         ({
-            assetId,
+            asset,
             destination,
             amount,
             amountBaseUnits,
@@ -61,8 +62,8 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             sendFundsStore.reset()
             if (destination) sendFundsStore.setDestination(destination)
             if (note) sendFundsStore.setNote(note)
-            if (assetId !== undefined) {
-                sendFundsStore.setSelectedAssetId(assetId)
+            if (asset !== undefined) {
+                sendFundsStore.setSelectedAsset(asset)
                 sendFundsStore.setCanSelectAsset(false)
             }
             if (amount) sendFundsStore.setAmount(amount)
@@ -78,7 +79,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             // Same modal the in-app Send button opens (see useAccountOverview).
             void requestByType(
                 'send-funds',
-                { assetId },
+                { asset },
                 {
                     size: 'modal',
                     enablePanDownToClose: false,

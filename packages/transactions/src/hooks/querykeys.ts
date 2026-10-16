@@ -87,6 +87,26 @@ export const transactionQueryKeys = {
             'recipient-warning',
             { recipient, asset, scope, amount: amount.toFixed() },
         ] as const,
+
+    /** `amount` is in base units, carried as plain text like `fee` above. */
+    transferFeeEstimate: (
+        from: string,
+        to: string,
+        asset: AssetRef,
+        scope: ChainScope,
+        amount: Decimal,
+    ) =>
+        [
+            MODULE_PREFIX,
+            'transfer-fee-estimate',
+            {
+                accountAddress: from,
+                to,
+                asset,
+                scope,
+                amount: amount.toFixed(),
+            },
+        ] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

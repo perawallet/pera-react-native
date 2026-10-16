@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
@@ -35,9 +34,8 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { bottomSheetNotifier } from '@components/core'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -57,7 +55,7 @@ export type UseTransactionProcessingScreenResult = {
 
 export const useTransactionProcessingScreen =
     (): UseTransactionProcessingScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSendScope()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -68,6 +66,7 @@ export const useTransactionProcessingScreen =
             sendMode,
             arc59Summary,
             isCloseAccount,
+            feePreset,
             onFinished,
         } = useSendFunds()
 
@@ -142,6 +141,7 @@ export const useTransactionProcessingScreen =
                 amount,
                 note,
                 isCloseAccount,
+                feePreset,
                 arc59Summary,
             } as SendTransactionParams
 

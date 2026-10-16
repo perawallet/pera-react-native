@@ -186,7 +186,9 @@ export const useCollectibleDetail = (
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
             id: SEND_FUNDS_SHEET_ID,
-            contents: <SendFundsContent assetId={assetId} />,
+            contents: (
+                <SendFundsContent asset={{ chainId: scope.chainId, assetId }} />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: false,
@@ -194,7 +196,7 @@ export const useCollectibleDetail = (
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, assetId])
+    }, [requestBottomSheet, assetId, scope.chainId])
 
     const handleOptOutPressed = useCallback(async () => {
         if (!account || !asset || !assetBalance) {

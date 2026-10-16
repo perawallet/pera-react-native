@@ -107,7 +107,7 @@ describe('Flow: Contacts → use in send destination picker', () => {
             () => (
                 <AddressSearchView
                     onSelected={onSelected}
-                    chainFamily='algorand'
+                    scope={{ chainId: 'algorand', networkId: 'mainnet' }}
                     showAllContactsWhenEmpty
                 />
             ),

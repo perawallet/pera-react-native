@@ -179,7 +179,10 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             minBalance: new Decimal(200_000),
         })
 
-        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAsset({
+            chainId: 'algorand',
+            assetId: USDC_TEST_ASSET_ID,
+        })
         useSendFundsStore.getState().setAmount(new Decimal('1.5'))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -260,7 +263,10 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         const sender = await seedAlgo25Sender()
         await seedAsaHolding(addressOf(sender))
 
-        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAsset({
+            chainId: 'algorand',
+            assetId: USDC_TEST_ASSET_ID,
+        })
         useSendFundsStore.getState().setAmount(new Decimal('1.5'))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -322,7 +328,10 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         const sender = await seedAlgo25Sender()
         await seedAsaHolding(addressOf(sender))
 
-        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAsset({
+            chainId: 'algorand',
+            assetId: USDC_TEST_ASSET_ID,
+        })
         useSendFundsStore.getState().setAmount(new Decimal('1.5'))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

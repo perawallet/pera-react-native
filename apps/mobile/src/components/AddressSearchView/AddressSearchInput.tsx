@@ -10,29 +10,29 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
 import type { SearchableListSearchProps } from '@components/SearchableList'
 import { useStyles } from './styles'
 
-// The search view lists the legacy chain's accounts (see useAddressSearchView).
-const SEARCH_CHAIN_IDS: readonly ChainId[] = [LEGACY_CHAIN_ID]
+type AddressSearchInputProps = SearchableListSearchProps & {
+    /** The chains a scanned code may name; one on another chain is refused. */
+    chainIds: readonly ChainId[]
+}
 
 export const AddressSearchInput = ({
     value,
     placeholder,
     onChangeText,
     onFocus,
-}: SearchableListSearchProps) => {
+    chainIds,
+}: AddressSearchInputProps) => {
     const styles = useStyles()
 
     return (
         <AddressEntryField
-            chainIds={SEARCH_CHAIN_IDS}
+            chainIds={chainIds}
             onChangeText={onChangeText}
             value={value}
             allowQRCode

@@ -14,8 +14,12 @@ import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
 import { useWebView } from '@modules/webview'
-import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useSendFunds,
+    useClaimAssets,
+    useSendScope,
+} from '@modules/transactions/hooks'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
@@ -33,12 +37,7 @@ type SuccessRouteParams = {
 
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
-    /**
-     * Undefined on a network with no explorer (`custom`'s `explorerUrl` is `''`
-     * by design), so the CTA is hidden rather than opening the schemeless
-     * relative path the interpolation would otherwise produce. Same shape as
-     * `useTransactionHashRow.onOpenExplorer`.
-     */
+    /** Undefined on a network with no explorer, such as a custom one, so the CTA is hidden. */
     handleViewInExplorer: (() => void) | undefined
     variant: SuccessVariant
 }
@@ -54,7 +53,10 @@ export const useTransactionSuccessScreen =
         const { onFinished: sendFundsOnFinished, isCloseAccount } =
             useSendFunds()
         const { onFinished: claimOnFinished } = useClaimAssets()
-        const { networkConfig } = useNetwork()
+        const scope = useSendScope()
+        const explorerUrl = getChainDescriptor(
+            scope.chainId,
+        ).explorer.transactionUrl(scope.networkId, transactionId)
         const { pushWebView } = useWebView()
 
         const isClaimFlow =
@@ -75,16 +77,11 @@ export const useTransactionSuccessScreen =
         }, [isClaimFlow, claimOnFinished, sendFundsOnFinished])
 
         const viewInExplorer = useCallback(() => {
-            if (!networkConfig.explorerUrl) return
-            pushWebView({
-                url: `${networkConfig.explorerUrl}/tx/${transactionId}`,
-                id: generateUniqueId(),
-            })
-        }, [networkConfig.explorerUrl, transactionId, pushWebView])
+            if (!explorerUrl) return
+            pushWebView({ url: explorerUrl, id: generateUniqueId() })
+        }, [explorerUrl, pushWebView])
 
-        const handleViewInExplorer = networkConfig.explorerUrl
-            ? viewInExplorer
-            : undefined
+        const handleViewInExplorer = explorerUrl ? viewInExplorer : undefined
 
         useEffect(() => {
             const subscription = BackHandler.addEventListener(

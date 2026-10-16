@@ -25,15 +25,11 @@ import type { ChainCapability } from '../models/capabilities'
  *
  * Send and dApp signing go through the chain-neutral `transactionPlanner`;
  * Ledger and multisig still sign through signing's Algorand-only `planner`.
+ * Send lists no reviewer: signing takes a chain's `reviewer` or its
+ * `transactionReviewer`, and refuses to sign with neither.
  */
 export const CAPABILITY_ADAPTERS = {
-    send: [
-        'send flow',
-        'transactionPlanner',
-        'reviewer',
-        'local-key signer',
-        'broadcaster',
-    ],
+    send: ['transfer', 'transactionPlanner', 'broadcaster'],
     receive: ['addressCodec'],
     history: ['transaction history'],
     assets: ['assets'],

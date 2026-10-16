@@ -2707,7 +2707,9 @@
             "nfd_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
             "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
             "nfd_unavailable_title": "{{name}} doğrulanamadı",
-            "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır."
+            "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır.",
+            "invalid_address_title": "Geçersiz adres",
+            "invalid_address_body": "Bu, geçerli bir {{chain}} adresi değil."
         },
         "fee": {
             "slow": "Yavaş",
@@ -2727,6 +2729,14 @@
             "recipient_below_mbr": {
                 "title": "Miktar alıcının minimumunun altında",
                 "body": "Algorand’ın minimum bakiye gereksinimini karşılamak için alıcının bu işlemden sonra en az {{min}} ALGO’ya sahip olması gerekiyor."
+            },
+            "fee_shortfall": {
+                "title": "Ücret için yeterli {{symbol}} yok",
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+            },
+            "fee_unavailable": {
+                "title": "Ücret tahmin edilemedi",
+                "body": "Bağlantını kontrol et ve tekrar dene."
             }
         },
         "processing": {

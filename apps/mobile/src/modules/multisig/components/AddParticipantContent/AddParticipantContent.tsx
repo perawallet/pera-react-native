@@ -11,6 +11,7 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,6 +25,7 @@ export const AddParticipantContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { handleSelected, dismiss } = useAddParticipantContent()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     return (
         <PWView style={styles.container}>
@@ -48,7 +50,7 @@ export const AddParticipantContent = () => {
             />
             <AddressSearchView
                 onSelected={handleSelected}
-                chainFamily='algorand'
+                scope={scope}
                 accountFilter={account =>
                     canBeMultisigParticipant(account, LEGACY_CHAIN_ID)
                 }

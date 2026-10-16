@@ -13,24 +13,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
     type AssetWithAccountBalance,
+    type ChainAssetBalance,
     useAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery,
+    useAccountScope,
     useSelectedAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+
+const isNativeOn = (balance: ChainAssetBalance): boolean =>
+    balance.assetId === nativeAssetFor(balance.scope.chainId).assetId
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
     excludeAssetId?: string
     filterAsset?: (asset: AssetWithAccountBalance) => boolean
+    /** Lists the account's holdings on every chain it has an address on, not only its own chain. */
+    isAcrossChains?: boolean
 }
 
 type UseAccountAssetSelectionListResult = {
-    filteredBalanceData: AssetWithAccountBalance[]
+    filteredBalanceData: ChainAssetBalance[]
     searchFilter: string
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
@@ -41,25 +48,31 @@ export const useAccountAssetSelectionList = ({
     isVisible,
     excludeAssetId,
     filterAsset,
+    isAcrossChains = false,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAccount = useSelectedAccount()
+    const scope = useAccountScope(selectedAccount, LEGACY_CHAIN_ID)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
-    const isNativeAssetId = useIsNativeAssetId(scope)
-    const { accountBalances, isPending } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-        scope,
-    )
+    const { accountBalances, isPending: isOwnChainPending } =
+        useAccountBalancesQuery(
+            selectedAccount && !isAcrossChains ? [selectedAccount] : [],
+            scope,
+        )
+    const { assetBalances: acrossChains, isPending: isAcrossChainsPending } =
+        useAccountHoldingsAcrossChainsQuery(
+            isAcrossChains ? selectedAccount : null,
+        )
+    const isPending = isAcrossChains ? isAcrossChainsPending : isOwnChainPending
 
-    const balanceData = useMemo(
-        () =>
-            selectedAddress
-                ? accountBalances.get(selectedAddress)?.assetBalances
-                : [],
-        [accountBalances, selectedAddress],
-    )
+    const balanceData = useMemo<ChainAssetBalance[]>(() => {
+        if (isAcrossChains) return acrossChains
+        const own = selectedAddress
+            ? accountBalances.get(selectedAddress)?.assetBalances
+            : undefined
+        return (own ?? []).map(balance => ({ ...balance, scope }))
+    }, [isAcrossChains, acrossChains, accountBalances, selectedAddress, scope])
 
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
@@ -89,18 +102,10 @@ export const useAccountAssetSelectionList = ({
 
         const predicated = filterAsset ? excluded.filter(filterAsset) : excluded
 
-        return [...predicated].sort((a, b) => {
-            if (isNativeAssetId(a.assetId)) return -1
-            if (isNativeAssetId(b.assetId)) return 1
-            return 0
-        })
-    }, [
-        isNativeAssetId,
-        balanceData,
-        debouncedSearchFilter,
-        excludeAssetId,
-        filterAsset,
-    ])
+        return [...predicated].sort((a, b) =>
+            isNativeOn(a) === isNativeOn(b) ? 0 : isNativeOn(a) ? -1 : 1,
+        )
+    }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
 
     return {
         filteredBalanceData,

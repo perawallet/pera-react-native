@@ -37,7 +37,7 @@ import {
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
-    sendFlowChainAdapters,
+    transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -66,7 +66,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 })
 
 const registries: CapabilityAdapterRegistries = {
-    'send flow': sendFlowChainAdapters,
+    transfer: transferChainAdapters,
     planner: plannerChainAdapters,
     transactionPlanner: transactionPlanners,
     reviewer: reviewerChainAdapters,

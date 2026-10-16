@@ -20,7 +20,7 @@ const { mockRequestByType, sendFundsStore } = vi.hoisted(() => ({
         reset: vi.fn(),
         setDestination: vi.fn(),
         setNote: vi.fn(),
-        setSelectedAssetId: vi.fn(),
+        setSelectedAsset: vi.fn(),
         setCanSelectAsset: vi.fn(),
         setAmount: vi.fn(),
         setPendingAmountBaseUnits: vi.fn(),
@@ -47,7 +47,7 @@ describe('useSendFundsDeeplink', () => {
         const { result } = renderHook(() => useSendFundsDeeplink())
 
         result.current({
-            assetId: '0',
+            asset: { chainId: 'algorand', assetId: '0' },
             destination: 'RECEIVER',
             amount: new Decimal('1.25'),
             note: 'rent',
@@ -57,7 +57,10 @@ describe('useSendFundsDeeplink', () => {
             sendFundsStore.setDestination,
         )
         expect(sendFundsStore.setDestination).toHaveBeenCalledWith('RECEIVER')
-        expect(sendFundsStore.setSelectedAssetId).toHaveBeenCalledWith('0')
+        expect(sendFundsStore.setSelectedAsset).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            assetId: '0',
+        })
         expect(sendFundsStore.setAmount).toHaveBeenCalledWith(
             new Decimal('1.25'),
         )
@@ -65,7 +68,7 @@ describe('useSendFundsDeeplink', () => {
         expect(sendFundsStore.setShouldContinueToConfirm).not.toHaveBeenCalled()
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { assetId: '0' },
+            { asset: { chainId: 'algorand', assetId: '0' } },
             expect.any(Object),
         )
     })
@@ -74,7 +77,7 @@ describe('useSendFundsDeeplink', () => {
         const { result } = renderHook(() => useSendFundsDeeplink())
 
         result.current({
-            assetId: '31566704',
+            asset: { chainId: 'algorand', assetId: '31566704' },
             destination: 'RECEIVER',
             amountBaseUnits: new Decimal('18446744073709551616'),
         })
@@ -89,7 +92,7 @@ describe('useSendFundsDeeplink', () => {
         const { result } = renderHook(() => useSendFundsDeeplink())
 
         result.current({
-            assetId: '0',
+            asset: { chainId: 'algorand', assetId: '0' },
             destination: 'RECEIVER',
             amount: new Decimal('1'),
             shouldContinueToConfirm: true,

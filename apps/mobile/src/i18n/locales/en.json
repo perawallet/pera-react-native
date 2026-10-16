@@ -2707,7 +2707,9 @@
             "nfd_mismatch_title": "Name doesn't match on-chain",
             "nfd_mismatch_body": "The NFD contract for {{name}} doesn't list this address. Paste the address directly if you trust it.",
             "nfd_unavailable_title": "Couldn't verify {{name}}",
-            "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly."
+            "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly.",
+            "invalid_address_title": "Invalid address",
+            "invalid_address_body": "This isn't a valid {{chain}} address."
         },
         "fee": {
             "slow": "Slow",
@@ -2727,6 +2729,14 @@
             "recipient_below_mbr": {
                 "title": "Amount Below Recipient Minimum",
                 "body": "The recipient needs at least {{min}} ALGO after this transaction to meet the Algorand minimum balance requirement."
+            },
+            "fee_shortfall": {
+                "title": "Not enough {{symbol}} for the fee",
+                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee."
+            },
+            "fee_unavailable": {
+                "title": "Couldn't estimate the fee",
+                "body": "Check your connection and try again."
             }
         },
         "processing": {

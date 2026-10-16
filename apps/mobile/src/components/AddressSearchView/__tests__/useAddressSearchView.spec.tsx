@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     addressCodecs,
     LEGACY_CHAIN_ID,
-    type ChainFamily,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import {
@@ -40,21 +40,34 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
-    const addressOn = (account: {
-        chains?: Record<string, { address?: string }>
-    }) => account.chains?.algorand?.address
+    const addressOn = (
+        account: { chains?: Record<string, { address?: string }> },
+        scope: { chainId: string },
+    ) => account.chains?.[scope.chainId]?.address
     return {
         addressOn,
         findAddressHolder: (
             accounts: Array<{ chains?: Record<string, { address?: string }> }>,
-            _scope: unknown,
+            scope: { chainId: string },
             address: string,
-        ) => accounts.find(a => addressOn(a) === address),
+        ) => accounts.find(a => addressOn(a, scope) === address),
         useAllAccounts: vi.fn(),
         useSortedAccounts: vi.fn(),
         useAccountValueTotalsQuery: vi.fn(),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: (chainId: string) => ({
+        family: chainId === 'ethereum' ? 'evm' : 'algorand',
+    }),
+}))
+
+const ALGORAND_SCOPE: ChainScope = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+}
+const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -96,6 +109,11 @@ beforeEach(() => {
         chainId: LEGACY_CHAIN_ID,
         isValid: address => mockIsValidAddress(address),
     })
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: 'ethereum',
+        isValid: address => mockIsValidAddress(address),
+    })
 })
 
 afterEach(() => {
@@ -132,7 +150,7 @@ describe('useAddressSearchView', () => {
 
     it('initializes with empty value and no results', () => {
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         expect(result.current.value).toBe('')
@@ -150,7 +168,7 @@ describe('useAddressSearchView', () => {
         )
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -186,7 +204,7 @@ describe('useAddressSearchView', () => {
         )
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -218,7 +236,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: 'algorand',
+                scope: ALGORAND_SCOPE,
                 excludeAddress: 'ABC123',
             }),
         )
@@ -256,7 +274,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: 'algorand',
+                scope: ALGORAND_SCOPE,
                 accountFilter: account =>
                     (account.custody as { seed?: string }).seed !== 'quantum',
             }),
@@ -283,7 +301,7 @@ describe('useAddressSearchView', () => {
         mockFindContacts.mockReturnValue(contacts)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -313,7 +331,7 @@ describe('useAddressSearchView', () => {
 
     it('does not search contacts when value is empty by default', () => {
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         expect(
@@ -331,7 +349,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: 'algorand',
+                scope: ALGORAND_SCOPE,
                 showAllContactsWhenEmpty: true,
             }),
         )
@@ -371,7 +389,7 @@ describe('useAddressSearchView', () => {
         ])
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -408,7 +426,7 @@ describe('useAddressSearchView', () => {
         mockIsValidAddress.mockReturnValue(true)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -437,7 +455,7 @@ describe('useAddressSearchView', () => {
         )
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         const accountItems = itemsOfType(
@@ -461,7 +479,7 @@ describe('useAddressSearchView', () => {
         mockFindContacts.mockReturnValue(contacts)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -502,7 +520,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: 'algorand',
+                scope: ALGORAND_SCOPE,
                 showAllContactsWhenEmpty: true,
             }),
         )
@@ -549,7 +567,7 @@ describe('useAddressSearchView', () => {
         mockFindContacts.mockReturnValue(contacts)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -586,7 +604,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: 'algorand',
+                scope: ALGORAND_SCOPE,
                 excludeAddress: 'OWN_ADDR_XYZ',
                 showAllContactsWhenEmpty: true,
             }),
@@ -611,12 +629,11 @@ describe('useAddressSearchView', () => {
                 name: 'My Account',
             },
         ]
-        const otherFamily = 'other' as ChainFamily
         const contacts = [
             {
                 addresses: {
                     algorand: 'OWN_ADDR',
-                    other: 'OTHER_ADDR',
+                    evm: 'OTHER_ADDR',
                 } as ContactAddresses,
                 name: 'Two Chains',
             },
@@ -628,18 +645,35 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
-                chainFamily: otherFamily,
+                scope: ETHEREUM_SCOPE,
                 showAllContactsWhenEmpty: true,
             }),
         )
 
         expect(mockFindContacts).toHaveBeenCalledWith({
             keyword: '',
-            family: otherFamily,
+            family: 'evm',
         })
         expect(itemsOfType(result.current.matchingItems, 'contact')).toEqual([
             expect.objectContaining({ address: 'OTHER_ADDR' }),
         ])
+    })
+
+    it("offers only the accounts with an address on the scope's chain", () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { chains: { algorand: { address: 'ALGO_ADDR' } }, name: 'Algo' },
+            { chains: { ethereum: { address: '0xETH' } }, name: 'Eth' },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+        )
+
+        expect(
+            itemsOfType(result.current.matchingItems, 'account').map(
+                item => (item as { account: { name: string } }).account.name,
+            ),
+        ).toEqual(['Eth'])
     })
 
     it('returns NFD results when value contains a dot', () => {
@@ -655,7 +689,7 @@ describe('useAddressSearchView', () => {
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -686,7 +720,7 @@ describe('useAddressSearchView', () => {
 
     it('does not search NFD when value has no dot', () => {
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -710,7 +744,7 @@ describe('useAddressSearchView', () => {
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ chainFamily: 'algorand' }),
+            useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
 
         act(() => {
@@ -733,7 +767,7 @@ describe('useAddressSearchView', () => {
 
             const { result } = renderHook(() =>
                 useAddressSearchView({
-                    chainFamily: 'algorand',
+                    scope: ALGORAND_SCOPE,
                     showClipboardPaste: true,
                 }),
             )
@@ -758,7 +792,7 @@ describe('useAddressSearchView', () => {
 
             const { result } = renderHook(() =>
                 useAddressSearchView({
-                    chainFamily: 'algorand',
+                    scope: ALGORAND_SCOPE,
                     showClipboardPaste: true,
                 }),
             )
@@ -778,7 +812,7 @@ describe('useAddressSearchView', () => {
             mockIsValidAddress.mockReturnValue(true)
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ chainFamily: 'algorand' }),
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
             )
 
             expect(mockReadText).not.toHaveBeenCalled()
@@ -799,7 +833,7 @@ describe('useAddressSearchView', () => {
 
             const { result } = renderHook(() =>
                 useAddressSearchView({
-                    chainFamily: 'algorand',
+                    scope: ALGORAND_SCOPE,
                     showClipboardPaste: true,
                 }),
             )
@@ -837,7 +871,7 @@ describe('useAddressSearchView', () => {
             mockSortedAs([storeOrder[1]!, storeOrder[0]!])
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ chainFamily: 'algorand' }),
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
             )
 
             expect(
@@ -870,7 +904,7 @@ describe('useAddressSearchView', () => {
             mockSortedAs([accounts[1]!, accounts[0]!, accounts[2]!])
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ chainFamily: 'algorand' }),
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
             )
 
             act(() => {

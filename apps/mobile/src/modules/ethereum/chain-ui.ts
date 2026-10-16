@@ -14,6 +14,7 @@ import type { ChainUi } from '@modules/chain-ui'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
 import { EthereumTransactionReviewBody } from './components/EthereumTransactionReviewBody'
+import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
 
 // metro.config.js swaps this for the stub unless the baked CHAINS lists
 // ethereum, which keeps viem out of an Algorand-only bundle.
@@ -22,5 +23,8 @@ export const ethereumChainUi: ChainUi | undefined = {
         ReviewBody: EthereumTransactionReviewBody,
         DetailBody: EthereumTransactionDetailBody,
         PreviewRow: EthereumTransactionPreviewRow,
+    },
+    sendConfirmation: {
+        FeeSection: EthereumSendFeeSection,
     },
 }

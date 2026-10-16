@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainFamily,
-} from '@perawallet/wallet-core-chain-contract'
+import { useCallback, useMemo } from 'react'
+import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     PWIcon,
     PWLoadingIndicator,
@@ -28,7 +22,10 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { SearchableList } from '@components/SearchableList'
+import {
+    SearchableList,
+    type SearchableListSearchProps,
+} from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountResultRow } from './AccountResultRow'
 import { AddressSearchInput } from './AddressSearchInput'
@@ -41,8 +38,8 @@ import {
 
 export type AddressSearchViewProps = {
     onSelected: (address: string, nfdName?: string) => void
-    /** See {@link UseAddressSearchViewProps.chainFamily}. */
-    chainFamily: ChainFamily
+    /** See {@link UseAddressSearchViewProps.scope}. */
+    scope: ChainScope
     excludeAddress?: string
     /** Only accounts passing this predicate are offered. */
     accountFilter?: (account: WalletAccount) => boolean
@@ -56,7 +53,7 @@ export type AddressSearchViewProps = {
 
 export const AddressSearchView = ({
     onSelected,
-    chainFamily,
+    scope,
     excludeAddress,
     accountFilter,
     showAllContactsWhenEmpty,
@@ -69,7 +66,7 @@ export const AddressSearchView = ({
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults, isNfdLoading } =
         useAddressSearchView({
-            chainFamily,
+            scope,
             excludeAddress,
             accountFilter,
             showAllContactsWhenEmpty,
@@ -98,6 +95,7 @@ export const AddressSearchView = ({
                             onPress={() => onSelected(item.address)}
                         >
                             <AddressDisplay
+                                scope={scope}
                                 address={item.address}
                                 showCopy={false}
                                 style={styles.accountDisplay}
@@ -106,9 +104,7 @@ export const AddressSearchView = ({
                     )
                 }
                 case 'account': {
-                    const address =
-                        chainAccountOf(item.account, LEGACY_CHAIN_ID)
-                            ?.address ?? ''
+                    const address = addressOn(item.account, scope) ?? ''
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(address)}
@@ -128,6 +124,7 @@ export const AddressSearchView = ({
                             style={showAddIcon ? styles.foreignRow : undefined}
                         >
                             <AddressDisplay
+                                scope={scope}
                                 address={item.address}
                                 showCopy={false}
                                 forceShowIcon
@@ -163,6 +160,7 @@ export const AddressSearchView = ({
                             }
                         >
                             <AddressDisplay
+                                scope={scope}
                                 address={item.nfd.address}
                                 showCopy={false}
                                 style={
@@ -188,8 +186,28 @@ export const AddressSearchView = ({
                 }
             }
         },
-        [onSelected, setValue, styles, t, showAccountBalance, showAddIcon],
+        [
+            onSelected,
+            setValue,
+            styles,
+            t,
+            showAccountBalance,
+            showAddIcon,
+            scope,
+        ],
     )
+
+    // SearchableList takes a component, so the scanned chain is bound here.
+    const SearchInput = useMemo(() => {
+        const chainIds = [scope.chainId]
+        const BoundAddressSearchInput = (props: SearchableListSearchProps) => (
+            <AddressSearchInput
+                {...props}
+                chainIds={chainIds}
+            />
+        )
+        return BoundAddressSearchInput
+    }, [scope.chainId])
 
     const renderSeparator = useCallback(
         () => <PWView style={styles.listSeparator} />,
@@ -226,7 +244,7 @@ export const AddressSearchView = ({
                 searchValue={value}
                 searchPlaceholder={t('address_entry.search_placeholder')}
                 onSearchChange={setValue}
-                SearchInputComponent={AddressSearchInput}
+                SearchInputComponent={SearchInput}
                 ListEmptyComponent={listEmptyComponent}
                 ItemSeparatorComponent={renderSeparator}
                 style={styles.list}

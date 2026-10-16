@@ -184,7 +184,7 @@ describe('useTabResume (web)', () => {
 
         await waitFor(() =>
             expect(mockOpenSendFunds).toHaveBeenCalledWith({
-                assetId: '0',
+                asset: { chainId: 'algorand', assetId: '0' },
                 destination: 'RECEIVER',
                 amount: new Decimal('1.25'),
                 note: 'rent',

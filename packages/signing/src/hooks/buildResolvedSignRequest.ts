@@ -38,6 +38,9 @@ const resolveTransportKind = (
     const source = context.signableGroups?.[0]?.source
     if (source?.type === 'multisig-cosign') return 'multisig-cosign'
     if (context.request.transport === 'callback') return 'callback'
+    // Submitted through the chain's broadcaster like an `algod` request; only
+    // the caller's answer differs.
+    if (context.request.transport === 'submit-and-answer') return 'algod'
     return (context.request.transport ?? 'algod') as TransportKind
 }
 

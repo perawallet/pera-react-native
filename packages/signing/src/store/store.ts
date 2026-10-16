@@ -12,7 +12,12 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { isChainId, type ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { SigningStore, SignRequest } from '../models'
+import {
+    answersCaller,
+    type SigningStore,
+    type SignRequest,
+    type SignRequestTransport,
+} from '../models'
 import { isUnsignedTransaction } from '../models/guards'
 import { isInteractiveSource, type SourceType } from '../pipeline/types'
 import {
@@ -59,7 +64,7 @@ export const isResumableRehydratedRequest = (
     // — reject it here too rather than surface an approval sheet that can only
     // fail at the transport layer.
     return (
-        r.transport !== 'callback' &&
+        !answersCaller(r.transport as SignRequestTransport) &&
         r.sourceType !== 'deeplink' &&
         isInteractiveSource(r.sourceType as SourceType | undefined)
     )
@@ -186,7 +191,7 @@ export const useSigningStore: UseBoundStore<
                 //     instead of being trapped on the broken sheet.
                 pendingSignRequests: state.pendingSignRequests.filter(
                     r =>
-                        r.transport !== 'callback' &&
+                        !answersCaller(r.transport) &&
                         r.sourceType !== 'deeplink',
                 ),
             }),

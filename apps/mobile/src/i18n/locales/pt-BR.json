@@ -2723,7 +2723,9 @@
             "nfd_mismatch_title": "O nome não corresponde na cadeia",
             "nfd_mismatch_body": "O contrato NFD de {{name}} não lista este endereço. Cole o endereço diretamente se confiar nele.",
             "nfd_unavailable_title": "Não foi possível verificar {{name}}",
-            "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente."
+            "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente.",
+            "invalid_address_title": "Endereço inválido",
+            "invalid_address_body": "Este não é um endereço válido de {{chain}}."
         },
         "fee": {
             "slow": "Lenta",
@@ -2743,6 +2745,14 @@
             "recipient_below_mbr": {
                 "title": "Valor abaixo do mínimo do destinatário",
                 "body": "O destinatário precisa ter no mínimo {{min}} ALGO após esta transação para atender ao saldo mínimo exigido pela Algorand."
+            },
+            "fee_shortfall": {
+                "title": "{{symbol}} insuficiente para a taxa",
+                "body": "Este envio pode custar até {{fee}} em taxas. Diminua o valor ou escolha uma taxa mais lenta."
+            },
+            "fee_unavailable": {
+                "title": "Não foi possível estimar a taxa",
+                "body": "Verifique sua conexão e tente novamente."
             }
         },
         "processing": {

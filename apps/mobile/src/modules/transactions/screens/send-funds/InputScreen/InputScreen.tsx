@@ -47,6 +47,7 @@ export const InputScreen = () => {
         accountAssetBalance,
         isBalanceReady,
         cryptoValue,
+        isMaxReady,
         setMax,
         handleKey,
         handlePaste,
@@ -255,6 +256,7 @@ export const InputScreen = () => {
                             variant='secondary'
                             style={styles.secondaryButton}
                             onPress={setMax}
+                            isDisabled={!isMaxReady}
                             testID='send_input_max_button'
                         />
                     </PWView>

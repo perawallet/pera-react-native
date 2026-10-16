@@ -160,7 +160,9 @@ describe('Edge: Network failure paths', () => {
         )
 
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

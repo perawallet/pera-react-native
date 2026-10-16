@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
@@ -24,11 +23,13 @@ import {
     useIsNativeAssetId,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
+    getChainDescriptor,
     useNetwork,
-    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -50,7 +51,10 @@ import { useToast } from '@hooks/useToast'
  * picker.
  */
 export const useSendDestinationRouter = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSendScope()
+    // Opt-in routing (Express, ARC-59) lives on the send-flow adapter; a chain
+    // without one lets any account receive any asset, so every send is plain.
+    const requiresAssetOptIn = sendFlowChainAdapters.has(scope.chainId)
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const isNativeAssetId = useIsNativeAssetId(scope)
     const accounts = useAllAccounts()
@@ -81,10 +85,7 @@ export const useSendDestinationRouter = () => {
         isFetching: isCheckingExternalOptIn,
         isSuccess: isExternalQuerySuccess,
         isError: isExternalQueryError,
-    } = useOnChainAccountStateQuery(
-        pendingExternalAddress ?? '',
-        useSelectedScope(LEGACY_CHAIN_ID),
-    )
+    } = useOnChainAccountStateQuery(pendingExternalAddress ?? '', scope)
 
     const { network } = useNetwork()
     const canUseAssetInbox = useCapability({
@@ -139,10 +140,26 @@ export const useSendDestinationRouter = () => {
 
     const resolveDestination = useCallback(
         (address: string) => {
+            // A deeplink or another screen can prefill a receiver the picker
+            // never validated, possibly one on another chain.
+            if (!addressCodecs.get(scope.chainId).isValid(address)) {
+                setDestination(undefined)
+                showToast({
+                    title: t('send_funds.destination.invalid_address_title'),
+                    body: t('send_funds.destination.invalid_address_body', {
+                        chain: getChainDescriptor(scope.chainId).displayName,
+                    }),
+                    type: 'error',
+                })
+                return
+            }
+
             setDestination(address)
 
-            // ALGO sends always go through normal flow
+            // Native-asset sends, and every send on a chain without opt-in,
+            // go through the normal flow
             if (
+                !requiresAssetOptIn ||
                 !selectedAsset?.assetId ||
                 isNativeAssetId(selectedAsset.assetId)
             ) {
@@ -188,6 +205,7 @@ export const useSendDestinationRouter = () => {
             setPendingExternalAddress(address)
         },
         [
+            requiresAssetOptIn,
             isNativeAssetId,
             selectedAsset,
             accounts,
@@ -197,6 +215,8 @@ export const useSendDestinationRouter = () => {
             navigation,
             routeToInbox,
             scope.chainId,
+            showToast,
+            t,
         ],
     )
 
@@ -215,7 +235,9 @@ export const useSendDestinationRouter = () => {
     // the asset lookup nor balances, so it's ready as soon as it resolves.
     const isReady =
         !!selectedAsset &&
-        (isNativeAssetId(selectedAsset.assetId) || !isBalancesPending)
+        (!requiresAssetOptIn ||
+            isNativeAssetId(selectedAsset.assetId) ||
+            !isBalancesPending)
 
     return {
         selectedAsset,

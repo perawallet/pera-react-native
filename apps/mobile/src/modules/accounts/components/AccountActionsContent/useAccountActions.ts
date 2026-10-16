@@ -48,7 +48,9 @@ export const useAccountActions = ({
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
 
     const existingContacts = useMemo(
-        () => contacts.filter(c => c.addresses.algorand === address),
+        // The address may be on any chain, so any of a contact's families can hold it.
+        () =>
+            contacts.filter(c => Object.values(c.addresses).includes(address)),
         [contacts, address],
     )
 

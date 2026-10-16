@@ -11,7 +11,10 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
@@ -21,11 +24,13 @@ const mocks = vi.hoisted(() => ({
     showToast: vi.fn(),
     setSendMode: vi.fn(),
     setDestination: vi.fn(),
+    isValidAddress: vi.fn<(address: string) => boolean>(),
 }))
 
 const RECEIVER = 'R'.repeat(58)
 
 vi.mock('@modules/transactions/hooks', () => ({
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useSendFunds: () => ({
         selectedAssetId: '123',
         setDestination: mocks.setDestination,
@@ -73,6 +78,48 @@ describe('useSendDestinationRouter', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useRemoteConfigStore.getState().resetState()
+        mocks.isValidAddress.mockReturnValue(true)
+        addressCodecs.register({
+            ...fixtureCodec,
+            chainId: 'algorand',
+            isValid: address => mocks.isValidAddress(address),
+        })
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
+        })
+    })
+
+    afterEach(() => {
+        addressCodecs.reset()
+        sendFlowChainAdapters.reset()
+    })
+
+    it("refuses a receiver the send chain's codec rejects and clears it", () => {
+        mocks.isValidAddress.mockReturnValue(false)
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        act(() => result.current.resolveDestination('0xabc'))
+
+        expect(mocks.setDestination).toHaveBeenCalledWith(undefined)
+        expect(mocks.navigate).not.toHaveBeenCalled()
+        expect(mocks.showToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'send_funds.destination.invalid_address_title',
+                type: 'error',
+            }),
+        )
+    })
+
+    it('sends any asset as a plain transfer on a chain without opt-in routing', () => {
+        sendFlowChainAdapters.reset()
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        act(() => result.current.resolveDestination(RECEIVER))
+
+        expect(mocks.setSendMode).toHaveBeenCalledWith('normal')
+        expect(mocks.navigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
     // A local receiver that holds no opt-in and can't be signed for has only

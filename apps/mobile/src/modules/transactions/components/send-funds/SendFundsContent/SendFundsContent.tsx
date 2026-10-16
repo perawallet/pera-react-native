@@ -15,6 +15,7 @@ import {
     NavigationIndependentTree,
 } from '@react-navigation/native'
 
+import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
@@ -32,13 +33,14 @@ import { useSendFundsContent } from './useSendFundsContent'
 export const SEND_FUNDS_SHEET_ID = 'send-funds'
 
 export type SendFundsContentProps = {
-    assetId?: string
+    /** The asset to send; the user picks one, on any of the account's chains, when unset. */
+    asset?: AssetRef
 }
 
-export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
+export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    const { selectedAccount, isReady } = useSendFundsContent(assetId)
+    const { selectedAccount, isReady } = useSendFundsContent(asset)
 
     return (
         <TransactionErrorBoundary t={t}>

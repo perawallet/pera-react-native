@@ -17,15 +17,6 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
-        linkContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginTop: theme.spacing.xs,
-            gap: theme.spacing.sm,
-        },
-        link: {
-            color: theme.colors.positive,
-        },
         scrollContent: {
             gap: theme.spacing.xl,
             paddingTop: theme.spacing.lg,

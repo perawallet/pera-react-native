@@ -203,7 +203,9 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when the user confirms, then the LedgerAwaitingApprovalContent surfaces via the SigningOverlays driver until the device signs', async () => {
         const sender = seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -274,7 +276,9 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when the device rejects the transaction, then the signing sheet shows the user-rejected error, never POSTs to algod, and never reaches success', async () => {
         seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -359,7 +363,9 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when signing times out mid-confirmation, then the signing sheet shows the timeout error, never POSTs to algod, and never reaches success', async () => {
         seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
