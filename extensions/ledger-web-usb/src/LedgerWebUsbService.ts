@@ -87,10 +87,13 @@ export class LedgerWebUsbService implements HardwareWalletService {
                 return () => subscription.unsubscribe()
             },
 
-            async connect(deviceId: string): Promise<HardwareWalletTransport> {
+            async connect(
+                deviceId: string,
+                chainId: string,
+            ): Promise<HardwareWalletTransport> {
                 // Resolved at connect, not when the transport registers: the
                 // chain package registers its driver after the transports.
-                const appDriver = ledgerAppDriverRegistry.resolve()
+                const appDriver = ledgerAppDriverRegistry.resolve(chainId)
                 let cached = devicesByKey.get(deviceId)
                 // `devicesByKey` only holds what THIS document scanned, and
                 // scanning only ever happens in the Ledger connect/import

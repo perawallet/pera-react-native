@@ -100,10 +100,13 @@ export class LedgerWebBleService implements HardwareWalletService {
                 return () => subscription.unsubscribe()
             },
 
-            async connect(deviceId: string): Promise<HardwareWalletTransport> {
+            async connect(
+                deviceId: string,
+                chainId: string,
+            ): Promise<HardwareWalletTransport> {
                 // Resolved at connect, not when the transport registers: the
                 // chain package registers its driver after the transports.
-                const appDriver = ledgerAppDriverRegistry.resolve()
+                const appDriver = ledgerAppDriverRegistry.resolve(chainId)
                 const cached = devicesById.get(deviceId)
                 // Without a cached device the library falls back to
                 // requestDevice(), a fresh picker. Fail first where the window

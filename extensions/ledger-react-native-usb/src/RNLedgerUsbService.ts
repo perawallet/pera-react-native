@@ -109,11 +109,12 @@ export class RNLedgerUsbService implements HardwareWalletService {
             // refuse otherwise. `deviceId` is advisory per the interface and
             // cannot influence which physical device the native layer opens.
             async connect(
-                _deviceId?: string,
+                _deviceId: string,
+                chainId: string,
             ): Promise<HardwareWalletTransport> {
                 // Resolved at connect, not when the transport registers: the
                 // chain package registers its driver after the transports.
-                const appDriver = ledgerAppDriverRegistry.resolve()
+                const appDriver = ledgerAppDriverRegistry.resolve(chainId)
                 const descriptors = await TransportHID.list()
                 if (descriptors.length === 0) {
                     throw new LedgerUsbNoDeviceError()
