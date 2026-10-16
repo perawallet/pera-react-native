@@ -38,30 +38,33 @@ beforeEach(() => {
     migrationService.isMigrationComplete.mockResolvedValue(false)
 })
 
+const renderLoaded = async () => {
+    const hook = renderHook(() => useSettingsDeveloperMigrationViewerScreen())
+    await waitFor(() => {
+        expect(hook.result.current.renderState.kind).not.toBe('loading')
+    })
+    return hook
+}
+
 describe('useSettingsDeveloperMigrationViewerScreen', () => {
-    it('starts in a loading state with no data and no error', () => {
+    it('starts in the loading state', () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperMigrationViewerScreen(),
         )
 
-        expect(result.current.isLoading).toBe(true)
-        expect(result.current.data).toBeNull()
-        expect(result.current.error).toBeNull()
+        expect(result.current.renderState).toEqual({ kind: 'loading' })
     })
 
     it('loads payload and migration-complete flag on mount', async () => {
         migrationService.isMigrationComplete.mockResolvedValue(true)
 
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
+        const { result } = await renderLoaded()
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
+        expect(result.current.renderState).toEqual({
+            kind: 'content',
+            data: samplePayload,
         })
-        expect(result.current.data).toBe(samplePayload)
         expect(result.current.isMigrationComplete).toBe(true)
-        expect(result.current.error).toBeNull()
     })
 
     it('runs getLegacyData and isMigrationComplete in parallel', async () => {
@@ -84,19 +87,15 @@ describe('useSettingsDeveloperMigrationViewerScreen', () => {
         expect(callOrder).toContain('isMigrationComplete')
     })
 
-    it('captures an Error rejection from the provider call', async () => {
-        const boom = new Error('boom')
-        migrationService.getLegacyData.mockRejectedValueOnce(boom)
+    it('surfaces an Error rejection as the error state with its message', async () => {
+        migrationService.getLegacyData.mockRejectedValueOnce(new Error('boom'))
 
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
+        const { result } = await renderLoaded()
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
+        expect(result.current.renderState).toEqual({
+            kind: 'error',
+            message: 'boom',
         })
-        expect(result.current.error).toBe(boom)
-        expect(result.current.data).toBeNull()
     })
 
     it('wraps non-Error rejections via String()', async () => {
@@ -104,25 +103,43 @@ describe('useSettingsDeveloperMigrationViewerScreen', () => {
             'string-fail',
         )
 
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
+        const { result } = await renderLoaded()
 
-        await waitFor(() => {
-            expect(result.current.error).not.toBeNull()
+        expect(result.current.renderState).toEqual({
+            kind: 'error',
+            message: 'string-fail',
         })
-        expect(result.current.error).toBeInstanceOf(Error)
-        expect(result.current.error?.message).toBe('string-fail')
+    })
+
+    it('is empty when the payload is null with no error', async () => {
+        migrationService.getLegacyData.mockResolvedValueOnce(null)
+
+        const { result } = await renderLoaded()
+
+        expect(result.current.renderState).toEqual({ kind: 'empty' })
+    })
+
+    it('prefers the error over stale data when a refresh fails', async () => {
+        const { result } = await renderLoaded()
+
+        migrationService.getLegacyData.mockRejectedValueOnce(
+            new Error('refresh-fail'),
+        )
+        await act(async () => {
+            result.current.refresh()
+        })
+        await waitFor(() => {
+            expect(result.current.renderState.kind).toBe('error')
+        })
+
+        expect(result.current.renderState).toEqual({
+            kind: 'error',
+            message: 'refresh-fail',
+        })
     })
 
     it('refresh() re-invokes both provider methods', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
-
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
-        })
+        const { result } = await renderLoaded()
 
         migrationService.getLegacyData.mockClear()
         migrationService.isMigrationComplete.mockClear()
@@ -139,48 +156,51 @@ describe('useSettingsDeveloperMigrationViewerScreen', () => {
         migrationService.getLegacyData.mockRejectedValueOnce(
             new Error('first-fail'),
         )
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
-        await waitFor(() => {
-            expect(result.current.error).not.toBeNull()
-        })
+        const { result } = await renderLoaded()
 
         migrationService.getLegacyData.mockResolvedValueOnce(samplePayload)
         await act(async () => {
             result.current.refresh()
         })
         await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
+            expect(result.current.renderState.kind).toBe('content')
         })
 
-        expect(result.current.error).toBeNull()
-        expect(result.current.data).toBe(samplePayload)
-    })
-
-    it('toggles isLoading to true while refresh is in flight', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperMigrationViewerScreen(),
-        )
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
-        })
-
-        let resolveLoad: (value: unknown) => void = () => undefined
-        migrationService.getLegacyData.mockImplementationOnce(
-            () => new Promise(resolve => (resolveLoad = resolve)),
-        )
-
-        act(() => {
-            result.current.refresh()
-        })
-        expect(result.current.isLoading).toBe(true)
-
-        await act(async () => {
-            resolveLoad(samplePayload)
-        })
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
+        expect(result.current.renderState).toEqual({
+            kind: 'content',
+            data: samplePayload,
         })
     })
+
+    it.each([
+        ['loaded data', samplePayload],
+        ['a prior error', new Error('prior-fail')],
+    ])(
+        'shows loading over %s while a refresh is in flight',
+        async (_label, firstResult) => {
+            if (firstResult instanceof Error) {
+                migrationService.getLegacyData.mockRejectedValueOnce(
+                    firstResult,
+                )
+            }
+            const { result } = await renderLoaded()
+
+            let resolveLoad: (value: unknown) => void = () => undefined
+            migrationService.getLegacyData.mockImplementationOnce(
+                () => new Promise(resolve => (resolveLoad = resolve)),
+            )
+
+            act(() => {
+                result.current.refresh()
+            })
+            expect(result.current.renderState).toEqual({ kind: 'loading' })
+
+            await act(async () => {
+                resolveLoad(samplePayload)
+            })
+            await waitFor(() => {
+                expect(result.current.renderState.kind).toBe('content')
+            })
+        },
+    )
 })

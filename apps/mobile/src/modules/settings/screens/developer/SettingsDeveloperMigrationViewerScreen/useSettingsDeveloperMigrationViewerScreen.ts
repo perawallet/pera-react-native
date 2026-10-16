@@ -14,10 +14,14 @@ import { useCallback, useEffect, useState } from 'react'
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
+type MigrationViewerRenderState =
+    | { kind: 'loading' }
+    | { kind: 'error'; message: string }
+    | { kind: 'empty' }
+    | { kind: 'content'; data: LegacyMigrationData }
+
 export type UseSettingsDeveloperMigrationViewerScreenResult = {
-    data: LegacyMigrationData | null
-    isLoading: boolean
-    error: Error | null
+    renderState: MigrationViewerRenderState
     isMigrationComplete: boolean
     refresh: () => void
 }
@@ -51,10 +55,15 @@ export const useSettingsDeveloperMigrationViewerScreen =
             void load()
         }, [load])
 
+        const getRenderState = (): MigrationViewerRenderState => {
+            if (isLoading) return { kind: 'loading' }
+            if (error) return { kind: 'error', message: error.message }
+            if (!data) return { kind: 'empty' }
+            return { kind: 'content', data }
+        }
+
         return {
-            data,
-            isLoading,
-            error,
+            renderState: getRenderState(),
             isMigrationComplete,
             refresh: () => void load(),
         }
