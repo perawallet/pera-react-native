@@ -43,7 +43,7 @@ export const BackupQuizItem = ({
                 })}
             </PWText>
             <PWView style={styles.optionGroup}>
-                {options.map(word => {
+                {options.map((word, index) => {
                     const isSelected = word === selectedWord
                     return (
                         <PWTouchableOpacity
@@ -53,7 +53,7 @@ export const BackupQuizItem = ({
                                 isSelected && styles.optionSelected,
                             ]}
                             onPress={() => onSelect(word)}
-                            testID={`${testID}_option_${word}`}
+                            testID={`${testID}_option_${index}`}
                         >
                             <PWText
                                 style={[

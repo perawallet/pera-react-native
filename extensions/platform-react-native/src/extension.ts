@@ -29,6 +29,11 @@ export type ReactNativePlatformExtension = PlatformExtension
 // only bites when an earlier step (e.g. a hung permission request) stalls.
 const NOTIFICATIONS_INIT_TIMEOUT_MS = 8000
 
+// Bootstrap awaits this behind the splash, and Firebase's own fetch timeout is
+// 60s, so a stalled network would otherwise hold the splash that long. The
+// fetch keeps running and activates late; until then cached/default values serve.
+const REMOTE_CONFIG_INIT_TIMEOUT_MS = 5000
+
 /**
  * wallet-provider Extension that provides all React Native platform service
  * implementations on the provider instance.
@@ -44,8 +49,15 @@ export const WithReactNativePlatformExtension = (
     const initialize = async (): Promise<PlatformInitResult> => {
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()
-        const remoteConfigInit =
-            platformServices.remoteConfig.initializeRemoteConfig()
+        const remoteConfigInit = withTimeout(
+            platformServices.remoteConfig.initializeRemoteConfig(),
+            REMOTE_CONFIG_INIT_TIMEOUT_MS,
+            'remote config initialization',
+        ).catch((error: unknown) => {
+            logger.warn('Remote Config initialization timed out or failed', {
+                error,
+            })
+        })
         const analyticsInit = platformServices.analytics.initializeAnalytics()
 
         await Promise.allSettled([

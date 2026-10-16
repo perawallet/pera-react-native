@@ -25,6 +25,7 @@ export const DeleteAllSuccessContent = () => {
             title={t('settings.main.remove_success_title')}
             confirmLabel={t('common.close.label')}
             testID='settings_delete_all_success_bottom_sheet'
+            confirmTestID='settings_delete_all_success_close_button'
         />
     )
 }

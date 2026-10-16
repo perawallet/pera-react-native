@@ -126,14 +126,14 @@ export const useSwapToAssetSelectionList = ({
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
             const assetId = item.dexAsset.assetId
-            // Seed the query cache so the AssetSelector can display the asset
-            // immediately after selection, even for unowned assets that aren't
-            // in the local asset database yet.
-            const queryKey = getAssetsQueryKey([assetId], scope)
-            // An empty array counts as "not cached": the DB-only assets query
-            // caches [] (staleTime Infinity) for an asset the account doesn't
-            // hold, and skipping the seed then leaves the selector unable to
-            // display the selection — permanently, for the default pair.
+            // Seed the AssetSelector's cache entry so the selection renders
+            // without waiting on the network fetch for an unowned asset.
+            const queryKey = getAssetsQueryKey([assetId], scope, {
+                fetchMissing: true,
+            })
+            // An empty array counts as "not cached": the asset may be absent
+            // on this network, and an [] entry never refetches (staleTime
+            // Infinity).
             const cached = queryClient.getQueryData<PeraAsset[]>(queryKey)
             if (!cached || cached.length === 0) {
                 const peraAsset: PeraAsset = {

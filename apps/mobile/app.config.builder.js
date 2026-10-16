@@ -538,6 +538,9 @@ function buildAppConfig(env) {
       // the React host is ready) by overriding it in MainActivity.
       './plugins/withAndroidUserLeaveHintFix',
 
+      // Turn on RN's fix for the findNextFocusableElement shadow-tree race.
+      './plugins/withAndroidFindShadowNodeRaceFix',
+
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
 

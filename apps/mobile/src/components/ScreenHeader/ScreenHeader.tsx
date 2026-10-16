@@ -63,6 +63,7 @@ export const ScreenHeader = ({
             <PWText
                 variant='h1'
                 style={styles.title}
+                testID={testID ? `${testID}_title` : undefined}
             >
                 {title}
             </PWText>

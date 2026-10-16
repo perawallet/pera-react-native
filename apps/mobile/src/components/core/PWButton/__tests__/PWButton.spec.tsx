@@ -78,11 +78,11 @@ describe('PWButton', () => {
                 onPress={vi.fn()}
                 variant='helper'
                 testID='add_account_button'
-                accessibilityLabel='add_account_button'
+                accessibilityLabel='Add a new account'
             />,
         )
 
         expect(screen.getByTestId('add_account_button')).toBeTruthy()
-        expect(screen.getByLabelText('add_account_button')).toBeTruthy()
+        expect(screen.getByLabelText('Add a new account')).toBeTruthy()
     })
 })

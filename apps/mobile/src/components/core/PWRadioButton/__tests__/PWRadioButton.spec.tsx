@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { TouchableOpacity } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { PWRadioButton } from '../PWRadioButton'
 
@@ -29,4 +30,24 @@ describe('PWRadioButton', () => {
         fireEvent.click(screen.getByText('Option 1'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
+
+    it.each([false, true])(
+        'exposes isSelected=%s as the radio checked state',
+        isSelected => {
+            render(
+                <PWRadioButton
+                    title='Option 1'
+                    isSelected={isSelected}
+                    onPress={vi.fn()}
+                />,
+            )
+
+            expect(
+                vi.mocked(TouchableOpacity).mock.lastCall?.[0],
+            ).toMatchObject({
+                accessibilityRole: 'radio',
+                accessibilityState: { checked: isSelected },
+            })
+        },
+    )
 })

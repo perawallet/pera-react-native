@@ -306,6 +306,24 @@ describe('useAppBootstrap', () => {
         rafSpy.mockRestore()
     })
 
+    it('hides the splash onto the loading view when an init step never settles', async () => {
+        mocks.provider.initialize.mockReturnValue(new Promise(() => {}))
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(9999)
+        })
+        expect(SplashScreen.hideAsync).not.toHaveBeenCalled()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1)
+        })
+        expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        expect(result.current.bootstrapped).toBe(false)
+        expect(result.current.initError).toBeNull()
+    })
+
     it('sets initError and hides splash when provider.initialize() rejects', async () => {
         mocks.provider.initialize.mockRejectedValue(new Error('boom'))
         vi.useFakeTimers()

@@ -13,10 +13,13 @@
 import { vi } from 'vitest'
 import type { PushNotificationInitResult } from '@perawallet/wallet-extension-platform'
 
-const { mockInitializeNotifications } = vi.hoisted(() => ({
-    mockInitializeNotifications:
-        vi.fn<() => Promise<PushNotificationInitResult>>(),
-}))
+const { mockInitializeNotifications, mockInitializeRemoteConfig } = vi.hoisted(
+    () => ({
+        mockInitializeNotifications:
+            vi.fn<() => Promise<PushNotificationInitResult>>(),
+        mockInitializeRemoteConfig: vi.fn<() => Promise<void>>(),
+    }),
+)
 
 // Stub the platform-service singletons so initialize() exercises only the
 // push-notification resilience wrapper. The resilient allSettled trio just
@@ -27,7 +30,7 @@ vi.mock('../resources', () => ({
             initializeCrashReporting: vi.fn(),
         },
         remoteConfig: {
-            initializeRemoteConfig: vi.fn().mockResolvedValue(undefined),
+            initializeRemoteConfig: mockInitializeRemoteConfig,
         },
         analytics: {
             initializeAnalytics: vi.fn(),
@@ -64,6 +67,7 @@ import { WithReactNativePlatformExtension } from '../extension'
 describe('WithReactNativePlatformExtension', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockInitializeRemoteConfig.mockResolvedValue(undefined)
     })
 
     describe('initialize', () => {
@@ -84,6 +88,32 @@ describe('WithReactNativePlatformExtension', () => {
 
                 expect(result.token).toBeUndefined()
                 expect(typeof result.unsubscribe).toBe('function')
+            } finally {
+                mockInitializeNotifications.mockReset()
+                vi.useRealTimers()
+            }
+        })
+
+        it('resolves within budget when the remote config fetch never settles', async () => {
+            vi.useFakeTimers()
+            try {
+                mockInitializeRemoteConfig.mockReturnValue(
+                    new Promise(() => {}),
+                )
+                mockInitializeNotifications.mockResolvedValue({
+                    token: 'abc',
+                    unsubscribe: vi.fn(),
+                })
+
+                const extension = WithReactNativePlatformExtension({})
+                const initialized = vi.fn()
+                void extension.initialize().then(initialized)
+
+                await vi.advanceTimersByTimeAsync(4999)
+                expect(initialized).not.toHaveBeenCalled()
+
+                await vi.advanceTimersByTimeAsync(1)
+                expect(initialized).toHaveBeenCalledTimes(1)
             } finally {
                 mockInitializeNotifications.mockReset()
                 vi.useRealTimers()

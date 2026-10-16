@@ -91,14 +91,16 @@ export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[1] === 'prices' &&
     queryKey[2] === 'history'
 
-export const getAssetsQueryKey = (assetIDs: string[], scope: ChainScope) => {
-    return [
-        MODULE_PREFIX,
-        {
-            assetIDs: hashAssetIds(assetIDs),
-            scope,
-        },
-    ]
+export const getAssetsQueryKey = (
+    assetIDs: string[],
+    scope: ChainScope,
+    { fetchMissing = false }: { fetchMissing?: boolean } = {},
+) => {
+    const key = [MODULE_PREFIX, { assetIDs: hashAssetIds(assetIDs), scope }]
+    // fetchMissing reads through the network, so it gets its own entry — a
+    // DB-only read must never satisfy it (staleTime Infinity would strand the
+    // missing assets).
+    return fetchMissing ? [...key, { fetchMissing: true }] : key
 }
 
 /** Canonical single-asset cache entry (DB-backed read path). */

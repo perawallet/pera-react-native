@@ -18,10 +18,12 @@ import {
     useOnramp,
     type RampPair,
 } from '@perawallet/wallet-core-onramp'
-import { useRoute } from '@react-navigation/native'
+import { useIsFocused, useRoute } from '@react-navigation/native'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import { useOnrampIntroduction } from '../useOnrampIntroduction'
 import { useOnrampScreen } from '../useOnrampScreen'
 
 vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
@@ -54,6 +56,7 @@ const fundableAccount = (): ReturnType<typeof useOnrampAccount> => ({
 })
 
 vi.mock('@react-navigation/native', () => ({
+    useIsFocused: vi.fn(),
     useRoute: vi.fn(),
 }))
 
@@ -157,6 +160,7 @@ describe('useOnrampScreen', () => {
         vi.clearAllMocks()
         setHasInternet(true)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
+        vi.mocked(useIsFocused).mockReturnValue(true)
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
@@ -360,6 +364,30 @@ describe('useOnrampScreen', () => {
             const { result } = renderHook(() => useOnrampScreen())
             act(() => result.current.handleRetryPairs())
             expect(refetch).toHaveBeenCalled()
+        })
+    })
+
+    describe('introduction sheet', () => {
+        const request = vi.fn()
+
+        beforeEach(() => {
+            request.mockResolvedValue(undefined)
+            vi.mocked(useBottomSheet).mockReturnValue({ request } as never)
+            vi.mocked(useOnrampIntroduction).mockReturnValue({
+                isIntroductionSeen: false,
+                markIntroductionSeen: vi.fn(),
+            })
+        })
+
+        it('opens once the screen is focused', () => {
+            renderHook(() => useOnrampScreen())
+            expect(request).toHaveBeenCalledTimes(1)
+        })
+
+        it('stays closed while another tab is focused', () => {
+            vi.mocked(useIsFocused).mockReturnValue(false)
+            renderHook(() => useOnrampScreen())
+            expect(request).not.toHaveBeenCalled()
         })
     })
 })
