@@ -135,7 +135,7 @@ export function fromDb(
 ): TransactionHistoryItem {
     return {
         id: row.id,
-        txType: row.txType as TransactionHistoryItem['txType'],
+        txType: row.txType,
         sender: row.sender,
         assetSender: row.assetSender,
         receiver: row.receiver,

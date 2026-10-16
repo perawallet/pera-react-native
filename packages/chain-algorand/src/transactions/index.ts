@@ -11,3 +11,9 @@
  */
 
 export * from './adapter'
+export {
+    algorandHistoryDataOf,
+    EMPTY_ALGORAND_HISTORY_DATA,
+    type AlgorandHistoryData,
+    type AlgorandSwapGroupDetail,
+} from './history-data'

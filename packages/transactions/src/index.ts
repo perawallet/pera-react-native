@@ -55,6 +55,7 @@ export {
     fetchMoreTransactions,
     mapHistoryItemToDisplayableTransaction,
     summarizeHistoryItem,
+    historyItemGroupToOpen,
     assetFactsResolverFor,
     TransactionHistoryRowsUnsupportedError,
     type AssetDisplayFacts,

@@ -19,25 +19,29 @@ import type {
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../network-id'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
+import { algorandHistoryDataOf } from './history-data'
 import { summarizeAlgorandHistoryItem } from './summarize'
 
 const toAlgorandTransactionRecord = (
     item: TransactionHistoryItem,
     address: string,
     scope: ChainScope,
-): TransactionRecord => ({
-    id: item.id,
-    scope,
-    status: item.status ?? 'confirmed',
-    timestamp: item.roundTime > 0 ? item.roundTime * 1000 : undefined,
-    fee: item.fee,
-    summary: summarizeAlgorandHistoryItem(item, address),
-    chainData: {
-        family: 'algorand',
-        groupId: item.groupId ?? undefined,
-        closeRemainderTo: item.closeTo ?? undefined,
-    },
-})
+): TransactionRecord => {
+    const data = algorandHistoryDataOf(item)
+    return {
+        id: item.id,
+        scope,
+        status: item.status ?? 'confirmed',
+        timestamp: item.roundTime > 0 ? item.roundTime * 1000 : undefined,
+        fee: item.fee,
+        summary: summarizeAlgorandHistoryItem(item, address),
+        chainData: {
+            family: 'algorand',
+            groupId: data.groupId ?? undefined,
+            closeRemainderTo: data.closeTo ?? undefined,
+        },
+    }
+}
 
 export const getAlgorandTransactionHistory = async (
     address: string,

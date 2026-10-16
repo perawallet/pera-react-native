@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     CSV_MIME_TYPE,
+    historyItemGroupToOpen,
     useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
@@ -189,10 +190,9 @@ export const useAssetTransactionList = ({
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
-            if (transaction.swapGroupDetail && transaction.groupId) {
-                navigation.navigate('GroupTransactionList', {
-                    groupId: transaction.groupId,
-                })
+            const groupId = historyItemGroupToOpen(transaction, scope.chainId)
+            if (groupId) {
+                navigation.navigate('GroupTransactionList', { groupId })
             } else {
                 navigation.navigate('TransactionDetails', {
                     transactionId: transaction.id,
@@ -200,7 +200,7 @@ export const useAssetTransactionList = ({
                 })
             }
         },
-        [navigation],
+        [navigation, scope.chainId],
     )
 
     const handleOpenFilter = useCallback(async () => {

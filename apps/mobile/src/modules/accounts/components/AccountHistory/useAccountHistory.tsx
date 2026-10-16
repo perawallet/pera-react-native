@@ -28,6 +28,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     CSV_MIME_TYPE,
+    historyItemGroupToOpen,
     useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
@@ -225,10 +226,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
-            if (transaction.swapGroupDetail && transaction.groupId) {
-                navigation.navigate('GroupTransactionList', {
-                    groupId: transaction.groupId,
-                })
+            const groupId = historyItemGroupToOpen(transaction, scope.chainId)
+            if (groupId) {
+                navigation.navigate('GroupTransactionList', { groupId })
             } else {
                 navigation.navigate('TransactionDetails', {
                     transactionId: transaction.id,
@@ -236,7 +236,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 })
             }
         },
-        [navigation],
+        [navigation, scope.chainId],
     )
 
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
