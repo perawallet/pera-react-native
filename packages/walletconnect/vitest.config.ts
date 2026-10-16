@@ -140,6 +140,8 @@ export default defineConfig({
                 __dirname,
                 '../deeplinks/src/index.ts',
             ),
+            // deeplinks' source imports this subpath; walletconnect's own dist
+            // isn't built while its tests run.
             '@perawallet/wallet-core-walletconnect/shared/deeplink':
                 path.resolve(__dirname, 'src/shared/deeplink.ts'),
         },
