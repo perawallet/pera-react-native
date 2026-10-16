@@ -26,35 +26,43 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import {
+    algorandHistoryDataOf,
+    EMPTY_ALGORAND_HISTORY_DATA,
+    type AlgorandHistoryData,
+} from '../../history-data'
+import { algorandHistoryChainData } from '../chain-data'
+import { flatHistoryItem, type FlatHistoryItem } from './history-item'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 const ADDRESS = 'ACCT1'
 const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 const makeTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem => ({
-    id: 'TX',
-    txType: 'pay',
-    sender: ADDRESS,
-    assetSender: null,
-    receiver: 'RECEIVER_ADDR',
-    confirmedRound: 12345,
-    status: 'confirmed',
-    roundTime: 1700000000,
-    fee: new Decimal(1000),
-    groupId: null,
-    amount: new Decimal(5000000),
-    closeTo: null,
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
-    asset: null,
-    swapGroupDetail: null,
-    interpretedMeaning: null,
-    balanceImpacts: [],
-    ...overrides,
-})
+    overrides: Partial<FlatHistoryItem> = {},
+): TransactionHistoryItem =>
+    flatHistoryItem({
+        id: 'TX',
+        txType: 'pay',
+        sender: ADDRESS,
+        assetSender: null,
+        receiver: 'RECEIVER_ADDR',
+        confirmedRound: 12345,
+        status: 'confirmed',
+        roundTime: 1700000000,
+        fee: new Decimal(1000),
+        groupId: null,
+        amount: new Decimal(5000000),
+        closeTo: null,
+        closeAmount: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        balanceImpacts: [],
+        ...overrides,
+    })
 
 const swapDetail = {
     assetInId: '0',
@@ -205,14 +213,18 @@ describe('Algorand history rows in chain_data', () => {
                     assetOutUnitName: '',
                     amountIn: new Decimal(1000000),
                     amountOut: new Decimal(5000000),
-                } as unknown as TransactionHistoryItem['swapGroupDetail'],
+                } as unknown as AlgorandHistoryData['swapGroupDetail'],
             }),
         ])
 
         const [item] = await read()
 
-        expect(item.swapGroupDetail?.assetInDecimals).toBe(6)
-        expect(item.swapGroupDetail?.assetOutDecimals).toBe(6)
+        expect(
+            algorandHistoryDataOf(item).swapGroupDetail?.assetInDecimals,
+        ).toBe(6)
+        expect(
+            algorandHistoryDataOf(item).swapGroupDetail?.assetOutDecimals,
+        ).toBe(6)
     })
 
     it('reads every Algorand field as absent from a document with no algorand entry', async () => {
@@ -223,13 +235,46 @@ describe('Algorand history rows in chain_data', () => {
 
         expect(item.confirmedRound).toBeUndefined()
         expect(item.roundTime).toBe(0)
-        expect(item).toMatchObject({
-            closeTo: null,
-            closeAmount: null,
-            swapGroupDetail: null,
-            groupId: null,
-            applicationId: null,
-            innerTransactionCount: null,
+        expect(item.chainData).toEqual(EMPTY_ALGORAND_HISTORY_DATA)
+    })
+
+    it('reads a document in the shape installs already hold', () => {
+        const decoded = algorandHistoryChainData.decode(
+            JSON.stringify({
+                algorand: {
+                    confirmedRound: 12345,
+                    roundTime: 1700000000,
+                    innerTransactionCount: 3,
+                    applicationId: '1002541853',
+                    closeTo: 'CLOSE_ADDR',
+                    swapGroupDetail: {
+                        assetInId: '0',
+                        assetInUnitName: 'ALGO',
+                        assetInDecimals: 6,
+                        assetOutId: '31566704',
+                        assetOutUnitName: 'USDC',
+                        assetOutDecimals: 6,
+                        amountIn: '1000000',
+                        amountOut: '18446744073709551615',
+                    },
+                    groupId: 'GROUP==',
+                    closeAmount: '50854132929',
+                },
+            }),
+        )
+
+        expect(decoded).toEqual({
+            confirmedRound: 12345,
+            roundTime: 1700000000,
+            chainData: {
+                family: 'algorand',
+                innerTransactionCount: 3,
+                applicationId: '1002541853',
+                closeTo: 'CLOSE_ADDR',
+                swapGroupDetail: swapDetail,
+                groupId: 'GROUP==',
+                closeAmount: new Decimal('50854132929'),
+            },
         })
     })
 

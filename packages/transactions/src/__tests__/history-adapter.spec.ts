@@ -23,6 +23,7 @@ import {
     fetchTransactionHistory,
     healCachedRows,
     historyChainAdapters,
+    historyItemGroupToOpen,
     mapHistoryItemToDisplayableTransaction,
     summarizeHistoryItem,
     TransactionHistoryRowsUnsupportedError,
@@ -106,6 +107,28 @@ describe('history adapter wrappers', () => {
 
         expect(summarizeHistoryItem(item, 'ADDR', 'algorand')).toBe(summary)
         expect(adapter.summarize).toHaveBeenCalledWith(item, 'ADDR')
+    })
+
+    it("opens the group the chain adapter's groupToOpen names", () => {
+        const adapter = makeAdapter({
+            groupToOpen: vi.fn().mockReturnValue('GROUP'),
+        })
+        historyChainAdapters.register(adapter)
+        const item = { id: 'TX' } as TransactionHistoryItem
+
+        expect(historyItemGroupToOpen(item, 'algorand')).toBe('GROUP')
+        expect(adapter.groupToOpen).toHaveBeenCalledWith(item)
+    })
+
+    it('opens no group when the chain adapter declares no groupToOpen', () => {
+        historyChainAdapters.register(makeAdapter())
+
+        expect(
+            historyItemGroupToOpen(
+                { id: 'TX' } as TransactionHistoryItem,
+                'algorand',
+            ),
+        ).toBeNull()
     })
 
     it("runs the chain's repair for the account", async () => {

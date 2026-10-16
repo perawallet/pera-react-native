@@ -12,6 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
+import {
+    algorandHistoryDataOf,
+    EMPTY_ALGORAND_HISTORY_DATA,
+} from '../history-data'
 import { summarizeAlgorandHistoryItem } from '../summarize'
 import { ALGORAND_HISTORY_SUMMARY_GOLDENS } from './history-summary-goldens'
 
@@ -31,9 +35,12 @@ describe('summarizeAlgorandHistoryItem', () => {
         const summary = summarizeAlgorandHistoryItem(
             {
                 ...swap.item,
-                swapGroupDetail: {
-                    ...swap.item.swapGroupDetail!,
-                    assetOutId: null,
+                chainData: {
+                    ...algorandHistoryDataOf(swap.item),
+                    swapGroupDetail: {
+                        ...algorandHistoryDataOf(swap.item).swapGroupDetail!,
+                        assetOutId: null,
+                    },
                 },
             },
             swap.account,
@@ -53,11 +60,14 @@ describe('summarizeAlgorandHistoryItem', () => {
         const summary = summarizeAlgorandHistoryItem(
             {
                 ...swap.item,
-                swapGroupDetail: {
-                    ...swap.item.swapGroupDetail!,
-                    assetInUnitName: 'asset(0)',
-                    assetInDecimals: 0,
-                    amountIn: new Decimal(3000),
+                chainData: {
+                    ...algorandHistoryDataOf(swap.item),
+                    swapGroupDetail: {
+                        ...algorandHistoryDataOf(swap.item).swapGroupDetail!,
+                        assetInUnitName: 'asset(0)',
+                        assetInDecimals: 0,
+                        amountIn: new Decimal(3000),
+                    },
                 },
             },
             swap.account,
@@ -67,5 +77,21 @@ describe('summarizeAlgorandHistoryItem', () => {
             amountIn: '0.003',
             assetIn: 'ALGO',
         })
+    })
+
+    it('summarises a row with no chain data as one with empty Algorand data', () => {
+        const payment = ALGORAND_HISTORY_SUMMARY_GOLDENS[0]
+
+        expect(
+            summarizeAlgorandHistoryItem(
+                { ...payment.item, chainData: null },
+                payment.account,
+            ),
+        ).toEqual(
+            summarizeAlgorandHistoryItem(
+                { ...payment.item, chainData: EMPTY_ALGORAND_HISTORY_DATA },
+                payment.account,
+            ),
+        )
     })
 })

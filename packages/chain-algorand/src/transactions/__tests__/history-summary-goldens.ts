@@ -16,10 +16,11 @@ import {
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    TransactionHistoryItem,
-    TransactionType,
-} from '@perawallet/wallet-core-transactions'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    EMPTY_ALGORAND_HISTORY_DATA,
+    type AlgorandHistoryData,
+} from '../history-data'
 
 export type HistorySummaryGolden = {
     name: string
@@ -48,26 +49,36 @@ const USDC_SUMMARY = {
     decimals: 6,
 }
 
-const item = (
-    overrides: Partial<TransactionHistoryItem>,
-): TransactionHistoryItem => ({
+const item = ({
+    groupId,
+    closeTo,
+    closeAmount,
+    applicationId,
+    innerTransactionCount,
+    swapGroupDetail,
+    ...overrides
+}: Partial<TransactionHistoryItem> &
+    Partial<Omit<AlgorandHistoryData, 'family'>>): TransactionHistoryItem => ({
     id: 'TX',
     txType: 'pay',
     sender: A,
     assetSender: null,
     receiver: B,
     roundTime: 1_700_000_000,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: null,
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
+    chainData: {
+        ...EMPTY_ALGORAND_HISTORY_DATA,
+        ...(groupId !== undefined && { groupId }),
+        ...(closeTo !== undefined && { closeTo }),
+        ...(closeAmount !== undefined && { closeAmount }),
+        ...(applicationId !== undefined && { applicationId }),
+        ...(innerTransactionCount !== undefined && { innerTransactionCount }),
+        ...(swapGroupDetail !== undefined && { swapGroupDetail }),
+    },
     ...overrides,
 })
 
@@ -381,7 +392,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
         {
             name: 'unknown transaction type',
             account: A,
-            item: item({ txType: 'xyz' as TransactionType, receiver: null }),
+            item: item({ txType: 'xyz', receiver: null }),
             summary: none('default', 'unknown'),
         },
         {

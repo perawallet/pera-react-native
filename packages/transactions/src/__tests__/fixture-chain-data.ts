@@ -12,6 +12,8 @@
 
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { TransactionHistoryItem } from '../models/types'
 import type {
     HistoryChainAdapter,
     HistoryChainDataCodec,
@@ -24,46 +26,73 @@ export const FIXTURE_PATHS = {
     swapAssetInDecimals: '$.fixture.swapGroupDetail.assetInDecimals',
 } as const
 
+/** The only chain facts the repository specs read, standing in for a chain's own member. */
+export type FixtureChainData = {
+    closeTo: Nullable<string>
+    closeAmount: Nullable<Decimal>
+    swapGroupDetail: Nullable<{
+        assetInId: Nullable<string>
+        amountIn: Decimal
+        amountOut: Decimal
+        [key: string]: unknown
+    }>
+}
+
+export const fixtureChainDataOf = (
+    data: Partial<FixtureChainData> = {},
+): FixtureChainData => ({
+    closeTo: null,
+    closeAmount: null,
+    swapGroupDetail: null,
+    ...data,
+})
+
+export const fixtureDataOf = (
+    item: Pick<TransactionHistoryItem, 'chainData'>,
+): FixtureChainData => fixtureChainDataOf(item.chainData as FixtureChainData)
+
 // Stands in for a chain package's codec, which this package can't import.
 export const fixtureChainData: HistoryChainDataCodec = {
-    encode: item =>
-        JSON.stringify({
+    encode: ({ confirmedRound, roundTime, chainData }) => {
+        const data = fixtureChainDataOf(chainData as FixtureChainData)
+        return JSON.stringify({
             fixture: {
-                confirmedRound: item.confirmedRound ?? null,
-                roundTime: item.roundTime,
-                innerTransactionCount: item.innerTransactionCount,
-                applicationId: item.applicationId,
-                closeTo: item.closeTo,
-                groupId: item.groupId,
-                closeAmount: item.closeAmount?.toString() ?? null,
-                swapGroupDetail: item.swapGroupDetail
+                confirmedRound: confirmedRound ?? null,
+                roundTime,
+                closeTo: data.closeTo,
+                closeAmount: data.closeAmount?.toString() ?? null,
+                swapGroupDetail: data.swapGroupDetail
                     ? {
-                          ...item.swapGroupDetail,
-                          amountIn: item.swapGroupDetail.amountIn.toString(),
-                          amountOut: item.swapGroupDetail.amountOut.toString(),
+                          ...data.swapGroupDetail,
+                          amountIn: data.swapGroupDetail.amountIn.toString(),
+                          amountOut: data.swapGroupDetail.amountOut.toString(),
                       }
                     : null,
             },
-        }),
+        })
+    },
     decode: json => {
         const stored = JSON.parse(json).fixture ?? {}
         return {
             confirmedRound: stored.confirmedRound ?? undefined,
             roundTime: stored.roundTime ?? 0,
-            innerTransactionCount: stored.innerTransactionCount ?? null,
-            applicationId: stored.applicationId ?? null,
-            closeTo: stored.closeTo ?? null,
-            groupId: stored.groupId ?? null,
-            closeAmount: stored.closeAmount
-                ? new Decimal(stored.closeAmount)
-                : null,
-            swapGroupDetail: stored.swapGroupDetail
-                ? {
-                      ...stored.swapGroupDetail,
-                      amountIn: new Decimal(stored.swapGroupDetail.amountIn),
-                      amountOut: new Decimal(stored.swapGroupDetail.amountOut),
-                  }
-                : null,
+            chainData: fixtureChainDataOf({
+                closeTo: stored.closeTo ?? null,
+                closeAmount: stored.closeAmount
+                    ? new Decimal(stored.closeAmount)
+                    : null,
+                swapGroupDetail: stored.swapGroupDetail
+                    ? {
+                          ...stored.swapGroupDetail,
+                          amountIn: new Decimal(
+                              stored.swapGroupDetail.amountIn,
+                          ),
+                          amountOut: new Decimal(
+                              stored.swapGroupDetail.amountOut,
+                          ),
+                      }
+                    : null,
+            }),
         }
     },
     assetIdPaths: [

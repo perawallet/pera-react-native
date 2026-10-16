@@ -99,16 +99,11 @@ const CACHED_TX: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 100,
     roundTime: 1_700_000_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(1_000_000), // 1 ALGO
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 

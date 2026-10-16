@@ -17,6 +17,10 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 // Faithful reimplementation of toBigInt — the real module pulls in
 // react-native-mmkv, which cannot load in the node test environment.
 
+import {
+    EMPTY_ALGORAND_HISTORY_DATA,
+    type AlgorandHistoryData,
+} from '../history-data'
 import { mapHistoryItemToDisplayableTransaction } from '../mapHistoryItemToDisplayableTransaction'
 
 const baseItem: TransactionHistoryItem = {
@@ -27,27 +31,34 @@ const baseItem: TransactionHistoryItem = {
     receiver: 'RECEIVER_ADDR',
     confirmedRound: 41065416,
     roundTime: 1752576000,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(2500000),
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
+    chainData: EMPTY_ALGORAND_HISTORY_DATA,
 }
+
+const withData = (
+    data: Partial<AlgorandHistoryData>,
+    overrides: Partial<TransactionHistoryItem> = {},
+): TransactionHistoryItem => ({
+    ...baseItem,
+    ...overrides,
+    chainData: { ...EMPTY_ALGORAND_HISTORY_DATA, ...data },
+})
 
 describe('mapHistoryItemToDisplayableTransaction', () => {
     it('carries closeAmount into the displayable payment leg', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            amount: new Decimal(0),
-            closeTo: 'CLOSE_ADDR',
-            closeAmount: new Decimal('50854132929'),
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData(
+                {
+                    closeTo: 'CLOSE_ADDR',
+                    closeAmount: new Decimal('50854132929'),
+                },
+                { amount: new Decimal(0) },
+            ),
+        )
 
         expect(result?.paymentTransaction).toEqual({
             amount: 0n,
@@ -67,19 +78,21 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
     })
 
     it('carries closeAmount into the displayable asset-transfer leg', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            txType: 'axfer',
-            amount: new Decimal(0),
-            closeTo: 'CLOSE_ADDR',
-            closeAmount: new Decimal('250000'),
-            asset: {
-                assetId: '31566704',
-                name: 'USD Coin',
-                unitName: 'USDC',
-                decimals: 6,
-            },
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData(
+                { closeTo: 'CLOSE_ADDR', closeAmount: new Decimal('250000') },
+                {
+                    txType: 'axfer',
+                    amount: new Decimal(0),
+                    asset: {
+                        assetId: '31566704',
+                        name: 'USD Coin',
+                        unitName: 'USDC',
+                        decimals: 6,
+                    },
+                },
+            ),
+        )
 
         expect(result?.assetTransferTransaction).toMatchObject({
             closeTo: 'CLOSE_ADDR',
@@ -106,11 +119,9 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
     })
 
     it('maps payment closeTo and null amount defensively', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            amount: null,
-            closeTo: 'CLOSE_ADDR',
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData({ closeTo: 'CLOSE_ADDR' }, { amount: null }),
+        )
 
         expect(result?.paymentTransaction).toEqual({
             amount: 0n,
@@ -168,13 +179,12 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
     })
 
     it('maps an app call row with its application id', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            txType: 'appl',
-            amount: null,
-            receiver: null,
-            applicationId: '1002541853',
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData(
+                { applicationId: '1002541853' },
+                { txType: 'appl', amount: null, receiver: null },
+            ),
+        )
 
         expect(result?.applicationTransaction?.applicationId).toBe(1002541853n)
         expect(result?.applicationTransaction?.onCompletion).toBeUndefined()
@@ -183,23 +193,21 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
     })
 
     it('threads the stored inner transaction count for app calls', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            txType: 'appl',
-            applicationId: '1002541853',
-            innerTransactionCount: 3,
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData(
+                { applicationId: '1002541853', innerTransactionCount: 3 },
+                { txType: 'appl' },
+            ),
+        )
 
         expect(result?.innerTransactionCount).toBe(3)
         expect(result?.innerTxns).toBeUndefined()
     })
 
     it('defaults a missing application id to 0 (app creation)', () => {
-        const result = mapHistoryItemToDisplayableTransaction({
-            ...baseItem,
-            txType: 'appl',
-            applicationId: null,
-        })
+        const result = mapHistoryItemToDisplayableTransaction(
+            withData({ applicationId: null }, { txType: 'appl' }),
+        )
 
         expect(result?.applicationTransaction?.applicationId).toBe(0n)
     })

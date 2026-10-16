@@ -27,6 +27,8 @@ import {
     setChainDataValue,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { algorandHistoryDataOf } from '../../history-data'
+import { flatHistoryItem } from './history-item'
 import {
     CLOSE_AMOUNT_PATH,
     CLOSE_TO_PATH,
@@ -113,7 +115,7 @@ describe('history rows cached before chain_data existed', () => {
             closeAmount: null,
         }
         const expected: TransactionHistoryItem[] = [
-            {
+            flatHistoryItem({
                 ...base,
                 id: 'CLOSE',
                 txType: 'pay',
@@ -127,8 +129,8 @@ describe('history rows cached before chain_data existed', () => {
                 applicationId: null,
                 innerTransactionCount: null,
                 swapGroupDetail: null,
-            },
-            {
+            }),
+            flatHistoryItem({
                 ...base,
                 id: 'SWAP',
                 txType: 'appl',
@@ -152,7 +154,7 @@ describe('history rows cached before chain_data existed', () => {
                     amountIn: new Decimal(1000000),
                     amountOut: new Decimal(5000000),
                 },
-            },
+            }),
         ]
         expect(items).toEqual(expected)
     })
@@ -175,7 +177,9 @@ describe('history rows cached before chain_data existed', () => {
             accountAddress: ADDRESS,
             scope,
         })
-        expect(close.closeAmount).toEqual(new Decimal('50854132929'))
+        expect(algorandHistoryDataOf(close).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
         expect(await closeRowsMissingAmount()).toEqual([])
     })
 

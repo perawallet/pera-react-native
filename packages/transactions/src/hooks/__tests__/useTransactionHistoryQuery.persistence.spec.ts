@@ -23,7 +23,10 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { historyChainAdapters } from '../../history-adapter'
-import { fixtureHistoryAdapter } from '../../__tests__/fixture-chain-data'
+import {
+    fixtureChainDataOf,
+    fixtureHistoryAdapter,
+} from '../../__tests__/fixture-chain-data'
 import type { TransactionHistoryItem } from '../../models/types'
 
 const mocks = vi.hoisted(() => ({
@@ -70,14 +73,9 @@ const makeTx = (
     status: 'confirmed',
     roundTime: 1700000000,
     fee: new Decimal(1000),
-    groupId: null,
+    chainData: null,
     amount: new Decimal(5000000),
-    closeTo: null,
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
     asset: null,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     balanceImpacts: [],
     ...overrides,
@@ -110,22 +108,26 @@ describe('useTransactionHistoryQuery over a migrated database', () => {
             txType: 'appl',
             roundTime: 1700000001,
             amount: null,
-            swapGroupDetail: {
-                assetInId: '0',
-                assetInUnitName: 'ALGO',
-                assetInDecimals: 6,
-                assetOutId: '31566704',
-                assetOutUnitName: 'USDC',
-                assetOutDecimals: 6,
-                amountIn: new Decimal('1000000'),
-                amountOut: new Decimal('18446744073709551615'),
-            },
+            chainData: fixtureChainDataOf({
+                swapGroupDetail: {
+                    assetInId: '0',
+                    assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
+                    assetOutId: '31566704',
+                    assetOutUnitName: 'USDC',
+                    assetOutDecimals: 6,
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('18446744073709551615'),
+                },
+            }),
         })
         const close = makeTx({
             id: 'CLOSE',
             amount: new Decimal(0),
-            closeTo: 'CLOSE_ADDR',
-            closeAmount: new Decimal('50854132929'),
+            chainData: fixtureChainDataOf({
+                closeTo: 'CLOSE_ADDR',
+                closeAmount: new Decimal('50854132929'),
+            }),
         })
         await upsertTransactions({
             items: [close, swap],

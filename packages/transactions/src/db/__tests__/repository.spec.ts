@@ -35,7 +35,10 @@ import {
 } from '../../history-adapter'
 import {
     FIXTURE_PATHS,
+    fixtureChainDataOf,
+    fixtureDataOf,
     fixtureHistoryAdapter,
+    type FixtureChainData,
 } from '../../__tests__/fixture-chain-data'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
@@ -79,9 +82,13 @@ describe('transaction repository', () => {
             missing: [FIXTURE_PATHS.closeAmount],
         })
 
-    const makeTx = (
-        overrides: Partial<TransactionHistoryItem> = {},
-    ): TransactionHistoryItem => ({
+    const makeTx = ({
+        closeTo,
+        closeAmount,
+        swapGroupDetail,
+        ...overrides
+    }: Partial<TransactionHistoryItem> &
+        Partial<FixtureChainData> = {}): TransactionHistoryItem => ({
         id: 'TX001',
         txType: 'pay',
         sender: 'SENDER_ADDR',
@@ -89,15 +96,15 @@ describe('transaction repository', () => {
         confirmedRound: 12345,
         roundTime: 1700000000,
         fee: new Decimal(1000),
-        groupId: null,
         amount: new Decimal(5000000),
-        closeTo: null,
-        applicationId: null,
-        innerTransactionCount: null,
         asset: null,
-        swapGroupDetail: null,
         interpretedMeaning: null,
         balanceImpacts: [],
+        chainData: fixtureChainDataOf({
+            closeTo,
+            closeAmount,
+            swapGroupDetail,
+        }),
         ...overrides,
     })
 
@@ -225,8 +232,10 @@ describe('transaction repository', () => {
             scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
-        expect(result[0].closeTo).toBe('CLOSE_ADDR')
-        expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
+        expect(fixtureDataOf(result[0]).closeTo).toBe('CLOSE_ADDR')
+        expect(fixtureDataOf(result[0]).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 
     it('never lists a row whose chain_data is not valid JSON', async () => {
@@ -270,7 +279,9 @@ describe('transaction repository', () => {
             scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
-        expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
+        expect(fixtureDataOf(result[0]).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 
     it('lists the rows holding every present path and none of the missing ones', async () => {
@@ -325,7 +336,9 @@ describe('transaction repository', () => {
             accountAddress: 'ACCT1',
             scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
-        expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
+        expect(fixtureDataOf(result[0]).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 
     it('upserts duplicate transaction IDs without duplicating', async () => {
@@ -543,7 +556,7 @@ describe('transaction repository', () => {
                     txType: 'appl',
                     roundTime: 1_700_000_200,
                     swapGroupDetail:
-                        swapDetail as TransactionHistoryItem['swapGroupDetail'],
+                        swapDetail as FixtureChainData['swapGroupDetail'],
                 }),
                 makeTx({
                     id: 'TX_OTHER_ASSET',
@@ -752,7 +765,9 @@ describe('transaction repository', () => {
         })
 
         expect(result[0].asset).toEqual(asset)
-        expect(result[0].swapGroupDetail).toEqual(swapGroupDetail)
+        expect(fixtureDataOf(result[0]).swapGroupDetail).toEqual(
+            swapGroupDetail,
+        )
         expect(result[0].interpretedMeaning).toEqual(interpretedMeaning)
     })
 
@@ -970,7 +985,7 @@ describe('transaction repository', () => {
             assetOutUnitName: '',
             amountIn: new Decimal(1000000),
             amountOut: new Decimal(5000000),
-        } as unknown as TransactionHistoryItem['swapGroupDetail']
+        } as unknown as FixtureChainData['swapGroupDetail']
 
         const swapRowsMissingFacts = (accountAddress = 'ACCT1') =>
             getRowsByChainData({

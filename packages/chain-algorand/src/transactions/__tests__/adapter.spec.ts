@@ -43,6 +43,10 @@ import {
     payloadTransactionOf,
 } from '../../signing/__tests__/transactions'
 import { algorandHistoryAdapter, algorandSendFlowAdapter } from '../adapter'
+import {
+    EMPTY_ALGORAND_HISTORY_DATA,
+    type AlgorandHistoryData,
+} from '../history-data'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
@@ -136,7 +140,10 @@ describe('algorandHistoryAdapter', () => {
     })
 
     describe('getTransactionHistory', () => {
-        const row = (overrides: Partial<TransactionHistoryItem> = {}) =>
+        const row = (
+            overrides: Partial<TransactionHistoryItem> = {},
+            data: Partial<AlgorandHistoryData> = {},
+        ) =>
             ({
                 id: 'TX',
                 txType: 'pay',
@@ -144,17 +151,12 @@ describe('algorandHistoryAdapter', () => {
                 assetSender: null,
                 receiver: 'R',
                 roundTime: 1_700_000_000,
-                swapGroupDetail: null,
                 interpretedMeaning: null,
                 fee: new Decimal(1000),
-                groupId: null,
                 amount: new Decimal(5),
-                closeTo: null,
-                closeAmount: null,
                 asset: null,
-                applicationId: null,
-                innerTransactionCount: null,
                 balanceImpacts: [],
+                chainData: { ...EMPTY_ALGORAND_HISTORY_DATA, ...data },
                 ...overrides,
             }) as TransactionHistoryItem
         const result = (
@@ -195,7 +197,7 @@ describe('algorandHistoryAdapter', () => {
 
         it('maps an item to a record', async () => {
             mocks.fetchTransactionHistory.mockResolvedValueOnce(
-                result([row({ groupId: 'GRP', closeTo: 'CLOSE' })]),
+                result([row({}, { groupId: 'GRP', closeTo: 'CLOSE' })]),
             )
 
             const { items } =
@@ -266,8 +268,7 @@ describe('algorandHistoryAdapter', () => {
             roundTime: 2,
             fee: new Decimal(1000),
             amount: new Decimal(5),
-            closeTo: null,
-            closeAmount: null,
+            chainData: null,
         } as unknown as TransactionHistoryItem
 
         expect(algorandHistoryAdapter.toDisplayable(item)).toMatchObject({

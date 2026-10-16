@@ -20,6 +20,7 @@ import {
     fetchMoreTransactions,
     fetchTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/transactions/history'
+import { algorandHistoryDataOf } from '@perawallet/wallet-core-chain-algorand/transactions'
 import { fetchIndexerCloseAmount } from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/endpoints'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
@@ -140,8 +141,9 @@ describe('history adapter conformance', () => {
             accountAddress: closer.address,
         })
         const closeRow = transactions.find(txn => txn.id === close.txId)
-        expect(closeRow?.closeTo).toBe(receiver.address)
+        const closeData = algorandHistoryDataOf(closeRow!)
+        expect(closeData.closeTo).toBe(receiver.address)
         expect(closeRow?.amount).toEqual(new Decimal(0))
-        expect(closeRow?.closeAmount).toEqual(new Decimal(swept.toString()))
+        expect(closeData.closeAmount).toEqual(new Decimal(swept.toString()))
     })
 })
