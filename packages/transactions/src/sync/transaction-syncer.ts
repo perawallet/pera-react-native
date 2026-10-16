@@ -50,7 +50,7 @@ export async function fetchAndPersistTransactions(
     }
 
     // Heal close rows whose swept amount the backend/derivation couldn't
-    // provide (rows cached before the close_amount column, receiver-only
+    // provide (rows cached before the swept amount was recorded, receiver-only
     // perspectives). Best-effort and bounded; never fails the sync.
     await backfillMissingCloseAmounts({ scope })
 

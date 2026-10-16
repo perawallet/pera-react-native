@@ -36,7 +36,7 @@ type BackfillParams = {
 
 /**
  * Heals close-involving rows whose swept amount is unknown — rows cached
- * before the close_amount column existed, or synced from a perspective whose
+ * before the swept amount was recorded, or synced from a perspective whose
  * balance impacts couldn't reveal it — by asking the chain indexer, which is
  * perspective-free truth. Bounded and best-effort: a failed lookup leaves the
  * row matching the predicate, so the next sync pass retries it naturally.

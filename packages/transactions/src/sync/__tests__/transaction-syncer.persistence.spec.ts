@@ -122,61 +122,20 @@ const page: TransactionHistoryItem[] = [
 ]
 
 type StoredRow = {
-    confirmedRound: number | null
-    roundTime: number | null
-    innerTransactionCount: number | null
-    applicationId: string | null
-    closeTo: string | null
-    closeAmount: string | null
-    groupId: string | null
-    swapGroupDetailJson: string | null
     assetJson: string | null
-    chainData: string | null
-    assetRef: string | null
-    summaryJson: string | null
+    chainData: string
 }
 
 const readRow = async (db: Database, id: string): Promise<StoredRow> => {
     const [row] = (await db.all(
-        sql`select confirmed_round, round_time, inner_transaction_count,
-            application_id, close_to, close_amount, group_id,
-            swap_group_detail_json, asset_json, chain_data, asset_ref,
-            summary_json
-            from transactions where id = ${id}`,
+        sql`select asset_json, chain_data from transactions where id = ${id}`,
     )) as unknown[][]
-    const [
-        confirmedRound,
-        roundTime,
-        innerTransactionCount,
-        applicationId,
-        closeTo,
-        closeAmount,
-        groupId,
-        swapGroupDetailJson,
-        assetJson,
-        chainData,
-        assetRef,
-        summaryJson,
-    ] = row
-    return {
-        confirmedRound,
-        roundTime,
-        innerTransactionCount,
-        applicationId,
-        closeTo,
-        closeAmount,
-        groupId,
-        swapGroupDetailJson,
-        assetJson,
-        chainData,
-        assetRef,
-        summaryJson,
-    } as StoredRow
+    const [assetJson, chainData] = row
+    return { assetJson, chainData } as StoredRow
 }
 
 const algorandOf = (row: StoredRow) =>
-    (JSON.parse(row.chainData ?? 'null') as { algorand: unknown } | null)
-        ?.algorand
+    (JSON.parse(row.chainData) as { algorand: unknown }).algorand
 
 describe('fetchAndPersistTransactions storage', () => {
     let teardown: () => void
@@ -197,17 +156,9 @@ describe('fetchAndPersistTransactions storage', () => {
         teardown()
     })
 
-    it('writes a payment close-out to the old columns and to chain_data', async () => {
+    it('writes a payment close-out to chain_data', async () => {
         const row = await readRow(mocks.db, 'PAY')
 
-        expect(row).toMatchObject({
-            confirmedRound: 12345,
-            roundTime: 1700000000,
-            closeTo: 'CLOSE_ADDR',
-            closeAmount: '50854132929',
-            assetRef: 'algorand/0',
-            summaryJson: null,
-        })
         expect(JSON.parse(row.assetJson ?? '')).toMatchObject({
             assetId: '0',
         })
@@ -223,25 +174,9 @@ describe('fetchAndPersistTransactions storage', () => {
         })
     })
 
-    it('references an asset transfer by chain and asset id', async () => {
-        const row = await readRow(mocks.db, 'AXFER')
-
-        expect(row.assetRef).toBe('algorand/31566704')
-        expect(JSON.parse(row.assetJson ?? '')).toMatchObject({
-            assetId: '31566704',
-            unitName: 'USDC',
-        })
-    })
-
-    it('writes an app call to the old columns and to chain_data', async () => {
+    it('writes an app call to chain_data', async () => {
         const row = await readRow(mocks.db, 'APPL')
 
-        expect(row).toMatchObject({
-            applicationId: '1002541853',
-            innerTransactionCount: 3,
-            groupId: 'GROUP==',
-            assetRef: null,
-        })
         expect(algorandOf(row)).toMatchObject({
             applicationId: '1002541853',
             innerTransactionCount: 3,
@@ -251,18 +186,16 @@ describe('fetchAndPersistTransactions storage', () => {
         })
     })
 
-    it('stores swap amounts as decimal strings in both shapes', async () => {
+    it('stores swap amounts as decimal strings in chain_data', async () => {
         const row = await readRow(mocks.db, 'SWAP')
-        const expected = {
-            assetInId: '0',
-            assetOutId: '31566704',
-            amountIn: '1000000',
-            amountOut: '18446744073709551615',
-        }
 
-        expect(JSON.parse(row.swapGroupDetailJson ?? '')).toMatchObject(
-            expected,
-        )
-        expect(algorandOf(row)).toMatchObject({ swapGroupDetail: expected })
+        expect(algorandOf(row)).toMatchObject({
+            swapGroupDetail: {
+                assetInId: '0',
+                assetOutId: '31566704',
+                amountIn: '1000000',
+                amountOut: '18446744073709551615',
+            },
+        })
     })
 })

@@ -29,7 +29,7 @@ import {
     persistResolvedSwapAssetFacts,
     updateTransactionCloseAmount,
 } from '../repository'
-import { TransactionsSchema } from '../schema'
+import { AccountTransactionsSchema, TransactionsSchema } from '../schema'
 import { historyChainAdapters } from '../../history-adapter'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
@@ -252,6 +252,128 @@ describe('transaction repository', () => {
 
         expect(result[0].closeTo).toBe('CLOSE_ADDR')
         expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
+    })
+
+    it('returns each Algorand kind exactly as it was written', async () => {
+        const full = (
+            overrides: Partial<TransactionHistoryItem>,
+        ): TransactionHistoryItem =>
+            makeTx({
+                assetSender: null,
+                closeAmount: null,
+                status: 'confirmed',
+                ...overrides,
+            })
+        const swapDetail = {
+            assetInId: '0',
+            assetInUnitName: 'ALGO',
+            assetInDecimals: 6,
+            assetOutId: '31566704',
+            assetOutUnitName: 'USDC',
+            assetOutDecimals: 6,
+            amountIn: new Decimal('1000000'),
+            amountOut: new Decimal('18446744073709551615'),
+        }
+        const written = [
+            full({
+                id: 'SWAP',
+                txType: 'appl',
+                roundTime: 1700000004,
+                amount: null,
+                swapGroupDetail: swapDetail,
+            }),
+            full({
+                id: 'PENDING',
+                roundTime: 1700000003,
+                confirmedRound: undefined,
+                status: 'pending',
+            }),
+            full({
+                id: 'APPL',
+                txType: 'appl',
+                roundTime: 1700000002,
+                amount: null,
+                applicationId: '1002541853',
+                innerTransactionCount: 3,
+                groupId: 'GROUP==',
+            }),
+            full({
+                id: 'AXFER',
+                txType: 'axfer',
+                roundTime: 1700000001,
+                asset: {
+                    assetId: '31566704',
+                    name: 'USDC',
+                    unitName: 'USDC',
+                    decimals: 6,
+                },
+            }),
+            full({
+                id: 'CLOSE',
+                roundTime: 1700000000,
+                amount: new Decimal(0),
+                closeTo: 'CLOSE_ADDR',
+                closeAmount: new Decimal('50854132929'),
+            }),
+        ]
+        await upsertTransactions({
+            db,
+            items: written,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(result).toEqual(written)
+    })
+
+    it('reads every Algorand field as absent from a chain_data document with no algorand entry', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ closeTo: 'CLOSE_ADDR' })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await db.run(sql`update transactions set chain_data = '{}'`)
+
+        const [item] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(item.confirmedRound).toBeUndefined()
+        expect(item.roundTime).toBe(0)
+        expect(item).toMatchObject({
+            closeTo: null,
+            closeAmount: null,
+            swapGroupDetail: null,
+            groupId: null,
+            applicationId: null,
+            innerTransactionCount: null,
+        })
+    })
+
+    it('skips a close row whose chain_data is not valid JSON', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ closeTo: 'CLOSE_ADDR', closeAmount: null })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await db.run(sql`update transactions set chain_data = '{not json'`)
+
+        const rows = await getCloseRowsMissingCloseAmount({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(rows).toEqual([])
     })
 
     it('keeps a known closeAmount when another account re-upserts the shared row without one', async () => {
@@ -617,7 +739,7 @@ describe('transaction repository', () => {
             .update(TransactionsSchema)
             .set({
                 balanceImpactsJson: '{not json',
-                swapGroupDetailJson: '{not json',
+                chainData: '{not json',
             })
             .where(eq(TransactionsSchema.id, 'TX_BROKEN'))
             .run()
@@ -990,9 +1112,9 @@ describe('transaction repository', () => {
                 scope: scopeForLegacyNetwork('mainnet'),
             })
             await db
-                .update(TransactionsSchema)
+                .update(AccountTransactionsSchema)
                 .set({ roundTime: null })
-                .where(eq(TransactionsSchema.id, 'UNTIMED'))
+                .where(eq(AccountTransactionsSchema.transactionId, 'UNTIMED'))
                 .run()
 
             const rows = await getSwapRowsMissingAssetFacts({
@@ -1050,7 +1172,7 @@ describe('transaction repository', () => {
             expect(rows.map(row => row.id)).toEqual(['MINE'])
         })
 
-        it('survives a row whose stored detail is not valid JSON', async () => {
+        it('skips a row whose chain_data is not valid JSON', async () => {
             await upsertTransactions({
                 db,
                 items: [
@@ -1062,7 +1184,7 @@ describe('transaction repository', () => {
             })
             await db
                 .update(TransactionsSchema)
-                .set({ swapGroupDetailJson: 'not json at all' })
+                .set({ chainData: 'not json at all' })
                 .where(eq(TransactionsSchema.id, 'BROKEN'))
                 .run()
 
@@ -1072,7 +1194,7 @@ describe('transaction repository', () => {
                 accountAddress: 'ACCT1',
             })
 
-            expect(rows.map(row => row.id).sort()).toEqual(['BROKEN', 'STALE'])
+            expect(rows.map(row => row.id)).toEqual(['STALE'])
         })
 
         it('stops listing a row once its resolved facts are persisted', async () => {
@@ -1125,29 +1247,19 @@ describe('transaction repository', () => {
         })
     })
 
-    describe('chain_data dual-write', () => {
+    describe('chain_data', () => {
         const readStored = async (id: string) => {
             const [row] = (await db.all(
-                sql`select chain_data, asset_ref, close_amount from transactions where id = ${id}`,
-            )) as Array<[string | null, string | null, string | null]>
-            const [chainData, assetRef, closeAmount] = row
+                sql`select chain_data from transactions where id = ${id}`,
+            )) as Array<[string]>
             return {
-                algorand: chainData
-                    ? (
-                          JSON.parse(chainData) as {
-                              algorand: Record<string, unknown>
-                          }
-                      ).algorand
-                    : null,
-                assetRef,
-                closeAmount,
+                algorand: (
+                    JSON.parse(row[0]) as {
+                        algorand: Record<string, unknown>
+                    }
+                ).algorand,
             }
         }
-
-        const clearChainData = (id: string) =>
-            db.run(
-                sql`update transactions set chain_data = NULL, asset_ref = NULL where id = ${id}`,
-            )
 
         it('keeps chain_data closeAmount when another account re-upserts the shared row without one', async () => {
             await upsertTransactions({
@@ -1170,36 +1282,9 @@ describe('transaction repository', () => {
 
             const stored = await readStored('TX001')
             expect(stored.algorand?.closeAmount).toBe('50854132929')
-            expect(stored.closeAmount).toBe('50854132929')
         })
 
-        it('fills chain_data on a row cached before it, carrying the stored closeAmount over', async () => {
-            await upsertTransactions({
-                db,
-                items: [
-                    makeTx({
-                        closeTo: 'CLOSE_ADDR',
-                        closeAmount: new Decimal('42'),
-                    }),
-                ],
-                accountAddress: 'SENDER_ACCT',
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
-            await clearChainData('TX001')
-
-            await upsertTransactions({
-                db,
-                items: [makeTx({ closeTo: 'CLOSE_ADDR', closeAmount: null })],
-                accountAddress: 'RECEIVER_ACCT',
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
-
-            const stored = await readStored('TX001')
-            expect(stored.algorand?.closeTo).toBe('CLOSE_ADDR')
-            expect(stored.algorand?.closeAmount).toBe('42')
-        })
-
-        it('writes a backfilled closeAmount to chain_data too', async () => {
+        it('writes a backfilled closeAmount to chain_data', async () => {
             await upsertTransactions({
                 db,
                 items: [
@@ -1222,73 +1307,9 @@ describe('transaction repository', () => {
 
             const stored = await readStored('TXSTALE')
             expect(stored.algorand?.closeAmount).toBe('50854132929')
-            expect(stored.closeAmount).toBe('50854132929')
         })
 
-        it('leaves chain_data absent when backfilling a row cached before it', async () => {
-            await upsertTransactions({
-                db,
-                items: [
-                    makeTx({
-                        id: 'TXSTALE',
-                        closeTo: 'CLOSE_ADDR',
-                        closeAmount: null,
-                    }),
-                ],
-                accountAddress: 'ACCT1',
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
-            await clearChainData('TXSTALE')
-
-            await updateTransactionCloseAmount({
-                db,
-                id: 'TXSTALE',
-                scope: scopeForLegacyNetwork('mainnet'),
-                closeAmount: new Decimal('7'),
-            })
-
-            const stored = await readStored('TXSTALE')
-            expect(stored.algorand).toBeNull()
-            expect(stored.closeAmount).toBe('7')
-        })
-
-        it('leaves chain_data absent when resolving swap facts on a row cached before it', async () => {
-            await upsertTransactions({
-                db,
-                items: [
-                    makeTx({
-                        id: 'STALE',
-                        swapGroupDetail: {
-                            assetInId: '0',
-                            assetInUnitName: '',
-                            assetOutId: '31566704',
-                            assetOutUnitName: 'USDC',
-                            amountIn: new Decimal(1000000),
-                            amountOut: new Decimal(5000000),
-                        } as unknown as TransactionHistoryItem['swapGroupDetail'],
-                    }),
-                ],
-                accountAddress: 'ACCT1',
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
-            await clearChainData('STALE')
-
-            await persistResolvedSwapAssetFacts({
-                db,
-                scope: scopeForLegacyNetwork('mainnet'),
-                ids: ['STALE'],
-            })
-
-            expect((await readStored('STALE')).algorand).toBeNull()
-            const [row] = await getTransactionHistory({
-                db,
-                accountAddress: 'ACCT1',
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
-            expect(row.swapGroupDetail?.assetInDecimals).toBe(6)
-        })
-
-        it('writes resolved swap facts to chain_data too', async () => {
+        it('writes resolved swap facts to chain_data', async () => {
             await upsertTransactions({
                 db,
                 items: [
