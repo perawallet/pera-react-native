@@ -80,7 +80,7 @@ const seedUnfunded = async (
         accountAddress: address,
         assetId: '0',
         scope: scopeForLegacyNetwork(network),
-        amount: '0',
+        amount: new Decimal(0),
     })
 }
 

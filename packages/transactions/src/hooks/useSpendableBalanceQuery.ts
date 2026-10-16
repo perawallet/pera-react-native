@@ -41,7 +41,7 @@ export const useSpendableBalanceQuery = (
                       address,
                       input.asset,
                       input.scope,
-                      input.fee.toString(),
+                      input.fee,
                   )
                 : [MODULE_PREFIX, 'spendable-balance'],
         queryFn:

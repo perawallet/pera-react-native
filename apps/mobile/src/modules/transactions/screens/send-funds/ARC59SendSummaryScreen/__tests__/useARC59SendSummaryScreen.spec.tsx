@@ -305,7 +305,7 @@ describe('useARC59SendSummaryScreen', () => {
         renderHook(() => useARC59SendSummaryScreen())
 
         expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
-            requiredBalance: '0.300000 ALGO',
+            requiredBalanceLabel: '0.300000 ALGO',
         })
     })
 

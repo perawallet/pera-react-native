@@ -149,13 +149,13 @@ describe('Flow: Settings → Network selection', () => {
             accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: MAINNET_SCOPE,
-            amount: '100000000', // 100 ALGO
+            amount: new Decimal('100000000'), // 100 ALGO
         })
         await insertAssetHolding({
             accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: TESTNET_SCOPE,
-            amount: '7000000', // 7 ALGO
+            amount: new Decimal('7000000'), // 7 ALGO
         })
 
         // Compose `useNetwork` + `useAccountBalancesQuery` in one

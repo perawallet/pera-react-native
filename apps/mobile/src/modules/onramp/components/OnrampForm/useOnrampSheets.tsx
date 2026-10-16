@@ -26,8 +26,8 @@ import { OnrampSenderAddressContent } from '../OnrampSenderAddressContent'
 
 type UseOnrampSheetsParams = {
     quotes: RampQuote[]
-    /** Raw source amount string — the provider sheet ranks XO quotes with it. */
-    sourceAmount: string
+    /** Display units; the provider sheet ranks XO quotes with it. */
+    sourceAmount: Nullable<Decimal>
     selectedQuoteId: Nullable<string>
     selectQuote: (quoteId: string) => void
     selectedPaymentMethodId: Nullable<string>

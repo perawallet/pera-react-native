@@ -75,9 +75,16 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
+// The browser registers no chain that serves one, and its request holds bigints
+// that cannot cross a message hop.
+const refuseSendTransaction = (): never => {
+    throw new Error('send-transaction cannot cross a browser message hop')
+}
+
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
+    if (operation.type === 'send-transaction') return refuseSendTransaction()
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -122,6 +129,7 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
+    if (result.type === 'send-transaction') return refuseSendTransaction()
     if (result.type !== 'sign-data') return result
     return {
         type: 'sign-data',

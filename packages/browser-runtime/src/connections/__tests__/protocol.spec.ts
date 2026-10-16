@@ -105,6 +105,21 @@ describe('wallet operation wire codec', () => {
         expect(decodeWalletOperationResult(wire)).toEqual(result)
     })
 
+    it('refuses to encode a send-transaction operation or result, whose bigints cannot cross a message hop', () => {
+        expect(() =>
+            encodeWalletOperation({
+                type: 'send-transaction',
+                request: { value: 1n },
+            }),
+        ).toThrow(/send-transaction/)
+        expect(() =>
+            encodeWalletOperationResult({
+                type: 'send-transaction',
+                txId: '0xabc',
+            }),
+        ).toThrow(/send-transaction/)
+    })
+
     it('leaves a sign-transactions result untouched', () => {
         const result = {
             type: 'sign-transactions' as const,

@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { Decimal } from 'decimal.js'
 
 const { withdrawWalletBalance } = vi.hoisted(() => ({
     withdrawWalletBalance: vi.fn(),
@@ -67,12 +68,13 @@ describe.each(SCOPES)('useWithdrawWalletBalanceMutation ($chainId)', SCOPE => {
                 () => useWithdrawWalletBalanceMutation(SCOPE, kind),
                 { wrapper },
             )
-            result.current.mutate({ amount: '10.5' })
+            const amount = new Decimal('10.5')
+            result.current.mutate({ amount })
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
             expect(withdrawWalletBalance).toHaveBeenCalledWith({
                 kind,
-                amount: '10.5',
+                amount,
                 scope: SCOPE,
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
@@ -93,7 +95,7 @@ describe.each(SCOPES)('useWithdrawWalletBalanceMutation ($chainId)', SCOPE => {
                 useWithdrawWalletBalanceMutation(SCOPE, CardWalletKind.Reward),
             { wrapper },
         )
-        result.current.mutate({ amount: '1' })
+        result.current.mutate({ amount: new Decimal('1') })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
     })

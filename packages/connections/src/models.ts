@@ -31,7 +31,7 @@ import type {
 export type { SourceType }
 
 /**
- * The last four are routed by a chain's WalletConnect support and refused by
+ * The last three are routed by a chain's WalletConnect support and refused by
  * the registry until each gains a `WalletOperation` variant and a validator.
  */
 export const WALLET_OPERATION_TYPES = [
@@ -55,11 +55,18 @@ export type WalletOperation =
           type: 'sign-data'
           payload: AuthDataSignableData | PeraArbitraryDataMessage[]
       }
+    | {
+          type: 'send-transaction'
+          /** Opaque here: only the chain whose `sendTransaction.validate` produced it reads it. */
+          request: unknown
+      }
 
 /** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
     | { type: 'sign-transactions'; signed: Nullable<string>[] }
     | { type: 'sign-data'; signatures: Uint8Array[] }
+    /** `txId` is the submitted transaction's chain-native id. */
+    | { type: 'send-transaction'; txId: string }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =

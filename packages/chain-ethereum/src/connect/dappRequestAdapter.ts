@@ -10,10 +10,17 @@
  limitations under the License
  */
 
+import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
+import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumKindIdOf } from '../accounts/local-key-kinds'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
+import {
+    buildEthereumSendTransaction,
+    validateEthereumSendTransaction,
+    type EthereumSendTransactionRequest,
+} from './sendTransaction'
 import { ethereumWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
@@ -23,7 +30,9 @@ const refuseTransactionGroup = (): never => {
     throw new Error(NO_TRANSACTION_GROUP)
 }
 
-export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
+export const createEthereumDappRequestAdapter = (
+    ctx: ChainContext,
+): DappRequestChainAdapter => ({
     chainId: ETHEREUM_CHAIN_ID,
     relayableErrorNames: [],
     // The kind id, not a wire name: no Ethereum bridge vocabulary exists to map to.
@@ -51,4 +60,20 @@ export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
     }),
 
     useEnqueueTransactionSigning: () => refuseTransactionGroup,
-}
+
+    // The v2 handler checked the envelope chain against the selected network
+    // in the same tick; the pipeline re-checks the scope before it signs.
+    sendTransaction: {
+        validate: (params, authorizedAccounts) =>
+            validateEthereumSendTransaction(params, {
+                authorizedAccounts,
+                eip155ChainId: eip155ChainIdOfNetwork(ctx.getScope().networkId),
+            }),
+        // `validate` is the only producer of the request.
+        build: request =>
+            buildEthereumSendTransaction(
+                ctx,
+                request as EthereumSendTransactionRequest,
+            ),
+    },
+})

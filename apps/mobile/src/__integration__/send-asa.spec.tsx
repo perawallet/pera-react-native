@@ -169,7 +169,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '10000000',
+            amount: new Decimal('10000000'),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(sender),
@@ -245,7 +245,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             accountAddress: address,
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '10000000',
+            amount: new Decimal('10000000'),
         })
         await seedAlgorandAccountState({
             accountAddress: address,
@@ -381,13 +381,13 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             accountAddress: addressOf(sender),
             assetId: '0',
             scope: MAINNET_SCOPE,
-            amount: '5000000',
+            amount: new Decimal('5000000'),
         })
         await insertAssetHolding({
             accountAddress: addressOf(sender),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '10000000',
+            amount: new Decimal('10000000'),
             native: { family: 'algorand', isFrozen: true },
         })
         await seedAlgorandAccountState({

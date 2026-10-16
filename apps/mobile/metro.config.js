@@ -21,8 +21,10 @@ const fs = require('fs');
 const buildGates = require('./metro-build-gates');
 const {
     DEVELOPER_GALLERY_MODULES,
+    E2E_FIXTURE_MODULES,
     ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isE2eFixturesIncluded,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,
@@ -243,6 +245,18 @@ console.log(
     `[metro] ethereum chain: ${ethereumIncluded ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
 );
 
+// Keyed on its own opt-in flag rather than the channel: staging builds go to
+// testers, and a deeplink that rewrites wallet state must not ride along.
+const e2eFixturesIncluded = isE2eFixturesIncluded({
+    e2eFixtures: process.env.E2E_FIXTURES,
+    bakedAppEnvironment,
+    appEnv: process.env.APP_ENV,
+});
+
+console.log(
+    `[metro] e2e fixtures: ${e2eFixturesIncluded ? 'included' : 'stubbed'} (E2E_FIXTURES=${process.env.E2E_FIXTURES ?? 'unset'})`,
+);
+
 const buildStubs = {
     ...(localeTourEnabled ? {} : localeTourStubs),
     ...(migrationDevToolsEnabled ? {} : migrationDevToolsStubs),
@@ -250,6 +264,7 @@ const buildStubs = {
         ? {}
         : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
     ...(ethereumIncluded ? {} : toStubMap(projectRoot, ETHEREUM_CHAIN_MODULES)),
+    ...(e2eFixturesIncluded ? {} : toStubMap(projectRoot, E2E_FIXTURE_MODULES)),
 };
 
 // AsyncStorage is not a Pera dependency and must never become one: it would

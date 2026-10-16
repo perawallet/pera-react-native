@@ -122,7 +122,10 @@ export const computeBidaliBalances = (
     }
 }
 
-const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
+const buildBidaliProviderJS = (
+    apiKey: string,
+    balancesJson: string,
+): string => {
     return `
         (function() {
             function sendRPC(method, params) {
@@ -139,7 +142,7 @@ const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
                 key: '${apiKey}',
                 name: 'perawallet',
                 paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES_JSON},
-                balances: ${balances},
+                balances: ${balancesJson},
 
                 onPaymentRequest: function(req) {
                     if (req == null || typeof req !== 'object') return;

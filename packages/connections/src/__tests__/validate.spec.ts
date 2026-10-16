@@ -99,6 +99,76 @@ describe('validateRawMessage', () => {
         }
     })
 
+    describe('send-transaction', () => {
+        const validate = vi.fn()
+
+        beforeEach(() => {
+            validate.mockReset()
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...fixtureAdapter,
+                sendTransaction: { validate, build: vi.fn() },
+            })
+        })
+
+        it("carries the chain's validated request, and hands the validator the session accounts", () => {
+            validate.mockReturnValue({ ok: true, request: { to: 'TO' } })
+
+            const result = validateRawMessage(
+                request('send-transaction', { from: 'AAAA' }),
+            )
+
+            expect(validate).toHaveBeenCalledWith({ from: 'AAAA' }, ['AAAA'])
+            expect(result).toMatchObject({
+                ok: true,
+                message: {
+                    operation: {
+                        type: 'send-transaction',
+                        request: { to: 'TO' },
+                    },
+                },
+            })
+        })
+
+        it('refuses an unauthorized account with its own code and failure', () => {
+            validate.mockReturnValue({
+                ok: false,
+                failure: 'unauthorized-account',
+                message: 'not yours',
+            })
+
+            const result = validateRawMessage(request('send-transaction', {}))
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({
+                    code: 'unauthorized-account',
+                    failure: 'unauthorized-account',
+                    message: 'not yours',
+                })
+            }
+        })
+
+        it('refuses invalid params as an invalid payload', () => {
+            validate.mockReturnValue({
+                ok: false,
+                failure: 'invalid-params',
+                message: 'bad value',
+            })
+
+            const result = validateRawMessage(request('send-transaction', {}))
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({
+                    code: 'invalid-payload',
+                    failure: 'invalid-params',
+                    message: 'bad value',
+                })
+            }
+        })
+    })
+
     it('refuses a message naming a chain with no registered adapter', () => {
         const result = validateRawMessage(
             request(

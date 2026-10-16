@@ -21,6 +21,9 @@ import type { AnyParsedDeeplink } from '@perawallet/wallet-core-deeplinks'
  */
 export type DevLocaleTourDeeplinkType = 'DEV_LOCALE_TOUR'
 
+/** Same no-runtime-member rule as the locale tour, for the E2E fixture hook. */
+export type DevE2eFixtureDeeplinkType = 'DEV_E2E_FIXTURE'
+
 /**
  * `perawallet://app/dev/locale-tour?locale=<tag>&step=<id>` drives one
  * screenshot-tour step; `?locale=<tag>&run=all` drives every step in the
@@ -39,4 +42,21 @@ export interface DevLocaleTourDeeplink {
     run?: 'all'
 }
 
-export type AppDeeplink = AnyParsedDeeplink | DevLocaleTourDeeplink
+export type E2eFixtureName = 'home' | 'contacts-empty' | 'contacts-one'
+
+/**
+ * `perawallet://app/dev/e2e-fixture?name=<fixture>` puts the app into a named
+ * state for a device test. Only names, never data: the URL cannot carry
+ * contacts, addresses or key material. Ships only in a bundle built with
+ * E2E_FIXTURES=1 (see metro-build-gates.js).
+ */
+export interface DevE2eFixtureDeeplink {
+    type: DevE2eFixtureDeeplinkType
+    sourceUrl: string
+    fixture: E2eFixtureName
+}
+
+export type AppDeeplink =
+    | AnyParsedDeeplink
+    | DevLocaleTourDeeplink
+    | DevE2eFixtureDeeplink

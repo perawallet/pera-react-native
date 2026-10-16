@@ -178,7 +178,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
             voteFirst: params.votefst,
             voteLast: params.votelst,
             voteKeyDilution: params.votekd,
-            fee: params.fee,
+            feeParam: params.fee,
             note: params.note,
             xnote: params.xnote,
         })

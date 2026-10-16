@@ -116,7 +116,7 @@ const seedBalances = async () => {
         accountAddress: ALGO25_TEST_ADDRESS,
         assetId: '0',
         scope: ALGO_SCOPE,
-        amount: '10000000',
+        amount: new Decimal('10000000'),
     })
     await upsertAssetPrices({
         prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
@@ -135,7 +135,7 @@ const seedBalances = async () => {
         accountAddress: ETH_ADDRESS,
         assetId: eth.assetId,
         scope: ETH_SCOPE,
-        amount: '1500000000000000000',
+        amount: new Decimal('1500000000000000000'),
     })
     await upsertAssetPrices({
         prices: [{ assetId: eth.assetId, usdPrice: new Decimal('2000') }],

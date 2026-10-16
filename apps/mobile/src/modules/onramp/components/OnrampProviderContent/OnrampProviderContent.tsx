@@ -28,8 +28,8 @@ import { useStyles } from './styles'
 
 export type OnrampProviderContentProps = {
     quotes: RampQuote[]
-    /** Raw source amount string — XO destination amounts are computed from it. */
-    sourceAmount: string
+    /** Display units; XO destination amounts are computed from it. */
+    sourceAmount: Nullable<Decimal>
     selectedQuoteId: Nullable<string>
     /** Narrows the list to one row per provider; null lists every quote. */
     selectedPaymentMethodId: Nullable<string>

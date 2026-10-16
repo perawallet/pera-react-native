@@ -31,17 +31,18 @@ export const parseRampAmount = (value: string): Nullable<Decimal> =>
  * Destination (receive) amount for a quote, in display units. Meld carries it
  * directly on the quote; XO returns a fixed rate, so it is computed as
  * `sourceAmount * rate - minerFee` (ported from the web `useSwapForm.ts`).
- * An empty/unparseable source amount computes as 0.
+ * `sourceAmount` is in display units; null (nothing valid entered) computes as 0.
  */
 export const quoteDestinationAmount = (
     quote: RampQuote,
-    sourceAmount: string,
+    sourceAmount: Nullable<Decimal>,
 ): Decimal => {
     if (quote.kind === 'meld') {
         return quote.destinationAmount
     }
-    const parsed = parseRampAmount(sourceAmount) ?? new Decimal(0)
-    return parsed.mul(quote.amount.value).minus(quote.minerFee.value)
+    return (sourceAmount ?? new Decimal(0))
+        .mul(quote.amount.value)
+        .minus(quote.minerFee.value)
 }
 
 /**
@@ -64,7 +65,7 @@ export const filterQuotesByPaymentMethod = (
  */
 export const quoteDestinationValueInUsd = (
     quote: RampQuote,
-    sourceAmount: string,
+    sourceAmount: Nullable<Decimal>,
     priceInUsd: Nullable<Decimal>,
 ): Nullable<Decimal> =>
     priceInUsd === null
@@ -74,7 +75,7 @@ export const quoteDestinationValueInUsd = (
 /** Quotes sorted by destination amount, highest (best offer) first. */
 export const sortQuotesByDestinationDesc = (
     quotes: RampQuote[],
-    sourceAmount: string,
+    sourceAmount: Nullable<Decimal>,
 ): RampQuote[] =>
     [...quotes].sort((a, b) =>
         quoteDestinationAmount(b, sourceAmount).comparedTo(
@@ -85,7 +86,7 @@ export const sortQuotesByDestinationDesc = (
 /** The quote with the highest destination amount (the "best offer"). */
 export const pickBestQuote = (
     quotes: RampQuote[],
-    sourceAmount: string,
+    sourceAmount: Nullable<Decimal>,
 ): Nullable<RampQuote> => {
     if (quotes.length === 0) return null
     return quotes.reduce((best, candidate) =>

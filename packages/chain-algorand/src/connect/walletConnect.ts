@@ -202,10 +202,19 @@ const screenDataRequest = (
  * `Nullable<string>[]`, one entry per transaction the request named, and
  * ARC-60's is the signatures base64-encoded.
  */
-const toWireResult = (result: WalletOperationResult): unknown =>
-    result.type === 'sign-transactions'
-        ? result.signed
-        : result.signatures.map(signature => encodeToBase64(signature))
+const toWireResult = (result: WalletOperationResult): unknown => {
+    switch (result.type) {
+        case 'sign-transactions': {
+            return result.signed
+        }
+        case 'sign-data': {
+            return result.signatures.map(signature => encodeToBase64(signature))
+        }
+        default: {
+            throw new Error(`Algorand routes no ${result.type} request`)
+        }
+    }
+}
 
 /**
  * Mirrors `AlgorandPermission` and `GET_EMPTY_SIGNATURES_METHOD` in

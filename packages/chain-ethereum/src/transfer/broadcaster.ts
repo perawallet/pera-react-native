@@ -95,8 +95,8 @@ export const createEthereumBroadcasterAdapter = (
                     const cause = toError(error)
                     throw new TransportError(cause.message, cause)
                 }
-                // An in-app send waits on the ids. The transactions are already
-                // out, so a failing answer must not fail the submission.
+                // The transaction is in flight, so a failing callback must not
+                // fail the pipeline; the dApp waits until its request expires.
                 if (source.callbacks?.approve) {
                     try {
                         await source.callbacks.approve(result, { txIds })

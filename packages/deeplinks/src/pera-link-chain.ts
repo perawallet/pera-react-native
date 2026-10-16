@@ -53,7 +53,8 @@ export type PeraKeyregParams = {
     voteFirst?: string
     voteLast?: string
     voteKeyDilution?: string
-    fee?: string
+    /** Raw query text; parsed as base units by {@link toPeraKeyregAction}. */
+    feeParam?: string
     note?: string
     xnote?: string
 }
@@ -77,12 +78,12 @@ const inferKeyregType = (params: PeraKeyregParams): 'online' | 'offline' =>
         ? 'online'
         : 'offline'
 
-/** `undefined` when `fee` is present and not digits. */
+/** `undefined` when `feeParam` is present and not digits. */
 export const toPeraKeyregAction = (
     params: PeraKeyregParams,
 ): ChainActionData | undefined => {
-    const fee = params.fee ? readBaseUnits(params.fee) : undefined
-    if (params.fee && !fee) return undefined
+    const fee = params.feeParam ? readBaseUnits(params.feeParam) : undefined
+    if (params.feeParam && !fee) return undefined
 
     return {
         family: 'algorand',

@@ -45,25 +45,16 @@ const upperMedian = (values: bigint[]): bigint =>
               Math.floor(values.length / 2)
           ]
 
-/** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
-export const readTransferFees = async (
+/** Reads EIP-1559 fees at each preset's fee-history percentile. */
+export const readEthereumFeePresets = async (
     client: PublicClient,
-    call: EthereumTransferCall,
-): Promise<EthereumTransferFees> => {
-    const [gas, history] = await Promise.all([
-        client.estimateGas({
-            account: call.from,
-            to: call.to,
-            value: call.value,
-            data: call.data,
-        }),
-        client.getFeeHistory({
-            blockCount: FEE_HISTORY_BLOCK_COUNT,
-            rewardPercentiles: FEE_PRESETS.map(
-                preset => FEE_PRESET_PERCENTILE[preset],
-            ),
-        }),
-    ])
+): Promise<Omit<EthereumTransferFees, 'gas'>> => {
+    const history = await client.getFeeHistory({
+        blockCount: FEE_HISTORY_BLOCK_COUNT,
+        rewardPercentiles: FEE_PRESETS.map(
+            preset => FEE_PRESET_PERCENTILE[preset],
+        ),
+    })
     // The last entry is the next block's base fee.
     const baseFeePerGas = history.baseFeePerGas.at(-1)
     if (baseFeePerGas === undefined) {
@@ -91,7 +82,24 @@ export const readTransferFees = async (
             ]
         }),
     ) as Record<FeePreset, FeeValuesEIP1559>
-    return { gas, baseFeePerGas, presets }
+    return { baseFeePerGas, presets }
+}
+
+/** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
+export const readTransferFees = async (
+    client: PublicClient,
+    call: EthereumTransferCall,
+): Promise<EthereumTransferFees> => {
+    const [gas, fees] = await Promise.all([
+        client.estimateGas({
+            account: call.from,
+            to: call.to,
+            value: call.value,
+            data: call.data,
+        }),
+        readEthereumFeePresets(client),
+    ])
+    return { gas, ...fees }
 }
 
 /** Prices each preset at gas x (base fee + tip), capped at gas x maxFeePerGas, in wei. */

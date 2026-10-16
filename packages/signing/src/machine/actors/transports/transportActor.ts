@@ -27,26 +27,8 @@ import {
     plannerAdapterForScope,
     plannerChainAdapters,
 } from '../../../chain-adapter'
-import { CannotSignError, TransportError } from '../../../pipeline/errors'
+import { CannotSignError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
-
-// A chain without a signing planner has no atomic groups, so a request it
-// signs comes back as one result and there is no group order to restore.
-const mergeSigningResults = (
-    scope: ChainScope,
-    signingResults: SigningResult[],
-): SigningResult => {
-    if (plannerChainAdapters.has(scope.chainId)) {
-        return plannerAdapterForScope(scope).mergeSigningResults(signingResults)
-    }
-    const [result] = signingResults
-    if (signingResults.length !== 1 || !result) {
-        throw new TransportError(
-            `Chain ${scope.chainId} delivers one signing result, got ${signingResults.length}`,
-        )
-    }
-    return result
-}
 
 export type TransportActorInput = {
     signingResults: SigningResult[]
@@ -62,6 +44,23 @@ export type TransportActorInput = {
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
     scope: ChainScope
+}
+
+// A chain with no planner adapter has nothing to merge, so it delivers its
+// single group as signed.
+const mergeResults = (
+    scope: ChainScope,
+    signingResults: SigningResult[],
+): SigningResult => {
+    if (plannerChainAdapters.has(scope.chainId)) {
+        return plannerAdapterForScope(scope).mergeSigningResults(signingResults)
+    }
+    if (signingResults.length !== 1) {
+        throw new Error(
+            `Chain ${scope.chainId} cannot merge ${signingResults.length} signing results`,
+        )
+    }
+    return signingResults[0]
 }
 
 /**
@@ -124,7 +123,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         }
 
         const transport = createTransport(source, authAccount)
-        const merged = mergeSigningResults(scope, signingResults)
+        const merged = mergeResults(scope, signingResults)
 
         return transport.send(merged, source, authAddress)
     },

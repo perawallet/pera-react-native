@@ -51,14 +51,14 @@ describe('pera-link-chain', () => {
             expect(
                 toPeraKeyregAction({
                     sender: 'S',
-                    fee: '2000',
+                    feeParam: '2000',
                 })?.fee?.toFixed(),
             ).toBe('2000')
         })
 
         it('is undefined for a fee that is not digits', () => {
             expect(
-                toPeraKeyregAction({ sender: 'S', fee: 'abc' }),
+                toPeraKeyregAction({ sender: 'S', feeParam: 'abc' }),
             ).toBeUndefined()
         })
     })

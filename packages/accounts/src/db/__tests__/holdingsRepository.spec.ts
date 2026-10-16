@@ -540,6 +540,26 @@ describe('account holdings repository', () => {
             expect(result[0].amount).toEqual(new Decimal(0))
         })
 
+        it('stores the given base-unit amount', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                scope: MAINNET_SCOPE,
+                amount: new Decimal('12345678901234567890'),
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(result[0].amount).toEqual(
+                new Decimal('12345678901234567890'),
+            )
+        })
+
         it('does not overwrite existing holding on conflict', async () => {
             await refreshAccountHoldings({
                 db,

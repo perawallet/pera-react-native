@@ -131,10 +131,8 @@ type StoredSwapGroupDetail = Omit<
     'amountIn' | 'amountOut'
 > & {
     /** Base units, as a decimal string. */
-    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
     amountIn: string
     /** Base units, as a decimal string. */
-    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
     amountOut: string
 }
 
@@ -153,7 +151,6 @@ type StoredAlgorandChainData = {
     swapGroupDetail: Nullable<StoredSwapGroupDetail>
     groupId: Nullable<string>
     /** Base units, as a decimal string. */
-    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
     closeAmount: Nullable<string>
 }
 

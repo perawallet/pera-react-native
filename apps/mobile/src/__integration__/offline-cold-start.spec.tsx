@@ -138,7 +138,7 @@ const seedPreviouslySyncedAccount = async () => {
         accountAddress: addressOf(ACCOUNT),
         assetId: '0',
         scope: scopeForLegacyNetwork(NETWORK),
-        amount: '10000000', // 10 ALGO in base units
+        amount: new Decimal('10000000'), // 10 ALGO in base units
     })
     await upsertAssetPrices({
         prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
@@ -264,7 +264,7 @@ describe('Flow: Cold start with no connectivity', () => {
             accountAddress: addressOf(ACCOUNT),
             assetId: '0',
             scope: scopeForLegacyNetwork(NETWORK),
-            amount: '10000000',
+            amount: new Decimal('10000000'),
         })
 
         onlineManager.setOnline(false)

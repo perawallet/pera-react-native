@@ -14,5 +14,6 @@ export type SwapScreenParams = {
     assetInId?: string
     assetOutId?: string
     /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
+    // lanekeep-ignore-next-line pera/amount-types reason: React Navigation params must be serializable, so the amount travels as a string
     payAmount?: string
 }

@@ -37,7 +37,6 @@ import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumDeeplinkAdapter } from '../deeplinks/adapter'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
-import { ethereumDappRequestAdapter } from '../connect/dappRequestAdapter'
 import { ethereumHistoryAdapter } from '../history'
 import { registerChain } from '../register'
 import { ethereumPlannerAdapter } from '../signing/adapter'
@@ -86,8 +85,8 @@ describe('registerChain', () => {
         expect(historyChainAdapters.get('ethereum')).toBe(
             ethereumHistoryAdapter,
         )
-        expect(dappRequestChainAdapters.get('ethereum')).toBe(
-            ethereumDappRequestAdapter,
+        expect(dappRequestChainAdapters.get('ethereum').chainId).toBe(
+            'ethereum',
         )
         expect(deeplinkAdapters.get('ethereum')).toBe(ethereumDeeplinkAdapter)
     })

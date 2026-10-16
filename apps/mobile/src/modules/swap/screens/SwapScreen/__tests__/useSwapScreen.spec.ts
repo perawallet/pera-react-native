@@ -12,6 +12,7 @@
 
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { useSwapScreen } from '../useSwapScreen'
 
 type Account = { id: string }
@@ -140,9 +141,23 @@ describe('useSwapScreen', () => {
 
         expect(result.current.initialPayAmount).toEqual({
             assetId: '123',
-            amount: '2.5',
+            amount: new Decimal('2.5'),
         })
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
+    })
+
+    it('returns the same resumed amount across renders', () => {
+        routeParams.current = {
+            assetInId: '123',
+            assetOutId: '31566704',
+            payAmount: '2.5',
+        }
+
+        const { result, rerender } = renderHook(() => useSwapScreen())
+        const first = result.current.initialPayAmount
+        rerender()
+
+        expect(result.current.initialPayAmount).toBe(first)
     })
 
     it('has no amount to restore for an ordinary visit', () => {

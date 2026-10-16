@@ -90,7 +90,11 @@ const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 // the key.
 const ETHEREUM_SENDER: WalletAccount = {
     id: 'eth-sender',
-    custody: { kind: 'local', seed: SeedScheme.Bip39 },
+    custody: {
+        kind: 'local',
+        seed: SeedScheme.Bip39,
+        hd: { account: 0, keyIndex: 0 },
+    },
     chains: { ethereum: { address: SENDER, keyPairId: 'eth-key' } },
     name: 'Eth sender',
 }
@@ -210,9 +214,11 @@ describe('Flow: send from an Ethereum account', () => {
                 responses: {
                     eth_sendRawTransaction: params => {
                         sentRawTransactions.push(params[0] as string)
-                        return DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction(
-                            params,
-                        )
+                        const respond =
+                            DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
+                        return typeof respond === 'function'
+                            ? respond(params)
+                            : respond
                     },
                 },
             }),

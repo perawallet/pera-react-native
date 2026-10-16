@@ -27,9 +27,9 @@ import { useTheme } from '@rneui/themed'
 type OnrampAmountSectionPayProps = {
     variant: 'pay'
     token: Nullable<RampToken>
-    /** Raw source amount string owned by the form (`sourceAmount`). */
-    amount: string
-    onAmountChange: (value: string) => void
+    /** Raw text of the pay field, owned by the form. */
+    amountText: string
+    onAmountTextChange: (text: string) => void
     onAssetPress: () => void
 }
 
@@ -66,9 +66,11 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     } = useOnrampAmountSection({
         variant,
         token,
-        amount: props.amount,
+        amountText: variant === 'pay' ? props.amountText : '',
+        amount: variant === 'receive' ? props.amount : null,
         isLoading: variant === 'receive' ? props.isLoading : false,
-        onAmountChange: variant === 'pay' ? props.onAmountChange : undefined,
+        onAmountTextChange:
+            variant === 'pay' ? props.onAmountTextChange : undefined,
     })
 
     return (

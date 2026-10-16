@@ -110,6 +110,38 @@ export const validateRawMessage = (
 
     const { rawOperation } = raw
 
+    if (rawOperation.type === 'send-transaction') {
+        const { sendTransaction } = dappRequestChainAdapters.get(raw.chainId)
+        if (!sendTransaction) {
+            return {
+                ok: false,
+                error: new ConnectionsError(
+                    'unsupported-operation',
+                    `${rawOperation.type} requests are not served`,
+                ),
+            }
+        }
+        const result = sendTransaction.validate(
+            rawOperation.params,
+            raw.authorizedAccounts,
+        )
+        if (!result.ok) {
+            return {
+                ok: false,
+                error: new ConnectionsError(
+                    result.failure === 'unauthorized-account'
+                        ? 'unauthorized-account'
+                        : 'invalid-payload',
+                    result.message,
+                ),
+            }
+        }
+        return accepted(raw, {
+            type: 'send-transaction',
+            request: result.request,
+        })
+    }
+
     if (
         rawOperation.type !== 'sign-transactions' &&
         rawOperation.type !== 'sign-data'

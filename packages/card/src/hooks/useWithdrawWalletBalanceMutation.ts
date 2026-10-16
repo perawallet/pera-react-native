@@ -11,6 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { withdrawWalletBalance } from '../api/wallet-balance'
 import type { CardWalletKind, WalletWithdrawResult } from '../models'
@@ -18,8 +19,8 @@ import { cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type WithdrawWalletBalanceVariables = {
-    /** Decimal string in display units (e.g. "10.5"). */
-    amount: string
+    /** Display units. */
+    amount: Decimal
 }
 
 export type UseWithdrawWalletBalanceMutationResult = CardMutationResult<

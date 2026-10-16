@@ -15,7 +15,6 @@ import type { Decimal } from 'decimal.js'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
-    parseRampAmount,
     type RampHistoryItem,
     type RampPair,
     type XoOrder,
@@ -41,19 +40,19 @@ export type XoLimitViolation =
     | { type: 'above'; max: string }
 
 /**
- * Whether the entered source amount violates the XO quote's min/max limits.
- * Returns null when the amount is empty/unparseable or within range.
+ * Whether the entered source amount (display units) violates the XO quote's
+ * min/max limits. Returns null when no valid amount is entered or it is within
+ * range.
  */
 export const getXoLimitViolation = (
     quote: XoQuote,
-    sourceAmount: string,
+    sourceAmount: Nullable<Decimal>,
 ): Nullable<XoLimitViolation> => {
-    const parsed = parseRampAmount(sourceAmount)
-    if (parsed === null) return null
-    if (parsed.lessThan(quote.min.value)) {
+    if (sourceAmount === null) return null
+    if (sourceAmount.lessThan(quote.min.value)) {
         return { type: 'below', min: quote.min.value.toString() }
     }
-    if (parsed.greaterThan(quote.max.value)) {
+    if (sourceAmount.greaterThan(quote.max.value)) {
         return { type: 'above', max: quote.max.value.toString() }
     }
     return null

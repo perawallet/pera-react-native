@@ -77,7 +77,7 @@ export const useWalletWithdrawConfirmationSheet = ({
         }
         try {
             await withdraw.mutateAsync({
-                amount: amount.toFixed(USDC_DISPLAY_PRECISION),
+                amount: amount.toDecimalPlaces(USDC_DISPLAY_PRECISION),
             })
             resolve('confirm')
         } catch (error) {

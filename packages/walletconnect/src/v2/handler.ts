@@ -28,6 +28,8 @@ import type {
 } from '@perawallet/wallet-core-connections'
 import {
     dappRequestChainAdapters,
+    dappRequestFailureOf,
+    type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import type {
@@ -516,6 +518,7 @@ export const createWalletConnectV2Handler = (
                 new WalletConnectPermissionError(
                     `WalletConnect v2 does not serve ${method}`,
                 ),
+                { support, failure: 'unsupported-method' },
             )
             return
         }
@@ -544,6 +547,7 @@ export const createWalletConnectV2Handler = (
                 id,
                 'UNSUPPORTED_CHAINS',
                 new WalletConnectInvalidNetworkError(),
+                { support, failure: 'unselected-chain' },
             )
             return
         }
@@ -558,6 +562,7 @@ export const createWalletConnectV2Handler = (
                 topic,
                 id,
                 route.answer(authorizedAccounts, networkId),
+                support,
             )
             return
         }
@@ -599,15 +604,19 @@ export const createWalletConnectV2Handler = (
                     jsonrpc: '2.0',
                     result: support.toWireResult(result),
                 }),
-            reject: async error =>
+            reject: async error => {
+                const failure = dappRequestFailureOf(error)
                 await respond({
                     id,
                     jsonrpc: '2.0',
                     error: {
-                        code: JSON_RPC_SERVER_ERROR,
+                        code:
+                            (failure && support.toWireErrorCode?.(failure)) ??
+                            JSON_RPC_SERVER_ERROR,
                         message: error.message,
                     },
-                }),
+                })
+            },
         })
     }
 
@@ -618,6 +627,7 @@ export const createWalletConnectV2Handler = (
         topic: string,
         id: number,
         result: Nullable<unknown>,
+        support: WalletConnectSupport,
     ): void => {
         if (!client || !sdk) return
         void client
@@ -625,11 +635,10 @@ export const createWalletConnectV2Handler = (
                 topic,
                 response:
                     result === null || result === undefined
-                        ? {
-                              id,
-                              jsonrpc: '2.0',
-                              error: sdk.getSdkError('UNSUPPORTED_CHAINS'),
-                          }
+                        ? refusalResponse(id, 'UNSUPPORTED_CHAINS', {
+                              support,
+                              failure: 'unselected-chain',
+                          })
                         : { id, jsonrpc: '2.0', result },
             })
             .catch((deliveryError: unknown) => {
@@ -642,6 +651,27 @@ export const createWalletConnectV2Handler = (
     }
 
     /**
+     * The SDK's refusal, unless the namespace maps `wire.failure` to a code of
+     * its own: a namespace's dApps may read only the codes their standard names.
+     */
+    const refusalResponse = (
+        id: number,
+        key: 'UNSUPPORTED_METHODS' | 'UNSUPPORTED_CHAINS' | 'USER_DISCONNECTED',
+        wire?: { support: WalletConnectSupport; failure: DappRequestFailure },
+    ): WalletKitJsonRpcResponse => {
+        const sdkError = requireSdk().getSdkError(key)
+        const code = wire?.support.toWireErrorCode?.(wire.failure)
+        return {
+            id,
+            jsonrpc: '2.0',
+            error:
+                code === undefined
+                    ? sdkError
+                    : { code, message: sdkError.message },
+        }
+    }
+
+    /**
      * Refuses a request in the namespace's own terms. Fire and forget: the
      * peer times out if the refusal cannot be delivered, and nothing upstream
      * is waiting on it.
@@ -651,16 +681,13 @@ export const createWalletConnectV2Handler = (
         id: number,
         key: 'UNSUPPORTED_METHODS' | 'UNSUPPORTED_CHAINS' | 'USER_DISCONNECTED',
         error: Error,
+        wire?: { support: WalletConnectSupport; failure: DappRequestFailure },
     ): void => {
         if (client && sdk) {
             void client
                 .respondSessionRequest({
                     topic,
-                    response: {
-                        id,
-                        jsonrpc: '2.0',
-                        error: sdk.getSdkError(key),
-                    },
+                    response: refusalResponse(id, key, wire),
                 })
                 .catch((deliveryError: unknown) => {
                     logger.warn('[WC v2] refusal delivery failed', {
