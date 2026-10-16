@@ -20,8 +20,9 @@ const isSdk = source =>
 // rule's options instead of merging them, so any per-path no-restricted-imports
 // override (the decimal.js ban) would silently drop this boundary. The root
 // config turns it off for chain-algorand, whose `Address` re-export is the
-// sanctioned seam, and for the conformance harness, which builds raw
-// transactions against LocalNet.
+// sanctioned seam, for the conformance harness, which builds raw
+// transactions against LocalNet, and for tests, whose fixtures build real
+// transactions and addresses.
 export const noAlgorandSdkImports = {
     meta: {
         type: 'suggestion',
