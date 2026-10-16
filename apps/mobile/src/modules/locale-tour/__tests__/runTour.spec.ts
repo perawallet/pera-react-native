@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const { mockRunTourStep, mockGetTourSteps } = vi.hoisted(() => ({
     mockRunTourStep: vi.fn(),
@@ -36,6 +36,16 @@ import {
 
 import type { TourStep } from '../types'
 
+// Every step holds CAPTURE_HOLD_MS for the screenshot driver; drain those on
+// fake timers instead of waiting them out.
+const runToCompletion = async (
+    options: Parameters<typeof runTour>[0],
+): Promise<void> => {
+    const run = runTour(options)
+    await vi.runAllTimersAsync()
+    await run
+}
+
 const stubStep = (id: string): TourStep =>
     ({
         id,
@@ -48,6 +58,7 @@ describe('runTour', () => {
     let logged: string[]
 
     beforeEach(() => {
+        vi.useFakeTimers()
         vi.clearAllMocks()
         logged = []
         vi.spyOn(console, 'log').mockImplementation(line => {
@@ -60,11 +71,15 @@ describe('runTour', () => {
         )
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('emits BEGIN with the step count and locale, one SHOT per step in order, then DONE', async () => {
         const steps = [stubStep('scr-a'), stubStep('scr-b'), stubStep('scr-c')]
         mockGetTourSteps.mockReturnValue(steps)
 
-        await runTour({ locale: 'en-XA' })
+        await runToCompletion({ locale: 'en-XA' })
 
         expect(logged).toEqual([
             `${TOUR_BEGIN_MARKER}|3|en-XA`,
@@ -79,7 +94,7 @@ describe('runTour', () => {
         const steps = [stubStep('scr-a'), stubStep('scr-b')]
         mockGetTourSteps.mockReturnValue(steps)
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
 
         expect(mockRunTourStep).toHaveBeenNthCalledWith(1, {
             stepId: 'scr-a',
@@ -94,10 +109,10 @@ describe('runTour', () => {
     it('forwards categories to getTourSteps, and omits the argument when none are given', async () => {
         mockGetTourSteps.mockReturnValue([])
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
         expect(mockGetTourSteps).toHaveBeenCalledWith(undefined)
 
-        await runTour({ locale: 'en', categories: ['sheets'] })
+        await runToCompletion({ locale: 'en', categories: ['sheets'] })
         expect(mockGetTourSteps).toHaveBeenCalledWith(['sheets'])
     })
 
@@ -113,7 +128,7 @@ describe('runTour', () => {
             },
         )
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
 
         expect(logged.some(line => line.includes('scr-a'))).toBe(true)
         expect(
@@ -140,7 +155,7 @@ describe('runTour', () => {
             },
         )
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
 
         expect(logged).toEqual([
             `${TOUR_BEGIN_MARKER}|2|en`,
@@ -170,7 +185,7 @@ describe('runTour', () => {
             },
         )
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
 
         // scr-a (shot), scr-b/c/d (the 3 consecutive navigation-not-ready
         // that trip the threshold) — scr-e is never reached.
@@ -207,7 +222,7 @@ describe('runTour', () => {
             },
         )
 
-        await runTour({ locale: 'en' })
+        await runToCompletion({ locale: 'en' })
 
         expect(mockRunTourStep).toHaveBeenCalledTimes(5)
         expect(logged.some(line => line.includes(NAVIGATION_LOST_REASON))).toBe(
@@ -217,7 +232,6 @@ describe('runTour', () => {
     })
 
     it('waits CAPTURE_HOLD_MS before starting the next step, so the driver has time to screenshot before the app moves on', async () => {
-        vi.useFakeTimers()
         const steps = [stubStep('scr-a'), stubStep('scr-b')]
         mockGetTourSteps.mockReturnValue(steps)
 
@@ -234,8 +248,6 @@ describe('runTour', () => {
 
         await vi.advanceTimersByTimeAsync(CAPTURE_HOLD_MS)
         await runPromise
-
-        vi.useRealTimers()
     })
 
     // Exact strings, not the exported marker constants: apps/mobile/scripts/
@@ -248,7 +260,7 @@ describe('runTour', () => {
         it('emits the literal BEGIN line', async () => {
             mockGetTourSteps.mockReturnValue([stubStep('scr-a')])
 
-            await runTour({ locale: 'en-XA' })
+            await runToCompletion({ locale: 'en-XA' })
 
             expect(logged[0]).toBe('LOCALE_TOUR_BEGIN|1|en-XA')
         })
@@ -256,7 +268,7 @@ describe('runTour', () => {
         it('emits the literal DONE line', async () => {
             mockGetTourSteps.mockReturnValue([])
 
-            await runTour({ locale: 'en' })
+            await runToCompletion({ locale: 'en' })
 
             expect(logged[logged.length - 1]).toBe('LOCALE_TOUR_DONE')
         })
@@ -271,7 +283,7 @@ describe('runTour', () => {
                 async () => 'navigation-not-ready' as const,
             )
 
-            await runTour({ locale: 'en' })
+            await runToCompletion({ locale: 'en' })
 
             expect(logged).toContain(
                 'LOCALE_TOUR_ERR|scr-c|navigation lost — remaining steps unreliable',
@@ -280,7 +292,6 @@ describe('runTour', () => {
     })
 
     it('emits the SHOT marker for a finished step before the hold that follows it, not after', async () => {
-        vi.useFakeTimers()
         const steps = [stubStep('scr-a'), stubStep('scr-b')]
         mockGetTourSteps.mockReturnValue(steps)
 
@@ -295,7 +306,5 @@ describe('runTour', () => {
         await vi.advanceTimersByTimeAsync(CAPTURE_HOLD_MS)
         await vi.advanceTimersByTimeAsync(CAPTURE_HOLD_MS)
         await runPromise
-
-        vi.useRealTimers()
     })
 })
