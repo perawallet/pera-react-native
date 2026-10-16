@@ -13,138 +13,92 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    extractAddressFromScannedUrl,
-    useScannedAddress,
-} from '../useScannedAddress'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
-import { parseDeeplink } from '@modules/deeplink/parser'
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import { algorandAddressCodec } from '@packages/chain-algorand/src/accounts/address-codec'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
+import { useScannedAddress } from '../useScannedAddress'
 
 const mockShowToast = vi.fn()
 
-const mockIsValidAddress = vi.fn<(address: string) => boolean>()
-
-vi.mock('@modules/deeplink/parser', () => ({
-    parseDeeplink: vi.fn(),
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: { chain?: string }) =>
+            params?.chain ? `${key}:${params.chain}` : key,
+    }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
+const ALGORAND_ADDRESS =
+    '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+const ETHEREUM_ADDRESS = '0x52908400098527886E0F7030069857D2E4169EE7'
+const CHAIN_IDS: ChainId[] = [LEGACY_CHAIN_ID]
+
 beforeEach(() => {
-    registerLegacyAddressCodec(address => mockIsValidAddress(address))
+    addressCodecs.register(algorandAddressCodec)
+    registerEthereumChain()
+    registerDeeplinkAdapters()
 })
 
 afterEach(() => {
     addressCodecs.reset()
-})
-
-describe('extractAddressFromScannedUrl', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockIsValidAddress.mockReturnValue(false)
-        vi.mocked(parseDeeplink).mockReturnValue(null)
-    })
-
-    it('returns raw address when it is a valid Algorand address', () => {
-        const rawAddress =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        mockIsValidAddress.mockReturnValue(true)
-
-        expect(extractAddressFromScannedUrl(rawAddress)).toBe(rawAddress)
-        expect(parseDeeplink).not.toHaveBeenCalled()
-    })
-
-    it('extracts address from algorand:// deeplink with address field', () => {
-        const address = 'EXTRACTED_ADDRESS_123'
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'ADDRESS_ACTIONS',
-            address,
-            sourceUrl: `algorand://${address}`,
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl(`algorand://${address}`)).toBe(
-            address,
-        )
-    })
-
-    it('extracts receiverAddress from transfer deeplink', () => {
-        const receiverAddress = 'RECEIVER_ADDRESS_456'
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'ALGO_TRANSFER',
-            receiverAddress,
-            sourceUrl: 'algorand://...',
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl('algorand://...')).toBe(
-            receiverAddress,
-        )
-    })
-
-    it('returns null for unsupported URL', () => {
-        expect(
-            extractAddressFromScannedUrl('https://random-site.com'),
-        ).toBeNull()
-    })
-
-    it('extracts senderAddress from a keyreg deeplink', () => {
-        const senderAddress = 'SENDER_ADDRESS_789'
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'KEYREG',
-            senderAddress,
-            keyregType: 'online',
-            sourceUrl: 'algorand://...',
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl('algorand://...')).toBe(
-            senderAddress,
-        )
-    })
-
-    it('returns null when deeplink has no address fields', () => {
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'HOME',
-            sourceUrl: 'perawallet://home',
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl('perawallet://home')).toBeNull()
-    })
+    deeplinkAdapters.reset()
 })
 
 describe('useScannedAddress', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockIsValidAddress.mockReturnValue(false)
-        vi.mocked(parseDeeplink).mockReturnValue(null)
+    it('returns a bare address on the field chain and stays quiet', () => {
+        const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
+
+        expect(result.current(ALGORAND_ADDRESS)).toBe(ALGORAND_ADDRESS)
+        expect(mockShowToast).not.toHaveBeenCalled()
+    })
+
+    it('returns the address a same-chain URI names', () => {
+        const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
+
+        expect(result.current(`algorand://${ALGORAND_ADDRESS}?amount=1`)).toBe(
+            ALGORAND_ADDRESS,
+        )
+        expect(mockShowToast).not.toHaveBeenCalled()
+    })
+
+    it('names the chain when the address belongs to another one', () => {
+        const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
+
+        expect(result.current(ETHEREUM_ADDRESS)).toBeNull()
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                body: 'address_entry.other_chain_qr_body:Ethereum',
+            }),
+            { delayLength: 'short' },
+        )
     })
 
     it('toasts and returns null when the QR carries no address', () => {
-        const { result } = renderHook(() => useScannedAddress())
+        const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
 
-        expect(result.current('perawallet://home')).toBeNull()
+        expect(result.current('perawallet://app/home')).toBeNull()
         expect(mockShowToast).toHaveBeenCalledTimes(1)
     })
 
     // Without the delay the toast animates in while the scanner's native Modal
     // is still sliding out, so it plays behind it.
     it('delays the toast so it lands after the scanner Modal has closed', () => {
-        const { result } = renderHook(() => useScannedAddress())
+        const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
 
-        result.current('perawallet://home')
+        result.current('perawallet://app/home')
 
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
             { delayLength: 'short' },
         )
-    })
-
-    it('returns the address and stays quiet when one is found', () => {
-        const address = 'A'.repeat(58)
-        mockIsValidAddress.mockReturnValue(true)
-        const { result } = renderHook(() => useScannedAddress())
-
-        expect(result.current(address)).toBe(address)
-        expect(mockShowToast).not.toHaveBeenCalled()
     })
 })

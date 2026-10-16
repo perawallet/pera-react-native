@@ -1,0 +1,170 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { renderHook } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    ETHEREUM_FIXTURE_RECIPIENT,
+    ETHEREUM_FIXTURE_SENDER,
+    ETHEREUM_FIXTURE_TOKEN,
+    reviewEthereumFixture,
+    type EthereumDisplayFixtureKind,
+} from '@test-utils/ethereum-display-fixtures'
+import { useEthereumTransactionPresentation } from '../useEthereumTransactionPresentation'
+
+const USDC = { assetId: ETHEREUM_FIXTURE_TOKEN, decimals: 6, unitName: 'USDC' }
+
+type AssetQuery = ReturnType<typeof useSingleAssetDetailsQuery>
+
+const mockAssetQuery = (query: { data?: unknown; isPending: boolean }) =>
+    vi
+        .mocked(useSingleAssetDetailsQuery)
+        .mockReturnValue(query as unknown as AssetQuery)
+
+const natives = {} as Record<EthereumDisplayFixtureKind, TransactionNative>
+
+describe('useEthereumTransactionPresentation', () => {
+    beforeAll(async () => {
+        registerEthereumChain()
+        for (const kind of [
+            'transfer',
+            'token-transfer',
+            'contract-call',
+            'contract-creation',
+        ] as const) {
+            natives[kind] = await reviewEthereumFixture(kind)
+        }
+    })
+
+    beforeEach(() => {
+        mockAssetQuery({ data: null, isPending: false })
+        vi.mocked(useFindAccountByAddress).mockReturnValue(null)
+    })
+
+    it('presents a transfer as a send of the recipient and the ether moved', () => {
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives.transfer),
+        )
+
+        expect(result.current?.titleKey).toBe('transactions.list_item.send')
+        expect(result.current?.iconName).toBe('transactions/send')
+        expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_RECIPIENT)
+        expect(result.current?.amount?.value).toEqual(new Decimal(1))
+        expect(result.current?.value.value).toEqual(new Decimal(1))
+        expect(result.current?.maxFee.value).toEqual(new Decimal('0.00042'))
+        expect(result.current?.isAmountLoading).toBe(false)
+    })
+
+    it("shows a token transfer's recipient, not the contract, and the amount in the token's units", () => {
+        mockAssetQuery({ data: USDC, isPending: false })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['token-transfer']),
+        )
+
+        expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_RECIPIENT)
+        expect(result.current?.amount?.asset).toBe(USDC)
+        expect(result.current?.amount?.value).toEqual(new Decimal(5))
+        expect(useSingleAssetDetailsQuery).toHaveBeenCalledWith(
+            ETHEREUM_FIXTURE_TOKEN,
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+    })
+
+    it("waits on a token's record before showing its amount", () => {
+        mockAssetQuery({ data: undefined, isPending: true })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['token-transfer']),
+        )
+
+        expect(result.current?.amount).toBeUndefined()
+        expect(result.current?.isAmountLoading).toBe(true)
+    })
+
+    it('falls back to the raw base units when the token record cannot be read', () => {
+        mockAssetQuery({ data: undefined, isPending: false })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['token-transfer']),
+        )
+
+        expect(result.current?.amount).toEqual({
+            asset: null,
+            value: new Decimal(5_000_000),
+        })
+        expect(result.current?.isAmountLoading).toBe(false)
+    })
+
+    it('presents an unrecognised call by its target, with no amount', () => {
+        // A disabled query reports pending, which must not read as a loading amount.
+        mockAssetQuery({ data: undefined, isPending: true })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['contract-call']),
+        )
+
+        expect(result.current?.titleKey).toBe(
+            'transactions.list_item.contract_call',
+        )
+        expect(result.current?.iconName).toBe('transactions/application-call')
+        expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_TOKEN)
+        expect(result.current?.amount).toBeUndefined()
+        expect(result.current?.isAmountLoading).toBe(false)
+    })
+
+    it('has no counterparty for a contract creation', () => {
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['contract-creation']),
+        )
+
+        expect(result.current?.counterparty).toBeUndefined()
+    })
+
+    it('returns the held account that sends the transaction', () => {
+        const account = { id: 'signer' } as ReturnType<
+            typeof useFindAccountByAddress
+        >
+        vi.mocked(useFindAccountByAddress).mockImplementation(address =>
+            address === ETHEREUM_FIXTURE_SENDER ? account : null,
+        )
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives.transfer),
+        )
+
+        expect(result.current?.signingAccount).toBe(account)
+    })
+
+    it('returns null for a native it cannot read', () => {
+        const algorand = renderHook(() =>
+            useEthereumTransactionPresentation({
+                family: 'algorand',
+                transaction: {},
+            }),
+        )
+        const malformed = renderHook(() =>
+            useEthereumTransactionPresentation({
+                family: 'evm',
+                transaction: {},
+            }),
+        )
+
+        expect(algorand.result.current).toBeNull()
+        expect(malformed.result.current).toBeNull()
+    })
+})

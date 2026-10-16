@@ -63,9 +63,12 @@ anything deeper. Tests are exempt.
   `src/utils`. Infrastructure (`components/core`, `bottom-sheet`, `security`) never imports a feature.
 - The developer gallery (`settings/screens/developer`) is allow-listed; a module needing a narrower
   entry documents it in the file and in the rule's `EXTRA_ENTRIES`.
-- A chain's own UI (`modules/algorand`) is the only app code that reads that chain's transaction
-  shapes or imports its chain package; everything else passes `TransactionNative` through opaque.
-  Each such module is listed in `CHAIN_UI_MODULES` (`lanekeep/shared/chain-package-allowlist.ts`).
+- A chain's own UI (`modules/algorand`, `modules/ethereum`) is the only app code that reads that
+  chain's transaction shapes or imports its chain package; everything else passes
+  `TransactionNative` through opaque. Each such module is listed in `CHAIN_UI_MODULES`
+  (`lanekeep/shared/chain-package-allowlist.ts`). A chain UI module whose chain package metro can
+  stub keeps its `chain-ui.ts` in `ETHEREUM_CHAIN_MODULES` (`metro-build-gates.js`) with a
+  `.stub.ts` beside it, or that package lands in every bundle.
   A feature reaches a chain's UI through `chainUiFor(family)` from `@modules/chain-ui`: one entry
   per family, one slot per feature. The feature owns its slot's type and what renders when a family
   has none.

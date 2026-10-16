@@ -15,9 +15,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 /** Scheme names only; call sites append `://` (hierarchical) or `:` (opaque). */
 export const WC_SCHEME = 'wc'
 export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
-/** Registered by the native iOS app; rewritten to `wc:` so old links keep routing. */
-export const ALGORAND_WC_SCHEME = 'algorand-wc'
-const ALGORAND_SCHEME = 'algorand'
 
 export type WalletConnectPairingLink = {
     /** The unwrapped `wc:` pairing URI. */
@@ -36,18 +33,11 @@ const normalizeUrl = (url: string): string => {
     return trimmed.toLowerCase()
 }
 
-// The pairing wrapper of @perawallet/connect < Feb 2025, whose Android base
-// was `algorand://`. Narrow on purpose: a plain `algorand://…` link is ARC-90.
-const isLegacyAlgorandWcWrapper = (normalizedUrl: string): boolean =>
-    normalizedUrl.startsWith(`${ALGORAND_SCHEME}://wc?`)
-
 export const isWalletConnectScheme = (url: string): boolean => {
     const normalizedUrl = normalizeUrl(url)
     return (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`) ||
-        isLegacyAlgorandWcWrapper(normalizedUrl)
+        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
     )
 }
 
@@ -97,8 +87,10 @@ const dropConnectTrailers = (value: string): string => {
 }
 
 /**
- * Unwraps `wc:`, `perawallet-wc:`, `algorand-wc:` and the wrapper forms into
- * the bare `wc:` URI the WalletConnect client takes. Nothing inside is parsed.
+ * Unwraps `wc:`, `perawallet-wc:` and their `?uri=` wrapper forms into the
+ * bare `wc:` URI the WalletConnect client takes. Nothing inside is parsed.
+ * A chain's own wrapper scheme is unwrapped to `wc:` by that chain's deeplink
+ * adapter first.
  */
 export const parseWalletConnectUri = (
     url: string,
@@ -120,16 +112,11 @@ export const parseWalletConnectUri = (
         } catch {
             return null
         }
-    } else if (isLegacyAlgorandWcWrapper(normalizedUrl)) {
-        // A bare `algorand://wc?…` was the legacy Android redirect signal, not a pairing.
-        return null
     } else if (normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)) {
         wcUri = normalizedUrl.replace(
             `${PERAWALLET_WC_SCHEME}:`,
             `${WC_SCHEME}:`,
         )
-    } else if (normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)) {
-        wcUri = normalizedUrl.replace(`${ALGORAND_WC_SCHEME}:`, `${WC_SCHEME}:`)
     }
 
     // Re-validated after unwrapping so `…?uri=javascript%3Aalert(1)` cannot

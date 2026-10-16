@@ -26,7 +26,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import {
+    registerEthereumChain,
+    registerLegacyAddressCodec,
+} from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
@@ -137,7 +142,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const { baseUnitsToDisplayUnits } = await vi.importActual<
+    const { toBigInt } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
 
@@ -154,7 +159,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
-        baseUnitsToDisplayUnits,
+        toBigInt,
     }
 })
 
@@ -514,9 +519,10 @@ const cases: Case[] = [
             expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(NOTE)
-            // 99999 microAlgos → 0.099999 ALGOs
-            expect(mockSetAmount).toHaveBeenCalled()
-            expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0.099999')
+            // Base units for every asset; the input step converts once the
+            // asset's decimals resolve.
+            expect(mockSetAmount).not.toHaveBeenCalled()
+            expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith(AMOUNT)
         },
     ),
 
@@ -810,6 +816,7 @@ const cases: Case[] = [
             expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(NOTE)
+            expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith(AMOUNT)
         },
     },
     {
@@ -973,10 +980,12 @@ const cases: Case[] = [
 
 beforeEach(() => {
     registerLegacyAddressCodec()
+    registerDeeplinkAdapters()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 describe('deeplink format coverage', () => {
@@ -1075,6 +1084,29 @@ describe('deeplink format coverage', () => {
         }
 
         extra?.()
+    })
+
+    it('refuses an ethereum: payment with the unavailable error and opens no send sheet', async () => {
+        registerEthereumChain()
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'ethereum:0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359@1?value=1',
+                false,
+                'qr',
+                onError,
+            )
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.stringContaining('common.network_unavailable'),
+            expect.stringContaining('common.network_unavailable'),
+        )
+        expect(onError).toHaveBeenCalledTimes(1)
+        expect(mockSendFundsReset).not.toHaveBeenCalled()
+        expect(mockRequestByType).not.toHaveBeenCalled()
     })
 
     it('parses + dispatches every test fixture without throwing', () => {

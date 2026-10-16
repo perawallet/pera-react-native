@@ -10,19 +10,4 @@
  limitations under the License
  */
 
-import { PERAWALLET_SCHEME } from './constants'
-import { DeeplinkType } from './types'
-
-export type BuildDeeplinkInput = {
-    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
-    address: string
-}
-
-export const buildDeeplink = (input: BuildDeeplinkInput): string => {
-    switch (input.type) {
-        case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-            const encodedAddress = encodeURIComponent(input.address)
-            return `${PERAWALLET_SCHEME}://app/shared-account-import/?address=${encodedAddress}`
-        }
-    }
-}
+export { EthereumTransactionDetailBody } from './EthereumTransactionDetailBody'

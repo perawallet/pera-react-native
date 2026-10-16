@@ -30,6 +30,7 @@ export {
     UnknownEvmNetworkError,
     type EvmErrorParams,
 } from './blockchain'
+export { ETHEREUM_CHAIN_ID } from './chain-id'
 export { ethereumModule } from './module'
 export {
     readEthereumNative,

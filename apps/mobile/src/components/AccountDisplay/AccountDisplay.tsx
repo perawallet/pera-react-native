@@ -12,6 +12,7 @@
 
 import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     PWIcon,
     type PWIconProps,
@@ -53,6 +54,8 @@ export type AccountDisplayProps = {
      * NFD) display the account type on the secondary line instead.
      */
     showAccountType?: boolean
+    /** The chain whose name and address to show; defaults to the legacy chain. */
+    chainId?: ChainId
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -65,6 +68,7 @@ export const AccountDisplay = ({
     noBorder,
     compact = false,
     showAccountType = false,
+    chainId,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -76,7 +80,13 @@ export const AccountDisplay = ({
         renderSecondary,
         showTypeAsSecondary,
         showBackupBadge,
-    } = useAccountDisplay({ account, compact, showAccountType, iconSize })
+    } = useAccountDisplay({
+        account,
+        compact,
+        showAccountType,
+        iconSize,
+        chainId,
+    })
 
     if (card) {
         return (
@@ -124,6 +134,7 @@ export const AccountDisplay = ({
         >
             {!!account && (
                 <PWView>
+                    {/* AccountIcon reads the legacy chain's account presentation adapter. */}
                     <AccountIcon
                         account={account}
                         size='xl'

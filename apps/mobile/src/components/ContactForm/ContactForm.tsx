@@ -17,6 +17,10 @@ import {
     type FieldPath,
     type FieldValues,
 } from 'react-hook-form'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import {
@@ -52,6 +56,9 @@ type ContactFormProps<T extends FieldValues> = {
     children?: ReactNode
 }
 
+// A contact's address is pinned to the legacy chain below.
+const CONTACT_CHAIN_IDS: readonly ChainId[] = [LEGACY_CHAIN_ID]
+
 export const ContactForm = <T extends FieldValues>({
     control,
     address,
@@ -72,7 +79,7 @@ export const ContactForm = <T extends FieldValues>({
     const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
     const addressInputRef = useRef<PWInputRef>(null)
-    const resolveScannedAddress = useScannedAddress()
+    const resolveScannedAddress = useScannedAddress(CONTACT_CHAIN_IDS)
 
     const renderAvatar = () => (
         <ContactAvatar

@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Colar da área de transferência",
         "invalid_qr_title": "Código QR inválido",
         "invalid_qr_body": "Este código QR não contém um endereço de wallet",
+        "other_chain_qr_body": "Este é um endereço de {{chain}}.",
         "address": "Endereço",
         "contacts": "Contatos",
         "my_accounts": "Contas",
@@ -966,7 +967,9 @@
         "save": "Salvar",
         "apply": "Aplicar",
         "copy": "Copiar",
-        "send": "Enviar"
+        "send": "Enviar",
+        "show_more": "Mostrar mais",
+        "show_less": "Mostrar menos"
     },
     "contacts": {
         "edit_contact": {
@@ -3177,6 +3180,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} transações internas"
+        },
+        "contract_call": {
+            "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
+            "function_selector": "Seletor de função",
+            "call_data": "Dados da chamada"
         },
         "type": {
             "pay": "Transação de pagamento",

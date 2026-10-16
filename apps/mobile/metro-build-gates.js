@@ -24,9 +24,13 @@ const DEVELOPER_GALLERY_MODULES = [
     'src/modules/settings/routes/developer-gallery',
 ]
 
-// The Ethereum chain module's only entry point: chain-adapters.ts reaches the
-// chain-ethereum package solely through it, so swapping it drops viem.
-const ETHEREUM_CHAIN_MODULES = ['src/bootstrap/ethereum-chain-module']
+// Every app entry into the chain-ethereum package: the bootstrap module, which
+// chain-adapters.ts reaches it through, and Ethereum's chain UI, which the
+// chain-UI registry reaches it through. Swapping them drops viem.
+const ETHEREUM_CHAIN_MODULES = [
+    'src/bootstrap/ethereum-chain-module',
+    'src/modules/ethereum/chain-ui',
+]
 
 // The E2E fixture deeplink's only entry points. It rewrites wallet state on
 // command, so it ships only in a bundle built for a device test run.

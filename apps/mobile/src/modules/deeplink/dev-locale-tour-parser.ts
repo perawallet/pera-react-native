@@ -13,8 +13,11 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { SUPPORTED_LOCALES } from '../../i18n/locales'
-import type { AnyParsedDeeplink, DevLocaleTourDeeplink } from './types'
-import { normalizeUrl, parseQueryParams } from './utils'
+import {
+    normalizeUrl,
+    parseQueryParams,
+} from '@perawallet/wallet-core-deeplinks'
+import type { AppDeeplink, DevLocaleTourDeeplink } from './types'
 
 // `perawallet` is the only scheme this app actually registers (see
 // app.config.builder.js) — `pera://` is not an OS-level URL scheme, so a
@@ -70,5 +73,5 @@ export const parseDevLocaleTourUri = (
  * release bundles this module is swapped out of.
  */
 export const isDevLocaleTourDeeplink = (
-    parsed: AnyParsedDeeplink,
+    parsed: AppDeeplink,
 ): parsed is DevLocaleTourDeeplink => parsed.type === 'DEV_LOCALE_TOUR'

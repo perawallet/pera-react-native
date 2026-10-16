@@ -123,7 +123,7 @@ export const useInputScreen = () => {
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
 
-    // ASSET_TRANSFER deeplinks stash a base-unit amount on the store because
+    // TRANSFER deeplinks stash a base-unit amount on the store because
     // they don't know the asset's `decimals` at parse time. Convert here once
     // the asset query resolves, mirror it into both `value` (the visual
     // input) and `amount` (the store's display-units amount), then clear the

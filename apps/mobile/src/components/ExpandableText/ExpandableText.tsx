@@ -13,6 +13,7 @@
 import type { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
 import { PWButton, PWText } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type ExpandableTextProps = {
     text: string
@@ -26,6 +27,7 @@ export const ExpandableText = ({
     limit = 150,
     textStyle,
 }: ExpandableTextProps) => {
+    const { t } = useLanguage()
     const [isExpanded, setIsExpanded] = useState(false)
 
     if (!text) {
@@ -41,7 +43,11 @@ export const ExpandableText = ({
             <PWText style={textStyle}>{displayText}</PWText>
             {shouldTruncate && (
                 <PWButton
-                    title={isExpanded ? 'Show less' : 'Show more'}
+                    title={
+                        isExpanded
+                            ? t('common.show_less')
+                            : t('common.show_more')
+                    }
                     onPress={() => setIsExpanded(!isExpanded)}
                     variant='linkPositive'
                 />

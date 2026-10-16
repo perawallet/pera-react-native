@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { Decimal } from 'decimal.js'
 import {
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
 } from './constants'
-import type { KeyregParticipationFields, KeyregType } from './types'
-
-// The parsers pass optional params straight through, so an absent one is simply not an address.
-export const isLegacyChainAddress = (address: string | undefined): boolean =>
-    !!address && addressCodecs.get(LEGACY_CHAIN_ID).isValid(address)
 
 // A percent sign that isn't a valid escape (`?label=100%`) makes
 // `decodeURIComponent` throw, and the fallback below is inside the catch, so it
@@ -75,33 +67,12 @@ export const parseQueryParams = (url: string): Record<string, string> => {
 }
 
 /**
- * ARC-90: assetid = 1*DIGIT. Asset IDs are uint64, so a valid id is
- * digits-only — this rejects negatives and non-numerics at the parse
- * boundary rather than letting them fail later at BigInt(assetId), past
- * the account picker and confirm sheet. Matches the ARC-90 path-form rule
- * and both native apps (android toLongOrNull, iOS Int64).
+ * Digits only: amounts and fees are unsigned integers in base units, so this
+ * rejects negatives, fractions and non-numerics at the parse boundary rather
+ * than letting them fail later, past the account picker and confirm sheet.
  */
-export const isValidAssetId = (assetId: string): boolean =>
-    /^\d+$/.test(assetId)
-
-/**
- * ARC-78 carries no online/offline discriminator — `type=keyreg` is its only
- * value — so the intent is read off the participation keys: a bare
- * `?type=keyreg` IS the de-registration (spec appendix example 2, and exactly
- * what nodekit emits for "go offline").
- *
- * Takes the already-resolved fields rather than the raw query params, because
- * the three parsers spell them differently (`votekey` vs `voteKey`, plus the
- * legacy `votekdkey`).
- *
- * A *partial* key set resolves to `online`, never `offline`: the user scanned
- * a go-online QR, and quietly building a de-registration instead would drop
- * their node out of consensus. The handler rejects the incomplete set instead.
- */
-export const inferKeyregType = (
-    participation: KeyregParticipationFields,
-): KeyregType =>
-    Object.values(participation).some(Boolean) ? 'online' : 'offline'
+export const readBaseUnits = (raw: string): Decimal | undefined =>
+    /^\d+$/.test(raw) ? new Decimal(raw) : undefined
 
 /**
  * Decode base64-encoded parameter
@@ -158,6 +129,34 @@ export const extractPath = (url: string): string => {
         return ''
     } catch {
         return ''
+    }
+}
+
+const stripPrefix = (text: string, prefix: string): string | null =>
+    text.startsWith(prefix) ? text.slice(prefix.length) : null
+
+/**
+ * The action and params of `perawallet://app/<action>` or
+ * `https://perawallet.app/qr/perawallet/app/<action>`, else null.
+ */
+export const readPeraAppLink = (
+    url: string,
+): { action: string; params: Record<string, string> } | null => {
+    const universalPath = getUniversalLinkPath(url)
+    const rest =
+        universalPath !== null
+            ? stripPrefix(universalPath, `/qr/${PERAWALLET_SCHEME}/app/`)
+            : stripPrefix(normalizeUrl(url), `${PERAWALLET_SCHEME}://app/`)
+    if (rest === null) return null
+
+    const queryAt = rest.indexOf('?')
+    const action = (queryAt === -1 ? rest : rest.slice(0, queryAt)).replace(
+        /\/$/,
+        '',
+    )
+    return {
+        action,
+        params: parseQueryParams(`${PERAWALLET_SCHEME}://app/${rest}`),
     }
 }
 

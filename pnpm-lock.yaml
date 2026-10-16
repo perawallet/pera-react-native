@@ -583,6 +583,9 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@perawallet/wallet-core-deeplinks':
+        specifier: workspace:*
+        version: link:../../packages/deeplinks
       '@perawallet/wallet-core-dev-fixtures':
         specifier: workspace:*
         version: link:../../packages/dev-fixtures
@@ -2931,6 +2934,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-walletconnect':
+        specifier: workspace:*
+        version: link:../walletconnect
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider

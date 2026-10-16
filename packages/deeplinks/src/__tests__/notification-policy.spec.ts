@@ -13,14 +13,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from '../types'
+import { DeeplinkType } from '../links'
 
 describe('isNotificationAllowedDeeplinkType', () => {
     it.each([
-        DeeplinkType.ALGO_TRANSFER,
-        DeeplinkType.ASSET_TRANSFER,
+        DeeplinkType.TRANSFER,
         DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
-        DeeplinkType.KEYREG,
+        DeeplinkType.CHAIN_ACTION,
         DeeplinkType.WALLET_CONNECT,
         DeeplinkType.ADD_CONTACT,
         DeeplinkType.EDIT_CONTACT,
@@ -43,11 +42,7 @@ describe('isNotificationAllowedDeeplinkType', () => {
         expect(isNotificationAllowedDeeplinkType(type)).toBe(true)
     })
 
-    it('refuses the dev locale tour, which the map does not classify', () => {
-        expect(
-            isNotificationAllowedDeeplinkType(
-                'DEV_LOCALE_TOUR' satisfies DevLocaleTourDeeplinkType as DeeplinkType,
-            ),
-        ).toBe(false)
+    it('refuses a type the map does not classify', () => {
+        expect(isNotificationAllowedDeeplinkType('UNCLASSIFIED')).toBe(false)
     })
 })

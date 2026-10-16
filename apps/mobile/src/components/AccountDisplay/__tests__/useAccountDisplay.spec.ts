@@ -19,6 +19,7 @@ import { useAccountDisplay } from '../useAccountDisplay'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
 let mockNfdNames: { name: string }[] | undefined
 let mockAccountTypeLabel: string | undefined
@@ -44,6 +45,8 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 
 const ADDRESS = 'A'.repeat(58)
 
+const ETH_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
 const makeAccount = (name?: string): WalletAccount => ({
     id: 'account-1',
     name,
@@ -54,6 +57,7 @@ const makeAccount = (name?: string): WalletAccount => ({
 describe('useAccountDisplay', () => {
     beforeAll(() => {
         registerAlgorandAddressCodec()
+        registerEthereumChain()
     })
 
     beforeEach(() => {
@@ -77,6 +81,52 @@ describe('useAccountDisplay', () => {
             truncateAlgorandAddress(ADDRESS),
         )
         expect(result.current.renderSecondary).toBe(true)
+    })
+
+    it("shows a named account's address on the given chain, truncated by that chain's codec", () => {
+        const account: WalletAccount = {
+            ...makeAccount('My Wallet'),
+            chains: {
+                algorand: { address: ADDRESS },
+                ethereum: { address: ETH_ADDRESS },
+            },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account,
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+                chainId: 'ethereum',
+            }),
+        )
+
+        expect(result.current.secondaryText).toBe(
+            addressCodecs.get('ethereum').truncate(ETH_ADDRESS),
+        )
+    })
+
+    it('names an unnamed Ethereum-only account by its truncated address', () => {
+        const account: WalletAccount = {
+            id: 'account-2',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const truncated = addressCodecs.get('ethereum').truncate(ETH_ADDRESS)
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account,
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+                chainId: 'ethereum',
+            }),
+        )
+
+        expect(result.current.displayName).toBe(truncated)
+        expect(result.current.renderSecondary).toBe(false)
     })
 
     it('suppresses the secondary line when it repeats the primary', () => {

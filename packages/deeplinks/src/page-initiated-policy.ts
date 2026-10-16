@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType, type DevDeeplinkType } from './types'
+import { DeeplinkType } from './links'
 
 /**
  * Whether web content may fire a given deeplink at the app.
@@ -25,19 +25,12 @@ import { DeeplinkType, type DevDeeplinkType } from './types'
  * can never be admitted by forgetting about this file. Default-deny, because
  * the failure mode of the opposite default is a phishing primitive.
  *
- * The dev deeplinks (locale tour, E2E fixtures) are the excluded keys: their
- * types have no runtime member to write here (see types.ts), and naming one as
- * a bare string would put the tag back into release bundles that the resolver
- * swap exists to keep it out of. `isOriginGatedDeeplinkType` reads an absent
- * entry as gated, so excluding them is default-deny too — and a dev build can still load the Discover webview,
- * where page content must never be able to drive in-app navigation.
+ * `isOriginGatedDeeplinkType` takes any string and reads an unclassified type as
+ * gated, so a type nothing here lists (a dev-only tour link) is default-deny too.
  */
 export type DeeplinkPagePolicy = 'page-allowed' | 'origin-gated'
 
-export const DEEPLINK_PAGE_POLICY: Record<
-    Exclude<DeeplinkType, DevDeeplinkType>,
-    DeeplinkPagePolicy
-> = {
+export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
     // --- Pure navigation ------------------------------------------------
     [DeeplinkType.HOME]: 'page-allowed',
     [DeeplinkType.CARDS]: 'page-allowed',
@@ -49,13 +42,12 @@ export const DEEPLINK_PAGE_POLICY: Record<
     [DeeplinkType.INTERNAL_BROWSER]: 'page-allowed',
 
     // --- Pre-fills a transfer -------------------------------------------
-    [DeeplinkType.ALGO_TRANSFER]: 'origin-gated',
-    [DeeplinkType.ASSET_TRANSFER]: 'origin-gated',
+    [DeeplinkType.TRANSFER]: 'origin-gated',
     // Opens Send with an attacker-chosen recipient via `openSendFunds`.
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: 'origin-gated',
 
     // --- Signs, submits, or authorises ----------------------------------
-    [DeeplinkType.KEYREG]: 'origin-gated',
+    [DeeplinkType.CHAIN_ACTION]: 'origin-gated',
     [DeeplinkType.ASSET_OPT_IN]: 'origin-gated',
     [DeeplinkType.SIGN_REQUEST]: 'origin-gated',
     [DeeplinkType.WALLET_CONNECT]: 'origin-gated',
@@ -84,14 +76,14 @@ export const DEEPLINK_PAGE_POLICY: Record<
     [DeeplinkType.ASSET_INBOX]: 'origin-gated',
 }
 
-// Widened, not cast: lets the lookup below accept any DeeplinkType while the
-// map above stays exhaustive over everything it is required to classify.
-const POLICY_BY_TYPE: Partial<Record<DeeplinkType, DeeplinkPagePolicy>> =
+// Widened, not cast: lets the lookup below accept any string while the map
+// above stays exhaustive over everything it is required to classify.
+const POLICY_BY_TYPE: Partial<Record<string, DeeplinkPagePolicy>> =
     DEEPLINK_PAGE_POLICY
 
 /**
  * True when only the trusted origin may fire this deeplink. Anything not
  * explicitly marked `page-allowed` is gated.
  */
-export const isOriginGatedDeeplinkType = (type: DeeplinkType): boolean =>
+export const isOriginGatedDeeplinkType = (type: string): boolean =>
     POLICY_BY_TYPE[type] !== 'page-allowed'

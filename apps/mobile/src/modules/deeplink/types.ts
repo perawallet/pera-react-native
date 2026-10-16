@@ -10,286 +10,19 @@
  limitations under the License
  */
 
-export const DeeplinkType = {
-    ADD_CONTACT: 'ADD_CONTACT',
-    EDIT_CONTACT: 'EDIT_CONTACT',
-    ADD_WATCH_ACCOUNT: 'ADD_WATCH_ACCOUNT',
-    RECEIVER_ACCOUNT_SELECTION: 'RECEIVER_ACCOUNT_SELECTION',
-    ADDRESS_ACTIONS: 'ADDRESS_ACTIONS',
-    ALGO_TRANSFER: 'ALGO_TRANSFER',
-    ASSET_TRANSFER: 'ASSET_TRANSFER',
-    KEYREG: 'KEYREG',
-    RECOVER_ADDRESS: 'RECOVER_ADDRESS',
-    WALLET_CONNECT: 'WALLET_CONNECT',
-    ASSET_OPT_IN: 'ASSET_OPT_IN',
-    ASSET_DETAIL: 'ASSET_DETAIL',
-    ASSET_TRANSACTIONS: 'ASSET_TRANSACTIONS',
-    ASSET_INBOX: 'ASSET_INBOX',
-    DISCOVER_BROWSER: 'DISCOVER_BROWSER',
-    DISCOVER_PATH: 'DISCOVER_PATH',
-    CARDS: 'CARDS',
-    STAKING: 'STAKING',
-    SWAP: 'SWAP',
-    BUY: 'BUY',
-    SELL: 'SELL',
-    ACCOUNT_DETAIL: 'ACCOUNT_DETAIL',
-    INTERNAL_BROWSER: 'INTERNAL_BROWSER',
-    SHARED_ACCOUNT_IMPORT: 'SHARED_ACCOUNT_IMPORT',
-    SIGN_REQUEST: 'SIGN_REQUEST',
-    PERA_WEB_IMPORT: 'PERA_WEB_IMPORT',
-    LIQUID_AUTH: 'LIQUID_AUTH',
-    HOME: 'HOME',
-} as const
+import type { AnyParsedDeeplink } from '@perawallet/wallet-core-deeplinks'
 
 /**
  * The locale tour's discriminant, declared as a type with deliberately no
- * runtime member above. Only the tour's own parser produces it and only the
+ * runtime member anywhere. Only the tour's own parser produces it and only the
  * tour's own handler reads it, and metro.config.js swaps both for stubs
- * outside dev builds — a `DeeplinkType` entry would keep the tag string alive
+ * outside dev builds — a runtime constant would keep the tag string alive
  * in release bundles after every module that could act on it is gone.
  */
 export type DevLocaleTourDeeplinkType = 'DEV_LOCALE_TOUR'
 
 /** Same no-runtime-member rule as the locale tour, for the E2E fixture hook. */
 export type DevE2eFixtureDeeplinkType = 'DEV_E2E_FIXTURE'
-
-/** Dev-only tags; every exhaustive policy table excludes them by this type. */
-export type DevDeeplinkType =
-    | DevLocaleTourDeeplinkType
-    | DevE2eFixtureDeeplinkType
-
-export type DeeplinkType =
-    | (typeof DeeplinkType)[keyof typeof DeeplinkType]
-    | DevDeeplinkType
-
-/**
- * Where a link entered the app. 'deeplink' means the OS Linking layer only
- * (a real external deep link, e.g. from a mobile browser) — webview-initiated
- * navigations must use 'in-app' and push-notification taps 'notification',
- * so handlers keyed on 'deeplink' (return-to-dapp, pairing overlay) never
- * fire for links that originated inside the app.
- */
-export type LinkSource = 'qr' | 'deeplink' | 'in-app' | 'notification'
-
-export interface ParsedDeeplink {
-    type: DeeplinkType
-    sourceUrl: string
-}
-
-export interface AddContactDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ADD_CONTACT
-    address: string
-    label?: string
-}
-
-export interface EditContactDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.EDIT_CONTACT
-    address: string
-    label?: string
-}
-
-export interface AddWatchAccountDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ADD_WATCH_ACCOUNT
-    address: string
-    label?: string
-}
-
-export interface ReceiverAccountSelectionDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.RECEIVER_ACCOUNT_SELECTION
-    address: string
-}
-
-export interface AddressActionsDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ADDRESS_ACTIONS
-    address: string
-    label?: string
-}
-
-export interface AddressActionsDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ADDRESS_ACTIONS
-    address: string
-    label?: string
-}
-
-export interface AlgoTransferDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ALGO_TRANSFER
-    receiverAddress: string
-    amount?: string
-    note?: string
-    xnote?: string
-    label?: string
-}
-
-export interface AssetTransferDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ASSET_TRANSFER
-    assetId: string
-    receiverAddress: string
-    amount?: string
-    note?: string
-    xnote?: string
-    label?: string
-}
-
-export type KeyregType = 'online' | 'offline'
-
-export interface KeyregDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.KEYREG
-    senderAddress: string
-    /**
-     * Resolved intent, never the raw `type` query param. ARC-78 only ever
-     * spells that `keyreg`, so leaving it loose let each parser invent its own
-     * value and silently miss the offline case.
-     */
-    keyregType: KeyregType
-    /**
-     * ARC-90 `net:` genesis id or `gh:` genesis hash naming the chain this
-     * keyreg targets. Absent when the URI names none. Compared against the
-     * active network before building, because the transaction is built with
-     * whatever chain the wallet is on — so the genesis-hash analyzer downstream
-     * always matches and can never catch a cross-chain scan.
-     */
-    targetNetwork?: string
-    voteKey?: string
-    selkey?: string
-    sprfkey?: string
-    votefst?: string
-    votelst?: string
-    votekd?: string
-    fee?: string
-    note?: string
-    xnote?: string
-}
-
-/** ARC-78 §Query Keys: all of these are required for an online registration. */
-export type KeyregParticipationFields = Pick<
-    KeyregDeeplink,
-    'voteKey' | 'selkey' | 'sprfkey' | 'votefst' | 'votelst' | 'votekd'
->
-
-export interface RecoverAddressDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.RECOVER_ADDRESS
-    mnemonic: string
-}
-
-export interface WalletConnectDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.WALLET_CONNECT
-    uri: string // Decoded WalletConnect URI
-    /**
-     * Present only when the iOS `@perawallet/connect` wrapper
-     * (`perawallet-wc://wc?uri=...&browser=<name>`) named the initiating
-     * mobile browser. Android sends the raw wc: URI with no wrapper.
-     */
-    browserName?: string
-}
-
-export interface AssetOptInDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ASSET_OPT_IN
-    assetId: string
-    address?: string
-}
-
-export interface AssetDetailDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ASSET_DETAIL
-    address: string
-    assetId: string
-}
-
-export interface AssetTransactionsDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ASSET_TRANSACTIONS
-    address: string
-    assetId: string
-}
-
-export interface AssetInboxDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ASSET_INBOX
-    address: string
-}
-
-export interface DiscoverBrowserDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.DISCOVER_BROWSER
-    url: string // Decoded URL
-}
-
-export interface DiscoverPathDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.DISCOVER_PATH
-    path?: string
-}
-
-export interface CardsDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.CARDS
-    path: string
-}
-
-export interface StakingDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.STAKING
-    path?: string
-}
-
-export interface SwapDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.SWAP
-    address?: string
-    assetInId?: string
-    assetOutId?: string
-}
-
-export interface BuyDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.BUY
-    address?: string
-}
-
-export interface SellDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.SELL
-    address?: string
-}
-
-export interface AccountDetailDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.ACCOUNT_DETAIL
-    address: string
-}
-
-export interface InternalBrowserDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.INTERNAL_BROWSER
-    url: string // Decoded URL
-}
-
-export interface HomeDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.HOME
-}
-
-export interface SharedAccountImportDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
-    address: string
-}
-
-export interface SignRequestDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.SIGN_REQUEST
-    signRequestId: string
-}
-
-export interface PeraWebImportDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.PERA_WEB_IMPORT
-    /** Server-side id of the encrypted backup row. */
-    backupId: string
-    /** 32-byte secretbox key, already decoded from the on-wire encoding. */
-    encryptionKey: Uint8Array
-}
-
-/**
- * A scanned/inbound Liquid Auth URL.
- *
- * - `variant: 'fido'`   — A `fido://…` URL. The handler hands the URL back
- *                        to the OS via Linking, which routes it to the
- *                        registered credential provider extension.
- * - `variant: 'liquid'` — A `liquid://…` URL for the Liquid Auth comms
- *                        protocol. Recognised by the parser today; the
- *                        protocol-side dispatch lands later.
- */
-export interface LiquidAuthDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.LIQUID_AUTH
-    variant: 'fido' | 'liquid'
-    /** Original URL as scanned, preserved for system Linking and logging. */
-    url: string
-}
 
 /**
  * `perawallet://app/dev/locale-tour?locale=<tag>&step=<id>` drives one
@@ -301,8 +34,9 @@ export interface LiquidAuthDeeplink extends ParsedDeeplink {
  * scheme (`pera://` is not registered as an OS URL scheme in
  * app.config.builder.js).
  */
-export interface DevLocaleTourDeeplink extends ParsedDeeplink {
+export interface DevLocaleTourDeeplink {
     type: DevLocaleTourDeeplinkType
+    sourceUrl: string
     locale: string
     step?: string
     run?: 'all'
@@ -316,39 +50,13 @@ export type E2eFixtureName = 'home' | 'contacts-empty' | 'contacts-one'
  * contacts, addresses or key material. Ships only in a bundle built with
  * E2E_FIXTURES=1 (see metro-build-gates.js).
  */
-export interface DevE2eFixtureDeeplink extends ParsedDeeplink {
+export interface DevE2eFixtureDeeplink {
     type: DevE2eFixtureDeeplinkType
+    sourceUrl: string
     fixture: E2eFixtureName
 }
 
-export type AnyParsedDeeplink =
-    | AddContactDeeplink
-    | EditContactDeeplink
-    | AddWatchAccountDeeplink
-    | ReceiverAccountSelectionDeeplink
-    | AddressActionsDeeplink
-    | AlgoTransferDeeplink
-    | AssetTransferDeeplink
-    | KeyregDeeplink
-    | RecoverAddressDeeplink
-    | WalletConnectDeeplink
-    | AssetOptInDeeplink
-    | AssetDetailDeeplink
-    | AssetTransactionsDeeplink
-    | AssetInboxDeeplink
-    | DiscoverBrowserDeeplink
-    | DiscoverPathDeeplink
-    | CardsDeeplink
-    | StakingDeeplink
-    | SwapDeeplink
-    | BuyDeeplink
-    | SellDeeplink
-    | AccountDetailDeeplink
-    | InternalBrowserDeeplink
-    | SharedAccountImportDeeplink
-    | SignRequestDeeplink
-    | PeraWebImportDeeplink
-    | LiquidAuthDeeplink
-    | HomeDeeplink
+export type AppDeeplink =
+    | AnyParsedDeeplink
     | DevLocaleTourDeeplink
     | DevE2eFixtureDeeplink

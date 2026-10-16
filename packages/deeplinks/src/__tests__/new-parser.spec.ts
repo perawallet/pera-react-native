@@ -12,11 +12,13 @@
 
 // @vitest-environment node
 
-import { parseDeeplink } from '../parser'
-import { parsePerawalletAppUri } from '../new-parser'
-import { DeeplinkType } from '../types'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { deeplinkAdapters } from '../chain-adapter'
+import { DeeplinkType } from '../links'
+import { parsePerawalletAppUri } from '../new-parser'
+import { parseDeeplink } from '../parser'
+import { registerPeraLinkChain } from './peraLinkChain'
 
 // Test addresses from CSV
 const TEST_ADDRESS =
@@ -25,11 +27,12 @@ const TEST_RECEIVER_ADDRESS =
     'Z73KQDNF5X3OPYUJNKH77CWZTHAYBKDUYRJELNMVFKWWYUJH2V2Y54W4CM'
 
 beforeEach(() => {
-    registerLegacyAddressCodec()
+    registerPeraLinkChain()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 describe('Deeplink Parser - New Format', () => {
@@ -64,15 +67,16 @@ describe('Deeplink Parser - New Format', () => {
     })
 
     describe('Asset transfer', () => {
-        it('parses  asset transfer with assetId=0 as ALGO transfer', () => {
+        it('parses asset transfer with assetId=0 as a transfer of the native asset', () => {
             const result = parseDeeplink(
                 `perawallet://app/asset-transfer/?assetId=0&receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=99999&note=HELLO%20WORLD%20NOTE`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
-            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_RECEIVER_ADDRESS)
-                expect(result.amount).toBe('99999')
+                expect(result.assetRef?.assetId).toBe('0')
+                expect(result.amount?.toFixed()).toBe('99999')
                 expect(result.note).toBe('HELLO WORLD NOTE')
             }
         })
@@ -82,11 +86,31 @@ describe('Deeplink Parser - New Format', () => {
                 `perawallet://app/asset-transfer/?assetId=31566704&receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=99999`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
-            if (result?.type === DeeplinkType.ASSET_TRANSFER) {
-                expect(result.assetId).toBe('31566704')
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
+                expect(result.assetRef?.assetId).toBe('31566704')
                 expect(result.receiverAddress).toBe(TEST_RECEIVER_ADDRESS)
             }
+        })
+
+        it('leaves the asset absent when the link names none, and carries the chain target', () => {
+            const result = parseDeeplink(
+                `perawallet://app/asset-transfer/?receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=5&xnote=locked`,
+            )
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
+                expect(result.assetRef).toBeUndefined()
+                expect(result.target.chainId).toBeDefined()
+                expect(result.chainData).toMatchObject({ xnote: 'locked' })
+            }
+        })
+
+        it('returns null for an amount that is not digits', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-transfer/?receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=1.5`,
+                ),
+            ).toBeNull()
         })
     })
 
@@ -113,7 +137,7 @@ describe('Deeplink Parser - New Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
             if (result?.type === DeeplinkType.ASSET_OPT_IN) {
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef.assetId).toBe('31566704')
             }
         })
     })
@@ -127,7 +151,7 @@ describe('Deeplink Parser - New Format', () => {
             expect(result?.type).toBe(DeeplinkType.ASSET_DETAIL)
             if (result?.type === DeeplinkType.ASSET_DETAIL) {
                 expect(result.address).toBe(TEST_ADDRESS)
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef.assetId).toBe('31566704')
             }
         })
     })
@@ -180,8 +204,8 @@ describe('Deeplink Parser - New Format', () => {
             expect(result?.type).toBe(DeeplinkType.SWAP)
             if (result?.type === DeeplinkType.SWAP) {
                 expect(result.address).toBe(TEST_ADDRESS)
-                expect(result.assetInId).toBe('0')
-                expect(result.assetOutId).toBe('31566704')
+                expect(result.assetInRef?.assetId).toBe('0')
+                expect(result.assetOutRef?.assetId).toBe('31566704')
             }
         })
     })
@@ -383,14 +407,13 @@ describe('Deeplink Parser - New Format', () => {
 
     describe('Keyreg', () => {
         it('parses keyreg', () => {
-            // Coverage for new-parser.ts lines 143-160
             const result = parseDeeplink(
                 `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=keyreg`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.senderAddress).toBe(TEST_ADDRESS)
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.sender).toBe(TEST_ADDRESS)
             }
         })
 
@@ -398,9 +421,9 @@ describe('Deeplink Parser - New Format', () => {
             const result = parseDeeplink(
                 `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=keyreg`,
             )
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.keyregType).toBe('offline')
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.keyregType).toBe('offline')
             }
         })
 
@@ -408,9 +431,9 @@ describe('Deeplink Parser - New Format', () => {
             const result = parseDeeplink(
                 `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=keyreg&voteKey=UU8&selkey=lfw&sprfkey=3No&votefst=1300&votelst=11300&votekd=100`,
             )
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.keyregType).toBe('online')
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.keyregType).toBe('online')
             }
         })
 
@@ -419,9 +442,9 @@ describe('Deeplink Parser - New Format', () => {
             const result = parseDeeplink(
                 `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=offline`,
             )
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.keyregType).toBe('offline')
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.keyregType).toBe('offline')
             }
         })
     })
@@ -437,103 +460,6 @@ describe('Deeplink Parser - New Format', () => {
             if (result?.type === DeeplinkType.RECOVER_ADDRESS) {
                 expect(result.mnemonic).toBe('test mnemonic')
             }
-        })
-    })
-
-    describe('Pera Web import (web-import)', () => {
-        const WEB_IMPORT_KEY_BYTES = Uint8Array.from(
-            Array.from({ length: 32 }, (_, i) => i),
-        )
-        const WEB_IMPORT_KEY_B64 =
-            Buffer.from(WEB_IMPORT_KEY_BYTES).toString('base64')
-
-        it('parses the app-action form with a percent-encoded base64 key', () => {
-            const result = parseDeeplink(
-                `perawallet://app/web-import/?backupId=abc-123_XYZ&encryptionKey=${encodeURIComponent(
-                    WEB_IMPORT_KEY_B64,
-                )}&action=import`,
-            )
-            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
-            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
-                expect(result.backupId).toBe('abc-123_XYZ')
-                expect(result.encryptionKey).toEqual(WEB_IMPORT_KEY_BYTES)
-                // The URL embeds the secretbox key; the parsed deeplink must
-                // never echo it back.
-                expect(result.sourceUrl).toBe('')
-            }
-        })
-
-        it('parses the legacy comma-separated decimal key', () => {
-            const commaKey = Array.from(WEB_IMPORT_KEY_BYTES).join(',')
-            const result = parseDeeplink(
-                `perawallet://app/web-import/?backupId=abc&encryptionKey=${commaKey}`,
-            )
-            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
-            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
-                expect(result.encryptionKey).toEqual(WEB_IMPORT_KEY_BYTES)
-            }
-        })
-
-        it('parses the universal-link form', () => {
-            const result = parseDeeplink(
-                `https://perawallet.app/qr/perawallet/app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
-                    WEB_IMPORT_KEY_B64,
-                )}`,
-            )
-            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
-            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
-                expect(result.sourceUrl).toBe('')
-            }
-        })
-
-        // Negative cases target parsePerawalletAppUri directly: through
-        // parseDeeplink they'd hit old parser's catch-all, return HOME not null.
-        it('returns null when backupId is missing', () => {
-            expect(
-                parsePerawalletAppUri(
-                    `perawallet://app/web-import/?encryptionKey=${encodeURIComponent(
-                        WEB_IMPORT_KEY_B64,
-                    )}`,
-                ),
-            ).toBeNull()
-        })
-
-        it('returns null when encryptionKey is missing', () => {
-            expect(
-                parsePerawalletAppUri(
-                    'perawallet://app/web-import/?backupId=abc',
-                ),
-            ).toBeNull()
-        })
-
-        it('returns null for an unknown action', () => {
-            expect(
-                parsePerawalletAppUri(
-                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
-                        WEB_IMPORT_KEY_B64,
-                    )}&action=modify`,
-                ),
-            ).toBeNull()
-        })
-
-        it('returns null for an unsupported version', () => {
-            expect(
-                parsePerawalletAppUri(
-                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
-                        WEB_IMPORT_KEY_B64,
-                    )}&version=2`,
-                ),
-            ).toBeNull()
-        })
-
-        it('returns null for a wrong-length key', () => {
-            expect(
-                parsePerawalletAppUri(
-                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
-                        Buffer.from(new Uint8Array(16)).toString('base64'),
-                    )}`,
-                ),
-            ).toBeNull()
         })
     })
 

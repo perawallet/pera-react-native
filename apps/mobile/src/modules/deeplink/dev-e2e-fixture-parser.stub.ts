@@ -12,12 +12,12 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import type { AnyParsedDeeplink, DevE2eFixtureDeeplink } from './types'
+import type { AppDeeplink, DevE2eFixtureDeeplink } from './types'
 
 // Null lets the fixture URL fall through to a harmless HOME, like any
 // unrecognized `perawallet://app/...` path.
 export const parseDevE2eFixtureUri = (): Nullable<DevE2eFixtureDeeplink> => null
 
 export const isDevE2eFixtureDeeplink = (
-    _parsed: AnyParsedDeeplink,
+    _parsed: AppDeeplink,
 ): _parsed is DevE2eFixtureDeeplink => false

@@ -110,6 +110,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Checks the account's onramp scope lands on whichever asset chain the caller passes, never a named chain.",
     },
     {
+        file: 'packages/deeplinks/src/pera-link-chain.ts',
+        text: "'algorand'",
+        reason: "Pera links name no chain yet and every one issued so far is Algorand's; this file is their one legacy default.",
+    },
+    {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
@@ -118,9 +123,7 @@ const ALLOWED: readonly Allowed[] = [
 
 export default defineRule({
     id: 'pera/no-chain-identity-in-shared-packages',
-    // Existing chain literals in walletconnect and card move to the chain package
-    // before this can block; the spec pins them so nothing new joins them.
-    severity: 'warn',
+    severity: 'error',
     card: {
         message:
             'A chain-independent package must not branch on chain identity or name a chain',

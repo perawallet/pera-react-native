@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type {
     AccountValueBasis,
@@ -32,10 +32,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     const chainOf = (account: WalletAccount) =>
         Object.keys(account.chains)[0] as string
     return {
-        useAccountScope: (account: WalletAccount) => ({
-            chainId: chainOf(account),
-            networkId: 'mainnet',
-        }),
+        useAccountChainId: chainOf,
         useAccountValueBasis: () => mockBasis.current,
         accountValueOf: (
             account: WalletAccount,
@@ -82,12 +79,44 @@ const ETH_ACCOUNT: WalletAccount = {
     chains: { ethereum: { address: ETH_ADDRESS } },
 }
 
+const BOTH_CHAINS: WalletAccount = {
+    ...ALGO_ACCOUNT,
+    chains: {
+        algorand: { address: ALGO_ADDRESS },
+        ethereum: { address: ETH_ADDRESS },
+    },
+}
+
 describe('useAccountWithBalance', () => {
+    beforeAll(() => {
+        registerEthereumChain()
+    })
+
     beforeEach(() => {
         mockUseIsOnTestTier.mockReset().mockReturnValue(false)
         mockIsSwitchedOff.mockReset().mockReturnValue(false)
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
+    })
+
+    it("reads the given chain's address, scope and native asset over the account's own chain", () => {
+        mockAccountValueTotals.set(ALGO_ADDRESS, {
+            nativeValue: new Decimal(1),
+        })
+        mockAccountValueTotals.set(ETH_ADDRESS, {
+            nativeValue: new Decimal(2),
+        })
+
+        const { result } = renderHook(() =>
+            useAccountWithBalance(BOTH_CHAINS, 'ethereum'),
+        )
+
+        expect(result.current.nativeValue).toEqual(new Decimal(2))
+        expect(result.current.scope.chainId).toBe('ethereum')
+        expect(result.current.availability).toEqual({
+            isAvailable: true,
+            nativeAsset: { assetId: 'eth' },
+        })
     })
 
     it('renders an Algorand-only wallet as a single-chain row', () => {

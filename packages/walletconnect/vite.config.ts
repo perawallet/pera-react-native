@@ -23,6 +23,9 @@ export default defineConfig(
             // handler: `apps/browser` imports the barrel and must stay
             // clear of @reown/walletkit.
             'v2/index': resolve(__dirname, 'src/v2/index.ts'),
+            // Light on purpose: the barrel registers stores and the v1 client
+            // at load, which the deeplink parser must not inherit.
+            'shared/deeplink': resolve(__dirname, 'src/shared/deeplink.ts'),
         },
     }),
 )

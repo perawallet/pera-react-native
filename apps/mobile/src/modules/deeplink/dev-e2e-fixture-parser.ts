@@ -12,12 +12,16 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+import {
+    normalizeUrl,
+    parseQueryParams,
+} from '@perawallet/wallet-core-deeplinks'
+
 import type {
-    AnyParsedDeeplink,
+    AppDeeplink,
     DevE2eFixtureDeeplink,
     E2eFixtureName,
 } from './types'
-import { normalizeUrl, parseQueryParams } from './utils'
 
 const DEV_E2E_FIXTURE_URL_BASE = 'perawallet://app/dev/e2e-fixture'
 
@@ -49,5 +53,5 @@ export const parseDevE2eFixtureUri = (
 // Lives beside the only producer of the tag, for the reason given in
 // dev-locale-tour-parser.ts.
 export const isDevE2eFixtureDeeplink = (
-    parsed: AnyParsedDeeplink,
+    parsed: AppDeeplink,
 ): parsed is DevE2eFixtureDeeplink => parsed.type === 'DEV_E2E_FIXTURE'

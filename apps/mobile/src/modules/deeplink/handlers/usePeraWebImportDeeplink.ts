@@ -13,7 +13,10 @@
 import { useCallback } from 'react'
 import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { navigateToScreen } from '../navigateToScreen'
-import type { LinkSource, PeraWebImportDeeplink } from '../types'
+import type {
+    LinkSource,
+    PeraWebImportDeeplink,
+} from '@perawallet/wallet-core-deeplinks'
 
 export type PeraWebImportDeeplinkHandler = (params: {
     data: PeraWebImportDeeplink
