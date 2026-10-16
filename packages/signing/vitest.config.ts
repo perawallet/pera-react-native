@@ -46,6 +46,18 @@ export default defineConfig({
                 __dirname,
                 '../chain-ethereum/src/__tests__/testing.ts',
             ),
+            // The chain sources above import deeplinks, which builds after
+            // signing (deeplinks → walletconnect → signing), so its dist
+            // doesn't exist yet when this suite runs on a cold turbo cache.
+            '@perawallet/wallet-core-deeplinks': path.resolve(
+                __dirname,
+                '../deeplinks/src/index.ts',
+            ),
+            '@perawallet/wallet-core-walletconnect/shared/deeplink':
+                path.resolve(
+                    __dirname,
+                    '../walletconnect/src/shared/deeplink.ts',
+                ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

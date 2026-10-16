@@ -133,6 +133,15 @@ export default defineConfig({
                 __dirname,
                 '../chain-algorand/src/connect/index.ts',
             ),
+            // chain-algorand's source imports deeplinks, which builds after
+            // walletconnect (deeplinks → walletconnect), so its dist doesn't
+            // exist yet when this suite runs on a cold turbo cache.
+            '@perawallet/wallet-core-deeplinks': path.resolve(
+                __dirname,
+                '../deeplinks/src/index.ts',
+            ),
+            '@perawallet/wallet-core-walletconnect/shared/deeplink':
+                path.resolve(__dirname, 'src/shared/deeplink.ts'),
         },
     },
 })
