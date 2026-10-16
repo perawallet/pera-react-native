@@ -70,18 +70,14 @@ describe('useTransactionHistoryQuery', () => {
         receiver: 'RECEIVER123',
         confirmedRound: 12345,
         roundTime: 1704067200,
-        swapGroupDetail: null,
+        chainData: null,
         interpretedMeaning: {
             title: 'Sent ALGO',
             description: 'Sent 1 ALGO to RECEIVER123',
         },
         fee: '1000',
-        groupId: null,
         amount: '1000000',
-        closeTo: null,
         asset: null,
-        applicationId: null,
-        innerTransactionCount: null,
     }
 
     beforeEach(() => {
@@ -886,7 +882,8 @@ describe('useTransactionHistoryQuery', () => {
             expect(result.current.transactions).toHaveLength(1)
             expect(result.current.transactions[0]).toMatchObject({
                 id: 'PENDING-TX-1',
-                txType: 'pay',
+                txType: '',
+                chainData: null,
                 confirmedRound: 0,
                 status: 'pending',
             })

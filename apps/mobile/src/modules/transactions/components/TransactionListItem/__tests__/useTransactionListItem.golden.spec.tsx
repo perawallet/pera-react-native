@@ -29,7 +29,10 @@ import {
     formatNumber,
 } from '@perawallet/wallet-core-shared'
 import { historyChainAdapters } from '@perawallet/wallet-core-transactions'
-import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
+import {
+    algorandHistoryAdapter,
+    algorandHistoryDataOf,
+} from '@perawallet/wallet-core-chain-algorand/transactions'
 import {
     ALGORAND_HISTORY_SUMMARY_GOLDENS,
     type HistorySummaryGolden,
@@ -127,10 +130,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 // Read from the stored row, independently of the summary's display hint.
 const factsOf = ({ item }: HistorySummaryGolden, assetId: string) => {
-    if (item.swapGroupDetail) {
+    const { swapGroupDetail } = algorandHistoryDataOf(item)
+    if (swapGroupDetail) {
         return {
-            decimals: item.swapGroupDetail.assetOutDecimals,
-            unitName: item.swapGroupDetail.assetOutUnitName,
+            decimals: swapGroupDetail.assetOutDecimals,
+            unitName: swapGroupDetail.assetOutUnitName,
         }
     }
     if (assetId === '0') return { decimals: 6, unitName: 'ALGO' }

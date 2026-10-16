@@ -17,6 +17,10 @@ import {
     transformTransactionHistoryResponse,
 } from '../transformers'
 import {
+    algorandHistoryDataOf,
+    EMPTY_ALGORAND_HISTORY_DATA,
+} from '../../history-data'
+import {
     parseTransactionHistoryResponse,
     type TransactionHistoryItemApiResponse,
 } from '../schema'
@@ -56,16 +60,11 @@ describe('transformTransactionItem', () => {
             confirmedRound: 12345,
             roundTime: 1700000000,
             fee: new Decimal(1000),
-            swapGroupDetail: null,
             interpretedMeaning: null,
-            groupId: null,
             amount: new Decimal(5000000),
-            closeTo: null,
-            closeAmount: null,
             asset: null,
-            applicationId: null,
-            innerTransactionCount: null,
             balanceImpacts: [],
+            chainData: EMPTY_ALGORAND_HISTORY_DATA,
         })
     })
 
@@ -77,14 +76,16 @@ describe('transformTransactionItem', () => {
         })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.closeTo).toBe('CLOSE_ADDR')
-        expect(result.closeAmount).toEqual(new Decimal('50854132929'))
+        expect(algorandHistoryDataOf(result).closeTo).toBe('CLOSE_ADDR')
+        expect(algorandHistoryDataOf(result).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 
     it('maps an absent close_amount to null', () => {
         const result = transformTransactionItem(makeApiItem())
 
-        expect(result.closeAmount).toBeNull()
+        expect(algorandHistoryDataOf(result).closeAmount).toBeNull()
     })
 
     describe('closeAmount derivation from balance impacts (backend omits close_amount)', () => {
@@ -107,7 +108,9 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
 
-            expect(result.closeAmount).toEqual(new Decimal('50854132929'))
+            expect(algorandHistoryDataOf(result).closeAmount).toEqual(
+                new Decimal('50854132929'),
+            )
         })
 
         it('derives the swept amount for the close-to account from its positive impact', () => {
@@ -128,7 +131,9 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem, 'ME')
 
-            expect(result.closeAmount).toEqual(new Decimal('2000000'))
+            expect(algorandHistoryDataOf(result).closeAmount).toEqual(
+                new Decimal('2000000'),
+            )
         })
 
         it('derives the asset opt-out sweep from the asset impact without subtracting the ALGO fee', () => {
@@ -161,7 +166,9 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
 
-            expect(result.closeAmount).toEqual(new Decimal('250000'))
+            expect(algorandHistoryDataOf(result).closeAmount).toEqual(
+                new Decimal('250000'),
+            )
         })
 
         it('prefers an explicit close_amount over derivation', () => {
@@ -181,7 +188,9 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
 
-            expect(result.closeAmount).toEqual(new Decimal('42'))
+            expect(algorandHistoryDataOf(result).closeAmount).toEqual(
+                new Decimal('42'),
+            )
         })
 
         it('leaves closeAmount null for a receiver-only perspective', () => {
@@ -202,7 +211,7 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem, 'ME')
 
-            expect(result.closeAmount).toBeNull()
+            expect(algorandHistoryDataOf(result).closeAmount).toBeNull()
         })
 
         it('leaves closeAmount null when no account address is provided', () => {
@@ -221,7 +230,7 @@ describe('transformTransactionItem', () => {
 
             const result = transformTransactionItem(apiItem)
 
-            expect(result.closeAmount).toBeNull()
+            expect(algorandHistoryDataOf(result).closeAmount).toBeNull()
         })
     })
 
@@ -262,7 +271,7 @@ describe('transformTransactionItem', () => {
         })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.swapGroupDetail).toEqual({
+        expect(algorandHistoryDataOf(result).swapGroupDetail).toEqual({
             assetInId: '31566704',
             assetInUnitName: 'USDC',
             assetInDecimals: 6,
@@ -285,7 +294,7 @@ describe('transformTransactionItem', () => {
         })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.swapGroupDetail).toEqual({
+        expect(algorandHistoryDataOf(result).swapGroupDetail).toEqual({
             assetInId: null,
             assetInUnitName: '',
             assetInDecimals: 6,
@@ -369,14 +378,14 @@ describe('transformTransactionItem', () => {
         const apiItem = makeApiItem({ application_id: '12345' })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.applicationId).toBe('12345')
+        expect(algorandHistoryDataOf(result).applicationId).toBe('12345')
     })
 
     it('converts inner_transaction_count to number when present', () => {
         const apiItem = makeApiItem({ inner_transaction_count: 3 })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.innerTransactionCount).toBe(3)
+        expect(algorandHistoryDataOf(result).innerTransactionCount).toBe(3)
     })
 
     it('defaults balanceImpacts to an empty array when absent', () => {
@@ -430,8 +439,8 @@ describe('transformTransactionItem', () => {
         })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.groupId).toBe('GROUP_ABC')
-        expect(result.closeTo).toBe('CLOSE_ADDR')
+        expect(algorandHistoryDataOf(result).groupId).toBe('GROUP_ABC')
+        expect(algorandHistoryDataOf(result).closeTo).toBe('CLOSE_ADDR')
     })
 })
 
@@ -600,8 +609,12 @@ describe('ALGO asset facts', () => {
 
         const result = transformTransactionItem(apiItem)
 
-        expect(result.swapGroupDetail?.assetInUnitName).toBe('ALGO')
-        expect(result.swapGroupDetail?.assetInDecimals).toBe(6)
+        expect(
+            algorandHistoryDataOf(result).swapGroupDetail?.assetInUnitName,
+        ).toBe('ALGO')
+        expect(
+            algorandHistoryDataOf(result).swapGroupDetail?.assetInDecimals,
+        ).toBe(6)
     })
 })
 
@@ -665,7 +678,7 @@ describe('Pera backend wire contract', () => {
 
         const item = transformTransactionItem(results[0])
 
-        expect(item.swapGroupDetail).toEqual({
+        expect(algorandHistoryDataOf(item).swapGroupDetail).toEqual({
             assetInId: '0',
             assetInUnitName: 'ALGO',
             assetInDecimals: 6,

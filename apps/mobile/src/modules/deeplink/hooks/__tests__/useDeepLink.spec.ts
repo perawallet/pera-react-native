@@ -483,6 +483,14 @@ describe('useDeepLink', () => {
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
+        // Error toasts fire on a 400ms timer; a real one outlives its test and
+        // lands in a later test's `mockErrorToast` assertions.
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    afterEach(() => {
+        vi.clearAllTimers()
+        vi.useRealTimers()
     })
 
     it('should validate deeplink', () => {

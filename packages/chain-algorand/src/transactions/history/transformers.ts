@@ -19,11 +19,14 @@ import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
     TransactionAssetSummary,
-    TransactionSwapGroupDetail,
     TransactionInterpretedMeaning,
     TransactionBalanceImpact,
 } from '@perawallet/wallet-core-transactions'
 import { resolveAlgorandAssetFacts } from './assetFacts'
+import type {
+    AlgorandHistoryData,
+    AlgorandSwapGroupDetail,
+} from '../history-data'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -34,7 +37,7 @@ import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
  */
 const transformSwapGroupDetail = (
     detail: TransactionHistoryItemApiResponse['swap_group_detail'],
-): Nullable<TransactionSwapGroupDetail> => {
+): Nullable<AlgorandSwapGroupDetail> => {
     if (!detail) return null
 
     const assetInId = detail.asset_in?.asset_id ?? null
@@ -197,26 +200,29 @@ export const transformTransactionItem = (
     receiver: item.receiver ?? null,
     confirmedRound: Number(item.confirmed_round),
     roundTime: Number(item.round_time),
-    swapGroupDetail: transformSwapGroupDetail(item.swap_group_detail),
     interpretedMeaning: transformInterpretedMeaning(item.interpreted_meaning),
     fee: new Decimal(item.fee),
-    groupId: item.group_id ?? null,
     amount:
         item.amount !== undefined && item.amount !== null
             ? new Decimal(item.amount)
             : null,
-    closeTo: item.close_to ?? null,
-    closeAmount:
-        item.close_amount !== undefined && item.close_amount !== null
-            ? new Decimal(item.close_amount)
-            : deriveCloseAmount(item, accountAddress),
     asset: transformAssetSummary(item.asset),
-    applicationId: item.application_id ?? null,
-    innerTransactionCount:
-        item.inner_transaction_count != null
-            ? Number(item.inner_transaction_count)
-            : null,
     balanceImpacts: transformBalanceImpacts(item.balance_impacts),
+    chainData: {
+        family: 'algorand',
+        groupId: item.group_id ?? null,
+        closeTo: item.close_to ?? null,
+        closeAmount:
+            item.close_amount !== undefined && item.close_amount !== null
+                ? new Decimal(item.close_amount)
+                : deriveCloseAmount(item, accountAddress),
+        applicationId: item.application_id ?? null,
+        innerTransactionCount:
+            item.inner_transaction_count != null
+                ? Number(item.inner_transaction_count)
+                : null,
+        swapGroupDetail: transformSwapGroupDetail(item.swap_group_detail),
+    } satisfies AlgorandHistoryData,
 })
 
 /**

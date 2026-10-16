@@ -114,14 +114,7 @@ export class TransactionHistoryRowsUnsupportedError extends AppError {
 /** The item fields a chain keeps in `transactions.chain_data`. */
 export type TransactionHistoryChainFields = Pick<
     TransactionHistoryItem,
-    | 'confirmedRound'
-    | 'roundTime'
-    | 'innerTransactionCount'
-    | 'applicationId'
-    | 'closeTo'
-    | 'swapGroupDetail'
-    | 'groupId'
-    | 'closeAmount'
+    'confirmedRound' | 'roundTime' | 'chainData'
 >
 
 /**
@@ -129,7 +122,7 @@ export type TransactionHistoryChainFields = Pick<
  * SQLite JSON paths into the document `encode` writes.
  */
 export interface HistoryChainDataCodec {
-    encode(item: TransactionHistoryItem): string
+    encode(fields: TransactionHistoryChainFields): string
     /** Also reads every older document shape the chain's migrations left behind. */
     decode(json: string): TransactionHistoryChainFields
     /** Asset ids a row involves beyond its top-level asset and balance impacts, for the per-asset history filter. */
@@ -166,6 +159,11 @@ export interface HistoryChainAdapter {
         item: TransactionHistoryItem,
         address: string,
     ): TransactionSummary
+    /**
+     * The id of the group whose transaction list a press on this row opens,
+     * or null when the press opens the row's own detail.
+     */
+    groupToOpen?(item: TransactionHistoryItem): Nullable<string>
     /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
     toDisplayable?(
         item: TransactionHistoryItem,
@@ -275,3 +273,10 @@ export const mapHistoryItemToDisplayableTransaction = (
     chainId: ChainId,
 ): Nullable<PeraDisplayableTransaction> =>
     historyChainAdapters.get(chainId).toDisplayable?.(item) ?? null
+
+/** Null when the chain declares no `groupToOpen`, or the row opens its own detail. */
+export const historyItemGroupToOpen = (
+    item: TransactionHistoryItem,
+    chainId: ChainId,
+): Nullable<string> =>
+    historyChainAdapters.get(chainId).groupToOpen?.(item) ?? null

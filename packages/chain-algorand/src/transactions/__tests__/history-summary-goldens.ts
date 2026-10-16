@@ -16,10 +16,11 @@ import {
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    TransactionHistoryItem,
-    TransactionType,
-} from '@perawallet/wallet-core-transactions'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    flatHistoryItem,
+    type FlatHistoryItem,
+} from '../history-cache/__tests__/history-item'
 
 export type HistorySummaryGolden = {
     name: string
@@ -49,27 +50,22 @@ const USDC_SUMMARY = {
 }
 
 const item = (
-    overrides: Partial<TransactionHistoryItem>,
-): TransactionHistoryItem => ({
-    id: 'TX',
-    txType: 'pay',
-    sender: A,
-    assetSender: null,
-    receiver: B,
-    roundTime: 1_700_000_000,
-    swapGroupDetail: null,
-    interpretedMeaning: null,
-    fee: new Decimal(1000),
-    groupId: null,
-    amount: null,
-    closeTo: null,
-    closeAmount: null,
-    asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
-    balanceImpacts: [],
-    ...overrides,
-})
+    overrides: Partial<FlatHistoryItem> = {},
+): TransactionHistoryItem =>
+    flatHistoryItem({
+        id: 'TX',
+        txType: 'pay',
+        sender: A,
+        assetSender: null,
+        receiver: B,
+        roundTime: 1_700_000_000,
+        interpretedMeaning: null,
+        fee: new Decimal(1000),
+        amount: null,
+        asset: null,
+        balanceImpacts: [],
+        ...overrides,
+    })
 
 const key = (name: string) => ({
     key: i18nKey(`transactions.list_item.${name}`),
@@ -381,7 +377,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
         {
             name: 'unknown transaction type',
             account: A,
-            item: item({ txType: 'xyz' as TransactionType, receiver: null }),
+            item: item({ txType: 'xyz', receiver: null }),
             summary: none('default', 'unknown'),
         },
         {
@@ -456,6 +452,23 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
             item: item({ amount: new Decimal(500_000), status: 'pending' }),
             summary: {
                 ...sentHalfAlgo,
+                notice: {
+                    kind: 'warning',
+                    title: { key: i18nKey('transactions.notice.pending') },
+                    since: 1_700_000_000_000,
+                },
+            },
+        },
+        {
+            name: 'pending placeholder before the chain lists the transaction',
+            account: A,
+            item: {
+                ...item({ status: 'pending', receiver: null }),
+                txType: '',
+                chainData: null,
+            },
+            summary: {
+                ...none('default', 'unknown'),
                 notice: {
                     kind: 'warning',
                     title: { key: i18nKey('transactions.notice.pending') },

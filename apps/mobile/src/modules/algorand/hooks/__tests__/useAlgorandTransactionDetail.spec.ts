@@ -42,16 +42,11 @@ const historyItem: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 41_065_416,
     roundTime: 1_752_576_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(2_500_000),
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 

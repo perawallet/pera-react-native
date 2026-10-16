@@ -35,6 +35,7 @@ import {
     algorandHistoryChainData,
     healAlgorandCachedRows,
 } from './history-cache'
+import { algorandGroupToOpen } from './history-data'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     buildExpressTransferTxs,
@@ -124,6 +125,7 @@ export const algorandHistoryAdapter = {
         fetchMoreTransactions({ ...params, network: algorandNetworkOf(scope) }),
     getTransactionHistory: getAlgorandTransactionHistory,
     summarize: summarizeAlgorandHistoryItem,
+    groupToOpen: algorandGroupToOpen,
     toDisplayable: mapHistoryItemToDisplayableTransaction,
     resolveAssetFacts: resolveAlgorandAssetFacts,
     chainData: algorandHistoryChainData,
