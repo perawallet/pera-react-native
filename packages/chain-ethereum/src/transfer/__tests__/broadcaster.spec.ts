@@ -18,6 +18,7 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
@@ -129,6 +130,61 @@ describe('Ethereum broadcaster adapter', () => {
                     status: 'submitted',
                 },
             ])
+        })
+
+        it('answers the source with the submitted ids and reports submitted-and-answered', async () => {
+            useRpc()
+            const approve = vi.fn(async () => undefined)
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                })
+
+            expect(approve).toHaveBeenCalledWith(signedTransactions, {
+                txIds: [HASH],
+            })
+            expect(result).toEqual({
+                type: 'submitted-and-answered',
+                txIds: [HASH],
+            })
+        })
+
+        it('still reports submitted when the source callback throws after the broadcast', async () => {
+            useRpc()
+            const approve = vi.fn(async () => {
+                throw new Error('delivery failed')
+            })
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                })
+
+            expect(result).toEqual({ type: 'submitted', txIds: [HASH] })
+            expect(await rows()).toMatchObject([{ status: 'submitted' }])
+        })
+
+        it('does not call the source callback when the node refuses', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+            })
+            const approve = vi.fn(async () => undefined)
+
+            await expect(
+                adapter.createSubmitTransport(SCOPE).send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                }),
+            ).rejects.toMatchObject({ classification: 'rejected-by-node' })
+            expect(approve).not.toHaveBeenCalled()
         })
 
         it('records the history entry with the most the transaction can be charged', async () => {

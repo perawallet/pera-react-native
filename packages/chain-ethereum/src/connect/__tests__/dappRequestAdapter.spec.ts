@@ -12,7 +12,8 @@
 
 import { describe, expect, it } from 'vitest'
 import { buildAccount } from '@perawallet/wallet-core-accounts'
-import { ethereumDappRequestAdapter as adapter } from '../dappRequestAdapter'
+import { testChainContext } from '../../__tests__/context'
+import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
 import { ethereumWalletConnectSupport } from '../walletConnect'
 
 const watch = buildAccount({
@@ -22,6 +23,8 @@ const watch = buildAccount({
         ethereum: { address: '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed' },
     },
 })
+
+const adapter = createEthereumDappRequestAdapter(testChainContext())
 
 describe('ethereumDappRequestAdapter', () => {
     it('is keyed by the Ethereum chain id and serves eip155 over WalletConnect', () => {
@@ -85,5 +88,27 @@ describe('ethereumDappRequestAdapter', () => {
                 networkId: 'mainnet',
             }),
         ).toBe('watch')
+    })
+    describe('sendTransaction.validate', () => {
+        const sending = adapter.sendTransaction
+        if (!sending) throw new Error('Ethereum sends transactions for dApps')
+        const [from] = [watch.chains.ethereum?.address ?? '']
+        const to = '0x2c7536E3605D9C16a7a3D7b1898e529396a65c23'
+
+        it('reads the active network from the context, which a request must name', () => {
+            expect(
+                sending.validate({ from, to, chainId: '0x1' }, [from]),
+            ).toMatchObject({ ok: true })
+            expect(
+                sending.validate({ from, to, chainId: '0xaa36a7' }, [from]),
+            ).toMatchObject({ ok: false, failure: 'invalid-params' })
+        })
+
+        it('hands the session accounts to the field rules', () => {
+            expect(sending.validate({ from, to }, [])).toMatchObject({
+                ok: false,
+                failure: 'unauthorized-account',
+            })
+        })
     })
 })
