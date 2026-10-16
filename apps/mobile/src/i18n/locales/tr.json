@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Bir uygulama, Pera'nın anlayamadığı bir istek gönderdi. Uygulamayı kontrol et ve tekrar dene.",
             "no_handler": "Pera bu bağlantı isteğini işleyemedi. Uygulamayı kontrol et ve tekrar dene.",
+            "unauthorized_account": "Bir uygulama, bağlantısına dahil olmayan bir hesapla imzalamak istedi.",
             "unknown_connection": "Pera bu bağlantıyı bulamadı. Bağlantı zaten kesilmiş olabilir.",
             "duplicate_kind": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
             "already_initialized": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
@@ -3028,7 +3029,9 @@
             "data_label": "İmzalanacak veri",
             "untrusted_message_label": "Görüntülenen mesaj (imzaladığın verinin parçası değil)",
             "binary_warning_title": "Veri okunabilir metin değil",
-            "binary_warning_body": "İmzalanacak veri okunabilir bir metin değil, bu yüzden ham baytları onaltılık olarak gösteriliyor. Yalnızca bu uygulamaya güveniyorsan onayla."
+            "binary_warning_body": "İmzalanacak veri okunabilir bir metin değil, bu yüzden ham baytları onaltılık olarak gösteriliyor. Yalnızca bu uygulamaya güveniyorsan onayla.",
+            "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
+            "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
         "arbitrary_data_details": {
             "unnamed": "Birisi",

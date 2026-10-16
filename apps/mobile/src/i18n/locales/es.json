@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Una app envió una solicitud que Pera no pudo entender. Revisa la app y vuelve a intentarlo.",
             "no_handler": "Pera no pudo procesar esta solicitud de conexión. Revisa la app y vuelve a intentarlo.",
+            "unauthorized_account": "Una app pidió firmar con una cuenta que no forma parte de su conexión.",
             "unknown_connection": "Pera no encontró esa conexión. Es posible que ya se haya desconectado.",
             "duplicate_kind": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
             "already_initialized": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
@@ -3028,7 +3029,9 @@
             "data_label": "Datos que se van a firmar",
             "untrusted_message_label": "Mensaje mostrado (no forma parte de lo que firmas)",
             "binary_warning_title": "Los datos no son texto legible",
-            "binary_warning_body": "Los datos que se van a firmar no son texto legible, por lo que se muestran sus bytes en hexadecimal. Aprueba solo si confías en esta aplicación."
+            "binary_warning_body": "Los datos que se van a firmar no son texto legible, por lo que se muestran sus bytes en hexadecimal. Aprueba solo si confías en esta aplicación.",
+            "typed_data_warning_title": "Esta firma puede mover tus tokens",
+            "typed_data_warning_body": "Firmar datos estructurados puede autorizar a una aplicación a gastar o intercambiar tus tokens sin volver a preguntarte. Aprueba solo si confías en esta aplicación."
         },
         "arbitrary_data_details": {
             "unnamed": "Alguien",

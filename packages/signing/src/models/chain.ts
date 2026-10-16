@@ -11,14 +11,30 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { isTransactionRequest, isUnsignedTransactionRequest } from './guards'
-import type { SignRequest, UnsignedTransactionSignRequest } from './index'
+import {
+    isMessageRequest,
+    isTransactionRequest,
+    isUnsignedTransactionRequest,
+} from './guards'
+import type {
+    MessageSignRequest,
+    SignRequest,
+    UnsignedTransactionSignRequest,
+} from './index'
 
 // The one place a request's chain is decided. It cannot come from the signer
 // account, which may hold addresses on several chains. Chain-neutral
-// transactions name their scope; every other request is stamped when built.
-export const chainIdOfSignRequest = (request: SignRequest): ChainId =>
-    isTransactionRequest(request) && isUnsignedTransactionRequest(request)
+// transactions and messages name their scope; every other request is stamped
+// when built.
+export const chainIdOfSignRequest = (request: SignRequest): ChainId => {
+    if (isMessageRequest(request)) return request.message.scope.chainId
+    return isTransactionRequest(request) &&
+        isUnsignedTransactionRequest(request)
         ? request.txs[0].scope.chainId
-        : (request as Exclude<SignRequest, UnsignedTransactionSignRequest>)
-              .chainId
+        : (
+              request as Exclude<
+                  SignRequest,
+                  UnsignedTransactionSignRequest | MessageSignRequest
+              >
+          ).chainId
+}

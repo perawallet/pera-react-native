@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Une application a envoyé une demande que Pera n’a pas pu comprendre. Veuillez vérifier l’application, puis réessayer.",
             "no_handler": "Pera n’a pas pu traiter cette demande de connexion. Veuillez vérifier l’application, puis réessayer.",
+            "unauthorized_account": "Une application a demandé de signer avec un compte qui ne fait pas partie de sa connexion.",
             "unknown_connection": "Pera n’a pas trouvé cette connexion. Elle a peut-être déjà été déconnectée.",
             "duplicate_kind": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
             "already_initialized": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
@@ -3028,7 +3029,9 @@
             "data_label": "Données à signer",
             "untrusted_message_label": "Message affiché (ne fait pas partie de ce que vous signez)",
             "binary_warning_title": "Les données ne sont pas du texte lisible",
-            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application."
+            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application.",
+            "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
+            "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",

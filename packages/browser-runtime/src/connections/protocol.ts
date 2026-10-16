@@ -18,6 +18,7 @@ import {
 import type {
     ConnectionErrorScope,
     ConnectionProposal,
+    MessageOperationType,
     SourceType,
     WalletOperation,
     WalletOperationResult,
@@ -62,6 +63,7 @@ type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'authData'> & {
 
 export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
+    | Extract<WalletOperation, { type: MessageOperationType }>
     | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
@@ -69,6 +71,11 @@ export type WireWalletOperation =
 
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
+    | {
+          type: MessageOperationType
+          /** base64 of the signature. */
+          signature: string
+      }
     | {
           type: 'sign-data'
           /** base64 of each signature. */
@@ -130,7 +137,13 @@ export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
     if (result.type === 'send-transaction') return refuseSendTransaction()
-    if (result.type !== 'sign-data') return result
+    if (result.type === 'sign-transactions') return result
+    if (result.type !== 'sign-data') {
+        return {
+            type: result.type,
+            signature: encodeToBase64(result.signature),
+        }
+    }
     return {
         type: 'sign-data',
         signatures: result.signatures.map(encodeToBase64),
@@ -140,7 +153,13 @@ export const encodeWalletOperationResult = (
 export const decodeWalletOperationResult = (
     result: WireWalletOperationResult,
 ): WalletOperationResult => {
-    if (result.type !== 'sign-data') return result
+    if (result.type === 'sign-transactions') return result
+    if (result.type !== 'sign-data') {
+        return {
+            type: result.type,
+            signature: decodeFromBase64(result.signature),
+        }
+    }
     return {
         type: 'sign-data',
         signatures: result.signatures.map(decodeFromBase64),
@@ -157,6 +176,14 @@ export const isWireWalletOperation = (
         }
         case 'sign-data': {
             return Array.isArray(value.payload) || isRecord(value.payload)
+        }
+        case 'sign-message':
+        case 'sign-typed-data': {
+            return (
+                isRecord(value.request) &&
+                typeof value.request.method === 'string' &&
+                typeof value.request.signer === 'string'
+            )
         }
         default: {
             return false
@@ -176,6 +203,10 @@ export const isWireWalletOperationResult = (
                     item => item === null || typeof item === 'string',
                 )
             )
+        }
+        case 'sign-message':
+        case 'sign-typed-data': {
+            return typeof value.signature === 'string'
         }
         case 'sign-data': {
             return isStringArray(value.signatures)

@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ScopeChangedError,
+    toScopeKey,
     transactionPlanners,
     type ChainId,
     type ChainScope,
@@ -57,6 +58,7 @@ import {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
 } from '../models'
@@ -223,6 +225,13 @@ const buildSourceMetadata = (
                         signer: result.signers[0]?.address ?? '',
                     },
                 ])
+            }
+        }
+    } else if (isMessageRequest(request) && request.approve) {
+        const messageApprove = request.approve
+        approveCallback = async (result: SigningResult) => {
+            if (result.signedData.type === 'message') {
+                await messageApprove(result.signedData.signed)
             }
         }
     }
@@ -507,6 +516,22 @@ const buildSignableGroups = (
                 },
                 source,
                 signerAddress: request.authData.signer,
+            },
+        ]
+    }
+
+    if (isMessageRequest(request)) {
+        const { message } = request
+        // Stamped when the request was queued; the user may have switched
+        // network while it waited behind another.
+        if (toScopeKey(message.scope) !== toScopeKey(scope)) {
+            throw new ScopeChangedError(message.scope, scope)
+        }
+        return [
+            {
+                data: { type: 'message', request: message },
+                source,
+                signerAddress: message.signer,
             },
         ]
     }

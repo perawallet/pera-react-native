@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     CannotSignError,
+    InvalidSignableDataError,
     SIGNING_ERROR_KEYS,
     SigningError,
     type AnalyzedSignableGroup,
@@ -145,6 +146,12 @@ export const createLocalKeyStrategy = (
                             account,
                             signAuthData,
                             callbacks,
+                        )
+                    }
+
+                    case 'message': {
+                        throw new InvalidSignableDataError(
+                            'Algorand signs no chain-neutral message request',
                         )
                     }
                 }

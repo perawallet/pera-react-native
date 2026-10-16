@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { numberToHex } from 'viem'
+import { bytesToHex, numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type {
     DappRequestChainAdapter,
@@ -132,7 +132,13 @@ export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnec
         networkForCaip2ChainId,
         toWireResult: result => {
             if (result.type === 'send-transaction') return result.txId
-            throw new Error(`Ethereum answers no ${result.type} result yet`)
+            if (
+                result.type === 'sign-message' ||
+                result.type === 'sign-typed-data'
+            ) {
+                return bytesToHex(result.signature)
+            }
+            throw new Error(`Ethereum answers no ${result.type} result`)
         },
         toWireErrorCode: failure => EIP_1193_CODE[failure],
         v2,

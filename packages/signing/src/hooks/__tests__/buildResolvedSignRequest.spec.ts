@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import type { SigningMachineContext } from '../../machine/context'
-import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
+import type {
+    AuthDataSignRequest,
+    MessageSignRequest,
+    TransactionSignRequest,
+} from '../../models'
 import {
     TEST_CHAIN_ID,
     algo25Account,
@@ -185,5 +189,44 @@ describe('buildResolvedSignRequest', () => {
                 message: 'chain algorand has no auth-data signer',
             },
         })
+    })
+
+    it("exposes the chain's own description of a message request on kind", () => {
+        const summary = {
+            kind: 'text' as const,
+            title: { key: 'signing.arbitrary_data_view.body' },
+            preview: 'hello',
+        }
+        const adapter = registerFakeMessageSignerAdapter({
+            describe: vi.fn(() => summary),
+        })
+        const message = {
+            scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' },
+            method: 'plain',
+            signer: 'A123',
+            payload: {},
+        }
+        const request = {
+            id: 'r1',
+            type: 'message',
+            sourceType: 'walletconnect',
+            transport: 'callback',
+            message,
+        } as unknown as MessageSignRequest
+        const context = {
+            signerAddress: 'A123',
+            allAccounts: [makeAccount('A123', 'algo25')],
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
+            request,
+            signableGroups: [{ signerAddress: 'A123' }],
+            deps,
+        } as unknown as SigningMachineContext
+
+        const result = buildResolvedSignRequest(context)
+
+        expect(result?.kind).toEqual({ type: 'message', summary })
+        expect(adapter.describe).toHaveBeenCalledWith(message)
     })
 })

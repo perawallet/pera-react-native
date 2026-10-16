@@ -25,8 +25,21 @@ export {
 } from '../signing/review'
 export { readEthereumNative } from '../signing/transaction-view'
 export {
+    ethereumMessageSignerAdapter,
+    personalSignMessageRequest,
+    typedDataMessageRequest,
+} from '../signing/messages'
+export {
+    MAIL_TYPED_DATA,
     SENDER,
+    SIGNER_KEY_PAIR_ID,
     TRANSFER,
+    VIEM_HELLO_WORLD,
+    VIEM_MAIL,
     VIEM_TRANSFER_NONCE_0,
     createVectorKeyStore,
+    vectorSignature,
 } from '../signing/__tests__/fixtures'
+// Re-exported so a suite outside this package verifies with viem itself
+// without declaring it.
+export { verifyMessage, verifyTypedData } from 'viem'

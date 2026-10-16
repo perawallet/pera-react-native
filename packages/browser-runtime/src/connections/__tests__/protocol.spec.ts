@@ -24,6 +24,7 @@ import {
     isConnectionsAck,
     isConnectionsControlMessage,
     isConnectionsEventMessage,
+    isWireWalletOperation,
     isWireWalletOperationResult,
 } from '../protocol'
 
@@ -131,6 +132,53 @@ describe('wallet operation wire codec', () => {
                 overTheWire(encodeWalletOperationResult(result)),
             ),
         ).toEqual(result)
+    })
+
+    it.each(['sign-message', 'sign-typed-data'] as const)(
+        'round-trips a %s operation unchanged and the guard accepts it',
+        type => {
+            const operation: WalletOperation = {
+                type,
+                request: {
+                    method: 'plain',
+                    signer: '0xabc',
+                    payload: { message: '0x68656c6c6f' },
+                },
+            }
+
+            const wire = overTheWire(encodeWalletOperation(operation))
+
+            expect(isWireWalletOperation(wire)).toBe(true)
+            expect(decodeWalletOperation(wire)).toEqual(operation)
+        },
+    )
+
+    it.each(['sign-message', 'sign-typed-data'] as const)(
+        'round-trips a %s signature through base64',
+        type => {
+            const result = {
+                type,
+                signature: new Uint8Array([1, 2, 255]),
+            }
+
+            const wire = overTheWire(encodeWalletOperationResult(result))
+
+            expect(isWireWalletOperationResult(wire)).toBe(true)
+            expect(wire).toEqual({ type, signature: 'AQL/' })
+            expect(decodeWalletOperationResult(wire)).toEqual(result)
+        },
+    )
+
+    it('rejects a message operation with no signer and a message result with no signature', () => {
+        expect(
+            isWireWalletOperation({
+                type: 'sign-message',
+                request: { method: 'personal_sign' },
+            }),
+        ).toBe(false)
+        expect(isWireWalletOperationResult({ type: 'sign-typed-data' })).toBe(
+            false,
+        )
     })
 })
 
