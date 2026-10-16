@@ -12,15 +12,17 @@
 
 import { parseDeeplink as parsePackageDeeplink } from '@perawallet/wallet-core-deeplinks'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { parseDevE2eFixtureUri } from './dev-e2e-fixture-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
 import { parsePeraWebImportLink } from './pera-web-import-parser'
 import type { AppDeeplink } from './types'
 
-// The first two own formats the package cannot decode (the web-import payload
-// needs backup, and the tour tag must never reach a shared module). Neither
+// The first three own formats the package cannot decode (the web-import payload
+// needs backup, and the dev tags must never reach a shared module). None of them
 // matches anything the package claims earlier, so running them first changes
 // no result.
 export const parseDeeplink = (url: string): Nullable<AppDeeplink> =>
     parsePeraWebImportLink(url) ??
     parseDevLocaleTourUri(url) ??
+    parseDevE2eFixtureUri(url) ??
     parsePackageDeeplink(url)

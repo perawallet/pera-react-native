@@ -16,8 +16,10 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 import {
     DEVELOPER_GALLERY_MODULES,
+    E2E_FIXTURE_MODULES,
     ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isE2eFixturesIncluded,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,
@@ -120,6 +122,65 @@ describe('developer gallery stubs', () => {
         expect(Object.keys(stubs)).toHaveLength(
             DEVELOPER_GALLERY_MODULES.length,
         )
+        for (const [real, stub] of Object.entries(stubs)) {
+            expect(existsSync(real)).toBe(true)
+            expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
+            expect(existsSync(stub)).toBe(true)
+        }
+    })
+})
+
+describe('isE2eFixturesIncluded', () => {
+    it('includes the fixtures only when E2E_FIXTURES is exactly 1', () => {
+        expect(
+            isE2eFixturesIncluded({
+                e2eFixtures: '1',
+                bakedAppEnvironment: 'staging',
+            }),
+        ).toBe(true)
+    })
+
+    it.each([undefined, '', '0', 'true', 'yes', ' 1'])(
+        'stubs the fixtures for E2E_FIXTURES=%s',
+        e2eFixtures => {
+            expect(
+                isE2eFixturesIncluded({
+                    e2eFixtures,
+                    bakedAppEnvironment: 'staging',
+                }),
+            ).toBe(false)
+        },
+    )
+
+    it.each([
+        ['production', undefined],
+        [undefined, 'production'],
+        ['staging', 'production'],
+    ])(
+        'refuses to build a production bundle with them (baked=%s, APP_ENV=%s)',
+        (baked, appEnv) => {
+            expect(() =>
+                isE2eFixturesIncluded({
+                    e2eFixtures: '1',
+                    bakedAppEnvironment: baked,
+                    appEnv,
+                }),
+            ).toThrow(/production/)
+        },
+    )
+
+    it('stubs a production bundle that did not ask for them', () => {
+        expect(
+            isE2eFixturesIncluded({ bakedAppEnvironment: 'production' }),
+        ).toBe(false)
+    })
+})
+
+describe('e2e fixture stubs', () => {
+    it('maps every gated module to an existing stub beside it', () => {
+        const stubs = toStubMap(PROJECT_ROOT, E2E_FIXTURE_MODULES)
+
+        expect(Object.keys(stubs)).toHaveLength(E2E_FIXTURE_MODULES.length)
         for (const [real, stub] of Object.entries(stubs)) {
             expect(existsSync(real)).toBe(true)
             expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))

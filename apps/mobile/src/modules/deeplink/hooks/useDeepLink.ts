@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-deeplinks'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
+import { isDevE2eFixtureDeeplink } from '../dev-e2e-fixture-parser'
 import type { AppDeeplink } from '../types'
 import {
     findAccountByAddressOn,
@@ -58,6 +59,7 @@ import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
     useDiscoverPathDeeplink,
+    useE2eFixtureDeeplink,
     useKeyregDeeplink,
     useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
@@ -101,7 +103,7 @@ const isUnsupportedChainLink = (url: string): boolean => {
 }
 
 const isRoutableLink = (link: AppDeeplink): boolean => {
-    if (isDevLocaleTourDeeplink(link)) {
+    if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
         return true
     }
     const target = linkTargetOf(link)
@@ -162,6 +164,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
+    const applyE2eFixture = useE2eFixtureDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
     const nativeAsset = useNativeAsset(scope)
 
@@ -253,6 +256,19 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
             if (isDevLocaleTourDeeplink(parsedData)) {
                 await runLocaleTourStep(parsedData)
+                onSuccess?.()
+                return
+            }
+
+            if (isDevE2eFixtureDeeplink(parsedData)) {
+                // In-app sources (QR, webview, banner, push) must never reset
+                // wallet state. Any OS-level sender still gets through, which
+                // is why the build gate, not this check, is the boundary.
+                if (source !== 'deeplink') {
+                    onError?.()
+                    return
+                }
+                applyE2eFixture(parsedData)
                 onSuccess?.()
                 return
             }
