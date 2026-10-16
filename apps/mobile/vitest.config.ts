@@ -243,13 +243,17 @@ export default defineConfig({
     },
     test: {
         ...poolConfig,
-        // The mobile app opts out of coverage thresholds — coverage is only a
-        // guard-rail for the packages/ and extensions/ tree. We still emit
-        // reports when run with --coverage so the mobile numbers are visible,
-        // but a below-threshold run should not fail CI.
         coverage: {
             ...coverageConfig,
-            thresholds: undefined,
+            exclude: [
+                ...coverageConfig.exclude,
+                // Module screens, components and routes are covered by flow
+                // tests, not unit tests (docs/TESTING.md), so counting them
+                // measured nothing we act on. Hooks (`use*`) still count.
+                'src/modules/**/[A-Z]*.tsx',
+                'src/**/routes/**',
+                'src/**/*.catalog.{ts,tsx}',
+            ],
         },
         globals: true,
         environment: 'jsdom',
@@ -325,10 +329,9 @@ export default defineConfig({
                 resolve: {
                     alias: [
                         {
-                            // Node < 24 has no `crypto.argon2`, and the app gets
-                            // it from react-native-quick-crypto. Flow tests that
-                            // reach the cloud-backup KDF would throw without a
-                            // stand-in; unit tests don't, so scope this to the
+                            // Flow tests that reach the cloud-backup KDF get a
+                            // fast deterministic Argon2 stand-in (see the file);
+                            // unit tests don't reach it, so scope this to the
                             // integration project.
                             find: /^crypto$/,
                             replacement: path.resolve(

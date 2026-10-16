@@ -16,6 +16,7 @@ import { ExpandablePanel } from '../ExpandablePanel'
 import { Text } from 'react-native'
 
 describe('ExpandablePanel', () => {
+    // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
     it('renders children', () => {
         render(
             <ExpandablePanel isExpanded={true}>

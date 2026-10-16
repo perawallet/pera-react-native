@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, test, vi } from 'vitest'
 import {
     CredentialsFileNotDownloadedError,

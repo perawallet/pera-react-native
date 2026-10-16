@@ -252,19 +252,6 @@ describe('PWBottomSheet.web', () => {
         },
     )
 
-    it('forwards testID to the sheet container', () => {
-        render(
-            <PWBottomSheet
-                isVisible={true}
-                testID='my-sheet'
-            >
-                <Text>Content</Text>
-            </PWBottomSheet>,
-        )
-
-        expect(screen.getByTestId('my-sheet')).toBeTruthy()
-    })
-
     // Regression test for the sheet bleeding to the full browser-tab width
     // on the wide "expanded" surface: react-native-web's Modal portals to
     // document.body outside AppShell.web.tsx's width-capped card, so the

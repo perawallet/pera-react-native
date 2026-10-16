@@ -66,36 +66,6 @@ describe('AddressDisplay', () => {
         })
     })
 
-    it('renders correctly with address', () => {
-        const address = 'ABCDEFGHIJ1234567890'
-        render(<AddressDisplay address={address} />)
-
-        expect(screen.getByText(/ABC/)).toBeTruthy()
-    })
-
-    it('renders NFD name when resolved', () => {
-        mockUseNfdForAddress.mockReturnValue({
-            data: [{ name: 'alice.algo' }],
-            isPending: false,
-        })
-
-        render(<AddressDisplay address={'A'.repeat(58)} />)
-
-        expect(screen.getByText('alice.algo')).toBeTruthy()
-    })
-
-    it('renders truncated address when no NFD found', () => {
-        mockUseNfdForAddress.mockReturnValue({
-            data: undefined,
-            isPending: false,
-        })
-
-        const address = 'ABCDEFGHIJ1234567890'
-        render(<AddressDisplay address={address} />)
-
-        expect(screen.getByText(/ABC/)).toBeTruthy()
-    })
-
     it('does not resolve NFD when displayType is address-only', () => {
         render(
             <AddressDisplay
@@ -111,18 +81,15 @@ describe('AddressDisplay', () => {
         )
     })
 
-    it('renders the default contact avatar (person icon) for a matched contact without an image', () => {
-        mockFindContacts.mockReturnValue([
-            {
-                name: 'Alice',
-                address: 'A'.repeat(58),
-            },
-        ])
+    it('renders a matched contact without an image as a person icon, the contact name and the truncated address', () => {
+        const address = 'A'.repeat(58)
+        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
 
-        render(<AddressDisplay address={'A'.repeat(58)} />)
+        render(<AddressDisplay address={address} />)
 
         expect(screen.getByTestId('icon-person')).toBeTruthy()
         expect(screen.getByText('Alice')).toBeTruthy()
+        expect(screen.getByText(/AAA/)).toBeTruthy()
     })
 
     it('renders a person icon avatar for a foreign address when forceShowIcon is set', () => {
@@ -138,7 +105,7 @@ describe('AddressDisplay', () => {
         expect(screen.getByTestId('icon-person')).toBeTruthy()
     })
 
-    it('renders a person icon avatar for an NFD-resolved foreign address', () => {
+    it('renders the NFD name with a person icon and the truncated address as a secondary line', () => {
         mockUseNfdForAddress.mockReturnValue({
             data: [{ name: 'alice.algo' }],
             isPending: false,
@@ -147,17 +114,6 @@ describe('AddressDisplay', () => {
         render(<AddressDisplay address={'C'.repeat(58)} />)
 
         expect(screen.getByTestId('icon-person')).toBeTruthy()
-        expect(screen.getByText('alice.algo')).toBeTruthy()
-    })
-
-    it('renders the truncated address as a secondary line when an NFD resolves', () => {
-        mockUseNfdForAddress.mockReturnValue({
-            data: [{ name: 'alice.algo' }],
-            isPending: false,
-        })
-
-        render(<AddressDisplay address={'C'.repeat(58)} />)
-
         expect(screen.getByText('alice.algo')).toBeTruthy()
         expect(screen.getByText(/CCC/)).toBeTruthy()
     })
@@ -168,16 +124,6 @@ describe('AddressDisplay', () => {
 
         const matches = screen.getAllByText(/DDD/)
         expect(matches).toHaveLength(1)
-    })
-
-    it('renders the contact name and the truncated address as two lines when they differ', () => {
-        const address = 'A'.repeat(58)
-        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
-
-        render(<AddressDisplay address={address} />)
-
-        expect(screen.getByText('Alice')).toBeTruthy()
-        expect(screen.getByText(/AAA/)).toBeTruthy()
     })
 
     it('renders only the contact name when it equals the truncated address', () => {

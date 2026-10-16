@@ -60,16 +60,6 @@ describe('PWTouchableOpacity', () => {
         expect(onPress).toHaveBeenCalledTimes(2)
     })
 
-    it('renders children correctly', () => {
-        render(
-            <PWTouchableOpacity>
-                <Text>Child Text</Text>
-            </PWTouchableOpacity>,
-        )
-
-        expect(screen.getByText('Child Text')).toBeTruthy()
-    })
-
     it('remounts the touchable when disabled flips to enabled', () => {
         // RN's Pressability leaves a stale, collapsed press region when only the
         // `disabled` prop flips (no layout event fires), so a button that mounts

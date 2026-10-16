@@ -30,8 +30,9 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: vi.fn() }),
 }))
 
+const mockShowError = vi.fn()
 vi.mock('@hooks/useErrorToast', () => ({
-    useErrorToast: () => ({ showError: vi.fn() }),
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -108,6 +109,19 @@ vi.mock('@modules/bottom-sheet', () => ({
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
+}))
+
+let capturedSigningHandler: ((event: unknown) => void) | null = null
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useSigningEvent: (
+        _predicate: unknown,
+        handler: (event: unknown) => void,
+    ) => {
+        capturedSigningHandler = handler
+    },
 }))
 
 beforeEach(() => {
@@ -365,5 +379,118 @@ describe('useRekeyConfirmScreen - no-op rekey guard', () => {
                 rekeyToAddress: 'TGT',
             })
         })
+    })
+})
+
+describe('useRekeyConfirmScreen - previous rekey warning', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
+        mockSubmitAsync.mockReset()
+        mockRequestBottomSheet.mockReset()
+        currentSource = mockEd25519Source
+        currentTarget = mockEd25519Target
+        mockIsUnderfunded = false
+    })
+
+    it('requests the warning with the configured copy and does not submit when it resolves with false', async () => {
+        seedAuthority('SRC', 'OTHER')
+        mockRequestBottomSheet.mockResolvedValueOnce(false)
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(
+            mockRequestBottomSheet.mock.calls[0][0].contents.props,
+        ).toMatchObject({
+            copy: config.warningCopy,
+            testID: config.warningTestID,
+        })
+        expect(mockSubmitAsync).not.toHaveBeenCalled()
+    })
+})
+
+describe('useRekeyConfirmScreen - submit outcome', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockSubmitAsync.mockReset()
+        mockRequestBottomSheet.mockReset()
+        currentSource = mockEd25519Source
+        currentTarget = mockEd25519Target
+        mockIsUnderfunded = false
+        capturedSigningHandler = null
+    })
+
+    it('exposes the fee from the rekey fee query', () => {
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        expect(result.current.feeAlgos?.toString()).toBe('0.001')
+    })
+
+    it('calls onSubmitSuccess with the source address after a successful submit', async () => {
+        mockSubmitAsync.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        await waitFor(() => {
+            expect(config.onSubmitSuccess).toHaveBeenCalledWith('SRC')
+        })
+    })
+
+    it('shows an error and does not call onSubmitSuccess when the submit fails', async () => {
+        mockSubmitAsync.mockRejectedValueOnce(new Error('boom'))
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        await waitFor(() => {
+            expect(mockShowError).toHaveBeenCalled()
+        })
+        expect(config.onSubmitSuccess).not.toHaveBeenCalled()
+    })
+
+    it('calls onProposed instead of onSubmitSuccess when the rekey is proposed for cosigning', async () => {
+        let resolveSubmit: () => void = () => {}
+        mockSubmitAsync.mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                resolveSubmit = resolve
+            }),
+        )
+        const onProposed = vi.fn()
+        const { result } = renderHook(() =>
+            useRekeyConfirmScreen({ ...config, onProposed }),
+        )
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+        act(() => {
+            capturedSigningHandler?.({
+                type: 'transport-result',
+                result: {
+                    type: 'proposed',
+                    signRequestId: 'sr-1',
+                    status: 'pending',
+                    sourceType: 'local',
+                },
+            })
+        })
+        await act(async () => {
+            resolveSubmit()
+        })
+
+        expect(onProposed).toHaveBeenCalledWith('SRC')
+        expect(config.onSubmitSuccess).not.toHaveBeenCalled()
     })
 })

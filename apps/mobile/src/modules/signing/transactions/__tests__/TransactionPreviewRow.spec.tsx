@@ -33,6 +33,7 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: () => ({ data: undefined }),
 }))
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: asserts what the user sees before signing, the security boundary of the review
 describe('TransactionPreviewRow', () => {
     it("renders the transaction's family row and forwards the press", () => {
         const onPress = vi.fn()

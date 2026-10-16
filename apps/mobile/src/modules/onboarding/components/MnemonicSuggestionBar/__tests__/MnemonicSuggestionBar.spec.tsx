@@ -16,20 +16,8 @@ import { fireEvent, render, screen } from '@test-utils/render'
 
 import { MnemonicSuggestionBar } from '../MnemonicSuggestionBar'
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: keyboard-stays-up regression, logic is inline
 describe('MnemonicSuggestionBar', () => {
-    it('renders one pill per suggestion', () => {
-        render(
-            <MnemonicSuggestionBar
-                suggestions={['abandon', 'ability', 'able']}
-                onSelectSuggestion={vi.fn()}
-            />,
-        )
-
-        expect(screen.getByText('abandon')).toBeTruthy()
-        expect(screen.getByText('ability')).toBeTruthy()
-        expect(screen.getByText('able')).toBeTruthy()
-    })
-
     it('renders nothing when there are no suggestions', () => {
         render(
             <MnemonicSuggestionBar

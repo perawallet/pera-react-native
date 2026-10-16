@@ -11,42 +11,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
-import {
-    registerAlgorandAccountsAdapter,
-    seedAuthority,
-} from '@test-utils/algorandAccountsAdapter'
+import { renderHook } from '@testing-library/react'
+import { config } from '@perawallet/wallet-core-config'
 import { useRekeyToStandardConfirmScreen } from '../useRekeyToStandardConfirmScreen'
-import {
-    useAccountChainStateStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+
+import type {
+    RekeyConfirmConfig,
+    UseRekeyConfirmScreenResult,
+} from '../../../../hooks/useRekeyConfirmScreen'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
-    }),
-}))
-
-const mockShowToast = vi.fn()
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
-    }),
-}))
-
-const mockShowError = vi.fn()
-vi.mock('@hooks/useErrorToast', () => ({
-    useErrorToast: () => ({
-        showError: mockShowError,
-    }),
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
     }),
 }))
 
@@ -61,174 +38,47 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
-}))
-
-const mockSourceAccount = {
-    chains: { algorand: { address: 'SRC' } },
-    name: 'Source',
-    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
-}
-const mockTargetAccount = {
-    chains: { algorand: { address: 'TGT' } },
-    name: 'Target',
-    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
-}
-const mockAuthAccount = {
-    chains: { algorand: { address: 'AUTH' } },
-    name: 'Auth',
-    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
-}
-
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...actual,
-        useFindAccountByAddress: (address: string) => {
-            if (address === 'SRC') return mockSourceAccount
-            if (address === 'TGT') return mockTargetAccount
-            if (address === 'AUTH') return mockAuthAccount
-            return undefined
-        },
-    }
-})
-
-const mockSubmitAsync = vi.fn()
-vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-transactions')
-    >()),
-    useSubmitRekeyMutation: () => ({
-        submitAsync: mockSubmitAsync,
-        isPending: false,
-    }),
-    useRekeyTransactionFeeQuery: () => ({
-        feeAlgos: new Decimal('0.001'),
-        isPending: false,
-    }),
-    useRekeyFeePreflight: () => ({ isUnderfunded: false }),
-}))
-
-const mockRequestBottomSheet = vi.fn()
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({
-        request: mockRequestBottomSheet,
-        requestByType: vi.fn(),
-        dismiss: vi.fn(),
-        dismissAll: vi.fn(),
-    }),
+const mockUseRekeyConfirmScreen =
+    vi.fn<(rekeyConfig: RekeyConfirmConfig) => UseRekeyConfirmScreenResult>()
+vi.mock('../../../../hooks/useRekeyConfirmScreen', () => ({
+    useRekeyConfirmScreen: (rekeyConfig: RekeyConfirmConfig) =>
+        mockUseRekeyConfirmScreen(rekeyConfig),
 }))
 
 describe('useRekeyToStandardConfirmScreen', () => {
     beforeEach(() => {
-        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
-        useAccountChainStateStore.getState().resetState()
-        mockSubmitAsync.mockReset()
-        mockRequestBottomSheet.mockReset()
     })
 
-    it('returns feeAlgos from the rekey transaction fee query', () => {
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
+    it('passes the routed addresses and the standard support URL and warning copy to the shared confirm hook', () => {
+        renderHook(() => useRekeyToStandardConfirmScreen())
 
-        expect(result.current.feeAlgos).toBeInstanceOf(Decimal)
-        expect(result.current.feeAlgos?.toString()).toBe('0.001')
-    })
-
-    it('handleConfirmPress submits and navigates on success when no previous rekey exists', async () => {
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        await waitFor(() => {
-            expect(mockSubmitAsync).toHaveBeenCalledWith({
+        expect(mockUseRekeyConfirmScreen).toHaveBeenCalledWith(
+            expect.objectContaining({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
-            })
-        })
+                targetAddress: 'TGT',
+                supportUrl: config.rekeyToStandardSupportUrl,
+                warningCopy: {
+                    titleKey: 'rekey.to_standard.confirm.replace_warning.title',
+                    bodyKey: 'rekey.to_standard.confirm.replace_warning.body',
+                    confirmKey:
+                        'rekey.to_standard.confirm.replace_warning.confirm',
+                    cancelKey:
+                        'rekey.to_standard.confirm.replace_warning.cancel',
+                },
+                warningTestID: 'rekey-to-standard-previous-rekey-warning-sheet',
+            }),
+        )
+    })
+
+    it('navigates to the standard success screen from onSubmitSuccess', () => {
+        renderHook(() => useRekeyToStandardConfirmScreen())
+
+        mockUseRekeyConfirmScreen.mock.calls[0][0].onSubmitSuccess('SRC')
+
         expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
             screen: 'RekeyToStandardSuccess',
             params: { sourceAddress: 'SRC' },
         })
-    })
-
-    it('handleConfirmPress requests the warning sheet without submitting when source has a previous rekey', async () => {
-        seedAuthority('SRC', 'AUTH')
-        mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-        expect(mockSubmitAsync).not.toHaveBeenCalled()
-    })
-
-    it('submits after the warning sheet resolves with true', async () => {
-        seedAuthority('SRC', 'AUTH')
-        mockRequestBottomSheet.mockResolvedValueOnce(true)
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        await waitFor(() => {
-            expect(mockSubmitAsync).toHaveBeenCalledTimes(1)
-        })
-    })
-
-    it('does not submit when the warning sheet resolves with false', async () => {
-        seedAuthority('SRC', 'AUTH')
-        mockRequestBottomSheet.mockResolvedValueOnce(false)
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        expect(mockSubmitAsync).not.toHaveBeenCalled()
-    })
-
-    it('shows the user-rejected toast and does not navigate when the signer cancels', async () => {
-        const { RekeyError } =
-            await import('@perawallet/wallet-core-transactions')
-        mockSubmitAsync.mockRejectedValueOnce(new RekeyError('user_rejected'))
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
-            )
-        })
-        expect(mockShowError).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('calls showError and does not navigate on generic errors', async () => {
-        mockSubmitAsync.mockRejectedValueOnce(new Error('boom'))
-        const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
-
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        await waitFor(() => {
-            expect(mockShowError).toHaveBeenCalled()
-        })
-        expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
     DeeplinkType,

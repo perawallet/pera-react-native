@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
 import { parsePeraWebImportLink } from '../pera-web-import-parser'

@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { getNextSharedAccountName } from '../getNextSharedAccountName'

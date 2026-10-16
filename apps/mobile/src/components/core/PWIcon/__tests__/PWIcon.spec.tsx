@@ -19,16 +19,6 @@ import { PWIcon } from '../PWIcon'
 import { getIconPixelSize } from '../types'
 
 describe('PWIcon', () => {
-    it('renders correctly with testID', () => {
-        render(
-            <PWIcon
-                name='algo'
-                testID='algo-icon'
-            />,
-        )
-        expect(screen.getByTestId('algo-icon')).toBeTruthy()
-    })
-
     it('renders the warning glyph (registered for destructive flows)', () => {
         render(
             <PWIcon

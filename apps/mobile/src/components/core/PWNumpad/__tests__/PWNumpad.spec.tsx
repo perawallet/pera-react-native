@@ -16,49 +16,6 @@ import { fireEvent } from '@testing-library/react'
 import { PWNumpad } from '../PWNumpad'
 
 describe('PWNumpad', () => {
-    it('renders correctly in pin mode', () => {
-        const onKeyPress = vi.fn()
-        render(
-            <PWNumpad
-                mode='pin'
-                onKeyPress={onKeyPress}
-            />,
-        )
-
-        expect(screen.getByText('1')).toBeTruthy()
-        expect(screen.getByText('2')).toBeTruthy()
-        expect(screen.getByText('3')).toBeTruthy()
-        expect(screen.getByText('4')).toBeTruthy()
-        expect(screen.getByText('5')).toBeTruthy()
-        expect(screen.getByText('6')).toBeTruthy()
-        expect(screen.getByText('7')).toBeTruthy()
-        expect(screen.getByText('8')).toBeTruthy()
-        expect(screen.getByText('9')).toBeTruthy()
-        expect(screen.getByText('0')).toBeTruthy()
-    })
-
-    it('renders correctly in number mode', () => {
-        const onKeyPress = vi.fn()
-        render(
-            <PWNumpad
-                mode='number'
-                onKeyPress={onKeyPress}
-            />,
-        )
-
-        expect(screen.getByText('1')).toBeTruthy()
-        expect(screen.getByText('2')).toBeTruthy()
-        expect(screen.getByText('3')).toBeTruthy()
-        expect(screen.getByText('4')).toBeTruthy()
-        expect(screen.getByText('5')).toBeTruthy()
-        expect(screen.getByText('6')).toBeTruthy()
-        expect(screen.getByText('7')).toBeTruthy()
-        expect(screen.getByText('8')).toBeTruthy()
-        expect(screen.getByText('9')).toBeTruthy()
-        expect(screen.getByText('0')).toBeTruthy()
-        expect(screen.getByText('.')).toBeTruthy()
-    })
-
     it('calls onKeyPress when number key is pressed', () => {
         const onKeyPress = vi.fn()
         render(

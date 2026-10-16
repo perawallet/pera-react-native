@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import type {
     MultisigSignRequest,

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { MeldQuote, XoQuote } from '@perawallet/wallet-core-onramp'

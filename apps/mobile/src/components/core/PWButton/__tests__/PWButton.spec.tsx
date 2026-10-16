@@ -71,7 +71,7 @@ describe('PWButton', () => {
         ).toBe('2')
     })
 
-    it('forwards accessibilityLabel and testID to the native touchable', () => {
+    it('announces its accessibility label rather than the testID', () => {
         render(
             <PWButton
                 title='Add Account'

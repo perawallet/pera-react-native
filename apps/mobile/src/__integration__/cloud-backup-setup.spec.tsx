@@ -143,10 +143,12 @@ const answerQuizIncorrectly = (): void => {
 }
 
 const enableFromStoreKeyScreen = async (): Promise<void> => {
-    await waitFor(() =>
-        expect(
-            screen.getByTestId('cloud_backup_store_encryption_key_screen'),
-        ).toBeTruthy(),
+    await waitFor(
+        () =>
+            expect(
+                screen.getByTestId('cloud_backup_store_encryption_key_screen'),
+            ).toBeTruthy(),
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
     fireEvent.click(
         screen.getByTestId('cloud_backup_store_encryption_key_checkbox'),

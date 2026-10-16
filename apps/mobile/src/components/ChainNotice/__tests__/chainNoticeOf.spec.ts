@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { formatDatetime } from '@perawallet/wallet-core-shared'

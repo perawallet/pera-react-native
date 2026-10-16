@@ -64,6 +64,7 @@ const renderWebView = () =>
         />,
     )
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: covers the webview bridge's security behaviour, which has no hook to move to
 describe('PWWebView title bar host', () => {
     it('shows the opened url host before any navigation event', () => {
         renderWebView()

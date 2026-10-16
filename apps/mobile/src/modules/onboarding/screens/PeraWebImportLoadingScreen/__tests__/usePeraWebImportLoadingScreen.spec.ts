@@ -35,11 +35,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockFetchPeraWebBackup = vi.fn()
 const mockDecryptPeraWebBackupPayload = vi.fn()
