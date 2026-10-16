@@ -16,25 +16,17 @@ const mocks = vi.hoisted(() => ({
     getLatestTransactionRoundTime: vi.fn(),
     fetchTransactionHistory: vi.fn(),
     upsertTransactions: vi.fn(),
-    backfillMissingCloseAmounts: vi.fn(),
-    backfillSwapAssetFacts: vi.fn(),
+    healCachedRows: vi.fn(),
 }))
 
 vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: mocks.fetchTransactionHistory,
+    healCachedRows: mocks.healCachedRows,
 }))
 
 vi.mock('../../db', () => ({
     getLatestTransactionRoundTime: mocks.getLatestTransactionRoundTime,
     upsertTransactions: mocks.upsertTransactions,
-}))
-
-vi.mock('../close-amount-backfill', () => ({
-    backfillMissingCloseAmounts: mocks.backfillMissingCloseAmounts,
-}))
-
-vi.mock('../swap-asset-facts-backfill', () => ({
-    backfillSwapAssetFacts: mocks.backfillSwapAssetFacts,
 }))
 
 import { fetchAndPersistTransactions } from '../transaction-syncer'
@@ -50,8 +42,7 @@ beforeEach(() => {
     mocks.getLatestTransactionRoundTime.mockResolvedValue(null)
     mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
     mocks.upsertTransactions.mockResolvedValue(undefined)
-    mocks.backfillMissingCloseAmounts.mockResolvedValue(undefined)
-    mocks.backfillSwapAssetFacts.mockResolvedValue(undefined)
+    mocks.healCachedRows.mockResolvedValue(undefined)
 })
 
 describe('fetchAndPersistTransactions', () => {
@@ -121,26 +112,15 @@ describe('fetchAndPersistTransactions', () => {
         expect(mocks.upsertTransactions).not.toHaveBeenCalled()
     })
 
-    it('runs the close-amount backfill after persisting the page', async () => {
+    it("runs the chain's repair of the account's cached rows", async () => {
         await fetchAndPersistTransactions(
             ADDRESS,
             scopeForLegacyNetwork(NETWORK),
         )
 
-        expect(mocks.backfillMissingCloseAmounts).toHaveBeenCalledWith({
-            scope: scopeForLegacyNetwork(NETWORK),
-        })
-    })
-
-    it('heals swap rows cached without their asset facts', async () => {
-        await fetchAndPersistTransactions(
+        expect(mocks.healCachedRows).toHaveBeenCalledWith(
             ADDRESS,
             scopeForLegacyNetwork(NETWORK),
         )
-
-        expect(mocks.backfillSwapAssetFacts).toHaveBeenCalledWith({
-            scope: scopeForLegacyNetwork(NETWORK),
-            accountAddress: ADDRESS,
-        })
     })
 })

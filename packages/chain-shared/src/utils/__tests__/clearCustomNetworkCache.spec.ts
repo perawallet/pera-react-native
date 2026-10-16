@@ -131,9 +131,9 @@ describe('clearCustomNetworkCache', () => {
             VALUES ('ADDR', 'TX', ${custom}, 1), ('ADDR', 'TX', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO transactions (id, network, tx_type, sender, confirmed_round, round_time, fee, updated_at)
-            VALUES ('TX_CUSTOM', ${custom}, 'pay', 'SENDER', 1, 1, '1000', 1),
-                   ('TX_TESTNET', ${testnet}, 'pay', 'SENDER', 1, 1, '1000', 1)
+            INSERT INTO transactions (id, network, tx_type, sender, fee, chain_data, updated_at)
+            VALUES ('TX_CUSTOM', ${custom}, 'pay', 'SENDER', '1000', '{}', 1),
+                   ('TX_TESTNET', ${testnet}, 'pay', 'SENDER', '1000', '{}', 1)
         `)
         await db.run(sql`
             INSERT INTO nfd_cache (address, network, updated_at)

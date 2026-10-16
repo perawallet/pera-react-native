@@ -28,10 +28,13 @@ import type {
     TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { algorandAssetInbox } from '../asa-inbox/adapter'
-import { fetchIndexerCloseAmount } from './history/indexer/endpoints'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { getAlgorandTransactionHistory } from './history-records'
+import {
+    algorandHistoryChainData,
+    healAlgorandCachedRows,
+} from './history-cache'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     buildExpressTransferTxs,
@@ -119,10 +122,10 @@ export const algorandHistoryAdapter = {
         }),
     fetchMoreHistory: async ({ scope, ...params }) =>
         fetchMoreTransactions({ ...params, network: algorandNetworkOf(scope) }),
-    fetchCloseAmount: async (txId, scope) =>
-        fetchIndexerCloseAmount(txId, algorandNetworkOf(scope)),
     getTransactionHistory: getAlgorandTransactionHistory,
     summarize: summarizeAlgorandHistoryItem,
     toDisplayable: mapHistoryItemToDisplayableTransaction,
     resolveAssetFacts: resolveAlgorandAssetFacts,
+    chainData: algorandHistoryChainData,
+    healCachedRows: healAlgorandCachedRows,
 } satisfies HistoryChainAdapter

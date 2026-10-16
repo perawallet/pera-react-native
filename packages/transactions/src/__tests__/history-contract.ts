@@ -129,6 +129,28 @@ export const historyContractTests = (
             expect(page.next).toBeUndefined()
         })
 
+        it.runIf(makeAdapter().fetchHistory !== undefined)(
+            'stores every row it fetches through its chain_data codec',
+            async () => {
+                const adapter = makeAdapter()
+                const codec = adapter.chainData
+                expect(codec).toBeDefined()
+
+                const { transactions } = await adapter.fetchHistory!({
+                    accountAddress: address,
+                    scope,
+                })
+
+                expect(transactions.length).toBeGreaterThan(0)
+                for (const item of transactions) {
+                    expect({
+                        ...item,
+                        ...codec!.decode(codec!.encode(item)),
+                    }).toEqual(item)
+                }
+            },
+        )
+
         it("refuses another chain's scope", async () => {
             await expect(
                 makeAdapter().getTransactionHistory(address, {
