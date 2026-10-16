@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     isSignRequestAwaitingPreflight,
+    isSignRequestPastApproval,
     isSignRequestPending,
     useSigningRequest,
     GenesisHashMismatchError,
@@ -118,6 +119,7 @@ export const useSignRequestApprovalScreen =
                 addSignRequest,
                 removeSignRequest,
                 isSignRequestPending,
+                isSignRequestPastApproval,
                 accounts: allAccounts,
                 // One request per window, and an expiry withdraws the whole
                 // approval at the bridge rather than this one entry.

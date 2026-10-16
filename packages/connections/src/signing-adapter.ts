@@ -27,6 +27,7 @@ import {
     MAX_DATA_SIGN_REQUESTS,
     canSignMessage,
     isFeeAdjustmentDeliveryError,
+    isSignRequestPastApproval,
     isSignRequestPending,
     useSigningRequest,
     type AuthDataSignRequest,
@@ -48,6 +49,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     DappRequestRejectedError,
+    PendingRequestCapacityError,
     dappRequestChainAdapters,
     type EnqueueTransactionSigning,
 } from './dappRequest'
@@ -70,13 +72,13 @@ type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
 
 /**
  * One request the pipeline is holding open for the user. `request` is null
- * while the chain's signing enqueue is still pending; an expiry landing in
- * that window marks the entry and the enqueue's continuation withdraws.
+ * while the chain's signing enqueue is still pending; an expiry or close
+ * landing in that window marks the entry and the enqueue's continuation withdraws.
  */
 type PendingRequest = {
     connectionId: ConnectionId
     request: Nullable<SignRequest>
-    isExpired: boolean
+    isWithdrawn: boolean
 }
 
 export type PendingRequestLedger = Map<string, PendingRequest>
@@ -94,7 +96,7 @@ const trackRequest = (
     deps.pendingRequests.set(requestKey(message), {
         connectionId: message.connectionId,
         request,
-        isExpired: false,
+        isWithdrawn: false,
     })
 }
 
@@ -105,7 +107,7 @@ const forgetRequest = (
     deps.pendingRequests.delete(requestKey(message))
 }
 
-/** The async enqueue settled: hand over the request, or honour an expiry that beat it. */
+/** The async enqueue settled: hand over the request, or honour an expiry or close that beat it. */
 const settleTrackedRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
@@ -117,7 +119,7 @@ const settleTrackedRequest = (
         deps.pendingRequests.delete(key)
         return
     }
-    if (entry.isExpired) {
+    if (entry.isWithdrawn) {
         deps.pendingRequests.delete(key)
         deps.removeSignRequest(request)
         return
@@ -125,15 +127,18 @@ const settleTrackedRequest = (
     entry.request = request
 }
 
+// An approved request is left to finish: a send-transaction broadcast goes out
+// regardless, and its answer simply fails against the gone peer.
 const withdrawTrackedRequest = (
     deps: EnqueueInboundRequestDeps,
     key: string,
     entry: PendingRequest,
 ): void => {
     if (!entry.request) {
-        entry.isExpired = true
+        entry.isWithdrawn = true
         return
     }
+    if (deps.isSignRequestPastApproval(entry.request.id)) return
     deps.pendingRequests.delete(key)
     deps.removeSignRequest(entry.request)
 }
@@ -455,8 +460,10 @@ const enqueueSendTransactionRequest = (
         .then(() => sending.build(request))
         .then(
             transaction => {
-                // An expiry while the chain built the transaction: the peer no longer takes an answer.
-                if (deps.pendingRequests.get(requestKey(message))?.isExpired) {
+                // An expiry or close while the chain built the transaction: the peer no longer takes an answer.
+                if (
+                    deps.pendingRequests.get(requestKey(message))?.isWithdrawn
+                ) {
                     forgetRequest(deps, message)
                     return
                 }
@@ -519,6 +526,7 @@ export type EnqueueInboundRequestDeps = {
     removeSignRequest: (request: SignRequest) => void
     /** Read live: requests arrive in bursts between renders. */
     isSignRequestPending: (id: string) => boolean
+    isSignRequestPastApproval: (id: string) => boolean
     accounts: WalletAccount[]
     /**
      * Every request still open for the user, so a `request-expired` message
@@ -562,10 +570,7 @@ export const enqueueInboundRequest = (
             connectionId: message.connectionId,
             breach,
         })
-        rejectInBackground(
-            message,
-            new Error('Too many requests are already open'),
-        )
+        rejectInBackground(message, new PendingRequestCapacityError())
         return
     }
 
@@ -701,6 +706,7 @@ export const useConnectionSigningAdapter = (
         addSignRequest,
         removeSignRequest,
         isSignRequestPending,
+        isSignRequestPastApproval,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
@@ -710,6 +716,7 @@ export const useConnectionSigningAdapter = (
         addSignRequest,
         removeSignRequest,
         isSignRequestPending,
+        isSignRequestPastApproval,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,

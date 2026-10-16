@@ -73,6 +73,7 @@ const EIP_1193 = {
     'unsupported-method': 4200,
     'unselected-chain': 4901,
     'invalid-params': -32_602,
+    'limit-exceeded': -32_005,
 } as const
 
 const algorandAdapter = dappRequestAdapterFor({

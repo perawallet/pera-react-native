@@ -170,6 +170,7 @@ describe('toWireErrorCode', () => {
         ['unsupported-method', 4200],
         ['unselected-chain', 4901],
         ['invalid-params', -32_602],
+        ['limit-exceeded', -32_005],
     ] as const)('maps %s to %i', (failure, code) => {
         expect(support.toWireErrorCode?.(failure)).toBe(code)
     })

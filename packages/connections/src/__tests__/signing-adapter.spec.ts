@@ -30,6 +30,7 @@ import {
     DappRequestRejectedError,
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
+    PendingRequestCapacityError,
 } from '../dappRequest'
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
@@ -59,6 +60,7 @@ const lastTransport = (): ExternalSignTxnTransport => {
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
 const mockIsSignRequestPending = vi.fn((_id: string) => true)
+const mockIsSignRequestPastApproval = vi.fn((_id: string) => false)
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
@@ -66,6 +68,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         removeSignRequest: mockRemoveSignRequest,
     }),
     isSignRequestPending: (id: string) => mockIsSignRequestPending(id),
+    isSignRequestPastApproval: (id: string) =>
+        mockIsSignRequestPastApproval(id),
     // Small on purpose so "too many requests" tests stay short — the real
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
@@ -248,6 +252,8 @@ describe('useConnectionSigningAdapter', () => {
         mockRemoveSignRequest.mockClear()
         mockIsSignRequestPending.mockReset()
         mockIsSignRequestPending.mockReturnValue(true)
+        mockIsSignRequestPastApproval.mockReset()
+        mockIsSignRequestPastApproval.mockReturnValue(false)
         mockEnqueue.mockClear()
         mockEnqueue.mockResolvedValue(null)
         dappRequestChainAdapters.reset()
@@ -714,6 +720,7 @@ describe('useConnectionSigningAdapter', () => {
                 addSignRequest: mockAddSignRequest,
                 removeSignRequest: mockRemoveSignRequest,
                 isSignRequestPending: mockIsSignRequestPending,
+                isSignRequestPastApproval: mockIsSignRequestPastApproval,
                 accounts: [],
                 pendingRequests,
                 onError,
@@ -868,8 +875,11 @@ describe('useConnectionSigningAdapter', () => {
                 MAX_PENDING_REQUESTS_PER_PEER,
             )
             expect(over.reject).toHaveBeenCalledWith(
-                new Error('Too many requests are already open'),
+                expect.any(PendingRequestCapacityError),
             )
+            expect(over.reject.mock.calls[0][0]).toMatchObject({
+                failure: 'limit-exceeded',
+            })
         })
 
         it('refuses any connection once the total cap is reached', () => {
@@ -925,6 +935,46 @@ describe('useConnectionSigningAdapter', () => {
     })
 
     describe('connection closed', () => {
+        // A send-transaction broadcast goes out even once its actor stops, so
+        // withdrawing here would hide an outcome the user needs to see.
+        it('leaves a request the user already approved to finish', async () => {
+            const approved = { id: 'sr-approved' }
+            const waiting = { id: 'sr-waiting' }
+            mockEnqueue
+                .mockResolvedValueOnce(approved as never)
+                .mockResolvedValueOnce(waiting as never)
+            mockIsSignRequestPastApproval.mockImplementation(
+                id => id === approved.id,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send(txnMessage('2', 'c1'))
+            await Promise.resolve()
+
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+
+            expect(mockRemoveSignRequest.mock.calls).toEqual([[waiting]])
+        })
+
+        it('leaves an approved request to finish on expiry too', async () => {
+            const approved = { id: 'sr-approved' }
+            mockEnqueue.mockResolvedValueOnce(approved as never)
+            mockIsSignRequestPastApproval.mockReturnValue(true)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage())
+            await Promise.resolve()
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+        })
+
         it('withdraws every request the closed connection still has open, and only those', async () => {
             const first = { id: 'sr-a' }
             const second = { id: 'sr-b' }
@@ -1690,6 +1740,7 @@ describe('useConnectionSigningAdapter', () => {
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
             isSignRequestPending: mockIsSignRequestPending,
+            isSignRequestPastApproval: mockIsSignRequestPastApproval,
             accounts: [],
             pendingRequests: new Map(),
         })

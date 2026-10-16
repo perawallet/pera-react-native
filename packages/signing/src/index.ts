@@ -139,6 +139,7 @@ export {
 export {
     applyAppStateToHardwareSessions,
     isSignRequestAwaitingPreflight,
+    isSignRequestPastApproval,
 } from './hooks/useSigningActorLifecycle'
 export { useSigningEvent } from './hooks/useSigningEvent'
 export { useSigningPipeline } from './hooks/useSigningPipeline'

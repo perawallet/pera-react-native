@@ -35,13 +35,14 @@ export const ETHEREUM_WC_V2_METHOD = {
     addChain: 'wallet_addEthereumChain',
 } as const
 
-/** EIP-1193 provider error codes, and JSON-RPC's invalid params, which viem and wagmi read. */
+/** EIP-1193 provider error codes, and EIP-1474's invalid params and limit exceeded, which viem and wagmi read. */
 const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'user-rejected': 4001,
     'unauthorized-account': 4100,
     'unsupported-method': 4200,
     'unselected-chain': 4901,
     'invalid-params': -32_602,
+    'limit-exceeded': -32_005,
 }
 
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>

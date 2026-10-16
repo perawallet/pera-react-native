@@ -37,6 +37,7 @@ export const DAPP_REQUEST_FAILURES = [
     'unsupported-method',
     'unselected-chain',
     'invalid-params',
+    'limit-exceeded',
 ] as const
 
 export type DappRequestFailure = (typeof DAPP_REQUEST_FAILURES)[number]
@@ -47,6 +48,15 @@ export class DappRequestRejectedError extends Error {
     constructor() {
         super('User rejected')
         this.name = 'DappRequestRejectedError'
+    }
+}
+
+export class PendingRequestCapacityError extends Error {
+    readonly failure = 'limit-exceeded' as const
+
+    constructor() {
+        super('Too many requests are already open')
+        this.name = 'PendingRequestCapacityError'
     }
 }
 
