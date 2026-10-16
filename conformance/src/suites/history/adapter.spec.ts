@@ -20,7 +20,7 @@ import {
     fetchMoreTransactions,
     fetchTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/transactions/history'
-import { algorandHistoryDataOf } from '@perawallet/wallet-core-chain-algorand/transactions'
+import { algorandHistoryDataOf } from '@perawallet/wallet-core-chain-algorand/transactions/history-data'
 import { fetchIndexerCloseAmount } from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/endpoints'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
