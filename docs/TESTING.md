@@ -48,6 +48,13 @@ The pyramid for this repo, from most to least invested in:
 - Re-test React Native primitives on every wrapper (`renders children`, `forwards testID`).
 - Use snapshots.
 
+### Coverage
+
+`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions. The
+mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
+under `apps/mobile/src/modules/`, `routes/` folders, and the dev-gallery catalogs. Module hooks
+(`use*`) still count, so a gap there is a missing hook test, not a missing render test.
+
 ## Writing a component test
 
 Test behaviour, not implementation. Ask what changes for the user when X happens; if the answer is
