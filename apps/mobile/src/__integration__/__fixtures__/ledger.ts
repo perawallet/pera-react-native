@@ -11,6 +11,7 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export type FakeLedgerOptions = {
@@ -35,7 +36,7 @@ export const registerFakeLedgerProvider = ({
         scan: () => () => {},
         connect: async (_deviceId: string, chainId: string) => {
             if (chainId !== LEGACY_CHAIN_ID) {
-                throw new Error(`No Ledger app driver for chain "${chainId}"`)
+                throw new LedgerAppDriverNotRegisteredError(chainId)
             }
             return {
                 getAddress: async (accountIndex: number) => ({

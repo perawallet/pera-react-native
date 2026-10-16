@@ -171,7 +171,7 @@ describe('ethereumLedgerAppDriver', () => {
                     0,
                     hexToBytes(unsignedHex(transaction)),
                 )
-                const signed = assemble(unsigned(transaction), [
+                const signed = await assemble(unsigned(transaction), [
                     {
                         requestIndex: 0,
                         signer: SENDER,

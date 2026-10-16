@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { registerFakeLedgerProvider } from '../ledger'
@@ -73,8 +74,8 @@ describe('registerFakeLedgerProvider', () => {
     it('serves only the legacy chain', async () => {
         registerFakeLedgerProvider({ address: 'FIXED' })
 
-        await expect(connectFakeLedger('ethereum')).rejects.toThrow(
-            'No Ledger app driver for chain "ethereum"',
+        await expect(connectFakeLedger('ethereum')).rejects.toBeInstanceOf(
+            LedgerAppDriverNotRegisteredError,
         )
     })
 })
