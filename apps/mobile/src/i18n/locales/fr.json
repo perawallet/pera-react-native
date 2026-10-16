@@ -967,7 +967,9 @@
         "save": "Enregistrer",
         "apply": "Appliquer",
         "copy": "Copier",
-        "send": "Envoyer"
+        "send": "Envoyer",
+        "show_more": "Afficher plus",
+        "show_less": "Afficher moins"
     },
     "contacts": {
         "edit_contact": {
@@ -3161,6 +3163,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} transactions internes"
+        },
+        "contract_call": {
+            "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
+            "function_selector": "Sélecteur de fonction",
+            "call_data": "Données de l’appel"
         },
         "type": {
             "pay": "Transaction de paiement",

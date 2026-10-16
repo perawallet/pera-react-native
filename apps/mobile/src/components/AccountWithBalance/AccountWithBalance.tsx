@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
@@ -24,11 +25,14 @@ import { useAccountWithBalance } from './useAccountWithBalance'
 export type AccountWithBalanceProps = {
     account: WalletAccount
     isHighlighted?: boolean
+    /** The chain whose address, balance and native asset to show; defaults to the account's own chain. */
+    chainId?: ChainId
 } & PWViewProps
 
 export const AccountWithBalance = ({
     account,
     isHighlighted,
+    chainId,
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles({ isHighlighted })
@@ -40,7 +44,7 @@ export const AccountWithBalance = ({
         nativeValue,
         isMultiChain,
         isTestTier,
-    } = useAccountWithBalance(account)
+    } = useAccountWithBalance(account, chainId)
 
     return (
         <PWView
@@ -49,6 +53,7 @@ export const AccountWithBalance = ({
         >
             <AccountDisplay
                 account={account}
+                chainId={chainId}
                 showChevron={false}
                 showAccountType
                 style={styles.accountDisplay}

@@ -959,7 +959,9 @@
         "save": "Speichern",
         "apply": "Anwenden",
         "copy": "Kopieren",
-        "send": "Senden"
+        "send": "Senden",
+        "show_more": "Mehr anzeigen",
+        "show_less": "Weniger anzeigen"
     },
     "contacts": {
         "edit_contact": {
@@ -3153,6 +3155,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen"
+        },
+        "contract_call": {
+            "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
+            "function_selector": "Funktionsselektor",
+            "call_data": "Aufrufdaten"
         },
         "type": {
             "pay": "Zahlungstransaktion",
