@@ -2459,7 +2459,7 @@ describe('useDeepLink', () => {
 
         // Claims `refused:` and refuses it for a reason other than `malformed`.
         const refusingAdapter: DeeplinkChainAdapter = {
-            chainId: 'algorand',
+            chainId: 'ethereum',
             schemes: ['refused'],
             canParse: input => input.startsWith('refused:'),
             parse: () => ({ ok: false, reason: 'unsupported-network' }),
@@ -2532,6 +2532,18 @@ describe('useDeepLink', () => {
                 expect.stringContaining('common.network_unavailable'),
             )
             expect(onError).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps calling a link the legacy chain refuses invalid, as before', () => {
+            ;(parseDeeplink as Mock).mockReturnValue(null)
+            deeplinkAdapters.register({
+                ...refusingAdapter,
+                chainId: 'algorand',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            expect(result.current.isValidDeepLink('refused:abc')).toBe(false)
+            expect(result.current.isDeepLinkAvailable('refused:abc')).toBe(true)
         })
 
         it('keeps calling text no adapter claims invalid', () => {

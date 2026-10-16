@@ -116,7 +116,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
 
     return useCallback(
         async ({ chainData, target }: ChainActionDeeplink) => {
-            if (!addressCodecs.get(scope.chainId).isValid(chainData.sender)) {
+            if (!addressCodecs.get(target.chainId).isValid(chainData.sender)) {
                 showError({
                     variant: 'keyreg',
                     parsedType: 'KEYREG',

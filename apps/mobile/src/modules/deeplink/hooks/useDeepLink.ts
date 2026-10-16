@@ -87,11 +87,16 @@ type UseDeepLinkResult = {
 // Handlers act on the legacy chain until routing resolves each link's own chain.
 const ROUTABLE_LINK_CHAINS: ReadonlySet<ChainId> = new Set([LEGACY_CHAIN_ID])
 
-// A chain's adapter claimed the link but refused it for a reason the user can
-// act on, so it is refused with a toast rather than ignored as "not a link".
+// A chain the app can't route yet claimed the link, so it is refused with a
+// toast rather than ignored as "not a link". A routable chain's own refusals
+// keep their old outcome.
 const isUnsupportedChainLink = (url: string): boolean => {
     const resolution = resolveChainDeeplink(url)
-    return resolution.status === 'failed' && resolution.reason !== 'malformed'
+    return (
+        resolution.status === 'failed' &&
+        resolution.reason !== 'malformed' &&
+        !ROUTABLE_LINK_CHAINS.has(resolution.chainId)
+    )
 }
 
 const isRoutableLink = (link: AppDeeplink): boolean => {
