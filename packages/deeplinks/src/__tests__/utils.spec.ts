@@ -12,6 +12,7 @@
 
 // @vitest-environment node
 
+import { describe, expect, it } from 'vitest'
 import {
     parseQueryParams,
     decodeBase64Param,

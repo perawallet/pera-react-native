@@ -12,12 +12,16 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { FIXTURE_CHAIN_ID } from '@perawallet/wallet-core-chain-contract/testing'
 import { linkFromIntent } from '../chain-links'
 import { DeeplinkType } from '../links'
 import type { ChainLinkTarget } from '../models'
 
-const target: ChainLinkTarget = { chainId: 'fixturehex', networkId: 'testnet' }
-const assetRef = { chainId: 'fixturehex', assetId: '7' }
+const target: ChainLinkTarget = {
+    chainId: FIXTURE_CHAIN_ID,
+    networkId: 'testnet',
+}
+const assetRef = { chainId: FIXTURE_CHAIN_ID, assetId: '7' }
 const URL = 'fixturehex:source'
 
 describe('linkFromIntent', () => {

@@ -12,6 +12,7 @@
 
 // @vitest-environment node
 
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from '../chain-adapter'
 import { DeeplinkType } from '../links'

@@ -44,7 +44,7 @@ export const readScannedAddress = (
     const target = link && linkTargetOf(link)
     if (!link || !target) return { status: 'none' }
 
-    // A keyreg link carries its account as the sender; without this a QR that
+    // A chain action carries its account as the sender; without this a QR that
     // does hold an address would be reported as holding none.
     const address =
         ('receiverAddress' in link && link.receiverAddress) ||
