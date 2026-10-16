@@ -151,27 +151,39 @@ export const startConnectionsHost = (
             })
     })
 
+    // The peer has had its answer (a timeout) or the connection is gone.
+    // Nothing may approve it now, or the user would sign into a discarded result.
+    const withdrawRequest = (
+        connectionId: string,
+        correlationId: string,
+    ): void => {
+        const key = requestKey(connectionId, correlationId)
+        if (!requests.delete(key)) return
+        void deps
+            .requestApproval({
+                kind: 'connection-request-withdrawn',
+                connectionId,
+                correlationId,
+            })
+            .catch((error: unknown) => {
+                logger.error('[connections-host] request withdrawal failed', {
+                    key,
+                    error,
+                })
+            })
+    }
+
     registry.subscribeToMessages(message => {
         if (message.kind === 'request-expired') {
-            const key = requestKey(message.connectionId, message.correlationId)
-            // The handler has answered the peer with a timeout. Nothing may
-            // approve it now, or the user would sign into a discarded result.
-            if (!requests.delete(key)) return
-            void deps
-                .requestApproval({
-                    kind: 'connection-request-withdrawn',
-                    connectionId: message.connectionId,
-                    correlationId: message.correlationId,
-                })
-                .catch((error: unknown) => {
-                    logger.error(
-                        '[connections-host] request withdrawal failed',
-                        {
-                            key,
-                            error,
-                        },
-                    )
-                })
+            withdrawRequest(message.connectionId, message.correlationId)
+            return
+        }
+        if (message.kind === 'connection-closed') {
+            for (const request of [...requests.values()]) {
+                if (request.connectionId === message.connectionId) {
+                    withdrawRequest(request.connectionId, request.correlationId)
+                }
+            }
             return
         }
         if (message.kind !== 'request') return

@@ -28,6 +28,8 @@ export default defineConfig(
             // The webview bridge's error relay reads the adapter registry; the
             // barrel would pull the registry's schema and signing graphs in.
             dappRequest: resolve(__dirname, 'src/dappRequest.ts'),
+            // The browser's service worker caps its approvals with these.
+            capacity: resolve(__dirname, 'src/capacity.ts'),
         },
     }),
 )

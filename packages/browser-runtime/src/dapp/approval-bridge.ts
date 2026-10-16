@@ -14,6 +14,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { SourceType } from '@perawallet/wallet-core-connections'
+import { pendingCapacityBreach } from '@perawallet/wallet-core-connections/capacity'
 import type {
     ConnectionKind,
     ConnectionPeer,
@@ -106,11 +107,6 @@ const capacityKeyFor = (approval: PendingApproval): string =>
 // Each open* method stores its typed `resolve` widened to this so one pending
 // map serves every approval kind; the cast back happens in that method's executor.
 type Settle = (decision: unknown) => void
-
-// Generous on purpose: a dApp has one approval in flight, and two tabs of the
-// same site is the only ordinary reason to exceed it. Bounded by assertCapacity.
-const MAX_PENDING_APPROVALS_PER_ORIGIN = 3
-const MAX_PENDING_APPROVALS = 8
 
 // How long a toolbar-popup approval may go unclaimed before it counts as dismissed:
 // longer than first paint plus one round-trip, far shorter than a user deliberating.
@@ -357,16 +353,18 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     // request id could otherwise bury the desktop in windows recoverable only
     // by force-quitting the browser.
     private assertCapacity(key: string): void {
-        if (this.pending.size >= MAX_PENDING_APPROVALS) {
+        const breach = pendingCapacityBreach(
+            [...this.pending.values()].map(entry =>
+                capacityKeyFor(entry.approval),
+            ),
+            key,
+        )
+        if (breach === 'total') {
             throw new ApprovalRejectedError(
                 'Too many approval requests are already open',
             )
         }
-        let forOrigin = 0
-        for (const entry of this.pending.values()) {
-            if (capacityKeyFor(entry.approval) === key) forOrigin++
-        }
-        if (forOrigin >= MAX_PENDING_APPROVALS_PER_ORIGIN) {
+        if (breach === 'peer') {
             throw new ApprovalRejectedError(
                 `Too many approval requests are already open for ${key}`,
             )

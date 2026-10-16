@@ -159,6 +159,11 @@ export type InboundMessage =
           connectionId: ConnectionId
           correlationId: string
       }
+    /**
+     * The connection's record is gone, whichever side ended it; every request
+     * it still has open must be let go of, as for `request-expired`.
+     */
+    | { kind: 'connection-closed'; connectionId: ConnectionId }
 
 /**
  * Envelope decoded and operation type known, payload unvalidated; the registry

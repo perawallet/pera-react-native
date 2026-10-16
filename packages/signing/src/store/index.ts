@@ -11,6 +11,7 @@
  */
 
 export {
+    isSignRequestPending,
     rehydrateSigningStore,
     useSigningStore,
     wasRestoredFromStorage,

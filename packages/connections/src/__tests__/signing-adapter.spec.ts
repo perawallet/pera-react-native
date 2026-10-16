@@ -34,6 +34,10 @@ import {
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
 import type { PendingRequestLedger } from '../signing-adapter'
+import {
+    MAX_PENDING_REQUESTS,
+    MAX_PENDING_REQUESTS_PER_PEER,
+} from '../capacity'
 
 const CHAIN_ID = 'algorand' as ChainId
 
@@ -54,12 +58,14 @@ const lastTransport = (): ExternalSignTxnTransport => {
 }
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
+const mockIsSignRequestPending = vi.fn((_id: string) => true)
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
         removeSignRequest: mockRemoveSignRequest,
     }),
+    isSignRequestPending: (id: string) => mockIsSignRequestPending(id),
     // Small on purpose so "too many requests" tests stay short — the real
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
@@ -181,6 +187,22 @@ const signDataMessage = (
     reject: vi.fn(async () => {}),
 })
 
+const txnMessage = (
+    correlationId = '7',
+    connectionId = 'c1',
+): Extract<InboundMessage, { kind: 'request' }> => ({
+    kind: 'request',
+    chainId: CHAIN_ID,
+    connectionId,
+    correlationId,
+    sourceType: 'walletconnect',
+    authorizedAccounts: ['AAAA'],
+    peer: PEER,
+    operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+    respond: vi.fn(async () => {}),
+    reject: vi.fn(async () => {}),
+})
+
 // A real `ConnectionRegistry`, not an `as never` double: `subscribeToMessages`
 // is the live implementation under test, and the other nine members are
 // `vi.fn()`s. If the interface gains a required method or
@@ -224,6 +246,8 @@ describe('useConnectionSigningAdapter', () => {
         mockSelectedNetwork.current = 'mainnet'
         mockAddSignRequest.mockClear()
         mockRemoveSignRequest.mockClear()
+        mockIsSignRequestPending.mockReset()
+        mockIsSignRequestPending.mockReturnValue(true)
         mockEnqueue.mockClear()
         mockEnqueue.mockResolvedValue(null)
         dappRequestChainAdapters.reset()
@@ -689,6 +713,7 @@ describe('useConnectionSigningAdapter', () => {
                 transactionSigning: new Map([[CHAIN_ID, throwingEnqueue]]),
                 addSignRequest: mockAddSignRequest,
                 removeSignRequest: mockRemoveSignRequest,
+                isSignRequestPending: mockIsSignRequestPending,
                 accounts: [],
                 pendingRequests,
                 onError,
@@ -735,19 +760,6 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request-expired',
             connectionId: 'c1',
             correlationId,
-        })
-
-        const txnMessage = (correlationId = '7'): InboundMessage => ({
-            kind: 'request',
-            chainId: CHAIN_ID,
-            connectionId: 'c1',
-            correlationId,
-            sourceType: 'walletconnect',
-            authorizedAccounts: ['AAAA'],
-            peer: PEER,
-            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
-            respond: vi.fn(async () => {}),
-            reject: vi.fn(async () => {}),
         })
 
         it('withdraws the enqueued transaction request the peer stopped waiting for', async () => {
@@ -829,6 +841,130 @@ describe('useConnectionSigningAdapter', () => {
             send(expired())
 
             expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('pending capacity', () => {
+        const sendBurst = (
+            send: (m: InboundMessage) => void,
+            count: number,
+            connectionFor: (index: number) => string,
+        ): void => {
+            for (let i = 0; i < count; i++) {
+                send(txnMessage(String(i), connectionFor(i)))
+            }
+        }
+
+        it('refuses a connection past its cap while earlier enqueues are still in flight', () => {
+            mockEnqueue.mockReturnValue(new Promise<never>(() => {}))
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+
+            const over = txnMessage('over', 'c1')
+            send(over)
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER,
+            )
+            expect(over.reject).toHaveBeenCalledWith(
+                new Error('Too many requests are already open'),
+            )
+        })
+
+        it('refuses any connection once the total cap is reached', () => {
+            mockEnqueue.mockReturnValue(new Promise<never>(() => {}))
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS, index => `c${index}`)
+
+            send(txnMessage('over', 'fresh'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(MAX_PENDING_REQUESTS)
+        })
+
+        it('frees the slot once a request is answered', async () => {
+            mockEnqueue.mockImplementation(
+                async () =>
+                    ({
+                        id: `sr-${mockEnqueue.mock.calls.length}`,
+                    }) as never,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+            await Promise.resolve()
+            await lastTransport().respondWithResult([null])
+
+            send(txnMessage('next', 'c1'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER + 1,
+            )
+        })
+
+        it('frees the slot of a request that left the queue without an answer', async () => {
+            mockEnqueue.mockImplementation(
+                async () =>
+                    ({
+                        id: `sr-${mockEnqueue.mock.calls.length}`,
+                    }) as never,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+            await Promise.resolve()
+            mockIsSignRequestPending.mockImplementation(id => id !== 'sr-1')
+
+            send(txnMessage('next', 'c1'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER + 1,
+            )
+        })
+    })
+
+    describe('connection closed', () => {
+        it('withdraws every request the closed connection still has open, and only those', async () => {
+            const first = { id: 'sr-a' }
+            const second = { id: 'sr-b' }
+            const other = { id: 'sr-c' }
+            mockEnqueue
+                .mockResolvedValueOnce(first as never)
+                .mockResolvedValueOnce(second as never)
+                .mockResolvedValueOnce(other as never)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send(txnMessage('2', 'c1'))
+            send(txnMessage('1', 'c2'))
+            await Promise.resolve()
+
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledTimes(2)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(first)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(second)
+        })
+
+        it('withdraws on arrival when the close beats the enqueue', async () => {
+            const signRequest = { id: 'sr-late' }
+            let settle: (value: never) => void = () => {}
+            mockEnqueue.mockReturnValueOnce(
+                new Promise<never>(resolve => {
+                    settle = resolve
+                }),
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+
+            settle(signRequest as never)
+            await Promise.resolve()
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
         })
     })
 
@@ -1553,6 +1689,7 @@ describe('useConnectionSigningAdapter', () => {
             transactionSigning: new Map([[CHAIN_ID, mockEnqueue]]),
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
+            isSignRequestPending: mockIsSignRequestPending,
             accounts: [],
             pendingRequests: new Map(),
         })

@@ -381,6 +381,37 @@ describe('startConnectionsHost', () => {
             ).toEqual({ ok: false, error: 'Unknown request conn-1:7' })
         })
 
+        it('withdraws every approval the closed connection still has open, and only those', () => {
+            fake.emitMessage(makeRequest({ correlationId: '7' }))
+            fake.emitMessage(makeRequest({ correlationId: '8' }))
+            fake.emitMessage(
+                makeRequest({ connectionId: 'conn-2', correlationId: '7' }),
+            )
+            requestApproval.mockClear()
+
+            fake.emitMessage({
+                kind: 'connection-closed',
+                connectionId: 'conn-1',
+            })
+
+            expect(requestApproval.mock.calls).toEqual([
+                [
+                    {
+                        kind: 'connection-request-withdrawn',
+                        connectionId: 'conn-1',
+                        correlationId: '7',
+                    },
+                ],
+                [
+                    {
+                        kind: 'connection-request-withdrawn',
+                        connectionId: 'conn-1',
+                        correlationId: '8',
+                    },
+                ],
+            ])
+        })
+
         it('withdraws nothing for an expiry on a request already answered', () => {
             fake.emitMessage({
                 kind: 'request-expired',

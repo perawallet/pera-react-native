@@ -27,6 +27,7 @@ import {
     MAX_DATA_SIGN_REQUESTS,
     canSignMessage,
     isFeeAdjustmentDeliveryError,
+    isSignRequestPending,
     useSigningRequest,
     type AuthDataSignRequest,
     type AuthDataSignableData,
@@ -37,6 +38,7 @@ import {
     type SignRequest,
     type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import {
     authorityOf,
     chainAccountOf,
@@ -49,6 +51,7 @@ import {
     dappRequestChainAdapters,
     type EnqueueTransactionSigning,
 } from './dappRequest'
+import { pendingCapacityBreach } from './capacity'
 import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
 
@@ -66,11 +69,15 @@ type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
 type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
 
 /**
- * One request the pipeline is holding open for the user. `withdraw` is null
+ * One request the pipeline is holding open for the user. `request` is null
  * while the chain's signing enqueue is still pending; an expiry landing in
  * that window marks the entry and the enqueue's continuation withdraws.
  */
-type PendingRequest = { withdraw: Nullable<() => void>; isExpired: boolean }
+type PendingRequest = {
+    connectionId: ConnectionId
+    request: Nullable<SignRequest>
+    isExpired: boolean
+}
 
 export type PendingRequestLedger = Map<string, PendingRequest>
 
@@ -82,10 +89,11 @@ const requestKey = (message: {
 const trackRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
-    withdraw: Nullable<() => void>,
+    request: Nullable<SignRequest>,
 ): void => {
     deps.pendingRequests.set(requestKey(message), {
-        withdraw,
+        connectionId: message.connectionId,
+        request,
         isExpired: false,
     })
 }
@@ -97,24 +105,37 @@ const forgetRequest = (
     deps.pendingRequests.delete(requestKey(message))
 }
 
-/** The async enqueue settled: hand over the withdrawal, or honour an expiry that beat it. */
+/** The async enqueue settled: hand over the request, or honour an expiry that beat it. */
 const settleTrackedRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
-    withdraw: Nullable<() => void>,
+    request: Nullable<SignRequest>,
 ): void => {
     const key = requestKey(message)
     const entry = deps.pendingRequests.get(key)
-    if (!withdraw || !entry) {
+    if (!request || !entry) {
         deps.pendingRequests.delete(key)
         return
     }
     if (entry.isExpired) {
         deps.pendingRequests.delete(key)
-        withdraw()
+        deps.removeSignRequest(request)
         return
     }
-    entry.withdraw = withdraw
+    entry.request = request
+}
+
+const withdrawTrackedRequest = (
+    deps: EnqueueInboundRequestDeps,
+    key: string,
+    entry: PendingRequest,
+): void => {
+    if (!entry.request) {
+        entry.isExpired = true
+        return
+    }
+    deps.pendingRequests.delete(key)
+    deps.removeSignRequest(entry.request)
 }
 
 // Not reported here: the handler that saw the expiry owns the user-facing
@@ -125,13 +146,32 @@ const withdrawExpiredRequest = (
 ): void => {
     const key = requestKey(message)
     const entry = deps.pendingRequests.get(key)
-    if (!entry) return
-    if (!entry.withdraw) {
-        entry.isExpired = true
-        return
+    if (entry) withdrawTrackedRequest(deps, key, entry)
+}
+
+const withdrawClosedConnection = (
+    connectionId: ConnectionId,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    for (const [key, entry] of deps.pendingRequests) {
+        if (entry.connectionId === connectionId) {
+            withdrawTrackedRequest(deps, key, entry)
+        }
     }
-    deps.pendingRequests.delete(key)
-    entry.withdraw()
+}
+
+/**
+ * The connection of every request still open. A request can leave the queue
+ * without an answer (the sheet's dismiss removes it directly), so its entry is
+ * dropped here rather than held against its connection's cap for good.
+ */
+const openRequestConnections = (deps: EnqueueInboundRequestDeps): string[] => {
+    for (const [key, entry] of deps.pendingRequests) {
+        if (entry.request && !deps.isSignRequestPending(entry.request.id)) {
+            deps.pendingRequests.delete(key)
+        }
+    }
+    return [...deps.pendingRequests.values()].map(entry => entry.connectionId)
 }
 
 /** Where a failure the user should hear about goes; the registry's channel on mobile. */
@@ -250,7 +290,7 @@ const enqueueDataSignRequest = (
         },
     }
     addSignRequest(signRequest)
-    trackRequest(deps, message, () => removeSignRequest(signRequest))
+    trackRequest(deps, message, signRequest)
 }
 
 /**
@@ -464,9 +504,7 @@ const enqueueSendTransactionRequest = (
                     },
                 }
                 addSignRequest(signRequest)
-                settleTrackedRequest(deps, message, () =>
-                    removeSignRequest(signRequest),
-                )
+                settleTrackedRequest(deps, message, signRequest)
             },
             (error: unknown) => {
                 forgetRequest(deps, message)
@@ -479,6 +517,8 @@ export type EnqueueInboundRequestDeps = {
     transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
+    /** Read live: requests arrive in bursts between renders. */
+    isSignRequestPending: (id: string) => boolean
     accounts: WalletAccount[]
     /**
      * Every request still open for the user, so a `request-expired` message
@@ -506,7 +546,28 @@ export const enqueueInboundRequest = (
         withdrawExpiredRequest(message, deps)
         return
     }
+    if (message.kind === 'connection-closed') {
+        withdrawClosedConnection(message.connectionId, deps)
+        return
+    }
     if (message.kind !== 'request') return
+
+    const breach = pendingCapacityBreach(
+        openRequestConnections(deps),
+        message.connectionId,
+    )
+    if (breach) {
+        // Not toasted: a peer flooding requests would flood the user too.
+        logger.warn('[connections] refused a request over the pending cap', {
+            connectionId: message.connectionId,
+            breach,
+        })
+        rejectInBackground(
+            message,
+            new Error('Too many requests are already open'),
+        )
+        return
+    }
 
     if (message.operation.type === 'sign-transactions') {
         // `useChainTransactionSigning` resolves one chain's hook per mount, so
@@ -583,12 +644,7 @@ export const enqueueInboundRequest = (
         // `enqueue` can still reject past its own handling (re-encoding a
         // fee-adjusted group); un-caught that is an unanswered peer.
         enqueued.then(
-            request =>
-                settleTrackedRequest(
-                    deps,
-                    message,
-                    request ? () => deps.removeSignRequest(request) : null,
-                ),
+            request => settleTrackedRequest(deps, message, request ?? null),
             (error: unknown) => {
                 forgetRequest(deps, message)
                 declineRequest(message, toError(error), deps.onError)
@@ -644,6 +700,7 @@ export const useConnectionSigningAdapter = (
         transactionSigning,
         addSignRequest,
         removeSignRequest,
+        isSignRequestPending,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
@@ -652,6 +709,7 @@ export const useConnectionSigningAdapter = (
         transactionSigning,
         addSignRequest,
         removeSignRequest,
+        isSignRequestPending,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
