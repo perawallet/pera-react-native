@@ -25,7 +25,7 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { algorandNetworkOf } from '../../../legacy-network'
+import { algorandNetworkOf } from '../../../network-id'
 import { fetchIndexerCloseAmount } from '../../history/indexer/endpoints'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
