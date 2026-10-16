@@ -12,11 +12,10 @@
 
 import type {
     ChainId,
-    ChainScope,
     MessageRequest,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AuthDataSignableData,
     PeraArbitraryDataMessage,

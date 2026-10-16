@@ -24,12 +24,6 @@ import { ETHEREUM_WC_V2_METHOD } from './walletConnect'
 type MessageValidation = DappRequestValidation<DappMessageRequest>
 type Refusal = Extract<MessageValidation, { ok: false }>
 
-// `plan` hashes and the review renders the whole payload on the JS thread, so
-// a session dApp's oversized one is refused before either sees it.
-export const MAX_MESSAGE_LENGTH = 64 * 1024
-export const MAX_TYPED_DATA_NODES = 2048
-export const MAX_TYPED_DATA_DEPTH = 32
-
 const invalid = (message: string): Refusal => ({
     ok: false,
     failure: 'invalid-params',
@@ -78,27 +72,6 @@ const parseTypedData = (value: unknown): unknown => {
     }
 }
 
-// Iterative and early-out, so a hostile document costs at most the budget.
-const isWithinTypedDataBudget = (root: unknown): boolean => {
-    const stack: { value: unknown; depth: number }[] = [
-        { value: root, depth: 0 },
-    ]
-    let nodes = 0
-    for (let next = stack.pop(); next; next = stack.pop()) {
-        const { value, depth } = next
-        nodes += 1
-        if (nodes > MAX_TYPED_DATA_NODES || depth > MAX_TYPED_DATA_DEPTH) {
-            return false
-        }
-        if (typeof value === 'object' && value !== null) {
-            for (const child of Object.values(value)) {
-                stack.push({ value: child, depth: depth + 1 })
-            }
-        }
-    }
-    return true
-}
-
 const validatePersonalSign = (
     params: readonly unknown[],
     authorizedAccounts: readonly string[],
@@ -106,9 +79,6 @@ const validatePersonalSign = (
     const usage = 'personal_sign expects [message, address]'
     const [message, address] = params
     if (typeof message !== 'string') return invalid(usage)
-    if (message.length > MAX_MESSAGE_LENGTH) {
-        return invalid('personal_sign message is too long')
-    }
     const signer = signerOf(address, authorizedAccounts, usage)
     if (!signer.ok) return signer
     return {
@@ -134,18 +104,9 @@ const validateSignTypedData = (
         'eth_signTypedData_v4 expects [address, typedData]',
     )
     if (!signer.ok) return signer
-    if (
-        typeof rawTypedData === 'string' &&
-        rawTypedData.length > MAX_MESSAGE_LENGTH
-    ) {
-        return invalid('eth_signTypedData_v4 typedData is too large')
-    }
     const typedData = parseTypedData(rawTypedData)
     if (!isRecord(typedData) || Array.isArray(typedData)) {
         return invalid('eth_signTypedData_v4 typedData is not an object')
-    }
-    if (!isWithinTypedDataBudget(typedData)) {
-        return invalid('eth_signTypedData_v4 typedData is too large')
     }
     return {
         ok: true,

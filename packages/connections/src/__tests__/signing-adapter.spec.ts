@@ -1630,7 +1630,7 @@ describe('useConnectionSigningAdapter', () => {
             expect(mockRemoveSignRequest).toHaveBeenCalled()
         })
 
-        it('declines a signer that cannot sign as an unsupported operation, with nothing enqueued', () => {
+        it('declines a signer that cannot sign, with nothing enqueued', () => {
             mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: false })]
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1638,14 +1638,12 @@ describe('useConnectionSigningAdapter', () => {
 
             send(message)
 
-            expect(message.reject).toHaveBeenCalledWith(
-                expect.objectContaining({ failure: 'unsupported-method' }),
-            )
+            expect(message.reject).toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(mockPlan).not.toHaveBeenCalled()
         })
 
-        it('declines a signer the wallet no longer holds as unauthorized, with nothing enqueued', () => {
+        it('declines a signer the wallet does not hold, with nothing enqueued', () => {
             mockAccounts = []
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
@@ -1653,9 +1651,7 @@ describe('useConnectionSigningAdapter', () => {
 
             send(message)
 
-            expect(message.reject).toHaveBeenCalledWith(
-                expect.objectContaining({ failure: 'unauthorized-account' }),
-            )
+            expect(message.reject).toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 

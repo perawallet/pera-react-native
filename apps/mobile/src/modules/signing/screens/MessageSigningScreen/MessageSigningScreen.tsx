@@ -13,7 +13,6 @@
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
-import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
@@ -80,20 +79,6 @@ export const MessageSigningScreen = () => {
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
-                    {summary.kind === 'typed-data' && (
-                        <InfoCallout
-                            icon='warning'
-                            iconSize='sm'
-                            titleVariant='bodySemibold'
-                            title={t(
-                                'signing.arbitrary_data_view.typed_data_warning_title',
-                            )}
-                            body={t(
-                                'signing.arbitrary_data_view.typed_data_warning_body',
-                            )}
-                            testID='message-signing-typed-data-warning'
-                        />
-                    )}
                     {!!summary.tree && <MessageTreeView nodes={summary.tree} />}
                 </PWView>
 
