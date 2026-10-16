@@ -3360,6 +3360,11 @@
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
         },
+        "switch_network": {
+            "title": "Ağ erişimine izin verilsin mi?",
+            "body": "{{name}}, {{network}} ağında {{chain}} hesaplarını kullanmak istiyor.",
+            "confirm": "İzin ver"
+        },
         "settings": {
             "empty_title": "WalletConnect oturumu yok",
             "empty_body": "Etkin bir WalletConnect oturumun yok.",

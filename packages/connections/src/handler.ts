@@ -106,6 +106,10 @@ export interface ConnectionHandler<
      */
     describeUri?(uri: string): Record<string, string | null>
 
-    /** Present only if the protocol can push wallet-initiated messages. */
+    /**
+     * Present only if the protocol can push wallet-initiated messages. Each
+     * handler decides relevance: resolves without sending when the session
+     * lacks the notice's chain, and never widens the accounts the session holds.
+     */
     notify?(id: ConnectionId, notice: WalletNotice): Promise<void>
 }

@@ -20,6 +20,7 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
     useConnectionSigningAdapter,
+    watchWalletNotices,
     type ConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
@@ -34,6 +35,7 @@ import {
 } from '@modules/walletconnect'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
+import { useNetworkSwitchPrompt } from './useNetworkSwitchPrompt'
 import { useProposalQueue } from './useProposalQueue'
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
@@ -93,7 +95,11 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         return () => clearActiveWalletConnectV1Delivery(v1Handler)
     }, [])
 
-    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID)
+    const confirmNetworkSwitch = useNetworkSwitchPrompt()
+    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID, {
+        confirmNetworkSwitch,
+    })
+    useEffect(() => watchWalletNotices(registry), [registry])
     useConnectionsBoot(registry)
     const proposals = useProposalQueue(registry)
     useConnectionErrorToasts(registry, proposals)

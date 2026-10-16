@@ -3360,6 +3360,11 @@
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
         },
+        "switch_network": {
+            "title": "Autoriser l’accès au réseau ?",
+            "body": "{{name}} souhaite utiliser vos comptes {{chain}} sur {{network}}.",
+            "confirm": "Autoriser"
+        },
         "settings": {
             "empty_title": "Aucune session WalletConnect",
             "empty_body": "Vous n’avez aucune session WalletConnect active.",

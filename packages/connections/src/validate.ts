@@ -11,6 +11,7 @@
  */
 
 import type { z } from 'zod'
+import { isNetworkId } from '@perawallet/wallet-core-chain-contract'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     legacyArbitraryDataWireSchema,
@@ -146,6 +147,28 @@ export const validateRawMessage = (
             type: 'send-transaction',
             request: result.request,
         })
+    }
+
+    if (rawOperation.type === 'switch-network') {
+        const adapter = dappRequestChainAdapters.get(raw.chainId)
+        const { params } = rawOperation
+        const networkId =
+            typeof params === 'object' && params !== null
+                ? (params as { networkId?: unknown }).networkId
+                : undefined
+        if (
+            !isNetworkId(networkId) ||
+            adapter.walletConnect.caip2ChainIdFor(networkId) === null
+        ) {
+            return {
+                ok: false,
+                error: new ConnectionsError(
+                    'invalid-payload',
+                    'The network cannot be switched to',
+                ),
+            }
+        }
+        return accepted(raw, { type: 'switch-network', networkId })
     }
 
     if (

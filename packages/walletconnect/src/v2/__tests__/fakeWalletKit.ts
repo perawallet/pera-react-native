@@ -121,6 +121,8 @@ export type FakeWalletKit = WalletKitClient & {
     rejectSession: Mock<WalletKitClient['rejectSession']>
     disconnectSession: Mock<WalletKitClient['disconnectSession']>
     respondSessionRequest: Mock<WalletKitClient['respondSessionRequest']>
+    updateSession: Mock<WalletKitClient['updateSession']>
+    emitSessionEvent: Mock<WalletKitClient['emitSessionEvent']>
     /** Core's own expirer event, whose target is `topic:…` or `id:…`. */
     emitExpired(target: string): void
     expirerListenerCount(): number
@@ -211,6 +213,16 @@ export const createFakeWalletKit = (
     const respondSessionRequest = vi.fn<
         WalletKitClient['respondSessionRequest']
     >(async () => {})
+    // Writes the namespaces the way the relay does once it accepts them.
+    const updateSession = vi.fn<WalletKitClient['updateSession']>(
+        async ({ topic, namespaces }) => {
+            sessions[topic] = { ...sessions[topic], namespaces }
+            return { acknowledged: async () => {} }
+        },
+    )
+    const emitSessionEvent = vi.fn<WalletKitClient['emitSessionEvent']>(
+        async () => {},
+    )
     const expirerListeners = new Set<(payload: { target: string }) => void>()
 
     return {
@@ -221,6 +233,8 @@ export const createFakeWalletKit = (
         rejectSession,
         disconnectSession,
         respondSessionRequest,
+        updateSession,
+        emitSessionEvent,
         core: {
             pairing: { pair, disconnect: pairingDisconnect },
             relayer: { transportClose },

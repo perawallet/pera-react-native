@@ -62,6 +62,8 @@ const makeRegistry = (order: string[]): ConnectionRegistry => ({
     subscribeToProposals: vi.fn(() => () => {}),
     subscribeToMessages: vi.fn(() => () => {}),
     subscribeToErrors: vi.fn(() => () => {}),
+    reportError: vi.fn(),
+    notify: vi.fn(async () => {}),
 })
 
 const flush = (): Promise<void> =>

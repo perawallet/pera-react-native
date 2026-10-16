@@ -18,7 +18,9 @@ import {
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import {
     broadcasterChainAdapters,
+    localKeySignerChainAdapters,
     messageSignerChainAdapters,
+    reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
 import {
     addressCodecs,
@@ -40,8 +42,10 @@ import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
 import { ethereumHistoryAdapter } from '../history'
 import { registerChain } from '../register'
 import { ethereumPlannerAdapter } from '../signing/adapter'
+import { ethereumLocalKeySignerAdapter } from '../signing/localKeySigner'
 import { ethereumMessageSignerAdapter } from '../signing/messages'
 import { ethereumReviewerAdapter } from '../signing/review'
+import { ethereumSigningReviewerAdapter } from '../signing/signingReviewer'
 
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
 const context = {} as ChainContext
@@ -53,6 +57,8 @@ describe('registerChain', () => {
         transactionPlanners.reset()
         transactionReviewers.reset()
         messageSignerChainAdapters.reset()
+        reviewerChainAdapters.reset()
+        localKeySignerChainAdapters.reset()
         accountsChainAdapters.reset()
         assetsChainAdapters.reset()
         transferChainAdapters.reset()
@@ -62,7 +68,7 @@ describe('registerChain', () => {
         deeplinkAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, message signer, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, signing reviewer, local-key signer, message signer, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -73,6 +79,12 @@ describe('registerChain', () => {
         )
         expect(messageSignerChainAdapters.get('ethereum')).toBe(
             ethereumMessageSignerAdapter,
+        )
+        expect(reviewerChainAdapters.get('ethereum')).toBe(
+            ethereumSigningReviewerAdapter,
+        )
+        expect(localKeySignerChainAdapters.get('ethereum')).toBe(
+            ethereumLocalKeySignerAdapter,
         )
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(assetsChainAdapters.get('ethereum').getNativeAsset()).toBe(

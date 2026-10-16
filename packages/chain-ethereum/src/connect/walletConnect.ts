@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { bytesToHex, numberToHex } from 'viem'
+import { bytesToHex, hexToBigInt, isHex, numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type {
     DappRequestChainAdapter,
     DappRequestFailure,
+    WalletConnectRequestRoute,
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
@@ -45,6 +46,9 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'limit-exceeded': -32_005,
 }
 
+/** EIP-3326's answer to a chain the wallet does not have; it has no `DappRequestFailure`. */
+const EIP3326_UNRECOGNIZED_CHAIN = 4902
+
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
     ethereumDescriptor.networks.find(network => network.id === networkId)
         ?.caip2 ?? null
@@ -57,6 +61,42 @@ const firstPositional = (params: unknown): unknown => {
     if (!Array.isArray(params)) return params
     const positional: unknown[] = params
     return positional[0]
+}
+
+// `[{ chainId: '0x…' }]`, the hex quantity EIP-3326 specifies.
+const requestedChainId = (params: unknown): Nullable<bigint> => {
+    const first = firstPositional(params)
+    if (typeof first !== 'object' || first === null) return null
+    const { chainId } = first as { chainId?: unknown }
+    return isHex(chainId, { strict: true }) && chainId.length > 2
+        ? hexToBigInt(chainId)
+        : null
+}
+
+const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
+    const requested = requestedChainId(params)
+    if (requested === null) {
+        return {
+            kind: 'refused',
+            error: {
+                code: EIP_1193_CODE['invalid-params'],
+                message: 'Expected [{ chainId }] with a hex chain id',
+            },
+        }
+    }
+    const networkId = networkForCaip2ChainId(
+        `${ETHEREUM_CAIP2_NAMESPACE}:${requested}`,
+    )
+    if (networkId === null) {
+        return {
+            kind: 'refused',
+            error: {
+                code: EIP3326_UNRECOGNIZED_CHAIN,
+                message: 'This wallet does not have that chain',
+            },
+        }
+    }
+    return { kind: 'switch-network', networkId }
 }
 
 const SIGNING_METHODS = [
@@ -94,11 +134,7 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
                 return { kind: 'operation', type: 'sign-typed-data', params }
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
-                return {
-                    kind: 'operation',
-                    type: 'switch-network',
-                    params: firstPositional(params),
-                }
+                return routeSwitch(params)
             }
             case ETHEREUM_WC_V2_METHOD.accounts:
             case ETHEREUM_WC_V2_METHOD.requestAccounts: {
@@ -123,6 +159,14 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
             }
         }
     },
+    sessionEvents: {
+        chainChangedData: networkId => {
+            const eip155ChainId = eip155ChainIdOfNetwork(networkId)
+            return eip155ChainId === undefined
+                ? null
+                : numberToHex(eip155ChainId)
+        },
+    },
 }
 
 export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnect'] =
@@ -132,6 +176,7 @@ export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnec
         networkForCaip2ChainId,
         toWireResult: result => {
             if (result.type === 'send-transaction') return result.txId
+            if (result.type === 'switch-network') return null
             if (
                 result.type === 'sign-message' ||
                 result.type === 'sign-typed-data'

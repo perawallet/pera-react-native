@@ -12,15 +12,8 @@
 
 import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-    useAccountBalancesQuery,
-    useSigningAccountsOn,
-    useSortedAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWFlatList, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -35,23 +28,11 @@ export type ConnectionApprovalViewProps = {
 export const ConnectionApprovalView = ({
     proposal,
 }: ConnectionApprovalViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
-    const signingAccounts = useSigningAccountsOn(proposal.requested.chains)
-    // Honor the user's account-overview sort order instead of raw store order.
-    const { accountBalances } = useAccountBalancesQuery(
-        signingAccounts,
-        scope,
-        true,
-    )
-    const { sortedAccounts } = useSortedAccounts(
-        signingAccounts,
-        accountBalances,
-        scope.chainId,
-    )
     const {
+        sortedAccounts,
         selectedAccounts,
         isConnecting,
         handleAccountPress,

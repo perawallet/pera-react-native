@@ -169,6 +169,29 @@ describe('wallet operation wire codec', () => {
         },
     )
 
+    it('round-trips a switch-network operation and its result unchanged, and the guards accept them', () => {
+        const operation: WalletOperation = {
+            type: 'switch-network',
+            networkId: 'sepolia',
+        }
+        const result = { type: 'switch-network' as const }
+
+        const wireOperation = overTheWire(encodeWalletOperation(operation))
+        const wireResult = overTheWire(encodeWalletOperationResult(result))
+
+        expect(isWireWalletOperation(wireOperation)).toBe(true)
+        expect(decodeWalletOperation(wireOperation)).toEqual(operation)
+        expect(isWireWalletOperationResult(wireResult)).toBe(true)
+        expect(decodeWalletOperationResult(wireResult)).toEqual(result)
+    })
+
+    it('rejects a switch-network operation with no network id', () => {
+        expect(isWireWalletOperation({ type: 'switch-network' })).toBe(false)
+        expect(
+            isWireWalletOperation({ type: 'switch-network', networkId: 5 }),
+        ).toBe(false)
+    })
+
     it('rejects a message operation with no signer and a message result with no signature', () => {
         expect(
             isWireWalletOperation({

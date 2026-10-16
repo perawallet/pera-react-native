@@ -28,6 +28,7 @@ import {
     addressCodecs,
     type AddressCodec,
     type ChainId,
+    type ChainScope,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
@@ -84,6 +85,8 @@ if (!algorandAdapter) {
 }
 const algorandCodec = addressCodecs.get('algorand')
 
+const EIP3326_UNRECOGNIZED_CHAIN = 4902
+
 const ethereumAdapter: DappRequestChainAdapter = {
     chainId: 'ethereum',
     relayableErrorNames: [],
@@ -106,9 +109,34 @@ const ethereumAdapter: DappRequestChainAdapter = {
             result.type === 'send-transaction' ? result.txId : null,
         toWireErrorCode: failure => EIP_1193[failure],
         v2: {
-            methods: ['eth_sendTransaction', 'eth_chainId'],
+            methods: [
+                'eth_sendTransaction',
+                'eth_chainId',
+                'wallet_switchEthereumChain',
+            ],
             signingMethods: ['eth_sendTransaction'],
+            sessionEvents: {
+                chainChangedData: networkId =>
+                    ({ mainnet: '0x1', sepolia: '0xaa36a7' })[networkId] ??
+                    null,
+            },
             handleRequest: (method, params) => {
+                if (method === 'wallet_switchEthereumChain') {
+                    const chainId = (params as [{ chainId: string }])[0].chainId
+                    if (chainId === '0x1') {
+                        return { kind: 'switch-network', networkId: 'mainnet' }
+                    }
+                    if (chainId === '0xaa36a7') {
+                        return { kind: 'switch-network', networkId: 'sepolia' }
+                    }
+                    return {
+                        kind: 'refused',
+                        error: {
+                            code: EIP3326_UNRECOGNIZED_CHAIN,
+                            message: 'Unrecognized chain',
+                        },
+                    }
+                }
                 if (method === 'eth_sendTransaction') {
                     return {
                         kind: 'operation',
@@ -681,5 +709,483 @@ describe('restore', () => {
                 methods: ['algo_signTxn', 'eth_sendTransaction'],
             },
         })
+    })
+})
+
+const EVENTS = ['accountsChanged', 'chainChanged']
+
+// A live session holding both namespaces, the shape `approveSession` leaves in
+// the SDK, with the record the handler stored for it.
+const liveSession = (
+    topic = TOPIC,
+    eip155: { chains?: string[]; events?: string[]; accounts?: string[] } = {},
+) =>
+    makeSession({
+        topic,
+        namespaces: {
+            algorand: {
+                chains: [MAINNET_CHAIN_ID],
+                accounts: [`${MAINNET_CHAIN_ID}:${ADDRESS}`],
+                methods: ['algo_signTxn'],
+                events: EVENTS,
+            },
+            eip155: {
+                chains: eip155.chains ?? [ETH_MAINNET],
+                accounts: eip155.accounts ?? [`${ETH_MAINNET}:${ETH}`],
+                methods: ['eth_sendTransaction', 'wallet_switchEthereumChain'],
+                events: eip155.events ?? EVENTS,
+            },
+        },
+    })
+
+const recordFor = (
+    topic = TOPIC,
+    overrides: { accounts?: string[]; chains?: string[] } = {},
+) => ({
+    id: topic,
+    kind: 'walletconnect-v2',
+    name: 'dApp',
+    peer: { name: 'dApp' },
+    accounts: overrides.accounts ?? [ADDRESS, ETH],
+    status: 'active' as const,
+    createdAt: 1,
+    lastActiveAt: 1,
+    metadata: {
+        topic,
+        chains: overrides.chains ?? [MAINNET_CHAIN_ID, ETH_MAINNET],
+        methods: ['algo_signTxn', 'eth_sendTransaction'],
+        expiry: 1_800_000_000,
+    },
+})
+
+const SECOND_TOPIC = 'b'.repeat(64)
+
+const BOTH_ETHEREUM_NETWORKS = {
+    chains: [ETH_MAINNET, ETH_SEPOLIA],
+    accounts: [`${ETH_MAINNET}:${ETH}`, `${ETH_SEPOLIA}:${ETH}`],
+}
+
+const SWITCH_TO_SEPOLIA = {
+    method: 'wallet_switchEthereumChain',
+    params: [{ chainId: '0xaa36a7' }],
+    chainId: ETH_MAINNET,
+}
+
+describe('wallet_switchEthereumChain', () => {
+    const live = async (session = liveSession(), record = recordFor(TOPIC)) => {
+        const walletKit = createFakeWalletKit({ [TOPIC]: session })
+        return await open([record], walletKit)
+    }
+
+    const switchRequest = async (
+        opened: Awaited<ReturnType<typeof live>>,
+        request: Parameters<typeof makeRequest>[0],
+    ) => {
+        opened.walletKit.emit('session_request', makeRequest(request))
+        await flush()
+    }
+
+    it('answers a refusal with the chain’s own error, without asking the registry or the user', async () => {
+        const opened = await live()
+
+        await switchRequest(opened, {
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }],
+            chainId: ETH_MAINNET,
+        })
+
+        expect(opened.context.onMessage).not.toHaveBeenCalled()
+        expect(opened.context.onError).not.toHaveBeenCalled()
+        expect(opened.walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: {
+                    code: EIP3326_UNRECOGNIZED_CHAIN,
+                    message: 'Unrecognized chain',
+                },
+            },
+        })
+    })
+
+    it('answers a switch to the selected network the session holds at once, with no prompt', async () => {
+        const opened = await live()
+
+        await switchRequest(opened, {
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x1' }],
+            chainId: ETH_MAINNET,
+        })
+
+        expect(opened.context.onMessage).not.toHaveBeenCalled()
+        expect(opened.walletKit.updateSession).not.toHaveBeenCalled()
+        expect(opened.walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: { id: REQUEST_ID, jsonrpc: '2.0', result: null },
+        })
+    })
+
+    it('refuses a network that is not the selected one with the unselected-chain code, without asking', async () => {
+        const opened = await live(liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS))
+
+        await switchRequest(opened, SWITCH_TO_SEPOLIA)
+
+        expect(opened.context.onMessage).not.toHaveBeenCalled()
+        expect(opened.walletKit.updateSession).not.toHaveBeenCalled()
+        expect(opened.walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({
+                    code: EIP_1193['unselected-chain'],
+                }),
+            },
+        })
+    })
+
+    const SWITCH_TO_MAINNET_FROM_SEPOLIA = {
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x1' }],
+        chainId: ETH_SEPOLIA,
+    }
+
+    const lackingMainnet = async () => {
+        const opened = await live(
+            liveSession(TOPIC, {
+                chains: [ETH_SEPOLIA],
+                accounts: [`${ETH_SEPOLIA}:${ETH}`],
+            }),
+            recordFor(TOPIC, { chains: [MAINNET_CHAIN_ID, ETH_SEPOLIA] }),
+        )
+        await switchRequest(opened, SWITCH_TO_MAINNET_FROM_SEPOLIA)
+        const [message] = opened.context.onMessage.mock.calls[0] as [
+            Extract<InboundMessage, { kind: 'request' }>,
+        ]
+        return { ...opened, message }
+    }
+
+    it('asks the user before adding the selected network to a session that lacks it', async () => {
+        const { walletKit, message } = await lackingMainnet()
+
+        expect(message).toMatchObject({
+            kind: 'request',
+            chainId: 'ethereum',
+            rawOperation: {
+                type: 'switch-network',
+                params: { networkId: 'mainnet' },
+            },
+        })
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+    })
+
+    it('adds the network with only the addresses the session holds, then answers, once the user approves', async () => {
+        const { walletKit, store, message } = await lackingMainnet()
+
+        await message.respond({ type: 'switch-network' })
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0]
+        expect(namespaces.eip155.chains).toEqual([ETH_SEPOLIA, ETH_MAINNET])
+        expect(namespaces.eip155.accounts).toEqual([
+            `${ETH_SEPOLIA}:${ETH}`,
+            `${ETH_MAINNET}:${ETH}`,
+        ])
+        // The other namespace is carried over untouched.
+        expect(namespaces.algorand.accounts).toEqual([
+            `${MAINNET_CHAIN_ID}:${ADDRESS}`,
+        ])
+        const [stored] = await store.list()
+        expect(stored.metadata?.chains).toEqual([
+            MAINNET_CHAIN_ID,
+            ETH_SEPOLIA,
+            ETH_MAINNET,
+        ])
+        expect(
+            walletKit.updateSession.mock.invocationCallOrder[0],
+        ).toBeLessThan(
+            walletKit.respondSessionRequest.mock.invocationCallOrder[0],
+        )
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: { id: REQUEST_ID, jsonrpc: '2.0', result: null },
+        })
+    })
+
+    it('throws rather than answering when the selection moved while the prompt was open', async () => {
+        const { walletKit, message } = await lackingMainnet()
+        selectedNetworks.ethereum = 'sepolia'
+
+        await expect(
+            message.respond({ type: 'switch-network' }),
+        ).rejects.toThrow()
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+    })
+
+    it('throws, and leaves the record alone, when the dApp cannot take the session update', async () => {
+        const { walletKit, store, message } = await lackingMainnet()
+        walletKit.updateSession.mockRejectedValueOnce(new Error('dApp offline'))
+
+        await expect(
+            message.respond({ type: 'switch-network' }),
+        ).rejects.toThrow('dApp offline')
+
+        const [stored] = await store.list()
+        expect(stored.metadata?.chains).toEqual([MAINNET_CHAIN_ID, ETH_SEPOLIA])
+        expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+    })
+
+    it('sends a rejected switch as the user-rejection code and leaves the session alone', async () => {
+        const { walletKit, message } = await lackingMainnet()
+
+        await message.reject(new DappRequestRejectedError())
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: { code: 4001, message: 'User rejected' },
+            },
+        })
+    })
+
+    it('refuses wallet_addEthereumChain as an unsupported method', async () => {
+        const opened = await live()
+
+        await switchRequest(opened, {
+            method: 'wallet_addEthereumChain',
+            params: [{ chainId: '0x89' }],
+            chainId: ETH_MAINNET,
+        })
+
+        expect(opened.context.onMessage).not.toHaveBeenCalled()
+        expect(opened.walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({
+                    code: EIP_1193['unsupported-method'],
+                }),
+            },
+        })
+    })
+})
+
+describe('notify', () => {
+    const SEPOLIA_NOTICE = {
+        type: 'network-changed',
+        scope: { chainId: 'ethereum', networkId: 'sepolia' },
+    } as const
+
+    const OTHER_ETH = '0x1111111111111111111111111111111111111111'
+    const THIRD_ETH = '0x2222222222222222222222222222222222222222'
+
+    const withSessions = async (
+        sessions: Record<string, ReturnType<typeof liveSession>>,
+        records: ReturnType<typeof recordFor>[],
+    ) => {
+        const walletKit = createFakeWalletKit(sessions)
+        return await open(records, walletKit)
+    }
+
+    it('emits chainChanged with the hex chain id on a session holding the new network', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS) },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, SEPOLIA_NOTICE)
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith({
+            topic: TOPIC,
+            event: { name: 'chainChanged', data: '0xaa36a7' },
+            chainId: ETH_SEPOLIA,
+        })
+    })
+
+    it('neither adds the new network nor emits on a session that lacks it', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession() },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, SEPOLIA_NOTICE)
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('sends nothing to a session without the chain’s namespace, or for another chain’s notice', async () => {
+        const { handler, walletKit } = await withSessions(
+            {
+                [TOPIC]: makeSession(),
+                [SECOND_TOPIC]: liveSession(SECOND_TOPIC),
+            },
+            [
+                recordFor(TOPIC, {
+                    accounts: [ADDRESS],
+                    chains: [MAINNET_CHAIN_ID],
+                }),
+                recordFor(SECOND_TOPIC),
+            ],
+        )
+
+        await handler.notify?.(TOPIC, SEPOLIA_NOTICE)
+        await handler.notify?.(SECOND_TOPIC, {
+            type: 'network-changed',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+        })
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('emits nothing when the dApp never asked for chainChanged', async () => {
+        const { handler, walletKit } = await withSessions(
+            {
+                [TOPIC]: liveSession(TOPIC, {
+                    ...BOTH_ETHEREUM_NETWORKS,
+                    events: ['accountsChanged'],
+                }),
+            },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, SEPOLIA_NOTICE)
+
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('reaches only the eip155 sessions when two of them and an Algorand-only one are open', async () => {
+        const SECOND = 'e'.repeat(64)
+        const THIRD = 'f'.repeat(64)
+        const { handler, walletKit } = await withSessions(
+            {
+                [TOPIC]: liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS),
+                [SECOND]: liveSession(SECOND, BOTH_ETHEREUM_NETWORKS),
+                [THIRD]: makeSession({ topic: THIRD }),
+            },
+            [
+                recordFor(TOPIC),
+                recordFor(SECOND),
+                recordFor(THIRD, {
+                    accounts: [ADDRESS],
+                    chains: [MAINNET_CHAIN_ID],
+                }),
+            ],
+        )
+
+        for (const id of [TOPIC, SECOND, THIRD]) {
+            await handler.notify?.(id, SEPOLIA_NOTICE)
+        }
+
+        expect(
+            walletKit.emitSessionEvent.mock.calls.map(([call]) => call.topic),
+        ).toEqual([TOPIC, SECOND])
+    })
+
+    it('emits accountsChanged with the session’s addresses the wallet still holds', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession() },
+            [recordFor(TOPIC, { accounts: [ADDRESS, ETH, OTHER_ETH] })],
+        )
+
+        await handler.notify?.(TOPIC, {
+            type: 'accounts-changed',
+            chainId: 'ethereum',
+            accounts: [ETH, OTHER_ETH, THIRD_ETH],
+            changed: [OTHER_ETH],
+        })
+
+        // The wallet also holds THIRD_ETH, which this session never did.
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith({
+            topic: TOPIC,
+            event: { name: 'accountsChanged', data: [ETH, OTHER_ETH] },
+            chainId: ETH_MAINNET,
+        })
+    })
+
+    it('emits an empty list once the last account the session held is gone', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession() },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, {
+            type: 'accounts-changed',
+            chainId: 'ethereum',
+            accounts: [],
+            changed: [ETH],
+        })
+
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith({
+            topic: TOPIC,
+            event: { name: 'accountsChanged', data: [] },
+            chainId: ETH_MAINNET,
+        })
+    })
+
+    it('never tells a session about an account it does not hold', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession() },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, {
+            type: 'accounts-changed',
+            chainId: 'ethereum',
+            accounts: [ETH, OTHER_ETH],
+            changed: [OTHER_ETH],
+        })
+
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('does nothing without a client', async () => {
+        const handler = createWalletConnectV2Handler({
+            getNetworkId: chainId => selectedNetworks[chainId],
+            isDappConnectEnabled: () => true,
+            projectId: '',
+            keyValueStorage: new MemoryKeyValueStorage(),
+        })
+        await handler.initialize({
+            store: memoryStore([recordFor(TOPIC)]),
+            onProposal: vi.fn(),
+            onMessage: vi.fn(),
+            onDisconnected: vi.fn(),
+            onRequestExpired: vi.fn(),
+            onError: vi.fn(),
+        })
+
+        await expect(
+            handler.notify?.(TOPIC, SEPOLIA_NOTICE),
+        ).resolves.toBeUndefined()
+    })
+})
+
+describe('matchesChainScope', () => {
+    it('matches every chain of a session on its own chain scope', async () => {
+        const { handler } = await open()
+        const record = recordFor(TOPIC, {
+            chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
+        }) as never
+
+        expect(
+            [
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'algorand', networkId: 'testnet' },
+                { chainId: 'ethereum', networkId: 'mainnet' },
+                { chainId: 'ethereum', networkId: 'sepolia' },
+            ].map(scope =>
+                handler.matchesChainScope(record, scope as ChainScope),
+            ),
+        ).toEqual([true, false, true, true])
     })
 })

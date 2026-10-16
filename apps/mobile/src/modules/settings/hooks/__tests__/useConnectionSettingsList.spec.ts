@@ -115,8 +115,8 @@ describe('useConnectionSettingsList', () => {
             result.current.connections.map(row => [row.id, row.networks]),
         )
         expect(byId).toEqual({
-            'conn-a': ['mainnet', 'testnet'],
-            'conn-b': ['testnet'],
+            'conn-a': [algorand('mainnet'), algorand('testnet')],
+            'conn-b': [algorand('testnet')],
         })
         expect(mockScopesFor).toHaveBeenCalledWith(connectionA)
     })

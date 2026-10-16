@@ -3352,6 +3352,11 @@
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
         },
+        "switch_network": {
+            "title": "Netzwerkzugriff erlauben?",
+            "body": "{{name}} möchte deine {{chain}}-Konten im Netzwerk {{network}} verwenden.",
+            "confirm": "Erlauben"
+        },
         "settings": {
             "empty_title": "Keine WalletConnect-Sitzungen",
             "empty_body": "Du hast keine aktiven WalletConnect-Sitzungen.",

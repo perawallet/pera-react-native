@@ -236,6 +236,7 @@ const makeRegistry = () => {
             return () => void (emit = undefined)
         },
         subscribeToErrors: vi.fn(() => () => {}),
+        notify: vi.fn(async () => {}),
     }
     return {
         registry,
@@ -1972,6 +1973,158 @@ describe('useConnectionSigningAdapter', () => {
                 sourceMetadata: PEER,
             }),
         )
+    })
+
+    describe('switch-network', () => {
+        const switchMessage = (correlationId = '3') => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId,
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: {
+                type: 'switch-network' as const,
+                networkId: 'sepolia',
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        // A prompt the test settles by hand, the way the sheet's buttons do.
+        const makePrompt = () => {
+            let decide: (approved: boolean) => void = () => {}
+            const decision = new Promise<boolean>(resolve => {
+                decide = resolve
+            })
+            const dismiss = vi.fn(() => decide(false))
+            return { decision, dismiss, decide }
+        }
+
+        const mount = (prompt = makePrompt()) => {
+            const confirmNetworkSwitch = vi.fn(() => prompt)
+            const harness = makeRegistry()
+            renderHook(() =>
+                useConnectionSigningAdapter(harness.registry, CHAIN_ID, {
+                    confirmNetworkSwitch,
+                }),
+            )
+            return { ...harness, prompt, confirmNetworkSwitch }
+        }
+
+        const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+
+        it('asks for the network and the peer, then answers once approved', async () => {
+            const { send, prompt, confirmNetworkSwitch } = mount()
+            const message = switchMessage()
+
+            send(message)
+            expect(confirmNetworkSwitch).toHaveBeenCalledWith({
+                scope: { chainId: CHAIN_ID, networkId: 'sepolia' },
+                peer: PEER,
+            })
+            expect(message.respond).not.toHaveBeenCalled()
+
+            prompt.decide(true)
+            await settle()
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'switch-network',
+            })
+            expect(message.reject).not.toHaveBeenCalled()
+        })
+
+        it('rejects the dApp with a user rejection when the user declines', async () => {
+            const { send, prompt, reportError } = mount()
+            const message = switchMessage()
+
+            send(message)
+            prompt.decide(false)
+            await settle()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+            expect(message.respond).not.toHaveBeenCalled()
+            expect(reportError).not.toHaveBeenCalled()
+        })
+
+        it('declines and tells the user when the switch fails to apply', async () => {
+            const failure = new Error('mode changed')
+            const { send, prompt, reportError } = mount()
+            const message = switchMessage()
+            message.respond.mockRejectedValueOnce(failure)
+
+            send(message)
+            prompt.decide(true)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalledWith(failure, {
+                connectionId: 'c1',
+            })
+        })
+
+        it('declines when the sheet cannot open', async () => {
+            const failure = new Error('no host mounted')
+            const { send, reportError } = mount({
+                decision: Promise.reject(failure),
+                dismiss: vi.fn(),
+                decide: () => {},
+            })
+            const message = switchMessage()
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalledWith(failure, {
+                connectionId: 'c1',
+            })
+        })
+
+        it('declines when no prompt is available', () => {
+            const { registry, send, reportError } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = switchMessage()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledTimes(1)
+            expect(reportError).toHaveBeenCalledTimes(1)
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('dismisses the sheet and answers nothing when the request expires', async () => {
+            const { send, prompt } = mount()
+            const message = switchMessage()
+
+            send(message)
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '3',
+            })
+            await settle()
+
+            expect(prompt.dismiss).toHaveBeenCalledTimes(1)
+            expect(message.respond).not.toHaveBeenCalled()
+            expect(message.reject).not.toHaveBeenCalled()
+        })
+
+        it('dismisses the sheet when the connection closes', async () => {
+            const { send, prompt } = mount()
+            const message = switchMessage()
+
+            send(message)
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+            await settle()
+
+            expect(prompt.dismiss).toHaveBeenCalledTimes(1)
+            expect(message.respond).not.toHaveBeenCalled()
+            expect(message.reject).not.toHaveBeenCalled()
+        })
     })
 
     it('unsubscribes on unmount', () => {

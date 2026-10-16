@@ -462,6 +462,7 @@ describe('createConnectionRegistry', () => {
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
             registry.register(beta)
+            const connection = makeConnection({ id: 'b1', kind: 'beta' })
 
             const scopes = registry.scopesFor(
                 makeConnection({ id: 'b1', kind: 'beta' }),
@@ -489,6 +490,118 @@ describe('createConnectionRegistry', () => {
             expect(
                 registry.scopesFor(makeConnection({ kind: 'beta' })),
             ).toEqual([])
+        })
+    })
+
+    describe('notify', () => {
+        const notice = {
+            type: 'network-changed',
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+        } as const
+
+        const setup = async (
+            handlers: Record<string, ConnectionHandler>,
+            records: Connection[],
+        ) => {
+            for (const record of records) await store.upsert(record)
+            const registry = createConnectionRegistry({ store })
+            for (const handler of Object.values(handlers)) {
+                registry.register(handler)
+            }
+            await registry.initialize()
+            return registry
+        }
+
+        // Boot reconciles the store against `restore()`, so these answer with the seeded records.
+        const withRestore = (
+            kind: string,
+            notify?: ConnectionHandler['notify'],
+        ): ConnectionHandler =>
+            makeHandler(kind, {
+                restore: vi.fn(async () =>
+                    (await store.list()).filter(record => record.kind === kind),
+                ),
+                notify,
+            })
+
+        it('fans out to every active connection of a kind that declares notify', async () => {
+            const alpha = vi.fn(async () => {})
+            const registry = await setup(
+                {
+                    alpha: withRestore('alpha', alpha),
+                    beta: withRestore('beta'),
+                },
+                [
+                    makeConnection({ id: 'a1' }),
+                    makeConnection({ id: 'a2' }),
+                    makeConnection({ id: 'b1', kind: 'beta' }),
+                ],
+            )
+
+            await registry.notify(notice)
+
+            expect(alpha.mock.calls.map(call => call[0]).sort()).toEqual([
+                'a1',
+                'a2',
+            ])
+            expect(alpha).toHaveBeenCalledWith('a1', notice)
+        })
+
+        it('skips an inactive connection', async () => {
+            const alpha = vi.fn(async () => {})
+            const registry = await setup(
+                { alpha: withRestore('alpha', alpha) },
+                [
+                    makeConnection({ id: 'a1', status: 'inactive' }),
+                    makeConnection({ id: 'a2' }),
+                ],
+            )
+
+            await registry.notify(notice)
+
+            expect(alpha).toHaveBeenCalledTimes(1)
+            expect(alpha).toHaveBeenCalledWith('a2', notice)
+        })
+
+        it('keeps going and resolves when one handler call rejects', async () => {
+            const delivered: string[] = []
+            const registry = await setup(
+                {
+                    alpha: withRestore('alpha', async id => {
+                        if (id === 'a1') throw new Error('socket closed')
+                        delivered.push(id)
+                    }),
+                },
+                [makeConnection({ id: 'a1' }), makeConnection({ id: 'a2' })],
+            )
+
+            await expect(registry.notify(notice)).resolves.toBeUndefined()
+
+            expect(delivered).toEqual(['a2'])
+        })
+
+        it('resolves when a handler throws synchronously', async () => {
+            const registry = await setup(
+                {
+                    alpha: withRestore('alpha', () => {
+                        throw new Error('boom')
+                    }),
+                },
+                [makeConnection({ id: 'a1' })],
+            )
+
+            await expect(registry.notify(notice)).resolves.toBeUndefined()
+        })
+
+        it('does nothing before initialize', async () => {
+            const alpha = vi.fn(async () => {})
+            await store.upsert(makeConnection({ id: 'a1' }))
+            const registry = createConnectionRegistry({ store })
+            registry.register(withRestore('alpha', alpha))
+
+            await registry.notify(notice)
+
+            expect(alpha).not.toHaveBeenCalled()
         })
     })
 

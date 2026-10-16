@@ -27,6 +27,7 @@ import type {
     ConnectionProposal,
     InboundMessage,
     RawInboundMessage,
+    WalletNotice,
 } from './models'
 import { validateRawMessage } from './validate'
 
@@ -74,6 +75,12 @@ export interface ConnectionRegistry extends ConnectionRegistryClient {
      * requests themselves and would otherwise fail silently.
      */
     reportError(error: Error, scope?: ConnectionErrorScope): void
+    /**
+     * Pushes a wallet-initiated notice to every active connection whose
+     * handler declares `notify`; the handler decides whether it concerns the
+     * session. A no-op while not live, and never rejects.
+     */
+    notify(notice: WalletNotice): Promise<void>
 }
 
 /** The configured scopes the handler accepts the connection on. */
@@ -429,5 +436,33 @@ export const createConnectionRegistry = (options: {
             return () => void errorListeners.delete(listener)
         },
         reportError: emitError,
+        notify: async notice => {
+            if (!isLive) return
+            try {
+                const active = (await store.list()).filter(
+                    connection => connection.status === 'active',
+                )
+                const results = await Promise.allSettled(
+                    active.map(async connection =>
+                        handlers
+                            .get(connection.kind)
+                            ?.notify?.(connection.id, notice),
+                    ),
+                )
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        logger.warn('[connections] notify failed', {
+                            kind: active[index].kind,
+                            id: active[index].id,
+                            error: toError(result.reason),
+                        })
+                    }
+                })
+            } catch (error) {
+                logger.warn('[connections] notify could not list connections', {
+                    error: toError(error),
+                })
+            }
+        },
     }
 }
