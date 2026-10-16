@@ -31,6 +31,7 @@ export {
 } from '../signing/messages'
 export {
     MAIL_TYPED_DATA,
+    PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,
     SENDER,
     SIGNER_KEY_PAIR_ID,
     TRANSFER,

@@ -385,12 +385,31 @@ export type MessageTreeNode =
     | { label: string; value: string }
     | { label: string; children: MessageTreeNode[] }
 
+export interface SpendAllowance {
+    assetRef: AssetRef
+    /** Base units of assetRef; absent when unlimited. */
+    amount?: Decimal
+}
+
+export interface SpendApproval {
+    /** Requester-supplied, in the chain's address format. */
+    spender: string
+    /** One per asset, in message order; never empty. */
+    allowances: SpendAllowance[]
+    /** Unix ms after which the approval can't be used; absent when it never lapses. */
+    deadline?: number
+    /** deadline is absent or more than a year after the summary was built. */
+    isLongLived: boolean
+}
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
     /** Set for kind `'typed-data'`: the signed fields, in schema order. */
     tree?: MessageTreeNode[]
+    /** Set on kind `'typed-data'` when signing lets someone else move the signer's assets. */
+    spendApproval?: SpendApproval
 }
 
 export interface MessageRequest {
