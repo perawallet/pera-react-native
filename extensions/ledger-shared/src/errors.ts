@@ -460,6 +460,61 @@ export class LedgerAppOutdatedError extends LedgerError {
 }
 
 /**
+ * The device app refuses the payload until the user turns on blind signing
+ * (or contract data) in its settings. Retryable once they have.
+ */
+export class LedgerBlindSigningRequiredError extends LedgerError {
+    readonly appName?: string
+
+    constructor({
+        appName,
+        originalError,
+    }: { appName?: string; originalError?: Error } = {}) {
+        super({
+            name: 'LedgerBlindSigningRequiredError',
+            message: appName
+                ? `Blind signing must be enabled in the Ledger ${appName} app`
+                : 'Blind signing must be enabled in the Ledger app',
+            severity: MEDIUM,
+            retryable: true,
+            expected: true,
+            originalError,
+        })
+        this.appName = appName
+    }
+}
+
+/**
+ * The device app lacks the instruction by design, so no update fixes it
+ * (unlike `LedgerAppOutdatedError`). Reaching it means a request was routed to
+ * a transport that cannot serve it.
+ */
+export class LedgerOperationUnsupportedError extends LedgerError {
+    readonly appName: string
+    readonly operation: string
+
+    constructor({
+        appName,
+        operation,
+        originalError,
+    }: {
+        appName: string
+        operation: string
+        originalError?: Error
+    }) {
+        super({
+            name: 'LedgerOperationUnsupportedError',
+            message: `The Ledger ${appName} app does not support ${operation}`,
+            severity: MEDIUM,
+            retryable: false,
+            originalError,
+        })
+        this.appName = appName
+        this.operation = operation
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error. App libraries built on
  * `@zondax/ledger-js` expose `returnCode` via its `ResponseError`; legacy
  * `statusCode` is also handled for compatibility. Prefer `statusCode` when
@@ -568,6 +623,11 @@ export interface LedgerAppProfile {
     appName: string
     /** The app's own reject status words, on top of the standard one. */
     userRejectedStatusCodes: readonly number[]
+    /**
+     * Status words meaning "enable blind signing". Per app, because the same
+     * word is a generic failure in other apps.
+     */
+    blindSigningRequiredStatusCodes?: readonly number[]
 }
 
 /**
@@ -591,6 +651,15 @@ export const classifyLedgerAppError = (
             app.userRejectedStatusCodes.includes(statusCode))
     ) {
         return new LedgerUserRejectedError(originalError)
+    }
+    if (
+        statusCode !== null &&
+        app.blindSigningRequiredStatusCodes?.includes(statusCode)
+    ) {
+        return new LedgerBlindSigningRequiredError({
+            appName: app.appName,
+            originalError,
+        })
     }
     if (statusCode === LEDGER_STATUS_CODES.APP_NOT_OPEN) {
         return new LedgerAppNotOpenError({
