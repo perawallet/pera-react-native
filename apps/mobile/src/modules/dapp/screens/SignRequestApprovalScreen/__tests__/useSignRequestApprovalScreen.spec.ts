@@ -43,6 +43,8 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: mocks.useSigningRequest,
     isSignRequestAwaitingPreflight: mocks.isSignRequestAwaitingPreflight,
+    isSignRequestPending: vi.fn(),
+    isSignRequestPastApproval: vi.fn(),
     GenesisHashMismatchError: mocks.GenesisHashMismatchError,
 }))
 

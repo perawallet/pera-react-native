@@ -1105,6 +1105,55 @@ describe('createConnectionRegistry', () => {
         })
     })
 
+    describe('connection-closed', () => {
+        it('announces a record removed through the handler context, whichever side ended it', async () => {
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await ctx.store.remove('c1')
+            ctx.onDisconnected('c2')
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(seen.mock.calls).toEqual([
+                [{ kind: 'connection-closed', connectionId: 'c1' }],
+                [{ kind: 'connection-closed', connectionId: 'c2' }],
+            ])
+        })
+
+        it('announces every record a clear drops', async () => {
+            const { ctx, registry } = await setupRegistry()
+            await store.upsert(makeConnection({ id: 'c1' }))
+            await store.upsert(makeConnection({ id: 'c2' }))
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await ctx.store.clear()
+
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'connection-closed',
+                connectionId: 'c1',
+            })
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'connection-closed',
+                connectionId: 'c2',
+            })
+        })
+
+        it('announces nothing when the removal fails', async () => {
+            store.remove = vi.fn(async () => {
+                throw new Error('storage write failed')
+            })
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await expect(ctx.store.remove('c1')).rejects.toThrow()
+
+            expect(seen).not.toHaveBeenCalled()
+        })
+    })
+
     describe('onDisconnected', () => {
         it('reports a failed store.remove through emitError instead of an unhandled rejection', async () => {
             store.remove = vi.fn(async () => {
