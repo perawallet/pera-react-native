@@ -7,7 +7,6 @@ import {
     CHAIN_UI_MODULES,
     COMPOSITION_ROOTS,
     TEST_PATHS,
-    TRANSITIONAL_ALLOWLIST,
 } from '../shared/chain-package-allowlist.js'
 import { locations, runRule, type Violation } from './helpers.js'
 
@@ -75,10 +74,13 @@ describe('pera/no-chain-package-imports', () => {
         expect(inFile(found, 'chain-imports.test-utils.ts')).toEqual([])
     })
 
-    it('limits a whole-move shim to its own subpath', async () => {
+    it('reports a re-export shim in a shared package', async () => {
         const found = await runRule(RULE, FIXTURES)
 
-        expect(inFile(found, 'asa-inbox/src/index.ts')).toEqual(['index.ts:6'])
+        expect(inFile(found, 'asa-inbox/src/index.ts')).toEqual([
+            'index.ts:5',
+            'index.ts:6',
+        ])
     })
 
     it('reports every chain-package import from an app file', async () => {
@@ -101,12 +103,11 @@ describe('pera/no-chain-package-imports', () => {
         ])
     })
 
-    it('gives every composition root, chain UI module, test path and allowlist entry a reason', () => {
+    it('gives every composition root, chain UI module and test path a reason', () => {
         const entries = [
             ...COMPOSITION_ROOTS,
             ...CHAIN_UI_MODULES,
             ...TEST_PATHS,
-            ...TRANSITIONAL_ALLOWLIST,
         ]
 
         expect(entries.filter(e => e.reason.trim() === '')).toEqual([])
