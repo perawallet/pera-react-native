@@ -393,3 +393,94 @@ describe('validateRawMessage', () => {
         expect(result.ok).toBe(true)
     })
 })
+
+describe('validateRawMessage: message operations', () => {
+    const SIGNER = '0xAbCd'
+    const validateMessagePayload = vi.fn<
+        NonNullable<DappRequestChainAdapter['validateMessagePayload']>
+    >((type, params) => ({
+        ok: true,
+        request: { method: type, signer: SIGNER, payload: params },
+    }))
+
+    const messageRequest = (
+        type: 'sign-message' | 'sign-typed-data',
+        params: unknown,
+    ): RawInboundMessage => ({
+        ...(request(type, params) as Extract<
+            RawInboundMessage,
+            { kind: 'request' }
+        >),
+        authorizedAccounts: [SIGNER],
+    })
+
+    beforeEach(() => {
+        validateMessagePayload.mockClear()
+        dappRequestChainAdapters.reset()
+        dappRequestChainAdapters.register({
+            ...fixtureAdapter,
+            validateMessagePayload,
+        })
+    })
+
+    it.each(['sign-message', 'sign-typed-data'] as const)(
+        "accepts a %s request the chain validated against the session's accounts",
+        type => {
+            const result = validateRawMessage(messageRequest(type, 'payload'))
+
+            expect(validateMessagePayload).toHaveBeenCalledWith(
+                type,
+                'payload',
+                [SIGNER],
+            )
+            expect(result.ok).toBe(true)
+            if (result.ok && result.message.kind === 'request') {
+                expect(result.message.operation).toEqual({
+                    type,
+                    request: {
+                        method: type,
+                        signer: SIGNER,
+                        payload: 'payload',
+                    },
+                })
+            }
+        },
+    )
+
+    it.each([
+        ['unauthorized-account', 'unauthorized-account'],
+        ['invalid-params', 'invalid-payload'],
+    ] as const)(
+        "refuses the chain's %s as %s, keeping its message",
+        (failure, code) => {
+            validateMessagePayload.mockReturnValueOnce({
+                ok: false,
+                failure,
+                message: 'why',
+            })
+
+            const result = validateRawMessage(
+                messageRequest('sign-message', 'p'),
+            )
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({ code, message: 'why' })
+            }
+        },
+    )
+
+    it('refuses as unsupported when the adapter serves no messages', () => {
+        dappRequestChainAdapters.reset()
+        dappRequestChainAdapters.register(fixtureAdapter)
+
+        const result = validateRawMessage(messageRequest('sign-message', 'p'))
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toMatchObject({
+                code: 'unsupported-operation',
+            })
+        }
+    })
+})

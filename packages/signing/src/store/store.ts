@@ -132,6 +132,10 @@ const restoredRequestIds = new Set<string>()
 export const wasRestoredFromStorage = (id: string): boolean =>
     restoredRequestIds.has(id)
 
+/** Read live, so a caller between renders sees a request added this tick. */
+export const isSignRequestPending = (id: string): boolean =>
+    useSigningStore.getState().pendingSignRequests.some(r => r.id === id)
+
 export const useSigningStore: UseBoundStore<
     WithPersist<StoreApi<SigningStore>, unknown>
 > = create<SigningStore>()(

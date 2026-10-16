@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "An app sent a request Pera couldn't understand. Please check the app and try again.",
             "no_handler": "Pera couldn't handle this connection request. Please check the app and try again.",
+            "unauthorized_account": "An app asked to sign with an account that isn't part of its connection.",
             "unknown_connection": "Pera couldn't find that connection. It may have already been disconnected.",
             "duplicate_kind": "Something went wrong setting up app connections. Please restart Pera and try again.",
             "already_initialized": "Something went wrong setting up app connections. Please restart Pera and try again.",
@@ -3038,7 +3039,9 @@
             "data_label": "Data to be signed",
             "untrusted_message_label": "Display message (not part of what you sign)",
             "binary_warning_title": "Data is not readable text",
-            "binary_warning_body": "The data to sign isn't readable text, so its raw bytes are shown in hexadecimal. Only approve if you trust this application."
+            "binary_warning_body": "The data to sign isn't readable text, so its raw bytes are shown in hexadecimal. Only approve if you trust this application.",
+            "typed_data_warning_title": "This signature can move your tokens",
+            "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
         "arbitrary_data_details": {
             "unnamed": "Someone",

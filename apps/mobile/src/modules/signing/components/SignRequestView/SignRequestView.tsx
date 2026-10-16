@@ -94,7 +94,8 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const isSupported =
         request.type === 'transactions' ||
         request.type === 'arbitrary-data' ||
-        request.type === 'auth-data'
+        request.type === 'auth-data' ||
+        request.type === 'message'
 
     if (!isSupported) {
         return (

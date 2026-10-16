@@ -12,8 +12,10 @@
 
 import type {
     ChainId,
+    MessageRequest,
     PeraSignedTransaction,
     PeraTransaction,
+    SignedMessage,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -67,7 +69,7 @@ export const answersCaller = (transport: SignRequestTransport): boolean =>
 
 type BaseSignRequest = {
     id: string
-    type: 'transactions' | 'arbitrary-data' | 'auth-data'
+    type: 'transactions' | 'arbitrary-data' | 'auth-data' | 'message'
     transport: SignRequestTransport
     transportId?: string
     /** Origin of the request. Defaults to 'local' when not specified. */
@@ -234,10 +236,19 @@ export type AuthDataSignRequest = AuthDataPayload &
         error?: (error: Error) => Promise<void>
     } & BaseSignRequest
 
+/** The chain is `message.scope.chainId`, so there is no separate stamp to disagree with it. */
+export type MessageSignRequest = BaseSignRequest & {
+    message: MessageRequest
+    approve?: (signed: SignedMessage) => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
+    error?: (error: Error) => Promise<void>
+}
+
 export type SignRequest =
     | TransactionSignRequest
     | ArbitraryDataSignRequest
     | AuthDataSignRequest
+    | MessageSignRequest
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
@@ -304,6 +315,7 @@ export {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
 } from './guards'

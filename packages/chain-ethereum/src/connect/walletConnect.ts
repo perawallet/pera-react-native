@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { numberToHex } from 'viem'
+import { bytesToHex, numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type {
     DappRequestChainAdapter,
@@ -35,13 +35,14 @@ export const ETHEREUM_WC_V2_METHOD = {
     addChain: 'wallet_addEthereumChain',
 } as const
 
-/** EIP-1193 provider error codes, and JSON-RPC's invalid params, which viem and wagmi read. */
+/** EIP-1193 provider error codes, and EIP-1474's invalid params and limit exceeded, which viem and wagmi read. */
 const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'user-rejected': 4001,
     'unauthorized-account': 4100,
     'unsupported-method': 4200,
     'unselected-chain': 4901,
     'invalid-params': -32_602,
+    'limit-exceeded': -32_005,
 }
 
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
@@ -131,7 +132,13 @@ export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnec
         networkForCaip2ChainId,
         toWireResult: result => {
             if (result.type === 'send-transaction') return result.txId
-            throw new Error(`Ethereum answers no ${result.type} result yet`)
+            if (
+                result.type === 'sign-message' ||
+                result.type === 'sign-typed-data'
+            ) {
+                return bytesToHex(result.signature)
+            }
+            throw new Error(`Ethereum answers no ${result.type} result`)
         },
         toWireErrorCode: failure => EIP_1193_CODE[failure],
         v2,

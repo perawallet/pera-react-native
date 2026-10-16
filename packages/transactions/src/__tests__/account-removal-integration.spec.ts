@@ -26,6 +26,8 @@ import { TransactionsSchema } from '../db/schema'
 // shared registry, exactly as loading the package does at runtime.
 import '../register-account-cleanup'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { historyChainAdapters } from '../history-adapter'
+import { fixtureHistoryAdapter } from './fixture-chain-data'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -73,10 +75,12 @@ describe('account removal prunes transactions end to end', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        historyChainAdapters.register(fixtureHistoryAdapter())
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
 
     it('deletes the removed account transactions and prunes now-orphaned rows', async () => {

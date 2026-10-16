@@ -24,10 +24,10 @@ import {
     type SQL,
     type SQLWrapper,
 } from 'drizzle-orm'
-import type { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     isoDateToUnixSeconds,
+    logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
@@ -37,8 +37,12 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
-import { assetFactsResolverFor } from '../history-adapter'
-import { deserializeSwapGroupDetail, fromDb, toDb } from './mappers'
+import {
+    assetFactsResolverFor,
+    chainDataCodecFor,
+    chainDataCodecOf,
+} from '../history-adapter'
+import { fromDb, toDb } from './mappers'
 
 type UpsertTransactionsParams = {
     db?: Database
@@ -46,6 +50,29 @@ type UpsertTransactionsParams = {
     accountAddress: string
     scope: ChainScope
 }
+
+/**
+ * A JSON column read that yields NULL instead of raising on a malformed value,
+ * so one bad cached row cannot fail the whole history query.
+ */
+const jsonPathAsText = (
+    column: SQLWrapper,
+    path: string,
+): SQL<Nullable<string>> =>
+    sql<
+        Nullable<string>
+    >`CASE WHEN json_valid(${column}) THEN CAST(json_extract(${column}, ${path}) AS TEXT) END`
+
+// json_extract, not jsonPathAsText: a sticky number must stay a number.
+const keepStickyChainData = (
+    incoming: string,
+    stickyPaths: readonly string[],
+): SQL =>
+    stickyPaths.reduce<SQL>(
+        (doc, path) =>
+            sql`json_set(${doc}, ${path}, COALESCE(json_extract(${incoming}, ${path}), CASE WHEN json_valid(${TransactionsSchema.chainData}) THEN json_extract(${TransactionsSchema.chainData}, ${path}) END))`,
+        sql`${incoming}`,
+    )
 
 export async function upsertTransactions({
     db = getDatabase(),
@@ -57,9 +84,10 @@ export async function upsertTransactions({
     if (items.length === 0) return
 
     const now = Date.now()
+    const codec = chainDataCodecFor(scope.chainId)
 
     for (const item of items) {
-        const row = toDb(item, scope)
+        const row = toDb(item, codec)
 
         await db
             .insert(TransactionsSchema)
@@ -74,35 +102,20 @@ export async function upsertTransactions({
                     txType: row.txType,
                     sender: row.sender,
                     receiver: row.receiver,
-                    confirmedRound: row.confirmedRound,
-                    roundTime: row.roundTime,
                     status: row.status,
                     fee: row.fee,
-                    groupId: row.groupId,
                     amount: row.amount,
-                    closeTo: row.closeTo,
-                    // The row is shared across wallet accounts and only some
-                    // perspectives can derive the sweep (see
-                    // deriveCloseAmount) — never let a sync that can't see
-                    // it erase one that could.
-                    // Raw sql bypasses decimalColumn's serializer, so bind
-                    // the TEXT representation directly.
-                    closeAmount: sql`COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount})`,
-                    applicationId: row.applicationId,
-                    innerTransactionCount: row.innerTransactionCount,
-                    // Shared row, per-account derivation (see closeAmount
-                    // above and deriveAssetSender): a perspective that can't
-                    // see the clawback must not erase one that could.
+                    // Shared row, per-account derivation (see the codec's
+                    // stickyPaths and deriveAssetSender): a perspective that
+                    // can't see the clawback must not erase one that could.
                     assetSender: sql`COALESCE(${row.assetSender ?? null}, ${TransactionsSchema.assetSender})`,
                     assetJson: row.assetJson,
-                    swapGroupDetailJson: row.swapGroupDetailJson,
                     interpretedMeaningJson: row.interpretedMeaningJson,
                     balanceImpactsJson: row.balanceImpactsJson,
-                    // Same merge rule as closeAmount. Reading the old column
-                    // also carries the sweep over for rows cached before
-                    // chain_data existed.
-                    chainData: sql`json_set(${row.chainData}, '$.algorand.closeAmount', COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount}))`,
-                    assetRef: row.assetRef,
+                    chainData: keepStickyChainData(
+                        row.chainData,
+                        codec.stickyPaths,
+                    ),
                     updatedAt: now,
                 },
             })
@@ -158,27 +171,26 @@ type GetTransactionHistoryParams = {
 }
 
 /**
- * A JSON column read that yields NULL instead of raising on a malformed value,
- * so one bad cached row cannot fail the whole history query.
- */
-const jsonPathAsText = (column: SQLWrapper, path: string): SQL =>
-    sql`CASE WHEN json_valid(${column}) THEN CAST(json_extract(${column}, ${path}) AS TEXT) END`
-
-/**
  * The backend sets a row's top-level `asset` only for pay/axfer, so swap and
- * app-call rows carry their assets in the balance impacts and swap detail.
+ * app-call rows carry their assets in the balance impacts and chain data.
  * Matching the indexed column alone hides every swap from an asset's history.
  */
-const involvesAsset = (assetId: string): SQL =>
+const involvesAsset = (
+    assetId: string,
+    chainDataAssetIdPaths: readonly string[],
+): SQL =>
     sql`(${eq(AccountTransactionsSchema.assetId, assetId)}
         OR CASE WHEN json_valid(${TransactionsSchema.balanceImpactsJson})
             THEN EXISTS (
                 SELECT 1 FROM json_each(${TransactionsSchema.balanceImpactsJson})
                 WHERE CAST(json_extract(json_each.value, '$.assetId') AS TEXT) = ${assetId}
             )
-            ELSE 0 END
-        OR ${jsonPathAsText(TransactionsSchema.swapGroupDetailJson, '$.assetInId')} = ${assetId}
-        OR ${jsonPathAsText(TransactionsSchema.swapGroupDetailJson, '$.assetOutId')} = ${assetId})`
+            ELSE 0 END${sql.join(
+                chainDataAssetIdPaths.map(
+                    path =>
+                        sql` OR ${jsonPathAsText(TransactionsSchema.chainData, path)} = ${assetId}`,
+                ),
+            )})`
 
 export async function getTransactionHistory({
     db = getDatabase(),
@@ -197,7 +209,12 @@ export async function getTransactionHistory({
     ]
 
     if (assetId !== undefined) {
-        conditions.push(involvesAsset(assetId))
+        conditions.push(
+            involvesAsset(
+                assetId,
+                chainDataCodecOf(scope.chainId)?.assetIdPaths ?? [],
+            ),
+        )
     }
 
     if (atOrBeforeRoundTime !== undefined) {
@@ -231,21 +248,14 @@ export async function getTransactionHistory({
             txType: TransactionsSchema.txType,
             sender: TransactionsSchema.sender,
             receiver: TransactionsSchema.receiver,
-            confirmedRound: TransactionsSchema.confirmedRound,
-            roundTime: TransactionsSchema.roundTime,
             status: TransactionsSchema.status,
             fee: TransactionsSchema.fee,
-            groupId: TransactionsSchema.groupId,
             amount: TransactionsSchema.amount,
-            closeTo: TransactionsSchema.closeTo,
-            closeAmount: TransactionsSchema.closeAmount,
-            applicationId: TransactionsSchema.applicationId,
-            innerTransactionCount: TransactionsSchema.innerTransactionCount,
             assetSender: TransactionsSchema.assetSender,
             assetJson: TransactionsSchema.assetJson,
-            swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
             interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
             balanceImpactsJson: TransactionsSchema.balanceImpactsJson,
+            chainData: TransactionsSchema.chainData,
         })
         .from(AccountTransactionsSchema)
         .innerJoin(
@@ -266,184 +276,154 @@ export async function getTransactionHistory({
         .limit(limit)
         .all()
 
+    if (rows.length === 0) return []
     const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
-    return rows.map(row => fromDb(row, resolveAssetFacts))
+    const codec = chainDataCodecFor(scope.chainId)
+    // Every writer goes through JSON.stringify or json_set, so this is a guard,
+    // not an expected path: one unparseable row must not fail the whole page.
+    return rows.flatMap(row => {
+        try {
+            return [fromDb(row, resolveAssetFacts, codec)]
+        } catch (error) {
+            logger.warn('history: skipped a cached row that would not parse', {
+                error,
+                id: row.id,
+            })
+            return []
+        }
+    })
 }
 
-type GetCloseRowsMissingCloseAmountParams = {
-    db?: Database
-    scope: ChainScope
-    /** Bounded per pass — survivors keep matching and retry next sync. */
-    limit?: number
-}
-
-/**
- * Close-involving rows whose swept amount is unknown: rows cached before the
- * close_amount column existed, or fetched from a perspective that couldn't
- * derive it. These are the chain-backfill work list (see
- * sync/close-amount-backfill.ts).
- */
-export async function getCloseRowsMissingCloseAmount({
-    db = getDatabase(),
-    scope,
-    limit = 20,
-}: GetCloseRowsMissingCloseAmountParams): Promise<Array<{ id: string }>> {
-    const network = toScopeKey(scope)
-    return db
-        .select({ id: TransactionsSchema.id })
-        .from(TransactionsSchema)
-        .where(
-            and(
-                eq(TransactionsSchema.network, network),
-                isNotNull(TransactionsSchema.closeTo),
-                isNull(TransactionsSchema.closeAmount),
-            ),
-        )
-        .limit(limit)
-        .all()
-}
-
-type GetSwapRowsMissingAssetFactsParams = {
+type GetRowsByChainDataParams = {
     db?: Database
     scope: ChainScope
     accountAddress: string
+    /** JSON paths into chain_data that must hold a value. */
+    present?: readonly string[]
+    /** JSON paths into chain_data that must be unset or null. */
+    missing?: readonly string[]
+    /** Bounded per pass: survivors keep matching and retry next sync. */
     limit?: number
 }
 
 /**
- * Swap rows cached before the per-side asset facts were read off the response,
- * for one account — the caller syncs per account, and an unscoped list would
- * have every account refetch every other account's stale rows.
+ * An account's cached rows matching a chain_data predicate, as the work list
+ * for a chain's repair. The predicate runs in SQL so `limit` bounds the
+ * matching rows; filtering afterwards would keep re-selecting the same healthy
+ * oldest rows and a repair would never finish. A row whose chain_data isn't
+ * valid JSON never matches, and neither does one with no time.
  *
- * The predicate lives in SQL rather than in a JS filter so `limit` actually
- * bounds the stale rows: filtering afterwards would keep re-selecting the same
- * healthy oldest rows and the backfill would never terminate. `json_extract`
- * raises on malformed input rather than returning null, so it is fed through
- * `json_valid` — one unparseable row would otherwise fail the whole query and
- * silently disable the backfill for good.
+ * Rows come back in random order, so rows a repair keeps failing on can't hold
+ * the first `limit` slots on every pass.
  */
-export async function getSwapRowsMissingAssetFacts({
+export async function getRowsByChainData({
     db = getDatabase(),
     scope,
     accountAddress,
+    present = [],
+    missing = [],
     limit = 20,
-}: GetSwapRowsMissingAssetFactsParams): Promise<
+}: GetRowsByChainDataParams): Promise<
     Array<{ id: string; roundTime: number }>
 > {
     const network = toScopeKey(scope)
-    return db
+    return (
+        db
+            .select({
+                id: TransactionsSchema.id,
+                // The NOT NULL filter below makes the narrowed type true.
+                roundTime: sql<number>`${AccountTransactionsSchema.roundTime}`,
+            })
+            .from(TransactionsSchema)
+            .innerJoin(
+                AccountTransactionsSchema,
+                and(
+                    eq(
+                        AccountTransactionsSchema.transactionId,
+                        TransactionsSchema.id,
+                    ),
+                    eq(
+                        AccountTransactionsSchema.network,
+                        TransactionsSchema.network,
+                    ),
+                ),
+            )
+            .where(
+                and(
+                    eq(TransactionsSchema.network, network),
+                    eq(
+                        AccountTransactionsSchema.accountAddress,
+                        accountAddress,
+                    ),
+                    isNotNull(AccountTransactionsSchema.roundTime),
+                    sql`json_valid(${TransactionsSchema.chainData})`,
+                    ...present.map(path =>
+                        isNotNull(
+                            jsonPathAsText(TransactionsSchema.chainData, path),
+                        ),
+                    ),
+                    ...missing.map(path =>
+                        isNull(
+                            jsonPathAsText(TransactionsSchema.chainData, path),
+                        ),
+                    ),
+                ),
+            )
+            // ponytail: random rotation, not backoff; a persistently failing row
+            // still costs one request each time it's drawn. Add a per-row attempt
+            // count if those requests start to matter.
+            .orderBy(sql`random()`)
+            .limit(limit)
+            .all()
+    )
+}
+
+type ChainDataValueParams = {
+    db?: Database
+    scope: ChainScope
+    id: string
+    /** A JSON path into chain_data. */
+    path: string
+}
+
+/** The value at `path` as text (JSON text for an object); null when unset or the document is malformed. */
+export async function getChainDataValue({
+    db = getDatabase(),
+    scope,
+    id,
+    path,
+}: ChainDataValueParams): Promise<Nullable<string>> {
+    const [row] = await db
         .select({
-            id: TransactionsSchema.id,
-            // The NOT NULL filter below makes the narrowed type true.
-            roundTime: sql<number>`${TransactionsSchema.roundTime}`,
+            value: jsonPathAsText(TransactionsSchema.chainData, path),
         })
         .from(TransactionsSchema)
-        .innerJoin(
-            AccountTransactionsSchema,
-            and(
-                eq(
-                    AccountTransactionsSchema.transactionId,
-                    TransactionsSchema.id,
-                ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
-            ),
-        )
         .where(
             and(
-                eq(TransactionsSchema.network, network),
-                eq(AccountTransactionsSchema.accountAddress, accountAddress),
-                isNotNull(TransactionsSchema.swapGroupDetailJson),
-                // The refetch is windowed by round time.
-                isNotNull(TransactionsSchema.roundTime),
-                sql`json_extract(CASE WHEN json_valid(${TransactionsSchema.swapGroupDetailJson}) THEN ${TransactionsSchema.swapGroupDetailJson} END, '$.assetInDecimals') IS NULL`,
+                eq(TransactionsSchema.id, id),
+                eq(TransactionsSchema.network, toScopeKey(scope)),
             ),
         )
-        .limit(limit)
         .all()
+    return row?.value ?? null
 }
 
-type PersistResolvedSwapAssetFactsParams = {
-    db?: Database
-    scope: ChainScope
-    ids: string[]
-}
-
-/**
- * Writes the read path's resolved swap facts into the rows themselves, so a
- * row the backend could not re-serve stops being re-queried on every sync. The
- * stored value becomes what {@link getTransactionHistory} was already
- * returning for it, so nothing renders differently.
- */
-export async function persistResolvedSwapAssetFacts({
+export async function setChainDataValue({
     db = getDatabase(),
     scope,
-    ids,
-}: PersistResolvedSwapAssetFactsParams): Promise<void> {
-    const network = toScopeKey(scope)
-    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
-    for (const id of ids) {
-        const [row] = await db
-            .select({ json: TransactionsSchema.swapGroupDetailJson })
-            .from(TransactionsSchema)
-            .where(
-                and(
-                    eq(TransactionsSchema.id, id),
-                    eq(TransactionsSchema.network, network),
-                ),
-            )
-            .all()
-
-        const resolved = deserializeSwapGroupDetail(
-            row?.json ?? null,
-            resolveAssetFacts,
-        )
-        if (!resolved) continue
-
-        await db
-            .update(TransactionsSchema)
-            .set({
-                swapGroupDetailJson: JSON.stringify(resolved),
-                // json_set on a NULL document stays NULL, so rows cached
-                // before chain_data existed are left alone.
-                chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.swapGroupDetail', json(${JSON.stringify(resolved)}))`,
-            })
-            .where(
-                and(
-                    eq(TransactionsSchema.id, id),
-                    eq(TransactionsSchema.network, network),
-                ),
-            )
-            .run()
-    }
-}
-
-type UpdateTransactionCloseAmountParams = {
-    db?: Database
-    id: string
-    scope: ChainScope
-    closeAmount: Decimal
-}
-
-export async function updateTransactionCloseAmount({
-    db = getDatabase(),
     id,
-    scope,
-    closeAmount,
-}: UpdateTransactionCloseAmountParams): Promise<void> {
-    const network = toScopeKey(scope)
+    path,
+    value,
+}: ChainDataValueParams & { value: unknown }): Promise<void> {
     await db
         .update(TransactionsSchema)
         .set({
-            closeAmount,
-            chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.closeAmount', ${closeAmount.toString()})`,
+            chainData: sql`json_set(${TransactionsSchema.chainData}, ${path}, json(${JSON.stringify(value)}))`,
         })
         .where(
             and(
                 eq(TransactionsSchema.id, id),
-                eq(TransactionsSchema.network, network),
+                eq(TransactionsSchema.network, toScopeKey(scope)),
             ),
         )
         .run()

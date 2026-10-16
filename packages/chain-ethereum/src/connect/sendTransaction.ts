@@ -16,7 +16,7 @@ import type {
     ChainContext,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { DappSendTransactionValidation } from '@perawallet/wallet-core-connections'
+import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
@@ -44,7 +44,7 @@ export type EthereumSendTransactionSession = {
     eip155ChainId: number | undefined
 }
 
-type Validation = DappSendTransactionValidation<EthereumSendTransactionRequest>
+type Validation = DappRequestValidation<EthereumSendTransactionRequest>
 
 const invalid = (message: string): Validation => ({
     ok: false,

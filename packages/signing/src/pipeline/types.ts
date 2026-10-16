@@ -14,9 +14,11 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
+    MessageRequest,
     PeraTransaction,
     PeraSignedTransaction,
     ReviewedTransaction,
+    SignedMessage,
     ReviewWarning,
     SignedTransaction,
     UnsignedTransaction,
@@ -105,10 +107,17 @@ export interface AuthDataSignableData extends AuthDataPayload {
     type: 'auth-data'
 }
 
+/** A chain-neutral message; its chain's message signer plans and signs it. */
+export interface MessageSignableData {
+    type: 'message'
+    request: MessageRequest
+}
+
 export type SignableData =
     | TransactionSignableData
     | ArbitraryDataSignableData
     | AuthDataSignableData
+    | MessageSignableData
 
 /** Shared by SourceMetadata (pipeline) and SignRequest (models). */
 export type SourceType =
@@ -394,11 +403,17 @@ export interface SignedAuthData {
     signature: Uint8Array
 }
 
+export interface SignedMessageData {
+    type: 'message'
+    signed: SignedMessage
+}
+
 export type SignedData =
     | SignedTransactionData
     | SignedChainTransactionsData
     | SignedArbitraryData
     | SignedAuthData
+    | SignedMessageData
 
 export interface SigningResult {
     signedData: SignedData

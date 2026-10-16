@@ -17,6 +17,7 @@ import type {
 import type {
     AuthDataSignRequest,
     ArbitraryDataSignRequest,
+    MessageSignRequest,
     SignRequest,
     TransactionSignRequest,
     UnsignedTransactionSignRequest,
@@ -51,3 +52,8 @@ export const isAuthDataRequest = (
     request: SignRequest,
 ): request is AuthDataSignRequest =>
     request.type === 'auth-data' && 'authData' in request
+
+export const isMessageRequest = (
+    request: SignRequest,
+): request is MessageSignRequest =>
+    request.type === 'message' && 'message' in request

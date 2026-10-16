@@ -17,7 +17,10 @@ import {
     parseAuthDataWireRequest,
     type AuthDataSignableData,
 } from '@perawallet/wallet-core-signing'
-import { dappRequestChainAdapters } from './dappRequest'
+import {
+    dappRequestChainAdapters,
+    type DappRequestValidation,
+} from './dappRequest'
 import { ConnectionsError } from './errors'
 import type {
     InboundMessage,
@@ -91,6 +94,27 @@ export const describeZodIssues = (error: z.ZodError): string =>
         .map(issue => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
         .join('; ')
 
+const unserved = (type: string): ValidationOutcome => ({
+    ok: false,
+    error: new ConnectionsError(
+        'unsupported-operation',
+        `${type} requests are not served`,
+    ),
+})
+
+const refused = ({
+    failure,
+    message,
+}: Extract<DappRequestValidation, { ok: false }>): ValidationOutcome => ({
+    ok: false,
+    error: new ConnectionsError(
+        failure === 'unauthorized-account'
+            ? 'unauthorized-account'
+            : 'invalid-payload',
+        message,
+    ),
+})
+
 export const validateRawMessage = (
     raw: RawInboundMessage,
 ): ValidationOutcome => {
@@ -112,32 +136,34 @@ export const validateRawMessage = (
 
     if (rawOperation.type === 'send-transaction') {
         const { sendTransaction } = dappRequestChainAdapters.get(raw.chainId)
-        if (!sendTransaction) {
-            return {
-                ok: false,
-                error: new ConnectionsError(
-                    'unsupported-operation',
-                    `${rawOperation.type} requests are not served`,
-                ),
-            }
-        }
+        if (!sendTransaction) return unserved(rawOperation.type)
         const result = sendTransaction.validate(
             rawOperation.params,
             raw.authorizedAccounts,
         )
-        if (!result.ok) {
-            return {
-                ok: false,
-                error: new ConnectionsError(
-                    result.failure === 'unauthorized-account'
-                        ? 'unauthorized-account'
-                        : 'invalid-payload',
-                    result.message,
-                ),
-            }
-        }
+        if (!result.ok) return refused(result)
         return accepted(raw, {
             type: 'send-transaction',
+            request: result.request,
+        })
+    }
+
+    if (
+        rawOperation.type === 'sign-message' ||
+        rawOperation.type === 'sign-typed-data'
+    ) {
+        const adapter = dappRequestChainAdapters.get(raw.chainId)
+        if (!adapter.validateMessagePayload) {
+            return unserved(rawOperation.type)
+        }
+        const result = adapter.validateMessagePayload(
+            rawOperation.type,
+            rawOperation.params,
+            raw.authorizedAccounts,
+        )
+        if (!result.ok) return refused(result)
+        return accepted(raw, {
+            type: rawOperation.type,
             request: result.request,
         })
     }
@@ -146,13 +172,7 @@ export const validateRawMessage = (
         rawOperation.type !== 'sign-transactions' &&
         rawOperation.type !== 'sign-data'
     ) {
-        return {
-            ok: false,
-            error: new ConnectionsError(
-                'unsupported-operation',
-                `${rawOperation.type} requests are not served`,
-            ),
-        }
+        return unserved(rawOperation.type)
     }
 
     if (rawOperation.type === 'sign-transactions') {

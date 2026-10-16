@@ -155,7 +155,7 @@ const messageOf = (error: unknown): string =>
 
 // The same reporting the chain's own local-key signer gives a keystore fault,
 // so the user sees the same copy whichever signer ran.
-const signOrReport = async (
+export const signOrReport = async (
     keyStore: Pick<ChainKeyStore, 'sign'>,
     keyPairId: string,
     payload: Uint8Array,

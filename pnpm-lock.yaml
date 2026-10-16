@@ -496,9 +496,6 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
         version: 1.0.0-canary.29(patch_hash=8636bde65d7681ff4c1d002011ec786968da49bd979a73d7578cc071d6e1b585)(1c538277941b19bf553140687d2d9501)
@@ -754,9 +751,6 @@ importers:
       '@zxcvbn-ts/language-en':
         specifier: ^4.1.1
         version: 4.1.1
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       buffer:
         specifier: 'catalog:'
         version: 6.0.3
@@ -971,6 +965,9 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.18)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
     devDependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1028,6 +1025,9 @@ importers:
       '@welldone-software/why-did-you-render':
         specifier: ^10.0.1
         version: 10.0.1(react@19.2.3)
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
       babel-plugin-module-resolver:
         specifier: ^5.0.2
         version: 5.0.3
@@ -1076,9 +1076,6 @@ importers:
 
   conformance:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.5
         version: 1.0.0-canary.5(patch_hash=481882bbbc92c47b9f665d6a44053ac13e468eee42b0539136adfdb20f87f092)(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.2)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
@@ -1121,9 +1118,6 @@ importers:
       '@tanstack/store':
         specifier: 'catalog:'
         version: 0.11.2
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -1134,12 +1128,18 @@ importers:
         specifier: 'catalog:'
         version: 1.0.3
     devDependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.2(algosdk@3.7.0)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../packages/devtools
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1858,28 +1858,6 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
-      vitest:
-        specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
-
-  packages/asa-inbox:
-    dependencies:
-      '@perawallet/wallet-core-chain-algorand':
-        specifier: workspace:*
-        version: link:../chain-algorand
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.19.43
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3076,25 +3054,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
-
-  packages/fee-delegation:
-    dependencies:
-      '@perawallet/wallet-core-chain-algorand':
-        specifier: workspace:*
-        version: link:../chain-algorand
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
-      vitest:
-        specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/hardware-wallet:
     dependencies:
@@ -15594,7 +15553,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 

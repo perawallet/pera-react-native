@@ -15,9 +15,8 @@ export {
     upsertTransactions,
     getTransactionHistory,
     getLatestTransactionRoundTime,
-    getCloseRowsMissingCloseAmount,
-    getSwapRowsMissingAssetFacts,
-    persistResolvedSwapAssetFacts,
-    updateTransactionCloseAmount,
+    getRowsByChainData,
+    getChainDataValue,
+    setChainDataValue,
     deleteTransactionsForAccount,
 } from './repository'

@@ -116,6 +116,7 @@ vi.mock('../../store', async importOriginal => {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     isSignRequestAwaitingPreflight,
+    isSignRequestPastApproval,
     useSigningActorLifecycle,
     __resetSigningActorRegistryForTests,
 } from '../useSigningActorLifecycle'
@@ -621,6 +622,33 @@ describe('useSigningActorLifecycle', () => {
         })
 
         expect(actor.send).toHaveBeenCalledWith({ type: 'USER_APPROVED' })
+    })
+
+    test('isSignRequestPastApproval holds only once the actor leaves the approval gate', async () => {
+        const actor = makeMockActor('tx-past')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+        renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest({ id: 'tx-past' })
+        expect(isSignRequestPastApproval('tx-past')).toBe(false)
+
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+        act(() => {
+            actor.emit({ value: 'awaiting_user', request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(false)
+
+        act(() => {
+            actor.emit({ value: { signing: 'local' }, request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(true)
+
+        act(() => {
+            actor.emit({ value: 'transporting', request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(true)
     })
 
     test('rejected gate result forwards USER_REJECTED to the actor', async () => {

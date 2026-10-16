@@ -11,20 +11,18 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
-import {
-    assetRefKey,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     TransactionHistoryStatuses,
     type TransactionHistoryItem,
     type TransactionHistoryStatus,
     type TransactionBalanceImpact,
     type TransactionAssetSummary,
-    type TransactionSwapGroupDetail,
 } from '../models/types'
-import type { AssetFactsResolver } from '../history-adapter'
+import type {
+    AssetFactsResolver,
+    HistoryChainDataCodec,
+} from '../history-adapter'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -95,107 +93,11 @@ function deserializeAsset(
     return { ...parsed, unitName: facts.unitName, decimals: facts.decimals }
 }
 
-/**
- * Rehydrates a persisted swap group detail. A cached row carrying no per-side
- * decimals falls back to 6 rather than 0, which would inflate its amounts by
- * six orders of magnitude.
- */
-export function deserializeSwapGroupDetail(
-    json: Nullable<string>,
-    resolveAssetFacts: AssetFactsResolver,
-): Nullable<TransactionSwapGroupDetail> {
-    if (!json) return null
-    const parsed = JSON.parse(json) as TransactionSwapGroupDetail
-    const assetIn = resolveAssetFacts(parsed.assetInId, {
-        unitName: parsed.assetInUnitName,
-        decimals: parsed.assetInDecimals ?? ALGO_DECIMALS,
-    })
-    const assetOut = resolveAssetFacts(parsed.assetOutId, {
-        unitName: parsed.assetOutUnitName,
-        decimals: parsed.assetOutDecimals ?? ALGO_DECIMALS,
-    })
-
+export function toDb(
+    item: TransactionHistoryItem,
+    codec: HistoryChainDataCodec,
+) {
     return {
-        ...parsed,
-        assetInUnitName: assetIn.unitName,
-        assetInDecimals: assetIn.decimals,
-        assetOutUnitName: assetOut.unitName,
-        assetOutDecimals: assetOut.decimals,
-        amountIn: new Decimal(parsed.amountIn),
-        amountOut: new Decimal(parsed.amountOut),
-    }
-}
-
-type StoredSwapGroupDetail = Omit<
-    TransactionSwapGroupDetail,
-    'amountIn' | 'amountOut'
-> & {
-    /** Base units, as a decimal string. */
-    amountIn: string
-    /** Base units, as a decimal string. */
-    amountOut: string
-}
-
-/**
- * The `algorand` entry of a `transactions.chain_data` document. Absent values
- * are `null` rather than omitted, so every row has the same keys.
- */
-type StoredAlgorandChainData = {
-    confirmedRound: Nullable<number>
-    /** Unix seconds. */
-    roundTime: Nullable<number>
-    innerTransactionCount: Nullable<number>
-    /** Decimal string: a uint64 id never lives in a JS number. */
-    applicationId: Nullable<string>
-    closeTo: Nullable<string>
-    swapGroupDetail: Nullable<StoredSwapGroupDetail>
-    groupId: Nullable<string>
-    /** Base units, as a decimal string. */
-    closeAmount: Nullable<string>
-}
-
-// Built from the converted columns, so the two shapes can't drift apart.
-function serializeAlgorandChainData(
-    columns: ReturnType<typeof toAlgorandColumns>,
-    swap: Nullable<TransactionSwapGroupDetail>,
-): string {
-    const algorand: StoredAlgorandChainData = {
-        confirmedRound: columns.confirmedRound,
-        roundTime: columns.roundTime,
-        innerTransactionCount: columns.innerTransactionCount,
-        applicationId: columns.applicationId?.toString() ?? null,
-        closeTo: columns.closeTo,
-        swapGroupDetail: swap
-            ? {
-                  ...swap,
-                  amountIn: swap.amountIn.toString(),
-                  amountOut: swap.amountOut.toString(),
-              }
-            : null,
-        groupId: columns.groupId,
-        closeAmount: columns.closeAmount?.toString() ?? null,
-    }
-    return JSON.stringify({ algorand })
-}
-
-function toAlgorandColumns(item: TransactionHistoryItem) {
-    return {
-        confirmedRound: item.confirmedRound ?? null,
-        roundTime: item.roundTime,
-        groupId: item.groupId,
-        closeTo: item.closeTo,
-        closeAmount: item.closeAmount,
-        applicationId: item.applicationId
-            ? new Decimal(item.applicationId)
-            : null,
-        innerTransactionCount: item.innerTransactionCount,
-    }
-}
-
-export function toDb(item: TransactionHistoryItem, scope: ChainScope) {
-    const algorandColumns = toAlgorandColumns(item)
-    return {
-        ...algorandColumns,
         id: item.id,
         txType: item.txType,
         sender: item.sender,
@@ -205,23 +107,11 @@ export function toDb(item: TransactionHistoryItem, scope: ChainScope) {
         amount: item.amount,
         assetSender: item.assetSender,
         assetJson: item.asset ? JSON.stringify(item.asset) : null,
-        swapGroupDetailJson: item.swapGroupDetail
-            ? JSON.stringify(item.swapGroupDetail)
-            : null,
         interpretedMeaningJson: item.interpretedMeaning
             ? JSON.stringify(item.interpretedMeaning)
             : null,
         balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
-        chainData: serializeAlgorandChainData(
-            algorandColumns,
-            item.swapGroupDetail,
-        ),
-        assetRef: item.asset
-            ? assetRefKey({
-                  chainId: scope.chainId,
-                  assetId: item.asset.assetId,
-              })
-            : null,
+        chainData: codec.encode(item),
     }
 }
 
@@ -232,22 +122,16 @@ export function fromDb(
         sender: string
         assetSender: Nullable<string>
         receiver: Nullable<string>
-        confirmedRound: Nullable<number>
-        roundTime: Nullable<number>
         status: TransactionHistoryStatus
         fee: Decimal
-        groupId: Nullable<string>
         amount: Nullable<Decimal>
-        closeTo: Nullable<string>
-        closeAmount: Nullable<Decimal>
-        applicationId: Nullable<Decimal>
-        innerTransactionCount: Nullable<number>
         assetJson: Nullable<string>
-        swapGroupDetailJson: Nullable<string>
         interpretedMeaningJson: Nullable<string>
         balanceImpactsJson: Nullable<string>
+        chainData: string
     },
     resolveAssetFacts: AssetFactsResolver,
+    codec: HistoryChainDataCodec,
 ): TransactionHistoryItem {
     return {
         id: row.id,
@@ -255,22 +139,11 @@ export function fromDb(
         sender: row.sender,
         assetSender: row.assetSender,
         receiver: row.receiver,
-        confirmedRound: row.confirmedRound ?? undefined,
         status: row.status,
-        // Only a chain that can't time a pending transaction leaves this NULL.
-        roundTime: row.roundTime ?? 0,
         fee: row.fee,
-        groupId: row.groupId,
         amount: row.amount,
-        closeTo: row.closeTo,
-        closeAmount: row.closeAmount,
-        applicationId: row.applicationId?.toString() ?? null,
-        innerTransactionCount: row.innerTransactionCount,
+        ...codec.decode(row.chainData),
         asset: deserializeAsset(row.assetJson, resolveAssetFacts),
-        swapGroupDetail: deserializeSwapGroupDetail(
-            row.swapGroupDetailJson,
-            resolveAssetFacts,
-        ),
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)
             : null,

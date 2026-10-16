@@ -49,7 +49,11 @@ export const resolveSigningAccount = (
     chainId: ChainId,
 ): WalletAccount => {
     if (source.type === 'multisig-cosign') return signerAccount
-    if (dataType === 'arbitrary-data' || dataType === 'auth-data') {
+    if (
+        dataType === 'arbitrary-data' ||
+        dataType === 'auth-data' ||
+        dataType === 'message'
+    ) {
         return signerAccount
     }
     return resolveAuthAccount(signerAccount, allAccounts, chainId)

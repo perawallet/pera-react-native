@@ -20,6 +20,10 @@
     "./dappRequest": {
       "types": "./dist/dappRequest.d.ts",
       "default": "./dist/dappRequest.js"
+    },
+    "./capacity": {
+      "types": "./dist/capacity.d.ts",
+      "default": "./dist/capacity.js"
     }
   },
   "scripts": {

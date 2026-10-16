@@ -10,12 +10,4 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
-
-export default defineConfig({
-    test: {
-        ...poolConfig,
-        passWithNoTests: true,
-    },
-})
+export { MessageSigningScreen } from './MessageSigningScreen'

@@ -102,7 +102,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 // its own broadcaster's transport, which records the send on
                 // the submission ledger with its history entry.
                 if (!plannerChainAdapters.has(scope.chainId)) {
-                    addSignRequest({
+                    const selfSubmitted: UnsignedTransactionSignRequest = {
                         id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'submit-and-answer',
@@ -113,7 +113,8 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             resolve({ txIds: submission?.txIds ?? [] })
                         },
                         ...callbacks,
-                    })
+                    }
+                    addSignRequest(selfSubmitted)
                     return
                 }
 

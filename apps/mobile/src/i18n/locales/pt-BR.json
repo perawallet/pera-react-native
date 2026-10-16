@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Um app enviou uma solicitação que a Pera não conseguiu entender. Verifique o app e tente novamente.",
             "no_handler": "A Pera não conseguiu processar esta solicitação de conexão. Verifique o app e tente novamente.",
+            "unauthorized_account": "Um app pediu para assinar com uma conta que não faz parte da sua conexão.",
             "unknown_connection": "A Pera não encontrou essa conexão. Ela pode já ter sido desconectada.",
             "duplicate_kind": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
             "already_initialized": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
@@ -3054,7 +3055,9 @@
             "data_label": "Dados a serem assinados",
             "untrusted_message_label": "Mensagem exibida (não faz parte do que você assina)",
             "binary_warning_title": "Os dados não são texto legível",
-            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo."
+            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo.",
+            "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
+            "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
         "arbitrary_data_details": {
             "unnamed": "Alguém",

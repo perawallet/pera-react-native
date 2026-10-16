@@ -188,7 +188,7 @@ const closeAmountLookupSchema = z.object({
  * The swept close amount of a single confirmed transaction (base units,
  * decimal string), straight from the chain — perspective-free, unlike the
  * Pera backend's balance-impact derivation. Null when the transaction has no
- * close leg. Powers sync/close-amount-backfill.ts.
+ * close leg. Powers history-cache/close-amount-backfill.ts.
  */
 export const fetchIndexerCloseAmount = async (
     txId: string,

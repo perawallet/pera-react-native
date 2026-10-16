@@ -78,6 +78,7 @@ export {
 export {
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isTransactionRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
@@ -90,6 +91,7 @@ export {
     type AuthDataSignRequest,
     type FeeAdjustment,
     type FeeAdjustmentReason,
+    type MessageSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequest,
@@ -139,6 +141,7 @@ export {
 export {
     applyAppStateToHardwareSessions,
     isSignRequestAwaitingPreflight,
+    isSignRequestPastApproval,
 } from './hooks/useSigningActorLifecycle'
 export { useSigningEvent } from './hooks/useSigningEvent'
 export { useSigningPipeline } from './hooks/useSigningPipeline'
@@ -297,7 +300,7 @@ export {
 } from './db'
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
-export { rehydrateSigningStore } from './store'
+export { isSignRequestPending, rehydrateSigningStore } from './store'
 
 export {
     BLE_CLASS_ERROR_KINDS,

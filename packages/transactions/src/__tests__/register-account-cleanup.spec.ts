@@ -23,6 +23,8 @@ import type { TransactionHistoryItem } from '../models/types'
 import { upsertTransactions, getTransactionHistory } from '../db/repository'
 import { cleanupTransactionsForAccount } from '../register-account-cleanup'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { historyChainAdapters } from '../history-adapter'
+import { fixtureHistoryAdapter } from './fixture-chain-data'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -59,10 +61,12 @@ describe('register-account-cleanup', () => {
             db = result.db
             teardown = result.teardown
             await runMigrations(db, migrations)
+            historyChainAdapters.register(fixtureHistoryAdapter())
         })
 
         afterEach(() => {
             teardown()
+            historyChainAdapters.reset()
         })
 
         it('deletes the account transactions using the forwarded db', async () => {

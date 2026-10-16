@@ -176,6 +176,13 @@ The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes
 through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
 `buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
 
+## WalletConnect v2 refusal codes
+
+A chain answers refusals in its namespace's codes through `walletConnect.toWireErrorCode`; a chain
+that omits it answers -32000 and WalletConnect's SDK errors. Whether a request's signer is a session
+account is the chain's call, made in `sendTransaction.validate` or `validateMessagePayload`, which
+both receive the connection's authorized accounts.
+
 ## WalletConnect v2 key material
 
 The v2 record carries no `secretRef`. WalletKit owns the key material itself: every pairing and

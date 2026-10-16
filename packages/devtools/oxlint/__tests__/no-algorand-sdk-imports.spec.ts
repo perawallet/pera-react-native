@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { noAlgorandSdkImports } from '../rules/no-algorand-sdk-imports.js'
-import { readOxlintConfig } from './helpers.js'
+import { overridesWith, readOxlintConfig } from './helpers.js'
 
 describe('pera/no-algorand-sdk-imports', () => {
     const lint = (
@@ -59,19 +59,33 @@ describe('pera/no-algorand-sdk-imports', () => {
         expect(lint('ExportNamedDeclaration', null)).not.toHaveBeenCalled()
     })
 
-    it('is on at the root top level, where mobile inherits it, and nothing re-enables it per path', () => {
-        const root = readOxlintConfig('.oxlintrc.json') as unknown as {
-            rules: Record<string, unknown>
-        }
-        expect(root.rules['pera/no-algorand-sdk-imports']).toBe('warn')
-        for (const path of ['.oxlintrc.json', 'apps/mobile/.oxlintrc.json']) {
-            const settings = readOxlintConfig(path)
-                .overrides.map(o => o.rules['pera/no-algorand-sdk-imports'])
-                .filter(s => s !== undefined)
+    it('is an error at the root, and only chain-algorand, the conformance harness and tests turn it off', () => {
+        const RULE = 'pera/no-algorand-sdk-imports'
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const rootRules = (
+            root as unknown as { rules: Record<string, unknown> }
+        ).rules
+
+        expect(rootRules[RULE]).toBe('error')
+        for (const config of [root, mobile]) {
             expect(
-                settings.every(s => s === 'off'),
-                path,
+                overridesWith(config, RULE).every(o => o.rules[RULE] === 'off'),
             ).toBe(true)
         }
+        expect(
+            overridesWith(root, RULE)
+                .flatMap(o => o.files)
+                .sort(),
+        ).toEqual(
+            [
+                'packages/chain-algorand/**',
+                'conformance/**',
+                '**/__tests__/**',
+                '**/*.spec.{ts,tsx}',
+                '**/__integration__/**',
+                '**/vitest*.ts',
+            ].sort(),
+        )
     })
 })

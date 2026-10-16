@@ -20,6 +20,10 @@ import { initializeDatabase, resetDatabase, type Database } from '../database'
 
 const IDENTITY_TAG = '0009_transaction_identity'
 
+// Later migrations reshape the table, so the column assertions stop here.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const SCOPES = ['algorand/mainnet', 'algorand/testnet'] as const
 
 const TRANSACTIONS_PER_SCOPE = 2_500
@@ -111,7 +115,7 @@ describe('transaction identity migration', () => {
     it('leaves every other column as it was', async () => {
         const db = await createSeededDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(IDENTITY_TAG))
 
         const [row] = await db.values(sql`
             SELECT id, network, tx_type, sender, asset_sender, receiver, confirmed_round,
@@ -156,7 +160,7 @@ describe('transaction identity migration', () => {
 
     it('accepts an id that another scope already holds', async () => {
         const db = await createSeededDatabase()
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(IDENTITY_TAG))
 
         await db.run(sql`
             INSERT INTO transactions (id, network, tx_type, sender, confirmed_round, round_time, fee, updated_at)
@@ -173,7 +177,7 @@ describe('transaction identity migration', () => {
 
     it('stores a transaction with no round yet', async () => {
         const db = await createSeededDatabase()
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(IDENTITY_TAG))
 
         await db.run(sql`
             INSERT INTO transactions (id, network, tx_type, sender, fee, status, updated_at)
@@ -259,9 +263,9 @@ describe('transaction identity migration', () => {
                 ),
             ).toBe(SCOPES.length)
             await test.db.run(sql`
-                INSERT INTO transactions (id, network, tx_type, sender, fee, updated_at)
-                VALUES ('SHARED', 'algorand/mainnet', 'pay', 'ADDR', '1000', 1),
-                       ('SHARED', 'algorand/testnet', 'pay', 'ADDR', '1000', 1)
+                INSERT INTO transactions (id, network, tx_type, sender, fee, chain_data, updated_at)
+                VALUES ('SHARED', 'algorand/mainnet', 'pay', 'ADDR', '1000', '{}', 1),
+                       ('SHARED', 'algorand/testnet', 'pay', 'ADDR', '1000', '{}', 1)
             `)
             expect(onReset).toHaveBeenCalledExactlyOnceWith(IDENTITY_TAG)
         })

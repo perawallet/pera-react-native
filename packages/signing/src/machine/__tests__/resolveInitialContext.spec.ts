@@ -50,6 +50,7 @@ import type { SigningMachineInput } from '../context'
 import type {
     ArbitraryDataSignRequest,
     AuthDataSignRequest,
+    MessageSignRequest,
     SignRequest,
     TransactionSignRequest,
 } from '../../models'
@@ -450,6 +451,70 @@ describe('resolveInitialContext — auth-data requests', () => {
         expect(authDataApprove).toHaveBeenCalledWith([
             { signature: sig, signer: USER_ADDRESS },
         ])
+    })
+})
+
+describe('resolveInitialContext — message requests', () => {
+    const messageRequest = (
+        networkId = 'mainnet',
+        overrides: Partial<MessageSignRequest> = {},
+    ): MessageSignRequest => ({
+        id: 'req-message',
+        type: 'message',
+        transport: 'callback',
+        sourceType: 'walletconnect',
+        message: {
+            scope: { chainId: 'algorand', networkId },
+            method: 'plain',
+            signer: USER_ADDRESS,
+            payload: { message: '0x68' },
+        },
+        ...overrides,
+    })
+
+    it('produces one message group keyed by the message signer', () => {
+        const context = resolveInitialContext(baseInput(messageRequest()))
+
+        expect(context.signableGroups).toHaveLength(1)
+        expect(context.signableGroups![0]).toMatchObject({
+            data: { type: 'message' },
+            signerAddress: USER_ADDRESS,
+        })
+        expect(context.groupSigners?.get(USER_ADDRESS)?.custody).toBe('local')
+    })
+
+    it('refuses a request stamped for a network the actor is not on', () => {
+        expect(() =>
+            resolveInitialContext(baseInput(messageRequest('testnet'))),
+        ).toThrow(ScopeChangedError)
+    })
+
+    it('hands the signed message to the request approve callback as is', async () => {
+        const approve = vi.fn(async () => undefined)
+        const context = resolveInitialContext(
+            baseInput(messageRequest('mainnet', { approve })),
+        )
+        const { callbacks } = context.signableGroups![0].source
+        const signed = {
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            signature: { bytes: new Uint8Array([7]) },
+        }
+
+        await callbacks?.approve?.({
+            signedData: { type: 'message', signed },
+            signers: [{ address: USER_ADDRESS }],
+        } as never)
+
+        expect(approve).toHaveBeenCalledWith(signed)
+    })
+
+    it('refuses a signer the wallet does not hold', () => {
+        const request = messageRequest()
+        request.message.signer = makeTestAddress(9).toString()
+
+        expect(() => resolveInitialContext(baseInput(request))).toThrow(
+            CannotSignError,
+        )
     })
 })
 
