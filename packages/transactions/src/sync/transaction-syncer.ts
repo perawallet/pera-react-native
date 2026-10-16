@@ -12,10 +12,8 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { fetchTransactionHistory } from '../history-adapter'
+import { fetchTransactionHistory, healCachedRows } from '../history-adapter'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
-import { backfillMissingCloseAmounts } from './close-amount-backfill'
-import { backfillSwapAssetFacts } from './swap-asset-facts-backfill'
 
 export async function fetchAndPersistTransactions(
     address: string,
@@ -49,13 +47,5 @@ export async function fetchAndPersistTransactions(
         })
     }
 
-    // Heal close rows whose swept amount the backend/derivation couldn't
-    // provide (rows cached before the swept amount was recorded, receiver-only
-    // perspectives). Best-effort and bounded; never fails the sync.
-    await backfillMissingCloseAmounts({ scope })
-
-    // Likewise for swap rows cached without their per-side asset facts. The
-    // fetch above only asks for transactions newer than the newest cached one,
-    // so nothing else ever revisits them.
-    await backfillSwapAssetFacts({ scope, accountAddress: address })
+    await healCachedRows(address, scope)
 }

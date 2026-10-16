@@ -33,7 +33,7 @@ import m0017 from './0017_submission_attempts_max_fee.sql?raw'
 import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
-// backfill (packages/transactions sync/close-amount-backfill.ts) — no
+// backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
 // cache-wiping migration needed.
 export const migrations: MigrationConfig = {
     '0000_initial': m0000,

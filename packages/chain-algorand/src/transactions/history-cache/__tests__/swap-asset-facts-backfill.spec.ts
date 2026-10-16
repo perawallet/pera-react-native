@@ -18,13 +18,16 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import type {
-    TransactionHistoryItem,
-    TransactionHistoryResult,
-} from '../../models/types'
-import { upsertTransactions, getTransactionHistory } from '../../db'
-import { backfillSwapAssetFacts } from '../swap-asset-facts-backfill'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    getTransactionHistory,
+    historyChainAdapters,
+    upsertTransactions,
+    type TransactionHistoryItem,
+    type TransactionHistoryResult,
+} from '@perawallet/wallet-core-transactions'
+import { backfillSwapAssetFacts } from '../swap-asset-facts-backfill'
+import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 // 2026-09-02T10:21:41Z. The window is padded a day either side so the row is
 // caught regardless of which timezone the backend reads the day filter in.
@@ -113,10 +116,12 @@ describe('backfillSwapAssetFacts', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        registerAlgorandHistoryCodec()
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
 
     const seedStaleRow = async (overrides: Record<string, unknown> = {}) =>

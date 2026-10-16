@@ -22,6 +22,8 @@ import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, deleteTransactionsForAccount } from '../repository'
 import { TransactionsSchema } from '../schema'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { historyChainAdapters } from '../../history-adapter'
+import { fixtureHistoryAdapter } from '../../__tests__/fixture-chain-data'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -59,10 +61,12 @@ describe('deleteTransactionsForAccount', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        historyChainAdapters.register(fixtureHistoryAdapter())
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
 
     it('drops the account link rows and prunes transactions it exclusively owned', async () => {

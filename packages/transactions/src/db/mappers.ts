@@ -11,16 +11,18 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     TransactionHistoryStatuses,
     type TransactionHistoryItem,
     type TransactionHistoryStatus,
     type TransactionBalanceImpact,
     type TransactionAssetSummary,
-    type TransactionSwapGroupDetail,
 } from '../models/types'
-import type { AssetFactsResolver } from '../history-adapter'
+import type {
+    AssetFactsResolver,
+    HistoryChainDataCodec,
+} from '../history-adapter'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -91,135 +93,10 @@ function deserializeAsset(
     return { ...parsed, unitName: facts.unitName, decimals: facts.decimals }
 }
 
-/**
- * Rehydrates a persisted swap group detail. A cached row carrying no per-side
- * decimals falls back to 6 rather than 0, which would inflate its amounts by
- * six orders of magnitude.
- */
-function restoreSwapGroupDetail(
-    parsed: StoredSwapGroupDetail,
-    resolveAssetFacts: AssetFactsResolver,
-): TransactionSwapGroupDetail {
-    const assetIn = resolveAssetFacts(parsed.assetInId, {
-        unitName: parsed.assetInUnitName,
-        decimals: parsed.assetInDecimals ?? ALGO_DECIMALS,
-    })
-    const assetOut = resolveAssetFacts(parsed.assetOutId, {
-        unitName: parsed.assetOutUnitName,
-        decimals: parsed.assetOutDecimals ?? ALGO_DECIMALS,
-    })
-
-    return {
-        ...parsed,
-        assetInUnitName: assetIn.unitName,
-        assetInDecimals: assetIn.decimals,
-        assetOutUnitName: assetOut.unitName,
-        assetOutDecimals: assetOut.decimals,
-        amountIn: new Decimal(parsed.amountIn),
-        amountOut: new Decimal(parsed.amountOut),
-    }
-}
-
-export function deserializeSwapGroupDetail(
-    json: Nullable<string>,
-    resolveAssetFacts: AssetFactsResolver,
-): Nullable<TransactionSwapGroupDetail> {
-    if (!json) return null
-    return restoreSwapGroupDetail(
-        JSON.parse(json) as StoredSwapGroupDetail,
-        resolveAssetFacts,
-    )
-}
-
-type StoredSwapGroupDetail = Omit<
-    TransactionSwapGroupDetail,
-    'amountIn' | 'amountOut'
-> & {
-    /** Base units, as a decimal string. */
-    amountIn: string
-    /** Base units, as a decimal string. */
-    amountOut: string
-}
-
-/**
- * The `algorand` entry of a `transactions.chain_data` document. Absent values
- * are `null` rather than omitted, so every row has the same keys.
- */
-type StoredAlgorandChainData = {
-    confirmedRound: Nullable<number>
-    /** Unix seconds. */
-    roundTime: Nullable<number>
-    innerTransactionCount: Nullable<number>
-    /** Decimal string: a uint64 id never lives in a JS number. */
-    applicationId: Nullable<string>
-    closeTo: Nullable<string>
-    swapGroupDetail: Nullable<StoredSwapGroupDetail>
-    groupId: Nullable<string>
-    /** Base units, as a decimal string. */
-    closeAmount: Nullable<string>
-}
-
-type StoredChainData = { algorand?: StoredAlgorandChainData }
-
-type AlgorandChainDataFields = Pick<
-    TransactionHistoryItem,
-    | 'confirmedRound'
-    | 'roundTime'
-    | 'innerTransactionCount'
-    | 'applicationId'
-    | 'closeTo'
-    | 'swapGroupDetail'
-    | 'groupId'
-    | 'closeAmount'
->
-
-function serializeAlgorandChainData(item: TransactionHistoryItem): string {
-    const swap = item.swapGroupDetail
-    const algorand: StoredAlgorandChainData = {
-        confirmedRound: item.confirmedRound ?? null,
-        roundTime: item.roundTime,
-        innerTransactionCount: item.innerTransactionCount,
-        applicationId: item.applicationId || null,
-        closeTo: item.closeTo,
-        swapGroupDetail: swap
-            ? {
-                  ...swap,
-                  amountIn: swap.amountIn.toString(),
-                  amountOut: swap.amountOut.toString(),
-              }
-            : null,
-        groupId: item.groupId,
-        closeAmount: item.closeAmount?.toString() ?? null,
-    }
-    return JSON.stringify({ algorand })
-}
-
-function deserializeAlgorandChainData(
-    json: string,
-    resolveAssetFacts: AssetFactsResolver,
-): AlgorandChainDataFields {
-    const algorand = (JSON.parse(json) as StoredChainData).algorand
-    return {
-        confirmedRound: algorand?.confirmedRound ?? undefined,
-        // Only a chain that can't time a pending transaction leaves this NULL.
-        roundTime: algorand?.roundTime ?? 0,
-        innerTransactionCount: algorand?.innerTransactionCount ?? null,
-        applicationId: algorand?.applicationId ?? null,
-        closeTo: algorand?.closeTo ?? null,
-        swapGroupDetail: algorand?.swapGroupDetail
-            ? restoreSwapGroupDetail(
-                  algorand.swapGroupDetail,
-                  resolveAssetFacts,
-              )
-            : null,
-        groupId: algorand?.groupId ?? null,
-        closeAmount: algorand?.closeAmount
-            ? new Decimal(algorand.closeAmount)
-            : null,
-    }
-}
-
-export function toDb(item: TransactionHistoryItem) {
+export function toDb(
+    item: TransactionHistoryItem,
+    codec: HistoryChainDataCodec,
+) {
     return {
         id: item.id,
         txType: item.txType,
@@ -234,7 +111,7 @@ export function toDb(item: TransactionHistoryItem) {
             ? JSON.stringify(item.interpretedMeaning)
             : null,
         balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
-        chainData: serializeAlgorandChainData(item),
+        chainData: codec.encode(item),
     }
 }
 
@@ -254,6 +131,7 @@ export function fromDb(
         chainData: string
     },
     resolveAssetFacts: AssetFactsResolver,
+    codec: HistoryChainDataCodec,
 ): TransactionHistoryItem {
     return {
         id: row.id,
@@ -264,7 +142,7 @@ export function fromDb(
         status: row.status,
         fee: row.fee,
         amount: row.amount,
-        ...deserializeAlgorandChainData(row.chainData, resolveAssetFacts),
+        ...codec.decode(row.chainData),
         asset: deserializeAsset(row.assetJson, resolveAssetFacts),
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)

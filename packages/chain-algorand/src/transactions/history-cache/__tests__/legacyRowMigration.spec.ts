@@ -20,13 +20,20 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '../../models/types'
 import {
-    getCloseRowsMissingCloseAmount,
-    getSwapRowsMissingAssetFacts,
+    getRowsByChainData,
     getTransactionHistory,
-    updateTransactionCloseAmount,
-} from '../repository'
+    historyChainAdapters,
+    setChainDataValue,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import {
+    CLOSE_AMOUNT_PATH,
+    CLOSE_TO_PATH,
+    SWAP_ASSET_IN_DECIMALS_PATH,
+    SWAP_GROUP_DETAIL_PATH,
+} from '../chain-data'
+import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 const TAG = '0018_drop_transaction_algorand_columns'
 const NETWORK = 'algorand/mainnet'
@@ -72,11 +79,22 @@ describe('history rows cached before chain_data existed', () => {
                    (${ADDRESS}, 'SWAP', ${NETWORK}, 1700000000)
         `)
         await runMigrations(db, migrations)
+        registerAlgorandHistoryCodec()
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
+
+    const closeRowsMissingAmount = () =>
+        getRowsByChainData({
+            db,
+            scope,
+            accountAddress: ADDRESS,
+            present: [CLOSE_TO_PATH],
+            missing: [CLOSE_AMOUNT_PATH],
+        })
 
     it('reads a row cached before chain_data as the item it was', async () => {
         const items = await getTransactionHistory({
@@ -125,7 +143,8 @@ describe('history rows cached before chain_data existed', () => {
                 innerTransactionCount: 3,
                 swapGroupDetail: {
                     assetInId: '0',
-                    assetInUnitName: '',
+                    // The cached placeholder name is repaired on read.
+                    assetInUnitName: 'ALGO',
                     assetInDecimals: 6,
                     assetOutId: '31566704',
                     assetOutUnitName: 'USDC',
@@ -139,15 +158,16 @@ describe('history rows cached before chain_data existed', () => {
     })
 
     it('lists a migrated close row for the backfill and reads the healed amount', async () => {
-        expect(await getCloseRowsMissingCloseAmount({ db, scope })).toEqual([
-            { id: 'CLOSE' },
+        expect(await closeRowsMissingAmount()).toEqual([
+            { id: 'CLOSE', roundTime: 1700000001 },
         ])
 
-        await updateTransactionCloseAmount({
+        await setChainDataValue({
             db,
-            id: 'CLOSE',
             scope,
-            closeAmount: new Decimal('50854132929'),
+            id: 'CLOSE',
+            path: CLOSE_AMOUNT_PATH,
+            value: '50854132929',
         })
 
         const [close] = await getTransactionHistory({
@@ -156,14 +176,16 @@ describe('history rows cached before chain_data existed', () => {
             scope,
         })
         expect(close.closeAmount).toEqual(new Decimal('50854132929'))
-        expect(await getCloseRowsMissingCloseAmount({ db, scope })).toEqual([])
+        expect(await closeRowsMissingAmount()).toEqual([])
     })
 
     it('lists a migrated swap row missing its asset facts', async () => {
-        const rows = await getSwapRowsMissingAssetFacts({
+        const rows = await getRowsByChainData({
             db,
             scope,
             accountAddress: ADDRESS,
+            present: [SWAP_GROUP_DETAIL_PATH],
+            missing: [SWAP_ASSET_IN_DECIMALS_PATH],
         })
 
         expect(rows).toEqual([{ id: 'SWAP', roundTime: 1700000000 }])

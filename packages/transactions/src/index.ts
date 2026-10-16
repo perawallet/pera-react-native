@@ -53,7 +53,6 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
-    fetchCloseAmount,
     mapHistoryItemToDisplayableTransaction,
     summarizeHistoryItem,
     assetFactsResolverFor,
@@ -61,6 +60,8 @@ export {
     type AssetDisplayFacts,
     type AssetFactsResolver,
     type HistoryChainAdapter,
+    type HistoryChainDataCodec,
+    type TransactionHistoryChainFields,
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
 } from './history-adapter'
@@ -77,6 +78,9 @@ export {
     getTransactionHistory,
     getLatestTransactionRoundTime,
     deleteTransactionsForAccount,
+    getRowsByChainData,
+    getChainDataValue,
+    setChainDataValue,
 } from './db'
 
 // Export syncer for sync service

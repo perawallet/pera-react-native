@@ -10,29 +10,34 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
-import { fetchCloseAmount as defaultFetchCloseAmount } from '../history-adapter'
 import {
-    getCloseRowsMissingCloseAmount,
-    updateTransactionCloseAmount,
-} from '../db'
+    getRowsByChainData,
+    setChainDataValue,
+} from '@perawallet/wallet-core-transactions'
+import { algorandNetworkOf } from '../../legacy-network'
+import { fetchIndexerCloseAmount } from '../history/indexer/endpoints'
+import { CLOSE_AMOUNT_PATH, CLOSE_TO_PATH } from './chain-data'
 
 type BackfillParams = {
     db?: Database
     scope: ChainScope
+    accountAddress: string
     /**
      * Resolves a transaction's swept close amount (base units, decimal
-     * string) from the chain indexer; null when the transaction has no close
-     * leg or the chain has no lookup. Injectable for tests.
+     * string) from the indexer; null when the transaction has no close leg.
+     * Injectable for tests.
      */
     fetchCloseAmount?: (
         txId: string,
         scope: ChainScope,
-    ) => Promise<string | null>
+    ) => Promise<Nullable<string>>
 }
+
+const defaultFetchCloseAmount = (txId: string, scope: ChainScope) =>
+    fetchIndexerCloseAmount(txId, algorandNetworkOf(scope))
 
 /**
  * Heals close-involving rows whose swept amount is unknown — rows cached
@@ -45,11 +50,18 @@ type BackfillParams = {
 export async function backfillMissingCloseAmounts({
     db,
     scope,
+    accountAddress,
     fetchCloseAmount = defaultFetchCloseAmount,
 }: BackfillParams): Promise<void> {
     let rows: Array<{ id: string }>
     try {
-        rows = await getCloseRowsMissingCloseAmount({ db, scope })
+        rows = await getRowsByChainData({
+            db,
+            scope,
+            accountAddress,
+            present: [CLOSE_TO_PATH],
+            missing: [CLOSE_AMOUNT_PATH],
+        })
     } catch (error) {
         logger.warn('close-amount backfill: work-list query failed', { error })
         return
@@ -59,11 +71,12 @@ export async function backfillMissingCloseAmounts({
         try {
             const closeAmount = await fetchCloseAmount(id, scope)
             if (closeAmount === null) continue
-            await updateTransactionCloseAmount({
+            await setChainDataValue({
                 db,
-                id,
                 scope,
-                closeAmount: new Decimal(closeAmount),
+                id,
+                path: CLOSE_AMOUNT_PATH,
+                value: closeAmount,
             })
         } catch (error) {
             logger.warn('close-amount backfill: lookup failed; will retry', {

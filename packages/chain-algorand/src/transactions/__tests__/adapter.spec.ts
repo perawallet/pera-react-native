@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
     buildKeyRegistrationTx: vi.fn(),
     fetchTransactionHistory: vi.fn(),
     fetchMoreTransactions: vi.fn(),
-    fetchIndexerCloseAmount: vi.fn(),
 }))
 
 vi.mock('../builders', async importOriginal => ({
@@ -32,7 +31,7 @@ vi.mock('../history', () => ({
     fetchMoreTransactions: mocks.fetchMoreTransactions,
 }))
 vi.mock('../history/indexer/endpoints', () => ({
-    fetchIndexerCloseAmount: mocks.fetchIndexerCloseAmount,
+    fetchIndexerCloseAmount: vi.fn(),
 }))
 
 import { Transaction, TransactionType } from 'algosdk'
@@ -119,18 +118,6 @@ describe('algorandHistoryAdapter', () => {
             url: 'NEXT',
             network: 'testnet',
         })
-    })
-
-    it('looks a close amount up on the indexer', async () => {
-        mocks.fetchIndexerCloseAmount.mockResolvedValueOnce('500')
-
-        await expect(
-            algorandHistoryAdapter.fetchCloseAmount!('TX', testnet),
-        ).resolves.toBe('500')
-        expect(mocks.fetchIndexerCloseAmount).toHaveBeenCalledWith(
-            'TX',
-            'testnet',
-        )
     })
 
     it('rejects a scope that is not Algorand', async () => {

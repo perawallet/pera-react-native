@@ -25,6 +25,7 @@ import {
     AppError,
     ErrorCategory,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,
@@ -109,6 +110,36 @@ export class TransactionHistoryRowsUnsupportedError extends AppError {
     }
 }
 
+/** The item fields a chain keeps in `transactions.chain_data`. */
+export type TransactionHistoryChainFields = Pick<
+    TransactionHistoryItem,
+    | 'confirmedRound'
+    | 'roundTime'
+    | 'innerTransactionCount'
+    | 'applicationId'
+    | 'closeTo'
+    | 'swapGroupDetail'
+    | 'groupId'
+    | 'closeAmount'
+>
+
+/**
+ * How a chain stores its own facts in `transactions.chain_data`. Paths are
+ * SQLite JSON paths into the document `encode` writes.
+ */
+export interface HistoryChainDataCodec {
+    encode(item: TransactionHistoryItem): string
+    /** Also reads every older document shape the chain's migrations left behind. */
+    decode(json: string): TransactionHistoryChainFields
+    /** Asset ids a row involves beyond its top-level asset and balance impacts, for the per-asset history filter. */
+    assetIdPaths: readonly string[]
+    /**
+     * Scalar facts only some accounts' perspectives can derive. The row is
+     * shared across accounts, so an upsert that lacks one keeps the stored value.
+     */
+    stickyPaths: readonly string[]
+}
+
 /** The chain-specific history source; registered by the chain package. */
 export interface HistoryChainAdapter {
     chainId: ChainId
@@ -120,11 +151,6 @@ export interface HistoryChainAdapter {
     fetchMoreHistory?(
         params: FetchMoreTransactionsParams,
     ): Promise<TransactionHistoryResult>
-    /** Swept close amount in base units, as a decimal string; null when the transaction has no close leg. */
-    fetchCloseAmount?(
-        txId: string,
-        scope: ChainScope,
-    ): Promise<Nullable<string>>
     /** Newest first, every summary read from `address`'s side. Throws on another chain's scope. */
     getTransactionHistory(
         address: string,
@@ -148,6 +174,17 @@ export interface HistoryChainAdapter {
      * cached row is read back: the syncer never refetches an old row.
      */
     resolveAssetFacts?: AssetFactsResolver
+    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    chainData?: HistoryChainDataCodec
+    /**
+     * Repairs the account's cached rows after each sync, for facts the
+     * backend left out that no later fetch revisits. Must never throw: the
+     * sync that calls it must not fail on a repair.
+     */
+    healCachedRows?(params: {
+        scope: ChainScope
+        accountAddress: string
+    }): Promise<void>
 }
 
 export const historyChainAdapters =
@@ -187,14 +224,29 @@ export const fetchMoreTransactions = async (
     return adapter.fetchMoreHistory(params)
 }
 
-/** Null when the chain has no lookup. */
-export const fetchCloseAmount = async (
-    txId: string,
+// Not `get`, like assetFactsResolverFor: a chain with no codec has no rows.
+export const chainDataCodecOf = (
+    chainId: ChainId,
+): Optional<HistoryChainDataCodec> =>
+    historyChainAdapters.has(chainId)
+        ? historyChainAdapters.get(chainId).chainData
+        : undefined
+
+/** Throws {@link TransactionHistoryRowsUnsupportedError} on a chain with no codec. */
+export const chainDataCodecFor = (chainId: ChainId): HistoryChainDataCodec => {
+    const codec = chainDataCodecOf(chainId)
+    if (!codec) throw new TransactionHistoryRowsUnsupportedError(chainId)
+    return codec
+}
+
+/** No-op on a chain with no repair. */
+export const healCachedRows = async (
+    accountAddress: string,
     scope: ChainScope,
-): Promise<Nullable<string>> =>
-    (await historyChainAdapters
+): Promise<void> =>
+    historyChainAdapters
         .get(scope.chainId)
-        .fetchCloseAmount?.(txId, scope)) ?? null
+        .healCachedRows?.({ scope, accountAddress })
 
 /**
  * Throws {@link TransactionHistoryRowsUnsupportedError} on a chain with no

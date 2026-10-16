@@ -18,11 +18,21 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import type { TransactionHistoryItem } from '../../models/types'
-import { upsertTransactions, getTransactionHistory } from '../../db'
-import { historyChainAdapters } from '../../history-adapter'
-import { backfillMissingCloseAmounts } from '../close-amount-backfill'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    getTransactionHistory,
+    historyChainAdapters,
+    upsertTransactions,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import { algorandNetworkOf } from '../../../legacy-network'
+import { fetchIndexerCloseAmount } from '../../history/indexer/endpoints'
+import { backfillMissingCloseAmounts } from '../close-amount-backfill'
+import { registerAlgorandHistoryCodec } from './register-history-codec'
+
+vi.mock('../../history/indexer/endpoints', () => ({
+    fetchIndexerCloseAmount: vi.fn(),
+}))
 
 const makeTx = (
     overrides: Partial<TransactionHistoryItem> = {},
@@ -56,10 +66,12 @@ describe('backfillMissingCloseAmounts', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        registerAlgorandHistoryCodec()
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
 
     it('fetches the chain value for stale close rows and heals them in place', async () => {
@@ -74,6 +86,7 @@ describe('backfillMissingCloseAmounts', () => {
         await backfillMissingCloseAmounts({
             db,
             scope: scopeForLegacyNetwork('mainnet'),
+            accountAddress: 'ACCT1',
             fetchCloseAmount,
         })
 
@@ -102,6 +115,7 @@ describe('backfillMissingCloseAmounts', () => {
             backfillMissingCloseAmounts({
                 db,
                 scope: scopeForLegacyNetwork('mainnet'),
+                accountAddress: 'ACCT1',
                 fetchCloseAmount,
             }),
         ).resolves.toBeUndefined()
@@ -133,39 +147,56 @@ describe('backfillMissingCloseAmounts', () => {
         await backfillMissingCloseAmounts({
             db,
             scope: scopeForLegacyNetwork('mainnet'),
+            accountAddress: 'ACCT1',
             fetchCloseAmount,
         })
 
         expect(fetchCloseAmount).not.toHaveBeenCalled()
     })
 
-    it('defaults to the chain adapter lookup and skips a chain that has none', async () => {
+    it('only heals the rows linked to the syncing account', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ id: 'THEIRS' })],
+            accountAddress: 'ACCT2',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        const fetchCloseAmount = vi.fn()
+
+        await backfillMissingCloseAmounts({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            accountAddress: 'ACCT1',
+            fetchCloseAmount,
+        })
+
+        expect(fetchCloseAmount).not.toHaveBeenCalled()
+    })
+
+    it("defaults to the indexer lookup on the scope's network", async () => {
         await upsertTransactions({
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
             scope: scopeForLegacyNetwork('mainnet'),
         })
-        historyChainAdapters.reset()
-        historyChainAdapters.register({
-            chainId: 'algorand',
-            fetchHistory: vi.fn(),
-            fetchMoreHistory: vi.fn(),
-            getTransactionHistory: vi.fn(),
-            summarize: vi.fn(),
-            toDisplayable: vi.fn(),
-        })
+        vi.mocked(fetchIndexerCloseAmount).mockResolvedValue('50854132929')
 
         await backfillMissingCloseAmounts({
             db,
             scope: scopeForLegacyNetwork('mainnet'),
+            accountAddress: 'ACCT1',
         })
 
+        expect(fetchIndexerCloseAmount).toHaveBeenCalledWith(
+            'TXSTALE',
+            algorandNetworkOf(scopeForLegacyNetwork('mainnet')),
+        )
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             scope: scopeForLegacyNetwork('mainnet'),
         })
-        expect(row.closeAmount).toBeNull()
+        expect(row.closeAmount).toEqual(new Decimal('50854132929'))
     })
 })

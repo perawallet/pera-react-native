@@ -13,13 +13,20 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
-import type { TransactionHistoryResult } from '../models/types'
-import { fetchTransactionHistory } from '../history-adapter'
 import {
-    getSwapRowsMissingAssetFacts,
-    persistResolvedSwapAssetFacts,
+    fetchTransactionHistory,
+    getChainDataValue,
+    getRowsByChainData,
+    setChainDataValue,
     upsertTransactions,
-} from '../db'
+    type TransactionHistoryResult,
+} from '@perawallet/wallet-core-transactions'
+import {
+    restoreSwapGroupDetail,
+    SWAP_ASSET_IN_DECIMALS_PATH,
+    SWAP_GROUP_DETAIL_PATH,
+    type StoredSwapGroupDetail,
+} from './chain-data'
 
 type FetchHistoryPage = (params: {
     accountAddress: string
@@ -102,10 +109,12 @@ export async function backfillSwapAssetFacts({
 }: BackfillParams): Promise<void> {
     let windows: Window[]
     try {
-        const rows = await getSwapRowsMissingAssetFacts({
+        const rows = await getRowsByChainData({
             db,
             scope,
             accountAddress,
+            present: [SWAP_GROUP_DETAIL_PATH],
+            missing: [SWAP_ASSET_IN_DECIMALS_PATH],
         })
         windows = groupIntoWindows(rows)
     } catch (error) {
@@ -133,11 +142,11 @@ export async function backfillSwapAssetFacts({
             })
 
             const returned = new Set(healed.map(item => item.id))
-            await persistResolvedSwapAssetFacts({
+            await persistResolvedSwapAssetFacts(
                 db,
                 scope,
-                ids: ids.filter(id => !returned.has(id)),
-            })
+                ids.filter(id => !returned.has(id)),
+            )
         } catch (error) {
             logger.warn('swap-facts backfill: refetch failed; will retry', {
                 error,
@@ -145,5 +154,38 @@ export async function backfillSwapAssetFacts({
                 afterTime,
             })
         }
+    }
+}
+
+/**
+ * Writes the read path's resolved swap facts into the rows themselves, so a
+ * row the backend could not re-serve stops being re-queried on every sync. The
+ * stored value becomes what the history read was already returning for it,
+ * so nothing renders differently.
+ */
+async function persistResolvedSwapAssetFacts(
+    db: Database | undefined,
+    scope: ChainScope,
+    ids: string[],
+): Promise<void> {
+    for (const id of ids) {
+        const json = await getChainDataValue({
+            db,
+            scope,
+            id,
+            path: SWAP_GROUP_DETAIL_PATH,
+        })
+        if (!json) continue
+
+        const resolved = restoreSwapGroupDetail(
+            JSON.parse(json) as StoredSwapGroupDetail,
+        )
+        await setChainDataValue({
+            db,
+            scope,
+            id,
+            path: SWAP_GROUP_DETAIL_PATH,
+            value: resolved,
+        })
     }
 }

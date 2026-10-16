@@ -22,6 +22,8 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { historyChainAdapters } from '../../history-adapter'
+import { fixtureHistoryAdapter } from '../../__tests__/fixture-chain-data'
 import type { TransactionHistoryItem } from '../../models/types'
 
 const mocks = vi.hoisted(() => ({
@@ -90,6 +92,7 @@ describe('useTransactionHistoryQuery over a migrated database', () => {
         mocks.db = result.db
         teardown = result.teardown
         await runMigrations(mocks.db, migrations)
+        historyChainAdapters.register(fixtureHistoryAdapter())
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -97,6 +100,7 @@ describe('useTransactionHistoryQuery over a migrated database', () => {
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
         vi.clearAllMocks()
     })
 
