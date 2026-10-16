@@ -195,6 +195,79 @@ describe('transportActor', () => {
         expect(send).toHaveBeenCalled()
     })
 
+    describe('a scope chain with no planner adapter', () => {
+        const ETHEREUM_SEPOLIA: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'sepolia',
+        }
+        const ethereumAccount = {
+            ...mockAlgo25Account,
+            chains: { ethereum: { address: MOCK_ADDRESS } },
+        } as WalletAccount
+        const signedResult = (id: string): SigningResult => ({
+            signedData: {
+                type: 'signed-transactions',
+                signed: [
+                    {
+                        scope: ETHEREUM_SEPOLIA,
+                        id,
+                        bytes: new Uint8Array([1]),
+                    },
+                ],
+                historyEntries: [],
+            },
+            signers: [{ address: MOCK_ADDRESS }],
+        })
+        const inputFor = (
+            signingResults: SigningResult[],
+            send: ReturnType<typeof vi.fn>,
+        ) =>
+            makeInput(
+                { type: 'walletconnect' },
+                {
+                    signingResults,
+                    allAccounts: [ethereumAccount],
+                    isKeyedByPlanner: true,
+                    createTransport: () => ({ send }),
+                    scope: ETHEREUM_SEPOLIA,
+                },
+            )
+
+        it('delivers its single result unmerged', async () => {
+            const send = vi
+                .fn()
+                .mockResolvedValue({ type: 'submitted', txIds: ['0x1'] })
+            const result = signedResult('0x1')
+
+            const actor = createActor(transportActor, {
+                input: inputFor([result], send),
+            })
+            actor.start()
+            await toPromise(actor)
+
+            expect(send).toHaveBeenCalledWith(
+                result,
+                expect.anything(),
+                MOCK_ADDRESS,
+            )
+        })
+
+        it('throws rather than guess how to merge several results', async () => {
+            const send = vi.fn()
+
+            const actor = createActor(transportActor, {
+                input: inputFor(
+                    [signedResult('0x1'), signedResult('0x2')],
+                    send,
+                ),
+            })
+            actor.start()
+
+            await expect(toPromise(actor)).rejects.toThrow(/cannot merge 2/)
+            expect(send).not.toHaveBeenCalled()
+        })
+    })
+
     it('routes to algod transport for local source', async () => {
         const source: SourceMetadata = { type: 'local' }
         const actor = createActor(transportActor, { input: makeInput(source) })
