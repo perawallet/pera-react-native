@@ -17,11 +17,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     CHAIN_CAPABILITIES,
-    scopeForLegacyNetwork,
     type ChainCapabilities,
     type ChainDescriptor,
     type ChainId,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
@@ -69,7 +69,10 @@ export const registerAlgorandRulesAs = (
 export const seedAuthority = (
     address: string,
     authorityAddress: string | null,
-    scope: ChainScope = scopeForLegacyNetwork('mainnet'),
+    scope: ChainScope = {
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const,
 ): void =>
     useAccountChainStateStore
         .getState()

@@ -33,10 +33,9 @@ export default defineConfig({
         conditions: ['default'],
         alias: {
             // Source, not `dist`, so tests cannot pass against a stale build
-            // artifact. Both aliases are load-bearing: `Networks`
-            // (betanet/custom) lives in packages/config and shared only
-            // re-exports it, so aliasing shared alone still resolves that
-            // re-export through config's own dist.
+            // artifact. Both aliases are load-bearing: shared
+            // imports packages/config, so aliasing shared alone still resolves
+            // config through its own dist.
             // Before the barrel key: aliases prefix-match, so the barrel entry
             // would rewrite `/queue` (imported by assets' dist) to a bad path.
             '@perawallet/wallet-core-shared/queue': path.resolve(

@@ -5,9 +5,8 @@
 import { defineRule } from 'lanekeep'
 import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
-// `legacyNetworkOf` throws for any scope off Algorand, so a package that
-// converts a scope back to a `Network` breaks the moment it is handed another
-// chain's.
+// The converters are deleted; a reintroduced name still reports. A package
+// that pins the legacy chain breaks the moment it is handed another chain's scope.
 const BRIDGE_CALLS = ['legacyNetworkOf', 'scopeForLegacyNetwork', 'useNetwork']
 
 export default defineRule({
@@ -17,7 +16,7 @@ export default defineRule({
     severity: 'warn',
     card: {
         message:
-            'A package must not convert between a ChainScope and the legacy Network',
+            'A package must not pin the legacy chain or convert a ChainScope to a four-value network',
         remediation:
             "Take the `ChainScope` from the caller and pass `{ scope }` down; only an app pins the Algorand scope with `useSelectedScope(LEGACY_CHAIN_ID)`. A chain-agnostic Pera endpoint (banners, inbox, currencies, integrity) takes no scope: route it by `useWalletDeployment()` and pass `deployment`. Code that is Algorand's own belongs in chain-algorand, which is exempt.",
         examples: {
@@ -30,7 +29,6 @@ export default defineRule({
         pathNotMatches: [
             '**/packages/chain-algorand/**',
             '**/packages/chain-contract/**',
-            '**/packages/chain-shared/src/hooks/useNetwork.ts',
             '**/packages/chain-shared/src/store/legacy-network.ts',
             ...TEST_SUPPORT,
         ],
@@ -47,7 +45,7 @@ export default defineRule({
         if (m.call !== undefined && m.fn !== undefined) {
             ctx.report(
                 m.fn,
-                `${ctx.text(m.fn)}() converts between a scope and the legacy Network`,
+                `${ctx.text(m.fn)}() converts a scope to the legacy Network`,
             )
             return
         }

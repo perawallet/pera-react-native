@@ -21,13 +21,13 @@ const { fetchCardTransactions } = vi.hoisted(() => ({
 vi.mock('../../api/transactions', () => ({ fetchCardTransactions }))
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useCardTransactionsQuery } from '../useCardTransactionsQuery'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('mainnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

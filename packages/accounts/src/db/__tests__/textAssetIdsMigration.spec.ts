@@ -19,13 +19,16 @@ import {
     type MigrationConfig,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     getAccountHoldings,
 } from '../holdingsRepository'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const HOLDINGS = [
     { assetId: '0', amount: 5_000_000n },

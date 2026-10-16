@@ -11,22 +11,26 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { algorandNetworkOf } from '../legacy-network'
+    ALGORAND_NETWORK_IDS,
+    algorandNetworkOf,
+    algorandScope,
+} from '../network-id'
+
+describe('algorandScope', () => {
+    it.each(ALGORAND_NETWORK_IDS)(
+        'round-trips %s through algorandNetworkOf',
+        networkId => {
+            const scope = algorandScope(networkId)
+
+            expect(scope).toEqual({ chainId: 'algorand', networkId })
+            expect(algorandNetworkOf(scope)).toBe(networkId)
+        },
+    )
+})
 
 describe('algorandNetworkOf', () => {
-    it('returns the legacy network for an Algorand scope', () => {
-        expect(algorandNetworkOf(scopeForLegacyNetwork('mainnet'))).toBe(
-            'mainnet',
-        )
-        expect(algorandNetworkOf(scopeForLegacyNetwork('testnet'))).toBe(
-            'testnet',
-        )
-    })
-
     it('rejects a scope from another chain', () => {
         const foreignScope = {
             chainId: 'other-chain',
@@ -36,11 +40,14 @@ describe('algorandNetworkOf', () => {
         expect(() => algorandNetworkOf(foreignScope)).toThrow(
             'Not an Algorand scope: other-chain/mainnet',
         )
+        expect(() =>
+            algorandNetworkOf({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toThrow('Not an Algorand scope: ethereum/mainnet')
     })
 
-    it('rejects a networkId with no legacy Network equivalent', () => {
+    it('rejects an Algorand network id the chain does not know', () => {
         expect(() =>
-            algorandNetworkOf({ chainId: 'algorand', networkId: 'unknown' }),
-        ).toThrow('Not an Algorand scope: algorand/unknown')
+            algorandNetworkOf({ chainId: 'algorand', networkId: 'fnet' }),
+        ).toThrow('Not an Algorand scope: algorand/fnet')
     })
 })

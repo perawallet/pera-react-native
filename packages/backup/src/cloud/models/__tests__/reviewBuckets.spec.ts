@@ -245,7 +245,6 @@ describe('deriveBackupAccountReview', () => {
                 },
             ],
             deps: {
-                network: 'mainnet',
                 backupId: 'did:pera:ADDR',
                 deviceId: 'dev',
                 encryptionKey: new Uint8Array(32).fill(7),

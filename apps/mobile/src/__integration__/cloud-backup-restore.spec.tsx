@@ -163,7 +163,7 @@ describe('Flow: Cloud backup → Restore', () => {
         // hook bails to onError('UNKNOWN') before pulling anything.
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(File.pickFileAsync).mockReset()

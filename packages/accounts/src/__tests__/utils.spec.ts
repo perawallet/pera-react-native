@@ -204,7 +204,7 @@ describe('services/accounts/utils - authority wrappers', () => {
     const account = testAccount('local', 'A')
 
     beforeEach(() => {
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         registerFakeAccountsChain({
             authority: {
                 targetKinds: [
@@ -236,7 +236,7 @@ describe('services/accounts/utils - authority wrappers', () => {
 
     test('ask the chain on the selected network', () => {
         const { authority } = fakeAccountsChain().adapter
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
 
         isDelegatedAccount(account, FAKE_CHAIN_ID)
         canSignProgram(account, FAKE_CHAIN_ID)

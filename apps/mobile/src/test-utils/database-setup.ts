@@ -32,10 +32,9 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     type ChainScope,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { testDatabaseService } from './sqlite-database'
 
 /**
@@ -78,11 +77,11 @@ export const teardownTestDatabase = async (): Promise<void> => {
  * test needs testnet.
  */
 export const seedAlgoAsset = async (
-    network: Network = 'mainnet',
+    networkId: NetworkId = 'mainnet',
 ): Promise<void> => {
     await upsertAssets({
         items: [nativeAssetFor(LEGACY_CHAIN_ID)],
-        scope: scopeForLegacyNetwork(network),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId } as const,
     })
 }
 
@@ -92,10 +91,13 @@ export const seedAlgoAsset = async (
  */
 export const seedAssets = async (
     assets: PeraAsset[],
-    network: Network = 'mainnet',
+    networkId: NetworkId = 'mainnet',
 ): Promise<void> => {
     if (assets.length === 0) return
-    await upsertAssets({ items: assets, scope: scopeForLegacyNetwork(network) })
+    await upsertAssets({
+        items: assets,
+        scope: { chainId: LEGACY_CHAIN_ID, networkId } as const,
+    })
 }
 
 type SeedAlgorandAccountStateParams = {

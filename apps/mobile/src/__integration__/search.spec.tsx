@@ -30,7 +30,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -43,8 +42,12 @@ import { SearchScreen } from '@modules/search/screens/SearchScreen'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // Shared substring that matches both the seeded account name and the seeded
 // contact name, so a single typed query surfaces results across two scopes.

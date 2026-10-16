@@ -30,7 +30,7 @@ import {
     isQuantumAccount,
 } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { cardAlgorandClient } from './client'
 import {
     algorandDelegationRequests,

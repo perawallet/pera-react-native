@@ -228,7 +228,7 @@ const makeRegistry = () => {
         reconnect: vi.fn(),
         abandonPairing: vi.fn(),
         describeUri: vi.fn(() => ({})),
-        networksFor: vi.fn(() => []),
+        scopesFor: vi.fn(() => []),
         methodsFor: vi.fn(() => []),
         subscribeToProposals: vi.fn(() => () => {}),
         subscribeToMessages: listener => {

@@ -18,7 +18,6 @@ import {
     derivedContactId,
     type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchManifest, readItems } from '../api'
 import {
@@ -126,7 +125,6 @@ export type PullBackupItemsResult = {
 }
 
 type PullBackupItemsParams = {
-    network: Network
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
@@ -167,14 +165,13 @@ const selectWantedKeys = (
         .map(([key]) => key)
 
 const readItemsInBatches = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     keys: BackupItemKey[],
 ): Promise<FetchedItem[]> => {
     const items: FetchedItem[] = []
     for (const batch of chunk(keys, READ_BATCH_SIZE)) {
-        items.push(...(await readItems(network, backupId, deviceId, batch)))
+        items.push(...(await readItems(backupId, deviceId, batch)))
     }
     return items
 }
@@ -502,20 +499,14 @@ export const buildPulledAccounts = ({
 }
 
 export const pullBackupItems = async ({
-    network,
     backupId,
     deviceId,
     encryptionKey,
 }: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
-    const manifest = await fetchManifest(network, backupId, deviceId)
+    const manifest = await fetchManifest(backupId, deviceId)
 
     const wantedKeys = selectWantedKeys(manifest.items)
-    const items = await readItemsInBatches(
-        network,
-        backupId,
-        deviceId,
-        wantedKeys,
-    )
+    const items = await readItemsInBatches(backupId, deviceId, wantedKeys)
     const {
         records,
         addressPayloads,

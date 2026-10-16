@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import { fetchAssetPrices } from '../endpoints'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 describe('pricing endpoints', () => {
     beforeEach(() => {
@@ -44,7 +45,10 @@ describe('pricing endpoints', () => {
             expect.objectContaining({
                 url: '/api/v3/asset-prices',
                 params: { asset_ids: '123,456' },
-                network: 'mainnet',
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             }),
         )
         expect(result).toEqual([

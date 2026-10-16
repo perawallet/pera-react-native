@@ -56,7 +56,7 @@ export const useConnectionSettingsList =
                     storedConnections.map(connection =>
                         toConnectionSettingsRow(
                             connection,
-                            registry.networksFor(connection),
+                            registry.scopesFor(connection),
                             registry.methodsFor(connection),
                         ),
                     ),

@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import {
-    deviceIdFor,
+    deviceIdForDeployment,
     deviceIdOriginFor,
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { LegacyDeviceIdentifiers } from '@perawallet/wallet-extension-platform'
 
 export const migrateDeviceIdentifiers = (
@@ -40,26 +40,29 @@ export const migrateDeviceIdentifiers = (
     // The origin flag distinguishes them: skip only when we know the migrated
     // id was already replaced. Otherwise write it and let the next PUT resolve
     // or 404 into recreate, which reports the loss via telemetry.
-    const applyMigratedDeviceId = (network: Network, migratedId: string) => {
-        const currentId = deviceIdFor(device, network)
-        const origin = deviceIdOriginFor(device, network)
+    const applyMigratedDeviceId = (
+        deployment: WalletMode,
+        migratedId: string,
+    ) => {
+        const currentId = deviceIdForDeployment(device, deployment)
+        const origin = deviceIdOriginFor(device, deployment)
         if (currentId != null && currentId !== migratedId) {
             if (origin === 'recreated') {
                 return
             }
             if (origin === 'migrated') {
-                device.setDeviceIdOrigin(network, 'recreated')
+                device.setDeviceIdOrigin(deployment, 'recreated')
                 return
             }
         }
-        device.setDeviceID(network, migratedId)
-        device.setDeviceIdOrigin(network, 'migrated')
+        device.setDeviceID(deployment, migratedId)
+        device.setDeviceIdOrigin(deployment, 'migrated')
     }
 
     const mainnetDeviceId =
         identifiers.mainnetDeviceId ?? identifiers.legacyFallbackDeviceId
     if (mainnetDeviceId) {
-        applyMigratedDeviceId('mainnet', mainnetDeviceId)
+        applyMigratedDeviceId('live', mainnetDeviceId)
     }
     // legacyFallbackDeviceId deliberately does NOT fall back to testnet.
     // Device ids are primary keys of a per-network backend deployment
@@ -70,7 +73,7 @@ export const migrateDeviceIdentifiers = (
     // 404 → recreate (a false "migrated id replaced" signal), at worst a
     // collision with an unrelated device's testnet record.
     if (identifiers.testnetDeviceId) {
-        applyMigratedDeviceId('testnet', identifiers.testnetDeviceId)
+        applyMigratedDeviceId('developer', identifiers.testnetDeviceId)
     }
 
     const settings = useSettingsStore.getState()

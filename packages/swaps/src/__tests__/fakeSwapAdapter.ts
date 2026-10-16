@@ -11,12 +11,12 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     broadcasterChainAdapters,
     type BroadcasterChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const FAKE_NATIVE_ASSET_ID = 'native'
 export const FAKE_RECEIVE_ASSET_ID = 'receive'
@@ -24,7 +24,7 @@ export const FAKE_RECEIVE_ASSET_ID = 'receive'
 export const fakeSwapAdapter = (
     overrides: Partial<SwapChainAdapter> = {},
 ): SwapChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: LEGACY_CHAIN_ID,
     nativeAssetId: FAKE_NATIVE_ASSET_ID,
     defaultReceiveAssetId: FAKE_RECEIVE_ASSET_ID,
     swapExplorerUrl: vi.fn(),
@@ -49,7 +49,7 @@ export const registerFakeBroadcaster = (
 ): BroadcasterChainAdapter['submit'] => {
     broadcasterChainAdapters.reset()
     broadcasterChainAdapters.register({
-        chainId: scopeForLegacyNetwork('mainnet').chainId,
+        chainId: LEGACY_CHAIN_ID,
         submit,
     } as BroadcasterChainAdapter)
     return submit

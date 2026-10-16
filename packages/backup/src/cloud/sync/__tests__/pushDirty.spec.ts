@@ -44,7 +44,6 @@ const item = (key: string, address: string): LocalItem => ({
     } as never,
 })
 const baseDeps = () => ({
-    network: 'mainnet' as const,
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey,
@@ -73,7 +72,6 @@ const dirtyState = (count: number) => {
 }
 
 const acceptAll = async (
-    _network: unknown,
     _backupId: unknown,
     _deviceId: unknown,
     request: { items: { key: string }[] },
@@ -95,7 +93,7 @@ describe('pushDirty', () => {
         const next = await pushDirty({ state, localItems, deps })
 
         const sizes = deps.batchUpsertItems.mock.calls.map(
-            call => (call[3] as { items: unknown[] }).items.length,
+            call => (call[2] as { items: unknown[] }).items.length,
         )
         expect(sizes).toEqual([25, 25, 10])
         expect(Object.values(next.items).every(i => !i.isDirty)).toBe(true)
@@ -236,7 +234,6 @@ describe('pushDirty', () => {
         }
         const next = await pushDirty({ state, localItems: [], deps })
         expect(deps.deleteItem).toHaveBeenCalledWith(
-            'mainnet',
             'b',
             'dev',
             'accounts/GONE',
@@ -381,7 +378,7 @@ describe('pushDirty', () => {
             deps,
         })
 
-        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [, , request] = deps.batchUpsertItems.mock.calls[0]
         const plaintext = decryptItemPayload(request.items[0].payload, {
             encryptionKey,
             backupId: 'b',
@@ -431,7 +428,7 @@ describe('pushDirty', () => {
             deps,
         })
 
-        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [, , request] = deps.batchUpsertItems.mock.calls[0]
         const plaintext = decryptItemPayload(request.items[0].payload, {
             encryptionKey,
             backupId: 'b',
@@ -475,7 +472,7 @@ describe('pushDirty', () => {
 
         await pushDirty({ state, localItems, deps })
 
-        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [, , request] = deps.batchUpsertItems.mock.calls[0]
         const plaintext = decryptItemPayload(request.items[0].payload, {
             encryptionKey,
             backupId: 'b',
@@ -518,7 +515,7 @@ describe('pushDirty', () => {
 
         await pushDirty({ state, localItems, deps })
 
-        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [, , request] = deps.batchUpsertItems.mock.calls[0]
         const plaintext = decryptItemPayload(request.items[0].payload, {
             encryptionKey,
             backupId: 'b',
@@ -548,7 +545,7 @@ describe('pushDirty', () => {
 
         const next = await pushDirty({ state, localItems: [], deps })
 
-        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [, , request] = deps.batchUpsertItems.mock.calls[0]
         const [entry] = request.items
         expect(entry).toMatchObject({
             key: 'settings/S',

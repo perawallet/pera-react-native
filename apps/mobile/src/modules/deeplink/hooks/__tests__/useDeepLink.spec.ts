@@ -159,10 +159,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: { genesisId: 'mainnet-v1.0' },
-    }),
 }))
 
 const mockImportAccount = vi.fn()

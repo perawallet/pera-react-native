@@ -18,11 +18,14 @@ vi.mock('../query-client', () => ({
     queryClient: queryClientMock,
 }))
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchAccountExists,
     fetchAccountFastLookup,
     getAccountFastLookupEndpointPath,
 } from '../account-fast-lookup'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 describe('fetchAccountFastLookup', () => {
     beforeEach(() => {
@@ -51,21 +54,18 @@ describe('fetchAccountFastLookup', () => {
             }
         })
 
-        const result = await fetchAccountFastLookup(
-            ['ADDR1', 'ADDR2'],
-            'mainnet',
-        )
+        const result = await fetchAccountFastLookup(['ADDR1', 'ADDR2'], SCOPE)
 
         expect(queryClientMock).toHaveBeenCalledTimes(2)
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: SCOPE,
             method: 'GET',
             url: '/v1/accounts/fast-lookup/ADDR1/',
         })
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: SCOPE,
             method: 'GET',
             url: '/v1/accounts/fast-lookup/ADDR2/',
         })
@@ -84,10 +84,7 @@ describe('fetchAccountFastLookup', () => {
             return { data: { account_exists: true } }
         })
 
-        const result = await fetchAccountFastLookup(
-            ['ADDR1', 'ADDR2'],
-            'mainnet',
-        )
+        const result = await fetchAccountFastLookup(['ADDR1', 'ADDR2'], SCOPE)
         expect(result).toEqual([
             { address: 'ADDR1', accountExists: false },
             { address: 'ADDR2', accountExists: true },
@@ -109,10 +106,10 @@ describe('fetchAccountExists', () => {
     test('maps account_exists for a single address', async () => {
         queryClientMock.mockResolvedValue({ data: { account_exists: true } })
 
-        await expect(fetchAccountExists('ADDR1', 'mainnet')).resolves.toBe(true)
+        await expect(fetchAccountExists('ADDR1', SCOPE)).resolves.toBe(true)
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: SCOPE,
             method: 'GET',
             url: '/v1/accounts/fast-lookup/ADDR1/',
         })
@@ -121,7 +118,7 @@ describe('fetchAccountExists', () => {
     test('throws on request failure so callers can distinguish probe-down from not-on-chain', async () => {
         queryClientMock.mockRejectedValue(new Error('offline'))
 
-        await expect(fetchAccountExists('ADDR1', 'mainnet')).rejects.toThrow(
+        await expect(fetchAccountExists('ADDR1', SCOPE)).rejects.toThrow(
             'offline',
         )
     })

@@ -20,7 +20,10 @@ import { AlgorandWalletConnectChainId } from '../models'
 // a value renumbered on one side without the other fails here, not silently
 // in production.
 describe('AlgorandWalletConnectChainId parity with the registered adapter', () => {
-    const v1 = walletConnectSupportFor('mainnet')?.v1
+    const v1 = walletConnectSupportFor({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })?.v1
     if (!v1) {
         throw new Error(
             'no v1 support registered — registerDappRequestAdapter.ts should have run',

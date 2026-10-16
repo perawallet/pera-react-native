@@ -45,13 +45,6 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
         request: mockRequestBottomSheet,
@@ -131,10 +124,10 @@ describe('useAccountOverview', () => {
             result.current.handleRefresh()
         })
 
-        expect(mockRefreshAccounts).toHaveBeenCalledWith(
-            ['test-address'],
-            'mainnet',
-        )
+        expect(mockRefreshAccounts).toHaveBeenCalledWith(['test-address'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockInvalidateQueries).not.toHaveBeenCalled()
     })
 

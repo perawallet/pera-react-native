@@ -40,10 +40,6 @@ export const mockCoreServices = () => {
             formatCurrency: vi.fn((value, _, currency, __) => {
                 return `${value.toString()} ${currency}`
             }),
-            Networks: {
-                mainnet: 'mainnet',
-                testnet: 'testnet',
-            },
             createPersistStorage: () => ({
                 getItem: () => null,
                 setItem: () => {},

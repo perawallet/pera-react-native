@@ -11,8 +11,8 @@
  */
 
 import {
-    scopeForLegacyNetwork,
     i18nKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
@@ -55,7 +55,7 @@ vi.mock('@hooks/useToast', () => ({
 import { resolveCardErrorCopy, useCardErrorToast } from '../useCardErrorToast'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 beforeEach(() => {
     registerAlgorandCardAdapter()

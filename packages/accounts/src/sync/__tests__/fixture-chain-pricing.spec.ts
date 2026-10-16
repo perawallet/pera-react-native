@@ -31,10 +31,10 @@ import {
     fakeAssetsAdapter,
 } from '@perawallet/wallet-core-assets/testing'
 import {
-    scopeForLegacyNetwork,
     type AssetPrice,
     type AssetRef,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { refreshAccountHoldings } from '../../db/holdingsRepository'
 import { getAccountPortfolioTotals } from '../../db/portfolioQueries'
@@ -134,7 +134,7 @@ describe('pricing a second chain through its assets adapter', () => {
         })
         const algorandRows = await getAssetPricesByIds({
             assetIds: ['native', 'tok'],
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         expect(

@@ -29,7 +29,7 @@ import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
 import * as endpoints from '../../history-adapter'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: vi.fn(),
@@ -116,7 +116,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -127,7 +130,10 @@ describe('useTransactionHistoryQuery', () => {
         expect(mockGetTransactionHistory).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: mockAddress,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             }),
         )
         // Should NOT call API for first page
@@ -146,7 +152,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -178,7 +187,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -208,7 +220,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     afterTime: '2024-01-01',
                     beforeTime: '2024-01-31',
                 }),
@@ -234,7 +249,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -250,7 +268,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -265,7 +286,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     isEnabled: false,
                 }),
             { wrapper },
@@ -298,7 +322,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -335,7 +362,10 @@ describe('useTransactionHistoryQuery', () => {
             ({ address }: { address: string }) =>
                 useTransactionHistoryQuery({
                     accountAddress: address,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper, initialProps: { address: mockAddress } },
         )
@@ -380,7 +410,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -413,7 +446,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -461,7 +497,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -489,7 +528,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -536,7 +578,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -598,7 +643,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -653,7 +701,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -676,7 +727,10 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: 'CURSOR1',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 accountAddress: mockAddress,
             }),
         )
@@ -728,7 +782,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     assetId: '31566704',
                     afterTime: '2025-02-01',
                     beforeTime: '2025-02-13',
@@ -754,7 +811,10 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: 'CURSOR1',
-                scope: scopeForLegacyNetwork('testnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const,
                 accountAddress: mockAddress,
                 assetId: '31566704',
                 afterTime: '2025-02-01',
@@ -769,7 +829,10 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper },
         )
@@ -811,7 +874,10 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        scope: scopeForLegacyNetwork('mainnet'),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'mainnet',
+                        } as const,
                     }),
                 { wrapper },
             )
@@ -836,7 +902,10 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        scope: scopeForLegacyNetwork('mainnet'),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'mainnet',
+                        } as const,
                     }),
                 { wrapper },
             )
@@ -858,7 +927,10 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        scope: scopeForLegacyNetwork('mainnet'),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'mainnet',
+                        } as const,
                     }),
                 { wrapper },
             )
@@ -868,7 +940,10 @@ describe('useTransactionHistoryQuery', () => {
             expect(result.current.transactions[0]!.id).toBe('PENDING-TX-1')
             // Scoping happens in SQL, not by post-filtering every account's rows.
             expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 sender: mockAddress,
                 limit: expect.any(Number),
             })
@@ -882,7 +957,10 @@ describe('useTransactionHistoryQuery', () => {
                 () =>
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
-                        scope: scopeForLegacyNetwork('mainnet'),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'mainnet',
+                        } as const,
                         assetId: '123',
                     }),
                 { wrapper },

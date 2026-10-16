@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    DEFAULT_PAGE_SIZE,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, DEFAULT_PAGE_SIZE } from '@perawallet/wallet-core-shared'
 import {
     assetSearchResponseSchema,
     type AssetSearchResponse,
 } from './search-schema'
+import { type AlgorandNetworkId, algorandScope } from '../../network-id'
 
 type SearchAssetsParams = {
     query: string
-    network: Network
+    network: AlgorandNetworkId
     cursor?: string
     limit?: number
     hasCollectible?: boolean
@@ -53,7 +50,7 @@ export const searchAssets = async ({
 
     const response = await queryClient<AssetSearchResponse, string>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: '/v1/assets/search/',
         params,

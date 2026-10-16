@@ -11,12 +11,10 @@
  */
 
 import {
+    isLegacyNetwork,
     isWalletMode,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
-
-const SUPPORTED = new Set<string>(Object.values(Networks))
 
 // The service worker never hydrates the network zustand store, so it reads the persisted envelope
 // straight from chrome.storage.local. That value is a JSON string, not an object, because the store
@@ -41,9 +39,7 @@ export const parseActiveDeployment = (raw: string | undefined): WalletMode => {
     if (isWalletMode(state?.mode)) return state.mode
     // v1 and v2 predate the mode, and either may survive until a UI or offscreen context rewrites it: only MainNet was live then.
     const network = state?.network ?? state?.selectedNetworkByChain?.algorand
-    return typeof network === 'string' &&
-        SUPPORTED.has(network) &&
-        network !== Networks.mainnet
+    return isLegacyNetwork(network) && network !== 'mainnet'
         ? 'developer'
         : 'live'
 }

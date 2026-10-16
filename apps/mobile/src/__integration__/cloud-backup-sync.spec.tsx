@@ -150,7 +150,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         useBackupSyncStateStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.clearAllMocks()
     })
@@ -199,7 +199,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         })
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'current-device')
+            .setDeviceID(useNetworkStore.getState().mode, 'current-device')
         await manager.syncNow()
 
         expect(
@@ -341,7 +341,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         useBackupSyncStateStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.clearAllMocks()
     })

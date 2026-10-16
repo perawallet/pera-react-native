@@ -16,12 +16,9 @@ import type { indexerModels } from 'algosdk'
 import type { GetPublicKey } from '@perawallet/wallet-core-accounts'
 import { getAlgorandClient } from '../blockchain'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
-import {
-    fetchAccountFastLookup,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { fetchAccountFastLookup, logger } from '@perawallet/wallet-core-shared'
 import { existsOnChain } from './endpoints'
+import { type AlgorandNetworkId, algorandScope } from '../network-id'
 
 // Cap on indexer pages when scanning for accounts rekeyed to an address.
 // The indexer returns ~100 accounts per page; very few accounts are ever
@@ -43,10 +40,13 @@ export const createXHDGetPublicKey = (rootKey: Uint8Array): GetPublicKey => {
 
 export async function checkAlgorandActivity(
     addresses: string[],
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<Map<string, boolean>> {
     try {
-        const results = await fetchAccountFastLookup(addresses, network)
+        const results = await fetchAccountFastLookup(
+            addresses,
+            algorandScope(network),
+        )
         const activityMap = new Map<string, boolean>()
         for (const result of results) {
             activityMap.set(result.address, result.accountExists)
@@ -115,7 +115,7 @@ async function checkRekeyed(
 
 export async function fetchAlgorandRekeyedAddresses(
     address: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<string[]> {
     const accounts = await checkRekeyed(getAlgorandClient(network), address)
     return accounts.map(a => a.address)
@@ -123,7 +123,7 @@ export async function fetchAlgorandRekeyedAddresses(
 
 export const algorandAccountExists = async (
     address: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<boolean> =>
     existsOnChain(
         await getAlgorandClient(network)

@@ -39,7 +39,6 @@ const PARAMS = {
     mnemonic: ['abandon', 'ability', 'able'],
     salt: 'c2FsdA==',
     deviceId: 'device-123',
-    network: 'mainnet' as const,
 }
 
 const derivedKeys = () => ({
@@ -70,7 +69,7 @@ describe('registerCloudBackup', () => {
             publicKey: encodeToBase64(AUTH_PUBLIC_KEY),
             authSecretKey: expect.any(Uint8Array),
         })
-        expect(registerBackupMock).toHaveBeenCalledWith('mainnet', {
+        expect(registerBackupMock).toHaveBeenCalledWith({
             backup_id: 'did:pera:abc',
             public_key: encodeToBase64(AUTH_PUBLIC_KEY),
             device_id: 'device-123',

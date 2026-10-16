@@ -18,14 +18,13 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     logger,
     stripNulls,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import {
     fetchAssetDetails,
     fetchIndexerAssetDetails,
@@ -34,7 +33,11 @@ import {
     transformIndexerAssetResponse,
     transformPublicAssetResponse,
 } from './api'
-import { algorandNetworkOf } from '../legacy-network'
+import {
+    algorandNetworkOf,
+    algorandScope,
+    type AlgorandNetworkId,
+} from '../network-id'
 
 /**
  * Re-asserts the real chain's values for fields that are facts about the chain
@@ -98,7 +101,7 @@ export const fetchAssetFromApis = async (
     }
 
     const asset =
-        indexerData && !isPeraBackedNetwork(network)
+        indexerData && !hasPeraBackend(algorandScope(network))
             ? withChainIntrinsics(merged, indexerData)
             : merged
 
@@ -125,7 +128,7 @@ export const fetchAssetFromApis = async (
 
 export const fetchOnChainAsset = async (
     assetId: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<PeraAsset> =>
     transformIndexerAssetResponse(
         await fetchIndexerAssetDetails(assetId, network),
@@ -141,7 +144,7 @@ const activeAuthority = (address: Optional<string>): Nullable<string> =>
 
 export const fetchAssetAuthorities = async (
     assetId: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetAuthorities> => {
     const response = await fetchIndexerAssetDetails(assetId, network)
     const params = response.asset.params

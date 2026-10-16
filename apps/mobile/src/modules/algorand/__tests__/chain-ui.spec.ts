@@ -14,9 +14,9 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { resolveAlgorandAssetAbout } from '../chain-ui'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const about = (isNativeAsset: boolean, explorerUrl: string | undefined) =>
     resolveAlgorandAssetAbout({
@@ -24,7 +24,7 @@ const about = (isNativeAsset: boolean, explorerUrl: string | undefined) =>
             assetId: '31566704',
             peraMetadata: { explorerUrl },
         } as PeraAsset,
-        scope: scopeForLegacyNetwork('mainnet'),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         descriptor: algorandDescriptor,
         isNativeAsset,
     })

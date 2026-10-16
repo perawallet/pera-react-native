@@ -225,7 +225,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
         useCloudBackupRestoreDraftStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, DEVICE_ID)
+            .setDeviceID(useNetworkStore.getState().mode, DEVICE_ID)
         await deleteBackupKeys().catch(() => undefined)
         vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(File.pickFileAsync).mockReset()

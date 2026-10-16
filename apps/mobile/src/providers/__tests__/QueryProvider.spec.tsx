@@ -158,7 +158,10 @@ describe('queryClient mutation error policy', () => {
                 useMutation({
                     mutationFn: () =>
                         Promise.reject(
-                            new PeraServiceUnavailableError('betanet'),
+                            new PeraServiceUnavailableError({
+                                chainId: 'algorand',
+                                networkId: 'betanet',
+                            }),
                         ),
                 }),
             { wrapper },
@@ -192,7 +195,10 @@ describe('queryClient query error policy', () => {
                     queryKey: ['pera-service-unavailable'],
                     queryFn: () =>
                         Promise.reject(
-                            new PeraServiceUnavailableError('betanet'),
+                            new PeraServiceUnavailableError({
+                                chainId: 'algorand',
+                                networkId: 'betanet',
+                            }),
                         ),
                 }),
             { wrapper },
@@ -240,7 +246,10 @@ describe('pera-service-unavailable listener wiring', () => {
                         queryKey: ['pera-listener-query'],
                         queryFn: () =>
                             Promise.reject(
-                                new PeraServiceUnavailableError('betanet'),
+                                new PeraServiceUnavailableError({
+                                    chainId: 'algorand',
+                                    networkId: 'betanet',
+                                }),
                             ),
                     }),
                 { wrapper },
@@ -267,7 +276,10 @@ describe('pera-service-unavailable listener wiring', () => {
                     useMutation({
                         mutationFn: () =>
                             Promise.reject(
-                                new PeraServiceUnavailableError('betanet'),
+                                new PeraServiceUnavailableError({
+                                    chainId: 'algorand',
+                                    networkId: 'betanet',
+                                }),
                             ),
                     }),
                 { wrapper },

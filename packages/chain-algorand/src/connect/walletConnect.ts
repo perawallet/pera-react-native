@@ -11,7 +11,7 @@
  */
 
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import { getChainConfig, Networks } from '@perawallet/wallet-core-config'
+import { getChainConfig } from '@perawallet/wallet-core-config'
 import type {
     DappRequestChainAdapter,
     WalletConnectV2ChainSupport,
@@ -24,6 +24,7 @@ import {
     arc60WireSchema,
     assertArc60RequestWithinLimits as assertArc60WireRequestWithinLimits,
 } from '../signing/message/arc60-wire'
+import { ALGORAND_NETWORK_IDS } from '../network-id'
 
 /**
  * CAIP-2 chain ids, which only WalletConnect v2 speaks — v1 has no concept of
@@ -54,9 +55,9 @@ const CAIP2_CHAIN_ID_BY_NETWORK: ReadonlyMap<
     NetworkId,
     Nullable<string>
 > = new Map(
-    Object.values(Networks).map(networkId => [
+    ALGORAND_NETWORK_IDS.map(networkId => [
         networkId,
-        networkId === Networks.custom
+        networkId === 'custom'
             ? null
             : toCaip2ChainId(
                   getChainConfig({ chainId: ALGORAND_CHAIN_ID, networkId })
@@ -99,10 +100,10 @@ const ALGORAND_WC_V1_CHAIN_ID = {
  */
 const EXPECTED_V1_CHAIN_ID_BY_NETWORK: ReadonlyMap<NetworkId, number> = new Map(
     [
-        [Networks.mainnet, ALGORAND_WC_V1_CHAIN_ID.mainnet],
-        [Networks.testnet, ALGORAND_WC_V1_CHAIN_ID.testnet],
-        [Networks.betanet, ALGORAND_WC_V1_CHAIN_ID.betanet],
-        [Networks.custom, ALGORAND_WC_V1_CHAIN_ID.testnet],
+        ['mainnet', ALGORAND_WC_V1_CHAIN_ID.mainnet],
+        ['testnet', ALGORAND_WC_V1_CHAIN_ID.testnet],
+        ['betanet', ALGORAND_WC_V1_CHAIN_ID.betanet],
+        ['custom', ALGORAND_WC_V1_CHAIN_ID.testnet],
     ],
 )
 
@@ -127,7 +128,7 @@ const isV1ChainIdAcceptable = (
 
 // The 4160 wildcard expands to every network, and TestNet's id also covers `custom`.
 const v1NetworksFor = (chainId: number): NetworkId[] =>
-    Object.values(Networks).filter(network =>
+    ALGORAND_NETWORK_IDS.filter(network =>
         isV1ChainIdAcceptable(chainId, network),
     )
 

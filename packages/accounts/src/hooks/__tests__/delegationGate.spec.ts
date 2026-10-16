@@ -87,7 +87,7 @@ describe.each(STATES)('delegation gate when $name', state => {
         gate.isOn = state.isOn
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         registerFakeAccountsChain(
             state.hasMember ? {} : { authority: undefined },
         )

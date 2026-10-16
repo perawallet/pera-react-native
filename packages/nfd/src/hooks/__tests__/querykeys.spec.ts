@@ -38,11 +38,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     queryKeyReferencesScope,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { MODULE_PREFIX, nfdQueryKeys } from '../querykeys'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
     test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
@@ -77,7 +77,10 @@ describe('nfdQueryKeys', () => {
         ]) {
             expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
             expect(
-                queryKeyReferencesScope(key, scopeForLegacyNetwork('testnet')),
+                queryKeyReferencesScope(key, {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const),
             ).toBe(false)
         }
     })

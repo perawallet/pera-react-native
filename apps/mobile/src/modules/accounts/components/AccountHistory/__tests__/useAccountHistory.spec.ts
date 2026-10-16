@@ -12,6 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+const mockScopeNetwork = vi.hoisted(() => ({ current: 'mainnet' }))
+
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
@@ -19,7 +21,6 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     useChainCapability,
     useIsCapabilityRestricted,
-    useNetwork,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     useCsvExportMutation,
@@ -32,10 +33,8 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import {
     AppError,
     isPeraServiceUnavailableError,
-    type Network,
     type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -57,7 +56,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(),
     useAccountScope: (account: { chains: Record<string, unknown> } | null) => ({
         chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
-        networkId: 'mainnet',
+        networkId: mockScopeNetwork.current,
     }),
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
@@ -81,7 +80,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
         >()
     return {
         ...actual,
-        useNetwork: vi.fn(),
         useChainCapability: vi.fn(actual.useChainCapability),
         useIsCapabilityRestricted: vi.fn(actual.useIsCapabilityRestricted),
     }
@@ -145,7 +143,6 @@ describe('useAccountHistory', () => {
     const mockAccount = {
         chains: { algorand: { address: ACCOUNT_ADDRESS } },
     }
-    const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
     const mockShowError = vi.fn()
     const mockExportCsv = vi.fn()
@@ -167,8 +164,7 @@ describe('useAccountHistory', () => {
         } as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
+        mockScopeNetwork.current = 'mainnet'
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
@@ -473,7 +469,7 @@ describe('useAccountHistory', () => {
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
                 [ACCOUNT_ADDRESS],
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
         })
 
@@ -622,9 +618,8 @@ describe('useAccountHistory', () => {
         })
     })
 
-    const mockUnavailableNetwork = (network: Network) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue({ network } as any)
+    const mockUnavailableNetwork = (network: string) => {
+        mockScopeNetwork.current = network
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [{ id: '1', roundTime: 1_704_067_200 }],
             isLoading: false,
@@ -672,7 +667,7 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(false)
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'keeps the export action visible on %s',
             network => {
                 mockUnavailableNetwork(network)
@@ -683,7 +678,7 @@ describe('useAccountHistory', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'explains why instead of exporting on %s',
             network => {
                 mockUnavailableNetwork(network)

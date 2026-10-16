@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,
@@ -91,7 +91,7 @@ export interface ConnectionHandler<
      */
     restore(): Promise<TConnection[]>
 
-    matchesNetwork(connection: TConnection, network: Network): boolean
+    matchesChainScope(connection: TConnection, scope: ChainScope): boolean
 
     /**
      * The methods this connection was approved for, as the settings panel

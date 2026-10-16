@@ -35,7 +35,7 @@ import {
     fetchAlgorandHoldingBalanceHistory,
     fetchAlgorandPortfolioHistory,
 } from './portfolio-history'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { algorandAuthority } from './authority'
 import { decodeAlgorandLegacyAuthority } from './legacy-authority'
 import { decodeAlgorandLegacyRecord } from './legacy-record'

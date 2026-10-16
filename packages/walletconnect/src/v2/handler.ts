@@ -1092,7 +1092,7 @@ export const createWalletConnectV2Handler = (
                 // A namespace's `chains` is absent, or empty, when its key is
                 // itself a chain id, in which case the accounts carry the only
                 // copy. An empty list matches no network, so the record would
-                // be invisible to `networksFor`.
+                // be invisible to `matchesChainScope`.
                 chains: dedupe(
                     parsedByNamespace.flatMap(({ namespace, parsed }) =>
                         namespace.chains?.length
@@ -1342,11 +1342,12 @@ export const createWalletConnectV2Handler = (
         restore,
 
         // Narrowed first: a malformed own-kind record must not throw here.
-        matchesNetwork: (connection, network) => {
+        matchesChainScope: (connection, scope) => {
             if (!isWalletConnectV2Connection(connection)) return false
             const chainId =
-                walletConnectSupportFor(network)?.caip2ChainIdFor(network) ??
-                null
+                walletConnectSupportFor(scope)?.caip2ChainIdFor(
+                    scope.networkId,
+                ) ?? null
             return (
                 chainId !== null && connection.metadata.chains.includes(chainId)
             )

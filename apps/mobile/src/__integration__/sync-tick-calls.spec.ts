@@ -95,7 +95,7 @@ describe('sync tick network calls', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         useSyncCursorStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
     })
 
     afterEach(() => {

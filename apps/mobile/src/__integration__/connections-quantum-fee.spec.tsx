@@ -96,7 +96,6 @@ import {
     bytesEqual,
     decodeFromBase64,
     encodeToBase64,
-    Networks,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -457,7 +456,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         await getProvider().connections.store.clear()
         // Harness builds mainnet transactions; pin mainnet so the analyzer's
         // genesis-hash check passes regardless of a local .env default.
-        useNetworkStore.getState().setNetwork(Networks.mainnet)
+        useNetworkStore.getState().setMode('live')
         vi.clearAllMocks()
         useAlgodMocks()
     })
@@ -845,7 +844,7 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
             .setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
         useAccountsStore.getState().setAccounts([])
         await getProvider().connections.store.clear()
-        useNetworkStore.getState().setNetwork(Networks.mainnet)
+        useNetworkStore.getState().setMode('live')
         vi.clearAllMocks()
         useAlgodMocks()
     })

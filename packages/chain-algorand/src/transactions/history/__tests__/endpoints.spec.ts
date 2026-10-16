@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Mock the queryClient using vi.hoisted to avoid hoisting issues
 const mockQueryClient = vi.hoisted(() => vi.fn())
@@ -83,12 +83,12 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123DEF456/transactions/',
             params: {
@@ -115,7 +115,7 @@ describe('fetchTransactionHistory', () => {
         const bigId = '18446744073709551615' // 2^64 - 1
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
             assetId: bigId,
         })
 
@@ -143,7 +143,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
             afterTime: '2025-02-01',
         })
 
@@ -169,7 +169,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
             beforeTime: '2025-02-13',
         })
 
@@ -195,7 +195,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.testnet,
+            network: 'testnet',
             assetId: '31566704',
             afterTime: '2025-02-01',
             beforeTime: '2025-02-13',
@@ -204,7 +204,7 @@ describe('fetchTransactionHistory', () => {
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: Networks.testnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123DEF456/transactions/',
             params: {
@@ -234,7 +234,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
             signal: abortController.signal,
         })
 
@@ -260,7 +260,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC+123/DEF=456',
-            network: Networks.mainnet,
+            network: 'mainnet',
         })
 
         // encodeURIComponent should encode special characters
@@ -286,7 +286,7 @@ describe('fetchTransactionHistory', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
-            network: Networks.mainnet,
+            network: 'mainnet',
             assetId: undefined,
             afterTime: undefined,
             beforeTime: undefined,
@@ -321,12 +321,12 @@ describe('fetchMoreTransactions', () => {
 
         await fetchMoreTransactions({
             url: 'https://api.perawallet.app/v1/accounts/ABC123/transactions/?cursor=abc&limit=25',
-            network: Networks.mainnet,
+            network: 'mainnet',
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123/transactions/?cursor=abc&limit=25',
             signal: undefined,
@@ -348,7 +348,7 @@ describe('fetchMoreTransactions', () => {
 
         await fetchMoreTransactions({
             url: 'https://api.perawallet.app/v1/accounts/ABC123/transactions/?after_time=2025-02-01&before_time=2025-02-13&cursor=xyz',
-            network: Networks.testnet,
+            network: 'testnet',
         })
 
         const call = mockQueryClient.mock.calls[0][0]
@@ -382,7 +382,7 @@ describe('routing by network', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.testnet,
+            network: 'testnet',
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
@@ -395,11 +395,11 @@ describe('routing by network', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.betanet,
+            network: 'betanet',
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.anything(),
@@ -411,7 +411,7 @@ describe('routing by network', () => {
 
         await fetchMoreTransactions({
             url: 'https://api.perawallet.app/v1/accounts/ABC123/transactions/?cursor=abc',
-            network: Networks.mainnet,
+            network: 'mainnet',
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
@@ -424,12 +424,12 @@ describe('routing by network', () => {
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
-            network: Networks.betanet,
+            network: 'betanet',
             accountAddress: 'ABC123',
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
@@ -442,7 +442,7 @@ describe('routing by network', () => {
         await expect(
             fetchMoreTransactions({
                 url: 'CURSOR1',
-                network: Networks.betanet,
+                network: 'betanet',
             }),
         ).rejects.toThrow(/accountAddress/)
 
@@ -459,7 +459,7 @@ describe('routing by network', () => {
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
-            network: Networks.betanet,
+            network: 'betanet',
             accountAddress: 'ABC123',
             assetId: '31566704',
             afterTime: '2025-02-01',
@@ -468,7 +468,7 @@ describe('routing by network', () => {
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.objectContaining({

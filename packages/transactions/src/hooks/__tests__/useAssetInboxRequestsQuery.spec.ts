@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type ChainId,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -25,7 +25,7 @@ import {
 } from '../../chain-adapter'
 import { useAssetInboxRequestsQuery } from '../useAssetInboxRequestsQuery'
 
-const scope = scopeForLegacyNetwork('testnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const chainId: ChainId = scope.chainId
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({

@@ -11,76 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Networks, type Network, type HistoryPeriod } from '../base-types'
-
-describe('Networks', () => {
-    test('has testnet network', () => {
-        expect(Networks.testnet).toBe('testnet')
-    })
-
-    test('has mainnet network', () => {
-        expect(Networks.mainnet).toBe('mainnet')
-    })
-
-    test('has betanet network', () => {
-        expect(Networks.betanet).toBe('betanet')
-    })
-
-    test('has custom network', () => {
-        expect(Networks.custom).toBe('custom')
-    })
-
-    test('has exactly four networks', () => {
-        const keys = Object.keys(Networks)
-        expect(keys).toHaveLength(4)
-        expect(keys).toContain('testnet')
-        expect(keys).toContain('mainnet')
-        expect(keys).toContain('betanet')
-        expect(keys).toContain('custom')
-    })
-})
-
-describe('Network type', () => {
-    test('accepts testnet value', () => {
-        const network: Network = 'testnet'
-        expect(network).toBe('testnet')
-    })
-
-    test('accepts mainnet value', () => {
-        const network: Network = 'mainnet'
-        expect(network).toBe('mainnet')
-    })
-
-    test('accepts betanet value', () => {
-        const network: Network = 'betanet'
-        expect(network).toBe('betanet')
-    })
-
-    test('accepts custom value', () => {
-        const network: Network = 'custom'
-        expect(network).toBe('custom')
-    })
-
-    test('can use Networks.testnet constant', () => {
-        const network: Network = Networks.testnet
-        expect(network).toBe(Networks.testnet)
-    })
-
-    test('can use Networks.mainnet constant', () => {
-        const network: Network = Networks.mainnet
-        expect(network).toBe(Networks.mainnet)
-    })
-
-    test('can use Networks.betanet constant', () => {
-        const network: Network = Networks.betanet
-        expect(network).toBe(Networks.betanet)
-    })
-
-    test('can use Networks.custom constant', () => {
-        const network: Network = Networks.custom
-        expect(network).toBe(Networks.custom)
-    })
-})
+import { type HistoryPeriod } from '../base-types'
 
 describe('HistoryPeriod type', () => {
     test('accepts one-year value', () => {

@@ -32,8 +32,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 import { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -45,8 +45,8 @@ import {
     invalidateTransactionQueriesForAddresses,
 } from '../querykeys'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
-const TESTNET = scopeForLegacyNetwork('testnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const ALGO: AssetRef = { chainId: MAINNET.chainId, assetId: '0' }
 
 describe('transactionQueryKeys', () => {

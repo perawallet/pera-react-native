@@ -12,29 +12,30 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    scopeKeyForLegacyNetwork,
-    type ChainScopeKey,
+import type {
+    ChainScopeKey,
+    WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 
 import { useDeviceStore } from '../../store'
 import { useIsDeviceRegistrationPending } from '../useIsDeviceRegistrationPending'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
 }))
+
+const LIVE_KEY = 'algorand/mainnet' as ChainScopeKey
 
 type SeedDeviceStoreOptions = {
     deviceIDs?: Map<ChainScopeKey, string>
-    pendingRegistrationNetworks?: Network[]
+    pendingRegistrationDeployments?: WalletMode[]
 }
 
 const seedDeviceStore = ({
     deviceIDs = new Map(),
-    pendingRegistrationNetworks = [],
+    pendingRegistrationDeployments = [],
 }: SeedDeviceStoreOptions): void => {
-    useDeviceStore.setState({ deviceIDs, pendingRegistrationNetworks })
+    useDeviceStore.setState({ deviceIDs, pendingRegistrationDeployments })
 }
 
 describe('device/hooks/useIsDeviceRegistrationPending', () => {
@@ -42,18 +43,16 @@ describe('device/hooks/useIsDeviceRegistrationPending', () => {
         useDeviceStore.getState().resetState()
     })
 
-    test('pending when the network has no device id', () => {
+    test('pending when the deployment has no device id', () => {
         seedDeviceStore({ deviceIDs: new Map() })
         const { result } = renderHook(() => useIsDeviceRegistrationPending())
         expect(result.current).toBe(true)
     })
 
-    test('pending when the network is marked registration-pending', () => {
+    test('pending when the deployment is marked registration-pending', () => {
         seedDeviceStore({
-            deviceIDs: new Map([
-                [scopeKeyForLegacyNetwork('mainnet'), 'DEV-1'],
-            ]),
-            pendingRegistrationNetworks: ['mainnet'],
+            deviceIDs: new Map([[LIVE_KEY, 'DEV-1']]),
+            pendingRegistrationDeployments: ['live'],
         })
         const { result } = renderHook(() => useIsDeviceRegistrationPending())
         expect(result.current).toBe(true)
@@ -61,9 +60,7 @@ describe('device/hooks/useIsDeviceRegistrationPending', () => {
 
     test('not pending when registered', () => {
         seedDeviceStore({
-            deviceIDs: new Map([
-                [scopeKeyForLegacyNetwork('mainnet'), 'DEV-1'],
-            ]),
+            deviceIDs: new Map([[LIVE_KEY, 'DEV-1']]),
         })
         const { result } = renderHook(() => useIsDeviceRegistrationPending())
         expect(result.current).toBe(false)

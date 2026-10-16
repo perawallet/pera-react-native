@@ -10,49 +10,42 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { useNetworkStore } from '../../store/network-store'
+import { useOnDeploymentSwitch } from '../useOnDeploymentSwitch'
 
-const { networkMock } = vi.hoisted(() => ({
-    networkMock: { current: 'mainnet' as 'mainnet' | 'testnet' },
-}))
-
-vi.mock('../useNetwork', () => ({
-    useNetwork: () => ({ network: networkMock.current }),
-}))
-
-import { useOnNetworkSwitch } from '../useOnNetworkSwitch'
-
-describe('useOnNetworkSwitch', () => {
+describe('useOnDeploymentSwitch', () => {
     beforeEach(() => {
-        networkMock.current = 'mainnet'
+        useNetworkStore.getState().resetState()
     })
 
     it('does not fire on the initial mount', () => {
         const handler = vi.fn()
 
-        renderHook(() => useOnNetworkSwitch(handler))
+        renderHook(() => useOnDeploymentSwitch(handler))
 
         expect(handler).not.toHaveBeenCalled()
     })
 
-    it('fires with (from, to) on a real network switch', () => {
+    it('fires with (from, to) once on a real deployment change', () => {
         const handler = vi.fn()
-        const { rerender } = renderHook(() => useOnNetworkSwitch(handler))
+        renderHook(() => useOnDeploymentSwitch(handler))
 
-        networkMock.current = 'testnet'
-        rerender()
+        act(() => useNetworkStore.getState().setMode('developer'))
 
         expect(handler).toHaveBeenCalledTimes(1)
-        expect(handler).toHaveBeenCalledWith('mainnet', 'testnet')
+        expect(handler).toHaveBeenCalledWith('live', 'developer')
     })
 
-    it('does not fire on a rerender that does not change the network', () => {
+    it('does not fire when only a chain network changes inside developer mode', () => {
         const handler = vi.fn()
-        const { rerender } = renderHook(() => useOnNetworkSwitch(handler))
+        act(() => useNetworkStore.getState().setMode('developer'))
+        renderHook(() => useOnDeploymentSwitch(handler))
 
-        rerender()
-        rerender()
+        act(() =>
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet'),
+        )
 
         expect(handler).not.toHaveBeenCalled()
     })
@@ -61,14 +54,14 @@ describe('useOnNetworkSwitch', () => {
         const first = vi.fn()
         const second = vi.fn()
         const { rerender } = renderHook(
-            ({ handler }) => useOnNetworkSwitch(handler),
+            ({ handler }) => useOnDeploymentSwitch(handler),
             { initialProps: { handler: first } },
         )
 
-        networkMock.current = 'testnet'
         rerender({ handler: second })
+        act(() => useNetworkStore.getState().setMode('developer'))
 
         expect(first).not.toHaveBeenCalled()
-        expect(second).toHaveBeenCalledWith('mainnet', 'testnet')
+        expect(second).toHaveBeenCalledWith('live', 'developer')
     })
 })

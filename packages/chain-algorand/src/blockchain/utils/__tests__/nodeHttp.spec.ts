@@ -12,7 +12,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PeraNetworkError, logger } from '@perawallet/wallet-core-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 import { setAlgorandChainContext } from '../../../chain-context'
 import { testChainContext } from '../../../__tests__/context'
 import { clearCustomNetwork, setCustomNetwork } from '../../store'
@@ -113,8 +112,8 @@ describe('fetchNodeJson', () => {
             genesisId: 'dockernet-v1',
         })
 
-        await fetchNodeJson(Networks.custom, 'algod', '/v2/status')
-        await fetchNodeJson(Networks.custom, 'indexer', '/v2/status')
+        await fetchNodeJson('custom', 'algod', '/v2/status')
+        await fetchNodeJson('custom', 'indexer', '/v2/status')
 
         const headersOf = (call: number) =>
             (fetchMock.mock.calls[call] as unknown as [string, RequestInit])[1]
@@ -221,7 +220,7 @@ describe('fetchNodeJson', () => {
             genesisId: 'dockernet-v1',
         })
 
-        await fetchNodeJson(Networks.custom, 'algod', '/v2/status')
+        await fetchNodeJson('custom', 'algod', '/v2/status')
 
         expect(fetchMock.mock.calls[0]?.[0]).toBe(
             'http://10.0.0.5:4001/v2/status',

@@ -33,7 +33,7 @@ import {
 } from './approval-surface'
 import algosdk from 'algosdk'
 import WalletConnect from '@perawallet/walletconnect'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { startFakeBridge } from './fixtures/fake-wc-bridge.mjs'
 
 const dist = path.resolve(
@@ -483,7 +483,10 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // wallet's decoder has something genuine to decode. Its window is far
         // ahead of mainnet: a window already behind the chain is declined as
         // expired before any review opens.
-        const genesisHash = getNetworkConfig(Networks.mainnet).genesisHash
+        const genesisHash = getAlgorandChainConfig({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        }).genesisHash
         const suggestedParams = {
             fee: 1000n,
             minFee: 1000n,

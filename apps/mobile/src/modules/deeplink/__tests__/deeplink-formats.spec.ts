@@ -327,7 +327,6 @@ vi.mock('@modules/transactions', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useCapability', async () =>

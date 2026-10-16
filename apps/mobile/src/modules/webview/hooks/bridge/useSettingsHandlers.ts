@@ -14,10 +14,10 @@ import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
 import {
     useSelectedScope,
-    useNetwork,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -36,8 +36,8 @@ export const useSettingsHandlers = (
     webview: Nullable<WebView>,
 ): UseSettingsHandlersResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
+    const network = scope.networkId
+    const deviceID = useDeploymentDeviceID(useWalletDeployment())
     const theme = useIsDarkMode() ? 'dark' : 'light'
     const { deviceInfo } = usePeraProvider()
     const { preferredCurrency } = useCurrency(scope)

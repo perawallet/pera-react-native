@@ -39,7 +39,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { mockIndexerSearchForAccounts } from '../../test-handlers'
 import {
@@ -54,7 +54,7 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAddressCodec } from '../address-codec'
 import { algorandAccountPresentation } from '../presentation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const addressOf = (n: number) => encodeAddress(new Uint8Array(32).fill(n))
 
 const AUTHORITY = addressOf(1)

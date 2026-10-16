@@ -12,7 +12,6 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-config'
 import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
@@ -178,7 +177,7 @@ describe('useAssetPriceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'does not invoke the queryFn when refetch is called on %s',
             async network => {
                 capability.networkId = network
@@ -199,7 +198,7 @@ describe('useAssetPriceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'still invokes the queryFn when refetch is called on %s',
             async network => {
                 capability.networkId = network
@@ -224,7 +223,7 @@ describe('useAssetPriceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'reports isPending false while unavailable on %s',
             network => {
                 capability.networkId = network

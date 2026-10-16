@@ -12,10 +12,11 @@
 
 import type {
     ChainId,
+    ChainScope,
     MessageRequest,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AuthDataSignableData,
     PeraArbitraryDataMessage,
@@ -87,7 +88,7 @@ export type WalletOperationResult =
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =
     | { type: 'accounts-changed'; accounts: string[] }
-    | { type: 'network-changed'; network: Network }
+    | { type: 'network-changed'; scope: ChainScope }
 
 export type ConnectionEvent =
     | { type: 'session-expiring'; expiresAt: number }

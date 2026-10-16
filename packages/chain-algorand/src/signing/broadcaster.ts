@@ -18,7 +18,7 @@ import {
 } from '../blockchain'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { createAlgodTransport } from './transports/createAlgodTransport'
 import { findStaleGroupReason } from './staleRequestGuard'
 import {

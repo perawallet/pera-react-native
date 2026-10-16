@@ -15,7 +15,9 @@ import { BackHandler } from 'react-native'
 
 import { useWebView } from '@modules/webview'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
@@ -54,7 +56,9 @@ export const useTransactionSuccessScreen =
         const { onFinished: sendFundsOnFinished, isCloseAccount } =
             useSendFunds()
         const { onFinished: claimOnFinished } = useClaimAssets()
-        const { networkConfig } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        // Read per render, never memoised on `scope`: a saved custom node keeps the same scope.
+        const { explorerUrl } = getAlgorandChainConfig(scope)
         const { pushWebView } = useWebView()
 
         const isClaimFlow =
@@ -75,16 +79,14 @@ export const useTransactionSuccessScreen =
         }, [isClaimFlow, claimOnFinished, sendFundsOnFinished])
 
         const viewInExplorer = useCallback(() => {
-            if (!networkConfig.explorerUrl) return
+            if (!explorerUrl) return
             pushWebView({
-                url: `${networkConfig.explorerUrl}/tx/${transactionId}`,
+                url: `${explorerUrl}/tx/${transactionId}`,
                 id: generateUniqueId(),
             })
-        }, [networkConfig.explorerUrl, transactionId, pushWebView])
+        }, [explorerUrl, transactionId, pushWebView])
 
-        const handleViewInExplorer = networkConfig.explorerUrl
-            ? viewInExplorer
-            : undefined
+        const handleViewInExplorer = explorerUrl ? viewInExplorer : undefined
 
         useEffect(() => {
             const subscription = BackHandler.addEventListener(

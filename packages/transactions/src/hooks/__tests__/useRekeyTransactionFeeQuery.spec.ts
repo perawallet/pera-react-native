@@ -16,11 +16,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockCallerScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
+const mockCallerScope = vi.fn(
+    () => ({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }) as const,
+)
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockUseSuggestedMinFeeQuery = vi.fn()
@@ -46,6 +47,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const quantum = (
     address = 'QADDR',
@@ -84,7 +86,10 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockCallerScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+    mockCallerScope.mockReturnValue({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const)
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
@@ -227,7 +232,10 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockCallerScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
+        mockCallerScope.mockReturnValue({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const { result: testnet } = renderHook(
             () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },

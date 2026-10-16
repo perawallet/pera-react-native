@@ -473,15 +473,8 @@ describe('useWebAppShell', () => {
         ;(initArgs.registerCompletionHandler as (h: unknown) => void)(handler)
         expect(mocks.setOnConfirmedHandler).toHaveBeenCalledWith(
             'algorand',
-            expect.any(Function),
+            handler,
         )
-        // The registered handler hands the sync service the legacy network.
-        const registered = mocks.setOnConfirmedHandler.mock.calls[0][1] as (
-            addresses: string[],
-            scope: { chainId: string; networkId: string },
-        ) => void
-        registered(['ADDR'], { chainId: 'algorand', networkId: 'testnet' })
-        expect(handler).toHaveBeenCalledWith(['ADDR'], 'testnet')
     })
 
     it('starts sync when hasAccounts && unlocked, stops on lock, never starts with no accounts', async () => {

@@ -14,7 +14,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import * as signing from '../index'
 import {
@@ -28,7 +27,7 @@ import {
 } from '../broadcaster'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {

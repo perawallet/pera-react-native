@@ -74,7 +74,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 vi.mock('@modules/ledger/utils', async () => ({
     ...(await vi.importActual<
@@ -136,10 +136,10 @@ describe('useLedgerFetchAccountsScreen', () => {
                 { address: 'LEDGER0', publicKeyHex: '00', accountIndex: 0 },
             ],
         })
-        expect(mockFetchAccountExists).toHaveBeenCalledWith(
-            'PROBE_ADDR',
-            'mainnet',
-        )
+        expect(mockFetchAccountExists).toHaveBeenCalledWith('PROBE_ADDR', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockSheetRequest).toHaveBeenCalledTimes(1)
     })
 

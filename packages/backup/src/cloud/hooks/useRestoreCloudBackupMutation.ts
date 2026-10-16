@@ -12,8 +12,8 @@
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     restoreCloudBackup,
     type RestoreCloudBackupResult,
@@ -50,8 +50,8 @@ export const useRestoreCloudBackupMutation = (
         RestoreCloudBackupVariables
     >,
 ) => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const deployment = useWalletDeployment()
+    const deviceId = useDeploymentDeviceID(deployment)
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const setProgress = useCloudBackupRestoreProgressStore(
@@ -86,7 +86,6 @@ export const useRestoreCloudBackupMutation = (
                     salt,
                     argon2id,
                     deviceId,
-                    network,
                     importAccounts,
                     importContacts,
                     importPasskeys,

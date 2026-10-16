@@ -12,8 +12,8 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type WebView from 'react-native-webview'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { GET_DEVICE_ID_ACTION, sendActionToWebview } from '../handlers'
 import type { BridgeHandler } from './types'
@@ -27,8 +27,7 @@ export const useDeviceIdHandler = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
 ): BridgeHandler => {
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
+    const deviceID = useDeploymentDeviceID(useWalletDeployment())
 
     // Discover reads the device id once at load and only fetches server-side
     // favorites while it holds a non-null one — so an id arriving later (store

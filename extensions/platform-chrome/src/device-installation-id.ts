@@ -18,8 +18,8 @@ export const DEVICE_INSTALLATION_ID_STORAGE_KEY = 'device:installation-id'
  * Returns this install's stable identifier, minting one if absent. Also serves
  * as the GA4 client id (see ChromeAnalyticsService).
  *
- * Not the backend device row id (`useDeviceID` in
- * `@perawallet/wallet-core-device`), which is server-assigned, per-network, and
+ * Not the backend device row id (`useDeploymentDeviceID` in
+ * `@perawallet/wallet-core-device`), which is server-assigned, per-deployment, and
  * recreated whenever the server stops recognising it.
  *
  * Cross-context safety: the background service worker calls this from

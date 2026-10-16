@@ -11,7 +11,7 @@
  */
 
 import { queryClient } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import type {
     DeviceDeleteRequest,
     DeviceRegistration,
@@ -28,7 +28,7 @@ const DEVICES_PATH = 'api/v3/devices'
  * carrying `id` updates that device, one without creates a new one.
  */
 export const registerDevice = async (
-    network: Network,
+    deployment: WalletMode,
     registration: DeviceRegistration,
 ): Promise<DeviceResponse> => {
     const response = await queryClient<
@@ -36,7 +36,7 @@ export const registerDevice = async (
         DeviceRegistrationRequest
     >({
         backend: 'pera',
-        network,
+        deployment,
         method: 'POST',
         url: DEVICES_PATH,
         data: toDeviceRegistrationRequest(registration),
@@ -46,12 +46,12 @@ export const registerDevice = async (
 }
 
 export const deleteDevice = async (
-    network: Network,
+    deployment: WalletMode,
     data: DeviceDeleteRequest,
 ): Promise<void> => {
     await queryClient<string, DeviceDeleteRequest>({
         backend: 'pera',
-        network,
+        deployment,
         method: 'DELETE',
         url: DEVICES_PATH,
         data,

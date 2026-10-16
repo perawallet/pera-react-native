@@ -13,9 +13,12 @@
 import { useEffect, useRef } from 'react'
 import {
     customNodeAdapters,
-    useNetworkStore,
+    getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
@@ -45,20 +48,23 @@ const noSheet: ProposalQueueHandle = {
 // literal `runOffscreenApp.ts` hardcodes for its own stores.
 const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 
+const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
+
 // Handlers are never initialized here; they only answer descriptor queries
-// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesNetwork` for dapp).
+// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for dapp).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registryRef = useRef<ConnectionRegistryClient | null>(null)
     if (!registryRef.current) {
         registryRef.current = createRemoteConnectionRegistry({
             handlers: [
                 createWalletConnectV1Handler({
-                    getNetwork: () => useNetworkStore.getState().network,
+                    chainId: LEGACY_CHAIN_ID,
+                    getNetworkId,
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
                     chainId: LEGACY_CHAIN_ID,
-                    getNetwork: () => useNetworkStore.getState().network,
+                    getNetworkId,
                     getCustomNetworkGenesisHash: () =>
                         customNodeAdapters.has(LEGACY_CHAIN_ID)
                             ? customNodeAdapters.get(LEGACY_CHAIN_ID).read()

@@ -26,18 +26,17 @@ vi.mock('../createAlgorandClient', async importOriginal => {
     }
 })
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    Networks,
+    getAlgorandChainConfig,
     getChainConfig,
-    getNetworkConfig,
 } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork, clearCustomNetwork } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const CUSTOM_SCOPE = scopeForLegacyNetwork(Networks.custom)
+const CUSTOM_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const
 
 describe('getChainConfig for the custom network (real store, end-to-end)', () => {
     beforeEach(() => {
@@ -99,7 +98,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
         })
     })
 
-    test('getNetworkConfig serves the saved node for custom', () => {
+    test('getAlgorandChainConfig serves the saved node for custom', () => {
         setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
@@ -107,7 +106,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
             genesisId: 'dockernet-v1',
         })
 
-        expect(getNetworkConfig(Networks.custom)).toMatchObject({
+        expect(getAlgorandChainConfig(CUSTOM_SCOPE)).toMatchObject({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -118,13 +117,12 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
     })
 
     test('the baked networks ignore the saved node', () => {
-        const bakedNetworks = [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ] as const
+        const bakedNetworks = ['mainnet', 'testnet', 'betanet'] as const
         const before = bakedNetworks.map(network =>
-            getChainConfig(scopeForLegacyNetwork(network)),
+            getChainConfig({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: network,
+            } as const),
         )
 
         setCustomNetwork({
@@ -136,7 +134,10 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
 
         expect(
             bakedNetworks.map(network =>
-                getChainConfig(scopeForLegacyNetwork(network)),
+                getChainConfig({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const),
             ),
         ).toStrictEqual(before)
     })
@@ -162,7 +163,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
             genesisId: 'dockernet-v1',
         })
 
-        getAlgorandClient(Networks.custom)
+        getAlgorandClient('custom')
 
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenLastCalledWith(
             expect.objectContaining({
@@ -212,7 +213,7 @@ describe('a persisted custom config on module load', () => {
         // algorandClient registers the saved-node reader the node reads use.
         await import('../algorandClient')
         const { fetchNodeJson } = await import('../nodeHttp')
-        await fetchNodeJson(Networks.custom, 'algod', '/v2/status')
+        await fetchNodeJson('custom', 'algod', '/v2/status')
 
         expect(fetchMock).toHaveBeenCalledWith(
             'http://10.0.0.9:4001/v2/status',

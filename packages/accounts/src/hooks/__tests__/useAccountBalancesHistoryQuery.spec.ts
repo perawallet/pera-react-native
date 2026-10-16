@@ -12,8 +12,6 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
@@ -22,6 +20,7 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -78,7 +77,10 @@ describe('useAccountBalancesHistoryQuery', () => {
         it('generates correct query key', () => {
             const addresses = ['ADDR1', 'ADDR2']
             const period = 'one-day'
-            const scope = scopeForLegacyNetwork('mainnet')
+            const scope = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const
             const key = getAccountBalancesHistoryQueryKey(
                 addresses,
                 period,
@@ -207,7 +209,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             )
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
                 mockNetwork.network = network
@@ -231,7 +233,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'leaves the query enabled and isUnavailableOnNetwork false on %s',
             async network => {
                 mockNetwork.network = network
@@ -256,7 +258,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'does not invoke the queryFn when refetch is called on %s',
             async network => {
                 mockNetwork.network = network
@@ -277,7 +279,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'still invokes the queryFn when refetch is called on %s',
             async network => {
                 mockNetwork.network = network
@@ -302,7 +304,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'reports isPending false while unavailable on %s',
             network => {
                 mockNetwork.network = network

@@ -19,12 +19,15 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 import { updateAssetPeraMetadata, upsertAssets } from '../metadataRepository'
 import { recordPriceMisses, upsertAssetPrices } from '../pricesRepository'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const ASSET: PeraAsset = {
     assetId: '100',

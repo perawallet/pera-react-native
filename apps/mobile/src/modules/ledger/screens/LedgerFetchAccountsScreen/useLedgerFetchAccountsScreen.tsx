@@ -29,7 +29,8 @@ import {
     type AppError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { AddAccountStackParamList } from '@modules/onboarding'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -68,7 +69,7 @@ export const useLedgerFetchAccountsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const isMounted = useIsMounted()
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { request: requestBottomSheet, dismiss } = useBottomSheet()
         const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
 
@@ -119,7 +120,7 @@ export const useLedgerFetchAccountsScreen =
                     // treats as "probe unavailable" and degrades to the
                     // shallow capped scan — offline import keeps working.
                     isAccountOnChain: address =>
-                        fetchAccountExists(address, network),
+                        fetchAccountExists(address, scope),
                 })
 
                 transportRef.current = result.transport
@@ -149,14 +150,7 @@ export const useLedgerFetchAccountsScreen =
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)
             }
-        }, [
-            deviceId,
-            deviceName,
-            transportType,
-            network,
-            navigation,
-            isMounted,
-        ])
+        }, [deviceId, deviceName, transportType, scope, navigation, isMounted])
 
         useEffect(() => {
             if (hasStartedRef.current) return

@@ -15,11 +15,10 @@ import {
     recordAuthority,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
     buildAccount({
@@ -33,7 +32,7 @@ export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
 export const recordLegacyAuthority = (account: LegacyAccount): void => {
     if (!account.authAddress) return
     recordAuthority(
-        scopeForLegacyNetwork(useNetworkStore.getState().network),
+        getSelectedScope(ALGORAND_CHAIN_ID),
         account.address,
         account.authAddress,
     )

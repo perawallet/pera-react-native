@@ -18,10 +18,7 @@ import {
     chainAccountOf,
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 
@@ -71,7 +68,7 @@ import {
 // What the account syncer records once it reads the chain's `auth-addr`.
 const seedAuthority = (address: string, authorityAddress: string | undefined) =>
     useAccountChainStateStore.getState().setAccountChainState(
-        scopeForLegacyNetwork(config.defaultNetwork),
+        { chainId: LEGACY_CHAIN_ID, networkId: config.defaultNetwork } as const,
         address,
         algorandAccountsAdapter.toChainState({
             authorityAddress: authorityAddress ?? null,

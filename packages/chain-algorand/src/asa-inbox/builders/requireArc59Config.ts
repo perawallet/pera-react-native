@@ -11,10 +11,8 @@
  */
 
 import { getArc59Config } from '@perawallet/wallet-core-config'
-import {
-    type Network,
-    PeraServiceUnavailableError,
-} from '@perawallet/wallet-core-shared'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 /**
  * The network's ARC-59 inbox config, or throw if the inbox app is not deployed
@@ -26,10 +24,11 @@ import {
  * cannot proceed without one.
  */
 export const requireArc59Config = (
-    network: Network,
+    network: AlgorandNetworkId,
 ): { appId: bigint; appAddress: string } => {
-    const arc59Config = getArc59Config(network)
-    if (arc59Config === null) throw new PeraServiceUnavailableError(network)
+    const scope = algorandScope(network)
+    const arc59Config = getArc59Config(scope)
+    if (arc59Config === null) throw new PeraServiceUnavailableError(scope)
 
     return arc59Config
 }

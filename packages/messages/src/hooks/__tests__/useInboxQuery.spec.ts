@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     useAllAccounts,
     useSigningAccounts,
@@ -24,8 +23,8 @@ import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
@@ -502,10 +501,13 @@ describe('useInboxQuery', () => {
             vi.mocked(fetchInbox).mockClear()
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
-                scopeState.current = scopeForLegacyNetwork(network)
+                scopeState.current = {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const
 
                 const { result } = renderHook(
                     () => useInboxQuery(scopeState.current),
@@ -523,10 +525,13 @@ describe('useInboxQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'reports isPending false while unavailable on %s',
             network => {
-                scopeState.current = scopeForLegacyNetwork(network)
+                scopeState.current = {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const
 
                 const { result } = renderHook(
                     () => useInboxQuery(scopeState.current),
@@ -540,10 +545,13 @@ describe('useInboxQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'does not invoke fetchInbox when refetch is called on %s',
             async network => {
-                scopeState.current = scopeForLegacyNetwork(network)
+                scopeState.current = {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const
 
                 const { result } = renderHook(
                     () => useInboxQuery(scopeState.current),

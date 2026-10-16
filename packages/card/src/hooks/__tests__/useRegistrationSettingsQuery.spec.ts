@@ -21,13 +21,13 @@ const { fetchRegistrationSettings } = vi.hoisted(() => ({
 vi.mock('../../api/onboarding', () => ({ fetchRegistrationSettings }))
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useRegistrationSettingsQuery } from '../useRegistrationSettingsQuery'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('mainnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

@@ -41,7 +41,7 @@ vi.mock('../../../blockchain', async importOriginal => {
 
 beforeEach(() => {
     useNetworkStore.getState().resetState()
-    useNetworkStore.getState().setNetwork('testnet')
+    useNetworkStore.getState().setMode('developer')
 })
 
 const transactionResult: SigningResult = {
@@ -89,7 +89,7 @@ describe('createMultisigCosignTransport', () => {
     })
 
     test("throws ScopeChangedError when Algorand's network switches", async () => {
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         const addSignatures = vi.fn()
         const transport = createMultisigCosignTransport(
             addSignatures,
@@ -243,7 +243,7 @@ describe('createMultisigProposeTransport', () => {
     })
 
     test("throws ScopeChangedError when Algorand's network switches", async () => {
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         const proposeSignRequest = vi.fn()
         const transport = buildPropose(proposeSignRequest)
 

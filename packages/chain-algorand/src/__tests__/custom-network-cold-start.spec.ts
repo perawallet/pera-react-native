@@ -31,9 +31,10 @@ const coldStartCustomChainConfig = async () => {
     vi.resetModules()
     await import('../register')
     const { getChainConfig } = await import('@perawallet/wallet-core-config')
-    const { scopeForLegacyNetwork } =
-        await import('@perawallet/wallet-core-chain-contract')
-    return getChainConfig(scopeForLegacyNetwork('custom'))
+    return getChainConfig({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'custom',
+    } as const)
 }
 
 describe('custom node cold start', () => {

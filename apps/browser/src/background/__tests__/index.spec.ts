@@ -52,7 +52,6 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    getNetworkConfig: vi.fn(),
     // The entry point logs its resolved config identity at module scope, so
     // the mock has to carry `config` even though these tests only exercise
     // alarm routing.

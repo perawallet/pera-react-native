@@ -134,9 +134,6 @@ vi.mock('@perawallet/wallet-core-config', () => {
             backupBaseUrl: 'https://backup.test.perawallet.app/',
             webIntegrityBearerEnabled: false,
         },
-        Networks: mockNetworks,
-        isPeraBackedNetwork: (network: string) =>
-            backendUrlByNetwork[network] !== undefined,
         configuredScopes: () => [
             ...Object.values(mockNetworks).map(network => ({
                 chainId: 'algorand',
@@ -345,7 +342,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test-endpoint',
             method: 'GET',
         })
@@ -359,7 +356,7 @@ describe('queryClient', () => {
         await expect(
             queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 url: '',
                 method: 'GET',
             }),
@@ -373,7 +370,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
             params: { limit: 10, offset: 0 },
@@ -393,7 +390,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test-with-slash',
             method: 'GET',
         })
@@ -417,7 +414,7 @@ describe('queryClient', () => {
         await expect(
             queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 url: '/test',
                 method: 'GET',
             }),
@@ -435,7 +432,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: 'test-no-slash',
             method: 'GET',
         })
@@ -451,7 +448,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'POST',
             data: { name: 'test' },
@@ -471,7 +468,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/chart',
             method: 'GET',
             timeout: 30_000,
@@ -489,7 +486,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -505,7 +502,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/integrity/challenge',
             method: 'POST',
             retry: IDEMPOTENT_POST_RETRY,
@@ -523,7 +520,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -547,7 +544,7 @@ describe('queryClient', () => {
         mockJson.mockResolvedValue({ status: 'ok' })
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v1/status',
         })
@@ -585,16 +582,39 @@ describe('queryClient', () => {
             PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
         } = await import('../../errors/pera-service')
 
-        await expect(
-            queryClient({
-                backend: 'pera',
-                network: 'betanet',
-                method: 'GET',
-                url: '/v1/assets/',
-            }),
-        ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
+        const refused = queryClient({
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'betanet' },
+            method: 'GET',
+            url: '/v1/assets/',
+        })
+
+        await expect(refused).rejects.toBeInstanceOf(
+            FreshPeraServiceUnavailableError,
+        )
+        await expect(refused).rejects.toMatchObject({
+            targetKey: 'algorand/betanet',
+        })
 
         expect(mockKy).not.toHaveBeenCalled()
+    })
+
+    test('a backup request names no target and reaches the backup client', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+        mockKy.mockClear()
+        mockJson.mockResolvedValue({ ok: true })
+        const { queryClient } = await import('../query-client')
+
+        await queryClient({
+            backend: 'backup',
+            method: 'GET',
+            url: '/backup/manifest',
+        })
+
+        expect(
+            findClientInstance('https://backup.test.perawallet.app/'),
+        ).toHaveBeenCalledTimes(1)
     })
 
     test('Pera-backed networks still reach their own backend', async () => {
@@ -605,7 +625,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             method: 'GET',
             url: '/v1/assets/',
         })
@@ -749,7 +769,7 @@ describe('queryClient', () => {
             expect(fixturePeraClient).toHaveBeenCalledTimes(1)
         })
 
-        test('a legacy network request naming a service its scope lacks is refused', async () => {
+        test('a request naming a service its scope lacks is refused', async () => {
             servicesByScopeKey['algorand/mainnet'] = ['prices']
             mockKy.mockClear()
             const { queryClient } = await import('../query-client')
@@ -760,7 +780,7 @@ describe('queryClient', () => {
 
             const refused = queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 service: 'assets',
                 method: 'GET',
                 url: '/v1/assets/',
@@ -777,7 +797,7 @@ describe('queryClient', () => {
 
             await queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 service: 'prices',
                 method: 'GET',
                 url: '/v1/prices/',
@@ -796,7 +816,7 @@ describe('queryClient', () => {
             await expect(
                 queryClient({
                     backend: 'pera',
-                    network: 'betanet',
+                    scope: { chainId: 'algorand', networkId: 'betanet' },
                     service: 'prices',
                     method: 'GET',
                     url: '/v1/prices/',
@@ -841,7 +861,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -881,7 +901,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -933,7 +953,7 @@ describe('queryClient', () => {
 
             await queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method: 'GET',
                 url: '/warm-up',
             })
@@ -996,7 +1016,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/empty-success',
             method: 'GET',
         })
@@ -1013,7 +1033,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/no-content',
             method: 'DELETE',
         })
@@ -1029,7 +1049,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/whitespace-body',
             method: 'GET',
         })
@@ -1045,7 +1065,7 @@ describe('queryClient', () => {
 
         const error = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/broken',
             method: 'GET',
         }).catch((thrown: unknown) => thrown)

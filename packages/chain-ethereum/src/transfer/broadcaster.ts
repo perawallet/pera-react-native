@@ -123,8 +123,7 @@ export const createEthereumBroadcasterAdapter = (
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
         }),
-        // The handler takes Algorand's legacy Network; Ethereum confirms
-        // through the reconciler.
+        // Ethereum confirms through the reconciler, not a completion handler.
         setOnConfirmedHandler: () => undefined,
         setSubmissionSettledHandler: setEthereumSubmissionSettledHandler,
         submitTimeoutError: timeoutMs =>

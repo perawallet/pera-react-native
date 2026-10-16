@@ -31,11 +31,11 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
+        typeof import('@perawallet/wallet-core-config')
     >()),
-    useNetwork: () => ({ networkConfig: mockNetworkConfig }),
+    getAlgorandChainConfig: () => mockNetworkConfig,
 }))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({

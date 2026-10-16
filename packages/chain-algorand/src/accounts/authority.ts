@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { fetchAlgorandRekeyedAddresses } from './discovery'
 import { hasLocalCoSigner } from './multisig-participants'
 import { getAlgorandAuthAccount } from './signer-resolution'

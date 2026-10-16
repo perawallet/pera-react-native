@@ -16,9 +16,9 @@ import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
     type ChainId,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { historyContractTests } from '@perawallet/wallet-core-transactions/testing'
 import { algorandHistoryAdapter } from '../adapter'
@@ -57,7 +57,7 @@ const serve = (first: object, second: object) =>
     )
 
 historyContractTests(() => algorandHistoryAdapter, {
-    scope: scopeForLegacyNetwork('mainnet'),
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     address: ADDRESS,
     nativeAsset: ALGO,
     arrangeTwoPages: () =>

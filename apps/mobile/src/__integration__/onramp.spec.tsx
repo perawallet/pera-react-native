@@ -68,7 +68,6 @@ import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { useOnrampStore } from '@perawallet/wallet-core-onramp'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -301,7 +300,7 @@ const REGION_RESPONSE = {
 // default mainnet network) and a selected account address are present.
 const TEST_DEVICE_ID = 'device-onramp-1'
 const seedDeviceId = () => {
-    useDeviceStore.getState().setDeviceID(Networks.mainnet, TEST_DEVICE_ID)
+    useDeviceStore.getState().setDeviceID('live', TEST_DEVICE_ID)
 }
 
 const HISTORY_ORDER_ID = 'history-order-1'

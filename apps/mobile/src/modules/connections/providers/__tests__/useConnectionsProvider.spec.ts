@@ -102,7 +102,10 @@ const errorSubscription: {
 const scoped = (pairingId: string): ErrorScope => ({ pairingId })
 
 /** What the composition root injects, per handler kind. */
-type V1Options = { getNetwork: () => string }
+type V1Options = {
+    chainId: string
+    getNetworkId: (chainId: string) => string
+}
 type V2Options = {
     getNetworkId: (chainId: string) => string
     isDappConnectEnabled: (chainId: string) => boolean
@@ -379,7 +382,9 @@ describe('useConnectionsProvider', () => {
         expect(v2.keyValueStorage).toBe(keyValueStorage)
         // Injected rather than defaulted, so neither handler pulls the
         // Algorand runtime into a consumer's graph.
-        expect(mockCreateV1.mock.calls[0][0].getNetwork).toBeTypeOf('function')
+        const v1 = mockCreateV1.mock.calls[0][0]
+        expect(v1.chainId).toBe('algorand')
+        expect(v1.getNetworkId).toBeTypeOf('function')
         expect(v2.getNetworkId).toBeTypeOf('function')
         expect(v2.isDappConnectEnabled).toBeTypeOf('function')
     })
@@ -388,7 +393,7 @@ describe('useConnectionsProvider', () => {
         renderHook(() => useConnectionsProvider())
         const { getNetworkId } = mockCreateV2.mock.calls[0][0]
 
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
 
         expect(getNetworkId('algorand')).toBe('testnet')
     })

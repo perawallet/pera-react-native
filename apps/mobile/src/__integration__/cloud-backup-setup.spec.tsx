@@ -179,8 +179,8 @@ const enterPin = async (pin: string): Promise<void> => {
 beforeEach(() => {
     // Also wipes the PIN, so a PIN test can't gate the tests after it.
     resetTestKeystore()
-    useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
-    useDeviceStore.getState().setDeviceID('testnet', 'device-integration')
+    useDeviceStore.getState().setDeviceID('live', 'device-integration')
+    useDeviceStore.getState().setDeviceID('developer', 'device-integration')
     useCloudBackupStore.getState().resetState()
     useCloudBackupDraftStore.getState().resetState()
 })

@@ -13,9 +13,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainScopeKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     runMigrations,
@@ -111,7 +111,7 @@ describe('submission reconciler', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             txIds: ['TXID-1'],
             flow: 'cosign',
             chainData: { family: 'algorand', lastValid: 100 },
@@ -336,7 +336,12 @@ describe('submission reconciler', () => {
         const keyedId = await record({ txIds: ['TXID-KEYED'] })
         await db
             .update(SubmissionAttemptsSchema)
-            .set({ scope: toScopeKey(scopeForLegacyNetwork('mainnet')) })
+            .set({
+                scope: toScopeKey({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
+            })
             .where(eq(SubmissionAttemptsSchema.id, keyedId))
             .run()
         const handled: string[] = []

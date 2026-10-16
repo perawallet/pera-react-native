@@ -49,14 +49,11 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 }))
 
 const mockNetworkConfig = { explorerUrl: 'https://explorer.test' }
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
+        typeof import('@perawallet/wallet-core-config')
     >()),
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: mockNetworkConfig,
-    }),
+    getAlgorandChainConfig: () => mockNetworkConfig,
 }))
 
 const renderDetail = (

@@ -141,7 +141,7 @@ describe('send from quantum account', () => {
 
     beforeEach(async () => {
         await resetTestDatabase()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         await seedAlgoAsset('mainnet')
 
         resetTestKeystore()

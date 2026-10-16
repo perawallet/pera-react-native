@@ -16,16 +16,16 @@ import {
     type AssetPrice,
     type AssetRef,
 } from '@perawallet/wallet-core-chain-contract'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { fetchPublicAssetDetails } from '../assets/api'
 import { algorandAssetIdOf } from '../assets/asset-ref'
 import { algorandDescriptor } from '../descriptor'
 import { fetchAssetPrices } from './endpoints'
+import { algorandScope, type AlgorandNetworkId } from '../network-id'
 
 const fetchNativePrice = async (
     ref: AssetRef,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetPrice[]> => {
     const details = await fetchPublicAssetDetails(ref.assetId, network)
     return details.usd_value
@@ -37,7 +37,7 @@ const fetchNativePrice = async (
 // known", not a transport gap, so it is left out rather than priced 0.
 const fetchTokenPrices = async (
     refs: AssetRef[],
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetPrice[]> => {
     const response = await fetchAssetPrices(
         refs.map(ref => ref.assetId),
@@ -54,11 +54,11 @@ const fetchTokenPrices = async (
 
 export const fetchPeraUsdPrices = async (
     refs: AssetRef[],
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetPrice[]> => {
     for (const ref of refs) algorandAssetIdOf(ref)
     // No Pera backend on this network: both endpoints below would only throw.
-    if (!isPeraBackedNetwork(network)) return []
+    if (!hasPeraBackend(algorandScope(network))) return []
 
     const native = refs.filter(ref => isNativeAsset(ref, algorandDescriptor))
     const tokens = refs.filter(ref => !isNativeAsset(ref, algorandDescriptor))

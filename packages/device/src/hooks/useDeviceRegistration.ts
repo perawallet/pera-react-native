@@ -12,11 +12,12 @@
 
 import { useEffect, useRef } from 'react'
 import { onlineManager, focusManager } from '@tanstack/react-query'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetwork,
-    useOnNetworkSwitch,
+    useOnDeploymentSwitch,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 
 import { useDevice } from './useDevice'
 import { useDeviceStore } from '../store'
@@ -28,11 +29,11 @@ export type UseDeviceRegistrationOptions = {
      * backend device record was created from scratch (no local id, or a
      * recreate fallback), rather than a clean PUT against an existing one.
      */
-    onDeviceCreated?: (network: Network) => void
+    onDeviceCreated?: (deployment: WalletMode) => void
 }
 
 /**
- * Drives best-effort device registration off network and account changes.
+ * Drives best-effort device registration off deployment and account changes.
  * Mirrors Android's `DeviceRegistrationUseCase`; failures are logged, never
  * thrown — but marked pending so the reconnect/foreground recovery below
  * heals them.
@@ -41,13 +42,13 @@ export const useDeviceRegistration = (
     accounts: DeviceAccountRegistration[],
     options?: UseDeviceRegistrationOptions,
 ): void => {
-    const { network } = useNetwork()
+    const deployment = useWalletDeployment()
     const { registerDevice, clearDevicePushToken } = useDevice()
     const setRegistrationPending = useDeviceStore(
         state => state.setRegistrationPending,
     )
     const isRegistrationPending = useDeviceStore(state =>
-        state.pendingRegistrationNetworks.includes(network),
+        state.pendingRegistrationDeployments.includes(deployment),
     )
 
     // Kept live every render (not just in an effect) so the mount effect and
@@ -76,9 +77,9 @@ export const useDeviceRegistration = (
     const accountsRef = useRef(accounts)
     accountsRef.current = accounts
 
-    // Stop the server pushing to the network we just left.
-    useOnNetworkSwitch(previousNetwork => {
-        clearDevicePushToken(previousNetwork).catch(error => {
+    // Stop the server pushing to the deployment we just left.
+    useOnDeploymentSwitch(previousDeployment => {
+        clearDevicePushToken(previousDeployment).catch(error => {
             logger.warn('Device push-token cleanup failed', {
                 source: 'useDeviceRegistration',
                 error,
@@ -95,7 +96,7 @@ export const useDeviceRegistration = (
     const attemptIdRef = useRef(0)
 
     // (Re)register on mount, when the account set changes, and on the new
-    // network after a switch.
+    // deployment after a switch.
     useEffect(() => {
         const attemptId = ++attemptIdRef.current
         const isCurrent = () => attemptIdRef.current === attemptId
@@ -103,13 +104,13 @@ export const useDeviceRegistration = (
         registerDevice(accountsRef.current)
             .then(result => {
                 if (!isCurrent()) return
-                setRegistrationPending(network, false)
+                setRegistrationPending(deployment, false)
                 if (result.createdNew) {
-                    optionsRef.current?.onDeviceCreated?.(network)
+                    optionsRef.current?.onDeviceCreated?.(deployment)
                 }
             })
             .catch(error => {
-                if (isCurrent()) setRegistrationPending(network, true)
+                if (isCurrent()) setRegistrationPending(deployment, true)
                 logger.warn('Device registration failed', {
                     source: 'useDeviceRegistration',
                     error,
@@ -118,10 +119,10 @@ export const useDeviceRegistration = (
             .finally(() => {
                 if (isCurrent()) inFlightRef.current = false
             })
-    }, [accountsKey, network, registerDevice, setRegistrationPending])
+    }, [accountsKey, deployment, registerDevice, setRegistrationPending])
 
     // A failed registration used to stay silently unregistered (no push
-    // notifications) until the account set or network changed. While one is
+    // notifications) until the account set or deployment changed. While one is
     // pending, retry on the reconnect and foreground edges with the same
     // list the mount path registers. The app wires these managers in
     // QueryProvider (AppState -> focusManager) and the network module
@@ -143,9 +144,9 @@ export const useDeviceRegistration = (
                 .registerDevice(accountsRef.current)
                 .then(result => {
                     if (!isCurrent()) return
-                    setRegistrationPending(network, false)
+                    setRegistrationPending(deployment, false)
                     if (result.createdNew) {
-                        optionsRef.current?.onDeviceCreated?.(network)
+                        optionsRef.current?.onDeviceCreated?.(deployment)
                     }
                 })
                 .catch(error => {
@@ -169,5 +170,5 @@ export const useDeviceRegistration = (
             unsubscribeOnline()
             unsubscribeFocus()
         }
-    }, [isRegistrationPending, network, setRegistrationPending])
+    }, [isRegistrationPending, deployment, setRegistrationPending])
 }

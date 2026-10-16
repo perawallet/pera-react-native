@@ -15,6 +15,8 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '../dappRequest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { configuredScopes } from '@perawallet/wallet-core-config'
 import { createConnectionRegistry } from '../registry'
 import type { ConnectionHandler, ConnectionHandlerContext } from '../handler'
 import type {
@@ -83,7 +85,7 @@ const makeOriginHandler = (
     disconnect: vi.fn(async () => {}),
     disconnectAll: vi.fn(async () => {}),
     restore: vi.fn(async () => []),
-    matchesNetwork: vi.fn(() => true),
+    matchesChainScope: vi.fn(() => true),
     methodsFor: vi.fn(() => []),
     ...overrides,
 })
@@ -447,35 +449,37 @@ describe('createConnectionRegistry', () => {
         })
     })
 
-    describe('networksFor', () => {
-        it('returns exactly the networks the kind handler accepts', () => {
+    describe('scopesFor', () => {
+        it('returns exactly the configured scopes the kind handler accepts', () => {
             const beta = makeHandler('beta', {
-                matchesNetwork: vi.fn(
-                    (_connection: Connection, network: string) =>
-                        network === 'mainnet' || network === 'custom',
+                matchesChainScope: vi.fn(
+                    (_connection: Connection, scope: ChainScope) =>
+                        scope.chainId === 'algorand' &&
+                        (scope.networkId === 'mainnet' ||
+                            scope.networkId === 'custom'),
                 ),
             })
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
             registry.register(beta)
 
-            const networks = registry.networksFor(
+            const scopes = registry.scopesFor(
                 makeConnection({ id: 'b1', kind: 'beta' }),
             )
 
-            expect(networks).toEqual(['mainnet', 'custom'])
+            expect(scopes).toEqual([
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'algorand', networkId: 'custom' },
+            ])
         })
 
-        it('yields every network for a handler that accepts them all', () => {
+        it('yields every configured scope for a handler that accepts them all', () => {
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
 
-            expect([...registry.networksFor(makeConnection())].sort()).toEqual([
-                'betanet',
-                'custom',
-                'mainnet',
-                'testnet',
-            ])
+            expect(registry.scopesFor(makeConnection())).toEqual(
+                configuredScopes(),
+            )
         })
 
         it('is empty for a kind with no registered handler', () => {
@@ -483,7 +487,7 @@ describe('createConnectionRegistry', () => {
             registry.register(makeHandler('alpha'))
 
             expect(
-                registry.networksFor(makeConnection({ kind: 'beta' })),
+                registry.scopesFor(makeConnection({ kind: 'beta' })),
             ).toEqual([])
         })
     })

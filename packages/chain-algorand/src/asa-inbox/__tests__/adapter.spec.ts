@@ -12,9 +12,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { algorandAssetInbox } from '../adapter'
 import { payloadTransactionOf } from '../../signing/__tests__/transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
@@ -68,7 +68,7 @@ describe('algorandAssetInbox', () => {
         mocks.fetchArc59AssetRequests.mockResolvedValue(requests)
 
         const result = await inbox.fetchRequests({
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             address: 'RECEIVER',
         })
 
@@ -87,7 +87,7 @@ describe('algorandAssetInbox', () => {
         })
 
         const result = await inbox.fetchSendSummary({
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             receiver: 'RECEIVER',
             assetId: '7',
         })
@@ -103,7 +103,7 @@ describe('algorandAssetInbox', () => {
 
     it("builds an inbox send with the scope's wallet client", async () => {
         const result = await inbox.buildSendTxs({
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             sender: 'SENDER',
             receiver: 'RECEIVER',
             assetId: 7n,
@@ -113,7 +113,10 @@ describe('algorandAssetInbox', () => {
         })
 
         expect(result.map(payloadTransactionOf)).toEqual(TXNS)
-        expect(result[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
+        expect(result[0].scope).toEqual({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         expect(mocks.createWalletAlgorandClient).toHaveBeenCalledWith('testnet')
         expect(mocks.buildArc59SendViaInboxTxs).toHaveBeenCalledWith(
             { algokit: CLIENT, network: 'testnet' },
@@ -131,7 +134,10 @@ describe('algorandAssetInbox', () => {
     it('refuses to build from a summary that fails the ARC-59 schema', async () => {
         await expect(
             inbox.buildSendTxs({
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 sender: 'SENDER',
                 receiver: 'RECEIVER',
                 assetId: 7n,
@@ -151,7 +157,10 @@ describe('algorandAssetInbox', () => {
             inboxAddress: 'INBOX',
             senderMinFee: 1000n,
         }
-        const scope = scopeForLegacyNetwork('mainnet')
+        const scope = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
 
         await inbox.buildClaimTxs({ scope, ...claim })
         await inbox.buildRejectTxs({

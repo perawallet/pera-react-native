@@ -12,10 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAssetSecurityTags } from '../useAssetSecurityTags'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 const mockAuthorities = vi.fn()
 const mockRequest = vi.fn()

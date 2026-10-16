@@ -15,7 +15,6 @@ import { afterAll, afterEach, beforeAll } from 'vitest'
 import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { broadcasterContractTests } from '@perawallet/wallet-core-signing/testing'
 import {
     mockAlgodPendingTransaction,
@@ -25,6 +24,7 @@ import {
 } from '../../test-handlers'
 import { algorandBroadcasterAdapter } from '../broadcaster'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const SENDER = generateAccount()
 const TXN = makeTestPaymentTx(SENDER.addr, {
@@ -49,7 +49,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 broadcasterContractTests(() => algorandBroadcasterAdapter, {
-    scope: scopeForLegacyNetwork('testnet'),
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
     signedTransactions: [TXN.signTxn(SENDER.sk)],
     txIds: [TX_ID],
     arrangeAccepted: () => {

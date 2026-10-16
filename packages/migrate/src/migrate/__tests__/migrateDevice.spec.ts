@@ -12,7 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { deviceStoreMock, settingsStoreMock } = vi.hoisted(() => ({
+const { deviceStoreMock, settingsStoreMock, storageKeyOf } = vi.hoisted(() => ({
+    storageKeyOf: (deployment: string) =>
+        deployment === 'live' ? 'algorand/mainnet' : 'algorand/testnet',
     deviceStoreMock: {
         setDeviceID: vi.fn(),
         setDeviceIdOrigin: vi.fn(),
@@ -24,14 +26,14 @@ const { deviceStoreMock, settingsStoreMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => deviceStoreMock },
-    deviceIdFor: (
+    deviceIdForDeployment: (
         state: { deviceIDs: Map<string, string | null> },
-        network: string,
-    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+        deployment: string,
+    ) => state.deviceIDs.get(storageKeyOf(deployment)) ?? null,
     deviceIdOriginFor: (
         state: { deviceIdOrigins: Record<string, string | undefined> },
-        network: string,
-    ) => state.deviceIdOrigins[`algorand/${network}`],
+        deployment: string,
+    ) => state.deviceIdOrigins[storageKeyOf(deployment)],
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -69,21 +71,18 @@ describe('migrateDeviceIdentifiers', () => {
         expect(settingsStoreMock.setPreference).not.toHaveBeenCalled()
     })
 
-    it('writes the mainnet device id under the mainnet network', () => {
+    it('writes the mainnet device id under the live deployment', () => {
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
-        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
-            'M1',
-        )
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('live', 'M1')
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(1)
     })
 
-    it('writes the testnet device id under the testnet network', () => {
+    it('writes the testnet device id under the developer deployment', () => {
         migrateDeviceIdentifiers(buildIdentifiers({ testnetDeviceId: 'T1' }))
 
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'testnet',
+            'developer',
             'T1',
         )
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(1)
@@ -94,8 +93,11 @@ describe('migrateDeviceIdentifiers', () => {
             buildIdentifiers({ mainnetDeviceId: 'M', testnetDeviceId: 'T' }),
         )
 
-        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('mainnet', 'M')
-        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('testnet', 'T')
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('live', 'M')
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'developer',
+            'T',
+        )
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(2)
     })
 
@@ -143,7 +145,7 @@ describe('migrateDeviceIdentifiers', () => {
             legacyFallbackDeviceId: 'LEGACY-1',
         })
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'LEGACY-1',
         )
     })
@@ -157,11 +159,11 @@ describe('migrateDeviceIdentifiers', () => {
             legacyFallbackDeviceId: 'LEGACY-1',
         })
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'MAIN-1',
         )
         expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'LEGACY-1',
         )
     })
@@ -172,11 +174,11 @@ describe('migrateDeviceIdentifiers', () => {
         )
 
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'migrated',
         )
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'testnet',
+            'developer',
             'migrated',
         )
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledTimes(2)
@@ -192,12 +194,12 @@ describe('migrateDeviceIdentifiers', () => {
         )
 
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'LEGACY-1',
         )
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(1)
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'migrated',
         )
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledTimes(1)
@@ -213,7 +215,7 @@ describe('migrateDeviceIdentifiers', () => {
 
         expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalled()
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'recreated',
         )
     })
@@ -228,12 +230,9 @@ describe('migrateDeviceIdentifiers', () => {
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
-        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
-            'M1',
-        )
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('live', 'M1')
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'migrated',
         )
     })
@@ -253,12 +252,9 @@ describe('migrateDeviceIdentifiers', () => {
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
-        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
-            'mainnet',
-            'M1',
-        )
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith('live', 'M1')
         expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
-            'mainnet',
+            'live',
             'migrated',
         )
     })

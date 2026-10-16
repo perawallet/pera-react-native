@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type {
+    ChainId,
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -53,7 +54,8 @@ export type CreateWalletConnectV1HandlerOptions = {
      * Injected rather than read from a store: a store default would drag the
      * blockchain package into every importer's module graph, `apps/browser` included.
      */
-    getNetwork: () => Network
+    chainId: ChainId
+    getNetworkId: (chainId: ChainId) => NetworkId
     /** Defaults to the keystore; the extension's offscreen document has none. */
     sessionKeys?: WalletConnectV1SessionKeyStore
     /** Defaults to the provider's key-value storage. */
@@ -64,7 +66,11 @@ export type CreateWalletConnectV1HandlerOptions = {
 export const createWalletConnectV1Handler = (
     options: CreateWalletConnectV1HandlerOptions,
 ): WalletConnectV1Handler => {
-    const { getNetwork } = options
+    const { chainId, getNetworkId } = options
+    const getScope = (): ChainScope => ({
+        chainId,
+        networkId: getNetworkId(chainId),
+    })
     const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()
     const answeredRequests =
         options.answeredRequests ??
@@ -92,13 +98,13 @@ export const createWalletConnectV1Handler = (
     const requests = createV1RequestHandlers({
         kit,
         connectors,
-        getNetwork,
+        getScope,
         answeredRequests,
     })
     const proposals = createV1ProposalHandlers({
         kit,
         connectors,
-        getNetwork,
+        getScope,
         sessionKeys,
         connectionFor: requests.connectionFor,
     })
@@ -212,9 +218,9 @@ export const createWalletConnectV1Handler = (
         restore,
 
         // Narrowed first: a malformed own-kind record must not throw here.
-        matchesNetwork: (connection, network) =>
+        matchesChainScope: (connection, scope) =>
             isWalletConnectV1Connection(connection) &&
-            isV1ChainIdAcceptable(connection.metadata.chainId, network),
+            isV1ChainIdAcceptable(connection.metadata.chainId, scope),
 
         methodsFor: connection =>
             isWalletConnectV1Connection(connection)

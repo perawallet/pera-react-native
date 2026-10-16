@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'device-id',
+    useDeploymentDeviceID: () => 'device-id',
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({

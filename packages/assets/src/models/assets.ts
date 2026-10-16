@@ -12,12 +12,12 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { type Network } from '@perawallet/wallet-core-config'
 
 import type { PeraCollectible } from './collectibles'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -116,8 +116,8 @@ export type PeraAssetMetadata = {
     isPriceAlertEnabled?: boolean
 }
 
-const legacyScopeKey = (network: Network): ChainScopeKey =>
-    toScopeKey(scopeForLegacyNetwork(network))
+const legacyScopeKey = (networkId: NetworkId): ChainScopeKey =>
+    toScopeKey({ chainId: LEGACY_CHAIN_ID, networkId })
 
 /**
  * Every declared network has an explicit entry, `null` included, so a network

@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchDelegationToken,
     fetchExternalWallets,
@@ -25,6 +24,7 @@ import {
 } from '../endpoints'
 import { AutoDrawDelegationRejectedError } from '../errors'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -113,7 +113,10 @@ describe('postDelegationApproval', () => {
         signature: 'c2ln',
         token: 'ABC_tok',
     }
-    const params = { scope: scopeForLegacyNetwork('testnet'), ...approval }
+    const params = {
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        ...approval,
+    }
 
     it("POSTs the chain adapter's route and body on the direct route with the user Bearer", async () => {
         const adapter = registerFakeCardAdapter({
@@ -178,7 +181,7 @@ describe('postDelegationApproval', () => {
 describe('postCardDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = scopeForLegacyNetwork('testnet')
+    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },
@@ -225,7 +228,7 @@ describe('postCardDelegation', () => {
 describe('postAutoDrawDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = scopeForLegacyNetwork('testnet')
+    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },

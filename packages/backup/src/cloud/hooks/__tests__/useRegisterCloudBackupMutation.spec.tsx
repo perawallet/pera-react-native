@@ -55,11 +55,11 @@ vi.mock('../../store/draftStore', () => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: deviceIdMock,
+    useDeploymentDeviceID: deviceIdMock,
 }))
 
 import { isExpectedError } from '@perawallet/wallet-core-shared'
@@ -107,7 +107,6 @@ describe('useRegisterCloudBackupMutation', () => {
             mnemonic: MNEMONIC,
             salt: SALT,
             deviceId: 'device-123',
-            network: 'mainnet',
         })
         expect(setRegistrationMock).toHaveBeenCalledWith(
             {

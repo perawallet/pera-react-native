@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    ChainId,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     LocalAccount,
     WalletAccount,
@@ -235,7 +238,6 @@ export type PasskeyImportFn = (
 export type SettingsImportFn = (settings: Partial<BackupSettings>) => void
 
 export type SyncEngineDeps = {
-    network: Network
     backupId: BackupId
     deviceId: DeviceId
     /** AES-256-GCM item key; held only for the duration of one sync run. */
@@ -271,7 +273,7 @@ export type SyncEngineDeps = {
 
 /** The wallet state the sync manager reads and watches but does not own. */
 export type BackupSyncSources = {
-    getNetwork: () => Network
+    getDeployment: () => WalletMode
     listAccounts: () => WalletAccount[]
     /** Fires on every accounts change; the manager diffs by fingerprint. */
     subscribeAccounts: (
@@ -289,7 +291,7 @@ export type BackupSyncSources = {
 /** The backup's own persisted state, which the sync manager reads and writes. */
 export type BackupSyncStatePort = {
     getBackupId: () => Nullable<BackupId>
-    getDeviceId: (network: Network) => Nullable<DeviceId>
+    getDeviceId: (deployment: WalletMode) => Nullable<DeviceId>
     getSyncState: () => Nullable<SyncState>
     setSyncState: (state: SyncState) => void
     setIsSyncing: (isSyncing: boolean) => void

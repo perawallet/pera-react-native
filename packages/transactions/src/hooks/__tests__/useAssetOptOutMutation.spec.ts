@@ -43,9 +43,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchOnChainAsset: (...args: unknown[]) => mockFetchOnChainAsset(...args),

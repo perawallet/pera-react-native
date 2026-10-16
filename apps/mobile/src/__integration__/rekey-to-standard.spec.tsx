@@ -57,7 +57,6 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToStandardIntroScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardIntroScreen'
 import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
@@ -70,8 +69,12 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // The rekey txn is sent + signed by the source; the target only contributes
 // its address. A fake `keyPairId` is enough for the target to pass

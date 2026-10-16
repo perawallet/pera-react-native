@@ -50,8 +50,8 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 })
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useCreateAndApproveCardMutation } from '../useCreateAndApproveCardMutation'
 import { useCardStore } from '../../store'
@@ -68,7 +68,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('testnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 const ADDRESS = 'FUNDINGADDR'
