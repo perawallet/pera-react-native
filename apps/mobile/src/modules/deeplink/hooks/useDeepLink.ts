@@ -20,6 +20,7 @@ import {
     DeeplinkType,
     isNotificationAllowedDeeplinkType,
     isPeraOwnedDeeplink,
+    linkTargetOf,
     resolveChainDeeplink,
     type BuildDeeplinkInput,
     type LinkSource,
@@ -100,7 +101,10 @@ const isUnsupportedChainLink = (url: string): boolean => {
 }
 
 const isRoutableLink = (link: AppDeeplink): boolean => {
-    const target = 'target' in link ? link.target : undefined
+    if (isDevLocaleTourDeeplink(link)) {
+        return true
+    }
+    const target = linkTargetOf(link)
     return !target || ROUTABLE_LINK_CHAINS.has(target.chainId)
 }
 

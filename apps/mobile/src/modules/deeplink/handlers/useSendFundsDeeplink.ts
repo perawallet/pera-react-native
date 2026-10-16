@@ -19,8 +19,7 @@ export type SendFundsDeeplinkPrefill = {
     assetId?: string
     destination?: string
     /**
-     * Display-units amount. Set when the deeplink already carries enough
-     * info to convert (native base units → display units). Lands on
+     * Display-units amount, set by callers that already have it. Lands on
      * `useSendFundsStore.amount`.
      */
     amount?: Decimal
