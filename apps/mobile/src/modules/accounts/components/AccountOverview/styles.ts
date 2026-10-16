@@ -51,7 +51,6 @@ export const useStyles = makeStyles(theme => {
         dateTimeColumn: {
             alignItems: 'flex-end',
             flexShrink: 0,
-            maxWidth: '45%',
             minWidth: 0,
         },
         dateDisplay: {
