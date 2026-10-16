@@ -56,6 +56,12 @@ export const createMultisigStrategy = (
                 )
             }
 
+            if (group.data.type === 'message') {
+                throw new SigningError(
+                    'Multisig signing of messages is not supported',
+                )
+            }
+
             const allAccounts = getAllAccounts()
             const multisigAccount = resolveAuthAccount(
                 account,

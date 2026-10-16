@@ -1,0 +1,172 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it } from 'vitest'
+import { stringToHex } from 'viem'
+import { MAIL_TYPED_DATA, SENDER } from '../../signing/__tests__/fixtures'
+import { validateEthereumMessagePayload } from '../messageParams'
+import { ETHEREUM_WC_V2_METHOD } from '../walletConnect'
+
+const LOWERCASE_SENDER = SENDER.toLowerCase()
+const OTHER = '0x0000000000000000000000000000000000000001'
+
+const validate = (
+    type: 'sign-message' | 'sign-typed-data',
+    params: unknown,
+    authorizedAccounts: readonly string[] = [SENDER],
+) => validateEthereumMessagePayload(type, params, authorizedAccounts)
+
+describe('validateEthereumMessagePayload: personal_sign', () => {
+    it('reads [message, address]', () => {
+        const result = validate('sign-message', ['0x68656c6c6f', SENDER])
+
+        expect(result).toEqual({
+            ok: true,
+            request: {
+                method: ETHEREUM_WC_V2_METHOD.personalSign,
+                signer: SENDER,
+                payload: { message: '0x68656c6c6f' },
+            },
+        })
+    })
+
+    it('signs a plain-text message as its UTF-8 bytes', () => {
+        const result = validate('sign-message', ['hello world', SENDER])
+
+        expect(result).toMatchObject({
+            ok: true,
+            request: { payload: { message: stringToHex('hello world') } },
+        })
+    })
+
+    it('signs odd-length hex as text, since it is not whole bytes', () => {
+        const result = validate('sign-message', ['0xabc', SENDER])
+
+        expect(result).toMatchObject({
+            ok: true,
+            request: { payload: { message: stringToHex('0xabc') } },
+        })
+    })
+
+    it('refuses the swapped order [address, message]', () => {
+        const result = validate('sign-message', [SENDER, 'hello world'])
+
+        expect(result.ok).toBe(false)
+    })
+
+    it('hands the signer back checksummed', () => {
+        const result = validate('sign-message', [
+            '0x68656c6c6f',
+            LOWERCASE_SENDER,
+        ])
+
+        expect(result).toMatchObject({ ok: true, request: { signer: SENDER } })
+    })
+
+    it.each([
+        ['a missing address', ['0x68656c6c6f']],
+        ['a malformed address', ['0x68656c6c6f', '0x1234']],
+        ['a non-string message', [42, SENDER]],
+        ['no params at all', []],
+    ])('refuses %s', (_label, params) => {
+        expect(validate('sign-message', params).ok).toBe(false)
+    })
+
+    it('refuses params that are not an array', () => {
+        expect(
+            validate('sign-message', {
+                message: 'x',
+                address: SENDER,
+            }).ok,
+        ).toBe(false)
+    })
+})
+
+describe('validateEthereumMessagePayload: eth_signTypedData_v4', () => {
+    it('reads [address, typedData] with the typed data as a JSON string', () => {
+        const result = validate('sign-typed-data', [
+            SENDER,
+            JSON.stringify(MAIL_TYPED_DATA),
+        ])
+
+        expect(result).toEqual({
+            ok: true,
+            request: {
+                method: ETHEREUM_WC_V2_METHOD.signTypedDataV4,
+                signer: SENDER,
+                payload: { typedData: MAIL_TYPED_DATA },
+            },
+        })
+    })
+
+    it('takes the typed data as an object too', () => {
+        const result = validate('sign-typed-data', [SENDER, MAIL_TYPED_DATA])
+
+        expect(result).toMatchObject({
+            ok: true,
+            request: { payload: { typedData: MAIL_TYPED_DATA } },
+        })
+    })
+
+    it('refuses the swapped order [typedData, address]', () => {
+        const result = validate('sign-typed-data', [
+            JSON.stringify(MAIL_TYPED_DATA),
+            SENDER,
+        ])
+
+        expect(result.ok).toBe(false)
+    })
+
+    it('hands the signer back checksummed', () => {
+        const result = validate('sign-typed-data', [
+            LOWERCASE_SENDER,
+            MAIL_TYPED_DATA,
+        ])
+
+        expect(result).toMatchObject({ ok: true, request: { signer: SENDER } })
+    })
+
+    it.each([
+        ['invalid JSON', [SENDER, '{not json']],
+        ['a JSON array', [SENDER, '[1, 2]']],
+        ['a JSON scalar', [SENDER, '"text"']],
+        ['a missing address', [undefined, MAIL_TYPED_DATA]],
+        ['a malformed address', ['nope', MAIL_TYPED_DATA]],
+    ])('refuses %s', (_label, params) => {
+        expect(validate('sign-typed-data', params).ok).toBe(false)
+    })
+})
+
+describe('validateEthereumMessagePayload: session accounts', () => {
+    it.each([
+        ['sign-message', ['0x68656c6c6f', SENDER]],
+        ['sign-typed-data', [SENDER, MAIL_TYPED_DATA]],
+    ] as const)(
+        'refuses a %s signer outside the session as unauthorized-account',
+        (type, params) => {
+            expect(validate(type, params, [OTHER])).toMatchObject({
+                ok: false,
+                failure: 'unauthorized-account',
+            })
+        },
+    )
+
+    it('matches a lowercase session account to a checksummed signer', () => {
+        expect(
+            validate(
+                'sign-message',
+                ['0x68656c6c6f', SENDER],
+                [LOWERCASE_SENDER],
+            ).ok,
+        ).toBe(true)
+    })
+})

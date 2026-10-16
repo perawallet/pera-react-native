@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Um app enviou uma solicitação que a Pera não conseguiu entender. Verifique o app e tente novamente.",
             "no_handler": "A Pera não conseguiu processar esta solicitação de conexão. Verifique o app e tente novamente.",
+            "unauthorized_account": "Um app pediu para assinar com uma conta que não faz parte da sua conexão.",
             "unknown_connection": "A Pera não encontrou essa conexão. Ela pode já ter sido desconectada.",
             "duplicate_kind": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
             "already_initialized": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",

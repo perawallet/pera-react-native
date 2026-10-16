@@ -16,6 +16,7 @@ import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumKindIdOf } from '../accounts/local-key-kinds'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
+import { validateEthereumMessagePayload } from './messageParams'
 import {
     buildEthereumSendTransaction,
     validateEthereumSendTransaction,
@@ -58,6 +59,8 @@ export const createEthereumDappRequestAdapter = (
         ok: false,
         message: NO_TRANSACTION_GROUP,
     }),
+
+    validateMessagePayload: validateEthereumMessagePayload,
 
     useEnqueueTransactionSigning: () => refuseTransactionGroup,
 

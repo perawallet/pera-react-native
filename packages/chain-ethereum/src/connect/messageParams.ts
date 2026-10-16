@@ -1,0 +1,132 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { isAddress, isHex, stringToHex } from 'viem'
+import type {
+    DappMessageRequest,
+    DappRequestChainAdapter,
+    DappRequestValidation,
+} from '@perawallet/wallet-core-connections'
+import { ethereumAddressCodec } from '../accounts/address-codec'
+import { isRecord } from '../signing/adapter'
+import type { EthereumPersonalSignPayload } from '../signing/messages'
+import { ETHEREUM_WC_V2_METHOD } from './walletConnect'
+
+type MessageValidation = DappRequestValidation<DappMessageRequest>
+type Refusal = Extract<MessageValidation, { ok: false }>
+
+const invalid = (message: string): Refusal => ({
+    ok: false,
+    failure: 'invalid-params',
+    message,
+})
+
+// Non-strict: a lowercase address is common, and its missing checksum is not a refusal.
+const addressOf = (value: unknown): string | undefined =>
+    typeof value === 'string' && isAddress(value, { strict: false })
+        ? ethereumAddressCodec.normalize(value)
+        : undefined
+
+const signerOf = (
+    value: unknown,
+    authorizedAccounts: readonly string[],
+    usage: string,
+): { ok: true; signer: string } | Refusal => {
+    const signer = addressOf(value)
+    if (signer === undefined) return invalid(usage)
+    if (
+        !authorizedAccounts.some(account =>
+            ethereumAddressCodec.areEqual(account, signer),
+        )
+    ) {
+        return {
+            ok: false,
+            failure: 'unauthorized-account',
+            message: 'The signer is not an account of this session',
+        }
+    }
+    return { ok: true, signer }
+}
+
+// `0x` plus whole bytes is the bytes themselves; anything else is text.
+const messageHexOf = (message: string): `0x${string}` =>
+    isHex(message, { strict: true }) && message.length % 2 === 0
+        ? message
+        : stringToHex(message)
+
+const parseTypedData = (value: unknown): unknown => {
+    if (typeof value !== 'string') return value
+    try {
+        return JSON.parse(value)
+    } catch {
+        return undefined
+    }
+}
+
+const validatePersonalSign = (
+    params: readonly unknown[],
+    authorizedAccounts: readonly string[],
+): MessageValidation => {
+    const usage = 'personal_sign expects [message, address]'
+    const [message, address] = params
+    if (typeof message !== 'string') return invalid(usage)
+    const signer = signerOf(address, authorizedAccounts, usage)
+    if (!signer.ok) return signer
+    return {
+        ok: true,
+        request: {
+            method: ETHEREUM_WC_V2_METHOD.personalSign,
+            signer: signer.signer,
+            payload: {
+                message: messageHexOf(message),
+            } satisfies EthereumPersonalSignPayload,
+        },
+    }
+}
+
+const validateSignTypedData = (
+    params: readonly unknown[],
+    authorizedAccounts: readonly string[],
+): MessageValidation => {
+    const [address, rawTypedData] = params
+    const signer = signerOf(
+        address,
+        authorizedAccounts,
+        'eth_signTypedData_v4 expects [address, typedData]',
+    )
+    if (!signer.ok) return signer
+    const typedData = parseTypedData(rawTypedData)
+    if (!isRecord(typedData) || Array.isArray(typedData)) {
+        return invalid('eth_signTypedData_v4 typedData is not an object')
+    }
+    return {
+        ok: true,
+        request: {
+            method: ETHEREUM_WC_V2_METHOD.signTypedDataV4,
+            signer: signer.signer,
+            // The shape is left to the message signer's `plan`.
+            payload: { typedData },
+        },
+    }
+}
+
+export const validateEthereumMessagePayload: NonNullable<
+    DappRequestChainAdapter['validateMessagePayload']
+> = (type, params, authorizedAccounts) => {
+    if (!Array.isArray(params)) {
+        return invalid('Message params must be an array')
+    }
+    const positional: unknown[] = params
+    return type === 'sign-message'
+        ? validatePersonalSign(positional, authorizedAccounts)
+        : validateSignTypedData(positional, authorizedAccounts)
+}

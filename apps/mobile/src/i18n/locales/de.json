@@ -1164,6 +1164,7 @@
         "connections": {
             "invalid_payload": "Eine App hat eine Anfrage gesendet, die Pera nicht verstehen konnte. Bitte überprüfe die App und versuche es erneut.",
             "no_handler": "Pera konnte diese Verbindungsanfrage nicht verarbeiten. Bitte überprüfe die App und versuche es erneut.",
+            "unauthorized_account": "Eine App wollte mit einem Konto signieren, das nicht zu ihrer Verbindung gehört.",
             "unknown_connection": "Pera konnte diese Verbindung nicht finden. Möglicherweise wurde sie bereits getrennt.",
             "duplicate_kind": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",
             "already_initialized": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",

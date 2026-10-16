@@ -38,7 +38,7 @@ const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, I18nKey> = {
     // same "nobody can answer this" as no-handler; no new locale copy needed.
     'unsupported-chain': i18nKey('errors.connections.no_handler'),
     'unsupported-operation': i18nKey('errors.connections.no_handler'),
-    'unauthorized-account': i18nKey('errors.connections.invalid_payload'),
+    'unauthorized-account': i18nKey('errors.connections.unauthorized_account'),
     'unknown-connection': i18nKey('errors.connections.unknown_connection'),
     'duplicate-kind': i18nKey('errors.connections.duplicate_kind'),
     'already-initialized': i18nKey('errors.connections.already_initialized'),

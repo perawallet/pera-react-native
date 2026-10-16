@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "An app sent a request Pera couldn't understand. Please check the app and try again.",
             "no_handler": "Pera couldn't handle this connection request. Please check the app and try again.",
+            "unauthorized_account": "An app asked to sign with an account that isn't part of its connection.",
             "unknown_connection": "Pera couldn't find that connection. It may have already been disconnected.",
             "duplicate_kind": "Something went wrong setting up app connections. Please restart Pera and try again.",
             "already_initialized": "Something went wrong setting up app connections. Please restart Pera and try again.",

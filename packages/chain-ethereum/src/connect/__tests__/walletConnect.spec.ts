@@ -156,6 +156,17 @@ describe('toWireResult', () => {
         ).toBe('0xabc')
     })
 
+    it.each(['sign-message', 'sign-typed-data'] as const)(
+        'answers a %s result as 0x-prefixed hex of the 65 signature bytes',
+        type => {
+            const signature = new Uint8Array(65).fill(0xab)
+
+            expect(support.toWireResult({ type, signature })).toBe(
+                `0x${'ab'.repeat(65)}`,
+            )
+        },
+    )
+
     it('throws for a result kind Ethereum does not serve', () => {
         expect(() =>
             support.toWireResult({ type: 'sign-data', signatures: [] }),

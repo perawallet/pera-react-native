@@ -29,10 +29,12 @@ import {
     isFeeAdjustmentDeliveryError,
     isSignRequestPastApproval,
     isSignRequestPending,
+    messageSignerChainAdapters,
     useSigningRequest,
     type AuthDataSignRequest,
     type AuthDataSignableData,
     type ArbitraryDataSignRequest,
+    type MessageSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
@@ -54,7 +56,13 @@ import {
     type EnqueueTransactionSigning,
 } from './dappRequest'
 import { pendingCapacityBreach } from './capacity'
-import type { ConnectionErrorScope, InboundMessage } from './models'
+import { ConnectionsError } from './errors'
+import type {
+    ConnectionErrorScope,
+    DappMessageRequest,
+    InboundMessage,
+    MessageOperationType,
+} from './models'
 import type { ConnectionRegistry } from './registry'
 
 /**
@@ -255,13 +263,35 @@ type DataSignPayload =
     | Pick<AuthDataSignRequest, 'type' | 'authData' | 'metadata'>
     | Pick<ArbitraryDataSignRequest, 'type' | 'data'>
 
+const requestLifecycle = (
+    message: RequestMessage,
+    deps: EnqueueInboundRequestDeps,
+    getSignRequest: () => SignRequest,
+): Pick<MessageSignRequest, 'reject' | 'error'> => ({
+    reject: async (reason: RejectReason = { kind: 'user' }) => {
+        forgetRequest(deps, message)
+        if (reason.kind === 'softReject') {
+            await message.reject(reason.error)
+            deps.removeSignRequest(getSignRequest())
+            return
+        }
+        rejectInBackground(message, new DappRequestRejectedError())
+    },
+    error: async (error: Error) => {
+        if (failRequest(message, error, deps.onError)) {
+            forgetRequest(deps, message)
+            deps.removeSignRequest(getSignRequest())
+        }
+    },
+})
+
 // ARC-60 and legacy arbitrary-data requests share one wire answer.
 const enqueueDataSignRequest = (
     message: RequestMessage,
     payload: DataSignPayload,
     deps: EnqueueInboundRequestDeps,
 ): void => {
-    const { addSignRequest, removeSignRequest, onError } = deps
+    const { addSignRequest } = deps
     const signRequest: AuthDataSignRequest | ArbitraryDataSignRequest = {
         ...payload,
         id: generateOrderedUniqueId(),
@@ -278,21 +308,70 @@ const enqueueDataSignRequest = (
             })
             forgetRequest(deps, message)
         },
-        reject: async (reason: RejectReason = { kind: 'user' }) => {
+        ...requestLifecycle(message, deps, () => signRequest),
+    }
+    addSignRequest(signRequest)
+    trackRequest(deps, message, signRequest)
+}
+
+// The chain's `plan` runs once here so a payload it refuses (a malformed
+// document, one bound to another network) never reaches a review.
+const enqueueMessageRequest = (
+    message: RequestMessage,
+    type: MessageOperationType,
+    request: DappMessageRequest,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { accounts, addSignRequest, onError } = deps
+    const { chainId } = message
+    const scope = getSelectedScope(chainId)
+    const kind = type === 'sign-typed-data' ? 'typedData' : 'message'
+
+    const account = findAccountByAddressOn(accounts, chainId, request.signer)
+    if (!account || !canSignMessage(chainId, account, kind)) {
+        declineRequest(
+            message,
+            new Error('Signer cannot sign this message'),
+            onError,
+        )
+        return
+    }
+
+    const messageRequest = { ...request, scope }
+    try {
+        messageSignerChainAdapters
+            .get(chainId)
+            .plan(messageRequest, { account, accounts })
+    } catch (error) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'invalid-payload',
+                toError(error).message,
+                toError(error),
+            ),
+            onError,
+        )
+        return
+    }
+
+    const signRequest: MessageSignRequest = {
+        id: generateOrderedUniqueId(),
+        type: 'message',
+        message: messageRequest,
+        transport: 'callback',
+        sourceType: message.sourceType,
+        transportId: message.connectionId,
+        sourceMetadata: message.peer,
+        verifiedOrigin: message.verifiedOrigin,
+        approve: async signed => {
+            await message.respond({
+                type,
+                signature: signed.signature.bytes,
+            })
             forgetRequest(deps, message)
-            if (reason.kind === 'softReject') {
-                await message.reject(reason.error)
-                removeSignRequest(signRequest)
-                return
-            }
-            rejectInBackground(message, new DappRequestRejectedError())
         },
-        error: async (error: Error) => {
-            if (failRequest(message, error, onError)) {
-                forgetRequest(deps, message)
-                removeSignRequest(signRequest)
-            }
-        },
+        ...requestLifecycle(message, deps, () => signRequest),
     }
     addSignRequest(signRequest)
     trackRequest(deps, message, signRequest)
@@ -442,7 +521,7 @@ const enqueueSendTransactionRequest = (
     request: unknown,
     deps: EnqueueInboundRequestDeps,
 ): void => {
-    const { addSignRequest, removeSignRequest, onError } = deps
+    const { addSignRequest, onError } = deps
     const sending = dappRequestChainAdapters.get(
         message.chainId,
     ).sendTransaction
@@ -491,24 +570,7 @@ const enqueueSendTransactionRequest = (
                         })
                         forgetRequest(deps, message)
                     },
-                    reject: async (reason: RejectReason = { kind: 'user' }) => {
-                        forgetRequest(deps, message)
-                        if (reason.kind === 'softReject') {
-                            await message.reject(reason.error)
-                            removeSignRequest(signRequest)
-                            return
-                        }
-                        rejectInBackground(
-                            message,
-                            new DappRequestRejectedError(),
-                        )
-                    },
-                    error: async (error: Error) => {
-                        if (failRequest(message, error, onError)) {
-                            forgetRequest(deps, message)
-                            removeSignRequest(signRequest)
-                        }
-                    },
+                    ...requestLifecycle(message, deps, () => signRequest),
                 }
                 addSignRequest(signRequest)
                 settleTrackedRequest(deps, message, signRequest)
@@ -664,6 +726,16 @@ export const enqueueInboundRequest = (
     }
 
     // The operation union is closed; the only remaining case is 'sign-data'.
+    if (message.operation.type !== 'sign-data') {
+        enqueueMessageRequest(
+            message,
+            message.operation.type,
+            message.operation.request,
+            deps,
+        )
+        return
+    }
+
     enqueueSignDataRequest(message, message.operation.payload, deps)
 }
 

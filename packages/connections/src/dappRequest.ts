@@ -25,7 +25,12 @@ import type {
     ExternalSignTxnTransport,
     SignRequest,
 } from '@perawallet/wallet-core-signing'
-import type { WalletOperationResult, WalletOperationType } from './models'
+import type {
+    DappMessageRequest,
+    MessageOperationType,
+    WalletOperationResult,
+    WalletOperationType,
+} from './models'
 
 /**
  * Why a dApp request failed, in no chain's wire vocabulary. A namespace's
@@ -95,7 +100,8 @@ export type EnqueueTransactionSigning = (
     transport: ExternalSignTxnTransport,
 ) => Promise<Nullable<SignRequest>>
 
-export type DappSendTransactionValidation<Request = unknown> =
+/** A chain's verdict on a dApp request object, the session-account check included. */
+export type DappRequestValidation<Request = unknown> =
     | { ok: true; request: Request }
     | {
           ok: false
@@ -113,7 +119,7 @@ export interface DappTransactionSending {
     validate(
         params: unknown,
         authorizedAccounts: readonly string[],
-    ): DappSendTransactionValidation
+    ): DappRequestValidation
     /** Prices on the chain's selected network and rejects when the node can't. */
     build(request: unknown): Promise<UnsignedTransaction>
 }
@@ -220,6 +226,16 @@ export interface DappRequestChainAdapter {
     ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
     /** Omitted by a chain whose dApps send no transaction for the wallet to build. */
     readonly sendTransaction?: DappTransactionSending
+    /**
+     * Parses a `sign-message` or `sign-typed-data` request's params. The
+     * signer comes back in the chain's canonical spelling. Omitted by a chain
+     * that serves no dApp message.
+     */
+    validateMessagePayload?(
+        type: MessageOperationType,
+        params: unknown,
+        authorizedAccounts: readonly string[],
+    ): DappRequestValidation<DappMessageRequest>
     useEnqueueTransactionSigning: () => EnqueueTransactionSigning
     /**
      * The account kind the dApp bridge reports for `account` on `scope`, rekey

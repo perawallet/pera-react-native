@@ -53,6 +53,7 @@ export type SigningStackParamList = {
     ArbitraryDataSigningDetails: { message: PeraArbitraryDataMessage }
     Arc60Signing: undefined
     Arc60SigningDetails: undefined
+    MessageSigning: undefined
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =

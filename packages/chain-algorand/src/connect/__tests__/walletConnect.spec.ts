@@ -245,6 +245,15 @@ describe('toWireResult', () => {
             }),
         ).toEqual(['AQID'])
     })
+
+    it('answers no message request', () => {
+        expect(() =>
+            support.toWireResult({
+                type: 'sign-message',
+                signature: new Uint8Array([1]),
+            }),
+        ).toThrow('Algorand routes no sign-message request')
+    })
 })
 
 describe('createAlgorandWalletConnectV2Support', () => {

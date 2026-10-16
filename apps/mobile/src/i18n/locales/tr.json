@@ -1172,6 +1172,7 @@
         "connections": {
             "invalid_payload": "Bir uygulama, Pera'nın anlayamadığı bir istek gönderdi. Uygulamayı kontrol et ve tekrar dene.",
             "no_handler": "Pera bu bağlantı isteğini işleyemedi. Uygulamayı kontrol et ve tekrar dene.",
+            "unauthorized_account": "Bir uygulama, bağlantısına dahil olmayan bir hesapla imzalamak istedi.",
             "unknown_connection": "Pera bu bağlantıyı bulamadı. Bağlantı zaten kesilmiş olabilir.",
             "duplicate_kind": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
             "already_initialized": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",

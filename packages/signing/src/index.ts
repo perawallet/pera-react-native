@@ -78,6 +78,7 @@ export {
 export {
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isTransactionRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
@@ -90,6 +91,7 @@ export {
     type AuthDataSignRequest,
     type FeeAdjustment,
     type FeeAdjustmentReason,
+    type MessageSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequest,

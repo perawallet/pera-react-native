@@ -61,6 +61,7 @@ const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
 const mockIsSignRequestPending = vi.fn((_id: string) => true)
 const mockIsSignRequestPastApproval = vi.fn((_id: string) => false)
+const mockPlan = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
@@ -85,6 +86,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         (kind === 'authData'
             ? account.canArc60 === true
             : account.canSignData === true),
+    messageSignerChainAdapters: { get: () => ({ plan: mockPlan }) },
     // Mirrors the real predicate: the class name, or the marker the
     // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
@@ -1472,6 +1474,220 @@ describe('useConnectionSigningAdapter', () => {
                     { signer: PRIMARY_SIGNER, signature: new Uint8Array([9]) },
                 ]),
             ).rejects.toThrow('socket dead')
+        })
+    })
+
+    describe('message', () => {
+        const MESSAGE_PAYLOAD = { message: '0x68656c6c6f' }
+
+        const messageRequest = (
+            type: 'sign-message' | 'sign-typed-data' = 'sign-message',
+            signer = PRIMARY_SIGNER,
+        ) => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '11',
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: [PRIMARY_SIGNER],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation: {
+                type,
+                request: {
+                    method: type === 'sign-message' ? 'plain' : 'structured',
+                    signer,
+                    payload: MESSAGE_PAYLOAD,
+                },
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const enqueuedSignRequest = () =>
+            mockAddSignRequest.mock.calls.at(-1)?.[0]
+
+        beforeEach(() => {
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: true })]
+            mockPlan.mockReset()
+        })
+
+        it('enqueues a message request on the selected scope, carrying the peer', () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+
+            send(messageRequest())
+
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            expect(enqueuedSignRequest()).toMatchObject({
+                type: 'message',
+                transport: 'callback',
+                sourceType: 'walletconnect',
+                transportId: 'c1',
+                sourceMetadata: PEER,
+                verifiedOrigin: 'https://dapp.example',
+                message: {
+                    method: 'plain',
+                    signer: PRIMARY_SIGNER,
+                    payload: MESSAGE_PAYLOAD,
+                    scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                },
+            })
+        })
+
+        it.each(['sign-message', 'sign-typed-data'] as const)(
+            'plans a %s once as a pre-check',
+            type => {
+                const { registry, send } = makeRegistry()
+                renderHook(() =>
+                    useConnectionSigningAdapter(registry, CHAIN_ID),
+                )
+
+                send(messageRequest(type))
+
+                expect(mockPlan).toHaveBeenCalledTimes(1)
+            },
+        )
+
+        it('answers the peer with the assembled signature bytes', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest('sign-typed-data')
+            send(message)
+            const bytes = new Uint8Array([7, 7, 7])
+
+            await enqueuedSignRequest().approve({
+                scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                signature: { bytes },
+            })
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'sign-typed-data',
+                signature: bytes,
+            })
+        })
+
+        it('propagates a delivery failure from respond', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            message.respond.mockRejectedValueOnce(new Error('socket closed'))
+            send(message)
+
+            await expect(
+                enqueuedSignRequest().approve({
+                    scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                    signature: { bytes: new Uint8Array([1]) },
+                }),
+            ).rejects.toThrow('socket closed')
+        })
+
+        it('rejects the peer with DappRequestRejectedError when the user declines', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+
+            await enqueuedSignRequest().reject()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+            expect(message.reject.mock.calls[0][0].message).toBe(
+                'User rejected',
+            )
+        })
+
+        it('hands a soft reject to the peer as given and withdraws the request', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+            const handoff = new Error('handed off')
+
+            await enqueuedSignRequest().reject({
+                kind: 'softReject',
+                error: handoff,
+            })
+
+            expect(message.reject).toHaveBeenCalledWith(handoff)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(
+                enqueuedSignRequest(),
+            )
+        })
+
+        it('answers and withdraws on an error the machine cannot retry', async () => {
+            const { registry, send, reportError } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+            const failure = new Error('key store is gone')
+
+            await enqueuedSignRequest().error(failure)
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalled()
+            expect(mockRemoveSignRequest).toHaveBeenCalled()
+        })
+
+        it('declines a signer that cannot sign, with nothing enqueued', () => {
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: false })]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockPlan).not.toHaveBeenCalled()
+        })
+
+        it('declines a signer the wallet does not hold, with nothing enqueued', () => {
+            mockAccounts = []
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('declines a payload the chain plan refuses as invalid-payload, with nothing enqueued', () => {
+            mockPlan.mockImplementation(() => {
+                throw new Error('The payload is for another network')
+            })
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest('sign-typed-data')
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    code: 'invalid-payload',
+                    message: 'The payload is for another network',
+                }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('withdraws the request when the peer stops waiting', () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(messageRequest())
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '11',
+            })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(
+                enqueuedSignRequest(),
+            )
         })
     })
 
