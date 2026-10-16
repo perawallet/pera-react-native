@@ -115,7 +115,7 @@
     "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }],
     "unicorn/switch-case-braces": "error",
     "unicorn/numeric-separators-style": "error",
-    "pera/no-algorand-sdk-imports": "warn",
+    "pera/no-algorand-sdk-imports": "error",
     "pera/no-i18n-key-cast": "error"
   },
   "overrides": [
@@ -239,6 +239,10 @@
     },
     {
       "files": ["packages/chain-algorand/**"],
+      "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["conformance/**"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     },
     {

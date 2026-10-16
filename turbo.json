@@ -128,6 +128,50 @@
         "vitest.setup.ts"
       ]
     },
+    "@perawallet/wallet-core-chain-contract#test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "package.json",
+        "$TURBO_ROOT$/pnpm-workspace.yaml",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/extensions/*/package.json",
+        "$TURBO_ROOT$/conformance/package.json"
+      ]
+    },
+    "@perawallet/wallet-core-chain-contract#test:unit": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "package.json",
+        "$TURBO_ROOT$/pnpm-workspace.yaml",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/extensions/*/package.json",
+        "$TURBO_ROOT$/conformance/package.json"
+      ]
+    },
     "test:watch": {
       "cache": false,
       "persistent": true

@@ -53,7 +53,6 @@ const ALLOWED_CHAIN_PACKAGES = new Set([
 
 const isForbidden = (name: string): boolean =>
     name === 'algosdk' ||
-    name === '@perawallet/wallet-core-blockchain' ||
     (name.startsWith('@perawallet/wallet-core-chain-') &&
         !ALLOWED_CHAIN_PACKAGES.has(name))
 

@@ -49,7 +49,7 @@ const SOURCE = {
  * 2. Already opted in → no-op.
  * 3. Not opted in + enough spare ALGO → self-funded opt-in.
  * 4. Not opted in + insufficient ALGO → fee-delegated opt-in via
- *    `@perawallet/wallet-core-fee-delegation` (sponsor covers fees + MBR;
+ *    `../fee-delegation` (sponsor covers fees + MBR;
  *    requires a valid device attestation token, throws the onramp's
  *    `RampAttestationRequiredError` otherwise). The opt-in itself is built
  *    with a zero fee — the sponsor tops the group's fee pool up to the full
