@@ -89,7 +89,7 @@ export const MessageSigningScreen = () => {
                         />
                     )}
                     {summary.kind === 'typed-data' &&
-                        !summary.spendApproval && (
+                        (!summary.spendApproval || !scope) && (
                             <InfoCallout
                                 icon='warning'
                                 iconSize='sm'
