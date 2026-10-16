@@ -3029,7 +3029,9 @@
             "data_label": "İmzalanacak veri",
             "untrusted_message_label": "Görüntülenen mesaj (imzaladığın verinin parçası değil)",
             "binary_warning_title": "Veri okunabilir metin değil",
-            "binary_warning_body": "İmzalanacak veri okunabilir bir metin değil, bu yüzden ham baytları onaltılık olarak gösteriliyor. Yalnızca bu uygulamaya güveniyorsan onayla."
+            "binary_warning_body": "İmzalanacak veri okunabilir bir metin değil, bu yüzden ham baytları onaltılık olarak gösteriliyor. Yalnızca bu uygulamaya güveniyorsan onayla.",
+            "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
+            "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
         "arbitrary_data_details": {
             "unnamed": "Birisi",

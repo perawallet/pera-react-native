@@ -3029,7 +3029,9 @@
             "data_label": "Données à signer",
             "untrusted_message_label": "Message affiché (ne fait pas partie de ce que vous signez)",
             "binary_warning_title": "Les données ne sont pas du texte lisible",
-            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application."
+            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application.",
+            "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
+            "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",

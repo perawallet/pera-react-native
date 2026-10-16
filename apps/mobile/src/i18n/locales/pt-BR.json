@@ -3045,7 +3045,9 @@
             "data_label": "Dados a serem assinados",
             "untrusted_message_label": "Mensagem exibida (não faz parte do que você assina)",
             "binary_warning_title": "Os dados não são texto legível",
-            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo."
+            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo.",
+            "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
+            "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
         "arbitrary_data_details": {
             "unnamed": "Alguém",

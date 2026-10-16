@@ -88,6 +88,7 @@ const NOT_A_SESSION_ACCOUNT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const HELLO_WORLD_HEX = '0x68656c6c6f20776f726c64'
 const CONFIRM_SLIDE = 'message-signing-confirm-slide'
 const REJECT_BUTTON = 'message-signing-reject-button'
+const TYPED_DATA_WARNING = 'message-signing-typed-data-warning'
 
 const ETHEREUM_ACCOUNT: WalletAccount = {
     id: 'eth-msg-account',
@@ -250,6 +251,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
             () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
             { timeout: 15_000 },
         )
+        expect(screen.queryByTestId(TYPED_DATA_WARNING)).toBeNull()
         fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
 
         const response = await answerOf(walletKit)
@@ -274,6 +276,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
             () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
             { timeout: 15_000 },
         )
+        expect(screen.getByTestId(TYPED_DATA_WARNING)).toBeTruthy()
         fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
 
         const response = await answerOf(walletKit)

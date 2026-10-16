@@ -3029,7 +3029,9 @@
             "data_label": "Datos que se van a firmar",
             "untrusted_message_label": "Mensaje mostrado (no forma parte de lo que firmas)",
             "binary_warning_title": "Los datos no son texto legible",
-            "binary_warning_body": "Los datos que se van a firmar no son texto legible, por lo que se muestran sus bytes en hexadecimal. Aprueba solo si confías en esta aplicación."
+            "binary_warning_body": "Los datos que se van a firmar no son texto legible, por lo que se muestran sus bytes en hexadecimal. Aprueba solo si confías en esta aplicación.",
+            "typed_data_warning_title": "Esta firma puede mover tus tokens",
+            "typed_data_warning_body": "Firmar datos estructurados puede autorizar a una aplicación a gastar o intercambiar tus tokens sin volver a preguntarte. Aprueba solo si confías en esta aplicación."
         },
         "arbitrary_data_details": {
             "unnamed": "Alguien",
