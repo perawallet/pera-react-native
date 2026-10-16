@@ -109,18 +109,18 @@ describe('assets repositories take a ChainScope', () => {
         void upsertAssetPrices({ prices: [], network: 'mainnet' })
     })
 
-    it('brands every network column as a scope key', () => {
+    it('brands every scope column as a scope key', () => {
         expectTypeOf(
-            AssetsNodeSchema.network._.data,
+            AssetsNodeSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
         expectTypeOf(
-            AssetsPeraSchema.network._.data,
+            AssetsPeraSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
         expectTypeOf(
-            AssetPricesSchema.network._.data,
+            AssetPricesSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
         expectTypeOf(
-            AssetPriceMissesSchema.network._.data,
+            AssetPriceMissesSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
     })
 })

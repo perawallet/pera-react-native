@@ -200,7 +200,7 @@ describe('transaction identity migration', () => {
     it('keeps the network index on the rebuilt table', async () => {
         const db = await createSeededDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(IDENTITY_TAG))
 
         const indexes = await db.values<[string]>(sql`
             SELECT name FROM sqlite_master
@@ -263,7 +263,7 @@ describe('transaction identity migration', () => {
                 ),
             ).toBe(SCOPES.length)
             await test.db.run(sql`
-                INSERT INTO transactions (id, network, tx_type, sender, fee, chain_data, updated_at)
+                INSERT INTO transactions (id, scope, tx_type, sender, fee, chain_data, updated_at)
                 VALUES ('SHARED', 'algorand/mainnet', 'pay', 'ADDR', '1000', '{}', 1),
                        ('SHARED', 'algorand/testnet', 'pay', 'ADDR', '1000', '{}', 1)
             `)

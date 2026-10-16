@@ -219,9 +219,9 @@ describe('nfd repository', () => {
         })
 
         const rows = (await db.all(
-            sql.raw('select network from nfd_cache'),
+            sql.raw('select scope from nfd_cache'),
         )) as Array<[string]>
-        expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
+        expect(rows.map(([scope]) => scope)).toEqual(['algorand/testnet'])
     })
 
     describe('getNfdsByAddresses', () => {

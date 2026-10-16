@@ -109,7 +109,7 @@ describe('resolveSwapHandoffOutcome', () => {
             .mockReset()
             .mockReturnValue({
                 txIds: ['derived-1'],
-                lastValid: 200,
+                chainData: { family: 'algorand', lastValid: 200 },
             })
     })
 
@@ -184,8 +184,14 @@ describe('resolveSwapHandoffOutcome', () => {
             .mockReset()
             .mockImplementation((_chainId, bytes: readonly Uint8Array[]) =>
                 bytes[0] === a
-                    ? { txIds: ['id-a'], lastValid: 20 }
-                    : { txIds: ['id-b'], lastValid: 40 },
+                    ? {
+                          txIds: ['id-a'],
+                          chainData: { family: 'algorand', lastValid: 20 },
+                      }
+                    : {
+                          txIds: ['id-b'],
+                          chainData: { family: 'algorand', lastValid: 40 },
+                      },
             )
         const completionDeps = await resolve(record)
 
@@ -200,7 +206,7 @@ describe('resolveSwapHandoffOutcome', () => {
             // Without a sender no sender-scoped guard can match a cosign row,
             // which let a re-proposed shared-account swap past the guard.
             sender: 'JOINT_ADDR',
-            lastValid: 20,
+            chainData: { family: 'algorand', lastValid: 20 },
         })
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
             scope: { chainId: 'algorand', networkId: 'mainnet' },
@@ -208,7 +214,7 @@ describe('resolveSwapHandoffOutcome', () => {
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
             sender: 'JOINT_ADDR',
-            lastValid: 40,
+            chainData: { family: 'algorand', lastValid: 40 },
         })
         // The durable row must exist before the POST, not after.
         expect(

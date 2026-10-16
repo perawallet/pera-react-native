@@ -160,7 +160,7 @@ describe('text asset id migration', () => {
         await runMigrations(db, migrations)
 
         await db.run(sql`
-            INSERT INTO account_asset_holdings (account_address, asset_id, network, amount, updated_at)
+            INSERT INTO account_asset_holdings (account_address, asset_id, scope, amount, updated_at)
             VALUES ('ADDR', '0', 'algorand/mainnet', '5', 1)
         `)
 

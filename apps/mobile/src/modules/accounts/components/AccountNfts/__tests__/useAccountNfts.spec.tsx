@@ -133,7 +133,7 @@ const makeRow = (assetId: string, title: string) => ({
     assetId,
     amount: new Decimal(1),
     decimals: 0,
-    creatorAddress: 'CREATOR',
+    chainData: null,
     totalSupply: '1',
     name: `Asset ${title}`,
     unitName: 'NFT',

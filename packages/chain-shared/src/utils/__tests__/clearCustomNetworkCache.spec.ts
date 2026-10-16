@@ -86,10 +86,10 @@ describe('clearCustomNetworkCache', () => {
     const storedValue = (network: LegacyNetwork) =>
         toScopeKey(scopeForLegacyNetwork(network))
 
-    test('lists every table that has a network column', async () => {
+    test('lists every table that has a scope column', async () => {
         const rows = await db.values<[string]>(sql`
             SELECT m.name FROM sqlite_master m, pragma_table_info(m.name) c
-            WHERE m.type = 'table' AND c.name = 'network'
+            WHERE m.type = 'table' AND c.name = 'scope'
         `)
 
         expect(rows.map(([name]) => name).sort()).toEqual(
@@ -103,44 +103,44 @@ describe('clearCustomNetworkCache', () => {
         // `transactions` and `submission_attempts` key on `id` alone, so each
         // network's row needs its own id.
         await db.run(sql`
-            INSERT INTO asset_prices (asset_id, network, usd_price, updated_at)
+            INSERT INTO asset_prices (asset_id, scope, usd_price, updated_at)
             VALUES ('1', ${custom}, '1.23', 1), ('1', ${testnet}, '1.23', 1)
         `)
         await db.run(sql`
-            INSERT INTO asset_price_misses (asset_id, network, attempted_at)
+            INSERT INTO asset_price_misses (asset_id, scope, attempted_at)
             VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO assets_node (asset_id, network, updated_at)
+            INSERT INTO assets_node (asset_id, scope, updated_at)
             VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO assets_pera (asset_id, network, updated_at)
+            INSERT INTO assets_pera (asset_id, scope, updated_at)
             VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO account_asset_holdings (account_address, asset_id, network, updated_at)
+            INSERT INTO account_asset_holdings (account_address, asset_id, scope, updated_at)
             VALUES ('ADDR', '1', ${custom}, 1), ('ADDR', '1', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO account_chain_state (account_address, network, native_balance, chain_data, updated_at)
+            INSERT INTO account_chain_state (account_address, scope, native_balance, chain_data, updated_at)
             VALUES ('ADDR', ${custom}, '0', '{}', 1), ('ADDR', ${testnet}, '0', '{}', 1)
         `)
         await db.run(sql`
-            INSERT INTO account_transactions (account_address, transaction_id, network, round_time)
+            INSERT INTO account_transactions (account_address, transaction_id, scope, round_time)
             VALUES ('ADDR', 'TX', ${custom}, 1), ('ADDR', 'TX', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO transactions (id, network, tx_type, sender, fee, chain_data, updated_at)
+            INSERT INTO transactions (id, scope, tx_type, sender, fee, chain_data, updated_at)
             VALUES ('TX_CUSTOM', ${custom}, 'pay', 'SENDER', '1000', '{}', 1),
                    ('TX_TESTNET', ${testnet}, 'pay', 'SENDER', '1000', '{}', 1)
         `)
         await db.run(sql`
-            INSERT INTO nfd_cache (address, network, updated_at)
+            INSERT INTO nfd_cache (address, scope, updated_at)
             VALUES ('ADDR', ${custom}, 1), ('ADDR', ${testnet}, 1)
         `)
         await db.run(sql`
-            INSERT INTO submission_attempts (id, network, tx_ids_json, flow, status, created_at)
+            INSERT INTO submission_attempts (id, scope, tx_ids_json, flow, status, created_at)
             VALUES ('ATTEMPT_CUSTOM', ${custom}, '[]', 'send', 'open', 1),
                    ('ATTEMPT_TESTNET', ${testnet}, '[]', 'send', 'open', 1)
         `)
@@ -150,10 +150,10 @@ describe('clearCustomNetworkCache', () => {
         expect(NETWORK_PARTITIONED_TABLES).toHaveLength(10)
         for (const table of NETWORK_PARTITIONED_TABLES) {
             const customRows = await db.values<[number]>(
-                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${custom}`,
+                sql`SELECT 1 FROM ${sql.raw(table)} WHERE scope = ${custom}`,
             )
             const otherRows = await db.values<[number]>(
-                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${testnet}`,
+                sql`SELECT 1 FROM ${sql.raw(table)} WHERE scope = ${testnet}`,
             )
             expect([table, customRows]).toEqual([table, []])
             expect([table, otherRows]).toEqual([table, [[1]]])

@@ -113,11 +113,9 @@ describe('transaction repository', () => {
 
         for (const table of ['transactions', 'account_transactions']) {
             const rows = (await db.all(
-                sql.raw(`select network from ${table}`),
+                sql.raw(`select scope from ${table}`),
             )) as Array<[string]>
-            expect(rows.map(([network]) => network)).toEqual([
-                'algorand/testnet',
-            ])
+            expect(rows.map(([scope]) => scope)).toEqual(['algorand/testnet'])
         }
     })
 
