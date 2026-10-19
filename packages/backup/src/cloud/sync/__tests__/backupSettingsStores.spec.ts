@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    AccountSortModes,
     LaunchAccountModes,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
@@ -25,6 +26,8 @@ import {
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
 const HELD_ID = 'held-id'
+const OTHER_ID = 'other-id'
+const ETH_ONLY_ID = 'eth-only-id'
 
 describe('backupSettingsStores', () => {
     beforeEach(() => {
@@ -52,6 +55,8 @@ describe('backupSettingsStores', () => {
         useAccountsStore.setState({
             launchAccountMode: LaunchAccountModes.specific,
             launchAccountId: HELD_ID,
+            sortMode: AccountSortModes.alphabeticalAsc,
+            manualAccountOrder: [HELD_ID],
         })
 
         expect(readBackupSettings('algorand')).toEqual({
@@ -59,6 +64,7 @@ describe('backupSettingsStores', () => {
             language: 'tr',
             confirmationMode: 'tap',
             launchAccount: { mode: 'specific', address: 'HELD' },
+            accountOrder: { mode: 'alphabeticalAsc', addresses: ['HELD'] },
         })
     })
 
@@ -69,6 +75,7 @@ describe('backupSettingsStores', () => {
                 language: 'de',
                 confirmationMode: 'tap',
                 launchAccount: { mode: 'specific', address: 'HELD' },
+                accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
             },
             'algorand',
         )
@@ -78,6 +85,69 @@ describe('backupSettingsStores', () => {
             language: 'de',
             confirmationMode: 'tap',
             launchAccount: { mode: 'specific', address: 'HELD' },
+            accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
+        })
+    })
+
+    describe('account order', () => {
+        beforeEach(() => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: HELD_ID,
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'HELD' } },
+                },
+                {
+                    id: ETH_ONLY_ID,
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xeth' } },
+                },
+                {
+                    id: OTHER_ID,
+                    custody: { kind: 'watch' },
+                    chains: {
+                        algorand: { address: 'OTHER' },
+                        ethereum: { address: '0xother' },
+                    },
+                },
+            ])
+        })
+
+        it("names each account by its scope chain's address, else its first", () => {
+            expect(
+                readBackupSettings('algorand').accountOrder.addresses,
+            ).toEqual(['HELD', '0xeth', 'OTHER'])
+        })
+
+        it("puts the named accounts first and keeps the rest in this device's order", () => {
+            applyBackupSettings(
+                {
+                    accountOrder: {
+                        mode: 'manual',
+                        addresses: ['0xother', 'NOT_HELD', 'HELD'],
+                    },
+                },
+                'algorand',
+            )
+
+            expect(useAccountsStore.getState().manualAccountOrder).toEqual([
+                OTHER_ID,
+                HELD_ID,
+                ETH_ONLY_ID,
+            ])
+        })
+
+        it('keeps the sort mode when the backup names one this device lacks', () => {
+            useAccountsStore.setState({ sortMode: AccountSortModes.balanceAsc })
+
+            applyBackupSettings(
+                { accountOrder: { mode: 'byColour', addresses: [] } },
+                'algorand',
+            )
+
+            expect(useAccountsStore.getState().sortMode).toBe(
+                AccountSortModes.balanceAsc,
+            )
         })
     })
 
