@@ -65,6 +65,7 @@ describe('ethereum descriptor', () => {
             supportsNativeMultisig: false,
             supportsRekey: false,
             hasTokenApproval: true,
+            requiresAssetOptIn: false,
         })
     })
 

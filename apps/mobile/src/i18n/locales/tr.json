@@ -159,12 +159,20 @@
             "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
             "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
             "body_keyreg_cannot_sign": "Bu hesap Pera’da işlem imzalayamaz. Kayıt işlemi için hesabın özel anahtarı gerekir, yalnızca izleme kopyası yeterli değildir.",
-            "body_keyreg_network_mismatch": "Bu kayıt, cüzdanının bağlı olduğu ağdan farklı bir Algorand ağı için. Ağı değiştir ve yeniden tara.",
+            "title_network_mismatch": "Yanlış ağ",
+            "body_network_mismatch": "Bu bağlantıyı açmak için {{network}} ağına geç.",
+            "title_no_account": "Bu bağlantı için hesap yok",
+            "body_no_account": "{{chain}} hesabın yok.",
+            "title_unsupported": "Bağlantı desteklenmiyor",
+            "body_unsupported_on_chain": "Pera bu bağlantıyı {{chain}} ağında açamıyor.",
             "title_recover": "Hesap içe aktarılamadı",
             "body_recover": "Hesabı bu QR kodundan içe aktaramadık.",
             "body_recover_duplicate": "Bu hesap cüzdanında zaten var.",
             "title_timeout": "Çok uzun sürdü",
             "body_timeout": "İstek zamanında tamamlanmadı. Ağını kontrol et ve tekrar dene."
+        },
+        "select_chain": {
+            "title": "Bu adres hangi blokzincirde?"
         }
     },
     "address_actions": {
@@ -2812,6 +2820,9 @@
             "title": "Minimum bakiye",
             "message": "Bu hesapta, bu işlem için gerekli olan {{amount}} ALGO’luk minimum bakiye yok.",
             "done": "Bitti"
+        },
+        "select_sender": {
+            "title": "Gönderen hesap"
         }
     },
     "settings": {

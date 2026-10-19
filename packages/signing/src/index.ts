@@ -126,7 +126,10 @@ export {
     useSuggestedMinFeeQuery,
 } from './hooks/chainFees'
 export { useMinFeeForSender } from './hooks/useMinFeeForSender'
-export { useMinimumFeeCalculator } from './hooks/useMinimumFeeCalculator'
+export {
+    useMinimumFeeCalculator,
+    useMinimumFeeCalculatorFor,
+} from './hooks/useMinimumFeeCalculator'
 export {
     ProgramSigningUnsupportedError,
     useProgramSigner,

@@ -23,6 +23,9 @@ const {
     mockRequestByType,
     mockSetDestination,
     mockReset,
+    mockResolveSender,
+    mockPickSender,
+    mockSetSelectedAccountId,
     contactsRef,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -30,7 +33,19 @@ const {
     mockRequestByType: vi.fn(),
     mockSetDestination: vi.fn(),
     mockReset: vi.fn(),
+    mockResolveSender: vi.fn(),
+    mockPickSender: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     contactsRef: { contacts: [] as Contact[] },
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAccountsStore: {
+        getState: () => ({ setSelectedAccountId: mockSetSelectedAccountId }),
+    },
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -49,6 +64,10 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
+    useSendAccountResolver: () => ({
+        resolve: mockResolveSender,
+        pick: mockPickSender,
+    }),
     useSendFundsStore: {
         getState: () => ({
             reset: mockReset,
@@ -59,6 +78,8 @@ vi.mock('@modules/transactions/hooks', () => ({
 
 const ADDRESS = 'A'.repeat(58)
 const onClose = vi.fn()
+const SENDER = { id: 'sender' }
+const OTHER_SENDER = { id: 'other-sender' }
 
 describe('useAccountActions', () => {
     beforeEach(() => {
@@ -154,6 +175,129 @@ describe('useAccountActions', () => {
             {},
             expect.objectContaining({ size: 'modal' }),
         )
+    })
+
+    describe('with the address chain known', () => {
+        it('narrows watching to that chain', () => {
+            mockResolveSender.mockReturnValue({ kind: 'none' })
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+            expect(result.current.canAddWatchAccount).toBe(true)
+
+            act(() => setCapabilityOverrides({ watchAccounts: false }))
+
+            expect(result.current.canAddWatchAccount).toBe(false)
+        })
+
+        it('hides send when no account on the chain can send', () => {
+            mockResolveSender.mockReturnValue({ kind: 'none' })
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+            expect(result.current.canSend).toBe(false)
+        })
+
+        it('hides send when the chain has send switched off', () => {
+            mockResolveSender.mockReturnValue({
+                kind: 'single',
+                account: SENDER,
+            })
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+            expect(result.current.canSend).toBe(true)
+
+            act(() => setCapabilityOverrides({ send: false }))
+
+            expect(result.current.canSend).toBe(false)
+        })
+
+        it('sends from the one account on the chain', () => {
+            mockResolveSender.mockReturnValue({
+                kind: 'single',
+                account: SENDER,
+            })
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+
+            act(() => result.current.openSendTransaction())
+
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('sender')
+            expect(mockSetDestination).toHaveBeenCalledWith(ADDRESS)
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                {},
+                expect.anything(),
+            )
+        })
+
+        it('sends from the account picked when several can', async () => {
+            mockResolveSender.mockReturnValue({
+                kind: 'picker',
+                accounts: [SENDER, OTHER_SENDER],
+            })
+            mockPickSender.mockResolvedValue(OTHER_SENDER)
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+
+            await act(async () => result.current.openSendTransaction())
+
+            expect(mockPickSender).toHaveBeenCalledWith('algorand', [
+                SENDER,
+                OTHER_SENDER,
+            ])
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+                'other-sender',
+            )
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                {},
+                expect.anything(),
+            )
+        })
+
+        it('opens nothing when the picker is dismissed', async () => {
+            mockResolveSender.mockReturnValue({
+                kind: 'picker',
+                accounts: [SENDER, OTHER_SENDER],
+            })
+            mockPickSender.mockResolvedValue(undefined)
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+
+            await act(async () => result.current.openSendTransaction())
+
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+        })
     })
 
     it('openWatchAddress navigates to WatchAccount with prefill', () => {

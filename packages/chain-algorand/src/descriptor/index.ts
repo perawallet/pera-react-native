@@ -108,6 +108,7 @@ export const algorandDescriptor: ChainDescriptor = {
         supportsNativeMultisig: true,
         supportsRekey: true,
         hasTokenApproval: false,
+        requiresAssetOptIn: true,
         maxNoteBytes: MAX_TX_NOTE_BYTES,
     },
     explorer: {

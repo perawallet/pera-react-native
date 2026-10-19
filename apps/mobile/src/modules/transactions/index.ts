@@ -15,7 +15,14 @@
 export { QuantumFeeExplainer } from './components/QuantumFeeExplainer'
 export { TransactionDateHeader } from './components/TransactionDateHeader'
 export { TransactionListItem } from './components/TransactionListItem'
-export { useReceiveFunds, useSendFunds, useSendFundsStore } from './hooks'
+export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
+export {
+    useReceiveFunds,
+    useSendAccountResolver,
+    useSendFunds,
+    useSendFundsStore,
+    type SendAccountResolution,
+} from './hooks'
 export type {
     SendConfirmationDisplay,
     SendTrailingSectionProps,

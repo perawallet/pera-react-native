@@ -10,9 +10,19 @@
  limitations under the License
  */
 
-import type { CapabilityRequirement } from '@hooks/useCapability'
+import type { ChainCapability } from '@perawallet/wallet-core-chain-contract'
 import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
+import type { CapabilityRequirement } from '@hooks/useCapability'
+import type { RouteCapability } from '@routes/capabilities'
 import type { AppDeeplink } from './types'
+
+export type DeeplinkCapabilityRequirement = {
+    platform?: RouteCapability
+    /** Checked on the chain the link targets. */
+    chain?: ChainCapability
+    /** Only for a type that names no chain; held when any chain has it. */
+    anyChain?: ChainCapability
+}
 
 /**
  * What a deeplink needs before it may navigate: a deeplink must never reach a
@@ -24,33 +34,36 @@ import type { AppDeeplink } from './types'
  */
 export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     DeeplinkType,
-    CapabilityRequirement | null
+    DeeplinkCapabilityRequirement | null
 > = {
+    [DeeplinkType.TRANSFER]: { chain: 'send' },
+    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: { chain: 'send' },
+    // Key registration signs and submits a transaction from the link's sender.
+    [DeeplinkType.CHAIN_ACTION]: { chain: 'send' },
+    [DeeplinkType.ASSET_OPT_IN]: { chain: 'manageAssets' },
+    [DeeplinkType.ASSET_INBOX]: { chain: 'assetInbox' },
+    [DeeplinkType.ADD_WATCH_ACCOUNT]: { chain: 'watchAccounts' },
+    [DeeplinkType.SWAP]: { platform: 'swapTab', chain: 'swap' },
+    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: {
+        platform: 'sharedAccounts',
+        chain: 'multisig',
+    },
+    [DeeplinkType.BUY]: { platform: 'fundTab' },
+
     [DeeplinkType.DISCOVER_PATH]: {
         platform: 'discoverTab',
         anyChain: 'discover',
     },
     [DeeplinkType.STAKING]: { platform: 'staking', anyChain: 'staking' },
-    [DeeplinkType.SWAP]: { platform: 'swapTab', anyChain: 'swap' },
-    [DeeplinkType.BUY]: { platform: 'fundTab' },
-    [DeeplinkType.ADD_WATCH_ACCOUNT]: { anyChain: 'watchAccounts' },
-    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: {
-        platform: 'sharedAccounts',
-        anyChain: 'multisig',
-    },
     [DeeplinkType.SIGN_REQUEST]: { anyChain: 'multisig' },
-    [DeeplinkType.ASSET_OPT_IN]: { anyChain: 'manageAssets' },
-    [DeeplinkType.ASSET_INBOX]: { anyChain: 'assetInbox' },
     [DeeplinkType.WALLET_CONNECT]: { anyChain: 'dappConnect' },
     [DeeplinkType.LIQUID_AUTH]: { anyChain: 'liquidAuth' },
     [DeeplinkType.PERA_WEB_IMPORT]: { anyChain: 'peraWebImport' },
 
+    // The action sheet filters its own actions by the address's chain.
+    [DeeplinkType.ADDRESS_ACTIONS]: null,
     [DeeplinkType.ADD_CONTACT]: null,
     [DeeplinkType.EDIT_CONTACT]: null,
-    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
-    [DeeplinkType.ADDRESS_ACTIONS]: null,
-    [DeeplinkType.TRANSFER]: null,
-    [DeeplinkType.CHAIN_ACTION]: null,
     [DeeplinkType.RECOVER_ADDRESS]: null,
     [DeeplinkType.ASSET_DETAIL]: null,
     [DeeplinkType.ASSET_TRANSACTIONS]: null,
@@ -64,9 +77,23 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
 }
 
 const REQUIREMENT_BY_TYPE: Partial<
-    Record<AppDeeplink['type'], CapabilityRequirement | null>
+    Record<AppDeeplink['type'], DeeplinkCapabilityRequirement | null>
 > = DEEPLINK_CAPABILITY_REQUIREMENTS
 
+/** The link's requirement with `chain` bound to the chain the link targets. */
 export const capabilityRequirementForDeeplink = (
-    type: AppDeeplink['type'],
-): CapabilityRequirement | null => REQUIREMENT_BY_TYPE[type] ?? null
+    link: AppDeeplink,
+): CapabilityRequirement | null => {
+    const requirement = REQUIREMENT_BY_TYPE[link.type]
+    if (!requirement) return null
+    const { platform, chain, anyChain } = requirement
+    const target = 'target' in link ? link.target : undefined
+    return {
+        platform,
+        anyChain,
+        ...(chain &&
+            target && {
+                chain: { chainId: target.chainId, capability: chain },
+            }),
+    }
+}

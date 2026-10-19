@@ -65,14 +65,22 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID, address: LINK_ADDRESS })
+            await result.current({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
         })
 
         // Only the confirmation sheet — no account-selection sheet.
         expect(mockRequestByType).toHaveBeenCalledTimes(1)
         expect(mockRequestByType).toHaveBeenCalledWith(
             'asset-opt-in',
-            { assetId: ASSET_ID, accountAddress: LINK_ADDRESS },
+            {
+                assetId: ASSET_ID,
+                accountAddress: LINK_ADDRESS,
+                chainId: 'algorand',
+            },
             expect.anything(),
         )
         expect(mockOptIn).toHaveBeenCalledWith({
@@ -92,13 +100,13 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID })
+            await result.current({ chainId: 'algorand', assetId: ASSET_ID })
         })
 
         expect(mockRequestByType).toHaveBeenNthCalledWith(
             1,
             'asset-opt-in-account-selection',
-            {},
+            { chainId: 'algorand' },
             expect.anything(),
         )
         expect(mockOptIn).toHaveBeenCalledWith({
@@ -113,7 +121,7 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID })
+            await result.current({ chainId: 'algorand', assetId: ASSET_ID })
         })
 
         expect(mockRequestByType).toHaveBeenCalledTimes(1)
@@ -126,7 +134,11 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID, address: LINK_ADDRESS })
+            await result.current({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
         })
 
         expect(mockOptIn).not.toHaveBeenCalled()
@@ -142,7 +154,11 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID, address: LINK_ADDRESS })
+            await result.current({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
         })
 
         expect(mockShowError).toHaveBeenCalledWith(
@@ -152,6 +168,21 @@ describe('useAssetOptInDeeplink', () => {
         expect(mockShowToast).not.toHaveBeenCalled()
     })
 
+    it('does nothing on a chain whose assets need no opt-in', async () => {
+        const { result } = renderHook(() => useAssetOptInDeeplink())
+
+        await act(async () => {
+            await result.current({
+                chainId: 'ethereum',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
+        })
+
+        expect(mockRequestByType).not.toHaveBeenCalled()
+        expect(mockOptIn).not.toHaveBeenCalled()
+    })
+
     it('stays silent when the user rejects signing', async () => {
         mockRequestByType.mockResolvedValueOnce('confirm')
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
@@ -159,7 +190,11 @@ describe('useAssetOptInDeeplink', () => {
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
         await act(async () => {
-            await result.current({ assetId: ASSET_ID, address: LINK_ADDRESS })
+            await result.current({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
         })
 
         expect(mockShowError).not.toHaveBeenCalled()

@@ -54,6 +54,8 @@ export interface ChainProtocolFacts {
     supportsRekey: boolean
     /** An account can grant a contract an allowance over its tokens. */
     hasTokenApproval: boolean
+    /** An account must opt in to an asset before it can receive it. */
+    requiresAssetOptIn: boolean
     /** UTF-8 bytes a transaction's free-text note may hold; absent when the chain has no note field. */
     maxNoteBytes?: number
 }

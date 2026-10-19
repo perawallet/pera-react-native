@@ -12,19 +12,18 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Maybe } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     buildDeeplink,
     DeeplinkType,
     isNotificationAllowedDeeplinkType,
     isPeraOwnedDeeplink,
-    linkTargetOf,
     peraLinkChainFailure,
-    readPeraAppLink,
     resolveChainDeeplink,
     type BuildDeeplinkInput,
+    type ChainDeeplinkIntent,
     type ChainLinkTarget,
     type LinkSource,
 } from '@perawallet/wallet-core-deeplinks'
@@ -38,15 +37,14 @@ import {
     hdIndexOf,
     useAccountsStore,
     useSelectedAccountId,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
+import { useSendAccountResolver } from '@modules/transactions'
 import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
@@ -54,7 +52,6 @@ import {
 import {
     getChainDescriptor,
     getSelectedScope,
-    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -73,6 +70,7 @@ import {
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
     useWalletConnectDeeplink,
+    type SendFundsDeeplinkPrefill,
 } from '../handlers'
 import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
 
@@ -94,61 +92,92 @@ type UseDeepLinkResult = {
     buildDeeplink: (input: BuildDeeplinkInput) => string
 }
 
-// Handlers act on the legacy chain until routing resolves each link's own chain.
-const ROUTABLE_LINK_CHAINS: ReadonlySet<ChainId> = new Set([LEGACY_CHAIN_ID])
-
-// A chain the app can't route yet claimed the link, so it is refused with a
-// toast rather than ignored as "not a link". A routable chain's own refusals
-// keep their old outcome.
+// A switched-off chain claimed the link, so it is refused with a toast rather
+// than ignored as "not a link".
 const isUnsupportedChainLink = (url: string): boolean => {
     if (peraLinkChainFailure(url)) return true
     const resolution = resolveChainDeeplink(url)
     return (
         resolution.status === 'failed' &&
-        resolution.reason !== 'malformed' &&
-        !ROUTABLE_LINK_CHAINS.has(resolution.chainId)
+        resolution.reason === 'chain-unavailable'
     )
 }
 
-// Handlers act on the selected network, so a Pera link whose `chain=` names
-// another one (TestNet while on MainNet) is refused rather than run there.
-// Chain URIs naming a network (`algorand://net:testnet/…`) keep running on the
-// selected network, as they always have.
-const isOnSelectedNetwork = (link: AppDeeplink, target: ChainLinkTarget) =>
-    !target.networkId ||
-    readPeraAppLink(link.sourceUrl) === null ||
-    target.networkId === getSelectedScope(target.chainId).networkId
+type AddressIntent = Extract<ChainDeeplinkIntent, { kind: 'address' }>
 
-const isRoutableLink = (link: AppDeeplink): boolean => {
-    if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
-        return true
+type AddressCandidates = { address: string; chainIds: ChainId[] }
+
+// A raw address more than one codec accepts parses to nothing: which chain it
+// is on is the user's call, never a guess from its shape.
+const addressCandidatesOf = (url: string): Maybe<AddressCandidates> => {
+    const resolution = resolveChainDeeplink(url)
+    if (resolution.status !== 'resolved') return undefined
+    const intents = resolution.intents.filter(
+        (intent): intent is AddressIntent => intent.kind === 'address',
+    )
+    const [first] = intents
+    if (!first || intents.length < 2) return undefined
+    if (intents.length !== resolution.intents.length) return undefined
+    return {
+        address: first.address,
+        chainIds: intents.map(intent => intent.target.chainId),
     }
-    const target = linkTargetOf(link)
-    if (!target) return true
-    return (
-        ROUTABLE_LINK_CHAINS.has(target.chainId) &&
-        isOnSelectedNetwork(link, target)
-    )
 }
+
+const targetOf = (link: AppDeeplink): Maybe<ChainLinkTarget> =>
+    'target' in link ? link.target : undefined
+
+// A link never switches network, so one naming a network other than its
+// chain's selected one is refused; a link naming none runs on the selected one.
+const mismatchedTargetOf = (link: AppDeeplink): Maybe<ChainLinkTarget> => {
+    const target = targetOf(link)
+    if (!target?.networkId) return undefined
+    return target.networkId === getSelectedScope(target.chainId).networkId
+        ? undefined
+        : target
+}
+
+const networkNameOf = ({ chainId, networkId }: ChainLinkTarget): string =>
+    getChainDescriptor(chainId).networks.find(({ id }) => id === networkId)
+        ?.displayName ??
+    networkId ??
+    ''
+
+const chainNameOf = (chainId: ChainId): string =>
+    getChainDescriptor(chainId).displayName
+
+type LinkRefusal =
+    | { kind: 'network-mismatch'; target: ChainLinkTarget }
+    | { kind: 'unsupported-on-chain'; chainId: ChainId }
+    | { kind: 'unavailable' }
+
+const CHAIN_SELECTION_SHEET_OPTIONS = {
+    size: 'auto',
+    enablePanDownToClose: true,
+    autoCreateContainer: false,
+} as const
 
 // Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
 // and a per-render arrow re-registers the `Linking` subscription every render.
 const isValidDeepLink = (url: string): boolean =>
-    parseDeeplink(url) !== null || isUnsupportedChainLink(url)
+    parseDeeplink(url) !== null ||
+    isUnsupportedChainLink(url) ||
+    addressCandidatesOf(url) !== undefined
 
 export const useDeepLink = (): UseDeepLinkResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountId } = useSelectedAccountId()
-    // A link naming an address outside the wallet leaves the selection alone.
-    const findLinkedAccount = (address: string) =>
+    // Compared through the chain's codec: an EIP-55 address differs in case
+    // from the same account's stored form. A link naming an address outside
+    // the wallet leaves the selection alone.
+    const findLinkedAccount = (chainId: ChainId, address: string) =>
         findAccountByAddressOn(
             useAccountsStore.getState().accounts,
-            LEGACY_CHAIN_ID,
+            chainId,
             address,
         )
-    const selectAccountByAddress = (address: string) => {
-        const account = findLinkedAccount(address)
+    const selectAccountByAddress = (chainId: ChainId, address: string) => {
+        const account = findLinkedAccount(chainId, address)
         if (account) setSelectedAccountId(account.id)
     }
     const swapChainOf = useSwapChainResolver()
@@ -167,13 +196,41 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
     const isAllowed = useCapabilityCheck()
+    const { resolve: resolveSender, pick: pickSender } =
+        useSendAccountResolver()
 
-    // CARDS and SELL gate on flag hooks that already fold in their capability.
-    const isTypeAvailable = (type: AppDeeplink['type']): boolean => {
-        if (type === DeeplinkType.CARDS) return isPeraCardEnabled
-        if (type === DeeplinkType.SELL) return isGiftCardsEnabled
-        const requirement = capabilityRequirementForDeeplink(type)
-        return !requirement || isAllowed(requirement)
+    // A capability that's off refuses the link before any screen opens.
+    const refusalOf = (link: AppDeeplink): Maybe<LinkRefusal> => {
+        if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
+            return undefined
+        }
+        const mismatched = mismatchedTargetOf(link)
+        if (mismatched) return { kind: 'network-mismatch', target: mismatched }
+        // CARDS and SELL gate on flag hooks that already fold in their capability.
+        if (link.type === DeeplinkType.CARDS) {
+            return isPeraCardEnabled ? undefined : { kind: 'unavailable' }
+        }
+        if (link.type === DeeplinkType.SELL) {
+            return isGiftCardsEnabled ? undefined : { kind: 'unavailable' }
+        }
+        if (
+            link.type === DeeplinkType.ASSET_OPT_IN &&
+            !getChainDescriptor(link.target.chainId).protocol.requiresAssetOptIn
+        ) {
+            return {
+                kind: 'unsupported-on-chain',
+                chainId: link.target.chainId,
+            }
+        }
+        const requirement = capabilityRequirementForDeeplink(link)
+        if (!requirement || isAllowed(requirement)) return undefined
+        if (requirement.chain && !isAllowed({ chain: requirement.chain })) {
+            return {
+                kind: 'unsupported-on-chain',
+                chainId: requirement.chain.chainId,
+            }
+        }
+        return { kind: 'unavailable' }
     }
 
     const recoverAddress = useRecoverAddressDeeplink()
@@ -187,7 +244,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const runLocaleTourStep = useLocaleTourDeeplink()
     const applyE2eFixture = useE2eFixtureDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
-    const nativeAsset = useNativeAsset(scope)
 
     /**
      * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app
@@ -219,26 +275,124 @@ export const useDeepLink = (): UseDeepLinkResult => {
     ) => {
         let parsedData: ReturnType<typeof parseDeeplink> = null
 
-        const refuseUnavailable = (type: string) => {
-            logger.warn('Blocked deeplink for an unavailable capability', {
-                type,
-            })
+        const refuse = (
+            type: string,
+            refusal: LinkRefusal = { kind: 'unavailable' },
+        ) => {
+            logger.warn('Refused deeplink', { type, reason: refusal.kind })
             // A notification refusal stays silent, like the policy below.
             if (source !== 'notification') {
-                errorToast(
-                    t('common.network_unavailable.title'),
-                    t('common.network_unavailable.generic_body'),
-                )
+                if (refusal.kind === 'network-mismatch') {
+                    showError({
+                        variant: 'network-mismatch',
+                        parsedType: type,
+                        values: { network: networkNameOf(refusal.target) },
+                    })
+                } else if (refusal.kind === 'unsupported-on-chain') {
+                    showError({
+                        variant: 'unsupported-on-chain',
+                        parsedType: type,
+                        values: { chain: chainNameOf(refusal.chainId) },
+                    })
+                } else {
+                    errorToast(
+                        t('common.network_unavailable.title'),
+                        t('common.network_unavailable.generic_body'),
+                    )
+                }
             }
             onError?.()
+        }
+
+        const openSendFrom = (
+            sender: WalletAccount,
+            prefill: SendFundsDeeplinkPrefill,
+        ) => {
+            // The send flow runs on the selected account's chain.
+            setSelectedAccountId(sender.id)
+            openSendFunds(prefill)
+        }
+
+        // False when the chain has no account that can send; the error is shown.
+        const sendOn = (
+            chainId: ChainId,
+            prefill: SendFundsDeeplinkPrefill,
+            parsedType: string,
+        ): boolean => {
+            const resolution = resolveSender(chainId)
+            if (resolution.kind === 'none') {
+                showError({
+                    variant: 'no-account',
+                    parsedType,
+                    values: { chain: chainNameOf(chainId) },
+                })
+                onError?.()
+                return false
+            }
+            if (resolution.kind === 'picker') {
+                dispatchDetached(
+                    pickSender(chainId, resolution.accounts).then(sender => {
+                        if (sender) openSendFrom(sender, prefill)
+                    }),
+                    parsedType,
+                )
+                return true
+            }
+            openSendFrom(resolution.account, prefill)
+            return true
+        }
+
+        const openAddressActions = (
+            chainId: ChainId,
+            address: string,
+            label?: string,
+        ) =>
+            requestByType(
+                'account-actions',
+                { address, label, chainId },
+                { enablePanDownToClose: true },
+            )
+
+        const pickAddressChain = async ({
+            address,
+            chainIds,
+        }: AddressCandidates) => {
+            const chainId = await requestByType<
+                'deeplink-chain-selection',
+                ChainId
+            >(
+                'deeplink-chain-selection',
+                { chainIds },
+                CHAIN_SELECTION_SHEET_OPTIONS,
+            )
+            if (chainId) await openAddressActions(chainId, address)
         }
 
         try {
             parsedData = parseDeeplink(url)
 
             if (!parsedData) {
+                const candidates = addressCandidatesOf(url)
+                if (candidates) {
+                    if (
+                        source === 'notification' &&
+                        !isNotificationAllowedDeeplinkType(
+                            DeeplinkType.ADDRESS_ACTIONS,
+                        )
+                    ) {
+                        onError?.()
+                        return
+                    }
+                    // Detached: the picker is a root sheet the QR scanner would cover.
+                    dispatchDetached(
+                        pickAddressChain(candidates),
+                        DeeplinkType.ADDRESS_ACTIONS,
+                    )
+                    onSuccess?.()
+                    return
+                }
                 if (isUnsupportedChainLink(url)) {
-                    refuseUnavailable('UNSUPPORTED_CHAIN_LINK')
+                    refuse('UNSUPPORTED_CHAIN_LINK')
                     return
                 }
                 // A recognized-but-unsupported Pera deeplink stays silent, like the QR
@@ -265,13 +419,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 return
             }
 
-            if (!isRoutableLink(parsedData)) {
-                refuseUnavailable(parsedData.type)
-                return
-            }
-
-            if (!isTypeAvailable(parsedData.type)) {
-                refuseUnavailable(parsedData.type)
+            const refusal = refusalOf(parsedData)
+            if (refusal) {
+                refuse(parsedData.type, refusal)
                 return
             }
 
@@ -333,34 +483,40 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 case DeeplinkType.RECEIVER_ACCOUNT_SELECTION: {
                     // Native invokes this from inside the Send destination
                     // picker; as a top-level deeplink we open Send fresh.
-                    openSendFunds({ destination: parsedData.address })
+                    if (
+                        !sendOn(
+                            parsedData.target.chainId,
+                            { destination: parsedData.address },
+                            parsedData.type,
+                        )
+                    ) {
+                        return
+                    }
                     break
                 }
 
                 case DeeplinkType.ADDRESS_ACTIONS: {
-                    void requestByType(
-                        'account-actions',
-                        {
-                            address: parsedData.address,
-                            label: parsedData.label,
-                        },
-                        { enablePanDownToClose: true },
+                    void openAddressActions(
+                        parsedData.target.chainId,
+                        parsedData.address,
+                        parsedData.label,
                     )
                     break
                 }
 
                 case DeeplinkType.TRANSFER: {
-                    openSendFunds({
+                    const { chainId } = parsedData.target
+                    const prefill: SendFundsDeeplinkPrefill = {
                         asset:
                             parsedData.assetRef ??
-                            getChainDescriptor(parsedData.target.chainId)
-                                .nativeAsset.ref,
+                            getChainDescriptor(chainId).nativeAsset.ref,
                         destination: parsedData.receiverAddress,
                         // Base units — InputScreen converts once the asset's
                         // `decimals` resolve.
                         amountBaseUnits: parsedData.amount,
                         note: parsedData.note ?? parsedData.chainData?.xnote,
-                    })
+                    }
+                    if (!sendOn(chainId, prefill, parsedData.type)) return
                     break
                 }
 
@@ -399,6 +555,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // needs observing; detached because it awaits its own sheets.
                     dispatchDetached(
                         optInAsset({
+                            chainId: parsedData.target.chainId,
                             assetId: parsedData.assetRef.assetId,
                             address: parsedData.address,
                         }),
@@ -409,7 +566,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS: {
-                    selectAccountByAddress(parsedData.address)
+                    const { chainId } = parsedData.target
+                    selectAccountByAddress(chainId, parsedData.address)
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: {
@@ -417,8 +575,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             params: {
                                 assetId:
                                     parsedData.assetRef?.assetId ??
-                                    nativeAsset.assetId,
-                                chainId: parsedData.target.chainId,
+                                    nativeAssetFor(chainId).assetId,
+                                chainId,
                             },
                         },
                     })
@@ -486,10 +644,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // check above isn't enough: the target account must have one.
                     const target =
                         (parsedData.address &&
-                            findLinkedAccount(parsedData.address)) ||
+                            findLinkedAccount(
+                                parsedData.target.chainId,
+                                parsedData.address,
+                            )) ||
                         useAccountsStore.getState().getSelectedAccount()
                     if (!target || swapChainOf(target) === undefined) {
-                        refuseUnavailable(parsedData.type)
+                        refuse(parsedData.type)
                         return
                     }
                     setSelectedAccountId(target.id)
@@ -517,14 +678,20 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // The same Bidali sheet and gate as the Menu's "Buy Gift Card"
                     // button, inheriting its bidaliProvider JS bridge wiring.
                     if (parsedData.address) {
-                        selectAccountByAddress(parsedData.address)
+                        selectAccountByAddress(
+                            parsedData.target.chainId,
+                            parsedData.address,
+                        )
                     }
                     void requestByType('bidali', {}, BIDALI_SHEET_OPTIONS)
                     break
                 }
 
                 case DeeplinkType.ACCOUNT_DETAIL: {
-                    selectAccountByAddress(parsedData.address)
+                    selectAccountByAddress(
+                        parsedData.target.chainId,
+                        parsedData.address,
+                    )
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: { screen: 'AccountDetails' },
@@ -651,12 +818,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
     )
 
     // For callers with their own refusal UI (or none), so the dispatcher's toast never doubles it.
-    const isTypeAvailableRef = useRef(isTypeAvailable)
-    isTypeAvailableRef.current = isTypeAvailable
+    const refusalOfRef = useRef(refusalOf)
+    refusalOfRef.current = refusalOf
     const isDeepLinkAvailable = useCallback((url: string): boolean => {
         const parsed = parseDeeplink(url)
         if (!parsed) return !isUnsupportedChainLink(url)
-        return isRoutableLink(parsed) && isTypeAvailableRef.current(parsed.type)
+        return refusalOfRef.current(parsed) === undefined
     }, [])
 
     return {

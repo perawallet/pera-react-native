@@ -12,10 +12,12 @@
 
 import { useCallback } from 'react'
 import {
+    accountsChainAdapters,
     detectImportKind,
     setPendingImportMnemonic,
+    type DetectedImportKind,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { navigateToScreen } from '../navigateToScreen'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import type { LinkSource } from '@perawallet/wallet-core-deeplinks'
@@ -36,6 +38,21 @@ export type RecoverAddressDeeplinkHandler = (params: {
 const normalizeMnemonic = (raw: string): string =>
     raw.replace(/[,\s]+/g, ' ').trim()
 
+// The recover QR names no chain, so the first chain, in registry order, whose
+// import accepts the word count takes it.
+const detectAnyChainImportKind = (mnemonic: string): DetectedImportKind => {
+    let detected: DetectedImportKind = {
+        success: false,
+        wordCount: mnemonic.split(' ').length,
+    }
+    for (const { id } of getProvider().chains.list()) {
+        if (!accountsChainAdapters.has(id)) continue
+        detected = detectImportKind(id, mnemonic)
+        if (detected.success) return detected
+    }
+    return detected
+}
+
 /**
  * QR-only: scanning a recover-address mnemonic opens the Import screen with the
  * passphrase pre-filled so the user reviews/confirms the words (and later names
@@ -51,7 +68,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
             if (source !== 'qr') return Promise.resolve()
 
             const normalized = normalizeMnemonic(mnemonic)
-            const resolved = detectImportKind(LEGACY_CHAIN_ID, normalized)
+            const resolved = detectAnyChainImportKind(normalized)
             if (!resolved.success) {
                 showError({
                     variant: 'recover',
