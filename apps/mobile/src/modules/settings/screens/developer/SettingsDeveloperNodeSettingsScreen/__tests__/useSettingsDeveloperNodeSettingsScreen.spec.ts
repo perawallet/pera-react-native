@@ -330,9 +330,15 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             })
 
             expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
-            expect(
-                mocks.requestBottomSheet.mock.calls[0][0].contents.props,
-            ).toEqual({ chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' })
+            const [request] = mocks.requestBottomSheet.mock.calls[0]
+            expect(request.contents.props).toEqual({
+                chainId: ETHEREUM_CHAIN_ID,
+                networkId: 'sepolia',
+            })
+            expect(request.options).toEqual({
+                size: 'modal',
+                autoCreateContainer: false,
+            })
         })
     })
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
@@ -77,6 +77,15 @@ export const useEndpointOverrideSheet = ({
     const [url, setUrl] = useState(() => override ?? '')
     const [error, setError] = useState<EndpointOverrideSheetError>()
     const [isChecking, setIsChecking] = useState(false)
+    // A dismissed sheet unmounts while its check may still be in flight; the
+    // result must not save an override the developer walked away from.
+    const isMountedRef = useRef(true)
+    useEffect(() => {
+        isMountedRef.current = true
+        return () => {
+            isMountedRef.current = false
+        }
+    }, [])
 
     const networkName = useMemo(() => {
         const descriptor = getChainDescriptor(chainId)
@@ -118,14 +127,14 @@ export const useEndpointOverrideSheet = ({
         }
 
         setIsChecking(true)
-        try {
-            const result = await adapter.checkOverride(networkId, candidate)
-            if (result !== 'matches') {
-                setError(result)
-                return false
-            }
-        } finally {
-            setIsChecking(false)
+        const result = await adapter.checkOverride(networkId, candidate)
+        if (!isMountedRef.current) {
+            return false
+        }
+        setIsChecking(false)
+        if (result !== 'matches') {
+            setError(result)
+            return false
         }
 
         setEndpointOverride(chainId, networkId, candidate)

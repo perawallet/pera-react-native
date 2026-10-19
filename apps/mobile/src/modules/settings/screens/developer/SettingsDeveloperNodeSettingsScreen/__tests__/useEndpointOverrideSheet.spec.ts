@@ -171,6 +171,47 @@ describe('useEndpointOverrideSheet', () => {
         expect(result.current.isChecking).toBe(false)
     })
 
+    it('saves nothing when the sheet is dismissed before the check answers', async () => {
+        let finish: (value: EndpointOverrideCheck) => void = () => {}
+        mocks.checkOverride.mockReturnValue(
+            new Promise<EndpointOverrideCheck>(resolve => {
+                finish = resolve
+            }),
+        )
+        const { result, unmount } = renderSheet()
+        act(() => result.current.handleUrlChange(OVERRIDE))
+        let pending: Promise<boolean> = Promise.resolve(true)
+        act(() => {
+            pending = result.current.handleSave()
+        })
+
+        unmount()
+        finish('matches')
+
+        await expect(pending).resolves.toBe(false)
+        expect(overrideOf('sepolia')).toBeUndefined()
+        expect(mocks.restart).not.toHaveBeenCalled()
+    })
+
+    it('saves nothing for a chain that accepts no override', async () => {
+        nodeEndpointAdapters.reset()
+        nodeEndpointAdapters.register({
+            chainId: ETHEREUM_CHAIN_ID,
+            endpointUrl: mocks.endpointUrl,
+        })
+        const { result } = renderSheet()
+        act(() => result.current.handleUrlChange(OVERRIDE))
+
+        let saved: boolean | undefined
+        await act(async () => {
+            saved = await result.current.handleSave()
+        })
+
+        expect(saved).toBe(false)
+        expect(result.current.error).toBeUndefined()
+        expect(overrideOf('sepolia')).toBeUndefined()
+    })
+
     it('saves a matching URL, trimmed, for that network only, then refreshes the network', async () => {
         const { result } = renderSheet()
         act(() => result.current.handleUrlChange(`  ${OVERRIDE}  `))
