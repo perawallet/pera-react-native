@@ -26,7 +26,6 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isKeyedByPlanner,
-    isUnsignedTransactionsData,
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
@@ -266,9 +265,10 @@ const buildSourceMetadata = (
 }
 
 const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
+const ALGORAND_SHAPE = 'transactions must be sent as chain-neutral transactions'
 
-const isChainNeutralTransactions = (group: SignableGroup): boolean =>
-    group.data.type === 'transactions' && isUnsignedTransactionsData(group.data)
+const isTransactionsGroup = (group: SignableGroup): boolean =>
+    group.data.type === 'transactions'
 
 /**
  * Groups chain-neutral transactions by signer. As on the Algorand path, a
@@ -422,62 +422,13 @@ const buildSignableGroups = (
     }
 
     if (isTransactionRequest(request)) {
-        if (request.txs.some(isUnsignedTransaction)) {
-            throw new InvalidSignableDataError(MIXED_SHAPES)
-        }
-        // Group integrity is checked over the full payload: sources that filter
-        // `txs` supply the original via `groupContext`, others fall back to
-        // `txs`.
-        //
-        // Multisig co-sign is the exception — the co-signer only holds the
-        // signable subset, so the full-group hash can't match. Its validator
-        // skips the recompute; contiguity is still enforced, and full-group
-        // integrity is verified on the submitter and by algod.
-        const txsToValidate = request.groupContext ?? request.txs
-        const planner = plannerAdapterForScope(scope)
-        planner.validateGroup(txsToValidate, {
-            isCosigner: request.sourceType === 'multisig-cosign',
-        })
-
-        const knownAddresses = new Set(
-            allAccounts.flatMap(
-                a => chainAccountOf(a, scope.chainId)?.address ?? [],
-            ),
+        // An empty request is left to the caller's "nothing to sign" refusal.
+        if (request.txs.length === 0) return []
+        throw new InvalidSignableDataError(
+            request.txs.some(isUnsignedTransaction)
+                ? MIXED_SHAPES
+                : ALGORAND_SHAPE,
         )
-        const rawBytes = request.rawTransactionsBase64
-
-        // Group transactions by sender, preserving original position
-        const bySender = new Map<
-            string,
-            { txs: typeof request.txs; indices: number[] }
-        >()
-        for (const [i, tx] of request.txs.entries()) {
-            const addr = request.signerOverrides?.get(i) ?? tx.sender.toString()
-
-            // Skip transactions whose signer is not a known account
-            if (!knownAddresses.has(addr)) continue
-
-            if (!bySender.has(addr)) {
-                bySender.set(addr, { txs: [], indices: [] })
-            }
-            const entry = bySender.get(addr)!
-            entry.txs.push(tx)
-            entry.indices.push(i)
-        }
-
-        return [...bySender.entries()].map(([addr, { txs, indices }]) => ({
-            data: {
-                type: 'transactions' as const,
-                transactions: txs,
-                indicesToSign: txs.map((_, i) => i),
-                ...(rawBytes && {
-                    rawTransactionsBase64: indices.map(i => rawBytes[i]),
-                }),
-            },
-            source,
-            signerAddress: addr,
-            originalIndices: indices,
-        }))
     }
 
     if (isArbitraryDataRequest(request)) {
@@ -582,29 +533,27 @@ export const resolveInitialContext = (
 
     // A planner-signed group and one the chain's own signer signs have no
     // common signed shape to deliver in. A chain that groups by the account
-    // signed for (Algorand) signs every group its own way instead, as it does
-    // the same request in its own shape; any other chain refuses up front.
-    const chainNeutral = signableGroups.filter(isChainNeutralTransactions)
-    const planned = chainNeutral.filter(group =>
+    // signed for (Algorand) hands every group to its own signer instead; any
+    // other chain refuses up front.
+    const transactionGroups = signableGroups.filter(isTransactionsGroup)
+    const planned = transactionGroups.filter(group =>
         isPlannerSigned(
             group,
             groupSigners.get(group.signerAddress),
             input.scope.chainId,
         ),
     )
-    if (planned.length > 0 && planned.length < chainNeutral.length) {
-        if (chainNeutral.some(group => isKeyedByPlanner(group.data))) {
+    if (planned.length > 0 && planned.length < transactionGroups.length) {
+        if (transactionGroups.some(group => isKeyedByPlanner(group.data))) {
             throw new SigningError(
                 'This request needs signers that sign in different ways, so it cannot be delivered as one group',
                 undefined,
                 { retryable: false },
             )
         }
-        const adapter = plannerAdapterForScope(input.scope)
         signableGroups = signableGroups.map(group =>
-            group.data.type === 'transactions' &&
-            isUnsignedTransactionsData(group.data)
-                ? { ...group, data: adapter.readTransactionsData(group.data) }
+            isTransactionsGroup(group)
+                ? { ...group, shouldUseChainSigner: true }
                 : group,
         )
     }

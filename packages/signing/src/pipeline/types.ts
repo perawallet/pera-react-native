@@ -295,6 +295,13 @@ export interface SignableGroup {
      * `[1, 3]`.
      */
     originalIndices?: number[]
+
+    /**
+     * Set when the request's groups sign in different ways, which have no
+     * common signed shape, so this group goes to the chain's own signer rather
+     * than the planner.
+     */
+    shouldUseChainSigner?: boolean
 }
 
 export type AnalysisWarning = ReviewWarning
