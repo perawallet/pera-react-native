@@ -85,6 +85,21 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",
     },
     {
+        file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
+        text: 'source.scope.chainId === storedChainId',
+        reason: "Checks the stored network chip is one of the viewed account's chains; compares two passed values, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
+        text: 'source.scope.chainId === selectedChainId',
+        reason: 'Narrows the asset list to whichever chain the selected chip names, never a named chain.',
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
+        text: 'item.scope.chainId === scope.chainId',
+        reason: "Opt-out is bound to the account's own chain; compares a holding's chain with it, never a named chain.",
+    },
+    {
         file: 'packages/config/src/network-config.ts',
         text: 'row.scope.chainId === scope.chainId',
         reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",

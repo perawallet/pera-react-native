@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useAccountAssetList } from '../useAccountAssetList'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     setCapabilityOverrides,
@@ -24,7 +23,10 @@ import {
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
-import { useAccountAssetsQuery } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountAssetsQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { AssetGroup } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
