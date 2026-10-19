@@ -63,16 +63,21 @@ ${FLAG_OVERRIDE_CLOUD_BACKUP}           xpath=//*[@resource-id='feature_flag_ove
 
 
 *** Keywords ***
-Scroll To
-    [Documentation]    Brings an element on screen in one driver call. Takes this file's locators:
-    ...                accessibility_id=<id>, or an xpath on a bare testID (a resource-id on Android).
+Bare Test Id
+    [Documentation]    The testID inside one of this file's locators, whichever shape it has.
+    ...                Locators used to be accessibility_id=<id>, so splitting on the first '='
+    ...                was enough; they are xpaths now and that split returned the whole
+    ...                predicate, which then went back into another xpath and would not parse.
     [Arguments]    ${locator}
     ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
-    IF    ${bare}
-        Scroll Into View    ${bare}[0]
-    ELSE
-        Scroll Into View    ${locator.split('=', 1)[1]}
-    END
+    IF    ${bare}    RETURN    ${bare}[0]
+    RETURN    ${{ $locator.split('=', 1)[1] }}
+
+Scroll To
+    [Documentation]    Brings an element on screen in one driver call.
+    [Arguments]    ${locator}
+    ${id}=    Bare Test Id    ${locator}
+    Scroll Into View    ${id}
 
 Is Visible
     [Documentation]    Instant probe: one check, no retry.
@@ -90,7 +95,7 @@ Open From Settings
 Switch State Locator
     [Documentation]    Android exposes a switch's state as checked, iOS as value 1/0.
     [Arguments]    ${locator}    ${on}
-    ${id}=    Set Variable    ${{ $locator.split('=', 1)[1] }}
+    ${id}=    Bare Test Id    ${locator}
     IF    ${on}
         RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1')]
     END
