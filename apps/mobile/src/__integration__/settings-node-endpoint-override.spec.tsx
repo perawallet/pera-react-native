@@ -109,7 +109,10 @@ describe('Flow: Settings → Developer Mode → Override RPC', () => {
     })
 
     it('Given Ethereum is registered, when the developer overrides Sepolia, then only Sepolia moves to the checked node, and Reset moves it back', async () => {
-        renderWithNavigation(SettingsDeveloperNodeSettingsScreen, 'NodeSettings')
+        renderWithNavigation(
+            SettingsDeveloperNodeSettingsScreen,
+            'NodeSettings',
+        )
         await waitFor(() => {
             expect(screen.getByTestId('node_settings_screen')).toBeTruthy()
         })
@@ -119,7 +122,9 @@ describe('Flow: Settings → Developer Mode → Override RPC', () => {
             ).getByRole('switch'),
         )
         await waitFor(() => {
-            expect(endpointText('ethereum', 'sepolia')).toBe(hostOf(SEPOLIA_RPC))
+            expect(endpointText('ethereum', 'sepolia')).toBe(
+                hostOf(SEPOLIA_RPC),
+            )
         })
         const algorandHost = endpointText('algorand', 'testnet')
         expect(algorandHost).toBe(hostOf(config.testnetAlgodUrl))
@@ -158,16 +163,18 @@ describe('Flow: Settings → Developer Mode → Override RPC', () => {
         expect(requestedUrls.length).toBeGreaterThan(0)
         expect(requestedUrls.every(url => url === SEPOLIA_OVERRIDE)).toBe(true)
 
-        expect(nodeEndpointAdapters.get('ethereum').endpointUrl('mainnet')).toBe(
-            MAINNET_RPC,
-        )
+        expect(
+            nodeEndpointAdapters.get('ethereum').endpointUrl('mainnet'),
+        ).toBe(MAINNET_RPC)
         expect(endpointText('algorand', 'testnet')).toBe(algorandHost)
 
         await openOverrideSheet()
         fireEvent.click(screen.getByTestId('endpoint_override_reset_button'))
 
         await waitFor(() => {
-            expect(endpointText('ethereum', 'sepolia')).toBe(hostOf(SEPOLIA_RPC))
+            expect(endpointText('ethereum', 'sepolia')).toBe(
+                hostOf(SEPOLIA_RPC),
+            )
         })
         expect(useNetworkStore.getState().endpointOverridesByChain).toEqual({
             ethereum: {},

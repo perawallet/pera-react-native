@@ -22,14 +22,13 @@ describe('endpointHostOf', () => {
 
     it('leaves out a path and query that may carry an API key', () => {
         expect(
-            endpointHostOf('https://sepolia.provider.example/v3/secret-key?x=1'),
+            endpointHostOf(
+                'https://sepolia.provider.example/v3/secret-key?x=1',
+            ),
         ).toBe('sepolia.provider.example')
     })
 
-    it.each([undefined, '', 'not a url'])(
-        'reports no host for %j',
-        value => {
-            expect(endpointHostOf(value)).toBeUndefined()
-        },
-    )
+    it.each([undefined, '', 'not a url'])('reports no host for %j', value => {
+        expect(endpointHostOf(value)).toBeUndefined()
+    })
 })

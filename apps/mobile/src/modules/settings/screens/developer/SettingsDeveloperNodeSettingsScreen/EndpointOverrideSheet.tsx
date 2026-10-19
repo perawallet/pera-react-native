@@ -51,7 +51,9 @@ export const EndpointOverrideSheet = ({
                     { network: sheet.networkName },
                 )
             case 'unreachable':
-                return t('settings.developer.node_settings.endpoint_unreachable')
+                return t(
+                    'settings.developer.node_settings.endpoint_unreachable',
+                )
             default:
                 return undefined
         }

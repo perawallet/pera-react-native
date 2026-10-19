@@ -85,7 +85,9 @@ export const useEndpointOverrideSheet = ({
     }, [chainId, networkId])
 
     // Re-read on every render so the caption follows a save or reset.
-    const currentHost = endpointHostOf(adapterFor(chainId)?.endpointUrl(networkId))
+    const currentHost = endpointHostOf(
+        adapterFor(chainId)?.endpointUrl(networkId),
+    )
 
     const refreshScope = useCallback(() => {
         void queryClient.invalidateQueries({

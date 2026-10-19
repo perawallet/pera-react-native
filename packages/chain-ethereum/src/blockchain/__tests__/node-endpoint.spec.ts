@@ -21,7 +21,9 @@ vi.mock('../utils/checkEvmRpcChainId', () => ({
 
 const TIMEOUTS = { readMs: 1_000, submitMs: 2_000 }
 
-const contextWith = (endpoints: () => Record<string, string>): ChainContext => ({
+const contextWith = (
+    endpoints: () => Record<string, string>,
+): ChainContext => ({
     getScope: () => ({ chainId: 'ethereum', networkId: 'mainnet' }),
     getEndpoints: endpoints,
     getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
@@ -45,13 +47,17 @@ describe('createEthereumNodeEndpointAdapter', () => {
     })
 
     it('reports nothing for a network without an endpoint', () => {
-        const adapter = createEthereumNodeEndpointAdapter(contextWith(() => ({})))
+        const adapter = createEthereumNodeEndpointAdapter(
+            contextWith(() => ({})),
+        )
 
         expect(adapter.endpointUrl('mainnet')).toBeUndefined()
     })
 
     it('checks an override against the network with the read ceiling', async () => {
-        const adapter = createEthereumNodeEndpointAdapter(contextWith(() => ({})))
+        const adapter = createEthereumNodeEndpointAdapter(
+            contextWith(() => ({})),
+        )
 
         await expect(
             adapter.checkOverride?.('sepolia', 'https://my-node.rpc.test/'),

@@ -61,7 +61,9 @@ export const NodeSettingsRow = ({
                 <PWButton
                     testID={`${testIdPrefix}_override_button`}
                     variant='linkNeutral'
-                    title={t('settings.developer.node_settings.override_endpoint')}
+                    title={t(
+                        'settings.developer.node_settings.override_endpoint',
+                    )}
                     onPress={onOverrideEndpoint}
                     style={styles.overrideButton}
                 />

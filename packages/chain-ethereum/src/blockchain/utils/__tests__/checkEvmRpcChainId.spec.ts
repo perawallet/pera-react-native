@@ -33,44 +33,45 @@ describe('checkEvmRpcChainId', () => {
             }),
         )
 
-        await expect(checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS)).resolves.toBe(
-            'matches',
-        )
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+        ).resolves.toBe('matches')
     })
 
     it('refuses a node serving another network', async () => {
         server.use(
-            ...evmRpcHandlers({ rpcUrl: RPC, responses: { eth_chainId: '0x1' } }),
+            ...evmRpcHandlers({
+                rpcUrl: RPC,
+                responses: { eth_chainId: '0x1' },
+            }),
         )
 
-        await expect(checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS)).resolves.toBe(
-            'wrong-network',
-        )
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+        ).resolves.toBe('wrong-network')
     })
 
     it('refuses a network with no EIP-155 id', async () => {
         server.use(...evmRpcHandlers({ rpcUrl: RPC }))
 
-        await expect(checkEvmRpcChainId(RPC, 'holesky', TIMEOUTS)).resolves.toBe(
-            'wrong-network',
-        )
+        await expect(
+            checkEvmRpcChainId(RPC, 'holesky', TIMEOUTS),
+        ).resolves.toBe('wrong-network')
     })
 
     it('reports a node answering with a server error as unreachable', async () => {
-        server.use(
-            http.post(RPC, () => HttpResponse.json({}, { status: 500 })),
-        )
+        server.use(http.post(RPC, () => HttpResponse.json({}, { status: 500 })))
 
-        await expect(checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS)).resolves.toBe(
-            'unreachable',
-        )
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+        ).resolves.toBe('unreachable')
     })
 
     it('reports a failed connection as unreachable', async () => {
         server.use(http.post(RPC, () => HttpResponse.error()))
 
-        await expect(checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS)).resolves.toBe(
-            'unreachable',
-        )
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+        ).resolves.toBe('unreachable')
     })
 })
