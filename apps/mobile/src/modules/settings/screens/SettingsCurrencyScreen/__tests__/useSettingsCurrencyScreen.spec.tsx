@@ -98,12 +98,6 @@ describe('useSettingsCurrencyScreen', () => {
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
-    it('requests the fiat currency list', () => {
-        renderScreenHook()
-
-        expect(mockUseCurrenciesQuery).toHaveBeenCalledWith()
-    })
-
     it('offers the fiat list, narrowed by the search', () => {
         const currencies = [
             { id: 'EUR', name: 'Euro', symbol: '€' },

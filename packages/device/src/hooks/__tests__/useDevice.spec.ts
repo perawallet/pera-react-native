@@ -210,7 +210,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         await seedPushToken('test-fcm-token')
-        // Raw state: the setters no longer write ALGO.
+        // Raw state: the setters keep the preference fiat.
         useCurrenciesStore.setState({
             preferredCurrency: 'ALGO',
             fallbackCurrency: 'EUR',

@@ -66,11 +66,6 @@ export const areRatesUsable = (
     fiatRate.greaterThan(0) &&
     assetDecimals !== null
 
-/**
- * A preference whose preferred currency is a fiat: ALGO moves to the fiat
- * fallback, or USD when the fallback is not a fiat, and ALGO becomes the
- * fallback.
- */
 export const toFiatCurrencyPreference = (
     preference: CurrencyPreference,
 ): CurrencyPreference => {
