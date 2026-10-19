@@ -242,6 +242,8 @@ node applies. Algorand keeps the context in
 `packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
 and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
 Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
+The app lays a developer's per-network endpoint override from the network store over that record,
+and only over networks the chain's config already carries.
 
 ## Account types share one signing path
 
