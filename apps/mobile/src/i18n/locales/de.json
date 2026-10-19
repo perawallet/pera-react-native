@@ -306,7 +306,10 @@
             "empty_title": "Keine Assets",
             "empty_body": "Diesem Konto sind keine Assets zugeordnet",
             "nomatch_title": "Keine passenden Assets",
-            "nomatch_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "nomatch_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "network_filter_all": "Alle",
+            "see_networks": "Netzwerke anzeigen",
+            "hide_networks": "Netzwerke ausblenden"
         },
         "nfts": {
             "search_placeholder": "NFTs durchsuchen",

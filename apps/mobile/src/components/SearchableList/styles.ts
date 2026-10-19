@@ -31,6 +31,9 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         marginBottom: theme.spacing.lg,
     },
+    searchAccessory: {
+        paddingTop: theme.spacing.md,
+    },
     // Wraps the list and the pinned search overlay floated on top of it.
     root: {
         flex: 1,

@@ -38,6 +38,34 @@ describe('SearchableList', () => {
         expect(screen.getByText('First item')).toBeTruthy()
     })
 
+    it('renders the search accessory under the search input', () => {
+        render(
+            <SearchableList
+                data={items}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => item.label}
+                searchAccessory={<PWText>Chips</PWText>}
+            />,
+        )
+
+        expect(screen.getByText('Chips')).toBeTruthy()
+    })
+
+    it('keeps the search accessory over an empty list', () => {
+        render(
+            <SearchableList
+                data={[] as Item[]}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => item.label}
+                searchAccessory={<PWText>Chips</PWText>}
+                ListEmptyComponent={<PWText>Nothing here</PWText>}
+            />,
+        )
+
+        expect(screen.getByText('Chips')).toBeTruthy()
+        expect(screen.getByText('Nothing here')).toBeTruthy()
+    })
+
     it('renders a custom search input', () => {
         const onSearchChange = vi.fn()
 

@@ -17,6 +17,7 @@ import type { PWFlatListRef } from '@components/core'
 import {
     addressOn,
     useAccountAssetsQuery,
+    useAccountHoldingSources,
     useCanSignWith,
     assetFromHoldingLiteRow,
     useAccountScope,
@@ -25,21 +26,29 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     findNativeAsset,
+    useAssetGroupsQuery,
     useAssetPreferencesStore,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
 import {
     useDebouncedValue,
-    type Optional,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import {
     LEGACY_CHAIN_ID,
+    networkTierOf,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    useIsChainSwitchedOff,
+} from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -47,6 +56,7 @@ import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets'
+import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
 import {
@@ -58,14 +68,20 @@ import {
     useAssetListFiatConverter,
     type AssetFiatConverter,
 } from './useAssetListFiat'
+import { buildAssetListItems, type AssetListItem } from './assetListItems'
 
 type UseAccountAssetListResult = {
-    chainId: ChainId
-    /** Undefined when this build doesn't ship the chain's assets adapter. */
-    nativeAssetId: Optional<string>
-    /** The header shows the unavailable notice; the list shows no holdings under it. */
+    /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
     isChainSwitchedOff: boolean
-    holdings: AccountHoldingsLiteRow[]
+    items: AssetListItem[]
+    /** Empty while the account is on fewer than two chains: nothing to filter. */
+    chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    /** The chain the list is narrowed to; `null` is All. */
+    selectedChainId: Nullable<ChainId>
+    setSelectedChainId: (chainId: Nullable<ChainId>) => void
+    /** Rows name their network while the list spans chains. */
+    showChainBadges: boolean
+    toggleGroupExpanded: (groupId: string) => void
     convertFiat: AssetFiatConverter
     isPending: boolean
     isReadOnly: boolean
@@ -86,11 +102,22 @@ type UseAccountAssetListResult = {
         canManageAssets: boolean
         goToAssetScreen: (item: AccountHoldingsLiteRow) => void
         handleOptOut: (item: AccountHoldingsLiteRow) => void
+        /** Opt-out runs on the account's own chain only. */
+        isSwipeable: (item: AccountHoldingsLiteRow) => boolean
     }
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
-const EMPTY_HOLDINGS: AccountHoldingsLiteRow[] = []
+const EMPTY_ITEMS: AssetListItem[] = []
+
+// A test network's holdings never fold into a group with mainnet ones.
+const isMainnetScope = ({ chainId, networkId }: ChainScope): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(chainId) &&
+        networkTierOf(chains.get(chainId).descriptor, networkId) === 'mainnet'
+    )
+}
 
 type UseAccountAssetListParams = {
     account: WalletAccount
@@ -102,18 +129,63 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
+    // The account's own chain: opt-out and asset management act here.
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
-    const nativeAssetId = useMemo(
-        () => findNativeAsset(scope.chainId)?.assetId,
-        [scope.chainId],
-    )
     const accountAddress = addressOn(account, scope) ?? ''
-    const isChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
+    const isOwnChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
     const canManageAssets =
         useCapability({
             chain: { chainId: scope.chainId, capability: 'manageAssets' },
-        }) && !isChainSwitchedOff
+        }) && !isOwnChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
+
+    const sources = useAccountHoldingSources(account)
+    const isChainSwitchedOff = sources.length === 0
+    const storedChainId = useAssetListViewStore(state => state.selectedChainId)
+    const setSelectedChainId = useAssetListViewStore(
+        state => state.setSelectedChainId,
+    )
+    const expandedGroupIds = useAssetListViewStore(
+        state => state.expandedGroupIds,
+    )
+    const toggleGroupExpanded = useAssetListViewStore(
+        state => state.toggleGroupExpanded,
+    )
+    // Derived, never written back: viewing an account without the stored chain
+    // shows All, and the next account that has it shows it again.
+    const selectedChainId =
+        storedChainId !== null &&
+        sources.some(source => source.scope.chainId === storedChainId)
+            ? storedChainId
+            : null
+    const querySources = useMemo(
+        () =>
+            selectedChainId === null
+                ? sources
+                : sources.filter(
+                      source => source.scope.chainId === selectedChainId,
+                  ),
+        [sources, selectedChainId],
+    )
+    const chainFilterOptions = useMemo(
+        (): FilterOption<Nullable<ChainId>>[] =>
+            sources.length < 2
+                ? []
+                : [
+                      {
+                          value: null,
+                          label: t('account_details.assets.network_filter_all'),
+                          testID: 'asset_network_filter_all',
+                      },
+                      ...sources.map(({ scope: { chainId } }) => ({
+                          value: chainId,
+                          label: chainDisplayNameOf(chainId) ?? chainId,
+                          testID: `asset_network_filter_${chainId}`,
+                      })),
+                  ],
+        [sources, t],
+    )
+    const { groups } = useAssetGroupsQuery()
 
     // Search is debounced locally and pushed into the DB query so pagination
     // stays correct over the whole held set (rather than filtering a window).
@@ -145,13 +217,30 @@ export const useAccountAssetList = ({
     // rows; FlashList virtualizes rendering and the visible rows materialize
     // their own metadata lazily (see AssetListItemView).
     const { holdings, isPending, isPlaceholderData } = useAccountAssetsQuery(
-        accountAddress,
-        scope,
+        querySources,
         {
             filters: balanceFilters,
             sortMode: assetSortMode,
             search: debouncedSearch,
         },
+    )
+
+    // A chain chip lists that chain's own rows, so only All folds groups.
+    const items = useMemo(
+        (): AssetListItem[] =>
+            selectedChainId === null
+                ? buildAssetListItems({
+                      rows: holdings,
+                      groups,
+                      expandedGroupIds: new Set(expandedGroupIds),
+                      isGroupable: isMainnetScope,
+                  })
+                : holdings.map(row => ({
+                      kind: 'holding',
+                      row,
+                      isGroupMember: false,
+                  })),
+        [selectedChainId, holdings, groups, expandedGroupIds],
     )
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
@@ -165,7 +254,7 @@ export const useAccountAssetList = ({
 
     useEffect(() => {
         setSearchFilter('')
-    }, [accountAddress])
+    }, [account.id])
 
     const listRef = useRef<PWFlatListRef | null>(null)
 
@@ -177,7 +266,7 @@ export const useAccountAssetList = ({
     // the FlashList re-population that follows (with the sticky search bar at
     // index 0) pushes the list past the header; keying off the sort alone missed
     // the reset entirely whenever the rows hadn't arrived yet.
-    const viewRequestKey = `${accountAddress}|${assetSortMode}`
+    const viewRequestKey = `${account.id}|${selectedChainId ?? ''}|${assetSortMode}`
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
 
@@ -185,7 +274,7 @@ export const useAccountAssetList = ({
         if (appliedViewRequestKeyRef.current === viewRequestKey) return
         if (!hasRowsForRequest) return
 
-        const [appliedAddress] = appliedViewRequestKeyRef.current.split('|')
+        const [appliedAccountId] = appliedViewRequestKeyRef.current.split('|')
         // Next frame: FlashList settles its own offset on the layout pass that
         // follows a data change, and a scroll issued before it loses.
         const frame = requestAnimationFrame(() => {
@@ -198,18 +287,19 @@ export const useAccountAssetList = ({
                 offset: 0,
                 // Animate a re-sort of the list in front of you; an account
                 // switch is a new list and should just start at the top.
-                animated: appliedAddress === accountAddress,
+                animated: appliedAccountId === account.id,
             })
         })
         return () => cancelAnimationFrame(frame)
-    }, [viewRequestKey, hasRowsForRequest, accountAddress])
+    }, [viewRequestKey, hasRowsForRequest, account.id])
 
     const isReadOnly = !useCanSignWith(account, scope.chainId)
 
     const goToAssetScreen = useCallback(
         (item: AccountHoldingsLiteRow) => {
             headerState.open()
-            const assetInfo = assetFromHoldingLiteRow(item, scope.chainId)
+            const { chainId } = item.scope
+            const assetInfo = assetFromHoldingLiteRow(item, chainId)
             if (assetInfo && isCollectible(assetInfo)) {
                 navigation.navigate('CollectibleDetails', {
                     assetId: item.assetId,
@@ -217,11 +307,11 @@ export const useAccountAssetList = ({
             } else {
                 navigation.navigate('AssetDetails', {
                     assetId: item.assetId,
-                    chainId: scope.chainId,
+                    chainId,
                 })
             }
         },
-        [headerState, navigation, scope.chainId],
+        [headerState, navigation],
     )
 
     const handleOptOut = useCallback(
@@ -334,21 +424,35 @@ export const useAccountAssetList = ({
         return t('account_details.assets.empty_body')
     }, [searchFilter, hasActiveFilter, t])
 
+    const isSwipeable = useCallback(
+        (item: AccountHoldingsLiteRow) =>
+            !isReadOnly &&
+            canManageAssets &&
+            item.scope.chainId === scope.chainId &&
+            findNativeAsset(item.scope.chainId)?.assetId !== item.assetId &&
+            item.amount.isZero(),
+        [isReadOnly, canManageAssets, scope.chainId],
+    )
+
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
             canManageAssets,
             goToAssetScreen,
             handleOptOut,
+            isSwipeable,
         }),
-        [isReadOnly, canManageAssets, goToAssetScreen, handleOptOut],
+        [isReadOnly, canManageAssets, goToAssetScreen, handleOptOut, isSwipeable],
     )
 
     return {
-        chainId: scope.chainId,
-        nativeAssetId,
         isChainSwitchedOff,
-        holdings: isChainSwitchedOff ? EMPTY_HOLDINGS : holdings,
+        items: isChainSwitchedOff ? EMPTY_ITEMS : items,
+        chainFilterOptions,
+        selectedChainId,
+        setSelectedChainId,
+        showChainBadges: selectedChainId === null && sources.length > 1,
+        toggleGroupExpanded,
         convertFiat,
         isPending,
         isReadOnly,

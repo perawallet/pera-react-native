@@ -30,6 +30,8 @@ export type AssetItemViewProps = {
     asset: DisplayableAsset
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
+    /** Trails the name in the title row, such as the holding's network. */
+    titleAccessory?: ReactNode
     iconSize?: PWIconSize
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
@@ -44,6 +46,7 @@ export type AssetItemViewProps = {
 export const AssetItemView = ({
     asset,
     right,
+    titleAccessory,
     iconSize = 'xl',
     logoUrl,
     showFavorite = false,
@@ -134,6 +137,7 @@ export const AssetItemView = ({
                             size='xs'
                         />
                     ) : null}
+                    {titleAccessory}
                     {showFrozenBadge ? (
                         <PWBadge
                             variant='secondary'

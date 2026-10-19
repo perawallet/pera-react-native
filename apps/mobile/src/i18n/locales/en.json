@@ -306,7 +306,10 @@
             "empty_title": "No Assets",
             "empty_body": "You have no assets linked to this account",
             "nomatch_title": "No Matching Assets",
-            "nomatch_body": "No assets matched your search term"
+            "nomatch_body": "No assets matched your search term",
+            "network_filter_all": "All",
+            "see_networks": "See networks",
+            "hide_networks": "Hide networks"
         },
         "nfts": {
             "search_placeholder": "Search NFTs",

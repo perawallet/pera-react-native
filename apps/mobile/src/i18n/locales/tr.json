@@ -306,7 +306,10 @@
             "empty_title": "Varlık yok",
             "empty_body": "Bu hesaba bağlı hiç varlığın yok",
             "nomatch_title": "Eşleşen varlık yok",
-            "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı"
+            "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
+            "network_filter_all": "Tümü",
+            "see_networks": "Ağları gör",
+            "hide_networks": "Ağları gizle"
         },
         "nfts": {
             "search_placeholder": "NFT ara",

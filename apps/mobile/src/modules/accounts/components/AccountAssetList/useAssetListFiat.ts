@@ -16,12 +16,12 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import {
-    useIsNativeAssetId,
-    useNativeAsset,
-} from '@perawallet/wallet-core-assets'
+import { findNativeAsset, useNativeAsset } from '@perawallet/wallet-core-assets'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetFiatValue = {
@@ -30,7 +30,7 @@ export type AssetFiatValue = {
 }
 
 export type AssetFiatConverter = (
-    assetId: string,
+    ref: AssetRef,
     usdPrice: Maybe<Decimal>,
     amountDisplayUnits: Decimal,
 ) => AssetFiatValue
@@ -47,7 +47,6 @@ export type AssetFiatConverter = (
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency(scope)
     const isPreferredAlgo = preferredCurrency === nativeAsset.unitName
@@ -60,13 +59,17 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
     )
 
     return useCallback(
-        (assetId, usdPrice, amountDisplayUnits) => {
+        (ref, usdPrice, amountDisplayUnits) => {
             if (usdPrice == null) {
                 return { displayCurrency: preferredCurrency, value: null }
             }
 
-            const isSourceAlgo = isNativeAssetId(assetId)
-            const needsFallback = isPreferredAlgo && isSourceAlgo
+            // A chain's native asset can't price in itself, whichever chain
+            // the holding is on.
+            const native = findNativeAsset(ref.chainId)
+            const needsFallback =
+                native?.assetId === ref.assetId &&
+                native.unitName === preferredCurrency
             const usdValue = amountDisplayUnits.mul(usdPrice)
             // An unresolved fallback rate yields no value, not a zero one —
             // the row renders a placeholder instead of claiming the holding
@@ -83,11 +86,9 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
             }
         },
         [
-            isNativeAssetId,
             preferredCurrency,
             fallbackCurrency,
             usdToPreferred,
-            isPreferredAlgo,
             fallbackRate,
         ],
     )

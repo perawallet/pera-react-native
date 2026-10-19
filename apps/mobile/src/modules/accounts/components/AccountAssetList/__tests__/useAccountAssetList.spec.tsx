@@ -24,6 +24,10 @@ import {
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
+import { useAccountAssetsQuery } from '@perawallet/wallet-core-accounts'
+import type { AssetGroup } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 
 const mockAccount: WalletAccount = {
     id: 'test-account',
@@ -49,7 +53,28 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/native-stack', () => ({}))
 
-const makeHolding = (assetId: string) => ({
+const ALGORAND_MAINNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'mainnet',
+}
+const ETHEREUM_MAINNET: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
+
+const ETH_ADDRESS = `0x${'a'.repeat(40)}`
+
+const twoChainAccount: WalletAccount = {
+    id: 'two-chains',
+    custody: { kind: 'watch' },
+    chains: {
+        algorand: { address: 'test-address' },
+        ethereum: { address: ETH_ADDRESS },
+    },
+}
+
+const makeHolding = (assetId: string, scope = ALGORAND_MAINNET) => ({
+    scope,
     assetId,
     amount: new Decimal(0),
     decimals: null,
@@ -64,14 +89,18 @@ const makeHolding = (assetId: string) => ({
     usdPrice: null,
 })
 
-const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
+const { mockAssetsQuery, mockPreferences, mockGroups } = vi.hoisted(() => ({
     mockAssetsQuery: {
         holdings: [] as unknown[],
         isPending: false,
         isPlaceholderData: false,
     },
     mockPreferences: { assetSortMode: 'balanceDesc' },
+    mockGroups: { current: [] as unknown[] },
 }))
+
+// Watch accounts sign nothing; a test flips this to reach the swipe rules.
+const mockCanSign = vi.hoisted(() => ({ current: false }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -80,6 +109,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
+        useCanSignWith: () => mockCanSign.current,
         useAccountAssetsQuery: vi.fn(() => ({
             holdings: mockAssetsQuery.holdings,
             isPending: mockAssetsQuery.isPending,
@@ -147,6 +177,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 }),
         ),
         isCollectible: vi.fn(() => false),
+        useAssetGroupsQuery: () => ({
+            groups: mockGroups.current,
+            isPending: false,
+        }),
     }
 })
 
@@ -183,7 +217,21 @@ describe('useAccountAssetList', () => {
         mockAssetsQuery.isPending = false
         mockAssetsQuery.isPlaceholderData = false
         mockPreferences.assetSortMode = 'balanceDesc'
+        mockGroups.current = []
+        mockCanSign.current = false
+        useAssetListViewStore.setState({
+            selectedChainId: null,
+            expandedGroupIds: [],
+        })
     })
+
+    const registerEthereum = () => {
+        registerEthereumChain()
+        registerEthereumAccountsAdapter()
+    }
+
+    const lastQuerySources = () =>
+        vi.mocked(useAccountAssetsQuery).mock.lastCall?.[0]
 
     it('offers asset management only while the manageAssets capability is on', () => {
         const { result } = renderHook(() =>
@@ -202,52 +250,188 @@ describe('useAccountAssetList', () => {
         const { result } = renderHook(() =>
             useAccountAssetList({ account: mockAccount, t: mockT }),
         )
-        expect(result.current.holdings).toHaveLength(1)
+        expect(result.current.items).toHaveLength(1)
 
         act(() => setChainEnabled('algorand', false))
 
         expect(result.current.isChainSwitchedOff).toBe(true)
-        expect(result.current.holdings).toEqual([])
+        expect(result.current.items).toEqual([])
         expect(result.current.canManageAssets).toBe(false)
     })
 
-    it("takes the native asset from the account's own chain", () => {
-        const { result } = renderHook(() =>
-            useAccountAssetList({ account: mockAccount, t: mockT }),
-        )
-
-        expect(result.current.chainId).toBe('algorand')
-        expect(result.current.nativeAssetId).toBe(NATIVE_ASSET.assetId)
-    })
-
-    it("reads an Ethereum account's holdings on Ethereum, with ETH as its native asset", () => {
-        registerEthereumChain()
-        registerEthereumAccountsAdapter()
+    it("reads an Ethereum account's holdings on Ethereum", () => {
+        registerEthereum()
         const ethAccount: WalletAccount = {
             id: 'eth',
             custody: { kind: 'watch' },
-            chains: { ethereum: { address: `0x${'a'.repeat(40)}` } },
+            chains: { ethereum: { address: ETH_ADDRESS } },
         }
 
         const { result } = renderHook(() =>
             useAccountAssetList({ account: ethAccount, t: mockT }),
         )
 
-        expect(result.current.chainId).toBe('ethereum')
-        expect(result.current.nativeAssetId).toBe('native')
+        expect(lastQuerySources()).toEqual([
+            { address: ETH_ADDRESS, scope: ETHEREUM_MAINNET },
+        ])
         expect(result.current.canManageAssets).toBe(false)
     })
 
-    it("opens a holding's detail screen on the account's chain", () => {
+    it("opens a holding's detail screen on the holding's own chain", () => {
+        registerEthereum()
         const { result } = renderHook(() =>
-            useAccountAssetList({ account: mockAccount, t: mockT }),
+            useAccountAssetList({ account: twoChainAccount, t: mockT }),
         )
 
-        act(() => result.current.goToAssetScreen(makeHolding('123')))
+        act(() =>
+            result.current.goToAssetScreen(
+                makeHolding('0xabc', ETHEREUM_MAINNET),
+            ),
+        )
 
         expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
-            assetId: '123',
-            chainId: 'algorand',
+            assetId: '0xabc',
+            chainId: 'ethereum',
+        })
+    })
+
+    describe('network chips', () => {
+        it('offers no chips while the account is on one chain', () => {
+            registerEthereum()
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(result.current.chainFilterOptions).toEqual([])
+            expect(result.current.showChainBadges).toBe(false)
+        })
+
+        it("offers All and one chip per chain the account is on", () => {
+            registerEthereum()
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            expect(
+                result.current.chainFilterOptions.map(option => option.value),
+            ).toEqual([null, 'algorand', 'ethereum'])
+            expect(result.current.chainFilterOptions[0]?.label).toBe(
+                'account_details.assets.network_filter_all',
+            )
+            expect(result.current.selectedChainId).toBeNull()
+            expect(result.current.showChainBadges).toBe(true)
+            expect(lastQuerySources()).toHaveLength(2)
+        })
+
+        it('narrows the read to the selected chain and folds no groups', () => {
+            registerEthereum()
+            mockGroups.current = [
+                {
+                    id: 'usdc',
+                    name: 'USD Coin',
+                    symbol: 'USDC',
+                    logoUrl: null,
+                    members: [
+                        { scope: ALGORAND_MAINNET, assetId: '31566704' },
+                        { scope: ETHEREUM_MAINNET, assetId: '0xA0b8' },
+                    ],
+                } satisfies AssetGroup,
+            ]
+            mockAssetsQuery.holdings = [makeHolding('0xA0b8', ETHEREUM_MAINNET)]
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(lastQuerySources()).toEqual([
+                { address: ETH_ADDRESS, scope: ETHEREUM_MAINNET },
+            ])
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'holding',
+            ])
+            expect(result.current.showChainBadges).toBe(false)
+        })
+
+        it('folds grouped holdings under All', () => {
+            registerEthereum()
+            mockGroups.current = [
+                {
+                    id: 'usdc',
+                    name: 'USD Coin',
+                    symbol: 'USDC',
+                    logoUrl: null,
+                    members: [
+                        { scope: ALGORAND_MAINNET, assetId: '31566704' },
+                        { scope: ETHEREUM_MAINNET, assetId: '0xA0b8' },
+                    ],
+                } satisfies AssetGroup,
+            ]
+            mockAssetsQuery.holdings = [
+                makeHolding('31566704'),
+                makeHolding('0xA0b8', ETHEREUM_MAINNET),
+            ]
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'group',
+            ])
+        })
+
+        it('shows All for an account without the selected chain, and keeps the selection', () => {
+            registerEthereum()
+            useAssetListViewStore.getState().setSelectedChainId('ethereum')
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(result.current.selectedChainId).toBeNull()
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'ethereum',
+            )
+        })
+
+        it('passes the search through to the read', async () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            act(() => result.current.setSearchFilter('0xA0'))
+            await act(
+                () => new Promise(resolve => setTimeout(resolve, 200)),
+            )
+
+            expect(vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]).toEqual(
+                expect.objectContaining({ search: '0xA0' }),
+            )
+        })
+
+        it("lets only the account's own chain swipe to opt out", () => {
+            registerEthereum()
+            mockCanSign.current = true
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            expect(
+                result.current.renderItemProps.isSwipeable(makeHolding('123')),
+            ).toBe(true)
+            expect(
+                result.current.renderItemProps.isSwipeable(
+                    makeHolding('0xabc', ETHEREUM_MAINNET),
+                ),
+            ).toBe(false)
+            expect(
+                result.current.renderItemProps.isSwipeable(makeHolding('0')),
+            ).toBe(false)
         })
     })
 
@@ -261,6 +445,7 @@ describe('useAccountAssetList', () => {
 
         await act(async () => {
             await result.current.handleOptOut({
+                scope: ALGORAND_MAINNET,
                 assetId: '123',
                 amount: new Decimal(0),
                 decimals: null,
@@ -290,6 +475,7 @@ describe('useAccountAssetList', () => {
 
         await act(async () => {
             await result.current.handleOptOut({
+                scope: ALGORAND_MAINNET,
                 assetId: '123',
                 amount: new Decimal(0),
                 decimals: null,
@@ -432,6 +618,7 @@ describe('useAccountAssetList', () => {
             rerender({
                 account: {
                     ...mockAccount,
+                    id: 'other-account',
                     chains: { algorand: { address: 'other-address' } },
                 },
             })
