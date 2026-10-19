@@ -10,72 +10,40 @@
  limitations under the License
  */
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
-import { Decimal } from 'decimal.js'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { assetFromHoldingLiteRow } from '@perawallet/wallet-core-accounts'
-import {
-    baseUnitsToDisplayUnits,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { AssetRowSkeleton } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
-import type { AssetListItem } from '../assetListItems'
-import type { AssetFiatConverter, AssetFiatValue } from '../useAssetListFiat'
+import { AssetRowSkeleton } from '../AssetRowSkeleton'
+import type { AssetFiatConverter } from '../../hooks/useAssetListFiatConverter'
+import type {
+    AssetGroupItem,
+    GroupableHolding,
+} from '../../utils/groupedHoldings'
+import { NetworkIconStack } from './NetworkIconStack'
+import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
-export type AssetGroupListItemViewProps = {
-    item: Extract<AssetListItem, { kind: 'group' }>
+export type AssetGroupRowProps<T extends GroupableHolding> = {
+    item: AssetGroupItem<T>
     convertFiat: AssetFiatConverter
-    onPress: () => void
+    onToggleExpanded: () => void
     style?: StyleProp<ViewStyle>
 }
 
-const AssetGroupListItemViewBase = ({
+const AssetGroupRowBase = <T extends GroupableHolding>({
     item,
     convertFiat,
-    onPress,
+    onToggleExpanded,
     style,
-}: AssetGroupListItemViewProps) => {
+}: AssetGroupRowProps<T>) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { group, members, amount, isExpanded } = item
+    const { group, amount, isExpanded } = item
 
-    const icon = useMemo(() => {
-        const [first] = members
-        return first
-            ? assetFromHoldingLiteRow(first, first.scope.chainId)
-            : null
-    }, [members])
-
-    // One unknown member makes the whole value unknown: a partial sum would
-    // understate the holding.
-    const fiat = useMemo((): Nullable<AssetFiatValue> => {
-        let total: Nullable<Decimal> = new Decimal(0)
-        let displayCurrency: Nullable<string> = null
-        for (const member of members) {
-            const asset = assetFromHoldingLiteRow(member, member.scope.chainId)
-            if (!asset) return null
-            const converted = convertFiat(
-                { chainId: member.scope.chainId, assetId: member.assetId },
-                member.usdPrice,
-                baseUnitsToDisplayUnits(member.amount, asset.decimals),
-            )
-            displayCurrency ??= converted.displayCurrency
-            total =
-                total === null ||
-                converted.value === null ||
-                converted.displayCurrency !== displayCurrency
-                    ? null
-                    : total.plus(converted.value)
-        }
-        return displayCurrency === null
-            ? null
-            : { displayCurrency, value: total }
-    }, [members, convertFiat])
+    const { icon, chainIds, fiat } = useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
         return <AssetRowSkeleton />
@@ -84,7 +52,7 @@ const AssetGroupListItemViewBase = ({
     return (
         <PWTouchableOpacity
             testID={`asset_group_row_${group.id}`}
-            onPress={onPress}
+            onPress={onToggleExpanded}
             style={[styles.container, style]}
         >
             <AssetIcon
@@ -115,6 +83,7 @@ const AssetGroupListItemViewBase = ({
                         size='xs'
                         style={isExpanded ? styles.chevronExpanded : undefined}
                     />
+                    <NetworkIconStack chainIds={chainIds} />
                 </PWView>
             </PWView>
             <PWView style={styles.amountContainer}>
@@ -129,9 +98,9 @@ const AssetGroupListItemViewBase = ({
                     numberOfLines={1}
                 />
                 <CurrencyAmount
-                    currency={fiat?.displayCurrency ?? ''}
+                    currency={fiat.displayCurrency}
                     assetId={null}
-                    value={fiat?.value}
+                    value={fiat.value}
                     precision='compact'
                     showSymbol
                     variant='body'
@@ -143,4 +112,6 @@ const AssetGroupListItemViewBase = ({
     )
 }
 
-export const AssetGroupListItemView = React.memo(AssetGroupListItemViewBase)
+export const AssetGroupRow = React.memo(
+    AssetGroupRowBase,
+) as typeof AssetGroupRowBase

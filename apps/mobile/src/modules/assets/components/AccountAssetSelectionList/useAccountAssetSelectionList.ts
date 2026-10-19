@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     type AssetWithAccountBalance,
     type ChainAssetBalance,
@@ -24,9 +24,25 @@ import {
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useGroupedHoldings } from '../../hooks/useGroupedHoldings'
+import {
+    spansChains,
+    type GroupableHoldingAdapter,
+    type GroupedHoldingItem,
+} from '../../utils/groupedHoldings'
 
 const isNativeOn = (balance: ChainAssetBalance): boolean =>
     balance.assetId === nativeAssetFor(balance.scope.chainId).assetId
+
+// Balances read 0 for an unpriced asset; its null fiat value is what says unknown.
+const pickerHoldingAdapter: GroupableHoldingAdapter<ChainAssetBalance> = {
+    assetOf: balance => balance.asset ?? null,
+    displayAmountOf: balance => balance.amount,
+    usdPriceOf: balance =>
+        balance.fiatValue === null ? null : (balance.usdPrice ?? null),
+}
+
+const NO_EXPANDED_GROUPS: ReadonlySet<string> = new Set()
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
@@ -38,6 +54,9 @@ type UseAccountAssetSelectionListParams = {
 
 type UseAccountAssetSelectionListResult = {
     filteredBalanceData: ChainAssetBalance[]
+    /** A group is never a selection: only its member rows are. */
+    items: GroupedHoldingItem<ChainAssetBalance>[]
+    toggleGroupExpanded: (groupId: string) => void
     searchFilter: string
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
@@ -76,12 +95,23 @@ export const useAccountAssetSelectionList = ({
 
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
+    const [expandedGroupIds, setExpandedGroupIds] =
+        useState<ReadonlySet<string>>(NO_EXPANDED_GROUPS)
 
     useEffect(() => {
         if (isVisible === false) {
             setSearchFilter('')
+            setExpandedGroupIds(NO_EXPANDED_GROUPS)
         }
     }, [isVisible])
+
+    const toggleGroupExpanded = useCallback((groupId: string) => {
+        setExpandedGroupIds(current => {
+            const next = new Set(current)
+            if (!next.delete(groupId)) next.add(groupId)
+            return next
+        })
+    }, [])
 
     const filteredBalanceData = useMemo(() => {
         const items = balanceData ?? []
@@ -107,8 +137,19 @@ export const useAccountAssetSelectionList = ({
         )
     }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
 
+    // Folds what survived the filters, so a search matching one member of a
+    // group lists it as a plain row. One chain can fold nothing.
+    const { items } = useGroupedHoldings({
+        holdings: filteredBalanceData,
+        adapter: pickerHoldingAdapter,
+        expandedGroupIds,
+        isEnabled: spansChains(filteredBalanceData),
+    })
+
     return {
         filteredBalanceData,
+        items,
+        toggleGroupExpanded,
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,

@@ -30,7 +30,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
 import { AssetItemView } from './AssetItemView'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
@@ -47,6 +47,8 @@ export type AccountAssetItemViewProps = {
     showFrozenBadge?: boolean
     /** The holding's chain; the selected Algorand scope when unset. */
     scope?: ChainScope
+    /** Replaces the secondary line under the name, such as the holding's network. */
+    subtitle?: ReactNode
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -58,6 +60,7 @@ export const AccountAssetItemView = ({
     skipFetch = false,
     showFrozenBadge = false,
     scope: holdingScope,
+    subtitle,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
@@ -152,6 +155,7 @@ export const AccountAssetItemView = ({
             showDeletedLabel
             showFrozenBadge={showFrozenBadge}
             copyableAssetId
+            subtitle={subtitle}
             onPress={onPress}
             {...rest}
         />

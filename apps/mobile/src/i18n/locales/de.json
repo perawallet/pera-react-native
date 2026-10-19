@@ -317,7 +317,8 @@
             "nomatch_body": "Keine Assets entsprechen deinem Suchbegriff",
             "network_filter_all": "Alle",
             "see_networks": "Netzwerke anzeigen",
-            "hide_networks": "Netzwerke ausblenden"
+            "hide_networks": "Netzwerke ausblenden",
+            "chain_network": "{{chain}}-Netzwerk"
         },
         "nfts": {
             "search_placeholder": "NFTs durchsuchen",

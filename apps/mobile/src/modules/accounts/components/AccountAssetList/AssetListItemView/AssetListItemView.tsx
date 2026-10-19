@@ -30,8 +30,9 @@ import {
     AssetItemView,
     CollectibleListItem,
     AssetRowSkeleton,
+    NetworkLabel,
+    type AssetFiatConverter,
 } from '@modules/assets'
-import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
 
 export type AssetListItemViewProps = {
@@ -41,6 +42,8 @@ export type AssetListItemViewProps = {
     isNativeAsset: boolean
     /** Shown beside the name when the list spans chains. */
     chainName?: string
+    /** Listed under its group: names its network instead of the chain badge. */
+    isGroupMember?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -60,6 +63,7 @@ const AssetListItemViewBase = ({
     chainId,
     isNativeAsset,
     chainName,
+    isGroupMember = false,
     convertFiat,
     onPress,
     style,
@@ -127,7 +131,7 @@ const AssetListItemViewBase = ({
             />
             {/* Dynamic currency: usually the preferred currency, but ALGO-
                 denominated holdings fall back to the fiat currency when the
-                preferred currency is ALGO (see useAssetListFiat). Must honor
+                preferred currency is ALGO (see useAssetListFiatConverter). Must honor
                 fiat.displayCurrency, so this is CurrencyAmount (not
                 PreferredAmount, which would force the ALGO label onto a fiat
                 value). */}
@@ -152,7 +156,12 @@ const AssetListItemViewBase = ({
             asset={asset}
             right={balance}
             titleAccessory={
-                chainName ? <ChainBadge name={chainName} /> : undefined
+                chainName && !isGroupMember ? (
+                    <ChainBadge name={chainName} />
+                ) : undefined
+            }
+            subtitle={
+                isGroupMember ? <NetworkLabel chainId={chainId} /> : undefined
             }
             showFavorite
             showDeletedLabel

@@ -26,11 +26,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     findNativeAsset,
-    useAssetGroupsQuery,
     useAssetPreferencesStore,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
 import {
+    baseUnitsToDisplayUnits,
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -39,15 +39,12 @@ import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import {
     LEGACY_CHAIN_ID,
-    networkTierOf,
     type ChainId,
-    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useIsChainSwitchedOff,
 } from '@perawallet/wallet-core-chain-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -55,7 +52,14 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddAssetContent } from '@modules/assets'
+import {
+    AddAssetContent,
+    useAssetListFiatConverter,
+    useGroupedHoldings,
+    type AssetFiatConverter,
+    type GroupableHoldingAdapter,
+    type GroupedHoldingItem,
+} from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
@@ -64,16 +68,11 @@ import {
     type ManageAssetsAction,
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
-import {
-    useAssetListFiatConverter,
-    type AssetFiatConverter,
-} from './useAssetListFiat'
-import { buildAssetListItems, type AssetListItem } from './assetListItems'
 
 type UseAccountAssetListResult = {
     /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
     isChainSwitchedOff: boolean
-    items: AssetListItem[]
+    items: GroupedHoldingItem<AccountHoldingsLiteRow>[]
     /** Empty while the account is on fewer than two chains: nothing to filter. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
     /** The chain the list is narrowed to; `null` is All. */
@@ -108,15 +107,15 @@ type UseAccountAssetListResult = {
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
-const EMPTY_ITEMS: AssetListItem[] = []
+const EMPTY_ITEMS: GroupedHoldingItem<AccountHoldingsLiteRow>[] = []
 
-// A test network's holdings never fold into a group with mainnet ones.
-const isMainnetScope = ({ chainId, networkId }: ChainScope): boolean => {
-    const { chains } = getProvider()
-    return (
-        chains.has(chainId) &&
-        networkTierOf(chains.get(chainId).descriptor, networkId) === 'mainnet'
-    )
+// Rows carry base units and parse their metadata lazily; only group members
+// reach this.
+const homeHoldingAdapter: GroupableHoldingAdapter<AccountHoldingsLiteRow> = {
+    assetOf: holding => assetFromHoldingLiteRow(holding, holding.scope.chainId),
+    displayAmountOf: (holding, asset) =>
+        baseUnitsToDisplayUnits(holding.amount, asset.decimals),
+    usdPriceOf: holding => holding.usdPrice,
 }
 
 type UseAccountAssetListParams = {
@@ -185,10 +184,6 @@ export const useAccountAssetList = ({
                   ],
         [sources, t],
     )
-    // Only All over two or more chains can fold anything.
-    const { groups } = useAssetGroupsQuery({
-        enabled: selectedChainId === null && sources.length > 1,
-    })
 
     // Search is debounced locally and pushed into the DB query so pagination
     // stays correct over the whole held set (rather than filtering a window).
@@ -228,23 +223,18 @@ export const useAccountAssetList = ({
         },
     )
 
-    // A chain chip lists that chain's own rows, so only All folds groups.
-    const items = useMemo(
-        (): AssetListItem[] =>
-            selectedChainId === null
-                ? buildAssetListItems({
-                      rows: holdings,
-                      groups,
-                      expandedGroupIds: new Set(expandedGroupIds),
-                      isGroupable: isMainnetScope,
-                  })
-                : holdings.map(row => ({
-                      kind: 'holding',
-                      row,
-                      isGroupMember: false,
-                  })),
-        [selectedChainId, holdings, groups, expandedGroupIds],
+    const expandedGroupIdSet = useMemo(
+        () => new Set(expandedGroupIds),
+        [expandedGroupIds],
     )
+    // A chain chip lists that chain's own rows, so only All over two or more
+    // chains can fold anything.
+    const { items } = useGroupedHoldings({
+        holdings,
+        adapter: homeHoldingAdapter,
+        expandedGroupIds: expandedGroupIdSet,
+        isEnabled: selectedChainId === null && sources.length > 1,
+    })
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
     // per-row render observer-free without precomputing all N holdings.

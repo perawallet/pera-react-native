@@ -12,6 +12,12 @@
 
 export { AccountAssetSelectionList } from './components/AccountAssetSelectionList'
 export { AddAssetContent } from './components/AddAssetContent'
+export {
+    AssetGroupRow,
+    NetworkLabel,
+    type AssetGroupRowProps,
+    type NetworkLabelProps,
+} from './components/AssetGroupRow'
 export { AccountAssetItemView, AssetItemView } from './components/AssetItem'
 export { AssetNameBadge } from './components/AssetNameBadge'
 export { AssetRowSkeleton } from './components/AssetRowSkeleton'
@@ -22,6 +28,27 @@ export { CollectibleGridItem } from './components/CollectibleGridItem'
 export { CollectibleListItem } from './components/CollectibleListItem'
 export { OptInAccountSelectionContent } from './components/OptInAccountSelectionContent'
 export { OptInConfirmationContent } from './components/OptInConfirmationContent'
+export {
+    useAssetListFiatConverter,
+    type AssetFiatConverter,
+    type AssetFiatValue,
+} from './hooks/useAssetListFiatConverter'
+export {
+    useGroupedHoldings,
+    type UseGroupedHoldingsParams,
+    type UseGroupedHoldingsResult,
+} from './hooks/useGroupedHoldings'
+export {
+    buildGroupedHoldingItems,
+    groupedHoldingItemKey,
+    isMainnetScope,
+    spansChains,
+    type AssetGroupItem,
+    type GroupableHolding,
+    type GroupableHoldingAdapter,
+    type GroupedHoldingItem,
+    type GroupedHoldingMember,
+} from './utils/groupedHoldings'
 export type {
     AssetAboutParams,
     AssetAboutDisplay,

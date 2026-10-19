@@ -317,7 +317,8 @@
             "nomatch_body": "Aucun actif ne correspond à votre recherche",
             "network_filter_all": "Tous",
             "see_networks": "Voir les réseaux",
-            "hide_networks": "Masquer les réseaux"
+            "hide_networks": "Masquer les réseaux",
+            "chain_network": "Réseau {{chain}}"
         },
         "nfts": {
             "search_placeholder": "Rechercher des NFT",

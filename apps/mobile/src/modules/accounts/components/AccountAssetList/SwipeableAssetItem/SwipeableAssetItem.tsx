@@ -23,7 +23,7 @@ import {
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetListItemView } from '../AssetListItemView'
-import type { AssetFiatConverter } from '../useAssetListFiat'
+import type { AssetFiatConverter } from '@modules/assets'
 import { useStyles } from './styles'
 
 export type SwipeableAssetItemProps = {
@@ -33,6 +33,8 @@ export type SwipeableAssetItemProps = {
     isSwipeEnabled: boolean
     /** Shown beside the name when the list spans chains. */
     chainName?: string
+    /** Listed under its group: names its network instead of the chain badge. */
+    isGroupMember?: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
     onOptOut: (item: AccountHoldingsLiteRow) => void
@@ -44,6 +46,7 @@ const SwipeableAssetItemInner = ({
     isNativeAsset,
     isSwipeEnabled,
     chainName,
+    isGroupMember,
     convertFiat,
     onPress,
     onOptOut,
@@ -83,6 +86,7 @@ const SwipeableAssetItemInner = ({
                 chainId={chainId}
                 isNativeAsset={isNativeAsset}
                 chainName={chainName}
+                isGroupMember={isGroupMember}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -115,6 +119,7 @@ const SwipeableAssetItemInner = ({
                     chainId={chainId}
                     isNativeAsset={isNativeAsset}
                     chainName={chainName}
+                    isGroupMember={isGroupMember}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}

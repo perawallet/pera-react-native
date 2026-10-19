@@ -18,6 +18,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
+import { useAssetListFiatConverter } from '../../hooks/useAssetListFiatConverter'
+import {
+    groupedHoldingItemKey,
+    type GroupedHoldingItem,
+} from '../../utils/groupedHoldings'
+import { AssetGroupRow, NetworkLabel } from '../AssetGroupRow'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -50,7 +56,8 @@ export const AccountAssetSelectionList = ({
 }: AccountAssetSelectionListProps) => {
     const styles = useStyles({ hasPadding })
     const {
-        filteredBalanceData,
+        items,
+        toggleGroupExpanded,
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
@@ -62,8 +69,27 @@ export const AccountAssetSelectionList = ({
         isAcrossChains,
     })
 
+    const convertFiat = useAssetListFiatConverter()
+
     const renderItem = useCallback(
-        ({ item }: { item: ChainAssetBalance }) => {
+        ({
+            item: listItem,
+        }: {
+            item: GroupedHoldingItem<ChainAssetBalance>
+        }) => {
+            if (listItem.kind === 'group') {
+                return (
+                    <AssetGroupRow
+                        item={listItem}
+                        convertFiat={convertFiat}
+                        onToggleExpanded={() =>
+                            toggleGroupExpanded(listItem.group.id)
+                        }
+                        style={styles.item}
+                    />
+                )
+            }
+            const { holding: item, isGroupMember } = listItem
             const isTransferBlocked =
                 item.restriction === HoldingRestrictions.transferBlocked
             return (
@@ -78,18 +104,23 @@ export const AccountAssetSelectionList = ({
                     // selectable.
                     disabled={isTransferBlocked}
                     showFrozenBadge={isTransferBlocked}
+                    subtitle={
+                        isGroupMember ? (
+                            <NetworkLabel chainId={item.scope.chainId} />
+                        ) : undefined
+                    }
                     testID={`asset-list-item-${item.assetId}`}
                 />
             )
         },
-        [onAssetSelected, styles],
+        [onAssetSelected, styles, convertFiat, toggleGroupExpanded],
     )
 
     return (
         <AssetSelectionList
-            data={filteredBalanceData}
+            data={items}
             renderItem={renderItem}
-            keyExtractor={item => `${item.scope.chainId}:${item.assetId}`}
+            keyExtractor={groupedHoldingItemKey}
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}

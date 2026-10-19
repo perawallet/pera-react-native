@@ -420,7 +420,7 @@ describe('useAccountAssetList', () => {
 
             const memberScopes = result.current.items.flatMap(item =>
                 item.kind === 'holding' && item.isGroupMember
-                    ? [item.row.scope.chainId]
+                    ? [item.holding.scope.chainId]
                     : [],
             )
             expect(result.current.items[0]?.kind).toBe('group')
@@ -460,7 +460,7 @@ describe('useAccountAssetList', () => {
                 item =>
                     item.kind === 'holding' &&
                     item.isGroupMember &&
-                    item.row.scope.chainId === 'ethereum',
+                    item.holding.scope.chainId === 'ethereum',
             )
             if (ethereumMember?.kind !== 'holding') {
                 throw new Error('expected the Ethereum member row')
@@ -468,7 +468,7 @@ describe('useAccountAssetList', () => {
 
             act(() =>
                 result.current.renderItemProps.goToAssetScreen(
-                    ethereumMember.row,
+                    ethereumMember.holding,
                 ),
             )
 

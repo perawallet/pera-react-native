@@ -317,7 +317,8 @@
             "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
-            "hide_networks": "Ağları gizle"
+            "hide_networks": "Ağları gizle",
+            "chain_network": "{{chain}} ağı"
         },
         "nfts": {
             "search_placeholder": "NFT ara",
