@@ -179,7 +179,9 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
 
     it('Given a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
         seedQuantumSender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -205,7 +207,9 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         // The account type gates the explainer: a standard signer must never
         // surface it.
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

@@ -21,7 +21,10 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -37,6 +40,8 @@ type UseAddressDisplayProps = {
     addressFormat: AddressFormat
     displayType: AddressDisplayType
     showSecondaryAddress: boolean
+    /** The address's chain; the selected Algorand scope when unset. */
+    scope?: ChainScope
 }
 
 type ResolvedLabels = {
@@ -107,8 +112,10 @@ export const useAddressDisplay = ({
     addressFormat,
     displayType,
     showSecondaryAddress,
+    scope: addressScope,
 }: UseAddressDisplayProps): UseAddressDisplayResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = addressScope ?? legacyScope
     const { copyToClipboard } = useClipboard()
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
@@ -120,10 +127,8 @@ export const useAddressDisplay = ({
         if (displayType !== 'full') {
             return null
         }
-        return (
-            findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address) ?? null
-        )
-    }, [displayType, accounts, address])
+        return findAccountByAddressOn(accounts, scope.chainId, address) ?? null
+    }, [displayType, accounts, address, scope.chainId])
 
     const contact = useMemo(() => {
         if (isAddressOnly) {

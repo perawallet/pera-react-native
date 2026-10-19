@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { CopyableText } from '@components/CopyableText'
 import { ContactAvatar } from '@components/ContactAvatar'
 import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
@@ -55,6 +56,8 @@ export type AddressDisplayProps = {
      * pushing them to the far right.
      */
     hugContent?: boolean
+    /** The address's chain; the selected Algorand scope when unset. */
+    scope?: ChainScope
 } & PWTouchableOpacityProps
 
 export const AddressDisplay = ({
@@ -70,6 +73,7 @@ export const AddressDisplay = ({
     contactAvatarVariant = 'default',
     trailing,
     hugContent = false,
+    scope,
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles({ hugContent })
@@ -86,6 +90,7 @@ export const AddressDisplay = ({
         addressFormat,
         displayType,
         showSecondaryAddress,
+        scope,
     })
 
     const isUnifiedLayout = !!iconName || showSecondaryAddress

@@ -122,8 +122,9 @@ export const useTabResume = (
                 })
                 return
             }
+            // The intent's account is looked up on the legacy chain above.
             openSendFunds({
-                assetId: intent.assetId,
+                asset: { chainId: LEGACY_CHAIN_ID, assetId: intent.assetId },
                 destination: intent.destination,
                 amount: new Decimal(intent.amount),
                 note: intent.note,

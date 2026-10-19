@@ -283,7 +283,10 @@ describe('Flow: View NFT collectible detail', () => {
         // destination: pre-set the send-funds store the way the
         // upstream screens would, then mount the same Confirmation
         // → Processing → Success stack send-asa.spec.tsx uses.
-        useSendFundsStore.getState().setSelectedAssetId(NFT_TEST_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAsset({
+            chainId: 'algorand',
+            assetId: NFT_TEST_ASSET_ID,
+        })
         // NFT amount is `1` in display units; decimals=0 means base
         // == display, so the asset-transfer tx will carry amount=1.
         useSendFundsStore.getState().setAmount(new Decimal(1))

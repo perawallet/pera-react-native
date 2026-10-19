@@ -40,7 +40,7 @@ const fakeRegistry = (registered: boolean) => ({
 })
 
 const registries = (registered: boolean): CapabilityAdapterRegistries => ({
-    'send flow': fakeRegistry(registered),
+    transfer: fakeRegistry(registered),
     planner: fakeRegistry(registered),
     transactionPlanner: fakeRegistry(registered),
     reviewer: fakeRegistry(registered),
@@ -97,10 +97,8 @@ describe('capabilityAdapterContractViolations', () => {
         expect(
             capabilityAdapterContractViolations(chains, registries(false)),
         ).toEqual([
-            'chain "algorand" enables "send" but the "send flow" registry has no adapter for it',
+            'chain "algorand" enables "send" but the "transfer" registry has no adapter for it',
             'chain "algorand" enables "send" but the "transactionPlanner" registry has no adapter for it',
-            'chain "algorand" enables "send" but the "reviewer" registry has no adapter for it',
-            'chain "algorand" enables "send" but the "local-key signer" registry has no adapter for it',
             'chain "algorand" enables "send" but the "broadcaster" registry has no adapter for it',
         ])
     })

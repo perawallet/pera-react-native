@@ -12,7 +12,15 @@
 
 import { Decimal } from 'decimal.js'
 import { act, renderHook } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from 'vitest'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
     canSignWith,
@@ -22,6 +30,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 
 const mockNavigate = vi.fn()
 const mockStackRoutes = vi.fn<() => { key: string }[]>()
@@ -55,11 +65,17 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: () => ({ displayName: 'Algorand' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     getArc59Config: mockGetArc59Config,
+}))
+
+// Algorand routes opt-in sends through its send-flow adapter.
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    sendFlowChainAdapters: { has: () => true },
 }))
 
 vi.mock('@hooks/useCapability', async () =>
@@ -74,6 +90,7 @@ vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -106,6 +123,19 @@ const EXTERNAL_ADDR = 'EXTERNALADDR'
 const INTERNAL_SIGNABLE_ADDR = 'SIGNABLEADDR'
 const INTERNAL_WATCH_ADDR = 'WATCHADDR'
 const INTERNAL_OPTED_IN_ADDR = 'OPTEDINADDR'
+
+// Every receiver these tests route is a valid address on the send chain.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: 'algorand',
+        isValid: () => true,
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('useSelectDestinationScreen', () => {
     beforeEach(() => {

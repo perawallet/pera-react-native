@@ -58,12 +58,12 @@ export const AssetActionButtons = ({
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
     const isReadOnly = !useCanSignWith(account, chainId)
-    const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
+    const { setSelectedAsset, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const { canSwap, canBuy } = useAssetActionButtons(account, chainId)
+    const { canSwap, canBuy, canSend } = useAssetActionButtons(account, chainId)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -98,13 +98,15 @@ export const AssetActionButtons = ({
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send)
         if (assetHolding) {
-            setSelectedAssetId(assetHolding.assetId)
+            setSelectedAsset({ chainId, assetId: assetHolding.assetId })
             setCanSelectAsset(false)
         }
 
         void requestBottomSheet({
             id: SEND_FUNDS_SHEET_ID,
-            contents: <SendFundsContent assetId={asset.assetId} />,
+            contents: (
+                <SendFundsContent asset={{ chainId, assetId: asset.assetId }} />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: false,
@@ -114,10 +116,11 @@ export const AssetActionButtons = ({
         })
     }, [
         assetHolding,
-        setSelectedAssetId,
+        setSelectedAsset,
         setCanSelectAsset,
         requestBottomSheet,
         asset.assetId,
+        chainId,
     ])
 
     const handleCopyAddress = useCallback(() => {
@@ -183,16 +186,18 @@ export const AssetActionButtons = ({
                     testID='asset_detail_buy_button'
                 />
             )}
-            <RoundButton
-                title={t('asset_details.action_buttons.send')}
-                icon='outflow'
-                variant='secondary'
-                onPress={handleSend}
-                disabled={isFrozen}
-                badgeIcon={isFrozen ? 'snowflake' : undefined}
-                style={styles.buttonFour}
-                testID='asset_detail_send_button'
-            />
+            {canSend && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.send')}
+                    icon='outflow'
+                    variant='secondary'
+                    onPress={handleSend}
+                    disabled={isFrozen}
+                    badgeIcon={isFrozen ? 'snowflake' : undefined}
+                    style={styles.buttonFour}
+                    testID='asset_detail_send_button'
+                />
+            )}
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'

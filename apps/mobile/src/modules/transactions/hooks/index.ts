@@ -11,6 +11,7 @@
  */
 
 export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
+export { useSendScope } from './send-funds/useSendScope'
 export {
     useClaimAssetsStore,
     useClaimAssets,

@@ -505,6 +505,38 @@ describe('useSigningRequest', () => {
 
             expect(mockReject).toHaveBeenCalled()
         })
+
+        test('when no actor, rejects a submit-and-answer caller too, so it never waits forever', async () => {
+            const mockReject = vi.fn()
+            const { result } = renderHook(() => useSigningRequest())
+
+            act(() => {
+                result.current.rejectRequest(
+                    makeTxRequest({
+                        transport: 'submit-and-answer',
+                        reject: mockReject,
+                    }),
+                )
+            })
+
+            expect(mockReject).toHaveBeenCalled()
+        })
+
+        test('when no actor, calls no reject callback for an algod request', async () => {
+            const mockReject = vi.fn()
+            const { result } = renderHook(() => useSigningRequest())
+
+            act(() => {
+                result.current.rejectRequest(
+                    makeTxRequest({
+                        transport: 'algod',
+                        reject: mockReject,
+                    } as never),
+                )
+            })
+
+            expect(mockReject).not.toHaveBeenCalled()
+        })
     })
 
     describe('actor lifecycle', () => {

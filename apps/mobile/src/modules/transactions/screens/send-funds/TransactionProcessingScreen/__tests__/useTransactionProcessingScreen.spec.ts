@@ -117,6 +117,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 })
 
 vi.mock('@modules/transactions/hooks', () => ({
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useSendFunds: () => ({
         selectedAssetId: '0',
         amount: sendFundsState.amount,

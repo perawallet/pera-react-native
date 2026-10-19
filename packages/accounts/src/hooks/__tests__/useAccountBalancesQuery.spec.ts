@@ -22,6 +22,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
+    useAccountHoldingsAcrossChainsQuery,
 } from '../useAccountBalancesQuery'
 import {
     onlineManager,
@@ -615,5 +616,85 @@ describe('useAccountAssetBalanceQuery', () => {
 
         expect(result.current.isPending).toBe(false)
         expect(result.current.data).toBeNull()
+    })
+})
+
+describe('useAccountHoldingsAcrossChainsQuery', () => {
+    const allOn = Object.fromEntries(
+        CHAIN_CAPABILITIES.map(capability => [capability, true]),
+    ) as ChainCapabilities
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockGetAccountChainStateRow.mockReturnValue({
+            nativeBalance: new Decimal(0),
+        })
+        mockFetchAndPersistAccount.mockResolvedValue(undefined)
+        for (const id of ['algorand', 'ethereum']) {
+            getProvider().chains.register(
+                {
+                    id,
+                    networks: [
+                        {
+                            id: 'mainnet',
+                            tier: 'mainnet',
+                            isDefaultForTier: true,
+                        },
+                    ],
+                } as unknown as ChainDescriptor,
+                allOn,
+            )
+        }
+    })
+
+    it("lists the holdings on every chain the account has an address on, each with its chain's scope", async () => {
+        mockGetAccountHoldingsPage.mockImplementation(
+            async ({ scope }: { scope: ChainScope }) =>
+                scope.chainId === 'ethereum'
+                    ? [
+                          {
+                              assetId: 'native',
+                              amount: new Decimal('2000000000000000000'),
+                              asset: { assetId: 'native', decimals: 18 },
+                              usdPrice: null,
+                              isFavorited: false,
+                          },
+                      ]
+                    : [algoRow(3_000_000, 1)],
+        )
+        const twoChainAccount = buildTestAccount(
+            { kind: 'watch' },
+            {
+                algorand: { address: 'ALGO1' },
+                ethereum: { address: 'ETH1' },
+            },
+            { id: 'two-chain' },
+        )
+
+        const { result } = renderHook(
+            () => useAccountHoldingsAcrossChainsQuery(twoChainAccount),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(
+            result.current.assetBalances.map(b => ({
+                chainId: b.scope.chainId,
+                assetId: b.assetId,
+                amount: b.amount,
+            })),
+        ).toEqual([
+            { chainId: 'algorand', assetId: '0', amount: new Decimal(3) },
+            { chainId: 'ethereum', assetId: 'native', amount: new Decimal(2) },
+        ])
+    })
+
+    it('lists nothing without an account', () => {
+        const { result } = renderHook(
+            () => useAccountHoldingsAcrossChainsQuery(null),
+            { wrapper: createWrapper() },
+        )
+
+        expect(result.current).toEqual({ assetBalances: [], isPending: false })
     })
 })

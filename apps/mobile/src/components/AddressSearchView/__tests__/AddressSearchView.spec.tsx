@@ -22,6 +22,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: vi.fn(),
@@ -29,8 +31,8 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
     type TestAccount = { chains?: Record<string, { address?: string }> }
-    const addressOn = (account: TestAccount) =>
-        account.chains?.algorand?.address
+    const addressOn = (account: TestAccount, scope?: { chainId: string }) =>
+        account.chains?.[scope?.chainId ?? 'algorand']?.address
     return {
         addressOn,
         chainAccountOf: (account: TestAccount, chainId: string) =>
@@ -49,6 +51,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         })),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: () => ({ family: 'algorand' }),
+}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -126,7 +132,7 @@ describe('AddressSearchView', () => {
     it('renders empty view when no matches found and input is empty', () => {
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -146,7 +152,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -168,7 +174,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -208,7 +214,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
                 excludeAddress='SENDER_ADDRESS_123'
             />,
@@ -224,7 +230,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -245,7 +251,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
                 showAddIcon
             />,
@@ -267,7 +273,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -298,7 +304,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )
@@ -330,7 +336,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
-                chainFamily='algorand'
+                scope={SCOPE}
                 onSelected={mockOnSelected}
             />,
         )

@@ -85,6 +85,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useLanguage')

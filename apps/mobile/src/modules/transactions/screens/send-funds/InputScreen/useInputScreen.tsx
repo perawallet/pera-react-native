@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -25,14 +24,13 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import type { Maybe } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
+    useSendFeeQuery,
     useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -47,7 +45,7 @@ import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSendScope()
     const nativeAsset = useNativeAsset(scope)
     const isNativeAssetId = useIsNativeAssetId(scope)
     const navigation =
@@ -62,6 +60,7 @@ export const useInputScreen = () => {
         pendingAmountBaseUnits,
         destination,
         shouldContinueToConfirm,
+        feePreset,
         setAmount,
         setPendingAmountBaseUnits,
         setIsCloseAccount,
@@ -142,11 +141,14 @@ export const useInputScreen = () => {
         setValueAndRef,
     ])
 
-    // PQ-aware: a quantum signer's fee is a multiple of the network minimum,
-    // and this is the same resolver the confirmation screen displays from —
-    // any amount derived here must reserve the fee the transaction will
-    // actually carry, not the base one.
-    const { minFee } = useMinFeeForSender(selectedAddress, scope.chainId)
+    // The same fee the confirmation screen prices from, so any amount derived
+    // here reserves what the transaction can actually be charged.
+    const { maxFeeAmount } = useSendFeeQuery({
+        scope,
+        senderAddress: selectedAddress,
+        assetId: selectedAssetId,
+        feePreset,
+    })
     const { data: accountAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         selectedAssetId,
@@ -165,10 +167,10 @@ export const useInputScreen = () => {
                           assetId: selectedAssetId,
                       },
                       scope,
-                      fee: new Decimal((minFee ?? 0n).toString()),
+                      fee: maxFeeAmount ?? new Decimal(0),
                   }
                 : undefined,
-        [selectedAccount, selectedAssetId, scope, minFee],
+        [selectedAccount, selectedAssetId, scope, maxFeeAmount],
     )
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(spendableInput)
@@ -204,11 +206,22 @@ export const useInputScreen = () => {
     const isReserveReleasable =
         !!emptyAccount || (!!reserveNotice && !reserveNotice.isFirm)
 
+    // Until the fee is known the spendable balance holds nothing back for it,
+    // so MAX would offer an amount the send can't pay for.
+    const isMaxReady = maxFeeAmount !== undefined && !isSpendablePending
+
     const setMax = useCallback(() => {
+        if (!isMaxReady) return
         setValueAndRef(
             (isReserveReleasable ? totalBalance : maxAmount).toString(),
         )
-    }, [isReserveReleasable, maxAmount, totalBalance, setValueAndRef])
+    }, [
+        isMaxReady,
+        isReserveReleasable,
+        maxAmount,
+        totalBalance,
+        setValueAndRef,
+    ])
 
     const translateParagraphs = useCallback(
         (notice: ChainNotice) =>
@@ -392,7 +405,10 @@ export const useInputScreen = () => {
     // load would reject a valid amount as exceeding a zero balance.
     const isBalanceReady = !!spendable
     const canCheckAmount =
-        !!asset && isBalanceReady && !isSpendablePending && minFee !== undefined
+        !!asset &&
+        isBalanceReady &&
+        !isSpendablePending &&
+        maxFeeAmount !== undefined
 
     // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
     // so every check a real tap makes still applies on the way to confirm.
@@ -488,6 +504,7 @@ export const useInputScreen = () => {
         accountAssetBalance,
         isBalanceReady,
         cryptoValue: value,
+        isMaxReady,
         setMax,
         handleNext,
         handleKey,

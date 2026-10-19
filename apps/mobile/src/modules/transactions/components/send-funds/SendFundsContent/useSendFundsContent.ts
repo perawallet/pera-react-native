@@ -24,11 +24,14 @@ import {
     isPureNft,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    assetRefKey,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 
 type UseSendFundsContentResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
@@ -37,14 +40,18 @@ type UseSendFundsContentResult = {
 }
 
 export const useSendFundsContent = (
-    assetId: Optional<string>,
+    prefilledAsset: Optional<AssetRef>,
 ): UseSendFundsContentResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const assetId = prefilledAsset?.assetId
+    // The store takes the asset in a layout effect, so read it on the asset's
+    // own chain rather than whatever the send scope resolves to before then.
+    const sendScope = useSendScope()
+    const scope = useSelectedScope(prefilledAsset?.chainId ?? sendScope.chainId)
     const selectedAccount = useSelectedAccount()
     const {
         canSelectAsset,
-        selectedAssetId,
-        setSelectedAssetId,
+        selectedAsset,
+        setSelectedAsset,
         setCanSelectAsset,
         setAmount,
         setOnFinished,
@@ -75,8 +82,12 @@ export const useSendFundsContent = (
             setCanSelectAsset(false)
         }
 
-        if (selectedAssetId !== assetId) {
-            setSelectedAssetId(assetId)
+        if (
+            prefilledAsset &&
+            (!selectedAsset ||
+                assetRefKey(selectedAsset) !== assetRefKey(prefilledAsset))
+        ) {
+            setSelectedAsset(prefilledAsset)
         }
 
         // Hold the flow closed until the asset query settles. SendFundsRoutes
@@ -105,13 +116,14 @@ export const useSendFundsContent = (
         setIsReady(true)
     }, [
         assetId,
+        prefilledAsset,
         asset,
         isFetched,
         setCanSelectAsset,
-        setSelectedAssetId,
+        setSelectedAsset,
         setAmount,
         canSelectAsset,
-        selectedAssetId,
+        selectedAsset,
     ])
 
     const handleFinished = useCallback(() => {

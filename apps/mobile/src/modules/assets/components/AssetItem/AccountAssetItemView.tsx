@@ -25,7 +25,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
@@ -42,6 +45,8 @@ export type AccountAssetItemViewProps = {
     skipFetch?: boolean
     /** Marks a holding-level frozen asset (selection contexts). */
     showFrozenBadge?: boolean
+    /** The holding's chain; the selected Algorand scope when unset. */
+    scope?: ChainScope
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -52,10 +57,12 @@ export const AccountAssetItemView = ({
     showBalance = true,
     skipFetch = false,
     showFrozenBadge = false,
+    scope: holdingScope,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = holdingScope ?? legacyScope
     const styles = useStyles()
     const isNativeAssetId = useIsNativeAssetId(scope)
 
@@ -126,6 +133,7 @@ export const AccountAssetItemView = ({
             <PreferredAmount
                 sourceAmount={accountBalance.amount}
                 sourceAssetId={accountBalance.assetId}
+                scope={scope}
                 usdPrice={usdPrice}
                 density='compact'
                 showSymbol

@@ -30,6 +30,7 @@
  * fire.
  */
 
+import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
 import { AccountActionsContent } from '@modules/accounts'
 import {
     OptInAccountSelectionContent,
@@ -76,7 +77,7 @@ declare module '@modules/bottom-sheet' {
             label?: string
         }
         'send-funds': {
-            assetId?: string
+            asset?: AssetRef
         }
         // BidaliContent takes no props — it owns its own internal navigator
         // and account selection. Empty record keeps the registry typed.

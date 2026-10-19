@@ -66,6 +66,23 @@ describe('AddressDisplay', () => {
         })
     })
 
+    it("resolves names on the address's own chain when given its scope", () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        render(
+            <AddressDisplay
+                address='0xabc'
+                scope={scope}
+            />,
+        )
+
+        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+            scope,
+            '0xabc',
+            expect.anything(),
+        )
+    })
+
     it('does not resolve NFD when displayType is address-only', () => {
         render(
             <AddressDisplay

@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Decimal } from 'decimal.js'
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type ComponentType,
+} from 'react'
+import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountAssetBalanceQuery,
@@ -23,36 +29,47 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isCollectible,
+    toWholeUnits,
     useAssetsQuery,
+    useIsNativeAssetId,
+    useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     type Maybe,
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
+    formatNumber,
+    ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-    type FeePreset,
+import type {
+    ChainScope,
+    FeeEstimate,
+    FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
+    sendFlowChainAdapters,
     useRecipientWarningQuery,
+    useSendFeeQuery,
+    useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
 import { bottomSheetNotifier } from '@components/core'
+import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { chainUiFor } from '@modules/chain-ui'
+import type { SendTrailingSectionProps } from '../../../types/send-confirmation-display'
 import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
+import { NeutralSendFeeSection } from './NeutralSendFeeSection'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -60,9 +77,10 @@ type useTransactionConfirmationScreenResult = {
     destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
-    chainId: ChainId
+    scope: ChainScope
     /** Base units of the chain's native asset. */
     feeAmount: Optional<Decimal>
+    feePresets: FeeEstimate['presets']
     isFeePending: boolean
     feePreset: FeePreset
     setFeePreset: (preset: FeePreset) => void
@@ -70,6 +88,8 @@ type useTransactionConfirmationScreenResult = {
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
     note: Optional<string>
+    FeeSection: ComponentType<FeeRowProps>
+    TrailingSection: Optional<ComponentType<SendTrailingSectionProps>>
     openNote: () => void
     handleConfirm: () => void
     isCollectible: boolean
@@ -82,7 +102,7 @@ type useTransactionConfirmationScreenResult = {
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSendScope()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -113,17 +133,30 @@ export const useTransactionConfirmationScreen =
         const selectedAddress = selectedAccount
             ? chainAccountOf(selectedAccount, scope.chainId)?.address
             : undefined
-        const { minFee, isPending: isFeePending } = useMinFeeForSender(
-            selectedAddress,
-            scope.chainId,
-        )
-        const feeAmount = useMemo(
+        const baseUnitAmount = useMemo(
             () =>
-                minFee !== undefined
-                    ? new Decimal(minFee.toString())
+                amount && asset
+                    ? displayUnitsToBaseUnits(amount, asset.decimals)
                     : undefined,
-            [minFee],
+            [amount, asset],
         )
+        const {
+            feeAmount,
+            maxFeeAmount,
+            presets: feePresets,
+            isPending: isFeePending,
+            isError: isFeeError,
+        } = useSendFeeQuery({
+            scope,
+            senderAddress: selectedAddress,
+            assetId: selectedAssetId,
+            recipient: destination,
+            amount: baseUnitAmount,
+            feePreset,
+        })
+        const sendConfirmation = chainUiFor(
+            getChainDescriptor(scope.chainId).family,
+        ).sendConfirmation
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
@@ -156,24 +189,45 @@ export const useTransactionConfirmationScreen =
 
         const recipientInput = useMemo(
             () =>
-                destination && amount && asset && selectedAssetId
+                destination && baseUnitAmount && selectedAssetId
                     ? {
                           recipient: destination,
                           asset: {
                               chainId: scope.chainId,
                               assetId: selectedAssetId,
                           },
-                          amount: displayUnitsToBaseUnits(
-                              amount,
-                              asset.decimals,
-                          ),
+                          amount: baseUnitAmount,
                           scope,
                       }
                     : undefined,
-            [destination, amount, asset, selectedAssetId, scope],
+            [destination, baseUnitAmount, selectedAssetId, scope],
         )
         const { data: recipientWarning, isPending: isRecipientInfoPending } =
             useRecipientWarningQuery(recipientInput)
+
+        // A node refuses a send its native balance can't cover at the selected
+        // preset's worst-case fee, so check that before signing. Algorand's
+        // amount step already sizes the send against its reserve and close-out.
+        const isFeeCoverageChecked = !sendFlowChainAdapters.has(scope.chainId)
+        const nativeAsset = useNativeAsset(scope)
+        const isNativeAssetId = useIsNativeAssetId(scope)
+        const nativeSpendableInput = useMemo(
+            () =>
+                isFeeCoverageChecked && selectedAccount
+                    ? {
+                          account: selectedAccount,
+                          asset: {
+                              chainId: scope.chainId,
+                              assetId: nativeAsset.assetId,
+                          },
+                          scope,
+                          fee: ZERO_DECIMAL,
+                      }
+                    : undefined,
+            [isFeeCoverageChecked, selectedAccount, nativeAsset.assetId, scope],
+        )
+        const { data: nativeSpendable } =
+            useSpendableBalanceQuery(nativeSpendableInput)
 
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()
@@ -207,6 +261,58 @@ export const useTransactionConfirmationScreen =
                     },
                 )
                 return
+            }
+
+            if (isFeeCoverageChecked) {
+                if (isFeeError) {
+                    showToast(
+                        {
+                            title: t(
+                                'send_funds.confirmation.fee_unavailable.title',
+                            ),
+                            body: t(
+                                'send_funds.confirmation.fee_unavailable.body',
+                            ),
+                            type: 'error',
+                        },
+                        {
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                    return
+                }
+                if (!maxFeeAmount || !nativeSpendable || !baseUnitAmount) {
+                    return
+                }
+                const nativeNeeded = isNativeAssetId(selectedAssetId)
+                    ? baseUnitAmount.plus(maxFeeAmount)
+                    : maxFeeAmount
+                if (nativeSpendable.max.lt(nativeNeeded)) {
+                    showToast(
+                        {
+                            title: t(
+                                'send_funds.confirmation.fee_shortfall.title',
+                                {
+                                    symbol: nativeAsset.unitName,
+                                },
+                            ),
+                            body: t(
+                                'send_funds.confirmation.fee_shortfall.body',
+                                {
+                                    fee: `${formatNumber(
+                                        toWholeUnits(maxFeeAmount, nativeAsset),
+                                        nativeAsset.decimals,
+                                    )} ${nativeAsset.unitName}`,
+                                },
+                            ),
+                            type: 'error',
+                        },
+                        {
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                    return
+                }
             }
 
             if (recipientWarning) {
@@ -249,8 +355,9 @@ export const useTransactionConfirmationScreen =
             destination,
             selectedAccount,
             selectedAssetId,
-            chainId: scope.chainId,
+            scope,
             feeAmount,
+            feePresets,
             isFeePending,
             feePreset,
             setFeePreset,
@@ -258,6 +365,8 @@ export const useTransactionConfirmationScreen =
             currentBalance,
             currentBalancePending,
             note,
+            FeeSection: sendConfirmation?.FeeSection ?? NeutralSendFeeSection,
+            TrailingSection: sendConfirmation?.TrailingSection,
             openNote,
             handleConfirm,
             isCollectible: isCollectibleAsset,

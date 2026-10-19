@@ -52,6 +52,7 @@ import {
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
 import {
+    getChainDescriptor,
     getSelectedScope,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
@@ -350,8 +351,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.TRANSFER: {
                     openSendFunds({
-                        assetId:
-                            parsedData.assetRef?.assetId ?? nativeAsset.assetId,
+                        asset:
+                            parsedData.assetRef ??
+                            getChainDescriptor(parsedData.target.chainId)
+                                .nativeAsset.ref,
                         destination: parsedData.receiverAddress,
                         // Base units — InputScreen converts once the asset's
                         // `decimals` resolve.

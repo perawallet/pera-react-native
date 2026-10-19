@@ -39,6 +39,7 @@ const context: ChainContext = {
 } as unknown as ChainContext
 
 const ENABLED = [
+    'send',
     'receive',
     'history',
     'assets',

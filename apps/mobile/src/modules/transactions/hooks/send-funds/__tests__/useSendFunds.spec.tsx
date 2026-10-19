@@ -24,21 +24,27 @@ describe('useSendFundsStore', () => {
     it('has correct initial state', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
-        expect(result.current.selectedAssetId).toBeUndefined()
+        expect(result.current.selectedAsset).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
         expect(result.current.amount).toBeUndefined()
         expect(result.current.note).toBeUndefined()
         expect(result.current.destination).toBeUndefined()
     })
 
-    it('sets selectedAssetId', () => {
+    it('sets selectedAsset', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
         act(() => {
-            result.current.setSelectedAssetId('123')
+            result.current.setSelectedAsset({
+                chainId: 'algorand',
+                assetId: '123',
+            })
         })
 
-        expect(result.current.selectedAssetId).toBe('123')
+        expect(result.current.selectedAsset).toEqual({
+            chainId: 'algorand',
+            assetId: '123',
+        })
     })
 
     it('sets canSelectAsset', () => {
@@ -86,7 +92,10 @@ describe('useSendFundsStore', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
         act(() => {
-            result.current.setSelectedAssetId('123')
+            result.current.setSelectedAsset({
+                chainId: 'algorand',
+                assetId: '123',
+            })
             result.current.setCanSelectAsset(false)
             result.current.setAmount(new Decimal('10.5'))
             result.current.setNote('Test note')
@@ -97,7 +106,7 @@ describe('useSendFundsStore', () => {
             result.current.reset()
         })
 
-        expect(result.current.selectedAssetId).toBeUndefined()
+        expect(result.current.selectedAsset).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
         expect(result.current.amount).toBeUndefined()
         expect(result.current.note).toBeUndefined()
@@ -125,13 +134,20 @@ describe('useSendFunds', () => {
         const amount = new Decimal('5')
 
         act(() => {
-            result.current.setSelectedAssetId('123')
+            result.current.setSelectedAsset({
+                chainId: 'algorand',
+                assetId: '123',
+            })
             result.current.setCanSelectAsset(false)
             result.current.setAmount(amount)
             result.current.setNote('hello')
             result.current.setDestination('DEST_ADDR')
         })
 
+        expect(result.current.selectedAsset).toEqual({
+            chainId: 'algorand',
+            assetId: '123',
+        })
         expect(result.current.selectedAssetId).toBe('123')
         expect(result.current.canSelectAsset).toBe(false)
         expect(result.current.amount).toBe(amount)
@@ -143,7 +159,10 @@ describe('useSendFunds', () => {
         const { result } = renderHook(() => useSendFunds())
 
         act(() => {
-            result.current.setSelectedAssetId('1')
+            result.current.setSelectedAsset({
+                chainId: 'algorand',
+                assetId: '1',
+            })
             result.current.setAmount(new Decimal('99'))
         })
 

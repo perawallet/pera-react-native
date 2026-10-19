@@ -95,7 +95,8 @@ describe('useButtonPanel', () => {
 
         const { result } = renderHook(() => useButtonPanel())
 
-        expect(result.current.canSend).toBe(false)
+        expect(result.current.canSwap).toBe(false)
+        expect(result.current.canSend).toBe(true)
         expect(result.current.canReceive).toBe(true)
     })
 })

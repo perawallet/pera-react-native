@@ -28,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useSendFunds } from '@modules/transactions/hooks'
 
-const mockSetSelectedAssetId = vi.fn()
+const mockSetSelectedAsset = vi.fn()
 const mockSetCanSelectAsset = vi.fn()
 const mockSetAmount = vi.fn()
 const mockSetOnFinished = vi.fn()
@@ -51,6 +51,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -70,8 +71,8 @@ describe('useSendFundsContent', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSendFunds as any).mockReturnValue({
             canSelectAsset: true,
-            selectedAssetId: undefined,
-            setSelectedAssetId: mockSetSelectedAssetId,
+            selectedAsset: undefined,
+            setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
             setAmount: mockSetAmount,
             setOnFinished: mockSetOnFinished,
@@ -80,9 +81,12 @@ describe('useSendFundsContent', () => {
     })
 
     it('returns selectedAccount', () => {
-        const { result } = renderHook(() => useSendFundsContent('123'), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useSendFundsContent({ chainId: 'algorand', assetId: '123' }),
+            {
+                wrapper,
+            },
+        )
 
         expect(result.current.selectedAccount).toEqual({
             address: 'test-address',
@@ -90,32 +94,44 @@ describe('useSendFundsContent', () => {
     })
 
     it('sets canSelectAsset to false and selects asset when assetId is provided', () => {
-        renderHook(() => useSendFundsContent('123'), { wrapper })
+        renderHook(
+            () => useSendFundsContent({ chainId: 'algorand', assetId: '123' }),
+            { wrapper },
+        )
 
         expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
-        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
+        expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            assetId: '123',
+        })
     })
 
-    it('does not call setSelectedAssetId if asset is already selected', () => {
+    it('does not call setSelectedAsset if asset is already selected', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSendFunds as any).mockReturnValue({
             canSelectAsset: false,
-            selectedAssetId: '123',
-            setSelectedAssetId: mockSetSelectedAssetId,
+            selectedAsset: { chainId: 'algorand', assetId: '123' },
+            setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
             setAmount: mockSetAmount,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
         })
 
-        renderHook(() => useSendFundsContent('123'), { wrapper })
+        renderHook(
+            () => useSendFundsContent({ chainId: 'algorand', assetId: '123' }),
+            { wrapper },
+        )
 
-        expect(mockSetSelectedAssetId).not.toHaveBeenCalled()
+        expect(mockSetSelectedAsset).not.toHaveBeenCalled()
         expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 
     it('sets onFinished', () => {
-        renderHook(() => useSendFundsContent('123'), { wrapper })
+        renderHook(
+            () => useSendFundsContent({ chainId: 'algorand', assetId: '123' }),
+            { wrapper },
+        )
 
         expect(mockSetOnFinished).toHaveBeenCalled()
     })
@@ -135,9 +151,13 @@ describe('useSendFundsContent', () => {
             isError: false,
         }))
 
-        const { rerender } = renderHook(() => useSendFundsContent('nft-1'), {
-            wrapper,
-        })
+        const { rerender } = renderHook(
+            () =>
+                useSendFundsContent({ chainId: 'algorand', assetId: 'nft-1' }),
+            {
+                wrapper,
+            },
+        )
         rerender()
         rerender()
 
@@ -160,7 +180,8 @@ describe('useSendFundsContent', () => {
         }))
 
         const { rerender } = renderHook(
-            ({ assetId }: { assetId: string }) => useSendFundsContent(assetId),
+            ({ assetId }: { assetId: string }) =>
+                useSendFundsContent({ chainId: 'algorand', assetId }),
             { wrapper, initialProps: { assetId: 'nft-1' } },
         )
         rerender({ assetId: 'nft-2' })
@@ -184,7 +205,8 @@ describe('useSendFundsContent', () => {
         }))
 
         const { result, rerender } = renderHook(
-            () => useSendFundsContent('nft-1'),
+            () =>
+                useSendFundsContent({ chainId: 'algorand', assetId: 'nft-1' }),
             { wrapper },
         )
         expect(mockSetAmount).toHaveBeenCalledTimes(1)

@@ -157,6 +157,11 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: (chainId: string) => ({
+        nativeAsset: {
+            ref: { chainId, assetId: chainId === 'algorand' ? '0' : 'native' },
+        },
+    }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
@@ -313,7 +318,7 @@ const {
     mockRequestByType,
     mockRequestBottomSheet,
     mockSetDestination,
-    mockSetSelectedAssetId,
+    mockSetSelectedAsset,
     mockSetCanSelectAsset,
     mockSetNote,
     mockSetAmount,
@@ -323,7 +328,7 @@ const {
     mockRequestByType: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     mockSetDestination: vi.fn(),
-    mockSetSelectedAssetId: vi.fn(),
+    mockSetSelectedAsset: vi.fn(),
     mockSetCanSelectAsset: vi.fn(),
     mockSetNote: vi.fn(),
     mockSetAmount: vi.fn(),
@@ -424,7 +429,7 @@ vi.mock('@modules/transactions', () => ({
         getState: () => ({
             reset: mockSendFundsReset,
             setDestination: mockSetDestination,
-            setSelectedAssetId: mockSetSelectedAssetId,
+            setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
             setNote: mockSetNote,
             setAmount: mockSetAmount,
@@ -1210,11 +1215,14 @@ describe('useDeepLink', () => {
         // No asset on the link: the target chain's native asset.
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { assetId: '0' },
+            { asset: { chainId: 'algorand', assetId: '0' } },
             expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
-        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
+        expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            assetId: '0',
+        })
         expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
         expect(mockSetNote).toHaveBeenCalledWith('test note')
         // Base units for every asset; the input step converts them.
@@ -1244,11 +1252,14 @@ describe('useDeepLink', () => {
         expect(mockInfoToast).not.toHaveBeenCalled()
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { assetId: '123' },
+            { asset: { chainId: 'algorand', assetId: '123' } },
             expect.objectContaining({ size: 'modal' }),
         )
         expect(mockSetDestination).toHaveBeenCalledWith('receiver1')
-        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
+        expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            assetId: '123',
+        })
         expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
         expect(mockSetNote).toHaveBeenCalledWith('test note')
         expect(mockSetAmount).not.toHaveBeenCalled()
@@ -2188,7 +2199,7 @@ describe('useDeepLink', () => {
 
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { assetId: undefined },
+            { asset: undefined },
             {
                 size: 'modal',
                 enablePanDownToClose: false,
@@ -2247,7 +2258,7 @@ describe('useDeepLink', () => {
         expect(mockSetDestination).toHaveBeenCalledWith('recipient1')
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { assetId: undefined },
+            { asset: undefined },
             expect.objectContaining({ size: 'modal' }),
         )
     })

@@ -25,6 +25,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../broadcaster'
+import { plannerChainAdapters } from '../chain-adapter'
 import type { UnsignedTransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
@@ -64,10 +65,11 @@ export type SignAndSubmitGroupResult = {
 
 /**
  * Push a pre-built unsigned transaction group through the XState signing
- * pipeline as a headless, `transport: 'callback'` request (`sourceType:
- * 'local'` falls outside `INTERACTIVE_SOURCES`, so no review or completion
- * sheet is surfaced).
- * Resolves with the algod txIds once signing and submission succeed.
+ * pipeline as a headless request (`sourceType: 'local'` falls outside
+ * `INTERACTIVE_SOURCES`, so no review or completion sheet is surfaced). An
+ * Algorand group comes back as signed bytes this hook submits itself; any
+ * other chain's is submitted by its broadcaster, which answers with the ids.
+ * Resolves with the submitted txIds once signing and submission succeed.
  *
  * Local-key accounts run validating → signing → completed without showing
  * any sheet (headless skips the review state). Hardware-wallet accounts
@@ -87,6 +89,35 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 return Promise.resolve({ txIds: [] })
             }
             return new Promise((resolve, reject) => {
+                const callbacks = {
+                    reject: async () => {
+                        reject(new UserRejectedSigningError())
+                    },
+                    error: async (err: Error) => {
+                        reject(err)
+                    },
+                }
+
+                // A chain without Algorand's signing planner submits through
+                // its own broadcaster's transport, which records the send on
+                // the submission ledger with its history entry.
+                if (!plannerChainAdapters.has(scope.chainId)) {
+                    const selfSubmitted: UnsignedTransactionSignRequest = {
+                        id: generateOrderedUniqueId(),
+                        type: 'transactions',
+                        transport: 'submit-and-answer',
+                        sourceType: 'local',
+                        txs: unsignedTxs,
+                        sourceMetadata: source,
+                        approve: async (_signed, submission) => {
+                            resolve({ txIds: submission?.txIds ?? [] })
+                        },
+                        ...callbacks,
+                    }
+                    addSignRequest(selfSubmitted)
+                    return
+                }
+
                 const request: UnsignedTransactionSignRequest = {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
@@ -124,12 +155,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             throw error
                         }
                     },
-                    reject: async () => {
-                        reject(new UserRejectedSigningError())
-                    },
-                    error: async (err: Error) => {
-                        reject(err)
-                    },
+                    ...callbacks,
                 }
                 addSignRequest(request)
             })
