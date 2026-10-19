@@ -72,7 +72,11 @@ export const AccountAssetSelectionList = ({
     const convertFiat = useAssetListFiatConverter()
 
     const renderItem = useCallback(
-        ({ item: listItem }: { item: GroupedHoldingItem<ChainAssetBalance> }) => {
+        ({
+            item: listItem,
+        }: {
+            item: GroupedHoldingItem<ChainAssetBalance>
+        }) => {
             if (listItem.kind === 'group') {
                 return (
                     <AssetGroupRow

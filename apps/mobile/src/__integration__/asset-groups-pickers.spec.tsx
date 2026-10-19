@@ -94,7 +94,9 @@ describe('Flow: One asset held on two chains, picked per network', () => {
         fireEvent.click(group)
         // The collapsed group selected nothing.
         expect(useSendFundsStore.getState().selectedAsset).toBeFalsy()
-        fireEvent.click(await screen.findByTestId(`asset-list-item-${ETH_USDC}`))
+        fireEvent.click(
+            await screen.findByTestId(`asset-list-item-${ETH_USDC}`),
+        )
 
         await waitFor(() => {
             expect(screen.getByTestId('next-step-stub')).toBeTruthy()

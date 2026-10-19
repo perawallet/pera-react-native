@@ -25,7 +25,9 @@ import { useGroupedHoldings } from '../useGroupedHoldings'
 const mockGroups = vi.hoisted(() => ({ current: [] as unknown[] }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<typeof import('@perawallet/wallet-core-assets')>()),
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     useAssetGroupsQuery: vi.fn(() => ({
         groups: mockGroups.current,
         isPending: false,
@@ -116,8 +118,8 @@ describe('useGroupedHoldings', () => {
         expect(vi.mocked(useAssetGroupsQuery).mock.lastCall?.[0]).toEqual({
             enabled: false,
         })
-        expect(result.current.items.every(item => item.kind === 'holding')).toBe(
-            true,
-        )
+        expect(
+            result.current.items.every(item => item.kind === 'holding'),
+        ).toBe(true)
     })
 })

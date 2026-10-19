@@ -103,7 +103,9 @@ export const AccountAssetList = ({
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
                     chainName={
-                        showChainBadges ? chainDisplayNameOf(chainId) : undefined
+                        showChainBadges
+                            ? chainDisplayNameOf(chainId)
+                            : undefined
                     }
                     isGroupMember={item.isGroupMember}
                     convertFiat={convertFiat}

@@ -20,13 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import {
-    act,
-    fireEvent,
-    screen,
-    waitFor,
-    within,
-} from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { View } from 'react-native'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 

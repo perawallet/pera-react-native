@@ -36,7 +36,10 @@ import { USDC_TEST_ASSET } from './assets'
 import { ALGO25_TEST_ADDRESS } from './onboarding'
 
 export const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
-export const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+export const ETH_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
 export const ALGO_SCOPE: ChainScope = {
     chainId: LEGACY_CHAIN_ID,
     networkId: 'mainnet',

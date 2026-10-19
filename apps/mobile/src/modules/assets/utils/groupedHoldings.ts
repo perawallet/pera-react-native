@@ -51,7 +51,10 @@ export type GroupedHoldingItem<T> =
           isExpanded: boolean
       }
 
-export type AssetGroupItem<T> = Extract<GroupedHoldingItem<T>, { kind: 'group' }>
+export type AssetGroupItem<T> = Extract<
+    GroupedHoldingItem<T>,
+    { kind: 'group' }
+>
 
 export type BuildGroupedHoldingItemsParams<T extends GroupableHolding> = {
     holdings: T[]

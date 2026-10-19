@@ -262,7 +262,11 @@ describe('useAccountAssetSelectionList', () => {
                 { scope: ETHEREUM, assetId: '0xa0b8' },
             ],
         }
-        const usdc = (scope: typeof ALGORAND, assetId: string, amount: string) => ({
+        const usdc = (
+            scope: typeof ALGORAND,
+            assetId: string,
+            amount: string,
+        ) => ({
             assetId,
             scope,
             amount: new Decimal(amount),
