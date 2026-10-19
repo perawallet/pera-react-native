@@ -394,6 +394,90 @@ describe('useAccountAssetList', () => {
             ])
         })
 
+        it('expands a grouped row to its networks and collapses it again, without navigating', () => {
+            registerEthereum()
+            mockGroups.current = [
+                {
+                    id: 'usdc',
+                    name: 'USD Coin',
+                    symbol: 'USDC',
+                    logoUrl: null,
+                    members: [
+                        { scope: ALGORAND_MAINNET, assetId: '31566704' },
+                        { scope: ETHEREUM_MAINNET, assetId: '0xA0b8' },
+                    ],
+                } satisfies AssetGroup,
+            ]
+            mockAssetsQuery.holdings = [
+                makeHolding('31566704'),
+                makeHolding('0xA0b8', ETHEREUM_MAINNET),
+            ]
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            act(() => result.current.toggleGroupExpanded('usdc'))
+
+            const memberScopes = result.current.items.flatMap(item =>
+                item.kind === 'holding' && item.isGroupMember
+                    ? [item.row.scope.chainId]
+                    : [],
+            )
+            expect(result.current.items[0]?.kind).toBe('group')
+            expect(memberScopes).toEqual(['algorand', 'ethereum'])
+
+            act(() => result.current.toggleGroupExpanded('usdc'))
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'group',
+            ])
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it("opens a group member's detail on that member's own chain", () => {
+            registerEthereum()
+            mockGroups.current = [
+                {
+                    id: 'usdc',
+                    name: 'USD Coin',
+                    symbol: 'USDC',
+                    logoUrl: null,
+                    members: [
+                        { scope: ALGORAND_MAINNET, assetId: '31566704' },
+                        { scope: ETHEREUM_MAINNET, assetId: '0xA0b8' },
+                    ],
+                } satisfies AssetGroup,
+            ]
+            mockAssetsQuery.holdings = [
+                makeHolding('31566704'),
+                makeHolding('0xA0b8', ETHEREUM_MAINNET),
+            ]
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+            act(() => result.current.toggleGroupExpanded('usdc'))
+            const ethereumMember = result.current.items.find(
+                item =>
+                    item.kind === 'holding' &&
+                    item.isGroupMember &&
+                    item.row.scope.chainId === 'ethereum',
+            )
+            if (ethereumMember?.kind !== 'holding') {
+                throw new Error('expected the Ethereum member row')
+            }
+
+            act(() =>
+                result.current.renderItemProps.goToAssetScreen(
+                    ethereumMember.row,
+                ),
+            )
+
+            expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+                assetId: '0xA0b8',
+                chainId: 'ethereum',
+            })
+        })
+
         it('asks for asset groups only where they could fold something', () => {
             registerEthereum()
             const { result, rerender } = renderHook(
