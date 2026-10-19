@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { trackEvent, ContactsEvent } from '@analytics'
+import { contactFamilyOf } from '../utils/contactFamily'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -42,10 +43,11 @@ export const useAddContactForm = (): UseAddContactFormResult => {
     const route = useRoute<RouteProp<ContactsStackParamsList, 'AddContact'>>()
     const prefillAddress = route.params?.address ?? ''
     const prefillName = route.params?.label ?? ''
+    const family = contactFamilyOf(route.params?.chainId)
     const initialContact = useMemo<NewContact | null>(() => {
         if (!prefillAddress && !prefillName) return null
-        return { addresses: { algorand: prefillAddress }, name: prefillName }
-    }, [prefillAddress, prefillName])
+        return { addresses: { [family]: prefillAddress }, name: prefillName }
+    }, [family, prefillAddress, prefillName])
     const form = useContactForm(initialContact)
 
     const save = useCallback(

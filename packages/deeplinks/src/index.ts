@@ -77,4 +77,8 @@ export {
     readPeraAppLink,
 } from './utils'
 export { walletConnectUriOf } from './wallet-connect'
+export {
+    peraLinkChainFailure,
+    type PeraLinkChainFailure,
+} from './pera-link-chain'
 export { readScannedAddress, type ScannedAddress } from './scanned-address'

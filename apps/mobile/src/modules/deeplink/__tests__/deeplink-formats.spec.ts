@@ -443,6 +443,7 @@ const cases: Case[] = [
                 params: {
                     address: ADDRESS,
                     label: LABEL,
+                    chainId: 'algorand',
                 },
             })
         },
@@ -459,6 +460,7 @@ const cases: Case[] = [
                 params: {
                     address: ADDRESS,
                     label: LABEL,
+                    chainId: 'algorand',
                 },
             })
         },

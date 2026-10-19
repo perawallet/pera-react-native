@@ -117,7 +117,7 @@ const ALLOWED: readonly Allowed[] = [
     {
         file: 'packages/deeplinks/src/pera-link-chain.ts',
         text: "'algorand'",
-        reason: "Pera links name no chain yet and every one issued so far is Algorand's; this file is their one legacy default.",
+        reason: "A Pera link without chain= is Algorand's, as every link issued before the param was; this file is their one legacy default.",
     },
     {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',

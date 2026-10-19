@@ -34,7 +34,9 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
     }
 })
 
-const routeParamsRef: { params: { address?: string; label?: string } } = {
+const routeParamsRef: {
+    params: { address?: string; label?: string; chainId?: string }
+} = {
     params: {},
 }
 
@@ -44,6 +46,11 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useLanguage')
+
+vi.mock('../../utils/contactFamily', () => ({
+    contactFamilyOf: (chainId?: string) =>
+        chainId === 'ethereum' ? 'evm' : 'algorand',
+}))
 
 vi.mock('@hooks/useImagePicker', () => ({
     useImagePicker: () => ({
@@ -106,6 +113,21 @@ describe('useAddContactForm', () => {
         expect(useContactFormMock).toHaveBeenCalledWith({
             addresses: { algorand: 'PREFILLED' },
             name: 'Alice',
+        })
+    })
+
+    it("prefills the entry of the link's chain family", () => {
+        routeParamsRef.params = {
+            address: '0xABC',
+            label: 'Vitalik',
+            chainId: 'ethereum',
+        }
+
+        renderHook(() => useAddContactForm())
+
+        expect(useContactFormMock).toHaveBeenCalledWith({
+            addresses: { evm: '0xABC' },
+            name: 'Vitalik',
         })
     })
 
