@@ -12,14 +12,13 @@
 
 import type { ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
 
-const mockSetPreferredCurrency = vi.hoisted(() => vi.fn())
-const mockSetFallbackCurrency = vi.hoisted(() => vi.fn())
+const mockSetCurrencyPreference = vi.hoisted(() => vi.fn())
 const mockUseCurrency = vi.hoisted(() => vi.fn())
 const mockUseCurrenciesQuery = vi.hoisted(() => vi.fn())
 const mockInvalidateAssetPrices = vi.hoisted(() => vi.fn())
@@ -63,9 +62,8 @@ const renderScreenHook = () =>
 
 const setPreferredCurrency = (preferredCurrency: string) => {
     mockUseCurrency.mockReturnValue({
-        setPreferredCurrency: mockSetPreferredCurrency,
-        setFallbackCurrency: mockSetFallbackCurrency,
-        fallbackCurrency: 'USD',
+        setCurrencyPreference: mockSetCurrencyPreference,
+        fallbackCurrency: 'ALGO',
         preferredCurrency,
     })
 }
@@ -100,22 +98,35 @@ describe('useSettingsCurrencyScreen', () => {
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
-    it('sets ALGO as preferred and USD as the secondary currency when ALGO is selected', () => {
+    it('offers the fiat list, narrowed by the search', () => {
+        const currencies = [
+            { id: 'EUR', name: 'Euro', symbol: '€' },
+            { id: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+        ]
+        mockUseCurrenciesQuery.mockReturnValue({
+            data: currencies,
+            isPaused: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
         const { result } = renderScreenHook()
 
-        result.current.setCurrency({ id: 'ALGO', name: 'Algo' } as never)
+        expect(result.current.filteredData).toEqual(currencies)
 
-        expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
-        expect(mockSetFallbackCurrency).toHaveBeenCalledWith('USD')
+        act(() => result.current.setSearch('yen'))
+
+        expect(result.current.filteredData).toEqual([currencies[1]])
     })
 
-    it('sets ALGO as the secondary currency when a fiat currency is selected', () => {
+    it('writes the selected fiat with ALGO as the secondary currency', () => {
         const { result } = renderScreenHook()
 
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
-        expect(mockSetPreferredCurrency).toHaveBeenCalledWith('AED')
-        expect(mockSetFallbackCurrency).toHaveBeenCalledWith(ALGO_ASSET_NAME)
+        expect(mockSetCurrencyPreference).toHaveBeenCalledWith({
+            preferredCurrency: 'AED',
+            fallbackCurrency: ALGO_ASSET_NAME,
+        })
     })
 
     describe('offline rate notice', () => {
@@ -146,15 +157,6 @@ describe('useSettingsCurrencyScreen', () => {
             expect(result.current.isRateUnavailableOffline).toBe(false)
         })
 
-        it('stays hidden offline for ALGO, whose price is DB-backed', () => {
-            setPreferredCurrency(ALGO_ASSET_NAME)
-            useNetworkStatusStore.getState().setHasInternet(false)
-
-            const { result } = renderScreenHook()
-
-            expect(result.current.isRateUnavailableOffline).toBe(false)
-        })
-
         it('shows offline when the selected fiat rate is uncached', () => {
             setPreferredCurrency('JPY')
             useNetworkStatusStore.getState().setHasInternet(false)
@@ -172,7 +174,10 @@ describe('useSettingsCurrencyScreen', () => {
 
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
-        expect(mockSetPreferredCurrency).toHaveBeenCalledWith('AED')
+        expect(mockSetCurrencyPreference).toHaveBeenCalledWith({
+            preferredCurrency: 'AED',
+            fallbackCurrency: ALGO_ASSET_NAME,
+        })
         expect(mockInvalidateAssetPrices).not.toHaveBeenCalled()
     })
 

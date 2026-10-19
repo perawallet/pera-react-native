@@ -12,6 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 // Stores register once, at import, and vitest clears mock calls before every
 // test, so registrations are kept here rather than on a vi.fn().
@@ -79,6 +80,49 @@ describe('CurrenciesStore', () => {
         expect(result.current.fallbackCurrency).toBe('USD')
     })
 
+    test('setPreferredCurrency moves ALGO to the stored fiat fallback', async () => {
+        const { useCurrenciesStore } = await import('../index')
+        act(() => {
+            useCurrenciesStore.getState().setFallbackCurrency('EUR')
+            useCurrenciesStore.getState().setPreferredCurrency('ALGO')
+        })
+
+        expect(useCurrenciesStore.getState()).toMatchObject({
+            preferredCurrency: 'EUR',
+            fallbackCurrency: 'ALGO',
+        })
+    })
+
+    test('setCurrencyPreference moves ALGO to the given fiat fallback', async () => {
+        const { useCurrenciesStore } = await import('../index')
+        act(() => {
+            useCurrenciesStore.getState().setCurrencyPreference({
+                preferredCurrency: 'ALGO',
+                fallbackCurrency: 'JPY',
+            })
+        })
+
+        expect(useCurrenciesStore.getState()).toMatchObject({
+            preferredCurrency: 'JPY',
+            fallbackCurrency: 'ALGO',
+        })
+    })
+
+    test('setCurrencyPreference writes a fiat preference as given', async () => {
+        const { useCurrenciesStore } = await import('../index')
+        act(() => {
+            useCurrenciesStore.getState().setCurrencyPreference({
+                preferredCurrency: 'AED',
+                fallbackCurrency: 'ALGO',
+            })
+        })
+
+        expect(useCurrenciesStore.getState()).toMatchObject({
+            preferredCurrency: 'AED',
+            fallbackCurrency: 'ALGO',
+        })
+    })
+
     test('registers clearStorage and resetState with the store registry', async () => {
         await import('../index')
 
@@ -93,5 +137,78 @@ describe('CurrenciesStore', () => {
         act(() => registration.resetState())
         expect(useCurrenciesStore.getState().preferredCurrency).toBe('USD')
         expect(() => registration.clearStorage()).not.toThrow()
+    })
+})
+
+describe('migrateCurrenciesState', () => {
+    test.each([
+        [
+            'ALGO with a fiat fallback',
+            { preferredCurrency: 'ALGO', fallbackCurrency: 'EUR' },
+            { preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'ALGO with a USD fallback',
+            { preferredCurrency: 'ALGO', fallbackCurrency: 'USD' },
+            { preferredCurrency: 'USD', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'a fiat preference',
+            { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' },
+            { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'an empty blob',
+            {},
+            { preferredCurrency: 'USD', fallbackCurrency: 'USD' },
+        ],
+    ])(
+        'moves a v1 blob holding %s to fiat',
+        async (_label, v1State, expected) => {
+            const { migrateCurrenciesState } = await import('../store')
+
+            expect(migrateCurrenciesState(v1State, 1)).toEqual(expected)
+        },
+    )
+
+    test('leaves v2 state unchanged', async () => {
+        const { migrateCurrenciesState } = await import('../store')
+        const v2State = { preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' }
+
+        expect(migrateCurrenciesState(structuredClone(v2State), 2)).toEqual(
+            v2State,
+        )
+    })
+
+    test('a v1 ALGO preference is fiat across two cold starts, saved by the first', async () => {
+        getProvider().keyValueStorage.setItem(
+            'currencies-store',
+            JSON.stringify({
+                state: { preferredCurrency: 'ALGO', fallbackCurrency: 'EUR' },
+                version: 1,
+            }),
+        )
+
+        const preferred: string[] = []
+        const stored: unknown[] = []
+        for (let start = 0; start < 2; start++) {
+            vi.resetModules()
+            const { useCurrenciesStore } = await import('../store')
+            await useCurrenciesStore.persist.rehydrate()
+            preferred.push(useCurrenciesStore.getState().preferredCurrency)
+            stored.push(
+                JSON.parse(
+                    getProvider().keyValueStorage.getItem(
+                        'currencies-store',
+                    ) as string,
+                ),
+            )
+        }
+
+        expect(preferred).toEqual(['EUR', 'EUR'])
+        expect(stored[0]).toEqual({
+            state: { preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' },
+            version: 2,
+        })
     })
 })

@@ -16,15 +16,28 @@ import {
     registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
-import type { CurrenciesStore } from '../models'
+import type { CurrenciesStore, CurrencyPreference } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { USD_CURRENCY_ID } from '../constants'
+import { toFiatCurrencyPreference } from '../utils'
 
 const STORE_NAME = 'currencies-store'
 
 const initialState = {
     preferredCurrency: USD_CURRENCY_ID,
     fallbackCurrency: USD_CURRENCY_ID,
+}
+
+export const migrateCurrenciesState = (
+    persistedState: unknown,
+    version: number,
+): CurrencyPreference => {
+    if (version >= 2) return persistedState as CurrencyPreference
+    const {
+        preferredCurrency = USD_CURRENCY_ID,
+        fallbackCurrency = USD_CURRENCY_ID,
+    } = (persistedState ?? {}) as Partial<CurrencyPreference>
+    return toFiatCurrencyPreference({ preferredCurrency, fallbackCurrency })
 }
 
 export const useCurrenciesStore: UseBoundStore<
@@ -34,15 +47,23 @@ export const useCurrenciesStore: UseBoundStore<
         set => ({
             ...initialState,
             setPreferredCurrency: (currency: string) =>
-                set({ preferredCurrency: currency }),
+                set(state =>
+                    toFiatCurrencyPreference({
+                        preferredCurrency: currency,
+                        fallbackCurrency: state.fallbackCurrency,
+                    }),
+                ),
             setFallbackCurrency: (currency: string) =>
                 set({ fallbackCurrency: currency }),
+            setCurrencyPreference: (preference: CurrencyPreference) =>
+                set(toFiatCurrencyPreference(preference)),
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
-            version: 1,
+            version: 2,
+            migrate: migrateCurrenciesState,
             partialize: state => ({
                 preferredCurrency: state.preferredCurrency,
                 fallbackCurrency: state.fallbackCurrency,

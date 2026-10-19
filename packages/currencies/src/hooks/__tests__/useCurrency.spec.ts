@@ -89,6 +89,28 @@ describe('services/currencies/hooks', () => {
             )
         })
 
+        it('returns setCurrencyPreference from store', () => {
+            const mockSetCurrencyPreference = vi.fn()
+
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({
+                    preferredCurrency: 'USD',
+                    setCurrencyPreference: mockSetCurrencyPreference,
+                }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: new Decimal('1.0') },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
+
+            expect(result.current.setCurrencyPreference).toBe(
+                mockSetCurrencyPreference,
+            )
+        })
+
         it('calls setPreferredCurrency when updating currency', () => {
             const mockSetPreferredCurrency = vi.fn()
 

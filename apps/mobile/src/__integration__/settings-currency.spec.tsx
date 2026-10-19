@@ -31,7 +31,7 @@ describe('Flow: Settings → Currency selection', () => {
         server.use(mockListCurrencies({ response: USD_EUR_GBP }))
     })
 
-    it('Given the currencies endpoint returns USD, EUR, GBP, when the screen mounts, then all three plus ALGO are listed', async () => {
+    it('Given the currencies endpoint returns USD, EUR, GBP, when the screen mounts, then those three fiat currencies are listed and ALGO is not', async () => {
         renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
 
         await waitFor(() => {
@@ -41,8 +41,7 @@ describe('Flow: Settings → Currency selection', () => {
         })
         expect(screen.getByTestId('settings_currency_item_eur')).toBeTruthy()
         expect(screen.getByTestId('settings_currency_item_gbp')).toBeTruthy()
-        // The hook prepends ALGO regardless of API response.
-        expect(screen.getByTestId('settings_currency_item_algo')).toBeTruthy()
+        expect(screen.queryByTestId('settings_currency_item_algo')).toBeNull()
     })
 
     it('Given the list is loaded, when the user types "eur" in the search, then only Euro is shown', async () => {
@@ -64,7 +63,7 @@ describe('Flow: Settings → Currency selection', () => {
         expect(screen.queryByTestId('settings_currency_item_algo')).toBeFalsy()
     })
 
-    it('Given a custom handler returning only JPY, when the screen mounts, then JPY appears (alongside ALGO) and USD/EUR do not', async () => {
+    it('Given a custom handler returning only JPY, when the screen mounts, then only JPY appears', async () => {
         // Per-test override of the default handler registered in beforeEach.
         server.use(mockListCurrencies({ response: JPY_ONLY }))
 
@@ -77,8 +76,7 @@ describe('Flow: Settings → Currency selection', () => {
         })
         expect(screen.queryByTestId('settings_currency_item_usd')).toBeFalsy()
         expect(screen.queryByTestId('settings_currency_item_eur')).toBeFalsy()
-        // ALGO is always prepended.
-        expect(screen.getByTestId('settings_currency_item_algo')).toBeTruthy()
+        expect(screen.queryByTestId('settings_currency_item_algo')).toBeNull()
     })
 
     describe('on a network with no Pera backend of its own', () => {

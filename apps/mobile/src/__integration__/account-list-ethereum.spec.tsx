@@ -40,6 +40,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setChainEnabled } from '@test-utils/capability-overrides'
 import {
@@ -197,29 +198,32 @@ describe('Flow: Account list with Ethereum registered', () => {
         expect(within(algoRow).getByText(/^\$ ?3\.00$/)).toBeTruthy()
     })
 
-    it('Given ALGO as the preferred currency, when a multi-chain list renders, then the Algorand row shows its value in the fallback currency', async () => {
-        useCurrenciesStore.getState().setPreferredCurrency('ALGO')
+    it('Given an ALGO preference stored before the upgrade, when a multi-chain list renders, then the Ethereum row and the portfolio total are in fiat', async () => {
+        getProvider().keyValueStorage.setItem(
+            'currencies-store',
+            JSON.stringify({
+                state: { preferredCurrency: 'ALGO', fallbackCurrency: 'USD' },
+                version: 1,
+            }),
+        )
+        await useCurrenciesStore.persist.rehydrate()
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
 
         renderMenu()
 
-        // An ALGO balance can't be shown in ALGO twice over; it falls back to USD.
         await waitFor(() => {
             expect(
-                within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
+                within(rowOf(ETHEREUM_ACCOUNT)).getByText(/\$ ?3,000\.00/),
             ).toBeTruthy()
         })
-        // ETH has no such clash, so it follows the preference: 10,000 ALGO, not dollars.
+        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/)).toBeNull()
         await waitFor(() => {
             expect(
-                within(rowOf(ETHEREUM_ACCOUNT)).getByText(/10,000\.00/),
-            ).toBeTruthy()
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/\$ ?3,003\.00/)
         })
-        expect(
-            within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/\$ ?3,000/),
-        ).toBeNull()
     })
 
     it('Given an Ethereum account on mainnet, when the portfolio header renders, then its fiat value is in the total', async () => {

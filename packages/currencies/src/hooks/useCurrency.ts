@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { useCurrenciesStore } from '../store'
+import type { CurrencyPreference } from '../models'
 import { USD_CURRENCY_ID } from '../constants'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useNativeUsdPriceQuery } from './useNativeUsdPriceQuery'
@@ -26,6 +27,7 @@ export type UseCurrencyResult = {
     setPreferredCurrency: (currency: string) => void
     fallbackCurrency: string
     setFallbackCurrency: (currency: string) => void
+    setCurrencyPreference: (preference: CurrencyPreference) => void
     /**
      * Converts a USD amount into the preferred currency. Returns `null` when
      * the backing rate is unknown (still loading, absent, or zero) and when
@@ -49,6 +51,9 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
     const fallbackCurrency = useCurrenciesStore(state => state.fallbackCurrency)
     const setFallbackCurrency = useCurrenciesStore(
         state => state.setFallbackCurrency,
+    )
+    const setCurrencyPreference = useCurrenciesStore(
+        state => state.setCurrencyPreference,
     )
 
     const isNativePreferred =
@@ -120,6 +125,7 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
         setPreferredCurrency,
         fallbackCurrency,
         setFallbackCurrency,
+        setCurrencyPreference,
         usdToPreferred,
         isRatePending,
         nativeUsdPrice: nativeUsdPrice ?? null,

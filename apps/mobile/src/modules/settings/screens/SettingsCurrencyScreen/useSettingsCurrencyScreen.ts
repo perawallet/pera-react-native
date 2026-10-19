@@ -18,10 +18,7 @@ import {
     useWalletDeployment,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    ALGO_ASSET_NAME,
-    isAlgoAssetName,
-} from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import {
     USD_CURRENCY_ID,
     currencyQueryKeys,
@@ -55,16 +52,12 @@ export const useSettingsCurrencyScreen =
     (): UseSettingsCurrencyScreenResult => {
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const deployment = useWalletDeployment()
-        const {
-            setPreferredCurrency,
-            setFallbackCurrency,
-            fallbackCurrency,
-            preferredCurrency,
-        } = useCurrency(scope)
+        const { setCurrencyPreference, fallbackCurrency, preferredCurrency } =
+            useCurrency(scope)
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data, isPaused, isError, refetch } = useCurrenciesQuery(scope)
+        const { data, isPaused, isError, refetch } = useCurrenciesQuery()
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
@@ -75,10 +68,8 @@ export const useSettingsCurrencyScreen =
 
         const isRateUnavailableOffline = useMemo(() => {
             if (hasInternet) return false
-            // USD is the identity path in useCurrency, and ALGO rides the
-            // DB-backed native-usd query, which works offline.
+            // USD is the identity path in useCurrency.
             if (preferredCurrency === USD_CURRENCY_ID) return false
-            if (isAlgoAssetName(preferredCurrency)) return false
 
             return !queryClient.getQueryData(
                 currencyQueryKeys.price(deployment, preferredCurrency),
@@ -104,13 +95,10 @@ export const useSettingsCurrencyScreen =
             trackEvent(SettingsEvent.ChangeCurrency, {
                 [AnalyticsMetadataKey.Id]: currency.id,
             })
-            if (isAlgoAssetName(currency.id)) {
-                setPreferredCurrency(ALGO_ASSET_NAME)
-                setFallbackCurrency(USD_CURRENCY_ID)
-            } else {
-                setPreferredCurrency(currency.id)
-                setFallbackCurrency(ALGO_ASSET_NAME)
-            }
+            setCurrencyPreference({
+                preferredCurrency: currency.id,
+                fallbackCurrency: ALGO_ASSET_NAME,
+            })
             // Read connectivity at press time, not from render state.
             // Offline this would only queue refetches that cannot run.
             if (useNetworkStatusStore.getState().hasInternet) {

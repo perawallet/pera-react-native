@@ -12,7 +12,12 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { areRatesUsable, assetToFiatAmount, fiatToAssetAmount } from '../utils'
+import {
+    areRatesUsable,
+    assetToFiatAmount,
+    fiatToAssetAmount,
+    toFiatCurrencyPreference,
+} from '../utils'
 
 describe('fiatToAssetAmount', () => {
     it('divides by price × rate and floors to the asset decimals', () => {
@@ -76,4 +81,32 @@ describe('areRatesUsable', () => {
     ] as const)('is false for %s', (_label, p, r, d) => {
         expect(areRatesUsable(p, r, d)).toBe(false)
     })
+})
+
+describe('toFiatCurrencyPreference', () => {
+    it('keeps a fiat preference as it is', () => {
+        expect(
+            toFiatCurrencyPreference({
+                preferredCurrency: 'EUR',
+                fallbackCurrency: 'ALGO',
+            }),
+        ).toEqual({ preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' })
+    })
+
+    it.each([
+        ['a fiat fallback', 'EUR', 'EUR'],
+        ['a USD fallback', 'USD', 'USD'],
+        ['an ALGO fallback', 'ALGO', 'USD'],
+        ['an empty fallback', '', 'USD'],
+    ])(
+        'moves an ALGO preference with %s to fiat and keeps ALGO as the fallback',
+        (_label, fallbackCurrency, expected) => {
+            expect(
+                toFiatCurrencyPreference({
+                    preferredCurrency: 'ALGO',
+                    fallbackCurrency,
+                }),
+            ).toEqual({ preferredCurrency: expected, fallbackCurrency: 'ALGO' })
+        },
+    )
 })

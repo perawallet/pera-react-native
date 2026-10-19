@@ -11,29 +11,15 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { fetchCurrenciesList } from '../api/currencies'
-import { nativeCurrencyFor } from './nativeCurrency'
 import { getCurrenciesQueryKey } from './querykeys'
 
-/** `scope` only picks the native currency listed first; the fiat list is the deployment's. */
-export const useCurrenciesQuery = (scope: ChainScope) => {
+/** The wallet deployment's fiat currencies. */
+export const useCurrenciesQuery = () => {
     const deployment = useWalletDeployment()
-    const results = useQuery({
+    return useQuery({
         queryKey: getCurrenciesQueryKey(deployment),
         queryFn: ({ signal }) => fetchCurrenciesList({ deployment, signal }),
     })
-
-    const dataWithNative = useMemo(() => {
-        return results.data
-            ? [nativeCurrencyFor(scope), ...results.data]
-            : undefined
-    }, [results.data, scope])
-
-    return {
-        ...results,
-        data: dataWithNative,
-    }
 }
