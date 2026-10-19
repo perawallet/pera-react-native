@@ -23,6 +23,7 @@ import { reviewerContractTests } from '@perawallet/wallet-core-signing/testing'
 import { algorandReviewerAdapter } from '../adapter'
 import {
     TEST_SUGGESTED_PARAMS,
+    asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
 } from './transactions'
@@ -69,8 +70,12 @@ const groupOf = (signer: Address, transactions: Transaction[]): SignableGroup =>
         source: { type: 'local' },
         data: {
             type: 'transactions',
-            transactions,
-            indicesToSign: transactions.map((_, i) => i),
+            transactions: transactions.map(txn =>
+                asUnsignedAlgorandTransaction(txn),
+            ),
+            chainData: {
+                algorand: { indicesToSign: transactions.map((_, i) => i) },
+            },
         },
     }) as unknown as SignableGroup
 

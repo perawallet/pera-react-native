@@ -91,7 +91,7 @@ const groupOf = (signerAddress: string, txns: FixtureTxn[]): SignableGroup =>
         data: {
             type: 'transactions',
             transactions: txns,
-            indicesToSign: txns.map((_, i) => i),
+            chainData: {},
         },
     }) as unknown as SignableGroup
 

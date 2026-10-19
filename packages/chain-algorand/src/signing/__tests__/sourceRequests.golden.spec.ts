@@ -24,8 +24,8 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
-    AnalyzedSignableGroup,
     LocalKeySigningDeps,
+    SigningResult,
     SourceMetadata,
 } from '@perawallet/wallet-core-signing'
 import { groupTransactions } from '../../blockchain'
@@ -39,7 +39,10 @@ import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { createLocalKeyStrategy } from '../local-key/createLocalKeyStrategy'
-import { signTransactionsWithLocalKey } from '../local-key/signTransactionsWithLocalKey'
+import {
+    assembleSignedTransaction,
+    signTransactionsWithLocalKey,
+} from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
 import { algorandTransactionPlanner } from '../planner'
 import { algorandSignedTransactionsOf } from '../signedTransactions'
@@ -53,7 +56,7 @@ import { MAINNET_GENESIS_HASH, payloadTransactionOf } from './transactions'
 // `UnsignedTransaction`s. These pin that, for each source's kind of group,
 // the wrapped transactions encode and sign to exactly the bytes the source
 // produced before: the unsigned bytes it built, and the signed bytes the
-// local-key signer gives the same group in its Algorand form.
+// local-key signer gives the same Algorand transactions signed directly.
 
 const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
@@ -146,27 +149,21 @@ const analysis = {
     riskLevel: 'low' as const,
 }
 
-// The bytes the local-key signer gives the group in its Algorand form, the
-// shape every source sent before.
+// The bytes the local-key signer gives the Algorand transactions directly,
+// with no chain-neutral wrapping in between.
 const signedAsBefore = async (
     transactions: PeraTransaction[],
     indicesToSign: number[],
     account: WalletAccount,
-    source: SourceMetadata = { type: 'local' },
-): Promise<Uint8Array[]> => {
-    const group: AnalyzedSignableGroup = {
-        data: { type: 'transactions', transactions, indicesToSign },
-        source,
-        signerAddress: transactions[indicesToSign[0]].sender.toString(),
-        originalIndices: indicesToSign,
-        analysis,
-    }
-    const result = await strategy.sign(group, account)
-    if (result.signedData.type !== 'transactions') {
-        throw new Error(`unexpected ${result.signedData.type}`)
-    }
-    return result.signedData.signed.map(encodeSignedTransaction)
-}
+): Promise<Uint8Array[]> =>
+    (
+        await signTransactionsWithLocalKey(
+            deps,
+            transactions,
+            indicesToSign,
+            account,
+        )
+    ).map(encodeSignedTransaction)
 
 // What the planner signs for an ed25519 local key, as the machine's planned
 // signer does, then reads back through the chain's own result reader.
@@ -375,7 +372,7 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
             type: 'multisig-cosign',
             signRequestId: 'sign-request-1',
         }
-        const expected = await signedAsBefore(transactions, [0], bob, source)
+        const expected = await signedAsBefore(transactions, [0], bob)
 
         const result = await strategy.sign(
             {
@@ -404,44 +401,37 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
 
     it('for a multisig proposal, which carries the unsigned group', () => {
         const transactions = groupTransactions([pay(), pay()])
-        const group = (
-            data: AnalyzedSignableGroup['data'],
-        ): AnalyzedSignableGroup => ({
-            data,
-            source: { type: 'local' },
-            signerAddress: ALICE_ADDRESS.toString(),
-            originalIndices: [0, 1],
-            analysis,
-        })
-        const bytesOf = (
-            result: ReturnType<typeof buildDeferredProposeSigningResult>,
-        ) =>
+        const bytesOf = (result: SigningResult) =>
             algorandSignedTransactionsOf(result, SCOPE).map(
                 entry => entry!.bytes,
             )
 
-        const expected = bytesOf(
-            buildDeferredProposeSigningResult(
-                group({
-                    type: 'transactions',
-                    transactions,
-                    indicesToSign: [0, 1],
-                }),
-            ),
-        )
+        const expected = bytesOf({
+            signedData: {
+                type: 'transactions',
+                signed: transactions.map(transaction =>
+                    assembleSignedTransaction(transaction),
+                ),
+            },
+            signers: [],
+        })
 
         expect(
             bytesOf(
-                buildDeferredProposeSigningResult(
-                    group({
+                buildDeferredProposeSigningResult({
+                    data: {
                         type: 'transactions',
                         transactions: toUnsignedAlgorandTransactions(
                             transactions,
                             SCOPE,
                         ),
                         chainData: { algorand: { indicesToSign: [0, 1] } },
-                    }),
-                ),
+                    },
+                    source: { type: 'local' },
+                    signerAddress: ALICE_ADDRESS.toString(),
+                    originalIndices: [0, 1],
+                    analysis,
+                }),
             ),
         ).toEqual(expected)
     })

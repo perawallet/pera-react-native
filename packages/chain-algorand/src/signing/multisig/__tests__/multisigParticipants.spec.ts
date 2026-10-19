@@ -47,6 +47,7 @@ import {
     getProposeParticipants,
 } from '../multisigParticipants'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
+import { assembleSignedTransaction } from '../../local-key/signTransactionsWithLocalKey'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     ({
@@ -277,15 +278,16 @@ describe('buildDeferredProposeSigningResult', () => {
             chainData: { algorand: { indicesToSign: [0, 1] } },
         })
 
-        expect(buildDeferredProposeSigningResult(neutral)).toEqual(
-            buildDeferredProposeSigningResult(
-                groupOf({
-                    type: 'transactions',
-                    transactions,
-                    indicesToSign: [0, 1],
-                }),
-            ),
-        )
+        expect(buildDeferredProposeSigningResult(neutral)).toEqual({
+            signedData: {
+                type: 'transactions',
+                signed: transactions.map(transaction =>
+                    assembleSignedTransaction(transaction),
+                ),
+            },
+            signers: [],
+            originalIndices: [0, 1],
+        })
     })
 
     test('refuses a chain-neutral payload it cannot read', () => {

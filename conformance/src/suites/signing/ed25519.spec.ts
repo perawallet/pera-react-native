@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createLocalKeyStrategy } from '@perawallet/wallet-core-chain-algorand/signing/local-key/createLocalKeyStrategy'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
+import { toUnsignedAlgorandTransactions } from '@perawallet/wallet-core-chain-algorand/signing/unsignedTransaction'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing/pipeline/types'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
@@ -115,6 +116,7 @@ describe('ed25519 signing conformance', () => {
         })
 
         const onProgress = vi.fn()
+        const scope = await localNetScope()
         const strategy = createLocalKeyStrategy({
             signTransactions: (txnGroup, indexesToSign, account) =>
                 signTransactionsWithLocalKey(
@@ -129,7 +131,7 @@ describe('ed25519 signing conformance', () => {
             signAuthData: () => {
                 throw new Error('not exercised by this test')
             },
-            scope: await localNetScope(),
+            scope,
         })
 
         expect(strategy.canSign(sender.walletAccount)).toBe(true)
@@ -139,8 +141,8 @@ describe('ed25519 signing conformance', () => {
             source: { type: 'walletconnect' },
             data: {
                 type: 'transactions',
-                transactions: [txn],
-                indicesToSign: [0],
+                transactions: toUnsignedAlgorandTransactions([txn], scope),
+                chainData: { algorand: { indicesToSign: [0] } },
             },
             originalIndices: [0],
             analysis: {

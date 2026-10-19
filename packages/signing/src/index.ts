@@ -197,7 +197,6 @@ export { bridgeTransactionReviewer } from './pipeline/transactionReviewerBridge'
 export {
     isExternalCallbackSource,
     isInteractiveSource,
-    isUnsignedTransactionsData,
     type AlgorandGroupData,
     type AnalysisContext,
     type AnalysisWarning,
@@ -206,9 +205,8 @@ export {
     type AuthDataPayload,
     type AuthDataSignableData,
     type AuthData,
+    type ChainSignerTransactions,
     type DecodedGroup,
-    type PeraTransactionsSignableData,
-    type TransactionSignableData,
     type UnsignedTransactionsSignableData,
     type RejectReason,
     type DataTransport,

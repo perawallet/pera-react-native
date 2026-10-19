@@ -22,16 +22,15 @@ import type {
 } from '@perawallet/wallet-core-hardware-wallet'
 
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
-import {
-    isUnsignedTransactionsData,
-    type SigningStrategy,
-    type AnalyzedSignableGroup,
-    type PeraTransactionsSignableData,
-    type AuthData,
-    type AuthDataMetadata,
-    type SigningResult,
-    type SigningCallbacks,
-    type SignerInfo,
+import type {
+    SigningStrategy,
+    AnalyzedSignableGroup,
+    ChainSignerTransactions,
+    AuthData,
+    AuthDataMetadata,
+    SigningResult,
+    SigningCallbacks,
+    SignerInfo,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
@@ -100,7 +99,7 @@ const toHardwareSigner = (
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
     chainId: ChainId,
-): PeraTransactionsSignableData => {
+): ChainSignerTransactions => {
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
@@ -113,7 +112,6 @@ const validateAndExtract = (
     if (group.data.type !== 'transactions') {
         throw new HardwareWalletError('unsupported_data_type')
     }
-    if (!isUnsignedTransactionsData(group.data)) return group.data
 
     // Only a chain's planner adapter reads its transactions out of a payload.
     if (!plannerChainAdapters.has(chainId)) {
@@ -127,7 +125,7 @@ const validateAndExtract = (
  */
 const signTransactions = async (
     transport: HardwareWalletTransport,
-    data: PeraTransactionsSignableData,
+    data: ChainSignerTransactions,
     signer: HardwareSigner,
     encodeTransaction: EncodeTransactionFunction,
     planner: PlannerChainAdapter,
@@ -215,7 +213,7 @@ const signTransactionsOnHardwareWallet = (
         ({ transport, guard }) =>
             signTransactions(
                 transport,
-                { type: 'transactions', transactions, indicesToSign },
+                { transactions, indicesToSign },
                 signer,
                 encodeTransaction,
                 planner,

@@ -287,7 +287,7 @@ describe('rekeyed signer resolution conformance', () => {
             data: {
                 type: 'transactions',
                 transactions: [],
-                indicesToSign: [],
+                chainData: { algorand: { indicesToSign: [] } },
             },
         }
 

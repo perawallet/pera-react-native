@@ -14,10 +14,15 @@ import { describe, expect, it } from 'vitest'
 import nacl from 'tweetnacl'
 import { Address } from 'algosdk'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type {
     AnalyzedSignableGroup,
     LocalKeySigningDeps,
+    SignerInfo,
     SigningResult,
     SourceMetadata,
 } from '@perawallet/wallet-core-signing'
@@ -29,7 +34,10 @@ import {
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { createLocalKeyStrategy } from '../local-key/createLocalKeyStrategy'
-import { signTransactionsWithLocalKey } from '../local-key/signTransactionsWithLocalKey'
+import {
+    assembleSignedTransaction,
+    signTransactionsWithLocalKey,
+} from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
 import {
     asUnsignedAlgorandTransaction,
@@ -101,65 +109,81 @@ const analysis = {
     riskLevel: 'low' as const,
 }
 
-type Shapes = {
-    algorand: AnalyzedSignableGroup
-    neutral: AnalyzedSignableGroup
-}
-
-const bothShapes = (
+const neutralGroup = (
     transactions: PeraTransaction[],
     indicesToSign: number[],
     source: SourceMetadata = { type: 'local' },
-): Shapes => {
-    const common = {
-        source,
-        signerAddress: transactions[0].sender.toString(),
-        originalIndices: transactions.map((_, i) => i),
-        analysis,
-    }
-    return {
-        algorand: {
-            ...common,
-            data: { type: 'transactions', transactions, indicesToSign },
-        },
-        neutral: {
-            ...common,
-            data: {
-                type: 'transactions',
-                transactions: transactions.map(txn =>
-                    asUnsignedAlgorandTransaction(txn),
-                ),
-                chainData: { algorand: { indicesToSign } },
-            },
-        },
-    }
-}
+): AnalyzedSignableGroup => ({
+    source,
+    signerAddress: transactions[0].sender.toString(),
+    originalIndices: transactions.map((_, i) => i),
+    analysis,
+    data: {
+        type: 'transactions',
+        transactions: transactions.map(txn =>
+            asUnsignedAlgorandTransaction(txn),
+        ),
+        chainData: { algorand: { indicesToSign } },
+    },
+})
 
-const signedBytes = (result: SigningResult): Uint8Array[] => {
+const signedOf = (result: SigningResult): PeraSignedTransaction[] => {
     if (result.signedData.type !== 'transactions') {
         throw new Error(`unexpected ${result.signedData.type}`)
     }
-    return result.signedData.signed.map(encodeSignedTransaction)
+    return result.signedData.signed
 }
 
+const signedBytes = (result: SigningResult): Uint8Array[] =>
+    signedOf(result).map(encodeSignedTransaction)
+
+// The reference is the Algorand transactions signed directly by the local-key
+// signer, with no chain-neutral wrapping in between.
 const signBoth = async (
-    { algorand, neutral }: Shapes,
+    transactions: PeraTransaction[],
+    indicesToSign: number[],
     account: WalletAccount,
+    source?: SourceMetadata,
 ) => {
-    const expected = await strategy.sign(algorand, account)
-    const result = await strategy.sign(neutral, account)
+    const expected = await signTransactionsWithLocalKey(
+        deps,
+        transactions,
+        indicesToSign,
+        account,
+    )
+    const result = await strategy.sign(
+        neutralGroup(transactions, indicesToSign, source),
+        account,
+    )
     return { expected, result }
 }
+
+const signersOf = (
+    address: string,
+    signed: PeraSignedTransaction[],
+): SignerInfo[] => [
+    {
+        address,
+        signatures: signed.map(stx =>
+            stx.sig ? encodeToBase64(stx.sig) : null,
+        ),
+    },
+]
 
 describe('a chain-neutral Algorand group signs to the same bytes as its Algorand form', () => {
     it('for a single transaction', async () => {
         const { expected, result } = await signBoth(
-            bothShapes([payment(addressOf(ALICE), 1n)], [0]),
+            [payment(addressOf(ALICE), 1n)],
+            [0],
             alice,
         )
 
-        expect(signedBytes(result)).toEqual(signedBytes(expected))
-        expect(result.signers).toEqual(expected.signers)
+        expect(signedBytes(result)).toEqual(
+            expected.map(encodeSignedTransaction),
+        )
+        expect(result.signers).toEqual(
+            signersOf(addressOf(ALICE).toString(), expected),
+        )
     })
 
     it('for the signable members of an atomic group', async () => {
@@ -169,59 +193,70 @@ describe('a chain-neutral Algorand group signs to the same bytes as its Algorand
             payment(addressOf(ALICE), 3n),
         ])
 
-        const { expected, result } = await signBoth(
-            bothShapes(group, [0, 2]),
-            alice,
-        )
+        const { expected, result } = await signBoth(group, [0, 2], alice)
 
-        expect(signedBytes(result)).toEqual(signedBytes(expected))
+        expect(signedBytes(result)).toEqual(
+            expected.map(encodeSignedTransaction),
+        )
     })
 
     it('for a rekeyed sender, signed by its authority', async () => {
         const { expected, result } = await signBoth(
-            bothShapes([payment(addressOf(BOB), 1n)], [0]),
+            [payment(addressOf(BOB), 1n)],
+            [0],
             alice,
         )
 
-        expect(signedBytes(result)).toEqual(signedBytes(expected))
+        expect(signedBytes(result)).toEqual(
+            expected.map(encodeSignedTransaction),
+        )
     })
 
     // The fixture's Falcon key isn't a real one the msgpack encoder accepts, so
     // the envelopes are compared field by field, signature bytes included.
     it('for a quantum key', async () => {
         const { expected, result } = await signBoth(
-            bothShapes([payment(addressOf(QUANTUM), 1n)], [0]),
+            [payment(addressOf(QUANTUM), 1n)],
+            [0],
             quantum,
         )
 
-        expect(result.signedData).toEqual(expected.signedData)
-        expect(
-            result.signedData.type === 'transactions' &&
-                result.signedData.signed[0].pqsig,
-        ).toBeTruthy()
+        expect(signedOf(result)).toEqual(expected)
+        expect(signedOf(result)[0].pqsig).toBeTruthy()
     })
 
     it('for a multisig cosignature, signed by the participant itself', async () => {
         const { expected, result } = await signBoth(
-            bothShapes([payment(addressOf(ALICE), 1n)], [0], {
-                type: 'multisig-cosign',
-                signRequestId: 'sign-request-1',
-            }),
+            [payment(addressOf(ALICE), 1n)],
+            [0],
             bob,
+            { type: 'multisig-cosign', signRequestId: 'sign-request-1' },
         )
 
-        expect(signedBytes(result)).toEqual(signedBytes(expected))
-        expect(result.signers).toEqual(expected.signers)
+        expect(signedBytes(result)).toEqual(
+            expected.map(encodeSignedTransaction),
+        )
+        expect(result.signers).toEqual(
+            signersOf(addressOf(BOB).toString(), expected),
+        )
     })
 
     it('for a deferred multisig proposal, which carries the unsigned group', () => {
-        const { algorand, neutral } = bothShapes(
-            [payment(addressOf(ALICE), 1n), payment(addressOf(ALICE), 2n)],
-            [0, 1],
-        )
+        const transactions = [
+            payment(addressOf(ALICE), 1n),
+            payment(addressOf(ALICE), 2n),
+        ]
 
-        expect(signedBytes(buildDeferredProposeSigningResult(neutral))).toEqual(
-            signedBytes(buildDeferredProposeSigningResult(algorand)),
+        expect(
+            signedBytes(
+                buildDeferredProposeSigningResult(
+                    neutralGroup(transactions, [0, 1]),
+                ),
+            ),
+        ).toEqual(
+            transactions.map(txn =>
+                encodeSignedTransaction(assembleSignedTransaction(txn)),
+            ),
         )
     })
 })

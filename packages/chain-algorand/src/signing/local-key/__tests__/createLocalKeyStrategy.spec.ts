@@ -56,14 +56,21 @@ const emptyAnalysis = {
     riskLevel: 'low' as const,
 }
 
+const TRANSACTIONS = [1n, 2n].map(amount =>
+    makeTestPaymentTx(makeTestAddress(1), {
+        receiver: makeTestAddress(2),
+        amount,
+        genesisHash: MAINNET_GENESIS_HASH,
+    }),
+)
+
 const makeTransactionGroup = (): AnalyzedSignableGroup => ({
     data: {
         type: 'transactions',
-        transactions: [
-            { sender: 'ADDR' } as never,
-            { sender: 'ADDR' } as never,
-        ],
-        indicesToSign: [0, 1],
+        transactions: TRANSACTIONS.map(transaction =>
+            asUnsignedAlgorandTransaction(transaction),
+        ),
+        chainData: { algorand: { indicesToSign: [0, 1] } },
     },
     source: { type: 'local' },
     signerAddress: 'ADDR',
@@ -154,49 +161,38 @@ describe('createLocalKeyStrategy', () => {
 
     describe('sign - transactions', () => {
         test('signs a chain-neutral group as the Algorand transactions its payloads carry', async () => {
-            const sender = makeTestAddress(1)
-            const transactions = [1n, 2n].map(amount =>
-                makeTestPaymentTx(sender, {
-                    receiver: makeTestAddress(2),
-                    amount,
-                    genesisHash: MAINNET_GENESIS_HASH,
-                }),
-            )
-            const algorandGroup = {
+            const signed = [
+                { txn: TRANSACTIONS[0] },
+                { txn: TRANSACTIONS[1], sig: new Uint8Array([1, 2, 3]) },
+            ]
+            signTransactions.mockResolvedValue(signed)
+            const neutralGroup: AnalyzedSignableGroup = {
                 ...makeTransactionGroup(),
                 data: {
                     type: 'transactions',
-                    transactions,
-                    indicesToSign: [1],
-                },
-            } as AnalyzedSignableGroup
-            const neutralGroup = {
-                ...makeTransactionGroup(),
-                data: {
-                    type: 'transactions',
-                    transactions: transactions.map(transaction =>
+                    transactions: TRANSACTIONS.map(transaction =>
                         asUnsignedAlgorandTransaction(transaction),
                     ),
                     chainData: { algorand: { indicesToSign: [1] } },
                 },
-            } as AnalyzedSignableGroup
+            }
 
-            const expected = await makeStrategy().sign(
-                algorandGroup,
-                standaloneAccount,
-            )
             const result = await makeStrategy().sign(
                 neutralGroup,
                 standaloneAccount,
             )
 
-            expect(result).toEqual(expected)
             expect(signTransactions).toHaveBeenLastCalledWith(
-                transactions,
+                TRANSACTIONS,
                 [1],
                 standaloneAccount,
                 ALGORAND_MAINNET,
             )
+            expect(result).toEqual({
+                signedData: { type: 'transactions', signed },
+                signers: [{ address: 'ADDR', signatures: [null, 'AQID'] }],
+                originalIndices: [3, 4],
+            })
         })
 
         test('refuses for good a chain-neutral payload it cannot read, without signing anything', async () => {
@@ -251,11 +247,9 @@ describe('createLocalKeyStrategy', () => {
             // the local signer — without this, signing falls back to
             // tx.sender lookup and breaks multisig cosign.
             expect(signTransactions).toHaveBeenCalledWith(
+                TRANSACTIONS,
                 group.data.type === 'transactions'
-                    ? group.data.transactions
-                    : undefined,
-                group.data.type === 'transactions'
-                    ? group.data.indicesToSign
+                    ? group.data.chainData.algorand?.indicesToSign
                     : undefined,
                 standaloneAccount,
                 ALGORAND_MAINNET,
@@ -274,11 +268,9 @@ describe('createLocalKeyStrategy', () => {
 
             expect(result.signedData.type).toBe('transactions')
             expect(signTransactions).toHaveBeenCalledWith(
+                TRANSACTIONS,
                 group.data.type === 'transactions'
-                    ? group.data.transactions
-                    : undefined,
-                group.data.type === 'transactions'
-                    ? group.data.indicesToSign
+                    ? group.data.chainData.algorand?.indicesToSign
                     : undefined,
                 quantumAccount,
                 ALGORAND_MAINNET,

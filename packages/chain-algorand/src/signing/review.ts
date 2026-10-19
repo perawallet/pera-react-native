@@ -15,15 +15,14 @@ import {
     GenesisHashMismatchError,
     InvalidSignableDataError,
     isAuthDataOriginMismatch,
-    isUnsignedTransactionsData,
     TransactionRoundTripError,
     type AnalysisContext,
     type AnalysisWarning,
     type DecodedGroup,
     type ReviewPolicy,
     type SignableGroup,
-    type TransactionSignableData,
     type TransactionDecoder,
+    type UnsignedTransactionsSignableData,
     type WarningDetector,
 } from '@perawallet/wallet-core-signing'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
@@ -49,8 +48,8 @@ const toAnalysisError = (error: unknown): Error => {
 type AlgorandGroup = {
     transactions: PeraTransaction[]
     rawTransactionsBase64?: string[]
-    /** For chain-neutral transactions: every planned signer the wallet holds. */
-    heldSigners?: string[]
+    /** Every planned signer the wallet holds. */
+    heldSigners: string[]
 }
 
 const refuse = (reason: string): never => {
@@ -62,10 +61,9 @@ const refuse = (reason: string): never => {
 // signers, so each one the wallet holds is listed for the user to approve,
 // and an authority a wallet sender isn't rekeyed to is refused.
 const algorandTransactionsOf = (
-    data: TransactionSignableData,
+    data: UnsignedTransactionsSignableData,
     context: AnalysisContext,
 ): AlgorandGroup => {
-    if (!isUnsignedTransactionsData(data)) return data
     const heldSigners = new Set<string>()
     const transactions = data.transactions.map(unsigned => {
         let read: ReturnType<typeof readAlgorandTransaction>
@@ -140,20 +138,12 @@ const decode = async (
             getExpectedGenesisHash(network),
         )
 
-        // The machine already split the request into one group per authorizer,
-        // so gate on `group.signerAddress`; `tx.sender` misses ARC-0001
-        // `signers` / `authAddr` overrides.
-        const signedByUs = context.accounts.some(
-            a => algorandAddressOf(a) === group.signerAddress,
-        )
-        const signableAddresses =
-            heldSigners ?? (signedByUs ? [group.signerAddress] : [])
         return {
             totalFees:
-                signableAddresses.length > 0
+                heldSigners.length > 0
                     ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
                     : 0n,
-            signableAddresses,
+            signableAddresses: heldSigners,
         }
     } catch (error) {
         throw toAnalysisError(error)

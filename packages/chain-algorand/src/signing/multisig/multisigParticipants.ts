@@ -25,7 +25,7 @@ import {
     algorandMultisigOf,
     signableParticipantAt,
 } from '../../accounts/multisig-participants'
-import { algorandSignableDataOf } from '../algorandRequest'
+import { readAlgorandTransactionsData } from '../algorandRequest'
 import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 
 /**
@@ -114,8 +114,8 @@ export const buildDeferredProposeSigningResult = (
             type: 'transactions',
             // The transport in deferred mode reads `stx.txn` only — no sig
             // or msig is needed because nothing is actually signed yet.
-            signed: algorandSignableDataOf(group.data).transactions.map(txn =>
-                assembleSignedTransaction(txn),
+            signed: readAlgorandTransactionsData(group.data).transactions.map(
+                txn => assembleSignedTransaction(txn),
             ),
         },
         signers: [],

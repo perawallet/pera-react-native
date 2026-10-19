@@ -26,9 +26,8 @@ import type {
 import type { PeraArbitraryDataMessage } from '../models'
 import type { SubmissionHistoryEntry } from '../db/types'
 
-/** Algorand transactions in the shape Algorand's sources build and decode. */
-export interface PeraTransactionsSignableData {
-    type: 'transactions'
+/** A chain-neutral group as the chain's own signers read it; never signable data itself. */
+export interface ChainSignerTransactions {
     transactions: PeraTransaction[]
     /** Populated only when decoding external requests. */
     rawTransactionsBase64?: string[]
@@ -48,22 +47,12 @@ export interface UnsignedTransactionsSignableData {
     chainData: { algorand?: AlgorandGroupData }
 }
 
-export type TransactionSignableData =
-    | PeraTransactionsSignableData
-    | UnsignedTransactionsSignableData
-
-export const isUnsignedTransactionsData = (
-    data: TransactionSignableData,
-): data is UnsignedTransactionsSignableData => 'chainData' in data
-
 /**
  * Keyed by the signer its planner names, so a rekey isn't followed again. An
  * Algorand group is keyed by the account it signs for, whose rekey is followed once.
  */
 export const isKeyedByPlanner = (data: SignableData): boolean =>
-    data.type === 'transactions' &&
-    isUnsignedTransactionsData(data) &&
-    data.chainData.algorand === undefined
+    data.type === 'transactions' && data.chainData.algorand === undefined
 
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'
@@ -114,7 +103,7 @@ export interface MessageSignableData {
 }
 
 export type SignableData =
-    | TransactionSignableData
+    | UnsignedTransactionsSignableData
     | ArbitraryDataSignableData
     | AuthDataSignableData
     | MessageSignableData
