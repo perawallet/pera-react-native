@@ -81,6 +81,24 @@ describe('backupSettingsStores', () => {
         })
     })
 
+    it.each([
+        ['a fiat fallback', 'EUR', 'EUR'],
+        ['an ALGO fallback', 'ALGO', 'USD'],
+    ])(
+        'restores an ALGO preference with %s as fiat',
+        (_label, fallback, expected) => {
+            applyBackupSettings(
+                { currency: { preferred: 'ALGO', fallback } },
+                'algorand',
+            )
+
+            expect(readBackupSettings('algorand').currency).toEqual({
+                preferred: expected,
+                fallback: 'ALGO',
+            })
+        },
+    )
+
     it('skips values this device does not recognise or cannot honour', () => {
         const before = readBackupSettings('algorand')
 

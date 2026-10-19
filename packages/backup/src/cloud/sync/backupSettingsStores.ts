@@ -77,9 +77,10 @@ export const applyBackupSettings = (
     const { currency, language, confirmationMode, launchAccount } = settings
 
     if (currency) {
-        const store = useCurrenciesStore.getState()
-        store.setPreferredCurrency(currency.preferred)
-        store.setFallbackCurrency(currency.fallback)
+        useCurrenciesStore.getState().setCurrencyPreference({
+            preferredCurrency: currency.preferred,
+            fallbackCurrency: currency.fallback,
+        })
     }
     if (language) useSettingsStore.getState().setLanguage(language)
     if (confirmationMode && CONFIRMATION_MODES.has(confirmationMode)) {
