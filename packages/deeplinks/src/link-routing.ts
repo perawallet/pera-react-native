@@ -29,6 +29,18 @@ export const isUnsupportedChainLink = (url: string): boolean => {
     )
 }
 
+/**
+ * The chain that recognised the link but refuses what it asks for (an EIP-681
+ * `approve`), so the caller can say so instead of calling it "not a link".
+ */
+export const unsupportedActionChainOf = (url: string): ChainId | undefined => {
+    const resolution = resolveChainDeeplink(url)
+    return resolution.status === 'failed' &&
+        resolution.reason === 'unsupported-action'
+        ? resolution.chainId
+        : undefined
+}
+
 type AddressIntent = Extract<ChainDeeplinkIntent, { kind: 'address' }>
 
 export type AddressCandidates = { address: string; chainIds: ChainId[] }

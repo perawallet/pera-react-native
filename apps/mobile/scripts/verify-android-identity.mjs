@@ -211,6 +211,7 @@ for (const scheme of [
     'perawallet-wc',
     'algorand-wc',
     'liquid',
+    'ethereum',
 ]) {
     assert(
         manifest.includes(`android:scheme="${scheme}"`),

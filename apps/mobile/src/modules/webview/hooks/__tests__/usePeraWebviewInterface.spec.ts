@@ -182,6 +182,25 @@ describe('usePeraWebviewInterface', () => {
         },
     )
 
+    // openNativeURI hands any parseable link to the dispatcher without the
+    // navigation guard's per-type policy, so this gate is what keeps a page
+    // from prefilling a send with an ethereum: or algorand:// link.
+    it('keeps an ethereum: payment link sent through openNativeURI from an untrusted origin away from the handler', () => {
+        const { webview, handleMessage } = render(true, TRUSTED_URL)
+
+        act(() =>
+            handleMessage(
+                bridgeMessage('eth-1', 'openNativeURI', {
+                    uri: 'ethereum:0x70997970C51812dc3A010C7d01b50e0d17dc79C8@1?value=1',
+                }),
+                { securedConnection: false, sourceUrl: EVIL_URL },
+            ),
+        )
+
+        expect(handlers.openNativeURI).not.toHaveBeenCalled()
+        expect(injectedScript(webview)).toContain('"code":-32001')
+    })
+
     it.each(OPEN_METHODS)(
         'lets %s through from an untrusted origin',
         method => {

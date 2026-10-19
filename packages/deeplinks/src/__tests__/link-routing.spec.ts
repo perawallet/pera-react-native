@@ -28,6 +28,7 @@ import {
     addressCandidatesOf,
     isUnsupportedChainLink,
     linkNetworkMismatchOf,
+    unsupportedActionChainOf,
 } from '../link-routing'
 import { fakeDeeplinkAdapter } from './fakeDeeplinkAdapter'
 
@@ -79,6 +80,32 @@ describe('link routing', () => {
             expect(isUnsupportedChainLink(`fixturehex:${sharedAddress}`)).toBe(
                 false,
             )
+        })
+    })
+
+    describe('unsupportedActionChainOf', () => {
+        it('names the chain that recognised a link but refuses its action', () => {
+            expect(
+                unsupportedActionChainOf(`fixturehex:${sharedAddress}/approve`),
+            ).toBe(A)
+        })
+
+        it('is undefined for a link its chain cannot read', () => {
+            expect(unsupportedActionChainOf('fixturehex:nope')).toBeUndefined()
+        })
+
+        it('is undefined for a link its chain reads', () => {
+            expect(
+                unsupportedActionChainOf(`fixturehex:${sharedAddress}`),
+            ).toBeUndefined()
+        })
+
+        it('is undefined when the chain is switched off', () => {
+            switchOff(A)
+
+            expect(
+                unsupportedActionChainOf(`fixturehex:${sharedAddress}/approve`),
+            ).toBeUndefined()
         })
     })
 

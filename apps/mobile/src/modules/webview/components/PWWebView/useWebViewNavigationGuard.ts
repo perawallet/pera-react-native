@@ -13,6 +13,10 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 
+import {
+    isUnsupportedChainLink,
+    unsupportedActionChainOf,
+} from '@perawallet/wallet-core-deeplinks'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     useDeepLink,
@@ -87,8 +91,11 @@ const isPeraUniversalLink = (url: string): boolean =>
  *   The installed-app checks are pre-warmed on mount, because `canOpenURL` is
  *   async while this guard answers synchronously.
  * - Value-bearing deeplinks (transfers, keyreg, import, WC pairing) route only
- *   from the trusted Discover origin, and are blocked outright elsewhere.
+ *   from the trusted Discover origin, and are blocked outright elsewhere. Chain
+ *   URIs (`algorand://`, `ethereum:`) follow the same policy as Pera links.
  *   OS/QR-sourced deeplinks come through a different path and are unaffected.
+ * - A chain URI the chain refuses (an `ethereum:` approve) reaches the
+ *   dispatcher from any origin, which only shows why it was refused.
  * - WC wake links carry no actionable URI, so they don't parse as deeplinks and
  *   are swallowed to keep them off the OS chooser.
  * - blob: URLs backed by http(s), like Vestige's chart iframes, load in place
@@ -207,6 +214,17 @@ export const useWebViewNavigationGuard = ({
                     )
                     return false
                 }
+                void handleDeepLink(url, false, 'in-app')
+                return false
+            }
+
+            // A chain claimed the link but refuses it (an EIP-681 approve, a
+            // switched-off chain). Nothing runs, so any origin gets the
+            // dispatcher's refusal message rather than a tap that does nothing.
+            if (
+                isUnsupportedChainLink(url) ||
+                unsupportedActionChainOf(url) !== undefined
+            ) {
                 void handleDeepLink(url, false, 'in-app')
                 return false
             }

@@ -521,9 +521,10 @@ describe('buildAppConfig — deep-link scheme parity', () => {
         'perawallet-wc',
         'algorand-wc',
         'liquid',
+        'ethereum',
     ]
 
-    it('registers all six iOS URL schemes across every variant', () => {
+    it('registers every iOS URL scheme across every variant', () => {
         for (const env of [
             { APP_ENV: 'production' },
             { APP_ENV: 'staging' },
@@ -533,7 +534,7 @@ describe('buildAppConfig — deep-link scheme parity', () => {
         }
     })
 
-    it('registers all six custom schemes in the Android intent filter', () => {
+    it('registers every custom scheme in the Android intent filter', () => {
         const filter = build({
             APP_ENV: 'production',
         }).android.intentFilters.find(f => !f.autoVerify)

@@ -23,6 +23,7 @@ import {
     isPeraOwnedDeeplink,
     isUnsupportedChainLink,
     linkNetworkMismatchOf,
+    unsupportedActionChainOf,
     unsupportedLinkChainOf,
     type AddressCandidates,
     type BuildDeeplinkInput,
@@ -119,6 +120,7 @@ const CHAIN_SELECTION_SHEET_OPTIONS = {
 const isValidDeepLink = (url: string): boolean =>
     parseDeeplink(url) !== null ||
     isUnsupportedChainLink(url) ||
+    unsupportedActionChainOf(url) !== undefined ||
     addressCandidatesOf(url) !== undefined
 
 export const useDeepLink = (): UseDeepLinkResult => {
@@ -348,6 +350,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
                 if (isUnsupportedChainLink(url)) {
                     refuse('UNSUPPORTED_CHAIN_LINK')
+                    return
+                }
+                const refusingChainId = unsupportedActionChainOf(url)
+                if (refusingChainId) {
+                    refuse('UNSUPPORTED_CHAIN_ACTION', {
+                        kind: 'unsupported-on-chain',
+                        chainId: refusingChainId,
+                    })
                     return
                 }
                 // A recognized-but-unsupported Pera deeplink stays silent, like the QR
@@ -777,7 +787,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
     refusalOfRef.current = refusalOf
     const isDeepLinkAvailable = useCallback((url: string): boolean => {
         const parsed = parseDeeplink(url)
-        if (!parsed) return !isUnsupportedChainLink(url)
+        if (!parsed) {
+            return (
+                !isUnsupportedChainLink(url) &&
+                unsupportedActionChainOf(url) === undefined
+            )
+        }
         return refusalOfRef.current(parsed) === undefined
     }, [])
 

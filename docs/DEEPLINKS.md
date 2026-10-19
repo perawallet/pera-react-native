@@ -14,8 +14,7 @@ notifications, Pera Web, and QR codes. The parser lives in `packages/deeplinks`;
 
 The universal form is the app link behind a fixed prefix and parses identically.
 
-Chain URIs (`algorand://`, `ethereum:`, `wc:`) are not Pera links. Each chain package parses its own;
-see `packages/deeplinks/src/chain-adapter.ts`.
+Chain URIs are not Pera links; see [Chain URIs](#chain-uris).
 
 ## Choosing the chain: `chain=`
 
@@ -80,11 +79,68 @@ Encoding rules:
 - An unknown path, a missing required param, or a value the target chain can't read (a
   non-integer amount, an asset id in another chain's spelling) opens the home screen.
 
-Links that arrive as push notifications or banners are restricted to navigation-only types; see
-`packages/deeplinks/src/notification-policy.ts`.
-
 ## Legacy address links
 
 `perawallet://<ADDRESS>?amount=…&asset=…&note=…` is the format the native apps issued before app
 links. It is Algorand-only, ignores `chain`, and is kept so printed QR codes keep working. Don't issue
 new ones; use the app-link paths above.
+
+## Chain URIs
+
+Each chain parses its own URI schemes through a `DeeplinkChainAdapter` registered from its chain
+package (`packages/chain-*/src/register.ts`):
+
+| Chain    | Schemes                              | Reads                                                                                          |
+| -------- | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Algorand | `algorand:`, `algo:`, `algorand-wc:` | Addresses, payments and asset transfers, opt-ins, key registration, ARC-90 asset and app links |
+| Ethereum | `ethereum:`                          | EIP-681: an address, an ether payment, an ERC-20 `transfer`                                    |
+
+`wc:` pairing URIs belong to no chain; `packages/deeplinks/src/wallet-connect.ts` reads them.
+
+A chain URI is resolved in the same terms as a Pera link with `chain=`:
+
+- **Sender.** A payment goes out from the selected account only when it lives on the link's chain.
+  Otherwise the wallet's one account on that chain is used, a picker opens when there are several, and
+  the no-account error shows when there is none. A link for one chain never sends from another's
+  account (`resolveSendAccount` in `apps/mobile/src/modules/transactions`).
+- **Network.** A link that names a network (`ethereum:0x…@11155111`, `algorand://net:testnet/…`) is refused
+  while that chain is on another one, never switched. One that names none runs on the chain's selected
+  network.
+- **Refusals.** A chain switched off by remote config shows the network-unavailable error. A link the
+  chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
+  other than `transfer` (an approval from a link is a drain vector, and the wallet decodes no
+  calldata), or a capability the chain lacks. Unreadable text is not a link at all.
+
+## Entry points and policies
+
+Every link reaches `useDeepLink` with its source, and what it may do depends on that source:
+
+| Source                      | Policy                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| OS, QR, paste               | Everything the parser reads. The OS delivers the schemes in `apps/mobile/app.config.builder.js` (iOS `scheme`, Android intent filter).    |
+| In-app browser page         | `packages/deeplinks/src/page-initiated-policy.ts`: value-bearing types only from the trusted Discover origin's top frame; others refused. |
+| Push notification or banner | `packages/deeplinks/src/notification-policy.ts`: navigation-only types.                                                                   |
+
+On top of the source policy, `packages/deeplinks/src/capability-policy.ts` refuses a link whose
+chain capability is off, whatever its source.
+
+- **`ethereum:` from the OS is shared.** On iOS any installed wallet can claim it and the OS picks
+  one; Android shows a chooser. Pera's own surfaces issue `perawallet://` with `chain=`, which only
+  Pera opens.
+- **A page has two ways in.** A navigation goes through `useWebViewNavigationGuard`, which applies the
+  page policy per link type. The `openNativeURI` bridge method dispatches any parseable link without
+  it, so the bridge's trusted-origin gate (`usePeraWebviewInterface`) is what keeps other origins out.
+- **The browser extension registers no schemes.** It reads chain URIs only from its paste field.
+
+## Adding a chain
+
+1. Implement `DeeplinkChainAdapter` (`packages/deeplinks/src/chain-adapter.ts`) in the chain package
+   and register it with `deeplinkAdapters`. Two chains claiming one scheme throws at bootstrap.
+2. Return `unsupported-action` for anything the wallet understands but refuses to do, so the user is
+   told why rather than shown "not a link".
+3. `chain=` accepts each network's `caip2` from the chain descriptor, so Pera links reach the new
+   chain with no parser change. Classify any new `DeeplinkType` in the notification, page and
+   capability policy records; each is exhaustive, so an unclassified type fails to compile.
+4. To receive the scheme from other apps, add it to `scheme` and the Android intent filter in
+   `apps/mobile/app.config.builder.js`, and to the identity checks in
+   `apps/mobile/scripts/verify-*-identity.mjs`.
