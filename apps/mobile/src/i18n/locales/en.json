@@ -309,7 +309,8 @@
             "nomatch_body": "No assets matched your search term",
             "network_filter_all": "All",
             "see_networks": "See networks",
-            "hide_networks": "Hide networks"
+            "hide_networks": "Hide networks",
+            "chain_network": "{{chain}} network"
         },
         "nfts": {
             "search_placeholder": "Search NFTs",

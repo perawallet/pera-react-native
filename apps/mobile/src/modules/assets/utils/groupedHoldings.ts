@@ -1,0 +1,260 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { Decimal } from 'decimal.js'
+import type { AssetGroup, PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    networkTierOf,
+    toScopeKey,
+    type AssetRef,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+
+export type GroupableHolding = { scope: ChainScope; assetId: string }
+
+/** Pass a module-level constant: the hook memoises on it. */
+export type GroupableHoldingAdapter<T extends GroupableHolding> = {
+    /** Null while the holding's metadata hasn't synced. */
+    assetOf: (holding: T) => Nullable<PeraAsset>
+    /** Display units. */
+    displayAmountOf: (holding: T, asset: PeraAsset) => Decimal
+    /** USD per whole unit; null while unpriced. */
+    usdPriceOf: (holding: T) => Nullable<Decimal>
+}
+
+export type GroupedHoldingMember<T> = {
+    holding: T
+    asset: Nullable<PeraAsset>
+    /** Display units; null while the asset's metadata hasn't synced. */
+    displayAmount: Nullable<Decimal>
+    usdPrice: Nullable<Decimal>
+}
+
+export type GroupedHoldingItem<T> =
+    | { kind: 'holding'; holding: T; isGroupMember: boolean }
+    | {
+          kind: 'group'
+          group: AssetGroup
+          members: GroupedHoldingMember<T>[]
+          /** Display units; null while any member's metadata hasn't synced. */
+          amount: Nullable<Decimal>
+          largestMember: T
+          isExpanded: boolean
+      }
+
+export type AssetGroupItem<T> = Extract<GroupedHoldingItem<T>, { kind: 'group' }>
+
+export type BuildGroupedHoldingItemsParams<T extends GroupableHolding> = {
+    holdings: T[]
+    groups: AssetGroup[]
+    expandedGroupIds: ReadonlySet<string>
+    adapter: GroupableHoldingAdapter<T>
+    /** A holding this rejects stays a plain row whatever group it belongs to. */
+    isGroupable?: (scope: ChainScope) => boolean
+}
+
+export type FindGroupedMembersParams<T extends GroupableHolding> = {
+    holdings: T[]
+    groups: AssetGroup[]
+    ref: AssetRef
+}
+
+// A test network's holdings never fold into a group with mainnet ones.
+export const isMainnetScope = ({ chainId, networkId }: ChainScope): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(chainId) &&
+        networkTierOf(chains.get(chainId).descriptor, networkId) === 'mainnet'
+    )
+}
+
+export const spansChains = (holdings: readonly GroupableHolding[]): boolean =>
+    new Set(holdings.map(holding => holding.scope.chainId)).size > 1
+
+const holdingKey = (scope: ChainScope, assetId: string): string =>
+    `${toScopeKey(scope)}|${assetId}`
+
+const indexGroupMembers = (groups: AssetGroup[]): Map<string, AssetGroup> => {
+    const groupOf = new Map<string, AssetGroup>()
+    for (const group of groups) {
+        for (const member of group.members) {
+            const key = holdingKey(member.scope, member.assetId)
+            if (!groupOf.has(key)) groupOf.set(key, group)
+        }
+    }
+    return groupOf
+}
+
+// Resolved once per holding; the predicate runs only for holdings a group names.
+const collectGroupMembers = <T extends GroupableHolding>(
+    holdings: T[],
+    groups: AssetGroup[],
+    isGroupable: (scope: ChainScope) => boolean,
+) => {
+    const groupOf = indexGroupMembers(groups)
+    const holdingGroups = holdings.map(holding => {
+        const group = groupOf.get(holdingKey(holding.scope, holding.assetId))
+        return group && isGroupable(holding.scope) ? group : undefined
+    })
+    const membersOf = new Map<string, T[]>()
+    holdings.forEach((holding, index) => {
+        const group = holdingGroups[index]
+        if (!group) return
+        const members = membersOf.get(group.id)
+        if (members) members.push(holding)
+        else membersOf.set(group.id, [holding])
+    })
+    return { holdingGroups, membersOf }
+}
+
+// Members carry their own decimals, so each converts before the sum: base
+// units of two chains' tokens don't add.
+const toMember = <T extends GroupableHolding>(
+    holding: T,
+    adapter: GroupableHoldingAdapter<T>,
+): GroupedHoldingMember<T> => {
+    const asset = adapter.assetOf(holding)
+    return {
+        holding,
+        asset,
+        displayAmount: asset ? adapter.displayAmountOf(holding, asset) : null,
+        usdPrice: adapter.usdPriceOf(holding),
+    }
+}
+
+const sumDisplayAmount = <T>(
+    members: GroupedHoldingMember<T>[],
+): Nullable<Decimal> => {
+    let total = new Decimal(0)
+    for (const { displayAmount } of members) {
+        if (displayAmount === null) return null
+        total = total.plus(displayAmount)
+    }
+    return total
+}
+
+const usdValueOf = <T>({
+    displayAmount,
+    usdPrice,
+}: GroupedHoldingMember<T>): Nullable<Decimal> =>
+    displayAmount === null || usdPrice === null
+        ? null
+        : displayAmount.mul(usdPrice)
+
+// One conversion factor applies to every member, so the USD order is the
+// order in the user's currency too.
+const largestOf = <T>(members: GroupedHoldingMember<T>[]): T => {
+    let largest = members[0]!
+    let largestValue = usdValueOf(largest)
+    for (const member of members.slice(1)) {
+        const value = usdValueOf(member)
+        if (value !== null && (largestValue === null || value.gt(largestValue))) {
+            largest = member
+            largestValue = value
+        }
+    }
+    return largest.holding
+}
+
+/**
+ * Folds holdings the groups name into one group item at the first member's
+ * sorted position, followed by its members when expanded. Only groups with two
+ * or more holdings present fold; everything else stays a plain row.
+ */
+export const buildGroupedHoldingItems = <T extends GroupableHolding>({
+    holdings,
+    groups,
+    expandedGroupIds,
+    adapter,
+    isGroupable = isMainnetScope,
+}: BuildGroupedHoldingItemsParams<T>): GroupedHoldingItem<T>[] => {
+    // The common case, and a list can hold thousands of holdings: skip the
+    // per-holding lookups entirely.
+    if (groups.length === 0) {
+        return holdings.map(holding => ({
+            kind: 'holding',
+            holding,
+            isGroupMember: false,
+        }))
+    }
+
+    const { holdingGroups, membersOf } = collectGroupMembers(
+        holdings,
+        groups,
+        isGroupable,
+    )
+
+    const items: GroupedHoldingItem<T>[] = []
+    const placed = new Set<string>()
+    holdings.forEach((holding, index) => {
+        const group = holdingGroups[index]
+        const present = group ? (membersOf.get(group.id) ?? []) : []
+        if (!group || present.length < 2) {
+            items.push({ kind: 'holding', holding, isGroupMember: false })
+            return
+        }
+        if (placed.has(group.id)) return
+        placed.add(group.id)
+
+        const members = present.map(member => toMember(member, adapter))
+        const isExpanded = expandedGroupIds.has(group.id)
+        items.push({
+            kind: 'group',
+            group,
+            members,
+            amount: sumDisplayAmount(members),
+            largestMember: largestOf(members),
+            isExpanded,
+        })
+        if (isExpanded) {
+            for (const member of present) {
+                items.push({
+                    kind: 'holding',
+                    holding: member,
+                    isGroupMember: true,
+                })
+            }
+        }
+    })
+    return items
+}
+
+export const groupedHoldingItemKey = <T extends GroupableHolding>(
+    item: GroupedHoldingItem<T>,
+): string =>
+    item.kind === 'group'
+        ? `group|${item.group.id}`
+        : holdingKey(item.holding.scope, item.holding.assetId)
+
+/** Empty unless two or more members of `ref`'s group are held. */
+export const findGroupedMembers = <T extends GroupableHolding>({
+    holdings,
+    groups,
+    ref,
+}: FindGroupedMembersParams<T>): T[] => {
+    if (groups.length === 0) return []
+    const { holdingGroups, membersOf } = collectGroupMembers(
+        holdings,
+        groups,
+        isMainnetScope,
+    )
+    const index = holdings.findIndex(
+        holding =>
+            holding.assetId === ref.assetId &&
+            holding.scope.chainId === ref.chainId,
+    )
+    const group = index === -1 ? undefined : holdingGroups[index]
+    const members = group ? (membersOf.get(group.id) ?? []) : []
+    return members.length < 2 ? [] : members
+}

@@ -15,21 +15,27 @@ import React, { useCallback } from 'react'
 import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountHoldingsLiteRow,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { SearchableList } from '@components/SearchableList'
-import { AssetRowSkeleton } from '@modules/assets'
+import {
+    AssetGroupRow,
+    AssetRowSkeleton,
+    groupedHoldingItemKey,
+    type GroupedHoldingItem,
+} from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
-import { AssetGroupListItemView } from './AssetGroupListItemView'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
-import { assetListItemKey, type AssetListItem } from './assetListItems'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -57,6 +63,7 @@ export const AccountAssetList = ({
         setSelectedChainId,
         showChainBadges,
         toggleGroupExpanded,
+        openGroup,
         convertFiat,
         isPending,
         isReadOnly,
@@ -75,16 +82,19 @@ export const AccountAssetList = ({
         ({ item }: { item: AssetListItem }) => {
             if (item.kind === 'group') {
                 return (
-                    <AssetGroupListItemView
+                    <AssetGroupRow
                         item={item}
                         convertFiat={convertFiat}
-                        onPress={() => toggleGroupExpanded(item.group.id)}
+                        onPress={() => openGroup(item)}
+                        onToggleExpanded={() =>
+                            toggleGroupExpanded(item.group.id)
+                        }
                         style={styles.groupItem}
                     />
                 )
             }
 
-            const { row } = item
+            const { holding: row } = item
             const { chainId } = row.scope
             return (
                 <SwipeableAssetItem
@@ -95,10 +105,9 @@ export const AccountAssetList = ({
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
                     chainName={
-                        showChainBadges || item.isGroupMember
-                            ? chainDisplayNameOf(chainId)
-                            : undefined
+                        showChainBadges ? chainDisplayNameOf(chainId) : undefined
                     }
+                    isGroupMember={item.isGroupMember}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
@@ -110,6 +119,7 @@ export const AccountAssetList = ({
             convertFiat,
             showChainBadges,
             toggleGroupExpanded,
+            openGroup,
             styles.groupItem,
         ],
     )
@@ -184,7 +194,7 @@ export const AccountAssetList = ({
                 getItemType={assetListItemType}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
-                keyExtractor={assetListItemKey}
+                keyExtractor={groupedHoldingItemKey}
                 // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags
@@ -217,6 +227,8 @@ export const AccountAssetList = ({
         </PWView>
     )
 }
+
+type AssetListItem = GroupedHoldingItem<AccountHoldingsLiteRow>
 
 const assetListItemType = (item: AssetListItem) => item.kind
 

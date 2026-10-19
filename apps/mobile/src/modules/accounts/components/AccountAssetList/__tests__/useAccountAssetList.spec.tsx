@@ -394,6 +394,52 @@ describe('useAccountAssetList', () => {
             ])
         })
 
+        it("opens a group on the network holding the most of it, even when that sorts second", () => {
+            registerEthereum()
+            mockGroups.current = [
+                {
+                    id: 'usdc',
+                    name: 'USD Coin',
+                    symbol: 'USDC',
+                    logoUrl: null,
+                    members: [
+                        { scope: ALGORAND_MAINNET, assetId: '31566704' },
+                        { scope: ETHEREUM_MAINNET, assetId: '0xA0b8' },
+                    ],
+                } satisfies AssetGroup,
+            ]
+            const priced = (
+                assetId: string,
+                scope: ChainScope,
+                amount: string,
+            ) => ({
+                ...makeHolding(assetId, scope),
+                amount: new Decimal(amount),
+                decimals: 6,
+                totalSupply: '1000000000000',
+                name: 'USD Coin',
+                unitName: 'USDC',
+                usdPrice: new Decimal(1),
+            })
+            mockAssetsQuery.holdings = [
+                priced('31566704', ALGORAND_MAINNET, '1000000'),
+                priced('0xA0b8', ETHEREUM_MAINNET, '3000000'),
+            ]
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+            const [group] = result.current.items
+            if (group?.kind !== 'group') throw new Error('expected a group')
+
+            act(() => result.current.openGroup(group))
+
+            expect(group.amount?.toString()).toBe('4')
+            expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+                assetId: '0xA0b8',
+                chainId: 'ethereum',
+            })
+        })
+
         it('asks for asset groups only where they could fold something', () => {
             registerEthereum()
             const { result, rerender } = renderHook(

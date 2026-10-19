@@ -34,6 +34,23 @@ export const useStyles = makeStyles(theme => ({
     subtitle: {
         color: theme.colors.textGray,
     },
+    toggle: {
+        alignSelf: 'flex-start',
+    },
+    networkStack: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: theme.spacing.xs,
+    },
+    // Overlap the icons so the stack reads as one group of networks.
+    stackedNetworkIcon: {
+        marginLeft: -theme.spacing.xs,
+    },
+    networkLabel: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     chevronExpanded: {
         transform: [{ rotate: '180deg' }],
     },

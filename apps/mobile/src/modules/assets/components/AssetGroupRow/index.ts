@@ -10,7 +10,5 @@
  limitations under the License
  */
 
-export {
-    AssetGroupListItemView,
-    type AssetGroupListItemViewProps,
-} from './AssetGroupListItemView'
+export { AssetGroupRow, type AssetGroupRowProps } from './AssetGroupRow'
+export { NetworkLabel, type NetworkLabelProps } from './NetworkLabel'

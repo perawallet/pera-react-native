@@ -32,6 +32,8 @@ export type AssetItemViewProps = {
     right?: ReactNode
     /** Trails the name in the title row, such as the holding's network. */
     titleAccessory?: ReactNode
+    /** Replaces the secondary line under the name; the deleted label still wins. */
+    subtitle?: ReactNode
     iconSize?: PWIconSize
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
@@ -47,6 +49,7 @@ export const AssetItemView = ({
     asset,
     right,
     titleAccessory,
+    subtitle: subtitleOverride,
     iconSize = 'xl',
     logoUrl,
     showFavorite = false,
@@ -80,6 +83,8 @@ export const AssetItemView = ({
         >
             {t('asset.deleted_label')}
         </PWText>
+    ) : subtitleOverride ? (
+        subtitleOverride
     ) : (
         <PWText
             // Account rows (copyableAssetId) have always shown the subtitle at
