@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -29,17 +29,17 @@ const USDC = { assetId: '31566704', name: 'USD Coin' } as PeraAsset
 
 const member = (
     chainId: 'algorand' | 'ethereum',
-    displayAmount: Nullable<Decimal>,
     asset: Nullable<PeraAsset> = USDC,
 ): GroupedHoldingMember<Holding> => ({
     holding: { scope: { chainId, networkId: 'mainnet' }, assetId: chainId },
     asset,
-    displayAmount,
+    displayAmount: new Decimal(1),
     usdPrice: new Decimal(1),
 })
 
 const groupOf = (
     members: GroupedHoldingMember<Holding>[],
+    usdValue: Nullable<Decimal>,
 ): AssetGroupItem<Holding> => ({
     kind: 'group',
     group: {
@@ -51,46 +51,42 @@ const groupOf = (
     },
     members,
     amount: null,
+    usdValue,
     isExpanded: false,
 })
 
-// Doubles the USD value into "EUR", so the sum shows conversion happened.
+// Doubles the USD value into "EUR", so the result shows conversion happened.
 const toEur: AssetFiatConverter = (_ref, usdPrice, amount) => ({
     displayCurrency: 'EUR',
     value: usdPrice ? amount.mul(usdPrice).mul(2) : null,
 })
 
 describe('useAssetGroupRow', () => {
-    it("sums each network's value in the preferred currency", () => {
+    it("converts the group's USD total to the preferred currency, as a plain amount", () => {
+        const convertFiat = vi.fn(toEur)
+
         const { result } = renderHook(() =>
             useAssetGroupRow({
-                item: groupOf([
-                    member('algorand', new Decimal('2.5')),
-                    member('ethereum', new Decimal('1.5')),
-                ]),
-                convertFiat: toEur,
+                item: groupOf(
+                    [member('algorand'), member('ethereum')],
+                    new Decimal('4'),
+                ),
+                convertFiat,
             }),
         )
 
-        expect(result.current.fiat?.displayCurrency).toBe('EUR')
-        expect(result.current.fiat?.value?.toString()).toBe('8')
+        expect(result.current.fiat.displayCurrency).toBe('EUR')
+        expect(result.current.fiat.value?.toString()).toBe('8')
+        expect(convertFiat.mock.calls[0]?.[0]).toBeNull()
         expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
         expect(result.current.icon).toBe(USDC)
     })
 
-    it('leaves the value unknown while a member has no price', () => {
-        const unpriced: AssetFiatConverter = (ref, usdPrice, amount) =>
-            ref.chainId === 'ethereum'
-                ? { displayCurrency: 'EUR', value: null }
-                : toEur(ref, usdPrice, amount)
-
+    it('leaves the value unknown while the USD total is', () => {
         const { result } = renderHook(() =>
             useAssetGroupRow({
-                item: groupOf([
-                    member('algorand', new Decimal(1)),
-                    member('ethereum', new Decimal(1)),
-                ]),
-                convertFiat: unpriced,
+                item: groupOf([member('algorand'), member('ethereum')], null),
+                convertFiat: toEur,
             }),
         )
 
@@ -100,18 +96,17 @@ describe('useAssetGroupRow', () => {
         })
     })
 
-    it("has no value or icon while the first member's metadata hasn't synced", () => {
+    it("has no icon while the first member's metadata hasn't synced", () => {
         const { result } = renderHook(() =>
             useAssetGroupRow({
-                item: groupOf([
-                    member('algorand', null, null),
-                    member('ethereum', new Decimal(1)),
-                ]),
+                item: groupOf(
+                    [member('algorand', null), member('ethereum')],
+                    null,
+                ),
                 convertFiat: toEur,
             }),
         )
 
-        expect(result.current.fiat).toBeNull()
         expect(result.current.icon).toBeNull()
     })
 })

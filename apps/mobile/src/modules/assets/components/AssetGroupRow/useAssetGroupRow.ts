@@ -24,6 +24,8 @@ import type {
     GroupableHolding,
 } from '../../utils/groupedHoldings'
 
+const ONE = new Decimal(1)
+
 export type UseAssetGroupRowParams<T extends GroupableHolding> = {
     item: AssetGroupItem<T>
     convertFiat: AssetFiatConverter
@@ -34,7 +36,7 @@ export type UseAssetGroupRowResult = {
     icon: Nullable<PeraAsset>
     chainIds: ChainId[]
     /** Null value while any member's is unknown. */
-    fiat: Nullable<AssetFiatValue>
+    fiat: AssetFiatValue
 }
 
 export const useAssetGroupRow = <T extends GroupableHolding>({
@@ -48,30 +50,13 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         [members],
     )
 
-    // One unknown member makes the whole value unknown: a partial sum would
-    // understate the holding.
-    const fiat = useMemo((): Nullable<AssetFiatValue> => {
-        let total: Nullable<Decimal> = new Decimal(0)
-        let displayCurrency: Nullable<string> = null
-        for (const { holding, displayAmount, usdPrice } of members) {
-            if (displayAmount === null) return null
-            const converted = convertFiat(
-                { chainId: holding.scope.chainId, assetId: holding.assetId },
-                usdPrice,
-                displayAmount,
-            )
-            displayCurrency ??= converted.displayCurrency
-            total =
-                total === null ||
-                converted.value === null ||
-                converted.displayCurrency !== displayCurrency
-                    ? null
-                    : total.plus(converted.value)
-        }
-        return displayCurrency === null
-            ? null
-            : { displayCurrency, value: total }
-    }, [members, convertFiat])
+    // The item's USD total already prices each network on its own; converting
+    // it as one unit at that price keeps the native-asset fallback out, which
+    // only applies to a single native holding.
+    const fiat = useMemo(
+        () => convertFiat(null, item.usdValue, ONE),
+        [item.usdValue, convertFiat],
+    )
 
     return { icon: members[0]?.asset ?? null, chainIds, fiat }
 }

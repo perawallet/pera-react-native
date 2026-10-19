@@ -48,6 +48,8 @@ export type GroupedHoldingItem<T> =
           members: GroupedHoldingMember<T>[]
           /** Display units; null while any member's metadata hasn't synced. */
           amount: Nullable<Decimal>
+          /** USD, each member at its own network's price; null while any member's is unknown. */
+          usdValue: Nullable<Decimal>
           isExpanded: boolean
       }
 
@@ -139,6 +141,20 @@ const sumDisplayAmount = <T>(
     return total
 }
 
+// Summed per member rather than amount × one price: the same asset can trade
+// at a different USD price on each network. One unknown member leaves the total
+// unknown, since a partial sum would understate the holding.
+const sumUsdValue = <T>(
+    members: GroupedHoldingMember<T>[],
+): Nullable<Decimal> => {
+    let total = new Decimal(0)
+    for (const { displayAmount, usdPrice } of members) {
+        if (displayAmount === null || usdPrice === null) return null
+        total = total.plus(displayAmount.mul(usdPrice))
+    }
+    return total
+}
+
 /**
  * Folds holdings the groups name into one group item at the first member's
  * sorted position, followed by its members when expanded. Only groups with two
@@ -186,6 +202,7 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
             group,
             members,
             amount: sumDisplayAmount(members),
+            usdValue: sumUsdValue(members),
             isExpanded,
         })
         if (isExpanded) {

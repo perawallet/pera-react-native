@@ -30,7 +30,8 @@ export type AssetFiatValue = {
 }
 
 export type AssetFiatConverter = (
-    ref: AssetRef,
+    /** Null for a plain USD amount that isn't one asset's holding. */
+    ref: Nullable<AssetRef>,
     usdPrice: Maybe<Decimal>,
     amountDisplayUnits: Decimal,
 ) => AssetFiatValue
@@ -66,9 +67,10 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
 
             // A chain's native asset can't price in itself, whichever chain
             // the holding is on.
-            const native = findNativeAsset(ref.chainId)
+            const native = ref ? findNativeAsset(ref.chainId) : undefined
             const needsFallback =
-                native?.assetId === ref.assetId &&
+                native !== undefined &&
+                native.assetId === ref?.assetId &&
                 native.unitName === preferredCurrency
             const usdValue = amountDisplayUnits.mul(usdPrice)
             // An unresolved fallback rate yields no value, not a zero one —

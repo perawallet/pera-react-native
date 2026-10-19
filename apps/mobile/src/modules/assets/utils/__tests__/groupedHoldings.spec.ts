@@ -145,6 +145,31 @@ describe('buildGroupedHoldingItems', () => {
         expect(parts.equals(group.amount ?? -1)).toBe(true)
     })
 
+    it("totals USD at each network's own price, so a depeg on one network shows", () => {
+        const depegged = holding(
+            ETH_MAINNET,
+            '0xA0b8',
+            '1500000000000000000',
+            18,
+            new Decimal('0.9'),
+        )
+
+        const group = groupAt(build([algoUsdc, depegged]), 0)
+
+        // 2.5 at $1 plus 1.5 at $0.90; the amount stays 4.
+        expect(group.amount?.toString()).toBe('4')
+        expect(group.usdValue?.toString()).toBe('3.85')
+    })
+
+    it("leaves the USD total unknown while a member's price is", () => {
+        const unpriced = holding(ETH_MAINNET, '0xA0b8', '1', 18, null)
+
+        const group = groupAt(build([algoUsdc, unpriced]), 0)
+
+        expect(group.usdValue).toBeNull()
+        expect(group.amount).not.toBeNull()
+    })
+
     it("leaves the sum unknown while a member's metadata hasn't synced", () => {
         const unsynced = holding(ETH_MAINNET, '0xA0b8', '1', null)
 
