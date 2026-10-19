@@ -143,7 +143,7 @@
     "expo-media-library": "57.0.5",
     "expo-navigation-bar": "~57.0.2",
     "expo-screen-capture": "57.0.1",
-    "expo-screen-orientation": "~57.0.2",
+    "expo-screen-orientation": "~58.0.3",
     "expo-sensors": "~57.0.2",
     "expo-splash-screen": "57.0.9",
     "expo-sqlite": "catalog:",
