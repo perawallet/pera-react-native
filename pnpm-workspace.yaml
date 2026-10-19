@@ -90,7 +90,7 @@ catalog:
   expo-device: ~57.0.1
   expo-local-authentication: ~57.0.2
   expo-localization: ~57.0.1
-  expo-sqlite: ~57.0.1
+  expo-sqlite: ~58.0.13
   fake-indexeddb: 6.2.5
   falcon-1024: 0.2.0
   fast-glob: ^3.3.2
