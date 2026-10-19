@@ -100,6 +100,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Opt-out is bound to the account's own chain; compares a holding's chain with it, never a named chain.",
     },
     {
+        file: 'apps/mobile/src/modules/assets/utils/groupedHoldings.ts',
+        text: 'holding.scope.chainId === ref.chainId',
+        reason: "Finds the caller's asset among the held ones; compares a holding's chain with the ref passed in, never a named chain.",
+    },
+    {
         file: 'packages/config/src/network-config.ts',
         text: 'row.scope.chainId === scope.chainId',
         reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",

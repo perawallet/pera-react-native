@@ -10,28 +10,24 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback } from 'react'
 import type {
     GestureResponderEvent,
     StyleProp,
     ViewStyle,
 } from 'react-native'
-import { Decimal } from 'decimal.js'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
-import type {
-    AssetFiatConverter,
-    AssetFiatValue,
-} from '../../hooks/useAssetListFiatConverter'
+import type { AssetFiatConverter } from '../../hooks/useAssetListFiatConverter'
 import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
 import { NetworkIconStack } from './NetworkIconStack'
+import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
 export type AssetGroupRowProps<T extends GroupableHolding> = {
@@ -52,39 +48,9 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
 }: AssetGroupRowProps<T>) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { group, members, amount, isExpanded } = item
+    const { group, amount, isExpanded } = item
 
-    const icon = members[0]?.asset ?? null
-
-    const chainIds = useMemo(
-        () => members.map(member => member.holding.scope.chainId),
-        [members],
-    )
-
-    // One unknown member makes the whole value unknown: a partial sum would
-    // understate the holding.
-    const fiat = useMemo((): Nullable<AssetFiatValue> => {
-        let total: Nullable<Decimal> = new Decimal(0)
-        let displayCurrency: Nullable<string> = null
-        for (const { holding, displayAmount, usdPrice } of members) {
-            if (displayAmount === null) return null
-            const converted = convertFiat(
-                { chainId: holding.scope.chainId, assetId: holding.assetId },
-                usdPrice,
-                displayAmount,
-            )
-            displayCurrency ??= converted.displayCurrency
-            total =
-                total === null ||
-                converted.value === null ||
-                converted.displayCurrency !== displayCurrency
-                    ? null
-                    : total.plus(converted.value)
-        }
-        return displayCurrency === null
-            ? null
-            : { displayCurrency, value: total }
-    }, [members, convertFiat])
+    const { icon, chainIds, fiat } = useAssetGroupRow({ item, convertFiat })
 
     // Nested in the row's touchable: on web the click would otherwise bubble
     // up and open the asset too.
