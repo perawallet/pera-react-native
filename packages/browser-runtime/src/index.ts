@@ -63,8 +63,27 @@ export {
     INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
     INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+    INTEGRITY_LAST_FAILURE_SESSION_KEY,
+    INTEGRITY_REVOCATIONS_SESSION_KEY,
+    INTEGRITY_USER_RETRIES_SESSION_KEY,
 } from './integrity/storage-keys'
 export * from './integrity/check-wire'
+export {
+    INTEGRITY_PENDING_GRACE_MS,
+    INTEGRITY_SNAPSHOT_KEYS,
+    deriveIntegrityAccessState,
+    onIntegritySnapshotChanged,
+    readIntegritySnapshot,
+    sendIntegrityControl,
+    type IntegrityAccessInputs,
+    type IntegrityAccessState,
+    type IntegrityAttemptView,
+    type IntegrityBackoff,
+    type IntegrityDegradedReason,
+    type IntegrityFailureCause,
+    type IntegrityLastFailure,
+    type IntegritySnapshot,
+} from './integrity/access-state'
 export {
     holdIntegrityCheckHost,
     onHostedCheckEnded,

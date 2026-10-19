@@ -1077,6 +1077,158 @@ describe('queryClient', () => {
         ).toBeInstanceOf(SyntaxError)
     })
 
+    describe('integrity refusals and the token wait', () => {
+        const peraRequest = (url = '/v1/projects/') => ({
+            backend: 'pera' as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
+            url,
+            method: 'GET' as const,
+        })
+        const refusal = (
+            status: number,
+            data?: unknown,
+            headers: Record<string, string> = {},
+        ) =>
+            Object.assign(new MockHTTPError(status), {
+                data,
+                request: { headers: new Headers(headers) },
+            })
+
+        // Same module generation as query-client: earlier blocks reset modules.
+        const load = async () => ({
+            ...(await import('../query-client')),
+            ...(await import('../integrity-token-provider')),
+            ...(await import('../../errors/integrity')),
+            ...(await import('../../errors/network')),
+            scopedConfig: (await import('@perawallet/wallet-core-config'))
+                .config,
+        })
+
+        afterEach(async () => {
+            const {
+                setIntegrityTokenProvider: setProvider,
+                setIntegrityTokenWaiter,
+                scopedConfig,
+            } = await load()
+            setProvider(() => null)
+            setIntegrityTokenWaiter(null)
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = false
+        })
+
+        it('throws IntegrityRequiredError for a Pera refusal and tells the realm', async () => {
+            const {
+                queryClient,
+                setOnIntegrityRefused,
+                isIntegrityRequiredError,
+                scopedConfig,
+            } = await load()
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            const handler = vi.fn()
+            const unsubscribe = setOnIntegrityRefused(handler)
+            mockKy.mockRejectedValueOnce(
+                refusal(403, { code: 'APP_INTEGRITY_TOKEN_REQUIRED' }),
+            )
+
+            const error = await queryClient(peraRequest()).catch(
+                (thrown: unknown) => thrown,
+            )
+            unsubscribe()
+
+            expect(isIntegrityRequiredError(error)).toBe(true)
+            expect(handler).toHaveBeenCalledWith(error)
+        })
+
+        it('never classifies in a build that sends no bearer: native keeps its errors', async () => {
+            const { queryClient, isIntegrityRequiredError, isPeraNetworkError, scopedConfig } =
+                await load()
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = false
+            mockKy.mockRejectedValueOnce(
+                refusal(403, { code: 'APP_INTEGRITY_TOKEN_REQUIRED' }),
+            )
+
+            const error = await queryClient(peraRequest()).catch(
+                (thrown: unknown) => thrown,
+            )
+
+            expect(isIntegrityRequiredError(error)).toBe(false)
+            expect(isPeraNetworkError(error)).toBe(true)
+        })
+
+        it('keeps a backup 401 a network error: that service signs its own requests', async () => {
+            const {
+                queryClient,
+                isIntegrityRequiredError,
+                isPeraNetworkError,
+            } = await load()
+            mockKy.mockRejectedValueOnce(
+                refusal(
+                    401,
+                    { error: 'AUTH_FAILED' },
+                    { Authorization: 'Bearer jwt' },
+                ),
+            )
+
+            const error = await queryClient({
+                backend: 'backup',
+                url: '/api/v3/backup/register',
+                method: 'POST',
+            }).catch((thrown: unknown) => thrown)
+
+            expect(isIntegrityRequiredError(error)).toBe(false)
+            expect(isPeraNetworkError(error)).toBe(true)
+        })
+
+        it('waits for the realm before a guarded request it holds no token for', async () => {
+            const { queryClient, setIntegrityTokenWaiter, scopedConfig } =
+                await load()
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            const order: string[] = []
+            setIntegrityTokenWaiter(async () => {
+                order.push('wait')
+            })
+            mockKy.mockImplementationOnce(async () => {
+                order.push('request')
+                return { json: mockJson, text: async () => '', status: 200 }
+            })
+
+            await queryClient(peraRequest())
+
+            expect(order).toEqual(['wait', 'request'])
+        })
+
+        it.each([
+            ['an integrity call', '/api/v3/public/integrity/challenge', 'none'],
+            ['a held token', '/v1/projects/', 'jwt'],
+        ])('sends at once for %s', async (_case, url, token) => {
+            const {
+                queryClient,
+                setIntegrityTokenWaiter,
+                setIntegrityTokenProvider: setProvider,
+                scopedConfig,
+            } = await load()
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            setProvider(() => (token === 'none' ? null : token))
+            const waiter = vi.fn(async () => {})
+            setIntegrityTokenWaiter(waiter)
+            mockJson.mockResolvedValue({ ok: true })
+
+            await queryClient(peraRequest(url))
+
+            expect(waiter).not.toHaveBeenCalled()
+        })
+
+        it('never waits when the build sends no bearer', async () => {
+            const { queryClient, setIntegrityTokenWaiter } = await load()
+            const waiter = vi.fn(async () => {})
+            setIntegrityTokenWaiter(waiter)
+            mockJson.mockResolvedValue({ ok: true })
+
+            await queryClient(peraRequest())
+
+            expect(waiter).not.toHaveBeenCalled()
+        })
+    })
+
     describe('beforeError hook (logError)', () => {
         const runBeforeError = async (error: Error) => {
             await import('../query-client')

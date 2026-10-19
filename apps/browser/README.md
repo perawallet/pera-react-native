@@ -2,11 +2,13 @@
 
 ## Build and load
 
-Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
-variable Bitrise injects for mobile; see `tools/dev/generate-config.sh`).
-Without it, Pera-backend calls (should-refresh, asset metadata, prices,
-history) 401 against staging; `bundle` still succeeds but prints a warning.
-A production build (`APP_ENV=production`) fails instead.
+The extension bakes no API key, even when `BACKEND_API_KEY` is set
+(`scripts/web-config.mjs` keeps it out): its credential is the web integrity
+token the service worker mints. Set `WEB_INTEGRITY_MINT_ENABLED`,
+`WEB_INTEGRITY_BEARER_ENABLED` and `WEB_INTEGRITY_ENROL_ENABLED` to `true` in
+the repo-root `.env`. With any of them off, guarded Pera-backend calls
+(should-refresh, asset metadata, prices, history) 401; `bundle` still succeeds
+but prints a warning. A production build (`APP_ENV=production`) fails instead.
 
 The bundle stamps `manifest.json`: `version` is the numeric part of this
 package's `version` (Chrome accepts only integers and needs a higher one for

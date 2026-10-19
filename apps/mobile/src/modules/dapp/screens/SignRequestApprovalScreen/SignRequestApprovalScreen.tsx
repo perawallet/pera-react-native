@@ -15,9 +15,11 @@
 import React from 'react'
 import { SignRequestView } from '@modules/signing/routes'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
+import { ChainNotice } from '@components/ChainNotice'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core'
+import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useApprovalIntegrityNotice } from './useApprovalIntegrityNotice.web'
 import { useSignRequestApprovalScreen } from './useSignRequestApprovalScreen.web'
 import { useStyles } from './styles'
 
@@ -26,6 +28,7 @@ export const SignRequestApprovalScreen = (): React.JSX.Element => {
     const styles = useStyles()
     const { isLoading, error, request, dismiss } =
         useSignRequestApprovalScreen()
+    const integrityNotice = useApprovalIntegrityNotice()
 
     if (error) {
         return (
@@ -49,5 +52,23 @@ export const SignRequestApprovalScreen = (): React.JSX.Element => {
         return <FullScreenLoadingView />
     }
 
-    return <SignRequestView request={request} />
+    // Signing never needs the token; the request stays pending for a retry
+    // once Pera is reachable again. The notice's slot keeps the review's
+    // position, so it appearing never remounts a review in progress.
+    return (
+        <PWView style={styles.review}>
+            {integrityNotice.isVisible && (
+                <ChainNotice
+                    kind='warning'
+                    titleKey='integrityCheck.approval_notice'
+                    action={{
+                        labelKey: 'integrityCheck.approval_open',
+                        onPress: integrityNotice.onOpenPera,
+                    }}
+                    style={styles.notice}
+                />
+            )}
+            <SignRequestView request={request} />
+        </PWView>
+    )
 }

@@ -19,6 +19,7 @@ import {
     type ErrorMessageKeys,
 } from './base'
 import { isRawPlatformNetworkError } from './expected'
+import { isIntegrityRequiredError } from './integrity'
 
 /**
  * Thrown by `assertOnline` before a mutation reaches the transport, so offline
@@ -228,6 +229,10 @@ const UNAUTHORIZED_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('errors.api.unauthorized.title'),
     bodyKey: i18nKey('errors.api.unauthorized.body'),
 }
+const INTEGRITY_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.integrity.unavailable.title'),
+    bodyKey: i18nKey('errors.integrity.unavailable.body'),
+}
 const API_GENERIC_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('errors.api.generic.title'),
     bodyKey: i18nKey('errors.api.generic.body'),
@@ -244,6 +249,7 @@ export const getNetworkErrorMessageKeys = (
     if (error instanceof NoConnectionError) {
         return NO_CONNECTION_KEYS
     }
+    if (isIntegrityRequiredError(error)) return INTEGRITY_KEYS
 
     if (!isPeraNetworkError(error)) return GENERAL_KEYS
 

@@ -914,6 +914,25 @@ describe('SyncService', () => {
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
     })
 
+    it('keeps asking after an integrity refusal: it clears once the extension holds a token', async () => {
+        mockSendShouldRefreshRequest.mockRejectedValue(
+            Object.assign(new Error('[integrity] 401'), {
+                name: 'IntegrityRequiredError',
+                status: 401,
+            }),
+        )
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(50) // 1st tick: force-sync
+        await vi.advanceTimersByTimeAsync(3100) // 2nd tick: should-refresh -> refused
+        mockSendShouldRefreshRequest.mockClear()
+        await vi.advanceTimersByTimeAsync(60_000) // past the tick backoff
+
+        service.stop()
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+    })
+
     it('treats 403 the same as 401 for the auth backoff', async () => {
         const authError = peraNetworkError(403)
         mockSendShouldRefreshRequest.mockRejectedValue(authError)

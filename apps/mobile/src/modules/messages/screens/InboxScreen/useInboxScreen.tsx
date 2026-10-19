@@ -18,6 +18,7 @@ import {
     useInboxQuery,
 } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
+import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useHandleInboxItemPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
@@ -27,6 +28,7 @@ export type UseInboxScreenResult = {
     isRefetching: boolean
     isError: boolean
     isOffline: boolean
+    isIntegrityBlocked: boolean
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
     refetch: () => void
@@ -55,6 +57,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isPending,
         isPaused,
         isError,
+        error,
         isRefetching,
         refetch,
         isUnavailableOnNetwork,
@@ -69,6 +72,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     // the same "nothing to show" situation — not a dead Retry. Mirrors the
     // charts / staking contract (docs/OFFLINE_PAUSED_STATE.md).
     const isOffline = isPaused || (isError && !hasInternet)
+    const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
     // Registration can never complete on a network with no Pera backend, so
     // don't let that state masquerade as "still awaiting registration".
     const isAwaitingRegistration =
@@ -82,6 +86,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isRefetching,
         isError,
         isOffline,
+        isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
         refetch: () => void refetch(),

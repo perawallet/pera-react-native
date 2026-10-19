@@ -99,6 +99,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         params?: Record<string, unknown>
         recoverable: boolean
         retryable: boolean
+        expected?: boolean
     }
 
     type ErrorMessageKeys = { titleKey: I18nKey; bodyKey: I18nKey }
@@ -249,6 +250,45 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
+    // Mirrors packages/shared/src/errors/integrity.ts: a sibling of
+    // PeraNetworkError, never an instance of it.
+    class IntegrityRequiredError extends AppError {
+        public readonly code: string | null
+        public readonly status: number
+        public readonly hadToken: boolean
+        public readonly tokenExpiresAt: number | null
+
+        constructor({
+            code,
+            status,
+            hadToken,
+            tokenExpiresAt = null,
+        }: {
+            code: string | null
+            status: number
+            hadToken: boolean
+            tokenExpiresAt?: number | null
+        }) {
+            super(`[integrity] ${status} ${code ?? 'no valid credential'}`, {
+                severity: 'medium',
+                category: 'network',
+                retryable: true,
+                expected: true,
+                titleKey: i18nKey('errors.integrity.unavailable.title'),
+                messageKey: i18nKey('errors.integrity.unavailable.body'),
+            })
+            this.code = code
+            this.status = status
+            this.hadToken = hadToken
+            this.tokenExpiresAt = tokenExpiresAt
+        }
+    }
+
+    const isIntegrityRequiredError = (
+        error: unknown,
+    ): error is IntegrityRequiredError =>
+        error instanceof IntegrityRequiredError
+
     // Mirrors packages/shared/src/errors/pera-service.ts. Thrown by the
     // request layer for a scope with no Pera deployment (betanet, custom) or
     // missing the named service; the crash-reporting sites in QueryProvider
@@ -317,6 +357,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const getNetworkErrorMessageKeys = (error: unknown): ErrorMessageKeys => {
         if (error instanceof NoConnectionError) {
             return keysFor('errors.network.no_connection')
+        }
+        if (isIntegrityRequiredError(error)) {
+            return keysFor('errors.integrity.unavailable')
         }
 
         if (!isPeraNetworkError(error)) return keysFor('errors.general')
@@ -520,6 +563,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 response?: { status?: number }
             } | null
             if (!e) return false
+            if (isIntegrityRequiredError(error)) return true
             if (e.name === 'TimeoutError' || e.name === 'NetworkError')
                 return true
             return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
@@ -528,6 +572,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         BlockchainError,
         PeraNetworkError,
         isPeraNetworkError,
+        IntegrityRequiredError,
+        isIntegrityRequiredError,
         PeraServiceUnavailableError,
         isPeraServiceUnavailableError,
         isConnectivityError,
@@ -583,5 +629,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isExpectedError,
         setIntegrityTokenProvider: vi.fn(),
         readIntegrityToken: vi.fn(() => null),
+        setIntegrityTokenWaiter: vi.fn(),
+        setOnIntegrityRefused: vi.fn(() => () => undefined),
     }
 })
