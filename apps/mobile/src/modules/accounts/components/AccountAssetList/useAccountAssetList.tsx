@@ -185,7 +185,10 @@ export const useAccountAssetList = ({
                   ],
         [sources, t],
     )
-    const { groups } = useAssetGroupsQuery()
+    // Only All over two or more chains can fold anything.
+    const { groups } = useAssetGroupsQuery({
+        enabled: selectedChainId === null && sources.length > 1,
+    })
 
     // Search is debounced locally and pushed into the DB query so pagination
     // stays correct over the whole held set (rather than filtering a window).

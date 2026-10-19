@@ -181,7 +181,7 @@ export const AccountAssetList = ({
                 ref={listRef}
                 data={items}
                 renderItem={renderItem}
-                getItemType={item => item.kind}
+                getItemType={assetListItemType}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
                 keyExtractor={assetListItemKey}
@@ -217,6 +217,8 @@ export const AccountAssetList = ({
         </PWView>
     )
 }
+
+const assetListItemType = (item: AssetListItem) => item.kind
 
 const ItemSeparator = () => {
     const styles = useStyles()

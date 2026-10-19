@@ -74,6 +74,12 @@ export const buildAssetListItems = ({
     expandedGroupIds,
     isGroupable,
 }: BuildAssetListItemsParams): AssetListItem[] => {
+    // The common case, and the list can hold thousands of rows: skip the
+    // per-row lookups entirely.
+    if (groups.length === 0) {
+        return rows.map(row => ({ kind: 'holding', row, isGroupMember: false }))
+    }
+
     const groupOf = new Map<string, AssetGroup>()
     for (const group of groups) {
         for (const member of group.members) {
@@ -82,29 +88,31 @@ export const buildAssetListItems = ({
         }
     }
 
-    const groupFor = (row: AccountHoldingsLiteRow) =>
-        isGroupable(row.scope)
-            ? groupOf.get(holdingKey(row.scope, row.assetId))
-            : undefined
+    // Resolved once per row; the predicate runs only for rows a group names.
+    const rowGroups = rows.map(row => {
+        const group = groupOf.get(holdingKey(row.scope, row.assetId))
+        return group && isGroupable(row.scope) ? group : undefined
+    })
 
     const membersOf = new Map<string, AccountHoldingsLiteRow[]>()
-    for (const row of rows) {
-        const group = groupFor(row)
-        if (group) {
-            membersOf.set(group.id, [...(membersOf.get(group.id) ?? []), row])
-        }
-    }
+    rows.forEach((row, index) => {
+        const group = rowGroups[index]
+        if (!group) return
+        const members = membersOf.get(group.id)
+        if (members) members.push(row)
+        else membersOf.set(group.id, [row])
+    })
 
     const items: AssetListItem[] = []
     const placed = new Set<string>()
-    for (const row of rows) {
-        const group = groupFor(row)
+    rows.forEach((row, index) => {
+        const group = rowGroups[index]
         const members = group ? (membersOf.get(group.id) ?? []) : []
         if (!group || members.length < 2) {
             items.push({ kind: 'holding', row, isGroupMember: false })
-            continue
+            return
         }
-        if (placed.has(group.id)) continue
+        if (placed.has(group.id)) return
         placed.add(group.id)
 
         const isExpanded = expandedGroupIds.has(group.id)
@@ -124,7 +132,7 @@ export const buildAssetListItems = ({
                 })
             }
         }
-    }
+    })
     return items
 }
 
