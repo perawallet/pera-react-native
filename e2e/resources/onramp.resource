@@ -5,13 +5,13 @@ Resource            discover.resource
 
 
 *** Variables ***
-${FUND_TAB}                     accessibility_id=Fund
-${ONRAMP_INTRO_START}           accessibility_id=onramp-intro-start-button
-${ONRAMP_TAB_FUND}              accessibility_id=onramp-tab-fund
-${ONRAMP_TAB_HISTORY}           accessibility_id=onramp-tab-history
-${ONRAMP_COUNTRY_CHIP}          accessibility_id=onramp-country-chip
+${FUND_TAB}                     xpath=//*[@resource-id='Fund' or @name='Fund' or @content-desc='Fund']
+${ONRAMP_INTRO_START}           xpath=//*[@resource-id='onramp-intro-start-button' or @name='onramp-intro-start-button' or @content-desc='onramp-intro-start-button']
+${ONRAMP_TAB_FUND}              xpath=//*[@resource-id='onramp-tab-fund' or @name='onramp-tab-fund' or @content-desc='onramp-tab-fund']
+${ONRAMP_TAB_HISTORY}           xpath=//*[@resource-id='onramp-tab-history' or @name='onramp-tab-history' or @content-desc='onramp-tab-history']
+${ONRAMP_COUNTRY_CHIP}          xpath=//*[@resource-id='onramp-country-chip' or @name='onramp-country-chip' or @content-desc='onramp-country-chip']
 # Rendered on the history page only; the pager keeps both pages mounted, so visibility is the signal.
-${ONRAMP_HISTORY_FILTER_ALL}    accessibility_id=onramp-history-filter-all
+${ONRAMP_HISTORY_FILTER_ALL}    xpath=//*[@resource-id='onramp-history-filter-all' or @name='onramp-history-filter-all' or @content-desc='onramp-history-filter-all']
 
 
 *** Keywords ***

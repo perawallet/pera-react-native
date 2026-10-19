@@ -6,12 +6,12 @@ Resource            accounts.resource
 
 
 *** Variables ***
-${ADD_ACCOUNT_CREATE_QUANTUM}       accessibility_id=add_account_create_quantum_button
-${IMPORT_RECOVER_WALLET_BUTTON}     accessibility_id=import_account_options_recover_wallet_button
-${IMPORT_QUANTUM_BUTTON}            accessibility_id=import_account_quantum_button
-${IMPORT_QUANTUM_NOTE}              accessibility_id=import_account_quantum_note
-${IMPORT_WORD_INPUT}                accessibility_id=import_account_word_input_
-${PASSPHRASE_WORD}                  accessibility_id=view_passphrase_bottom_sheet_word_
+${ADD_ACCOUNT_CREATE_QUANTUM}       xpath=//*[@resource-id='add_account_create_quantum_button' or @name='add_account_create_quantum_button' or @content-desc='add_account_create_quantum_button']
+${IMPORT_RECOVER_WALLET_BUTTON}     xpath=//*[@resource-id='import_account_options_recover_wallet_button' or @name='import_account_options_recover_wallet_button' or @content-desc='import_account_options_recover_wallet_button']
+${IMPORT_QUANTUM_BUTTON}            xpath=//*[@resource-id='import_account_quantum_button' or @name='import_account_quantum_button' or @content-desc='import_account_quantum_button']
+${IMPORT_QUANTUM_NOTE}              xpath=//*[@resource-id='import_account_quantum_note' or @name='import_account_quantum_note' or @content-desc='import_account_quantum_note']
+${IMPORT_WORD_INPUT}                xpath=//*[@resource-id='import_account_word_input_' or @name='import_account_word_input_' or @content-desc='import_account_word_input_']
+${PASSPHRASE_WORD}                  xpath=//*[@resource-id='view_passphrase_bottom_sheet_word_' or @name='view_passphrase_bottom_sheet_word_' or @content-desc='view_passphrase_bottom_sheet_word_']
 ${QUANTUM_KEYGEN_TIMEOUT}           120s
 
 

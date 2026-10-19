@@ -19,42 +19,42 @@ ${OWN}                                  own
 &{CREATED}
 ${IMPORT_LINK}                          perawallet://app/shared-account-import/?address=
 
-${ACCOUNT_SELECTION_BUTTON}             accessibility_id=account_selection_button
+${ACCOUNT_SELECTION_BUTTON}             xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
 ${ACCOUNT_ROW_PREFIX}                   account_switcher_row_
-${ACCOUNT_MENU_ADD_BUTTON}              accessibility_id=account_menu_add_account_button
-${MORE_BUTTON}                          accessibility_id=more_button
-${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   accessibility_id=add_account_create_multisig_button
-${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        accessibility_id=add_account_see_other_options_button
-${ADD_ACCOUNT_WATCH_BUTTON}             accessibility_id=add_account_watch_button
-${WATCH_ADDRESS_INPUT}                  accessibility_id=watch_account_address_input
-${WATCH_SUBMIT_BUTTON}                  accessibility_id=watch_account_submit_button
+${ACCOUNT_MENU_ADD_BUTTON}              xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
+${MORE_BUTTON}                          xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
+${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   xpath=//*[@resource-id='add_account_create_multisig_button' or @name='add_account_create_multisig_button' or @content-desc='add_account_create_multisig_button']
+${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        xpath=//*[@resource-id='add_account_see_other_options_button' or @name='add_account_see_other_options_button' or @content-desc='add_account_see_other_options_button']
+${ADD_ACCOUNT_WATCH_BUTTON}             xpath=//*[@resource-id='add_account_watch_button' or @name='add_account_watch_button' or @content-desc='add_account_watch_button']
+${WATCH_ADDRESS_INPUT}                  xpath=//*[@resource-id='watch_account_address_input' or @name='watch_account_address_input' or @content-desc='watch_account_address_input']
+${WATCH_SUBMIT_BUTTON}                  xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
 
-${MULTISIG_INTRO_CONTINUE_BUTTON}       accessibility_id=multisig_introduction_continue_button
-${ADD_PARTICIPANT_BUTTON}               accessibility_id=add_participant_button
-${CREATE_MULTISIG_CONTINUE_BUTTON}      accessibility_id=create_multisig_continue_button
-${ADDRESS_SEARCH_INPUT}                 accessibility_id=address_search_input
-${EDIT_PARTICIPANT_NAME_INPUT}          accessibility_id=contact_name_input
-${SET_THRESHOLD_CONTINUE_BUTTON}        accessibility_id=set_threshold_continue_button
-${THRESHOLD_DECREMENT_BUTTON}           accessibility_id=threshold_decrement_button
-${THRESHOLD_INCREMENT_BUTTON}           accessibility_id=threshold_increment_button
-${BEFORE_CREATE_PROCEED_BUTTON}         accessibility_id=before_create_proceed_button
-${BEFORE_CREATE_GO_BACK_BUTTON}         accessibility_id=before_create_go_back_button
+${MULTISIG_INTRO_CONTINUE_BUTTON}       xpath=//*[@resource-id='multisig_introduction_continue_button' or @name='multisig_introduction_continue_button' or @content-desc='multisig_introduction_continue_button']
+${ADD_PARTICIPANT_BUTTON}               xpath=//*[@resource-id='add_participant_button' or @name='add_participant_button' or @content-desc='add_participant_button']
+${CREATE_MULTISIG_CONTINUE_BUTTON}      xpath=//*[@resource-id='create_multisig_continue_button' or @name='create_multisig_continue_button' or @content-desc='create_multisig_continue_button']
+${ADDRESS_SEARCH_INPUT}                 xpath=//*[@resource-id='address_search_input' or @name='address_search_input' or @content-desc='address_search_input']
+${EDIT_PARTICIPANT_NAME_INPUT}          xpath=//*[@resource-id='contact_name_input' or @name='contact_name_input' or @content-desc='contact_name_input']
+${SET_THRESHOLD_CONTINUE_BUTTON}        xpath=//*[@resource-id='set_threshold_continue_button' or @name='set_threshold_continue_button' or @content-desc='set_threshold_continue_button']
+${THRESHOLD_DECREMENT_BUTTON}           xpath=//*[@resource-id='threshold_decrement_button' or @name='threshold_decrement_button' or @content-desc='threshold_decrement_button']
+${THRESHOLD_INCREMENT_BUTTON}           xpath=//*[@resource-id='threshold_increment_button' or @name='threshold_increment_button' or @content-desc='threshold_increment_button']
+${BEFORE_CREATE_PROCEED_BUTTON}         xpath=//*[@resource-id='before_create_proceed_button' or @name='before_create_proceed_button' or @content-desc='before_create_proceed_button']
+${BEFORE_CREATE_GO_BACK_BUTTON}         xpath=//*[@resource-id='before_create_go_back_button' or @name='before_create_go_back_button' or @content-desc='before_create_go_back_button']
 
-${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_network_algorand_copy
-${ACCOUNT_ALGORAND_EXPAND}              accessibility_id=account_network_algorand_expand
-${ACCOUNT_OPTION_SHARED_DETAIL}         accessibility_id=account_option_shared-account-detail
-${ACCOUNT_OPTION_EXPORT}                accessibility_id=account_option_export-share-account
-${ACCOUNT_OPTION_REKEY}                 accessibility_id=account_option_rekey-account
-${ACCOUNT_OPTION_REMOVE}                accessibility_id=account_option_remove-account
-${REMOVE_ACCOUNT_CONFIRM_BUTTON}        accessibility_id=remove_account_confirm_button
-${ACCOUNT_TYPE_INFO_BUTTON}             accessibility_id=account-type-info-button
-${SHARED_ACCOUNT_THRESHOLD}             accessibility_id=shared_account_threshold
-${REKEY_TO_SHARED_START}                accessibility_id=rekey-to-shared-intro-start
-${REKEY_OPTION_STANDARD}                accessibility_id=rekey_option_standard
-${REKEY_OPTION_LEDGER}                  accessibility_id=rekey_option_ledger
+${ACCOUNT_OPTION_COPY_ADDRESS}          xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
+${ACCOUNT_ALGORAND_EXPAND}              xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
+${ACCOUNT_OPTION_SHARED_DETAIL}         xpath=//*[@resource-id='account_option_shared-account-detail' or @name='account_option_shared-account-detail' or @content-desc='account_option_shared-account-detail']
+${ACCOUNT_OPTION_EXPORT}                xpath=//*[@resource-id='account_option_export-share-account' or @name='account_option_export-share-account' or @content-desc='account_option_export-share-account']
+${ACCOUNT_OPTION_REKEY}                 xpath=//*[@resource-id='account_option_rekey-account' or @name='account_option_rekey-account' or @content-desc='account_option_rekey-account']
+${ACCOUNT_OPTION_REMOVE}                xpath=//*[@resource-id='account_option_remove-account' or @name='account_option_remove-account' or @content-desc='account_option_remove-account']
+${REMOVE_ACCOUNT_CONFIRM_BUTTON}        xpath=//*[@resource-id='remove_account_confirm_button' or @name='remove_account_confirm_button' or @content-desc='remove_account_confirm_button']
+${ACCOUNT_TYPE_INFO_BUTTON}             xpath=//*[@resource-id='account-type-info-button' or @name='account-type-info-button' or @content-desc='account-type-info-button']
+${SHARED_ACCOUNT_THRESHOLD}             xpath=//*[@resource-id='shared_account_threshold' or @name='shared_account_threshold' or @content-desc='shared_account_threshold']
+${REKEY_TO_SHARED_START}                xpath=//*[@resource-id='rekey-to-shared-intro-start' or @name='rekey-to-shared-intro-start' or @content-desc='rekey-to-shared-intro-start']
+${REKEY_OPTION_STANDARD}                xpath=//*[@resource-id='rekey_option_standard' or @name='rekey_option_standard' or @content-desc='rekey_option_standard']
+${REKEY_OPTION_LEDGER}                  xpath=//*[@resource-id='rekey_option_ledger' or @name='rekey_option_ledger' or @content-desc='rekey_option_ledger']
 
-${IMPORT_ADD_BUTTON}                    accessibility_id=import-shared-account-add-button
-${IMPORT_IGNORE_BUTTON}                 accessibility_id=import-shared-account-ignore-button
+${IMPORT_ADD_BUTTON}                    xpath=//*[@resource-id='import-shared-account-add-button' or @name='import-shared-account-add-button' or @content-desc='import-shared-account-add-button']
+${IMPORT_IGNORE_BUTTON}                 xpath=//*[@resource-id='import-shared-account-ignore-button' or @name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button']
 # The import screen once its lookup has answered: the account, or the error state.
 ${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry']
 
@@ -132,7 +132,7 @@ Accounts In Open Menu
 
 Pick Account In Open Menu
     [Arguments]    ${address}
-    Tap    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+    Tap    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
     Wait Until Account Menu Closed
 
 Select Account
@@ -197,7 +197,7 @@ Remove Account
     Go Home
     Open Account Menu
     ${present}=    Run Keyword And Return Status
-    ...    Page Should Contain Element    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+    ...    Page Should Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
     IF    not ${present}
         Close Account Menu
         RETURN
@@ -254,7 +254,7 @@ Add Participants
 
 Participant Should Be Listed
     [Arguments]    ${index}    ${address}
-    Wait Until Page Contains Element    accessibility_id=participant_item_${index}_${address}    timeout=10s
+    Wait Until Page Contains Element    xpath=//*[@resource-id='participant_item_${index}_${address}' or @name='participant_item_${index}_${address}' or @content-desc='participant_item_${index}_${address}']    timeout=10s
 
 Open Set Threshold
     Tap    ${CREATE_MULTISIG_CONTINUE_BUTTON}
@@ -370,7 +370,7 @@ Start With Shared Account
     IF    $address
         Open Account Menu
         ${present}=    Run Keyword And Return Status
-        ...    Page Should Contain Element    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+        ...    Page Should Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
         IF    ${present}
             Pick Account In Open Menu    ${address}
             RETURN    ${address}

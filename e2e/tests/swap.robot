@@ -50,7 +50,7 @@ Receive Selector Says Select When No Asset Is Chosen
     Open Swap
     ${unset}=    Run Keyword And Return Status    Page Should Contain Element    ${SWAP_SELECT_ASSET_LABEL}
     IF    not ${unset}
-        ${label}=    Text Inside    //*[@content-desc='swap-receive-asset-selector' or @name='swap-receive-asset-selector']
+        ${label}=    Text Inside    //*[@content-desc='swap-receive-asset-selector' or @resource-id='swap-receive-asset-selector' or @name='swap-receive-asset-selector']
         Skip If    not $label.strip()
         ...    App gap: AssetSelector's PWTouchableOpacity applies getTestProps (apps/mobile/src/components/core/PWTouchableOpacity/PWTouchableOpacity.tsx), which hides its label on iOS.
         Skip    A receive asset (${label}) is already chosen on this wallet.

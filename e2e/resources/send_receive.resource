@@ -12,40 +12,40 @@ ${FUNDED_MNEMONIC}                  %{E2E_FUNDED_MNEMONIC=}
 ${FUNDED_ADDRESS}                   %{E2E_FUNDED_ADDRESS=}
 ${SEND_AMOUNT}                      0.001
 
-${ACCOUNT_SELECTION_BUTTON}         accessibility_id=account_selection_button
-${MORE_BUTTON}                      accessibility_id=more_button
-${ACCOUNT_MENU_ADD_BUTTON}          accessibility_id=account_menu_add_account_button
-${ADD_ACCOUNT_IMPORT_BUTTON}        accessibility_id=add_account_import_button
-${IMPORT_RECOVER_WALLET_BUTTON}     accessibility_id=import_account_options_recover_wallet_button
-${IMPORT_HD_WALLET_OPTION}          accessibility_id=import_options_hd_wallet_button
-${IMPORT_INFO_RECOVER_BUTTON}       accessibility_id=import_info_recover_button
-${IMPORT_FIRST_WORD_INPUT}          accessibility_id=import_account_word_input_0
-${IMPORT_SUBMIT_BUTTON}             accessibility_id=import_account_import_button
-${IMPORT_SELECT_CONTINUE}           accessibility_id=import_select_addresses_continue_button
-${NAME_ACCOUNT_FINISH}              accessibility_id=name_account_finish_button
+${ACCOUNT_SELECTION_BUTTON}         xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
+${MORE_BUTTON}                      xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
+${ACCOUNT_MENU_ADD_BUTTON}          xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
+${ADD_ACCOUNT_IMPORT_BUTTON}        xpath=//*[@resource-id='add_account_import_button' or @name='add_account_import_button' or @content-desc='add_account_import_button']
+${IMPORT_RECOVER_WALLET_BUTTON}     xpath=//*[@resource-id='import_account_options_recover_wallet_button' or @name='import_account_options_recover_wallet_button' or @content-desc='import_account_options_recover_wallet_button']
+${IMPORT_HD_WALLET_OPTION}          xpath=//*[@resource-id='import_options_hd_wallet_button' or @name='import_options_hd_wallet_button' or @content-desc='import_options_hd_wallet_button']
+${IMPORT_INFO_RECOVER_BUTTON}       xpath=//*[@resource-id='import_info_recover_button' or @name='import_info_recover_button' or @content-desc='import_info_recover_button']
+${IMPORT_FIRST_WORD_INPUT}          xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']
+${IMPORT_SUBMIT_BUTTON}             xpath=//*[@resource-id='import_account_import_button' or @name='import_account_import_button' or @content-desc='import_account_import_button']
+${IMPORT_SELECT_CONTINUE}           xpath=//*[@resource-id='import_select_addresses_continue_button' or @name='import_select_addresses_continue_button' or @content-desc='import_select_addresses_continue_button']
+${NAME_ACCOUNT_FINISH}              xpath=//*[@resource-id='name_account_finish_button' or @name='name_account_finish_button' or @content-desc='name_account_finish_button']
 # Any account row other than the funded one: the suite's own wallet account.
-${OTHER_ACCOUNT_ROW}                xpath=(//*[(starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')) and not(contains(@content-desc,'${FUNDED_ADDRESS}')) and not(contains(@name,'${FUNDED_ADDRESS}'))])[1]
+${OTHER_ACCOUNT_ROW}                xpath=(//*[(starts-with(@content-desc, 'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')) and not(contains(@content-desc,'${FUNDED_ADDRESS}')) and not(contains(@resource-id,'${FUNDED_ADDRESS}')) and not(contains(@name,'${FUNDED_ADDRESS}'))])[1]
 
-${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
-${SETTINGS_DEVELOPER_ITEM}          accessibility_id=settings_item_developer_settings
-${DEVELOPER_NODE_ITEM}              accessibility_id=developer_settings_node_item
-${DEVELOPER_MODE_SWITCH}            accessibility_id=node_settings_developer_mode_switch
+${MENU_SETTINGS_BUTTON}             xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
+${SETTINGS_DEVELOPER_ITEM}          xpath=//*[@resource-id='settings_item_developer_settings' or @name='settings_item_developer_settings' or @content-desc='settings_item_developer_settings']
+${DEVELOPER_NODE_ITEM}              xpath=//*[@resource-id='developer_settings_node_item' or @name='developer_settings_node_item' or @content-desc='developer_settings_node_item']
+${DEVELOPER_MODE_SWITCH}            xpath=//*[@resource-id='node_settings_developer_mode_switch' or @name='node_settings_developer_mode_switch' or @content-desc='node_settings_developer_mode_switch']
 # Listed only while Developer Mode is on; turning it off is how mainnet comes back.
-${TESTNET_RADIO}                    accessibility_id=node_settings_algorand_testnet_radio
+${TESTNET_RADIO}                    xpath=//*[@resource-id='node_settings_algorand_testnet_radio' or @name='node_settings_algorand_testnet_radio' or @content-desc='node_settings_algorand_testnet_radio']
 
-${SEND_BUTTON}                      accessibility_id=send_button
-${RECEIVE_BUTTON}                   accessibility_id=receive_button
-${RECEIVE_COPY_ADDRESS}             accessibility_id=receive_copy_address_button
-${RECEIVE_SHARE_ADDRESS}            accessibility_id=receive_share_address_button
+${SEND_BUTTON}                      xpath=//*[@resource-id='send_button' or @name='send_button' or @content-desc='send_button']
+${RECEIVE_BUTTON}                   xpath=//*[@resource-id='receive_button' or @name='receive_button' or @content-desc='receive_button']
+${RECEIVE_COPY_ADDRESS}             xpath=//*[@resource-id='receive_copy_address_button' or @name='receive_copy_address_button' or @content-desc='receive_copy_address_button']
+${RECEIVE_SHARE_ADDRESS}            xpath=//*[@resource-id='receive_share_address_button' or @name='receive_share_address_button' or @content-desc='receive_share_address_button']
 ${COPIED_TOAST_TEXT}                Copied to clipboard
-${SEND_ALGO_ROW}                    accessibility_id=asset-list-item-0
+${SEND_ALGO_ROW}                    xpath=//*[@resource-id='asset-list-item-0' or @name='asset-list-item-0' or @content-desc='asset-list-item-0']
 # The send-info sheet over the numpad has no testID on its button.
 ${SEND_INFO_UNDERSTAND}             xpath=//*[@text='I Understand' or @label='I Understand']
-${SEND_NEXT_BUTTON}                 accessibility_id=send_input_next_button
-${SEND_MAX_BUTTON}                  accessibility_id=send_input_max_button
-${ADDRESS_SEARCH_INPUT}             accessibility_id=address_search_input
-${SEND_CONFIRM_SLIDE}               accessibility_id=send_confirm_button
-${SEND_SUCCESS_DONE}                accessibility_id=send_success-primary
+${SEND_NEXT_BUTTON}                 xpath=//*[@resource-id='send_input_next_button' or @name='send_input_next_button' or @content-desc='send_input_next_button']
+${SEND_MAX_BUTTON}                  xpath=//*[@resource-id='send_input_max_button' or @name='send_input_max_button' or @content-desc='send_input_max_button']
+${ADDRESS_SEARCH_INPUT}             xpath=//*[@resource-id='address_search_input' or @name='address_search_input' or @content-desc='address_search_input']
+${SEND_CONFIRM_SLIDE}               xpath=//*[@resource-id='send_confirm_button' or @name='send_confirm_button' or @content-desc='send_confirm_button']
+${SEND_SUCCESS_DONE}                xpath=//*[@resource-id='send_success-primary' or @name='send_success-primary' or @content-desc='send_success-primary']
 
 
 *** Keywords ***
@@ -81,7 +81,7 @@ Restore Suite Wallet
     Select Account    ${OTHER_ACCOUNT_ROW}
 
 Funded Account Row
-    RETURN    accessibility_id=account_switcher_row_${FUNDED_ADDRESS}
+    RETURN    xpath=//*[@resource-id='account_switcher_row_${FUNDED_ADDRESS}' or @name='account_switcher_row_${FUNDED_ADDRESS}' or @content-desc='account_switcher_row_${FUNDED_ADDRESS}']
 
 Open Account Switcher
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
@@ -125,7 +125,7 @@ Import Funded Account
 
 Pick Funded Address
     Wait Until Page Contains Element    ${IMPORT_SELECT_CONTINUE}    timeout=60s
-    ${checkbox}=    Set Variable    accessibility_id=import_select_addresses_item_checkbox_${FUNDED_ADDRESS}
+    ${checkbox}=    Set Variable    xpath=//*[@resource-id='import_select_addresses_item_checkbox_${FUNDED_ADDRESS}' or @name='import_select_addresses_item_checkbox_${FUNDED_ADDRESS}' or @content-desc='import_select_addresses_item_checkbox_${FUNDED_ADDRESS}']
     Wait Until Page Contains Element    ${checkbox}    timeout=30s
     ${ready}=    Run Keyword And Return Status    Element Should Be Enabled    ${IMPORT_SELECT_CONTINUE}
     IF    not ${ready}    Tap    ${checkbox}
@@ -207,9 +207,9 @@ Enter Amount
     @{chars}=    Split String To Characters    ${amount}
     FOR    ${c}    IN    @{chars}
         IF    $c == '.'
-            Tap    accessibility_id=numpad_key_decimal
+            Tap    xpath=//*[@resource-id='numpad_key_decimal' or @name='numpad_key_decimal' or @content-desc='numpad_key_decimal']
         ELSE
-            Tap    accessibility_id=numpad_key_${c}
+            Tap    xpath=//*[@resource-id='numpad_key_${c}' or @name='numpad_key_${c}' or @content-desc='numpad_key_${c}']
         END
     END
     Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${SEND_NEXT_BUTTON}
@@ -220,7 +220,7 @@ Open Destination
 
 Choose Own Address As Recipient
     Input Text    ${ADDRESS_SEARCH_INPUT}    ${FUNDED_ADDRESS}
-    ${row}=    Set Variable    accessibility_id=account_result_row_${FUNDED_ADDRESS}
+    ${row}=    Set Variable    xpath=//*[@resource-id='account_result_row_${FUNDED_ADDRESS}' or @name='account_result_row_${FUNDED_ADDRESS}' or @content-desc='account_result_row_${FUNDED_ADDRESS}']
     Wait Until Page Contains Element    ${row}    timeout=15s
     Dismiss Keyboard
     Tap    ${row}

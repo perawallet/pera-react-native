@@ -16,7 +16,7 @@ ${CAMERA_DENIED_CLOSE}          xpath=//*[@text='Close' or @label='Close']
 # The offline pill has no testID either (common.offline_mode).
 ${OFFLINE_BANNER}               xpath=//*[@text='Offline Mode' or @label='Offline Mode']
 ${BIOMETRIC_TOGGLE_ID}          settings_security_biometric_toggle
-${BIOMETRIC_TOGGLE}             accessibility_id=${BIOMETRIC_TOGGLE_ID}
+${BIOMETRIC_TOGGLE}             xpath=//*[@resource-id='${BIOMETRIC_TOGGLE_ID}' or @name='${BIOMETRIC_TOGGLE_ID}' or @content-desc='${BIOMETRIC_TOGGLE_ID}']
 
 
 *** Keywords ***

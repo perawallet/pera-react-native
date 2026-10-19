@@ -4,46 +4,46 @@ Resource            app.resource
 
 
 *** Variables ***
-${ACCOUNT_SELECTION_BUTTON}         accessibility_id=account_selection_button
-${MORE_BUTTON}                      accessibility_id=more_button
-${RECEIVE_BUTTON}                   accessibility_id=receive_button
-${RECEIVE_COPY_ADDRESS_BUTTON}      accessibility_id=receive_copy_address_button
+${ACCOUNT_SELECTION_BUTTON}         xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
+${MORE_BUTTON}                      xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
+${RECEIVE_BUTTON}                   xpath=//*[@resource-id='receive_button' or @name='receive_button' or @content-desc='receive_button']
+${RECEIVE_COPY_ADDRESS_BUTTON}      xpath=//*[@resource-id='receive_copy_address_button' or @name='receive_copy_address_button' or @content-desc='receive_copy_address_button']
 
-${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
-${MENU_STAKING_BUTTON}              accessibility_id=menu_staking_button
-${MENU_CONTACTS_BUTTON}             accessibility_id=menu_contacts_button
-${SETTINGS_SECURITY_ITEM}           accessibility_id=settings_item_security
-${SETTINGS_DEVELOPER_ITEM}          accessibility_id=settings_item_developer_settings
-${DEVELOPER_NODE_ITEM}              accessibility_id=developer_settings_node_item
-${NODE_DEVELOPER_MODE_SWITCH}       accessibility_id=node_settings_developer_mode_switch
-${NODE_TESTNET_RADIO}               accessibility_id=node_settings_algorand_testnet_radio
+${MENU_SETTINGS_BUTTON}             xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
+${MENU_STAKING_BUTTON}              xpath=//*[@resource-id='menu_staking_button' or @name='menu_staking_button' or @content-desc='menu_staking_button']
+${MENU_CONTACTS_BUTTON}             xpath=//*[@resource-id='menu_contacts_button' or @name='menu_contacts_button' or @content-desc='menu_contacts_button']
+${SETTINGS_SECURITY_ITEM}           xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
+${SETTINGS_DEVELOPER_ITEM}          xpath=//*[@resource-id='settings_item_developer_settings' or @name='settings_item_developer_settings' or @content-desc='settings_item_developer_settings']
+${DEVELOPER_NODE_ITEM}              xpath=//*[@resource-id='developer_settings_node_item' or @name='developer_settings_node_item' or @content-desc='developer_settings_node_item']
+${NODE_DEVELOPER_MODE_SWITCH}       xpath=//*[@resource-id='node_settings_developer_mode_switch' or @name='node_settings_developer_mode_switch' or @content-desc='node_settings_developer_mode_switch']
+${NODE_TESTNET_RADIO}               xpath=//*[@resource-id='node_settings_algorand_testnet_radio' or @name='node_settings_algorand_testnet_radio' or @content-desc='node_settings_algorand_testnet_radio']
 
-${ACCOUNT_MENU_ADD_BUTTON}          accessibility_id=account_menu_add_account_button
-${ADD_ACCOUNT_IMPORT_BUTTON}        accessibility_id=add_account_import_button
-${ADD_ACCOUNT_ADD_BUTTON}           accessibility_id=add_account_add_button
-${ADD_ACCOUNT_UNIVERSAL_BUTTON}     accessibility_id=add_account_create_universal_wallet_button
-${ADD_ACCOUNT_SEE_OTHER_BUTTON}     accessibility_id=add_account_see_other_options_button
-${ADD_ACCOUNT_WATCH_BUTTON}         accessibility_id=add_account_watch_button
-${WATCH_ADDRESS_INPUT}              accessibility_id=watch_account_address_input
-${WATCH_SUBMIT_BUTTON}              accessibility_id=watch_account_submit_button
+${ACCOUNT_MENU_ADD_BUTTON}          xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
+${ADD_ACCOUNT_IMPORT_BUTTON}        xpath=//*[@resource-id='add_account_import_button' or @name='add_account_import_button' or @content-desc='add_account_import_button']
+${ADD_ACCOUNT_ADD_BUTTON}           xpath=//*[@resource-id='add_account_add_button' or @name='add_account_add_button' or @content-desc='add_account_add_button']
+${ADD_ACCOUNT_UNIVERSAL_BUTTON}     xpath=//*[@resource-id='add_account_create_universal_wallet_button' or @name='add_account_create_universal_wallet_button' or @content-desc='add_account_create_universal_wallet_button']
+${ADD_ACCOUNT_SEE_OTHER_BUTTON}     xpath=//*[@resource-id='add_account_see_other_options_button' or @name='add_account_see_other_options_button' or @content-desc='add_account_see_other_options_button']
+${ADD_ACCOUNT_WATCH_BUTTON}         xpath=//*[@resource-id='add_account_watch_button' or @name='add_account_watch_button' or @content-desc='add_account_watch_button']
+${WATCH_ADDRESS_INPUT}              xpath=//*[@resource-id='watch_account_address_input' or @name='watch_account_address_input' or @content-desc='watch_account_address_input']
+${WATCH_SUBMIT_BUTTON}              xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
 
-${ACCOUNT_TYPE_INFO_BUTTON}         accessibility_id=account-type-info-button
-${OPTION_COPY_ADDRESS}              accessibility_id=account_network_algorand_copy
-${OPTION_ALGORAND_EXPAND}           accessibility_id=account_network_algorand_expand
-${OPTION_RENAME}                    accessibility_id=account_option_rename-account
-${OPTION_REMOVE}                    accessibility_id=account_option_remove-account
-${OPTION_VIEW_PASSPHRASE}           accessibility_id=account_option_view-passphrase
-${RENAME_INPUT}                     accessibility_id=rename_account_input
-${RENAME_SAVE_BUTTON}               accessibility_id=rename_account_save_button
-${REMOVE_BACKUP_CONTINUE_BUTTON}    accessibility_id=remove_account_backup_continue_button
-${REMOVE_CONFIRM_BUTTON}            accessibility_id=remove_account_confirm_button
-${REMOVE_CANCEL_BUTTON}             accessibility_id=remove_account_cancel_button
-${PASSPHRASE_ACK_REVEAL}            accessibility_id=passphrase_acknowledge_bottom_sheet_reveal
-${PASSPHRASE_ACK_ROW}               accessibility_id=passphrase_acknowledge_bottom_sheet_row_
+${ACCOUNT_TYPE_INFO_BUTTON}         xpath=//*[@resource-id='account-type-info-button' or @name='account-type-info-button' or @content-desc='account-type-info-button']
+${OPTION_COPY_ADDRESS}              xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
+${OPTION_ALGORAND_EXPAND}           xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
+${OPTION_RENAME}                    xpath=//*[@resource-id='account_option_rename-account' or @name='account_option_rename-account' or @content-desc='account_option_rename-account']
+${OPTION_REMOVE}                    xpath=//*[@resource-id='account_option_remove-account' or @name='account_option_remove-account' or @content-desc='account_option_remove-account']
+${OPTION_VIEW_PASSPHRASE}           xpath=//*[@resource-id='account_option_view-passphrase' or @name='account_option_view-passphrase' or @content-desc='account_option_view-passphrase']
+${RENAME_INPUT}                     xpath=//*[@resource-id='rename_account_input' or @name='rename_account_input' or @content-desc='rename_account_input']
+${RENAME_SAVE_BUTTON}               xpath=//*[@resource-id='rename_account_save_button' or @name='rename_account_save_button' or @content-desc='rename_account_save_button']
+${REMOVE_BACKUP_CONTINUE_BUTTON}    xpath=//*[@resource-id='remove_account_backup_continue_button' or @name='remove_account_backup_continue_button' or @content-desc='remove_account_backup_continue_button']
+${REMOVE_CONFIRM_BUTTON}            xpath=//*[@resource-id='remove_account_confirm_button' or @name='remove_account_confirm_button' or @content-desc='remove_account_confirm_button']
+${REMOVE_CANCEL_BUTTON}             xpath=//*[@resource-id='remove_account_cancel_button' or @name='remove_account_cancel_button' or @content-desc='remove_account_cancel_button']
+${PASSPHRASE_ACK_REVEAL}            xpath=//*[@resource-id='passphrase_acknowledge_bottom_sheet_reveal' or @name='passphrase_acknowledge_bottom_sheet_reveal' or @content-desc='passphrase_acknowledge_bottom_sheet_reveal']
+${PASSPHRASE_ACK_ROW}               xpath=//*[@resource-id='passphrase_acknowledge_bottom_sheet_row_' or @name='passphrase_acknowledge_bottom_sheet_row_' or @content-desc='passphrase_acknowledge_bottom_sheet_row_']
 ${REMOVE_NEXT_STEP}                 xpath=//*[@content-desc='remove_account_backup_continue_button' or @name='remove_account_backup_continue_button' or @content-desc='remove_account_confirm_button' or @name='remove_account_confirm_button']
 
-${ACCOUNT_PORTFOLIO}                accessibility_id=account_portfolio
-${ALGO_HOLDING_ROW}                 accessibility_id=asset_row_0
+${ACCOUNT_PORTFOLIO}                xpath=//*[@resource-id='account_portfolio' or @name='account_portfolio' or @content-desc='account_portfolio']
+${ALGO_HOLDING_ROW}                 xpath=//*[@resource-id='asset_row_0' or @name='asset_row_0' or @content-desc='asset_row_0']
 
 # Containers, icons and the drawer search trigger carry their testID without an accessibility
 # label, so Android exposes it only as resource-id and iOS only as name.
@@ -83,7 +83,7 @@ Wait Until Switcher Closed
 
 Switcher Row
     [Arguments]    ${address}
-    RETURN    accessibility_id=account_switcher_row_${address}
+    RETURN    xpath=//*[@resource-id='account_switcher_row_${address}' or @name='account_switcher_row_${address}' or @content-desc='account_switcher_row_${address}']
 
 Switcher Addresses
     [Documentation]    Addresses of the accounts listed in the open switcher, in list order.

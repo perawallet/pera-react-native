@@ -15,7 +15,7 @@ ${ANDROID_UDID}         ${EMPTY}
 # Give each device its own port when several run in parallel.
 ${ANDROID_SYSTEM_PORT}  8201
 ${WEBVIEW}             xpath=//android.webkit.WebView
-${MENU_TAB}             accessibility_id=Menu
+${MENU_TAB}             xpath=//*[@content-desc='Menu' or @name='Menu']
 
 
 *** Keywords ***
@@ -61,7 +61,7 @@ Dismiss Keyboard
 Enter Recovery Phrase
     # The import screen spreads a pasted phrase across its word fields.
     [Arguments]    ${phrase}
-    Input Text    accessibility_id=import_account_word_input_0    ${phrase}
+    Input Text    xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']    ${phrase}
 
 Get Text In Container
     # A testID-only container is a resource-id on Android, with its text in following siblings.

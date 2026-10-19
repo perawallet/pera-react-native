@@ -81,7 +81,7 @@ Rescan Lists The Account Rekeyed To This One
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
-    Page Should Contain Element    accessibility_id=rescan-rekeyed-row-${REKEYED_ADDRESS}
+    Page Should Contain Element    xpath=//*[@resource-id='rescan' or @name='rescan' or @content-desc='rescan']-rekeyed-row-${REKEYED_ADDRESS}
     Page Should Contain Element    ${RESCAN_SELECT_ALL}
     Page Should Contain Element    ${RESCAN_ADD}
     Page Should Contain Element    ${RESCAN_SKIP}
