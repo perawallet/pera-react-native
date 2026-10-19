@@ -212,7 +212,8 @@ const useBackupSyncManagerSetup = () => {
             sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
             importAccounts: accounts => latest.current.importAccounts(accounts),
             importContacts: contacts => latest.current.importContacts(contacts),
-            resolveHd: account => latest.current.resolveHd(account),
+            resolveHd: (account, seedSecrets) =>
+                latest.current.resolveHd(account, seedSecrets),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
             resolvePrivateKey: (chainId, keyPairId) =>
                 latest.current.resolvePrivateKey(chainId, keyPairId),
