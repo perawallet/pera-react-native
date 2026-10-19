@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     addressOn,
     type AccountBalanceHistoryItem,
@@ -96,9 +96,16 @@ export const useAccountOverviewHeader = (
                 },
             }),
         )
-    const hasFiatTotal = sources.some(
-        source => !isTestTierScope(getProvider().chains, source.scope),
+    // Test-network holdings never count as money (once a second chain is
+    // registered), so they stay out of the total.
+    const countedSources = useMemo(
+        () =>
+            sources.filter(
+                source => !isTestTierScope(getProvider().chains, source.scope),
+            ),
+        [sources],
     )
+    const hasFiatTotal = countedSources.length > 0
     const chainName = chainDisplayNameOf(scope.chainId)
     const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency(currencyScope)
@@ -109,16 +116,37 @@ export const useAccountOverviewHeader = (
         scope,
     )
     const valuedAccounts = useMemo(() => [account], [account])
-    const { portfolioFiatValue, isPending } = useAccountValueTotalsQuery(
+    const { accountValueTotals, isPending } = useAccountValueTotalsQuery(
         valuedAccounts,
         currencyScope,
         availability.isAvailable,
     )
+    // Summed over the chains the list and chart read, not every chain the
+    // account has an entry on: a switched-off chain's last-synced value would
+    // otherwise inflate the headline. One unknown value makes the total unknown.
+    const portfolioFiatValue = useMemo(
+        () =>
+            countedSources.reduce<Nullable<Decimal>>((total, source) => {
+                const fiatValue =
+                    accountValueTotals.get(source.address)?.fiatValue ?? null
+                return total === null || fiatValue === null
+                    ? null
+                    : total.plus(fiatValue)
+            }, new Decimal(0)),
+        [countedSources, accountValueTotals],
+    )
     const allAccounts = useAllAccounts()
-    // Show the "get started" empty state only for a lone account with no native balance
-    // (a brand-new wallet). Any funded account, or any account in a multi-
-    // account wallet, shows its balance (even 0) — gated on data, not value.
-    const isOnlyEmptyAccount = allAccounts.length <= 1 && nativeAmount.isZero()
+    // The account's own chain is the first source (registry order), and keeps
+    // today's native-balance test; any other chain counts once it holds value.
+    const isEmptyOnOtherChains = sources.slice(1).every(source => {
+        const nativeValue = accountValueTotals.get(source.address)?.nativeValue
+        return nativeValue !== null && (nativeValue?.isZero() ?? true)
+    })
+    // Show the "get started" empty state only for a lone account with nothing
+    // on any chain (a brand-new wallet). Any funded account, or any account in a
+    // multi-account wallet, shows its balance (even 0) — gated on data, not value.
+    const isOnlyEmptyAccount =
+        allAccounts.length <= 1 && nativeAmount.isZero() && isEmptyOnOtherChains
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioFiatValue),
         [usdToPreferred, portfolioFiatValue],

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import React from 'react'
 import { Decimal } from 'decimal.js'
@@ -43,7 +43,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isError: false,
         })),
         useAccountValueTotalsQuery: vi.fn(() => ({
-            portfolioFiatValue: new Decimal('300'),
+            accountValueTotals: new Map([
+                [
+                    'test-address',
+                    {
+                        nativeValue: new Decimal('1000'),
+                        fiatValue: new Decimal('300'),
+                    },
+                ],
+            ]),
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => [{ address: 'a' }]),
@@ -94,13 +102,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     </AccountOverviewModalContext.Provider>
 )
 
+const ETH_ADDRESS = `0x${'c'.repeat(40)}`
+
 describe('useAccountOverviewHeader', () => {
     const twoChainAccount = {
         id: 'two-chains',
         custody: { kind: 'watch' },
         chains: {
             algorand: { address: 'test-address' },
-            ethereum: { address: `0x${'c'.repeat(40)}` },
+            ethereum: { address: ETH_ADDRESS },
         },
     } as WalletAccount
 
@@ -110,12 +120,56 @@ describe('useAccountOverviewHeader', () => {
         chains: { algorand: { address: 'test-address' } },
     } as WalletAccount
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
         useRemoteConfigStore.getState().resetState()
+        // Tests below override these; put the funded defaults back each time.
+        const { useAccountSummaryQuery, useAccountValueTotalsQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            nativeAmount: new Decimal('100'),
+            portfolioNativeValue: new Decimal('100'),
+            portfolioUsdValue: new Decimal('200'),
+            holdingsCount: 3,
+            isComplete: true,
+            isPending: false,
+            isError: false,
+            isPaused: false,
+        })
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map([
+                [
+                    'test-address',
+                    {
+                        nativeValue: new Decimal('1000'),
+                        fiatValue: new Decimal('300'),
+                    },
+                ],
+            ]),
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
     })
 
-    it("shows balances in the account's own chain's native asset", () => {
+    afterEach(() => {
+        act(() => useNetworkStore.getState().setMode('live'))
+    })
+
+    const twoChainTotals = async (
+        algo: { nativeValue: Decimal; fiatValue: Decimal },
+        eth: { nativeValue: Decimal; fiatValue: Decimal },
+    ) => {
+        const { useAccountValueTotalsQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map([
+                ['test-address', algo],
+                [ETH_ADDRESS, eth],
+            ]),
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
+    }
+
+    it("shows balances while the account's own chain is available", () => {
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
             { wrapper },
@@ -243,7 +297,65 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.hasFiatTotal).toBe(false)
-        act(() => useNetworkStore.getState().setMode('live'))
+    })
+
+    it("leaves a switched-off chain's last-synced value out of the total", async () => {
+        registerEthereumChain()
+        await twoChainTotals(
+            { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
+            { nativeValue: new Decimal('1.5'), fiatValue: new Decimal('3000') },
+        )
+        act(() => setChainEnabled('ethereum', false))
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('300')
+        expect(result.current.hasBalanceHistory).toBe(true)
+    })
+
+    it('sums every listed chain into one fiat total', async () => {
+        registerEthereumChain()
+        await twoChainTotals(
+            { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
+            { nativeValue: new Decimal('1.5'), fiatValue: new Decimal('3000') },
+        )
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
+    })
+
+    it('shows the balance, not "get started", for a lone account holding value only on another chain', async () => {
+        registerEthereumChain()
+        const { useAccountSummaryQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            nativeAmount: new Decimal('0'),
+            portfolioNativeValue: new Decimal('0'),
+            portfolioUsdValue: new Decimal('0'),
+            holdingsCount: 0,
+            isComplete: true,
+            isPending: false,
+            isError: false,
+            isPaused: false,
+        })
+        await twoChainTotals(
+            { nativeValue: new Decimal('0'), fiatValue: new Decimal('0') },
+            { nativeValue: new Decimal('1.5'), fiatValue: new Decimal('3000') },
+        )
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalance).toBe(true)
     })
 
     it('hides the chart once the account spans a chain without balance history', () => {
