@@ -149,7 +149,7 @@ function buildAppConfig(env) {
     version: resolveMarketingVersion(env),
     orientation: 'portrait',
     icon: appIconIos,
-    scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc', 'algorand-wc', 'liquid'],
+    scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc', 'algorand-wc', 'liquid', 'ethereum'],
     userInterfaceStyle: 'automatic',
 
     // iOS-specific configuration
@@ -295,6 +295,9 @@ function buildAppConfig(env) {
             // on Android too so there's a single source of truth.
             { scheme: 'algorand-wc' },
             { scheme: 'liquid' },
+            // EIP-681 payment links. Other installed wallets claim it too and
+            // the OS picks one; Pera's own surfaces issue perawallet:// with chain=.
+            { scheme: 'ethereum' },
           ],
           category: ['DEFAULT', 'BROWSABLE'],
         },

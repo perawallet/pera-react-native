@@ -108,7 +108,7 @@ for (const domain of [
 ]) {
     assert(entitlements.includes(domain), `associated-domain ${domain} not found`)
 }
-// 4b. Info.plist — all six native-parity URL schemes registered.
+// 4b. Info.plist — every custom URL scheme registered.
 for (const scheme of [
     'perawallet',
     'algorand',
@@ -116,6 +116,7 @@ for (const scheme of [
     'perawallet-wc',
     'algorand-wc',
     'liquid',
+    'ethereum',
 ]) {
     assert(
         infoPlist.includes(`<string>${scheme}</string>`),

@@ -39,6 +39,9 @@ export const fakeDeeplinkAdapter = (
             if (target.includes('@')) {
                 return { ok: false, reason: 'unsupported-network' }
             }
+            if (target.includes('/')) {
+                return { ok: false, reason: 'unsupported-action' }
+            }
             if (!codec.isValid(target))
                 return { ok: false, reason: 'malformed' }
 

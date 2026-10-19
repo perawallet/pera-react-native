@@ -16,7 +16,11 @@ import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    registerLegacyAddressCodec,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 
 const handleDeepLink = vi.fn()
@@ -73,6 +77,9 @@ const renderSocialGuard = async (
 }
 
 const RECEIVER = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+// Hardhat accounts #1 and the USDC contract, both checksummed.
+const ETHEREUM_RECEIVER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+const ETHEREUM_TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 describe('useWebViewNavigationGuard', () => {
     beforeEach(() => {
@@ -275,6 +282,76 @@ describe('useWebViewNavigationGuard', () => {
             ),
         ).toBe(false)
         expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    describe('ethereum: links', () => {
+        const transfer = `ethereum:${ETHEREUM_RECEIVER}@1?value=1`
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('blocks an untrusted page firing an ether transfer', () => {
+            const { result } = renderGuard(false)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(request(transfer)),
+            ).toBe(false)
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('routes the same transfer from the trusted Discover origin', () => {
+            const { result } = renderGuard(true)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(request(transfer)),
+            ).toBe(false)
+            expect(handleDeepLink).toHaveBeenCalledWith(
+                transfer,
+                false,
+                'in-app',
+            )
+        })
+
+        it('blocks a transfer fired from a subframe of the trusted origin', () => {
+            const { result } = renderGuard(true)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request(transfer, false),
+                ),
+            ).toBe(false)
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('hands an approve link to the dispatcher from any origin so it can say why it is refused', () => {
+            const { result } = renderGuard(false)
+            const approve = `ethereum:${ETHEREUM_TOKEN}@1/approve?address=${ETHEREUM_RECEIVER}&uint256=1`
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(request(approve)),
+            ).toBe(false)
+            expect(handleDeepLink).toHaveBeenCalledWith(
+                approve,
+                false,
+                'in-app',
+            )
+        })
+
+        it('refuses a malformed ethereum: link without dispatching it', () => {
+            const { result } = renderGuard(true)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('ethereum:not-an-address'),
+                ),
+            ).toBe(false)
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
     })
 
     describe('social media handoff', () => {

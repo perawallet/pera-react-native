@@ -2900,6 +2900,42 @@ describe('useDeepLink', () => {
             },
         )
 
+        describe('when the chain recognises the link but refuses its action', () => {
+            const actionRefusingAdapter: DeeplinkChainAdapter = {
+                ...refusingAdapter,
+                parse: () => ({ ok: false, reason: 'unsupported-action' }),
+            }
+
+            beforeEach(() => {
+                ;(parseDeeplink as Mock).mockReturnValue(null)
+                deeplinkAdapters.register(actionRefusingAdapter)
+            })
+
+            it('reports it as valid but unavailable', () => {
+                const { result } = renderHook(() => useDeepLink())
+
+                expect(result.current.isValidDeepLink('refused:approve')).toBe(
+                    true,
+                )
+                expect(
+                    result.current.isDeepLinkAvailable('refused:approve'),
+                ).toBe(false)
+            })
+
+            it('refuses it as not supported on that chain', async () => {
+                const { onError } = await dispatch('refused:approve')
+
+                expect(onError).toHaveBeenCalledTimes(1)
+                expect(mockRequestByType).not.toHaveBeenCalled()
+                await vi.waitFor(() =>
+                    expect(mockErrorToast).toHaveBeenCalledWith(
+                        'deeplink.error.title_unsupported',
+                        'deeplink.error.body_unsupported_on_chain',
+                    ),
+                )
+            })
+        })
+
         it('keeps calling text no adapter claims invalid', () => {
             ;(parseDeeplink as Mock).mockReturnValue(null)
             deeplinkAdapters.register(refusingAdapter)

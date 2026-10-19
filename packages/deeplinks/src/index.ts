@@ -73,6 +73,7 @@ export {
     addressCandidatesOf,
     isUnsupportedChainLink,
     linkNetworkMismatchOf,
+    unsupportedActionChainOf,
     type AddressCandidates,
 } from './link-routing'
 export { buildDeeplink, type BuildDeeplinkInput } from './builders'
