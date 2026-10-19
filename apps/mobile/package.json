@@ -147,7 +147,7 @@
     "expo-sensors": "~57.0.2",
     "expo-splash-screen": "57.0.9",
     "expo-sqlite": "catalog:",
-    "expo-status-bar": "~57.0.1",
+    "expo-status-bar": "~58.0.3",
     "expo-video": "~57.0.5",
     "fast-text-encoding": "^1.0.6",
     "i18next": "^26.2.0",
