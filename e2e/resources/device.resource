@@ -33,7 +33,8 @@ Open Passphrase
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
     Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
     FOR    ${i}    IN RANGE    4
-        Tap    ${PASSPHRASE_ACK_ROW}${i}
+        ${row_locator}=    Passphrase Ack Row    ${i}
+        Tap    ${row_locator}
     END
     Tap    ${PASSPHRASE_ACK_REVEAL}
     Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s

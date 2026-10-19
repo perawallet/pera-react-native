@@ -28,8 +28,7 @@ ${WATCH_ADDRESS_INPUT}              xpath=//*[@resource-id='watch_account_addres
 ${WATCH_SUBMIT_BUTTON}              xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
 
 ${ACCOUNT_TYPE_INFO_BUTTON}         xpath=//*[@resource-id='account-type-info-button' or @name='account-type-info-button' or @content-desc='account-type-info-button']
-${OPTION_COPY_ADDRESS}              xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
-${OPTION_ALGORAND_EXPAND}           xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
+${OPTION_COPY_ADDRESS}              xpath=//*[@resource-id='account_option_copy-address' or @name='account_option_copy-address' or @content-desc='account_option_copy-address']
 ${OPTION_RENAME}                    xpath=//*[@resource-id='account_option_rename-account' or @name='account_option_rename-account' or @content-desc='account_option_rename-account']
 ${OPTION_REMOVE}                    xpath=//*[@resource-id='account_option_remove-account' or @name='account_option_remove-account' or @content-desc='account_option_remove-account']
 ${OPTION_VIEW_PASSPHRASE}           xpath=//*[@resource-id='account_option_view-passphrase' or @name='account_option_view-passphrase' or @content-desc='account_option_view-passphrase']
@@ -39,8 +38,8 @@ ${REMOVE_BACKUP_CONTINUE_BUTTON}    xpath=//*[@resource-id='remove_account_backu
 ${REMOVE_CONFIRM_BUTTON}            xpath=//*[@resource-id='remove_account_confirm_button' or @name='remove_account_confirm_button' or @content-desc='remove_account_confirm_button']
 ${REMOVE_CANCEL_BUTTON}             xpath=//*[@resource-id='remove_account_cancel_button' or @name='remove_account_cancel_button' or @content-desc='remove_account_cancel_button']
 ${PASSPHRASE_ACK_REVEAL}            xpath=//*[@resource-id='passphrase_acknowledge_bottom_sheet_reveal' or @name='passphrase_acknowledge_bottom_sheet_reveal' or @content-desc='passphrase_acknowledge_bottom_sheet_reveal']
-${PASSPHRASE_ACK_ROW}               xpath=//*[@resource-id='passphrase_acknowledge_bottom_sheet_row_' or @name='passphrase_acknowledge_bottom_sheet_row_' or @content-desc='passphrase_acknowledge_bottom_sheet_row_']
-${REMOVE_NEXT_STEP}                 xpath=//*[@content-desc='remove_account_backup_continue_button' or @name='remove_account_backup_continue_button' or @content-desc='remove_account_confirm_button' or @name='remove_account_confirm_button']
+${PASSPHRASE_ACK_ROW_ID}            passphrase_acknowledge_bottom_sheet_row_
+${REMOVE_NEXT_STEP}                 xpath=//*[@content-desc='remove_account_backup_continue_button' or @resource-id='remove_account_backup_continue_button' or @name='remove_account_backup_continue_button' or @content-desc='remove_account_confirm_button' or @resource-id='remove_account_confirm_button' or @name='remove_account_confirm_button']
 
 ${ACCOUNT_PORTFOLIO}                xpath=//*[@resource-id='account_portfolio' or @name='account_portfolio' or @content-desc='account_portfolio']
 ${ALGO_HOLDING_ROW}                 xpath=//*[@resource-id='asset_row_0' or @name='asset_row_0' or @content-desc='asset_row_0']
@@ -51,7 +50,7 @@ ${DRAWER_SEARCH_BUTTON}             xpath=//*[@resource-id='account_drawer_searc
 ${ADD_ACCOUNT_CLOSE_BUTTON}         xpath=//*[@resource-id='add_account_close_button' or @name='add_account_close_button']
 ${PASSPHRASE_GRID}                  xpath=//*[@resource-id='view_passphrase_bottom_sheet_grid' or @name='view_passphrase_bottom_sheet_grid']
 ${NODE_CHAIN_NETWORKS}              xpath=//*[@resource-id='node_settings_chain_networks' or @name='node_settings_chain_networks']
-${SWITCHER_ROWS}                    xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
+${SWITCHER_ROWS}                    xpath=//*[starts-with(@content-desc, 'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 # The watch intro's only button has no testID.
 ${WATCH_INFO_CREATE_BUTTON}         xpath=//*[@text='Create a Watch Account' or @label='Create a Watch Account']
 
@@ -162,15 +161,6 @@ Open Account Option
     Scroll Until Tappable    ${option}
     Tap    ${option}
 
-Open Algorand Account Option
-    [Documentation]    Rekey and rekeyed-account scan sit in the Algorand network row, behind its chevron.
-    [Arguments]    ${option}
-    Open Account Options
-    Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
-    Tap    ${OPTION_ALGORAND_EXPAND}
-    Scroll Until Tappable    ${option}
-    Tap    ${option}
-
 Start Account Removal
     [Documentation]    Stops on the final confirmation. An account not backed up warns first.
     Open Account Option    ${OPTION_REMOVE}
@@ -246,3 +236,9 @@ Select Watch Account
     Open Account Switcher
     Tap    ${row}
     Wait Until Switcher Closed
+
+Passphrase Ack Row
+    [Documentation]    The acknowledgement row at this index. A bare prefix variable cannot be
+    ...                concatenated into an xpath, so the index is applied here instead.
+    [Arguments]    ${index}
+    RETURN    xpath=//*[@resource-id='${PASSPHRASE_ACK_ROW_ID}${index}' or @name='${PASSPHRASE_ACK_ROW_ID}${index}' or @content-desc='${PASSPHRASE_ACK_ROW_ID}${index}']

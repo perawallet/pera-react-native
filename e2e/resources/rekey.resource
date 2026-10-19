@@ -116,7 +116,8 @@ Import Passphrase
     Wait Until Settled    ${kind}
     Tap    ${kind}
     FOR    ${i}    IN RANGE    ${{len($words)}}
-        Input Password    ${IMPORT_WORD_INPUT}${i}    ${words}[${i}]
+        ${field}=    quantum.Indexed Row    ${IMPORT_WORD_INPUT_ID}    ${i}
+        Input Password    ${field}    ${words}[${i}]
     END
     Set Log Level    ${level}
     Dismiss Keyboard
