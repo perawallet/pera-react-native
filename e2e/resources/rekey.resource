@@ -27,14 +27,14 @@ ${QUANTUM_UNDERFUNDED}              xpath=//*[@resource-id='rekey-to-quantum-und
 ${LEDGER_INTRO_START}               xpath=//*[@resource-id='rekey-to-ledger-intro-start' or @name='rekey-to-ledger-intro-start' or @content-desc='rekey-to-ledger-intro-start']
 ${RESCAN_SELECT_ALL}                xpath=//*[@resource-id='rescan-rekeyed-select-all-checkbox' or @name='rescan-rekeyed-select-all-checkbox' or @content-desc='rescan-rekeyed-select-all-checkbox']
 ${RESCAN_ADD}                       xpath=//*[@resource-id='rescan-rekeyed-add' or @name='rescan-rekeyed-add' or @content-desc='rescan-rekeyed-add']
-${RESCAN_SKIP}                      xpath=//*[@resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip' or @content-desc='rescan-rekeyed-skip']
+${RESCAN_SKIP}                      xpath=//*[@resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip' or @content-desc='rescan-rekeyed-skip' or @resource-id='rescan-rekeyed-skip']
 # Screen containers are not accessibility elements: Android exposes their testID only as
 # resource-id, iOS only as name.
 ${STANDARD_SELECT_TARGET}           xpath=//*[@resource-id='rekey-to-standard-select-target-screen' or @name='rekey-to-standard-select-target-screen']
 ${QUANTUM_SELECT_TARGET}            xpath=//*[@resource-id='rekey-to-quantum-select-target-screen' or @name='rekey-to-quantum-select-target-screen']
 ${RESCAN_ERROR}                     xpath=//*[@resource-id='rescan-rekeyed-error' or @name='rescan-rekeyed-error']
 # Loading has no testID; empty, error and the select list are the three ways a rescan settles.
-${RESCAN_SETTLED}                   xpath=//*[@resource-id='rescan-rekeyed-empty' or @name='rescan-rekeyed-empty' or @resource-id='rescan-rekeyed-error' or @name='rescan-rekeyed-error' or @content-desc='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip']
+${RESCAN_SETTLED}                   xpath=//*[@resource-id='rescan-rekeyed-empty' or @name='rescan-rekeyed-empty' or @resource-id='rescan-rekeyed-error' or @name='rescan-rekeyed-error' or @content-desc='rescan-rekeyed-skip' or @resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip']
 ${ANY_TARGET_ROW}                   xpath=//*[starts-with(@content-desc, 'rekey-target-row-') or starts-with(@resource-id, 'rekey-target-row-') or starts-with(@name,'rekey-target-row-')]
 
 ${IMPORT_HD_BUTTON}                 xpath=//*[@resource-id='import_options_hd_wallet_button' or @name='import_options_hd_wallet_button' or @content-desc='import_options_hd_wallet_button']
