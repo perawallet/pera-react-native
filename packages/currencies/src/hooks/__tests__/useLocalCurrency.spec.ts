@@ -71,6 +71,7 @@ describe('useLocalCurrency', () => {
         expect(result.current.localCurrency).toBe('EUR')
         expect(result.current.localCurrencySymbol).toBe('€')
         expect(result.current.localRate?.toString()).toBe('0.9')
+        expect(mockUseCurrenciesQuery).toHaveBeenCalledWith()
     })
 
     it('falls back to the fallback fiat and its rate when the native asset is preferred', () => {

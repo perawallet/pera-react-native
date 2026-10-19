@@ -41,7 +41,7 @@ export const useLocalCurrency = (scope: ChainScope): UseLocalCurrencyResult => {
         ? fallbackCurrency
         : preferredCurrency
 
-    const { data: currencies } = useCurrenciesQuery(scope)
+    const { data: currencies } = useCurrenciesQuery()
     const localCurrencySymbol = useMemo(
         () =>
             currencies?.find(currency => currency.id === localCurrency)
