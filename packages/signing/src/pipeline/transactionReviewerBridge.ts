@@ -27,12 +27,7 @@ import {
     type ReviewerChainAdapter,
 } from '../chain-adapter'
 import { InvalidSignableDataError, PipelineError } from './errors'
-import {
-    isUnsignedTransactionsData,
-    type AnalysisContext,
-    type DecodedGroup,
-    type SignableGroup,
-} from './types'
+import type { AnalysisContext, DecodedGroup, SignableGroup } from './types'
 
 /** The legs of a reviewer the signing machine runs on every group. */
 export type GroupReviewer = Pick<
@@ -68,15 +63,8 @@ const reviewContextOf = (
 /** Undefined for a group of data rather than transactions. */
 const unsignedTransactionsOf = (
     group: SignableGroup,
-): UnsignedTransaction[] | undefined => {
-    if (group.data.type !== 'transactions') return undefined
-    if (!isUnsignedTransactionsData(group.data)) {
-        throw new InvalidSignableDataError(
-            'this chain reviews only chain-neutral transactions',
-        )
-    }
-    return group.data.transactions
-}
+): UnsignedTransaction[] | undefined =>
+    group.data.type === 'transactions' ? group.data.transactions : undefined
 
 const toDecodedTransactions = (
     decoded: Pick<

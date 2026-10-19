@@ -21,9 +21,9 @@ import { groupTransactions } from '../../blockchain'
 import { algorandPlannerAdapter, algorandReviewerAdapter } from '../adapter'
 import {
     algorandRequestOf,
-    algorandSignableDataOf,
     algorandSignedForAddresses,
     algorandTransactionsOf,
+    readAlgorandTransactionsData,
 } from '../algorandRequest'
 import {
     asUnsignedAlgorandTransaction,
@@ -184,20 +184,10 @@ describe('algorandTransactionsOf', () => {
     })
 })
 
-describe('algorandSignableDataOf', () => {
-    it('returns Algorand group data as it is', () => {
-        const data = {
-            type: 'transactions' as const,
-            transactions: GROUP,
-            indicesToSign: [1],
-        }
-
-        expect(algorandSignableDataOf(data)).toBe(data)
-    })
-
+describe('readAlgorandTransactionsData', () => {
     it('reads the transactions, indices and raw bytes of a chain-neutral group', () => {
         expect(
-            algorandSignableDataOf({
+            readAlgorandTransactionsData({
                 type: 'transactions',
                 transactions: GROUP.map(txn =>
                     asUnsignedAlgorandTransaction(txn),
@@ -210,7 +200,6 @@ describe('algorandSignableDataOf', () => {
                 },
             }),
         ).toEqual({
-            type: 'transactions',
             transactions: GROUP,
             indicesToSign: [0, 2],
             rawTransactionsBase64: ['a', 'b', 'c'],
@@ -219,7 +208,7 @@ describe('algorandSignableDataOf', () => {
 
     it('signs every transaction of a chain-neutral group that names no indices', () => {
         expect(
-            algorandSignableDataOf({
+            readAlgorandTransactionsData({
                 type: 'transactions',
                 transactions: GROUP.map(txn =>
                     asUnsignedAlgorandTransaction(txn),
@@ -227,7 +216,6 @@ describe('algorandSignableDataOf', () => {
                 chainData: {},
             }),
         ).toEqual({
-            type: 'transactions',
             transactions: GROUP,
             indicesToSign: [0, 1, 2],
         })
@@ -235,7 +223,7 @@ describe('algorandSignableDataOf', () => {
 
     it("refuses as invalid data a payload that isn't Algorand's", () => {
         expect(() =>
-            algorandSignableDataOf({
+            readAlgorandTransactionsData({
                 type: 'transactions',
                 transactions: [makeUnsignedAlgorandTransaction()],
                 chainData: {},
@@ -245,7 +233,7 @@ describe('algorandSignableDataOf', () => {
 
     it('keeps the genesis mismatch of a payload built for another network', () => {
         expect(() =>
-            algorandSignableDataOf({
+            readAlgorandTransactionsData({
                 type: 'transactions',
                 transactions: [
                     asUnsignedAlgorandTransaction(
@@ -296,7 +284,6 @@ describe('the Algorand adapters on a chain-neutral group', () => {
                 chainData: {},
             }),
         ).toEqual({
-            type: 'transactions',
             transactions: [GROUP[0]],
             indicesToSign: [0],
         })

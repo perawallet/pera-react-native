@@ -342,12 +342,12 @@ describe('signPlannedGroups', () => {
     })
 
     it('signs nothing but chain-neutral transactions', async () => {
-        const algorandGroup = {
+        const messageGroup = {
             ...neutralGroup(),
-            data: { type: 'transactions', transactions: [], indicesToSign: [] },
+            data: { type: 'arbitrary-data', data: [] },
         } as unknown as AnalyzedSignableGroup
 
-        await expect(run([algorandGroup])).rejects.toBeInstanceOf(
+        await expect(run([messageGroup])).rejects.toBeInstanceOf(
             InvalidSignableDataError,
         )
         expect(sign).not.toHaveBeenCalled()

@@ -45,7 +45,7 @@ import {
     signArbitraryDataCase,
     signAuthDataCase,
 } from '../message/standardDataSigning'
-import { algorandSignableDataOf } from '../algorandRequest'
+import { readAlgorandTransactionsData } from '../algorandRequest'
 
 /**
  * Creates a signing strategy for accounts whose signing key lives on this
@@ -91,7 +91,7 @@ export const createLocalKeyStrategy = (
                 switch (group.data.type) {
                     case 'transactions': {
                         const { transactions, indicesToSign } =
-                            algorandSignableDataOf(group.data)
+                            readAlgorandTransactionsData(group.data)
                         callbacks?.onSigningStart?.()
                         callbacks?.onProgress?.(0, transactions.length)
 

@@ -54,7 +54,11 @@ const group = (
     source: AnalyzedSignableGroup['source'] = { type: 'local' },
 ): AnalyzedSignableGroup =>
     ({
-        data: { type: 'transactions', transactions: [], indicesToSign: [] },
+        data: {
+            type: 'transactions',
+            transactions: [],
+            chainData: { algorand: { indicesToSign: [] } },
+        },
         source,
         signerAddress,
         analysis: {

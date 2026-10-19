@@ -45,6 +45,12 @@ import {
     algorandPlannerAdapter,
 } from '../../adapter'
 import { signMultisigGroups } from '../signMultisigGroups'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../__tests__/transactions'
 
 beforeEach(() => {
     plannerChainAdapters.reset()
@@ -114,14 +120,17 @@ const makeMockRegistry = (transport: HardwareWalletTransport) => {
     return registry
 }
 
-const mockTxn = { txn: {} } as never
+const mockTxn = makeTestPaymentTx(makeTestAddress(1), {
+    receiver: makeTestAddress(2),
+    genesisHash: MAINNET_GENESIS_HASH,
+})
 const mockGroup = (
     signerAddress: string = MULTISIG_ADDRESS,
 ): AnalyzedSignableGroup => ({
     data: {
         type: 'transactions',
-        transactions: [mockTxn],
-        indicesToSign: [0],
+        transactions: [asUnsignedAlgorandTransaction(mockTxn)],
+        chainData: { algorand: { indicesToSign: [0] } },
     },
     source: { type: 'local' },
     signerAddress,
@@ -307,16 +316,7 @@ describe('signMultisigGroups', () => {
             .fn()
             .mockResolvedValue([{ txn: {}, sig: new Uint8Array([0x42]) }])
 
-        const hardwareReadyGroup: AnalyzedSignableGroup = {
-            ...mockGroup(),
-            data: {
-                type: 'transactions',
-                transactions: [
-                    { sender: { toString: () => MULTISIG_ADDRESS } } as never,
-                ],
-                indicesToSign: [0],
-            },
-        }
+        const hardwareReadyGroup = mockGroup()
 
         const input = buildInput({
             groups: [hardwareReadyGroup],
@@ -367,16 +367,7 @@ describe('signMultisigGroups', () => {
             .mockReturnValue(new Uint8Array([0x01]))
         const signTransactions = vi.fn()
 
-        const hardwareReadyGroup: AnalyzedSignableGroup = {
-            ...mockGroup(),
-            data: {
-                type: 'transactions',
-                transactions: [
-                    { sender: { toString: () => MULTISIG_ADDRESS } } as never,
-                ],
-                indicesToSign: [0],
-            },
-        }
+        const hardwareReadyGroup = mockGroup()
 
         const input = buildInput({
             groups: [hardwareReadyGroup],

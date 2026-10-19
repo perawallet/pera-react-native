@@ -47,9 +47,9 @@ import type {
     AnalyzedSignableGroup,
     AuthData,
     AuthDataMetadata,
+    ChainSignerTransactions,
     DataTransport,
     DecodedGroup,
-    PeraTransactionsSignableData,
     SignableAnalysis,
     SignableGroup,
     SignRequestStatus,
@@ -57,7 +57,7 @@ import type {
     SigningResult,
     SigningStrategy,
     SourceMetadata,
-    TransactionSignableData,
+    UnsignedTransactionsSignableData,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 import { chainIdOfSignRequest } from './models/chain'
@@ -768,13 +768,12 @@ export interface PlannerChainAdapter {
         options: { isCosigner: boolean },
     ): void
     /**
-     * The group as the chain's own signers read it, from a chain-neutral
-     * payload when it is one.
+     * The group as the chain's own signers read it.
      * @throws InvalidSignableDataError when a payload isn't this chain's.
      */
     readTransactionsData(
-        data: TransactionSignableData,
-    ): PeraTransactionsSignableData
+        data: UnsignedTransactionsSignableData,
+    ): ChainSignerTransactions
     /**
      * The account each of `request.txs` signs for, when the chain groups its
      * chain-neutral requests that way rather than by planned signer; the

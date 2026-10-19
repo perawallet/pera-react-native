@@ -209,7 +209,11 @@ describe('createSigningStrategySelector', () => {
         }
 
         const fakeGroup = {
-            data: { type: 'transactions', transactions: [], indicesToSign: [] },
+            data: {
+                type: 'transactions',
+                transactions: [],
+                chainData: { algorand: { indicesToSign: [] } },
+            },
             source: { type: 'multisig-cosign', signRequestId: 'sr-1' },
             signerAddress: 'M',
             analysis: {

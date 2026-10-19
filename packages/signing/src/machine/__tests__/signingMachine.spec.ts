@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
 import { Address } from 'algosdk'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
@@ -32,11 +33,7 @@ import {
     fakeReviewerAdapter,
     registerFakeReviewerAdapter,
 } from '../../__tests__/fakeReviewerAdapter'
-import {
-    plannerChainAdapters,
-    reviewerChainAdapters,
-} from '../../chain-adapter'
-import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import { reviewerChainAdapters } from '../../chain-adapter'
 import { signingMachine } from '../signingMachine'
 import { analyzerActor } from '../actors/analyzerActor'
 import {
@@ -63,11 +60,16 @@ const MOCK_ADDRESS =
 
 const mockAlgo25Account = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
-const mockTx = {
-    sender: { toString: () => MOCK_ADDRESS },
-    fee: 1000n,
-    type: 'pay',
-} as never
+// Only what the fake Algorand planner and planner adapter read off the payload.
+const mockAlgorandTx = (sender: string) =>
+    asUnsignedAlgorandTransaction({
+        sender: { toString: () => sender },
+        fee: 1000n,
+        type: 'pay',
+        bytesToSign: () => new Uint8Array(),
+    } as never)
+
+const mockTx = mockAlgorandTx(MOCK_ADDRESS)
 
 const mockRequest: TransactionSignRequest = {
     id: 'req-1',
@@ -145,6 +147,7 @@ const mockedMachine = signingMachine.provide({
 describe('signingMachine', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeTransactionPlanner(fakeAlgorandTransactionPlanner())
     })
 
     it('reaches completed for a local-key account via algod', async () => {
@@ -406,18 +409,16 @@ describe('signingMachine', () => {
         const CONTRACT_ADDRESS =
             'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
 
-        const contractTx = {
-            sender: { toString: () => CONTRACT_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const contractTx = mockAlgorandTx(CONTRACT_ADDRESS)
 
         const requestWithOverride: TransactionSignRequest = {
             id: 'req-override',
             type: 'transactions',
             transport: 'callback',
             txs: [contractTx],
-            signerOverrides: new Map([[0, MOCK_ADDRESS]]),
+            chainData: {
+                algorand: { signerOverrides: new Map([[0, MOCK_ADDRESS]]) },
+            },
         }
 
         const actor = createActor(mockedMachine, {
@@ -443,11 +444,7 @@ describe('signingMachine', () => {
         const CONTRACT_ADDRESS =
             'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
 
-        const contractTx = {
-            sender: { toString: () => CONTRACT_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const contractTx = mockAlgorandTx(CONTRACT_ADDRESS)
 
         // External source (webview) sends mixed group: user tx + contract tx
         const mixedRequest: TransactionSignRequest = {
@@ -480,11 +477,7 @@ describe('signingMachine', () => {
         const CONTRACT_ADDRESS =
             'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
 
-        const contractTx = {
-            sender: { toString: () => CONTRACT_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const contractTx = mockAlgorandTx(CONTRACT_ADDRESS)
 
         const allContractRequest: TransactionSignRequest = {
             id: 'req-all-contract',
@@ -508,11 +501,7 @@ describe('signingMachine', () => {
         const UNKNOWN_ADDRESS =
             'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
-        const unknownTx = {
-            sender: { toString: () => UNKNOWN_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const unknownTx = mockAlgorandTx(UNKNOWN_ADDRESS)
 
         const localRequest: TransactionSignRequest = {
             id: 'req-local-unknown',
@@ -537,11 +526,7 @@ describe('signingMachine', () => {
 
         const mockMultisigAccount = multisigAccount(MULTISIG_ADDRESS)
 
-        const mockTxFromMultisig = {
-            sender: { toString: () => MULTISIG_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const mockTxFromMultisig = mockAlgorandTx(MULTISIG_ADDRESS)
 
         const mixedRequest: TransactionSignRequest = {
             id: 'req-mixed',
@@ -789,11 +774,7 @@ describe('signingMachine', () => {
 
         const hwAccount = ledgerAccount(HW_ADDRESS)
 
-        const hwTx = {
-            sender: { toString: () => HW_ADDRESS },
-            fee: 1000n,
-            type: 'pay',
-        } as never
+        const hwTx = mockAlgorandTx(HW_ADDRESS)
 
         const hwRequest: TransactionSignRequest = {
             id: 'req-hw',
@@ -1002,8 +983,16 @@ describe('signingMachine', () => {
                 },
             },
         } as WalletAccount
+        const secondChainRequest: TransactionSignRequest = {
+            ...mockRequest,
+            txs: [makeUnsignedTransaction(MOCK_ADDRESS, secondScope)],
+        }
         const secondChainInput = (): SigningMachineInput =>
-            makeInput({ scope: secondScope, allAccounts: [secondChainAccount] })
+            makeInput({
+                request: secondChainRequest,
+                scope: secondScope,
+                allAccounts: [secondChainAccount],
+            })
 
         const secondDecode = vi.fn()
         const secondAutoApproveLocal = vi.fn()
@@ -1038,11 +1027,6 @@ describe('signingMachine', () => {
                     decoder: { decode: secondDecode },
                     policy: { autoApproveLocal: secondAutoApproveLocal },
                 }),
-            )
-            // The Algorand-shaped requests here validate through the chain's
-            // Algorand planner.
-            plannerChainAdapters.register(
-                fakePlannerAdapter({ chainId: SECOND_CHAIN_ID }),
             )
             registerFakeTransactionPlanner()
         })
@@ -1159,7 +1143,10 @@ describe('signingMachine', () => {
             const actor = createActor(realAnalyzerMachine, {
                 input: {
                     ...secondChainInput(),
-                    request: { ...mockRequest, sourceType: 'walletconnect' },
+                    request: {
+                        ...secondChainRequest,
+                        sourceType: 'walletconnect',
+                    },
                 },
             })
             actor.start()
