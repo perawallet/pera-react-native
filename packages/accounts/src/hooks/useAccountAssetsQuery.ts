@@ -11,13 +11,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    queryKeyReferencesScope,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
 import {
     getAccountHoldingsLite,
+    type AccountHoldingSource,
     type AccountHoldingsFilters,
     type AccountHoldingsLiteRow,
 } from '../db'
@@ -42,19 +39,26 @@ export type UseAccountAssetsQueryResult = {
     isPaused: boolean
 }
 
+const sourcesSignature = (sources: readonly unknown[]): string =>
+    JSON.stringify(sources)
+
+// The source elements sit between the two-element prefix and the params
+// element; see `getAccountHoldingsPageQueryKey`.
+const sourcesOfKey = (queryKey: readonly unknown[]): unknown[] =>
+    queryKey.slice(2, -1)
+
 /**
- * A single account's asset list: sorted, filtered and searched **in SQL**, read
- * in one pass. Returns lightweight rows that defer `PeraAsset` materialization
- * (metadata parsing) to the visible rows — so a re-read of thousands of
- * holdings on every sync invalidation doesn't parse + build objects for every
- * row on the JS thread (the burst that blanked the list during a large
- * account's warm-up). FlashList virtualizes rendering, so there's no need to
- * page the data; one stable read avoids the scroll jumps that paging over a
- * value sort caused as prices/metadata enriched.
+ * An account's asset list over one or more sources: sorted, filtered and
+ * searched **in SQL**, read in one pass. Returns lightweight rows that defer
+ * `PeraAsset` materialization (metadata parsing) to the visible rows — so a
+ * re-read of thousands of holdings on every sync invalidation doesn't parse +
+ * build objects for every row on the JS thread (the burst that blanked the
+ * list during a large account's warm-up). FlashList virtualizes rendering, so
+ * there's no need to page the data; one stable read avoids the scroll jumps
+ * that paging over a value sort caused as prices/metadata enriched.
  */
 export const useAccountAssetsQuery = (
-    address: string | undefined,
-    scope: ChainScope,
+    sources: readonly AccountHoldingSource[],
     {
         filters,
         sortMode = 'balanceDesc',
@@ -62,28 +66,28 @@ export const useAccountAssetsQuery = (
         enabled = true,
     }: UseAccountAssetsQueryParams = {},
 ): UseAccountAssetsQueryResult => {
+    const queryKey = getAccountHoldingsPageQueryKey(sources, {
+        filters,
+        sortMode,
+        search,
+    })
+    const signature = sourcesSignature(sourcesOfKey(queryKey))
+
     const query = useQuery({
-        queryKey: getAccountHoldingsPageQueryKey(address ?? '', scope, {
-            filters,
-            sortMode,
-            search,
-        }),
-        enabled: !!address && enabled,
+        queryKey,
+        enabled: sources.length > 0 && enabled,
         staleTime: Infinity,
         gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Same reason as the collectibles read: sort mode, filters
         // and search are part of the key, so changing one starts a cold query
         // that would empty the list mid-interaction. Hold the previous rows,
-        // but never across accounts or networks.
-        placeholderData: (previousRows, previousQuery) => {
-            const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string }
-                | undefined
-            return previousParams?.address === address &&
-                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
+        // but never across accounts, networks or a different set of chains.
+        placeholderData: (previousRows, previousQuery) =>
+            previousQuery &&
+            sourcesSignature(sourcesOfKey(previousQuery.queryKey)) ===
+                signature
                 ? previousRows
-                : undefined
-        },
+                : undefined,
         // SQLite is the source of truth; run the queryFn even while offline
         // instead of pausing it (TanStack's default networkMode: 'online'),
         // which would strand consumers in `pending`. Network segments are
@@ -92,10 +96,13 @@ export const useAccountAssetsQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, scope)
+            await Promise.all(
+                sources.map(({ address, scope }) =>
+                    ensureAccountFetched(address, scope),
+                ),
+            )
             return getAccountHoldingsLite({
-                accountAddress: address as string,
-                scope,
+                sources,
                 ...filters,
                 sortMode,
                 search,

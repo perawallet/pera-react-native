@@ -44,10 +44,12 @@ describe('useAccountHoldingsInvalidator', () => {
     })
 
     it('matches holdings-page keys and leaves other account keys alone', () => {
-        const holdings = getAccountHoldingsPageQueryKey('ADDRESS', {
-            chainId: LEGACY_CHAIN_ID,
-            networkId: 'mainnet',
-        } as const)
+        const holdings = getAccountHoldingsPageQueryKey([
+            {
+                address: 'ADDRESS',
+                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+            },
+        ])
         const balances = getAccountBalancesQueryKey('ADDRESS', {
             chainId: LEGACY_CHAIN_ID,
             networkId: 'mainnet',
