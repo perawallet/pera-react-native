@@ -20,6 +20,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setChainEnabled } from '@test-utils/capability-overrides'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     AccountOverviewModalContext,
     type UseAccountOverviewModalResult,
@@ -40,6 +41,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isComplete: true,
             isPending: false,
             isError: false,
+        })),
+        useAccountValueTotalsQuery: vi.fn(() => ({
+            portfolioFiatValue: new Decimal('300'),
+            isPending: false,
         })),
         useAllAccounts: vi.fn(() => [{ address: 'a' }]),
         useCanSignWith: vi.fn(() => true),
@@ -90,6 +95,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe('useAccountOverviewHeader', () => {
+    const twoChainAccount = {
+        id: 'two-chains',
+        custody: { kind: 'watch' },
+        chains: {
+            algorand: { address: 'test-address' },
+            ethereum: { address: `0x${'c'.repeat(40)}` },
+        },
+    } as WalletAccount
+
     const mockAccount = {
         id: 'test',
         custody: { kind: 'watch' },
@@ -201,14 +215,47 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.canSign).toBe(false)
     })
 
-    it('returns portfolio values from account balances query', () => {
+    it("shows the account's fiat total across its chains", async () => {
+        const { useAccountValueTotalsQuery } =
+            await import('@perawallet/wallet-core-accounts')
+
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
             { wrapper },
         )
 
-        expect(result.current.portfolioNativeValue?.toString()).toBe('100')
-        expect(result.current.portfolioPreferredValue?.toString()).toBe('200')
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('300')
+        expect(result.current.hasFiatTotal).toBe(true)
+        expect(vi.mocked(useAccountValueTotalsQuery)).toHaveBeenCalledWith(
+            [mockAccount],
+            { chainId: 'algorand', networkId: 'mainnet' },
+            true,
+        )
+    })
+
+    it('has no fiat total when every chain the account is on is a test network', () => {
+        registerEthereumChain()
+        act(() => useNetworkStore.getState().setMode('developer'))
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasFiatTotal).toBe(false)
+        act(() => useNetworkStore.getState().setMode('live'))
+    })
+
+    it('hides the chart once the account spans a chain without balance history', () => {
+        registerEthereumChain()
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalanceHistory).toBe(false)
+        expect(result.current.hasFiatTotal).toBe(true)
     })
 
     it('determines hasBalance correctly when balance is greater than zero', () => {

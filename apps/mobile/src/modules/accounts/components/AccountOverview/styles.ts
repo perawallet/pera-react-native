@@ -36,17 +36,11 @@ export const useStyles = makeStyles(theme => {
         },
         secondaryValueBar: {
             flexDirection: 'row',
-            // Top, not centre: the scrubbed date is two lines tall and would
-            // centre the single-line converted value against it, pushing it
-            // away from the balance it belongs to.
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: theme.spacing.md,
             minWidth: 0,
             flexShrink: 1,
-        },
-        valueTitle: {
-            color: theme.colors.textGray,
         },
         dateTimeColumn: {
             alignItems: 'flex-end',
