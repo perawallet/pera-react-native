@@ -142,15 +142,34 @@ describe('CurrenciesStore', () => {
 
 describe('migrateCurrenciesState', () => {
     test.each([
-        ['ALGO with a fiat fallback', { preferredCurrency: 'ALGO', fallbackCurrency: 'EUR' }, { preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' }],
-        ['ALGO with a USD fallback', { preferredCurrency: 'ALGO', fallbackCurrency: 'USD' }, { preferredCurrency: 'USD', fallbackCurrency: 'ALGO' }],
-        ['a fiat preference', { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' }, { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' }],
-        ['an empty blob', {}, { preferredCurrency: 'USD', fallbackCurrency: 'USD' }],
-    ])('moves a v1 blob holding %s to fiat', async (_label, v1State, expected) => {
-        const { migrateCurrenciesState } = await import('../store')
+        [
+            'ALGO with a fiat fallback',
+            { preferredCurrency: 'ALGO', fallbackCurrency: 'EUR' },
+            { preferredCurrency: 'EUR', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'ALGO with a USD fallback',
+            { preferredCurrency: 'ALGO', fallbackCurrency: 'USD' },
+            { preferredCurrency: 'USD', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'a fiat preference',
+            { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' },
+            { preferredCurrency: 'GBP', fallbackCurrency: 'ALGO' },
+        ],
+        [
+            'an empty blob',
+            {},
+            { preferredCurrency: 'USD', fallbackCurrency: 'USD' },
+        ],
+    ])(
+        'moves a v1 blob holding %s to fiat',
+        async (_label, v1State, expected) => {
+            const { migrateCurrenciesState } = await import('../store')
 
-        expect(migrateCurrenciesState(v1State, 1)).toEqual(expected)
-    })
+            expect(migrateCurrenciesState(v1State, 1)).toEqual(expected)
+        },
+    )
 
     test('leaves v2 state unchanged', async () => {
         const { migrateCurrenciesState } = await import('../store')

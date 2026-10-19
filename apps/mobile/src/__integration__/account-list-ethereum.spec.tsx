@@ -218,9 +218,7 @@ describe('Flow: Account list with Ethereum registered', () => {
                 within(rowOf(ETHEREUM_ACCOUNT)).getByText(/\$ ?3,000\.00/),
             ).toBeTruthy()
         })
-        expect(
-            within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/),
-        ).toBeNull()
+        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/)).toBeNull()
         await waitFor(() => {
             expect(
                 screen.getByTestId('portfolio_total_value').textContent,
