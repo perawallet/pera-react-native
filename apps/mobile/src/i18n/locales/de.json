@@ -397,7 +397,8 @@
         "backup_warning_continue": "Ja, fortfahren",
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
-        "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast"
+        "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
+        "view_private_key": "Privaten Schlüssel anzeigen"
     },
     "account_info": {
         "min_balance": "Mindestguthaben",
@@ -468,6 +469,11 @@
             "error_title": "Passphrase konnte nicht abgerufen werden",
             "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
         }
+    },
+    "reveal_private_key": {
+        "title": "Privater Schlüssel",
+        "body": "Wer diesen Schlüssel hat, kontrolliert das Konto. Teile ihn niemals.",
+        "error_title": "Privater Schlüssel konnte nicht angezeigt werden"
     },
     "banners": {
         "dismiss": "Nicht erneut anzeigen"
@@ -2133,6 +2139,16 @@
             "pera_card_option_description": "Gib dein Krypto in der realen Welt mit der Pera Card aus",
             "see_other_options": "Weitere Optionen anzeigen"
         },
+        "import_private_key": {
+            "title": "Privaten Schlüssel importieren",
+            "body": "Gib den privaten Schlüssel des {{chain}}-Kontos ein.",
+            "input_label": "Privater Schlüssel",
+            "invalid": "Das ist kein gültiger privater Schlüssel",
+            "submit": "Konto importieren",
+            "error_title": "Konto konnte nicht importiert werden",
+            "backup_included": "Dieses Konto ist in deinem Cloud-Backup enthalten.",
+            "backup_not_included": "Dieses Konto ist in keinem Cloud-Backup. Um es später wiederherzustellen, nutze „Privaten Schlüssel anzeigen“ in den Kontooptionen und bewahre den Schlüssel sicher auf."
+        },
         "import_account_options": {
             "title": "Konto\nimportieren",
             "recover_wallet_title": "Wallet wiederherstellen",
@@ -3035,6 +3051,18 @@
             "typed_data_warning_title": "Diese Signatur kann deine Token bewegen",
             "typed_data_warning_body": "Das Signieren strukturierter Daten kann einer Anwendung erlauben, deine Token ohne erneute Rückfrage auszugeben oder zu tauschen. Genehmige dies nur, wenn du dieser Anwendung vertraust."
         },
+        "spend_approval": {
+            "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
+            "spend_warning_bold": "Signiere nur, wenn du dieser Anwendung vertraust.",
+            "spender_caption": "Berechtigte Adresse: {{address}}",
+            "unlimited_warning": "Der Betrag ist unbegrenzt, daher kann die berechtigte Adresse alle deine Token dieser Art nehmen.",
+            "long_deadline_warning": "Diese Berechtigung gilt länger als ein Jahr.",
+            "no_deadline_warning": "Diese Berechtigung läuft nie ab.",
+            "spender_label": "Berechtigte Adresse",
+            "unlimited": "Unbegrenzt",
+            "deadline_label": "Frist",
+            "never": "Nie"
+        },
         "arbitrary_data_details": {
             "unnamed": "Jemand",
             "description": "Eine Daten-Signaturanfrage ist eine Anfrage zum Signieren beliebiger Daten. Dies wird häufig von Diensten verwendet, um den Besitz eines Kontos zu überprüfen, verursacht jedoch keine Gebühren.",
@@ -3349,6 +3377,11 @@
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
+        },
+        "switch_network": {
+            "title": "Netzwerkzugriff erlauben?",
+            "body": "{{name}} möchte deine {{chain}}-Konten im Netzwerk {{network}} verwenden.",
+            "confirm": "Erlauben"
         },
         "settings": {
             "empty_title": "Keine WalletConnect-Sitzungen",

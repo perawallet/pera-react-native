@@ -14,10 +14,14 @@ import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HistoryChainDataCodec,
-    TransactionHistoryItem,
-    TransactionSwapGroupDetail,
+    TransactionHistoryChainFields,
 } from '@perawallet/wallet-core-transactions'
 import { resolveAlgorandAssetFacts } from '../history/assetFacts'
+import {
+    algorandHistoryDataOf,
+    type AlgorandHistoryData,
+    type AlgorandSwapGroupDetail,
+} from '../history-data'
 
 export const CLOSE_TO_PATH = '$.algorand.closeTo'
 export const CLOSE_AMOUNT_PATH = '$.algorand.closeAmount'
@@ -28,7 +32,7 @@ export const SWAP_ASSET_IN_DECIMALS_PATH =
     '$.algorand.swapGroupDetail.assetInDecimals'
 
 export type StoredSwapGroupDetail = Omit<
-    TransactionSwapGroupDetail,
+    AlgorandSwapGroupDetail,
     'amountIn' | 'amountOut'
 > & {
     /** Base units, as a decimal string. */
@@ -63,7 +67,7 @@ type StoredChainData = { algorand?: StoredAlgorandChainData }
  */
 export function restoreSwapGroupDetail(
     parsed: StoredSwapGroupDetail,
-): TransactionSwapGroupDetail {
+): AlgorandSwapGroupDetail {
     const assetIn = resolveAlgorandAssetFacts(parsed.assetInId, {
         unitName: parsed.assetInUnitName,
         decimals: parsed.assetInDecimals ?? ALGO_DECIMALS,
@@ -84,14 +88,15 @@ export function restoreSwapGroupDetail(
     }
 }
 
-function encode(item: TransactionHistoryItem): string {
-    const swap = item.swapGroupDetail
+function encode(fields: TransactionHistoryChainFields): string {
+    const data = algorandHistoryDataOf(fields)
+    const swap = data.swapGroupDetail
     const algorand: StoredAlgorandChainData = {
-        confirmedRound: item.confirmedRound ?? null,
-        roundTime: item.roundTime,
-        innerTransactionCount: item.innerTransactionCount,
-        applicationId: item.applicationId || null,
-        closeTo: item.closeTo,
+        confirmedRound: fields.confirmedRound ?? null,
+        roundTime: fields.roundTime,
+        innerTransactionCount: data.innerTransactionCount,
+        applicationId: data.applicationId || null,
+        closeTo: data.closeTo,
         swapGroupDetail: swap
             ? {
                   ...swap,
@@ -99,18 +104,16 @@ function encode(item: TransactionHistoryItem): string {
                   amountOut: swap.amountOut.toString(),
               }
             : null,
-        groupId: item.groupId,
-        closeAmount: item.closeAmount?.toString() ?? null,
+        groupId: data.groupId,
+        closeAmount: data.closeAmount?.toString() ?? null,
     }
     return JSON.stringify({ algorand })
 }
 
-function decode(json: string) {
+function decode(json: string): TransactionHistoryChainFields {
     const algorand = (JSON.parse(json) as StoredChainData).algorand
-    return {
-        confirmedRound: algorand?.confirmedRound ?? undefined,
-        // Only a chain that can't time a pending transaction leaves this NULL.
-        roundTime: algorand?.roundTime ?? 0,
+    const chainData: AlgorandHistoryData = {
+        family: 'algorand',
         innerTransactionCount: algorand?.innerTransactionCount ?? null,
         applicationId: algorand?.applicationId ?? null,
         closeTo: algorand?.closeTo ?? null,
@@ -121,6 +124,12 @@ function decode(json: string) {
         closeAmount: algorand?.closeAmount
             ? new Decimal(algorand.closeAmount)
             : null,
+    }
+    return {
+        confirmedRound: algorand?.confirmedRound ?? undefined,
+        // Only a chain that can't time a pending transaction leaves this NULL.
+        roundTime: algorand?.roundTime ?? 0,
+        chainData,
     }
 }
 

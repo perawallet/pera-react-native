@@ -12,33 +12,45 @@
 
 import { describe, test, expect } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 
 import { getKnownAssetId } from '../assets'
 
 describe('known asset ids', () => {
     test('getKnownAssetId returns null where the asset has no known id', () => {
-        expect(getKnownAssetId('USDC', scopeForLegacyNetwork('mainnet'))).toBe(
-            '31566704',
-        )
-        expect(getKnownAssetId('USDC', scopeForLegacyNetwork('testnet'))).toBe(
-            '10458941',
-        )
+        expect(
+            getKnownAssetId('USDC', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).toBe('31566704')
+        expect(
+            getKnownAssetId('USDC', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const),
+        ).toBe('10458941')
         // Was TestNet's id, which does not identify USDC on these chains.
         expect(
-            getKnownAssetId('USDC', scopeForLegacyNetwork('betanet')),
+            getKnownAssetId('USDC', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'betanet',
+            } as const),
         ).toBeNull()
         expect(
-            getKnownAssetId('USDC', scopeForLegacyNetwork('custom')),
+            getKnownAssetId('USDC', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'custom',
+            } as const),
         ).toBeNull()
     })
 
     test('getKnownAssetId returns null for a network no chain declares', () => {
         expect(
             getKnownAssetId('USDC', {
-                ...scopeForLegacyNetwork('mainnet'),
+                chainId: LEGACY_CHAIN_ID,
                 networkId: 'fnet',
             }),
         ).toBeNull()

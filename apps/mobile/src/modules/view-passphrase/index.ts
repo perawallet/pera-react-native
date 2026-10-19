@@ -12,3 +12,5 @@
 
 export { useViewPassphraseFlow } from './components/ViewPassphraseFlow'
 export type { UseViewPassphraseFlowResult } from './components/ViewPassphraseFlow'
+export { useRevealPrivateKeyFlow } from './components/RevealPrivateKeyFlow'
+export type { UseRevealPrivateKeyFlowResult } from './components/RevealPrivateKeyFlow'

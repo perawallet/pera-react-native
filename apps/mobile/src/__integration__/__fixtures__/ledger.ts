@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export type FakeLedgerOptions = {
@@ -20,7 +22,10 @@ export type FakeLedgerOptions = {
 }
 
 // Without a registered BLE transport every Ledger screen throws
-// `LedgerProviderNotFoundError` before reaching the flow under test.
+// `LedgerProviderNotFoundError` before reaching the flow under test. The fake
+// serves only the legacy chain, as a build with one registered app driver
+// does, so a flow that connects for another chain fails the way it would on a
+// device.
 export const registerFakeLedgerProvider = ({
     address,
     signTransaction = async () => new Uint8Array(64),
@@ -29,21 +34,26 @@ export const registerFakeLedgerProvider = ({
         manufacturer: 'ledger',
         transportType: 'ble',
         scan: () => () => {},
-        connect: async () => ({
-            getAddress: async (accountIndex: number) => ({
-                address:
-                    typeof address === 'function'
-                        ? address(accountIndex)
-                        : address,
-                publicKey: new Uint8Array(32),
-                accountIndex,
-            }),
-            signTransaction,
-            signData: async () => new Uint8Array(64),
-            getAppVersion: async () => ({ major: 0, minor: 0, patch: 0 }),
-            assertCanSignData: async () => {},
-            disconnect: async () => {},
-        }),
+        connect: async (_deviceId: string, chainId: string) => {
+            if (chainId !== LEGACY_CHAIN_ID) {
+                throw new LedgerAppDriverNotRegisteredError(chainId)
+            }
+            return {
+                getAddress: async (accountIndex: number) => ({
+                    address:
+                        typeof address === 'function'
+                            ? address(accountIndex)
+                            : address,
+                    publicKey: new Uint8Array(32),
+                    accountIndex,
+                }),
+                signTransaction,
+                signData: async () => new Uint8Array(64),
+                getAppVersion: async () => ({ major: 0, minor: 0, patch: 0 }),
+                assertCanSignData: async () => {},
+                disconnect: async () => {},
+            }
+        },
         isSupported: async () => false,
     })
 }

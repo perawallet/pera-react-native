@@ -11,17 +11,14 @@
  */
 
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
-import {
-    logger,
-    queryClient,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { logger, queryClient } from '@perawallet/wallet-core-shared'
 
 import {
     feeDelegationResponseSchema,
     type FeeDelegationApiResponse,
     type FeeDelegationRequest,
 } from './schema'
+import { type AlgorandNetworkId, algorandScope } from '../../network-id'
 
 /**
  * Logs the backend's `{ error, code }` body for a sponsorship refusal. The
@@ -63,14 +60,14 @@ const logFeeDelegationFailure = (error: unknown): void => {
  */
 export const requestFeeDelegation = async (
     request: FeeDelegationRequest,
-    network: Network,
+    network: AlgorandNetworkId,
     signal?: AbortSignal,
 ): Promise<FeeDelegationApiResponse> => {
     let response
     try {
         response = await queryClient<unknown>({
             backend: 'pera',
-            network,
+            scope: algorandScope(network),
             method: 'POST',
             url: '/api/v3/fee-delegation',
             data: request,

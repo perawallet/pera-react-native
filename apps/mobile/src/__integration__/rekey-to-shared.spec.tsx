@@ -47,7 +47,6 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToSharedIntroScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedIntroScreen'
 import { RekeyToSharedSelectTargetScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedSelectTargetScreen'
 import { RekeyToSharedConfirmScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedConfirmScreen'
@@ -60,8 +59,12 @@ import {
     MULTISIG_REKEY_INTEGRATION_ADDRESS,
 } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const seedRekeyAccounts = async (): Promise<{
     source: WalletAccount

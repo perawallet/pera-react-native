@@ -22,15 +22,15 @@ const { withdrawWalletBalance } = vi.hoisted(() => ({
 vi.mock('../../api/wallet-balance', () => ({ withdrawWalletBalance }))
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useWithdrawWalletBalanceMutation } from '../useWithdrawWalletBalanceMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardWalletKind } from '../../models'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('mainnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

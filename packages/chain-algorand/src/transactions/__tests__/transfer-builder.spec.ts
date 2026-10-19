@@ -31,12 +31,12 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
     type ChainId,
     type PeraTransaction,
     type UnsignedTransaction,
     type TransferIntent,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -73,7 +73,9 @@ const quantum = quantumAccount(QUANTUM.toString(), {
     keyPairId: 'kp-quantum',
 })
 
-const context = { scope: scopeForLegacyNetwork('testnet') }
+const context = {
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+}
 const ALGO: AssetRef = { chainId: 'algorand' as ChainId, assetId: '0' }
 const USDC: AssetRef = { chainId: 'algorand' as ChainId, assetId: '31566704' }
 

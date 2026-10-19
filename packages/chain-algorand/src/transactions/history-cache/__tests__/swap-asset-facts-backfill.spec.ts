@@ -18,7 +18,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getTransactionHistory,
     historyChainAdapters,
@@ -26,7 +26,12 @@ import {
     type TransactionHistoryItem,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+import {
+    algorandHistoryDataOf,
+    type AlgorandHistoryData,
+} from '../../history-data'
 import { backfillSwapAssetFacts } from '../swap-asset-facts-backfill'
+import { flatHistoryItem, type FlatHistoryItem } from './history-item'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 // 2026-09-02T10:21:41Z. The window is padded a day either side so the row is
@@ -38,27 +43,28 @@ const ACCOUNT = 'ACCT1'
 const NETWORK = 'mainnet'
 
 const makeTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem => ({
-    id: 'SWAP001',
-    txType: 'pay',
-    sender: 'SENDER_ADDR',
-    receiver: 'RECEIVER_ADDR',
-    confirmedRound: 12345,
-    roundTime: ROUND_TIME,
-    fee: new Decimal(1000),
-    groupId: 'GROUP_ABC',
-    amount: new Decimal(5000),
-    closeTo: null,
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
-    asset: null,
-    swapGroupDetail: null,
-    interpretedMeaning: null,
-    balanceImpacts: [],
-    ...overrides,
-})
+    overrides: Partial<FlatHistoryItem> = {},
+): TransactionHistoryItem =>
+    flatHistoryItem({
+        id: 'SWAP001',
+        txType: 'pay',
+        sender: 'SENDER_ADDR',
+        receiver: 'RECEIVER_ADDR',
+        confirmedRound: 12345,
+        roundTime: ROUND_TIME,
+        fee: new Decimal(1000),
+        groupId: 'GROUP_ABC',
+        amount: new Decimal(5000),
+        closeTo: null,
+        closeAmount: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        balanceImpacts: [],
+        ...overrides,
+    })
 
 /** A swap row as the pre-fix schema persisted it: no ids, names or decimals. */
 const legacySwapDetail = {
@@ -68,9 +74,9 @@ const legacySwapDetail = {
     assetOutUnitName: '',
     amountIn: new Decimal(500000),
     amountOut: new Decimal(6638534),
-} as unknown as TransactionHistoryItem['swapGroupDetail']
+} as unknown as AlgorandHistoryData['swapGroupDetail']
 
-const healedSwapDetail: TransactionHistoryItem['swapGroupDetail'] = {
+const healedSwapDetail: AlgorandHistoryData['swapGroupDetail'] = {
     assetInId: '0',
     assetInUnitName: 'ALGO',
     assetInDecimals: 6,
@@ -131,13 +137,13 @@ describe('backfillSwapAssetFacts', () => {
                 makeTx({ swapGroupDetail: legacySwapDetail, ...overrides }),
             ],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
 
     const run = (fetchHistory: unknown) =>
         backfillSwapAssetFacts({
             db,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             accountAddress: ACCOUNT,
             fetchHistory: fetchHistory as never,
         })
@@ -146,7 +152,7 @@ describe('backfillSwapAssetFacts', () => {
         const rows = await getTransactionHistory({
             db,
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         return rows.find(row => row.id === id)
     }
@@ -163,14 +169,15 @@ describe('backfillSwapAssetFacts', () => {
 
         expect(fetchHistory).toHaveBeenCalledWith({
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             afterTime: WINDOW_START,
             beforeTime: WINDOW_END,
             limit: 200,
         })
-        expect((await readRow())?.swapGroupDetail?.assetOutUnitName).toBe(
-            'ALPHA',
-        )
+        expect(
+            algorandHistoryDataOf((await readRow())!).swapGroupDetail
+                ?.assetOutUnitName,
+        ).toBe('ALPHA')
     })
 
     it('writes back only the stale rows, not the rest of the page', async () => {
@@ -182,7 +189,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ id: 'BYSTANDER' })],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         const fetchHistory = vi.fn().mockResolvedValue(
             asResult([
@@ -215,7 +222,10 @@ describe('backfillSwapAssetFacts', () => {
 
         // Two passes, one fetch: the first settled the row out of the work list.
         expect(fetchHistory).toHaveBeenCalledTimes(1)
-        expect((await readRow())?.swapGroupDetail?.assetInDecimals).toBe(6)
+        expect(
+            algorandHistoryDataOf((await readRow())!).swapGroupDetail
+                ?.assetInDecimals,
+        ).toBe(6)
     })
 
     it('leaves the row for the next pass when the refetch fails', async () => {
@@ -256,7 +266,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ swapGroupDetail: healedSwapDetail })],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         const fetchHistory = vi.fn()
 
@@ -271,7 +281,10 @@ describe('backfillSwapAssetFacts', () => {
         await expect(
             backfillSwapAssetFacts({
                 db: { select: () => throwingBuilder() } as never,
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
                 accountAddress: ACCOUNT,
                 fetchHistory: fetchHistory as never,
             }),

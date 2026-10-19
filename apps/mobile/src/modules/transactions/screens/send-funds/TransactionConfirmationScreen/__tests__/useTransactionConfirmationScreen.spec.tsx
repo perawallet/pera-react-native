@@ -149,7 +149,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useSelectedScope: vi.fn(),
     getChainDescriptor: vi.fn(() => ({ family: 'algorand' })),
 }))

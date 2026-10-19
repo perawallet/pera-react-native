@@ -22,6 +22,7 @@ import {
 import { DeeplinkType, linkTargetOf, type AnyParsedDeeplink } from './links'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
+import { peraLinkChainFailure } from './pera-link-chain'
 import { resolveChainDeeplink } from './resolve'
 import { getUniversalLinkPath, normalizeUrl } from './utils'
 import { parseWalletConnectDeeplink } from './wallet-connect'
@@ -144,6 +145,9 @@ const parseUncheckedDeeplink = (url: string): AnyParsedDeeplink | null => {
         return others.length === 0 ? linkFromIntent(intent, url) : null
     }
     if (resolution.status === 'failed') return null
+
+    // Otherwise the legacy `perawallet://` parser below would read it as HOME.
+    if (peraLinkChainFailure(url)) return null
 
     const universalLinkPath = getUniversalLinkPath(url)
     if (universalLinkPath !== null) {

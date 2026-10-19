@@ -49,7 +49,7 @@ const walletConnectRow: ConnectionSettingsRow = {
     lastActiveAt: new Date('2026-01-01T00:00:00.000Z').getTime(),
     peer: { name: 'Some Dapp', url: 'https://dapp.example.com' },
     permissions: ['algo_signTxn'],
-    networks: ['mainnet'],
+    networks: [{ chainId: 'algorand', networkId: 'mainnet' }],
     protocolVersion: 1,
 }
 
@@ -65,7 +65,7 @@ const dappRow: ConnectionSettingsRow = {
     lastActiveAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
     peer: { name: 'Some Site', url: 'https://site.example.com' },
     permissions: ['algo_signTxn'],
-    networks: ['mainnet'],
+    networks: [{ chainId: 'algorand', networkId: 'mainnet' }],
 }
 
 describe('useConnectionsSettingsScreen', () => {

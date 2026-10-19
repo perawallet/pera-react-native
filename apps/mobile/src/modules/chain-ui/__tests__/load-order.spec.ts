@@ -23,6 +23,8 @@ vi.mock('@modules/chain-ui', () => {
 // it, Algorand's transaction bodies (which import AssetTitle from that barrel)
 // could still be initialising and its entry would come out undefined.
 describe('chain-UI registry load order', () => {
+    // Imports four module graphs cold, which overruns the unit project's 5 s
+    // default on a loaded CI runner.
     it('is not loaded by the assets barrel, the signing barrel or a chain UI', async () => {
         await import('@modules/assets')
         await import('@modules/algorand/chain-ui')
@@ -30,5 +32,5 @@ describe('chain-UI registry load order', () => {
         await import('@modules/signing')
 
         expect(loaded.chainUi).toBe(false)
-    })
+    }, 30_000)
 })

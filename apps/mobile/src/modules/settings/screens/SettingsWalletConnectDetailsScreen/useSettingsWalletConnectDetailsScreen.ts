@@ -15,12 +15,18 @@ import { useNavigation } from '@react-navigation/native'
 import {
     findAccountByAddressOn,
     useAllAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     trackEvent,
     WalletConnectEvent,
@@ -44,9 +50,70 @@ const wcVersionFor = (
     return undefined
 }
 
+export type ConnectedNetworkLabel = {
+    key: string
+    label: string
+    tone: 'mainnet' | 'testnet' | 'other'
+}
+
+export type ConnectedAccountRow = {
+    account: WalletAccount
+    networks: ConnectedNetworkLabel[]
+}
+
+const toneOf = (network: ChainNetwork): ConnectedNetworkLabel['tone'] => {
+    if (network.tier === 'mainnet') return 'mainnet'
+    return network.isDefaultForTier ? 'testnet' : 'other'
+}
+
+/**
+ * One row per wallet account the session holds, with the networks it is
+ * usable on. A scope whose network the chain's descriptor does not list (an
+ * Algorand `custom` slot, which names a node and not a network a user picks)
+ * is left out.
+ */
+const toConnectedAccountRows = (
+    scopes: readonly ChainScope[],
+    addresses: readonly string[],
+    accounts: readonly WalletAccount[],
+): ConnectedAccountRow[] => {
+    const { chains } = getProvider()
+    const rows = new Map<
+        string,
+        { account: WalletAccount; labels: Map<string, ConnectedNetworkLabel> }
+    >()
+    for (const scope of scopes) {
+        if (!chains.has(scope.chainId)) continue
+        const network = chains
+            .get(scope.chainId)
+            .descriptor.networks.find(({ id }) => id === scope.networkId)
+        if (!network) continue
+        const key = toScopeKey(scope)
+        const label = { key, label: network.displayName, tone: toneOf(network) }
+        for (const address of addresses) {
+            const account = findAccountByAddressOn(
+                accounts,
+                scope.chainId,
+                address,
+            )
+            if (!account) continue
+            const row = rows.get(account.id) ?? {
+                account,
+                labels: new Map(),
+            }
+            row.labels.set(key, label)
+            rows.set(account.id, row)
+        }
+    }
+    return [...rows.values()].map(({ account, labels }) => ({
+        account,
+        networks: [...labels.values()],
+    }))
+}
+
 export type UseSettingsWalletConnectDetailsScreenResult = {
     preferredIcon: Optional<string>
-    connectedAccounts: ReturnType<typeof useAllAccounts>
+    connectedAccounts: ConnectedAccountRow[]
     isLoading: boolean
     deleteModalState: ReturnType<typeof useModalState>
     handleDelete: () => void
@@ -67,12 +134,12 @@ export const useSettingsWalletConnectDetailsScreen = (
 
     const connectedAccounts = useMemo(
         () =>
-            connection.accounts
-                .map(address =>
-                    findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address),
-                )
-                .filter(account => account !== undefined),
-        [connection.accounts, accounts],
+            toConnectedAccountRows(
+                connection.networks,
+                connection.accounts,
+                accounts,
+            ),
+        [connection.networks, connection.accounts, accounts],
     )
 
     const preferredIcon = getPreferredDappIcon(connection.peer.icons)

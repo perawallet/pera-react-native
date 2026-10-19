@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,
@@ -38,7 +38,7 @@ export type ConnectionSettingsRow = {
      */
     permissions: string[]
     /** Every network the connection is usable on, as its handler resolves it. */
-    networks: Network[]
+    networks: ChainScope[]
     /** Protocol version behind the `WCV…` badge; absent for a kind with none. */
     protocolVersion?: number
 }
@@ -52,7 +52,7 @@ const protocolVersionFor = (kind: ConnectionKind): number | undefined => {
 
 export const toConnectionSettingsRow = (
     connection: Connection,
-    networks: Network[],
+    scopes: readonly ChainScope[],
     methods: string[],
 ): ConnectionSettingsRow => ({
     id: connection.id,
@@ -66,7 +66,7 @@ export const toConnectionSettingsRow = (
     lastActiveAt: connection.lastActiveAt,
     peer: connection.peer,
     permissions: methods,
-    networks,
+    networks: [...scopes],
     ...(protocolVersionFor(connection.kind) !== undefined
         ? { protocolVersion: protocolVersionFor(connection.kind) }
         : {}),

@@ -27,7 +27,6 @@ import {
     type SignerResolution,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     standaloneAccount,
     hardwareAccount,
@@ -39,6 +38,7 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAccountsAdapter } from '../adapter'
 import { algorandAddressOf } from '../vocabulary'
 import { seedAuthority } from './seedAuthority'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 beforeAll(() => {
     accountsChainAdapters.reset()
@@ -251,8 +251,8 @@ describe('resolveSignerForAccount — tagged resolution', () => {
 })
 
 describe('the adapter resolves on the scope it is given', () => {
-    const mainnet = scopeForLegacyNetwork('mainnet')
-    const testnet = scopeForLegacyNetwork('testnet')
+    const mainnet = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+    const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
     it('follows the authority recorded for that scope and no other', () => {
         const auth = algo25('S')

@@ -66,8 +66,8 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
 
 import { getAssetsQueryKey } from '@perawallet/wallet-core-assets'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { transactionQueryKeys } from '@perawallet/wallet-core-transactions'
 import { useNetworkSwitchInvalidation } from '../useNetworkSwitchInvalidation'
@@ -133,8 +133,14 @@ describe('useNetworkSwitchInvalidation', () => {
         // for these, so dropping them on switch loses nothing.
 
         // Keys derive from each scope; the factories that are public build them.
-        const MAINNET = scopeForLegacyNetwork('mainnet')
-        const TESTNET = scopeForLegacyNetwork('testnet')
+        const MAINNET = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
+        const TESTNET = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const
         const balanceKey = (scope: ChainScope) => [
             'accounts',
             'balance',

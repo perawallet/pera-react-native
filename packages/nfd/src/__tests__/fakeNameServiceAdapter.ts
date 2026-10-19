@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     nameServiceChainAdapters,
     type NameServiceChainAdapter,
 } from '../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Shape-only, unlike a real chain's check: these specs cover the name
 // service's plumbing, not address validation.
 export const fakeNameServiceAdapter = (
     overrides: Partial<NameServiceChainAdapter> = {},
 ): NameServiceChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: LEGACY_CHAIN_ID,
     isValidAddress: address => /^[0-9a-zA-Z]{58}$/.test(address),
     ...overrides,
 })

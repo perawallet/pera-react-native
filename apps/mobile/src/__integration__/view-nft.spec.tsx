@@ -56,7 +56,6 @@ import {
     mockIndexerSearchForAccounts,
     mockPublicAssetDetails,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -66,8 +65,12 @@ import {
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // The detail screen passes `useDB: false`, so metadata comes from REST every
 // time — hence mocks for all three endpoints it merges, with minimal bodies

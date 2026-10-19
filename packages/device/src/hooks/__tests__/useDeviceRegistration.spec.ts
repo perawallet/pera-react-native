@@ -13,11 +13,11 @@
 import { describe, test, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { onlineManager, focusManager } from '@tanstack/react-query'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { DeviceAccountRegistration } from '../../models'
 
 const mockRegisterDevice = vi.fn()
 const mockClearDevicePushToken = vi.fn()
-const mockUseNetwork = vi.fn()
 
 vi.mock('../useDevice', () => ({
     useDevice: () => ({
@@ -28,33 +28,18 @@ vi.mock('../useDevice', () => ({
     }),
 }))
 
-// Faithful re-implementation of the real useOnNetworkSwitch (effect-timed,
-// fires once per real switch) driven by the same mocked useNetwork.
-vi.mock('@perawallet/wallet-core-chain-shared', async () => {
-    const { useEffect, useRef } = await import('react')
-    return {
-        useNetwork: () => mockUseNetwork(),
-        useOnNetworkSwitch: (handler: (from: string, to: string) => void) => {
-            const { network } = mockUseNetwork()
-            const handlerRef = useRef(handler)
-            handlerRef.current = handler
-            const previousNetworkRef = useRef(network)
-            useEffect(() => {
-                const previousNetwork = previousNetworkRef.current
-                if (previousNetwork === network) return
-                previousNetworkRef.current = network
-                handlerRef.current(previousNetwork, network)
-            }, [network])
-        },
-    }
-})
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
-        logger: { warn: vi.fn() },
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            critical: vi.fn(),
+        },
     }
 })
 
@@ -77,7 +62,7 @@ describe('useDeviceRegistration', () => {
         vi.clearAllMocks()
         mockRegisterDevice.mockResolvedValue({ createdNew: false })
         mockClearDevicePushToken.mockResolvedValue(undefined)
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        useNetworkStore.getState().resetState()
         onlineManager.setOnline(true)
         const { useDeviceStore } = await import('../../store')
         useDeviceStore.getState().resetState()
@@ -88,7 +73,7 @@ describe('useDeviceRegistration', () => {
         focusManager.setFocused(undefined)
     })
 
-    test('registers device on mount without clearing push token (no prior network)', async () => {
+    test('registers device on mount without clearing push token (no prior deployment)', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
@@ -101,7 +86,7 @@ describe('useDeviceRegistration', () => {
         expect(mockClearDevicePushToken).not.toHaveBeenCalled()
     })
 
-    test('clears previous network push token before re-registering on network switch', async () => {
+    test('clears the previous deployment push token before re-registering on a deployment switch', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
@@ -112,13 +97,56 @@ describe('useDeviceRegistration', () => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
 
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        act(() => useNetworkStore.getState().setMode('developer'))
         rerender()
 
         await waitFor(() => {
-            expect(mockClearDevicePushToken).toHaveBeenCalledWith('mainnet')
+            expect(mockClearDevicePushToken).toHaveBeenCalledWith('live')
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
+    })
+
+    test('registers on the developer deployment after a live to developer flip', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { rerender } = renderHook(() =>
+            useDeviceRegistration([registration('acct-1')]),
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        act(() => useNetworkStore.getState().setMode('developer'))
+        rerender()
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockClearDevicePushToken).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not clear or re-register when only the network changes inside developer mode', async () => {
+        act(() => useNetworkStore.getState().setMode('developer'))
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { rerender } = renderHook(() =>
+            useDeviceRegistration([registration('acct-1')]),
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        // setState, not selectNetwork: that resolves the chain registry, which
+        // this package's tests do not populate.
+        act(() =>
+            useNetworkStore.setState({
+                selectedNetworkByChain: { algorand: 'betanet' },
+            }),
+        )
+        rerender()
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        expect(mockClearDevicePushToken).not.toHaveBeenCalled()
     })
 
     test('does not re-register when a new array carries the same accounts', async () => {
@@ -205,7 +233,7 @@ describe('useDeviceRegistration', () => {
         })
     })
 
-    test('swallows push-token cleanup failures on network switch', async () => {
+    test('swallows push-token cleanup failures on a deployment switch', async () => {
         mockClearDevicePushToken.mockRejectedValueOnce(new Error('boom'))
 
         const { useDeviceRegistration } =
@@ -218,7 +246,7 @@ describe('useDeviceRegistration', () => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
 
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        act(() => useNetworkStore.getState().setMode('developer'))
         rerender()
 
         await waitFor(() => {
@@ -237,8 +265,8 @@ describe('useDeviceRegistration', () => {
 
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
 
         act(() => onlineManager.setOnline(false))
@@ -249,7 +277,7 @@ describe('useDeviceRegistration', () => {
         })
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
+                useDeviceStore.getState().pendingRegistrationDeployments,
             ).toEqual([])
         })
     })
@@ -265,8 +293,8 @@ describe('useDeviceRegistration', () => {
 
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
 
         act(() => focusManager.setFocused(false))
@@ -289,8 +317,8 @@ describe('useDeviceRegistration', () => {
 
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
 
         // Account-set change fires a second mount registration that hangs.
@@ -315,7 +343,7 @@ describe('useDeviceRegistration', () => {
         act(() => resolveHanging())
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
+                useDeviceStore.getState().pendingRegistrationDeployments,
             ).toEqual([])
         })
     })
@@ -354,8 +382,8 @@ describe('useDeviceRegistration', () => {
 
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
         expect(mockRegisterDevice).toHaveBeenLastCalledWith(accounts)
 
@@ -397,16 +425,16 @@ describe('useDeviceRegistration', () => {
         })
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
 
         // The stale first attempt settles late — it must not mark the newer
         // failure as healed.
         await act(async () => resolveFirst())
-        expect(useDeviceStore.getState().pendingRegistrationNetworks).toContain(
-            'mainnet',
-        )
+        expect(
+            useDeviceStore.getState().pendingRegistrationDeployments,
+        ).toContain('live')
     })
 
     test('a stale settle does not release the lock a newer attempt owns', async () => {
@@ -431,8 +459,8 @@ describe('useDeviceRegistration', () => {
         )
         await waitFor(() => {
             expect(
-                useDeviceStore.getState().pendingRegistrationNetworks,
-            ).toContain('mainnet')
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
         })
 
         // Two further attempts: #2 hangs, then #3 starts and owns the lock.
@@ -490,7 +518,7 @@ describe('useDeviceRegistration', () => {
             useDeviceRegistration([registration('ADDR')], { onDeviceCreated }),
         )
         await waitFor(() =>
-            expect(onDeviceCreated).toHaveBeenCalledWith('mainnet'),
+            expect(onDeviceCreated).toHaveBeenCalledWith('live'),
         )
     })
 

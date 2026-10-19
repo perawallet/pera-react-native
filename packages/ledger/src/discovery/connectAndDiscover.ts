@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     LedgerAccount,
     LedgerTransport,
@@ -25,6 +26,9 @@ export type ConnectAndDiscoverOptions = {
     /** The BLE device ID to connect to */
     deviceId: string
 
+    /** The chain whose device app the connection speaks */
+    chainId: ChainId
+
     /** Called after each account is fetched, for progress reporting */
     onProgress?: (accountIndex: number) => void
 
@@ -38,7 +42,7 @@ export type ConnectAndDiscoverResult = {
 }
 
 /**
- * Connects to a Ledger device and discovers all Algorand accounts on it.
+ * Connects to a Ledger device and discovers all of its accounts for a chain.
  *
  * This is the core orchestration function that combines connection and discovery
  * into a single operation. The caller owns the transport lifecycle only on
@@ -49,7 +53,10 @@ export type ConnectAndDiscoverResult = {
 export const connectAndDiscoverAccounts = async (
     options: ConnectAndDiscoverOptions,
 ): Promise<ConnectAndDiscoverResult> => {
-    const connectPromise = options.provider.connect(options.deviceId)
+    const connectPromise = options.provider.connect(
+        options.deviceId,
+        options.chainId,
+    )
     let transport: LedgerTransport
     try {
         transport = await withLedgerConnectionTimeout(

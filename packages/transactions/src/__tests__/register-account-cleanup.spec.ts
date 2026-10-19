@@ -22,7 +22,7 @@ import { getAccountCleanupRegistry } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '../models/types'
 import { upsertTransactions, getTransactionHistory } from '../db/repository'
 import { cleanupTransactionsForAccount } from '../register-account-cleanup'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { historyChainAdapters } from '../history-adapter'
 import { fixtureHistoryAdapter } from './fixture-chain-data'
 
@@ -34,13 +34,9 @@ const makeTx = (id: string): TransactionHistoryItem => ({
     confirmedRound: 12345,
     roundTime: 1700000000,
     fee: new Decimal(1000),
-    groupId: null,
+    chainData: null,
     amount: new Decimal(5000000),
-    closeTo: null,
-    applicationId: null,
-    innerTransactionCount: null,
     asset: null,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     balanceImpacts: [],
 })
@@ -74,7 +70,10 @@ describe('register-account-cleanup', () => {
                 db,
                 items: [makeTx('TX1')],
                 accountAddress: 'ACCT1',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             await cleanupTransactionsForAccount({ db, accountAddress: 'ACCT1' })
@@ -83,7 +82,10 @@ describe('register-account-cleanup', () => {
                 await getTransactionHistory({
                     db,
                     accountAddress: 'ACCT1',
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             ).toEqual([])
         })

@@ -77,7 +77,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     getSelectedScope: vi.fn((chainId: string) => ({
         chainId,
         networkId: 'testnet',

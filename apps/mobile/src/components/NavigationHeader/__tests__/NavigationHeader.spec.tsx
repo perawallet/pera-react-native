@@ -34,11 +34,6 @@ const mockProps = {
 } as unknown as NavigationHeaderProps
 
 describe('NavigationHeader', () => {
-    it('renders title from options', () => {
-        render(<NavigationHeader {...mockProps} />)
-        expect(screen.getByText('Test Title')).toBeTruthy()
-    })
-
     it('lets a long title wrap to a second line', () => {
         render(<NavigationHeader {...mockProps} />)
         expect(
@@ -136,29 +131,16 @@ describe('NavigationHeader', () => {
         expect(screen.queryByText('Original')).toBeNull()
     })
 
-    it('renders custom headerLeft', () => {
+    it.each(['headerLeft', 'headerRight'])('renders custom %s', slot => {
         const props = {
             ...mockProps,
             options: {
                 headerShown: true,
                 title: 'Test',
-                headerLeft: () => <Text>Custom Back</Text>,
+                [slot]: () => <Text>Custom {slot}</Text>,
             },
         } as unknown as NavigationHeaderProps
         render(<NavigationHeader {...props} />)
-        expect(screen.getByText('Custom Back')).toBeTruthy()
-    })
-
-    it('renders custom headerRight', () => {
-        const props = {
-            ...mockProps,
-            options: {
-                headerShown: true,
-                title: 'Test',
-                headerRight: () => <Text>Action Button</Text>,
-            },
-        } as unknown as NavigationHeaderProps
-        render(<NavigationHeader {...props} />)
-        expect(screen.getByText('Action Button')).toBeTruthy()
+        expect(screen.getByText(`Custom ${slot}`)).toBeTruthy()
     })
 })

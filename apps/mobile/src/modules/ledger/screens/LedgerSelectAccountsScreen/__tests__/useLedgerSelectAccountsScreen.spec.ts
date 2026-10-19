@@ -146,7 +146,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
@@ -223,7 +222,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockConnect).toHaveBeenCalledTimes(1)
-        expect(mockConnect).toHaveBeenCalledWith('device-1')
+        expect(mockConnect).toHaveBeenCalledWith('device-1', 'algorand')
         expect(mockGetAddress).toHaveBeenCalledTimes(1)
         expect(mockGetAddress).toHaveBeenCalledWith(2, true)
         const derived = derivedAccounts(result.current)

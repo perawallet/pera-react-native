@@ -19,10 +19,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         defaultNetwork: 'mainnet',
     },
-    Networks: {
-        testnet: 'testnet',
-        mainnet: 'mainnet',
-    },
+    peraDeploymentOf: (scope: { networkId: string }) =>
+        ({ mainnet: 'live', testnet: 'developer' })[scope.networkId],
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -52,31 +50,33 @@ describe('device/store', () => {
         expect(result.current.pushToken).toBeNull()
     })
 
-    test('setRegistrationPending tracks pending registrations per network', async () => {
+    test('setRegistrationPending tracks pending registrations per deployment', async () => {
         const { useDeviceStore } = await import('../index')
         const { result } = renderHook(() => useDeviceStore())
 
         act(() => {
-            result.current.setRegistrationPending('mainnet', true)
-            result.current.setRegistrationPending('testnet', true)
+            result.current.setRegistrationPending('live', true)
+            result.current.setRegistrationPending('developer', true)
         })
-        expect(result.current.pendingRegistrationNetworks).toEqual([
-            'mainnet',
-            'testnet',
+        expect(result.current.pendingRegistrationDeployments).toEqual([
+            'live',
+            'developer',
         ])
 
         act(() => {
-            result.current.setRegistrationPending('mainnet', true)
+            result.current.setRegistrationPending('live', true)
         })
-        expect(result.current.pendingRegistrationNetworks).toEqual([
-            'mainnet',
-            'testnet',
+        expect(result.current.pendingRegistrationDeployments).toEqual([
+            'live',
+            'developer',
         ])
 
         act(() => {
-            result.current.setRegistrationPending('mainnet', false)
+            result.current.setRegistrationPending('live', false)
         })
-        expect(result.current.pendingRegistrationNetworks).toEqual(['testnet'])
+        expect(result.current.pendingRegistrationDeployments).toEqual([
+            'developer',
+        ])
     })
 
     test('setPushToken stores the token', async () => {
@@ -91,17 +91,61 @@ describe('device/store', () => {
     })
 
     test('setDeviceID overwrites existing and keeps other networks intact', async () => {
-        const { useDeviceStore, deviceIdFor } = await import('../index')
+        const { useDeviceStore, deviceIdForDeployment } =
+            await import('../index')
         const { result } = renderHook(() => useDeviceStore())
 
         act(() => {
-            result.current.setDeviceID('mainnet', 'mainnet-1')
-            result.current.setDeviceID('testnet', 'testnet-1')
-            result.current.setDeviceID('mainnet', 'mainnet-2')
+            result.current.setDeviceID('live', 'live-1')
+            result.current.setDeviceID('developer', 'developer-1')
+            result.current.setDeviceID('live', 'live-2')
         })
 
-        expect(deviceIdFor(result.current, 'mainnet')).toBe('mainnet-2')
-        expect(deviceIdFor(result.current, 'testnet')).toBe('testnet-1')
+        expect(deviceIdForDeployment(result.current, 'live')).toBe('live-2')
+        expect(deviceIdForDeployment(result.current, 'developer')).toBe(
+            'developer-1',
+        )
+    })
+
+    test('a developer id is read back by deployment and by an Algorand testnet scope, and persists under algorand/testnet', async () => {
+        const { useDeviceStore, deviceIdForDeployment, deviceIdForScope } =
+            await import('../index')
+        act(() => {
+            useDeviceStore.getState().setDeviceID('developer', 'id-1')
+        })
+
+        const state = useDeviceStore.getState()
+        expect(deviceIdForDeployment(state, 'developer')).toBe('id-1')
+        expect(
+            deviceIdForScope(state, {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe('id-1')
+        const { partialize } = useDeviceStore.persist.getOptions()
+        expect(partialize?.(state)).toMatchObject({
+            deviceIDs: { 'algorand/testnet': 'id-1' },
+        })
+    })
+
+    test('an id stored under algorand/mainnet reads as the live deployment', async () => {
+        const { useDeviceStore, deviceIdForDeployment } =
+            await import('../index')
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        getProvider().keyValueStorage.setItem(
+            'device-store',
+            JSON.stringify({
+                state: { deviceIDs: { 'algorand/mainnet': 'stored-id' } },
+                version: 2,
+            }),
+        )
+
+        await useDeviceStore.persist.rehydrate()
+
+        expect(deviceIdForDeployment(useDeviceStore.getState(), 'live')).toBe(
+            'stored-id',
+        )
     })
 
     test('setDeviceID produces a new Map reference (immutability)', async () => {
@@ -110,22 +154,22 @@ describe('device/store', () => {
 
         const original = result.current.deviceIDs
         act(() => {
-            result.current.setDeviceID('mainnet', 'id')
+            result.current.setDeviceID('live', 'id')
         })
 
         expect(result.current.deviceIDs).not.toBe(original)
     })
 
-    test('setDeviceIdOrigin tracks origins per network', async () => {
+    test('setDeviceIdOrigin tracks origins per deployment', async () => {
         const { useDeviceStore } = await import('../index')
         const { result } = renderHook(() => useDeviceStore())
 
         expect(result.current.deviceIdOrigins).toEqual({})
 
         act(() => {
-            result.current.setDeviceIdOrigin('mainnet', 'migrated')
-            result.current.setDeviceIdOrigin('testnet', 'migrated')
-            result.current.setDeviceIdOrigin('mainnet', 'recreated')
+            result.current.setDeviceIdOrigin('live', 'migrated')
+            result.current.setDeviceIdOrigin('developer', 'migrated')
+            result.current.setDeviceIdOrigin('live', 'recreated')
         })
 
         expect(result.current.deviceIdOrigins).toEqual({
@@ -137,7 +181,7 @@ describe('device/store', () => {
     test('persists deviceIdOrigins', async () => {
         const { useDeviceStore } = await import('../index')
         act(() => {
-            useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+            useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
         })
 
         const { partialize } = useDeviceStore.persist.getOptions()
@@ -151,7 +195,7 @@ describe('device/store', () => {
     test('resetState clears deviceIdOrigins', async () => {
         const { useDeviceStore } = await import('../index')
         act(() => {
-            useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+            useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
         })
 
         act(() => useDeviceStore.getState().resetState())
@@ -159,29 +203,29 @@ describe('device/store', () => {
         expect(useDeviceStore.getState().deviceIdOrigins).toEqual({})
     })
 
-    test('does not persist pendingRegistrationNetworks', async () => {
+    test('does not persist pendingRegistrationDeployments', async () => {
         const { useDeviceStore } = await import('../index')
         act(() => {
-            useDeviceStore.getState().setRegistrationPending('mainnet', true)
+            useDeviceStore.getState().setRegistrationPending('live', true)
         })
 
         const { partialize } = useDeviceStore.persist.getOptions()
         const persisted = partialize?.(useDeviceStore.getState())
 
-        expect(persisted).not.toHaveProperty('pendingRegistrationNetworks')
+        expect(persisted).not.toHaveProperty('pendingRegistrationDeployments')
     })
 
-    test('resetState clears pendingRegistrationNetworks', async () => {
+    test('resetState clears pendingRegistrationDeployments', async () => {
         const { useDeviceStore } = await import('../index')
         act(() => {
-            useDeviceStore.getState().setRegistrationPending('mainnet', true)
+            useDeviceStore.getState().setRegistrationPending('live', true)
         })
 
         act(() => useDeviceStore.getState().resetState())
 
-        expect(useDeviceStore.getState().pendingRegistrationNetworks).toEqual(
-            [],
-        )
+        expect(
+            useDeviceStore.getState().pendingRegistrationDeployments,
+        ).toEqual([])
     })
 
     test('registers a resetState and clearStorage callback with the store registry', async () => {
@@ -191,7 +235,7 @@ describe('device/store', () => {
 
         const { useDeviceStore } = await import('../index')
         act(() => {
-            useDeviceStore.getState().setDeviceID('mainnet', 'id')
+            useDeviceStore.getState().setDeviceID('live', 'id')
             useDeviceStore.getState().setPushToken('tok')
         })
 
@@ -205,7 +249,8 @@ describe('device/store', () => {
     test('hydrates a v1 mainnet device id under the Algorand mainnet key', async () => {
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
-        const { useDeviceStore, deviceIdFor } = await import('../index')
+        const { useDeviceStore, deviceIdForDeployment } =
+            await import('../index')
         getProvider().keyValueStorage.setItem(
             'device-store',
             JSON.stringify({
@@ -227,7 +272,7 @@ describe('device/store', () => {
                 ['algorand/testnet', null],
             ]),
         )
-        expect(deviceIdFor(state, 'mainnet')).toBe('device-main')
+        expect(deviceIdForDeployment(state, 'live')).toBe('device-main')
         expect(state.deviceIdOrigins).toEqual({
             'algorand/mainnet': 'migrated',
         })

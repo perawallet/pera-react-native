@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNfds } from '../nfd-syncer'
 import { NFD_BULK_CHUNK_SIZE } from '../../constants'
-import { Networks } from '@perawallet/wallet-core-config'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -175,18 +174,15 @@ describe('non-Pera-backed networks', () => {
             .mockImplementation(async ({ addresses }) => addresses)
     })
 
-    it.each([Networks.betanet, Networks.custom])(
-        'writes nothing on %s',
-        async network => {
-            await fetchAndPersistNfds([ADDR_A], {
-                chainId: 'algorand',
-                networkId: network,
-            })
+    it.each(['betanet', 'custom'])('writes nothing on %s', async network => {
+        await fetchAndPersistNfds([ADDR_A], {
+            chainId: 'algorand',
+            networkId: network,
+        })
 
-            expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
-            expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
-        },
-    )
+        expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
+        expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
+    })
 
     it('still persists misses as null on mainnet', async () => {
         mockFetchNfdBulkRead.mockResolvedValue([])

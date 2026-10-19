@@ -19,13 +19,10 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandClient } from '../blockchain'
-import {
-    type Network,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '../descriptor'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
+import { type AlgorandNetworkId } from '../network-id'
 
 // algod rejects a full account read with HTTP 400 once total resources exceed
 // MaxAPIResourcesPerAccount (default 1000). Below that, one call returns balance
@@ -133,7 +130,7 @@ async function fetchAllHoldings(
 
 export async function fetchAlgorandAccountState(
     address: string,
-    network: Network,
+    network: AlgorandNetworkId,
     { priorChainState }: AccountStateReadHint,
 ): Promise<AccountStateSnapshot> {
     const { info, holdings, observedRound } = await fetchAccountSnapshot(

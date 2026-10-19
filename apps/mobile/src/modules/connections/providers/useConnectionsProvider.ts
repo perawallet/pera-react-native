@@ -11,15 +11,16 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    getSelectedScope,
-    useNetworkStore,
-} from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
     useConnectionSigningAdapter,
+    watchWalletNotices,
     type ConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
@@ -34,7 +35,10 @@ import {
 } from '@modules/walletconnect'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
+import { useNetworkSwitchPrompt } from './useNetworkSwitchPrompt'
 import { useProposalQueue } from './useProposalQueue'
+
+const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
 /**
  * The handler factories run synchronously during render, before
@@ -55,13 +59,14 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         // blockchain package into every importer's graph, `apps/browser`
         // included.
         const v1Handler = createWalletConnectV1Handler({
-            getNetwork: () => useNetworkStore.getState().network,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId,
         })
         registry.register(v1Handler)
         v1HandlerRef.current = v1Handler
         registry.register(
             createWalletConnectV2Handler({
-                getNetworkId: chainId => getSelectedScope(chainId).networkId,
+                getNetworkId,
                 isDappConnectEnabled: chainId => {
                     const { chains } = getProvider()
                     return (
@@ -90,7 +95,11 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         return () => clearActiveWalletConnectV1Delivery(v1Handler)
     }, [])
 
-    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID)
+    const confirmNetworkSwitch = useNetworkSwitchPrompt()
+    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID, {
+        confirmNetworkSwitch,
+    })
+    useEffect(() => watchWalletNotices(registry), [registry])
     useConnectionsBoot(registry)
     const proposals = useProposalQueue(registry)
     useConnectionErrorToasts(registry, proposals)

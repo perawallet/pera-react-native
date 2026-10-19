@@ -11,17 +11,18 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { registerFakeLedgerProvider } from '../ledger'
 
-const connectFakeLedger = async () => {
+const connectFakeLedger = async (chainId = 'algorand') => {
     const provider = getProvider().hardwareWalletRegistry.getProvider(
         'ledger',
         'ble',
     )
     if (!provider) throw new Error('No Ledger BLE provider registered')
-    return provider.connect('test-device-id')
+    return provider.connect('test-device-id', chainId)
 }
 
 describe('registerFakeLedgerProvider', () => {
@@ -68,5 +69,13 @@ describe('registerFakeLedgerProvider', () => {
         await expect(
             transport.signTransaction(0, new Uint8Array()),
         ).resolves.toBe(signature)
+    })
+
+    it('serves only the legacy chain', async () => {
+        registerFakeLedgerProvider({ address: 'FIXED' })
+
+        await expect(connectFakeLedger('ethereum')).rejects.toBeInstanceOf(
+            LedgerAppDriverNotRegisteredError,
+        )
     })
 })

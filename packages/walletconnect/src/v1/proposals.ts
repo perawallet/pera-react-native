@@ -11,12 +11,8 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionPeer,
@@ -64,11 +60,11 @@ export type V1ProposalHandlers = {
 export const createV1ProposalHandlers = (deps: {
     kit: HandlerKit
     connectors: WalletConnectConnectorRegistry
-    getNetwork: () => Network
+    getScope: () => ChainScope
     sessionKeys: WalletConnectV1SessionKeyStore
     connectionFor: V1RequestHandlers['connectionFor']
 }): V1ProposalHandlers => {
-    const { kit, connectors, getNetwork, sessionKeys, connectionFor } = deps
+    const { kit, connectors, getScope, sessionKeys, connectionFor } = deps
     const { reportError, store, requireContext, pendingOrigins } = kit
 
     // The proposal id already handed out for each pairing. The bridge replays a
@@ -250,11 +246,11 @@ export const createV1ProposalHandlers = (deps: {
             return
         }
 
-        const network = getNetwork()
+        const scope = getScope()
         const { chainId } = params
         if (
             typeof chainId !== 'number' ||
-            !isV1ChainIdAcceptable(chainId, network)
+            !isV1ChainIdAcceptable(chainId, scope)
         ) {
             // `rejectSession()` throws on an already-connected connector.
             if (!connector.connected) {
@@ -289,8 +285,8 @@ export const createV1ProposalHandlers = (deps: {
             pairingId: clientId,
             peer,
             requested: {
-                networks: v1NetworksFor(chainId),
-                chains: [scopeForLegacyNetwork(network).chainId],
+                networks: v1NetworksFor(scope, chainId),
+                chains: [scope.chainId],
                 methods,
             },
             expiresAt,

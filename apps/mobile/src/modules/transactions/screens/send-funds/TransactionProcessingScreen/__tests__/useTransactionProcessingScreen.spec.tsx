@@ -88,11 +88,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 describe('useTransactionProcessingScreen', () => {
     const mockShowError = vi.fn()

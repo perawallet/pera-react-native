@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import type {
     ChainId,
     ChainScope,
+    NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -41,7 +42,10 @@ import {
     type SignRequest,
     type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import type { ConnectionId } from '@perawallet/wallet-extension-connections'
+import type {
+    ConnectionId,
+    ConnectionPeer,
+} from '@perawallet/wallet-extension-connections'
 import {
     authorityOf,
     chainAccountOf,
@@ -82,10 +86,12 @@ type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
  * One request the pipeline is holding open for the user. `request` is null
  * while the chain's signing enqueue is still pending; an expiry or close
  * landing in that window marks the entry and the enqueue's continuation withdraws.
+ * A network-switch prompt has no sign request, so it carries `dismiss` instead.
  */
 type PendingRequest = {
     connectionId: ConnectionId
     request: Nullable<SignRequest>
+    dismiss?: () => void
     isWithdrawn: boolean
 }
 
@@ -100,10 +106,12 @@ const trackRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
     request: Nullable<SignRequest>,
+    dismiss?: () => void,
 ): void => {
     deps.pendingRequests.set(requestKey(message), {
         connectionId: message.connectionId,
         request,
+        dismiss,
         isWithdrawn: false,
     })
 }
@@ -142,6 +150,11 @@ const withdrawTrackedRequest = (
     key: string,
     entry: PendingRequest,
 ): void => {
+    if (entry.dismiss) {
+        deps.pendingRequests.delete(key)
+        entry.dismiss()
+        return
+    }
     if (!entry.request) {
         entry.isWithdrawn = true
         return
@@ -597,6 +610,79 @@ const enqueueSendTransactionRequest = (
         )
 }
 
+/**
+ * A network-switch sheet held open for the user. `decision` is true only on
+ * approve, and resolves false after `dismiss`.
+ */
+export type NetworkSwitchPrompt = {
+    decision: Promise<boolean>
+    dismiss: () => void
+}
+
+export type ConfirmNetworkSwitch = (request: {
+    scope: ChainScope
+    peer: ConnectionPeer
+}) => NetworkSwitchPrompt
+
+/**
+ * Asks the user, then answers once they approve; the handler's `respond`
+ * performs the switch, so a rejection from it is a failed switch, not a
+ * success. An expiry or close while the sheet is open dismisses it and
+ * answers nothing.
+ */
+const enqueueNetworkSwitch = (
+    message: RequestMessage,
+    networkId: NetworkId,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { confirmNetworkSwitch, onError } = deps
+    if (!confirmNetworkSwitch) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unsupported-operation',
+                'This wallet cannot confirm a network switch here',
+            ),
+            onError,
+        )
+        return
+    }
+
+    let prompt: NetworkSwitchPrompt
+    try {
+        prompt = confirmNetworkSwitch({
+            scope: { chainId: message.chainId, networkId },
+            peer: message.peer,
+        })
+    } catch (error) {
+        declineRequest(message, toError(error), onError)
+        return
+    }
+    trackRequest(deps, message, null, prompt.dismiss)
+
+    const isOpen = (): boolean => deps.pendingRequests.has(requestKey(message))
+    prompt.decision.then(
+        isApproved => {
+            if (!isOpen()) return
+            forgetRequest(deps, message)
+            if (!isApproved) {
+                rejectInBackground(message, new DappRequestRejectedError())
+                return
+            }
+            message
+                .respond({ type: 'switch-network' })
+                .catch((error: unknown) =>
+                    declineRequest(message, toError(error), onError),
+                )
+        },
+        (error: unknown) => {
+            if (!isOpen()) return
+            forgetRequest(deps, message)
+            declineRequest(message, toError(error), onError)
+        },
+    )
+}
+
 export type EnqueueInboundRequestDeps = {
     transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
@@ -616,6 +702,8 @@ export type EnqueueInboundRequestDeps = {
      * passes its own surface.
      */
     onError?: ConnectionErrorReporter
+    /** Without one a network switch is declined. */
+    confirmNetworkSwitch?: ConfirmNetworkSwitch
 }
 
 /**
@@ -740,6 +828,11 @@ export const enqueueInboundRequest = (
         return
     }
 
+    if (message.operation.type === 'switch-network') {
+        enqueueNetworkSwitch(message, message.operation.networkId, deps)
+        return
+    }
+
     // The operation union is closed; the only remaining case is 'sign-data'.
     if (message.operation.type !== 'sign-data') {
         enqueueMessageRequest(
@@ -773,11 +866,17 @@ export const useChainTransactionSigning = (
     )
 }
 
+export type UseConnectionSigningAdapterOptions = {
+    confirmNetworkSwitch?: ConfirmNetworkSwitch
+}
+
 /** Every handler normalises into `InboundMessage`, so a new connection kind needs no change here. */
 export const useConnectionSigningAdapter = (
     registry: ConnectionRegistry,
     chainId: ChainId,
+    options?: UseConnectionSigningAdapterOptions,
 ): void => {
+    const confirmNetworkSwitch = options?.confirmNetworkSwitch
     const transactionSigning = useChainTransactionSigning(chainId)
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
@@ -797,6 +896,7 @@ export const useConnectionSigningAdapter = (
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
+        confirmNetworkSwitch,
     })
     depsRef.current = {
         transactionSigning,
@@ -807,6 +907,7 @@ export const useConnectionSigningAdapter = (
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
+        confirmNetworkSwitch,
     }
 
     useEffect(

@@ -397,7 +397,8 @@
         "backup_warning_continue": "Sim, continuar",
         "backup_warning_cancel": "Não, manter conta",
         "remove_rekey_error_title": "Não é possível remover a conta",
-        "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela"
+        "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
+        "view_private_key": "Ver chave privada"
     },
     "account_info": {
         "min_balance": "Saldo mín.",
@@ -468,6 +469,11 @@
             "error_title": "Não foi possível obter a passphrase",
             "error_body": "Algo deu errado. Tente novamente."
         }
+    },
+    "reveal_private_key": {
+        "title": "Chave privada",
+        "body": "Quem tiver esta chave controla a conta. Nunca a compartilhe.",
+        "error_title": "Não foi possível mostrar a chave privada"
     },
     "banners": {
         "dismiss": "Não mostrar novamente"
@@ -2145,6 +2151,16 @@
             "pera_card_option_description": "Gaste suas criptomoedas no mundo real com o Pera Card",
             "see_other_options": "Ver outras opções"
         },
+        "import_private_key": {
+            "title": "Importar chave privada",
+            "body": "Digite a chave privada da conta {{chain}}.",
+            "input_label": "Chave privada",
+            "invalid": "Esta não é uma chave privada válida",
+            "submit": "Importar conta",
+            "error_title": "Não foi possível importar a conta",
+            "backup_included": "Esta conta está incluída no seu backup na nuvem.",
+            "backup_not_included": "Esta conta não está em nenhum backup na nuvem. Para recuperá-la depois, use Ver chave privada nas opções da conta e guarde a chave em um lugar seguro."
+        },
         "import_account_options": {
             "title": "Importar uma\nconta",
             "recover_wallet_title": "Recuperar uma wallet",
@@ -3059,6 +3075,18 @@
             "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
             "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
+        "spend_approval": {
+            "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
+            "spend_warning_bold": "Assine somente se você confia neste aplicativo.",
+            "spender_caption": "Endereço autorizado: {{address}}",
+            "unlimited_warning": "O valor é ilimitado, então o endereço autorizado pode pegar todos os seus tokens deste tipo.",
+            "long_deadline_warning": "Esta permissão dura mais de um ano.",
+            "no_deadline_warning": "Esta permissão nunca expira.",
+            "spender_label": "Endereço autorizado",
+            "unlimited": "Ilimitado",
+            "deadline_label": "Prazo",
+            "never": "Nunca"
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguém",
             "description": "Uma solicitação de assinatura de dados pede que você assine dados arbitrários. Serviços costumam usar isso para verificar a propriedade de uma conta, e não gera taxas.",
@@ -3380,6 +3408,11 @@
         },
         "connection": {
             "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."
+        },
+        "switch_network": {
+            "title": "Permitir acesso à rede?",
+            "body": "{{name}} quer usar suas contas {{chain}} na rede {{network}}.",
+            "confirm": "Permitir"
         },
         "settings": {
             "empty_title": "Nenhuma sessão do WalletConnect",

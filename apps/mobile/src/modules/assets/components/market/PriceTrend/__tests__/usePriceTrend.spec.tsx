@@ -14,10 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { usePriceTrend } from '../usePriceTrend'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -52,7 +52,10 @@ describe('usePriceTrend', () => {
 
     it('reads the price history on the scope it is given', () => {
         mockQuery([point(100), point(150)], false)
-        const testnet = scopeForLegacyNetwork('testnet')
+        const testnet = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const
 
         renderHook(() =>
             usePriceTrend({

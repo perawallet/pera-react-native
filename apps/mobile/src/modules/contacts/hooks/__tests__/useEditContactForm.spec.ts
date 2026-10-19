@@ -67,6 +67,11 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: () => useRouteMock(),
 }))
 
+vi.mock('../../utils/contactFamily', () => ({
+    contactFamilyOf: (chainId?: string) =>
+        chainId === 'ethereum' ? 'evm' : 'algorand',
+}))
+
 vi.mock('@modules/cloud-backup', () => ({
     useIsContactBackedUp: (id: string) => isContactBackedUpMock(id),
     DeleteFromBackupSheet: () => null,
@@ -241,6 +246,33 @@ describe('useEditContactForm', () => {
             }
             expect(result.current.contact).toEqual(expected)
             expect(useContactFormMock).toHaveBeenCalledWith(expected)
+        })
+
+        it("matches the link's address against its chain's family entry", () => {
+            const saved = {
+                id: 'eve',
+                name: 'Eve',
+                addresses: { algorand: 'EVEALGO', evm: '0xEVE' },
+            }
+            const other = {
+                id: 'mallory',
+                name: 'Mallory',
+                addresses: { algorand: '0xEVE' },
+            }
+            useContactsMock.mockReturnValue({
+                editContact: editContactMock,
+                deleteContact: deleteContactMock,
+                selectedContact: other,
+                setSelectedContact: setSelectedContactMock,
+                contacts: [other, saved],
+            })
+            useRouteMock.mockReturnValue({
+                params: { address: '0xEVE', chainId: 'ethereum' },
+            })
+
+            const { result } = renderHook(() => useEditContactForm())
+
+            expect(result.current.contact).toEqual(saved)
         })
     })
 

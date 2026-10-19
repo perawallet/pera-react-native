@@ -20,14 +20,20 @@ import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen'
 import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type ContactsStackParamsList = {
     ContactsList: undefined
     ViewContact: undefined
     // Forwarded by ADD_CONTACT / EDIT_CONTACT deeplinks and by the
     // AccountActions sheet so the form can prefill the address+label.
-    EditContact: { address?: string; label?: string } | undefined
-    AddContact: { address?: string; label?: string } | undefined
+    // `chainId` is the link's chain; absent means the Algorand entry.
+    EditContact:
+        | { address?: string; label?: string; chainId?: ChainId }
+        | undefined
+    AddContact:
+        | { address?: string; label?: string; chainId?: ChainId }
+        | undefined
 }
 
 const ContactsStack = createAppStackNavigator<ContactsStackParamsList>()

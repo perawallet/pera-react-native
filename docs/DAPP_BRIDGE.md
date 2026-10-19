@@ -67,7 +67,7 @@ A `txns` entry is an ARC-0001 wallet transaction,
 Events are delivered as JSON-RPC notifications (no `id`). **Only `disconnect`
 `{}` is emitted today**, when the record is removed. `accountsChanged`
 `{ accounts }` and `networkChanged` `{ network }` are reserved: the handler can
-send them, but nothing in the wallet produces the `WalletNotice` that would, so
+send them, but nothing in the extension produces the `WalletNotice` that would, so
 an SDK must not wait on either. Re-read `getAddresses()` instead.
 
 `requestTransactionSigning` and the ARC-60 form of `requestDataSigning` keep the

@@ -12,8 +12,12 @@
 
 import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { MessageSummary } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    MessageSummary,
+} from '@perawallet/wallet-core-chain-contract'
 import {
+    isMessageRequest,
     useLastSigningEvent,
     useSigningPipeline,
     type SignRequestSource,
@@ -23,6 +27,7 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseMessageSigningScreenResult = {
     summary: Nullable<MessageSummary>
+    scope: Nullable<ChainScope>
     signerAccount: Nullable<WalletAccount>
     sourceMetadata: Optional<SignRequestSource>
     verifiedOrigin: Optional<string>
@@ -54,6 +59,10 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
     return {
         summary:
             resolved?.kind.type === 'message' ? resolved.kind.summary : null,
+        scope:
+            currentRequest && isMessageRequest(currentRequest)
+                ? currentRequest.message.scope
+                : null,
         signerAccount: resolved?.signerAccount ?? null,
         sourceMetadata: currentRequest?.sourceMetadata,
         verifiedOrigin: currentRequest?.verifiedOrigin,

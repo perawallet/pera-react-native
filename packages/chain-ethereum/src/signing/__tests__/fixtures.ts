@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { bytesToHex, hexToBytes } from 'viem'
+import {
+    bytesToHex,
+    encodeFunctionData,
+    erc20Abi,
+    hexToBytes,
+    maxUint160,
+} from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainKeyStore } from '@perawallet/wallet-core-chain-contract'
@@ -27,6 +33,20 @@ export const TRANSFER: TransactionSerializableEIP1559 = {
     gas: 21000n,
     maxFeePerGas: 20_000_000_000n,
     maxPriorityFeePerGas: 1_000_000_000n,
+}
+
+// USDC `transfer(0x7099…79C8, 1_000_000)`; the calldata is what makes the
+// Ledger app ask for clear-signing descriptors.
+export const ERC20_TRANSFER: TransactionSerializableEIP1559 = {
+    ...TRANSFER,
+    to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    value: 0n,
+    data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: ['0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 1_000_000n],
+    }),
+    gas: 65_000n,
 }
 
 // The EIP-712 specification's "Ether Mail" example.
@@ -62,6 +82,212 @@ export const MAIL_TYPED_DATA = {
     },
 } as const
 
+// 2026-01-01T00:00:00Z. The permit fixtures' deadlines are relative to it.
+export const PERMIT_NOW_MS = 1_767_225_600_000
+
+// Addresses are lowercase and uints are decimal strings, the way a dApp's JSON
+// arrives, so every vector also exercises checksumming and string parsing.
+export const PERMIT_SPENDER = '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'
+export const PERMIT_USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+export const PERMIT_WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+export const PERMIT2_ADDRESS = '0x000000000022d473030f116ddee9f6b43ac78ba3'
+/** 30 and 60 days after `PERMIT_NOW_MS`, in Unix seconds. */
+export const PERMIT_DEADLINE_30D = '1769817600'
+export const PERMIT_DEADLINE_60D = '1772409600'
+
+const PERMIT2_DOMAIN = {
+    name: 'Permit2',
+    chainId: 1,
+    verifyingContract: PERMIT2_ADDRESS,
+}
+const PERMIT_DETAILS_TYPE = [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint160' },
+    { name: 'expiration', type: 'uint48' },
+    { name: 'nonce', type: 'uint48' },
+]
+const TOKEN_PERMISSIONS_TYPE = [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint256' },
+]
+const permitDetails = (token: string, expiration = PERMIT_DEADLINE_30D) => ({
+    token,
+    amount: '1000000',
+    expiration,
+    nonce: '0',
+})
+const tokenPermissions = (token: string) => ({ token, amount: '1000000' })
+
+export const EIP2612_PERMIT_TYPED_DATA = {
+    domain: {
+        name: 'USD Coin',
+        version: '2',
+        chainId: 1,
+        verifyingContract: PERMIT_USDC,
+    },
+    types: {
+        Permit: [
+            { name: 'owner', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' },
+        ],
+    },
+    primaryType: 'Permit',
+    message: {
+        owner: SENDER,
+        spender: PERMIT_SPENDER,
+        value: '1000000',
+        nonce: '0',
+        deadline: PERMIT_DEADLINE_30D,
+    },
+}
+
+export const PERMIT2_SINGLE_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitSingle: [
+            { name: 'details', type: 'PermitDetails' },
+            { name: 'spender', type: 'address' },
+            { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: PERMIT_DETAILS_TYPE,
+    },
+    primaryType: 'PermitSingle',
+    message: {
+        details: permitDetails(PERMIT_USDC),
+        spender: PERMIT_SPENDER,
+        sigDeadline: PERMIT_DEADLINE_30D,
+    },
+}
+
+export const PERMIT2_SINGLE_UNLIMITED_TYPED_DATA = {
+    ...PERMIT2_SINGLE_TYPED_DATA,
+    message: {
+        ...PERMIT2_SINGLE_TYPED_DATA.message,
+        details: {
+            ...PERMIT2_SINGLE_TYPED_DATA.message.details,
+            amount: maxUint160.toString(),
+        },
+    },
+}
+
+export const PERMIT2_BATCH_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatch: [
+            { name: 'details', type: 'PermitDetails[]' },
+            { name: 'spender', type: 'address' },
+            { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: PERMIT_DETAILS_TYPE,
+    },
+    primaryType: 'PermitBatch',
+    message: {
+        details: [
+            permitDetails(PERMIT_USDC),
+            permitDetails(PERMIT_WETH, PERMIT_DEADLINE_60D),
+        ],
+        spender: PERMIT_SPENDER,
+        sigDeadline: PERMIT_DEADLINE_60D,
+    },
+}
+
+const transferFromTail = [
+    { name: 'spender', type: 'address' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+]
+const transferFromMessage = {
+    spender: PERMIT_SPENDER,
+    nonce: '0',
+    deadline: PERMIT_DEADLINE_30D,
+}
+// Permit2's own test witness.
+const WITNESS_TYPE = [
+    { name: 'value', type: 'uint256' },
+    { name: 'person', type: 'address' },
+    { name: 'test', type: 'bool' },
+]
+const witness = { value: '42', person: PERMIT_SPENDER, test: true }
+
+export const PERMIT2_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            ...transferFromTail,
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+    },
+    primaryType: 'PermitTransferFrom',
+    message: {
+        permitted: tokenPermissions(PERMIT_USDC),
+        ...transferFromMessage,
+    },
+}
+
+export const PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatchTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions[]' },
+            ...transferFromTail,
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+    },
+    primaryType: 'PermitBatchTransferFrom',
+    message: {
+        permitted: [
+            tokenPermissions(PERMIT_USDC),
+            tokenPermissions(PERMIT_WETH),
+        ],
+        ...transferFromMessage,
+    },
+}
+
+export const PERMIT2_WITNESS_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitWitnessTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            ...transferFromTail,
+            { name: 'witness', type: 'MockWitness' },
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+        MockWitness: WITNESS_TYPE,
+    },
+    primaryType: 'PermitWitnessTransferFrom',
+    message: {
+        permitted: tokenPermissions(PERMIT_USDC),
+        ...transferFromMessage,
+        witness,
+    },
+}
+
+export const PERMIT2_BATCH_WITNESS_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatchWitnessTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions[]' },
+            ...transferFromTail,
+            { name: 'witness', type: 'MockWitness' },
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+        MockWitness: WITNESS_TYPE,
+    },
+    primaryType: 'PermitBatchWitnessTransferFrom',
+    message: {
+        permitted: [
+            tokenPermissions(PERMIT_USDC),
+            tokenPermissions(PERMIT_WETH),
+        ],
+        ...transferFromMessage,
+        witness,
+    },
+}
+
 // Hardhat account #0 (`m/44'/60'/0'/0/0` of `test test test test test test
 // test test test test test junk`). This package's tests may not hold a
 // secp256k1 key (see `firewall.spec.ts`), so the key store answers from
@@ -77,14 +303,18 @@ export const KMS_SIGNATURES: Record<Hex, Hex> = {
         '0xe04588d881d59ef43990fd1bdd2e05bce76c3052620432089e1d632b6d4bc3884930cf24da1dda4ff05d7dffee6605f6ab807db2cfe2ff01dd73054883b6e81601',
     '0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2':
         '0x6ea8bb309a3401225701f3565e32519f94a0ea91a5910ce9229fe488e773584c0390416a2190d9560219dab757ecca2029e63fa9d1c2aebf676cc25b9f03126a00',
+    '0x3d5f8596f420e506cd72a92f8a0af2f1b751a8629c2accc5e233a1367b7b3b20':
+        '0x14a151566889e31a834bcd323d90eba083c2f0010965b909f5969a4481405d2b312ebb7f7c50c4546a4d991d990c7252bed307533bccf21a11f57c1849bd964701',
 }
 
-// viem's own `signTransaction` output for `TRANSFER` under the same key; never
-// derived from the vectors above.
+// viem's own `signTransaction` output for `TRANSFER` and `ERC20_TRANSFER` under
+// the same key; never derived from the vectors above.
 export const VIEM_TRANSFER_NONCE_0 =
     '0x02f8730180843b9aca008504a817c8008252089470997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c001a00a3a2646d4ad968bb56317fdb15e17fb4d9deec0d03e8b6cb05e7125bda3006da026618ad17cc63cf1979ca75f850c536a073ec88ab1ab7c8db8b8eb129499d9ae'
 export const VIEM_TRANSFER_NONCE_2 =
     '0x02f8730102843b9aca008504a817c8008252089470997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c080a0082e76302cca13d703850329a812776dd29a70054c6f17ee6a5dff9cfad917cda06bb6ba4e6095246f7cbb722eec394bc5d8b4617bb1d9cb2a9dbdf953d95bd28b'
+export const VIEM_ERC20_TRANSFER =
+    '0x02f8b00180843b9aca008504a817c80082fde894a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4880b844a9059cbb00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c800000000000000000000000000000000000000000000000000000000000f4240c001a014a151566889e31a834bcd323d90eba083c2f0010965b909f5969a4481405d2ba0312ebb7f7c50c4546a4d991d990c7252bed307533bccf21a11f57c1849bd9647'
 
 // viem's own `signMessage` and `signTypedData` output under the same key as the
 // transaction vectors above; never derived from them.

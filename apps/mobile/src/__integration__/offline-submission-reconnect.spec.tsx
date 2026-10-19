@@ -33,10 +33,7 @@ import {
 } from '@tanstack/react-query'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { toSignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
@@ -98,7 +95,10 @@ const renderHistoryQuery = (accountAddress: string) => {
         () =>
             useTransactionHistoryQuery({
                 accountAddress,
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             }),
         { wrapper },
     )
@@ -138,7 +138,7 @@ describe('Flow: offline submission reconnect', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
             mockAlgodAccountInformation({
@@ -172,9 +172,9 @@ describe('Flow: offline submission reconnect', () => {
             [unsignedTxn],
             [0],
             account,
-            scopeForLegacyNetwork(NETWORK),
+            { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         )
-        const scope = scopeForLegacyNetwork(NETWORK)
+        const scope = { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const
         const txIds = await submitAndAutoRefresh(
             scope,
             signedTxns.map(signed =>
@@ -188,7 +188,10 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             })
             expect(open).toHaveLength(1)
             expect(open[0]!.txIds).toContain(txid)
@@ -276,7 +279,10 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             })
             expect(open).toHaveLength(0)
         })
@@ -300,10 +306,10 @@ describe('Flow: offline submission reconnect', () => {
             }),
         )
 
-        await fetchAndPersistTransactions(
-            addressOf(account),
-            scopeForLegacyNetwork(NETWORK),
-        )
+        await fetchAndPersistTransactions(addressOf(account), {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: NETWORK,
+        } as const)
 
         const syncedHistory = renderHistoryQuery(addressOf(account))
         await waitFor(() => {

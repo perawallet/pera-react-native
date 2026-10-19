@@ -40,6 +40,8 @@ export const CAPABILITY_ADAPTERS = {
         'transactionPlanner',
         'reviewer',
         'local-key signer',
+        'message signer',
+        'broadcaster',
     ],
     watchAccounts: ['accounts', 'addressCodec'],
     ledger: ['ledger app driver', 'planner', 'reviewer'],

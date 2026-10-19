@@ -161,24 +161,19 @@ const toPendingHistoryItem = (
     accountAddress: string,
 ): TransactionHistoryItem => ({
     id: attempt.txIds[0] ?? attempt.id,
-    txType: 'pay',
+    txType: '',
     sender: attempt.sender ?? accountAddress,
     assetSender: null,
     receiver: null,
     confirmedRound: 0,
     roundTime: Math.floor(attempt.createdAt / 1000),
     fee: new Decimal(0),
-    groupId: null,
     amount: null,
-    closeTo: null,
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
     asset: null,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     balanceImpacts: [],
     status: TransactionHistoryStatuses.PENDING,
+    chainData: null,
 })
 
 /**
@@ -340,7 +335,7 @@ export const useTransactionHistoryQuery = (
                     url: pageParam.url,
                     scope,
                     // Only meaningful on indexer-backed networks (see
-                    // `isPeraBackedNetwork`), which have no replayable
+                    // `hasPeraBackend`), which have no replayable
                     // pagination URL and need the address alongside the
                     // cursor. Harmless to pass on Pera-backed networks.
                     accountAddress,

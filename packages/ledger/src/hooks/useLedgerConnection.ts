@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
@@ -31,7 +32,10 @@ export type UseLedgerConnectionResult = {
     connectionStatus: HardwareWalletConnectionStatus
     startScan: () => void
     stopScan: () => void
-    connect: (device: HardwareWalletDevice) => Promise<HardwareWalletTransport>
+    connect: (
+        device: HardwareWalletDevice,
+        chainId: ChainId,
+    ) => Promise<HardwareWalletTransport>
     disconnect: () => Promise<void>
     error: Nullable<AppError>
 }
@@ -122,6 +126,7 @@ export const useLedgerConnection = (
     const connect = useCallback(
         async (
             device: HardwareWalletDevice,
+            chainId: ChainId,
         ): Promise<HardwareWalletTransport> => {
             stopScan()
             setConnectionStatus('connecting')
@@ -139,7 +144,7 @@ export const useLedgerConnection = (
             }
 
             try {
-                const transport = await provider.connect(device.id)
+                const transport = await provider.connect(device.id, chainId)
                 transportRef.current = transport
                 setConnectionStatus('connected')
                 return transport

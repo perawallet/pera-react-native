@@ -15,16 +15,11 @@ import type {
     WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    deviceIdFor,
     deviceIdForDeployment,
     deviceIdForScope,
     useDeviceStore,
 } from '../store'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-
-export const useDeviceID = (network: Network) => {
-    return useDeviceStore(state => deviceIdFor(state, network))
-}
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const useScopedDeviceID = (
     scope: Nullable<ChainScope>,

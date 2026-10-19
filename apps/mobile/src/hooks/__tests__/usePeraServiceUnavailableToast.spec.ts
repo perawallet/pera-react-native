@@ -51,8 +51,14 @@ describe('usePeraServiceUnavailableToast', () => {
 
         expect(mockSetOnPeraBackendUnavailable).toHaveBeenCalledTimes(1)
 
-        const betanet = new PeraServiceUnavailableError('betanet')
-        const custom = new PeraServiceUnavailableError('custom')
+        const betanet = new PeraServiceUnavailableError({
+            chainId: 'algorand',
+            networkId: 'betanet',
+        })
+        const custom = new PeraServiceUnavailableError({
+            chainId: 'algorand',
+            networkId: 'custom',
+        })
         // Same network id on another chain: a different scope, so it gets its
         // own toast.
         const fixtureBetanet = new PeraServiceUnavailableError({

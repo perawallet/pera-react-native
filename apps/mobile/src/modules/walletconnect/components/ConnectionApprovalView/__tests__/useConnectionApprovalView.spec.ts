@@ -58,6 +58,13 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView }),
 }))
 
+// Keyed by address, one entry per chain an account is on, as the real query returns it.
+const totals = vi.hoisted(() => ({
+    current: new Map<string, { fiatValue: unknown; nativeValue: unknown }>(),
+    query: vi.fn(),
+    sort: vi.fn(),
+}))
+
 const ACCOUNTS = [
     { id: 'acct-algo', chains: { algorand: { address: 'AAAA' } } },
     {
@@ -78,6 +85,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAllAccounts: () => ACCOUNTS,
+    useSigningAccountsOn: () => ACCOUNTS,
+    useAccountValueTotalsQuery: (...args: unknown[]) => {
+        totals.query(...args)
+        return { accountValueTotals: totals.current }
+    },
+    useSortedAccounts: (...args: unknown[]) => totals.sort(...args),
     signingAddressesOn: (
         account: (typeof ACCOUNTS)[number],
         _accounts: unknown,
@@ -115,6 +128,51 @@ describe('useConnectionApprovalView', () => {
         errorToast.mockClear()
         showError.mockClear()
         pushWebView.mockClear()
+    })
+
+    // The ranking itself is the accounts package's; what this hook owns is
+    // feeding it every chain's totals, so an Ethereum account ranks by its
+    // own balance instead of as if empty.
+    describe('sortedAccounts', () => {
+        beforeEach(() => {
+            totals.query.mockClear()
+            totals.sort.mockReset()
+            totals.sort.mockImplementation((accounts: unknown[]) => ({
+                sortedAccounts: [...accounts].reverse(),
+            }))
+        })
+
+        it('is the signing accounts in the order the shared sort gives them', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(makeProposal() as never),
+            )
+
+            expect(result.current.sortedAccounts.map(({ id }) => id)).toEqual([
+                'acct-eth-only',
+                'acct-both',
+                'acct-algo',
+            ])
+        })
+
+        it('sorts by the value totals of every chain, keyed by address', () => {
+            const accountValueTotals = new Map([
+                ['0xCCCC', { fiatValue: 50, nativeValue: 50 }],
+            ])
+            totals.current = accountValueTotals as never
+
+            renderHook(() => useConnectionApprovalView(makeProposal() as never))
+
+            expect(totals.query).toHaveBeenCalledWith(
+                ACCOUNTS,
+                expect.objectContaining({ chainId: 'algorand' }),
+                true,
+            )
+            expect(totals.sort).toHaveBeenCalledWith(
+                ACCOUNTS,
+                accountValueTotals,
+                'algorand',
+            )
+        })
     })
 
     it('approves through the proposal, with no registry lookup', async () => {

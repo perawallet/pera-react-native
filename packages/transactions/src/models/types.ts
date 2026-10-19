@@ -14,27 +14,6 @@ import type { Decimal } from 'decimal.js'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-/** Maps directly to the transaction types returned by the API. */
-export const TransactionTypes = {
-    /** Standard payment (ALGO transfer) */
-    PAY: 'pay',
-    /** Asset transfer (ASA) */
-    AXFER: 'axfer',
-    /** Asset create/modify/destroy */
-    ACFG: 'acfg',
-    AFRZ: 'afrz',
-    /** Smart contract interaction */
-    APPL: 'appl',
-    /** Consensus participation */
-    KEYREG: 'keyreg',
-    /** Proof that a participating account is still online */
-    HB: 'hb',
-    STPF: 'stpf',
-} as const
-
-export type TransactionType =
-    (typeof TransactionTypes)[keyof typeof TransactionTypes]
-
 export type TransactionHistoryStatus = TransactionRecord['status']
 
 export const TransactionHistoryStatuses = {
@@ -43,24 +22,6 @@ export const TransactionHistoryStatuses = {
     FAILED: 'failed',
     REPLACED: 'replaced',
 } as const satisfies Record<string, TransactionHistoryStatus>
-
-/** Aggregate details for a DEX swap, whose transactions are grouped. */
-export interface TransactionSwapGroupDetail {
-    /** Decimal string — uint64 ids must never live in a JS number. */
-    assetInId: Nullable<string>
-    assetInUnitName: string
-    /** 0-19. */
-    assetInDecimals: number
-    /** Decimal string. */
-    assetOutId: Nullable<string>
-    assetOutUnitName: string
-    /** 0-19. */
-    assetOutDecimals: number
-    /** Base units. */
-    amountIn: Decimal
-    /** Base units. */
-    amountOut: Decimal
-}
 
 export interface TransactionAssetSummary {
     /** Decimal string — uint64 ids must never live in a JS number. */
@@ -95,12 +56,10 @@ export interface TransactionInterpretedMeaning {
 
 export interface TransactionHistoryItem {
     id: string
-    txType: TransactionType
+    /** The chain's own type tag, interpreted only by that chain; empty until the chain lists the transaction. */
+    txType: string
     sender: string
-    /**
-     * The account debited by an asset transfer (`asnd`); null unless the
-     * transfer is a clawback, where `sender` is the authority instead.
-     */
+    /** The holder an asset transfer debits, when that isn't `sender`; null otherwise. */
     assetSender: Nullable<string>
     /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
@@ -110,27 +69,19 @@ export interface TransactionHistoryItem {
     status?: TransactionHistoryStatus
     /** Unix seconds. */
     roundTime: number
-    /** Only present for DEX swaps. */
-    swapGroupDetail: Nullable<TransactionSwapGroupDetail>
     interpretedMeaning: Nullable<TransactionInterpretedMeaning>
-    /** microAlgos. */
+    /** Base units of the chain's native asset. */
     fee: Decimal
-    /** Set for atomic groups. */
-    groupId: Nullable<string>
     /** Base units. */
     amount: Nullable<Decimal>
-    closeTo: Nullable<string>
-    /**
-     * Base units swept to `closeTo` when the sender closed the account (pay)
-     * or holding (axfer). Separate from `amount` — a close-out sends its whole
-     * balance here with `amount` 0.
-     */
-    closeAmount: Nullable<Decimal>
     asset: Nullable<TransactionAssetSummary>
-    applicationId: Nullable<string>
-    innerTransactionCount: Nullable<number>
     /** Empty when the API returns none. */
     balanceImpacts: TransactionBalanceImpact[]
+    /**
+     * The owning chain's own facts, read only by that chain and stored whole
+     * through its codec. Null when the chain has described none (a pending row).
+     */
+    chainData: unknown
 }
 
 export interface TransactionPaginationState {

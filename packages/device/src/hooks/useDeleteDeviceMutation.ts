@@ -12,24 +12,23 @@
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { deleteDevice } from './endpoints'
-import { useDeviceID } from './useDeviceID'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { useDeploymentDeviceID } from './useDeviceID'
 
 export const useDeleteDeviceMutation = (
     options?: UseMutationOptions<void, Error, void>,
 ) => {
-    const testNetDeviceID = useDeviceID(Networks.testnet)
-    const mainNetDeviceID = useDeviceID(Networks.mainnet)
+    const developerDeviceID = useDeploymentDeviceID('developer')
+    const liveDeviceID = useDeploymentDeviceID('live')
     return useMutation({
         mutationFn: async () => {
             // v3 takes `id` alone and prefers it over a push token when both
             // are sent, so a device whose push token was never granted can
             // still be deleted — v1 could not.
-            if (testNetDeviceID) {
-                await deleteDevice(Networks.testnet, { id: testNetDeviceID })
+            if (developerDeviceID) {
+                await deleteDevice('developer', { id: developerDeviceID })
             }
-            if (mainNetDeviceID) {
-                await deleteDevice(Networks.mainnet, { id: mainNetDeviceID })
+            if (liveDeviceID) {
+                await deleteDevice('live', { id: liveDeviceID })
             }
         },
         ...options,

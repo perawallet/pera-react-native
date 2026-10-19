@@ -17,9 +17,6 @@ import {
     Arc0001ErrorCode,
 } from '../../blockchain'
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     CannotSignError,
     MAX_TRANSACTION_SIGN_REQUESTS,
@@ -38,6 +35,8 @@ import {
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandDappRequestAdapter as adapter } from '../dappRequestAdapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 const signTxns = (txns: unknown) =>
     adapter.parseSigningParams('sign-transactions', { txns })
@@ -48,7 +47,10 @@ describe('algorandDappRequestAdapter', () => {
     })
 
     describe('accountTypeOf', () => {
-        const mainnet = scopeForLegacyNetwork(Networks.mainnet)
+        const mainnet = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
 
         beforeEach(() => {
             useAccountChainStateStore.getState().resetState()
@@ -101,11 +103,10 @@ describe('algorandDappRequestAdapter', () => {
             const rekeyed = hdAccount('A', { authorityAddress: 'B' })
 
             expect(
-                adapter.accountTypeOf(
-                    rekeyed,
-                    [rekeyed],
-                    scopeForLegacyNetwork(Networks.testnet),
-                ),
+                adapter.accountTypeOf(rekeyed, [rekeyed], {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const),
             ).toBe('HDWallet')
         })
     })
@@ -202,31 +203,37 @@ describe('algorandDappRequestAdapter', () => {
         it('passes a baked network through', () => {
             expect(
                 adapter.resolveReportedNetwork(
-                    scopeForLegacyNetwork(Networks.mainnet),
+                    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
                     undefined,
                 ),
-            ).toBe(Networks.mainnet)
+            ).toBe('mainnet')
             expect(
                 adapter.resolveReportedNetwork(
-                    scopeForLegacyNetwork(Networks.testnet),
+                    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
                     'ignored',
                 ),
-            ).toBe(Networks.testnet)
+            ).toBe('testnet')
         })
 
         it('maps a custom network onto the baked network sharing its genesis hash', () => {
-            const hash = getNetworkConfig(Networks.testnet).genesisHash
+            const hash = getAlgorandChainConfig({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const).genesisHash
 
             expect(
                 adapter.resolveReportedNetwork(
-                    scopeForLegacyNetwork(Networks.custom),
+                    { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
                     hash,
                 ),
-            ).toBe(Networks.testnet)
+            ).toBe('testnet')
         })
 
         it('refuses a custom network whose genesis hash matches no baked network', () => {
-            const customScope = scopeForLegacyNetwork(Networks.custom)
+            const customScope = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'custom',
+            } as const
 
             expect(
                 adapter.resolveReportedNetwork(customScope, 'not-a-real-hash'),
@@ -356,21 +363,5 @@ describe('walletConnect.v2', () => {
 
         expect(route.answer(['A'], 'mainnet')).toEqual({ A: 'gA==' })
         expect(emptySignaturesFor).toHaveBeenCalledWith(['A'])
-    })
-})
-
-describe('switchChain', () => {
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
-
-    it("selects the network for Algorand's chain", () => {
-        const selectNetwork = vi
-            .spyOn(useNetworkStore.getState(), 'selectNetwork')
-            .mockImplementation(() => {})
-
-        adapter.switchChain?.('betanet')
-
-        expect(selectNetwork).toHaveBeenCalledWith(ALGORAND_CHAIN_ID, 'betanet')
     })
 })

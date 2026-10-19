@@ -552,7 +552,7 @@ describe('useAccountValueTotalsQuery', () => {
             registerBothChains()
             // The Algorand scope is passed in; the second chain follows the
             // wallet's selection, which this puts on its test network.
-            useNetworkStore.getState().setNetwork('testnet')
+            useNetworkStore.getState().setMode('developer')
 
             try {
                 const { result } = renderHook(
@@ -578,7 +578,7 @@ describe('useAccountValueTotalsQuery', () => {
                     new Decimal(40),
                 )
             } finally {
-                useNetworkStore.getState().setNetwork('mainnet')
+                useNetworkStore.getState().setMode('live')
             }
         })
 

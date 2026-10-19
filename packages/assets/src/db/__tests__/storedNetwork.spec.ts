@@ -19,12 +19,15 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 import { updateAssetPeraMetadata, upsertAssets } from '../metadataRepository'
 import { recordPriceMisses, upsertAssetPrices } from '../pricesRepository'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const ASSET: PeraAsset = {
     assetId: '100',
@@ -53,9 +56,9 @@ describe('assets repositories store the scope key', () => {
 
     const storedNetworks = async (table: string): Promise<string[]> => {
         const rows = (await db.all(
-            sql.raw(`select network from ${table}`),
+            sql.raw(`select scope from ${table}`),
         )) as Array<[string]>
-        return rows.map(([network]) => network)
+        return rows.map(([scope]) => scope)
     }
 
     it('writes the scope key to assets_node and assets_pera', async () => {

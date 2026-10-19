@@ -192,6 +192,7 @@ export {
     type WarningDetector,
 } from './chain-adapter'
 export { composeAnalysis, reviewGroup } from './pipeline/composeAnalysis'
+export { bridgeTransactionReviewer } from './pipeline/transactionReviewerBridge'
 
 export {
     isExternalCallbackSource,

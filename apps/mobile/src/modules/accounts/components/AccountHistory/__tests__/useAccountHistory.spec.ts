@@ -12,6 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+const mockScopeNetwork = vi.hoisted(() => ({ current: 'mainnet' }))
+
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
@@ -19,12 +21,18 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     useChainCapability,
     useIsCapabilityRestricted,
-    useNetwork,
 } from '@perawallet/wallet-core-chain-shared'
 import {
+    historyChainAdapters,
     useCsvExportMutation,
     useTransactionHistoryQuery,
+    type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import {
+    algorandHistoryAdapter,
+    EMPTY_ALGORAND_HISTORY_DATA,
+} from '@perawallet/wallet-core-chain-algorand/transactions'
+import { Decimal } from 'decimal.js'
 import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterContent/types'
@@ -32,10 +40,8 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import {
     AppError,
     isPeraServiceUnavailableError,
-    type Network,
     type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -57,7 +63,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(),
     useAccountScope: (account: { chains: Record<string, unknown> } | null) => ({
         chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
-        networkId: 'mainnet',
+        networkId: mockScopeNetwork.current,
     }),
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
@@ -81,14 +87,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
         >()
     return {
         ...actual,
-        useNetwork: vi.fn(),
         useChainCapability: vi.fn(actual.useChainCapability),
         useIsCapabilityRestricted: vi.fn(actual.useIsCapabilityRestricted),
     }
 })
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    CSV_MIME_TYPE: 'text/csv',
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-transactions')
+    >()),
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
@@ -139,13 +146,23 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const SWAP_DETAIL = {
+    assetInId: '0',
+    assetInUnitName: 'ALGO',
+    assetInDecimals: 6,
+    assetOutId: '31566704',
+    assetOutUnitName: 'USDC',
+    assetOutDecimals: 6,
+    amountIn: new Decimal(1_000_000),
+    amountOut: new Decimal(500_000),
+}
+
 describe('useAccountHistory', () => {
     const ACCOUNT_ADDRESS =
         'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
         chains: { algorand: { address: ACCOUNT_ADDRESS } },
     }
-    const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
     const mockShowError = vi.fn()
     const mockExportCsv = vi.fn()
@@ -155,6 +172,8 @@ describe('useAccountHistory', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        historyChainAdapters.reset()
+        historyChainAdapters.register(algorandHistoryAdapter)
         vi.mocked(useChainCapability).mockReset()
         vi.mocked(useIsCapabilityRestricted).mockReset()
         mockNavigate.mockReset()
@@ -167,8 +186,7 @@ describe('useAccountHistory', () => {
         } as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
+        mockScopeNetwork.current = 'mainnet'
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
@@ -473,7 +491,7 @@ describe('useAccountHistory', () => {
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
                 [ACCOUNT_ADDRESS],
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
         })
 
@@ -622,9 +640,8 @@ describe('useAccountHistory', () => {
         })
     })
 
-    const mockUnavailableNetwork = (network: Network) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue({ network } as any)
+    const mockUnavailableNetwork = (network: string) => {
+        mockScopeNetwork.current = network
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [{ id: '1', roundTime: 1_704_067_200 }],
             isLoading: false,
@@ -672,7 +689,7 @@ describe('useAccountHistory', () => {
             expect(result.current.isCsvExportVisible).toBe(false)
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'keeps the export action visible on %s',
             network => {
                 mockUnavailableNetwork(network)
@@ -683,7 +700,7 @@ describe('useAccountHistory', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'explains why instead of exporting on %s',
             network => {
                 mockUnavailableNetwork(network)
@@ -704,132 +721,71 @@ describe('useAccountHistory', () => {
     })
 
     describe('transaction press', () => {
-        it('navigates to TransactionDetails for a regular transaction without groupId', () => {
+        const press = (chainData: unknown) => {
             const { result } = renderHook(() => useAccountHistory())
-
-            const mockTransaction = {
-                id: 'TX_123',
-                txType: 'pay',
-                sender: 'sender-address',
-                receiver: 'receiver-address',
-                confirmedRound: 100,
-                roundTime: 1_704_067_200,
-                swapGroupDetail: null,
-                interpretedMeaning: null,
-                fee: '1000',
-                groupId: null,
-                amount: '5000000',
-                closeTo: null,
-                asset: null,
-                applicationId: null,
-                innerTransactionCount: null,
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            result.current.handleTransactionPress(mockTransaction as any)
-
-            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: mockTransaction.id,
-                historyTransaction: mockTransaction,
-            })
-        })
-
-        it('navigates to TransactionDetails for a non-swap transaction with groupId', () => {
-            const { result } = renderHook(() => useAccountHistory())
-
-            const mockTransaction = {
-                id: 'TX_456',
-                txType: 'pay',
-                sender: 'sender-address',
-                receiver: 'receiver-address',
-                confirmedRound: 200,
-                roundTime: 1_704_153_600,
-                swapGroupDetail: null,
-                interpretedMeaning: null,
-                fee: '1000',
-                groupId: 'GROUP_XYZ',
-                amount: '5000000',
-                closeTo: null,
-                asset: null,
-                applicationId: null,
-                innerTransactionCount: null,
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            result.current.handleTransactionPress(mockTransaction as any)
-
-            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: mockTransaction.id,
-                historyTransaction: mockTransaction,
-            })
-        })
-
-        it('navigates to GroupTransactionList for a swap transaction with groupId', () => {
-            const { result } = renderHook(() => useAccountHistory())
-
-            const mockTransaction = {
-                id: 'TX_SWAP_789',
+            const transaction = {
+                id: 'TX_PRESS',
                 txType: 'appl',
                 sender: 'sender-address',
+                assetSender: null,
                 receiver: null,
                 confirmedRound: 300,
                 roundTime: 1_704_240_000,
-                swapGroupDetail: {
-                    amountIn: '1000000',
-                    assetInUnitName: 'ALGO',
-                    amountOut: '500000',
-                    assetOutUnitName: 'USDC',
-                },
                 interpretedMeaning: null,
-                fee: '2000',
-                groupId: 'SWAP_GROUP_ABC',
+                fee: new Decimal(2000),
                 amount: null,
-                closeTo: null,
                 asset: null,
-                applicationId: '12345',
-                innerTransactionCount: 3,
-            }
+                balanceImpacts: [],
+                chainData,
+            } satisfies TransactionHistoryItem
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            result.current.handleTransactionPress(mockTransaction as any)
+            result.current.handleTransactionPress(transaction)
+
+            return transaction
+        }
+
+        it('navigates to GroupTransactionList for an Algorand swap row in a group', () => {
+            press({
+                ...EMPTY_ALGORAND_HISTORY_DATA,
+                groupId: 'SWAP_GROUP_ABC',
+                swapGroupDetail: SWAP_DETAIL,
+            })
 
             expect(mockNavigate).toHaveBeenCalledWith('GroupTransactionList', {
                 groupId: 'SWAP_GROUP_ABC',
             })
         })
 
-        it('navigates to TransactionDetails for a swap transaction without groupId', () => {
-            const { result } = renderHook(() => useAccountHistory())
-
-            const mockTransaction = {
-                id: 'TX_SWAP_NO_GROUP',
-                txType: 'appl',
-                sender: 'sender-address',
-                receiver: null,
-                confirmedRound: 400,
-                roundTime: 1_704_326_400,
-                swapGroupDetail: {
-                    amountIn: '1000000',
-                    assetInUnitName: 'ALGO',
-                    amountOut: '500000',
-                    assetOutUnitName: 'USDC',
-                },
-                interpretedMeaning: null,
-                fee: '2000',
-                groupId: null,
-                amount: null,
-                closeTo: null,
-                asset: null,
-                applicationId: '12345',
-                innerTransactionCount: 3,
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            result.current.handleTransactionPress(mockTransaction as any)
+        it('navigates to TransactionDetails for a grouped row that is not a swap', () => {
+            const transaction = press({
+                ...EMPTY_ALGORAND_HISTORY_DATA,
+                groupId: 'GROUP_XYZ',
+            })
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: mockTransaction.id,
-                historyTransaction: mockTransaction,
+                transactionId: transaction.id,
+                historyTransaction: transaction,
+            })
+        })
+
+        it('navigates to TransactionDetails for a swap row without a group', () => {
+            const transaction = press({
+                ...EMPTY_ALGORAND_HISTORY_DATA,
+                swapGroupDetail: SWAP_DETAIL,
+            })
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: transaction.id,
+                historyTransaction: transaction,
+            })
+        })
+
+        it('navigates to TransactionDetails for a row with no chain data', () => {
+            const transaction = press(null)
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: transaction.id,
+                historyTransaction: transaction,
             })
         })
     })

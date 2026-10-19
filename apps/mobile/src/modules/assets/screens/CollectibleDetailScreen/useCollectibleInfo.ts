@@ -14,8 +14,8 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useClipboard } from '@hooks/useClipboard'
@@ -24,8 +24,8 @@ import { routeCapabilities } from '@routes/capabilities'
 
 export const useCollectibleInfo = (asset: PeraAsset) => {
     const { pushWebView } = useWebView()
-    const { network } = useNetwork()
-    const config = getNetworkConfig(network)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const config = getAlgorandChainConfig(scope)
     const { navigate } = useAppNavigation()
     const { copyToClipboard } = useClipboard()
 

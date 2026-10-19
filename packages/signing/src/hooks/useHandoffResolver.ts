@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueries, type QueryKey } from '@tanstack/react-query'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
     HandoffPollOutcome,
     TerminalHandoffOutcome,
@@ -107,15 +107,6 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
      * Omit to disable the fallback.
      */
     registeredAtOf?: (item: TItem) => number
-    /**
-     * When set (together with {@link networkOf}), only handoffs on this network
-     * are driven — others wait until the active network switches back. Consumers
-     * that submit to algod opt in so submission never targets the wrong node;
-     * consumers that only hand bytes back to a peer (WalletConnect) leave it
-     * unset and drive every handoff on its own captured network.
-     */
-    activeNetwork?: Network
-    networkOf?: (item: TItem) => Network
 }
 
 /**
@@ -123,10 +114,10 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
  * the WalletConnect sync-flow resolver and the shared-account swap resolver.
  *
  * Owns the parts both consumers share verbatim: one `useQueries` poll per
- * handoff with a stateless two-tier backoff cadence, an optional active-network
- * filter, a `resolvedRef` guard (pruned to the live set) that delivers each
- * terminal outcome exactly once even if a late poll lands before the registry
- * re-render, and the `classify → resolve` dispatch. Consumers supply only their
+ * handoff with a stateless two-tier backoff cadence, a `resolvedRef` guard
+ * (pruned to the live set) that delivers each terminal outcome exactly once
+ * even if a late poll lands before the registry re-render, and the
+ * `classify → resolve` dispatch. Consumers supply only their
  * registry source, the per-handoff poll, and the terminal `resolve`.
  */
 export const useHandoffResolver = <TItem, TRaw, TDetail>({
@@ -135,20 +126,9 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
     poll,
     classify,
     resolve,
-    activeNetwork,
-    networkOf,
     expiresAtOf,
     registeredAtOf,
 }: UseHandoffResolverArgs<TItem, TRaw, TDetail>): void => {
-    // Opt-in active-network filter. Without it, every handoff is driven on its
-    // own captured network (the WalletConnect behavior).
-    const active = useMemo(() => {
-        if (activeNetwork === undefined || networkOf === undefined) {
-            return handoffs
-        }
-        return handoffs.filter(item => networkOf(item) === activeNetwork)
-    }, [handoffs, activeNetwork, networkOf])
-
     // Sign-request ids that have delivered a terminal outcome, or are mid-
     // classification and may still deliver one — guards against a late poll
     // re-delivering before the registry-remove re-render lands. A non-terminal
@@ -156,10 +136,10 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
     const resolvedRef = useRef<Set<string>>(new Set())
 
     // One poll query per handoff. `useQueries` handles the dynamic count;
-    // results stay index-aligned with `active`.
+    // results stay index-aligned with `handoffs`.
     const queries = useMemo(
         () =>
-            active.map(item => {
+            handoffs.map(item => {
                 const descriptor = poll(item)
                 return {
                     ...descriptor,
@@ -175,21 +155,21 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
                             : BASE_POLL_INTERVAL_MS,
                 }
             }),
-        [active, poll],
+        [handoffs, poll],
     )
 
     const results = useQueries({ queries })
 
     useEffect(() => {
-        // Drop guard entries for handoffs that have left the active set so the
+        // Drop guard entries for handoffs that have left the handoff set so the
         // set stays bounded across a long-lived session.
-        const activeIds = new Set(active.map(keyOf))
+        const activeIds = new Set(handoffs.map(keyOf))
         for (const id of resolvedRef.current) {
             if (!activeIds.has(id)) resolvedRef.current.delete(id)
         }
 
         results.forEach((result, index) => {
-            const item = active[index]
+            const item = handoffs[index]
             if (!item) return
 
             const key = keyOf(item)
@@ -254,5 +234,13 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
                 await resolve(outcome, item, detail)
             })()
         })
-    }, [results, active, keyOf, classify, resolve, expiresAtOf, registeredAtOf])
+    }, [
+        results,
+        handoffs,
+        keyOf,
+        classify,
+        resolve,
+        expiresAtOf,
+        registeredAtOf,
+    ])
 }

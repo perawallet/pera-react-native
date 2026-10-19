@@ -40,8 +40,12 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    getSelectedScope,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     bootConnections,
     createConnectionRegistry,
@@ -142,9 +146,12 @@ export const runOffscreenApp = async ({
     const storage = provider.keyValueStorage
     const sessionKeys = createStorageSessionKeyStore(storage)
     const registry = createConnectionRegistry({ store })
+    const getNetworkId = (chainId: ChainId) =>
+        getSelectedScope(chainId).networkId
     registry.register(
         createWalletConnectV1Handler({
-            getNetwork: () => useNetworkStore.getState().network,
+            chainId: ALGORAND_CHAIN_ID,
+            getNetworkId,
             sessionKeys,
         }),
     )
@@ -152,7 +159,7 @@ export const runOffscreenApp = async ({
         createDappConnectionHandler({
             transport: createChromeDappTransport(),
             chainId: ALGORAND_CHAIN_ID,
-            getNetwork: () => useNetworkStore.getState().network,
+            getNetworkId,
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => {
@@ -172,7 +179,7 @@ export const runOffscreenApp = async ({
     )
     const connectionsHost = startConnectionsHost({
         registry,
-        network: () => useNetworkStore.getState().network,
+        activeNetworkId: () => getSelectedScope(ALGORAND_CHAIN_ID).networkId,
         knownAddresses: () =>
             useAccountsStore.getState().accounts.flatMap(account => {
                 const address = chainAccountOf(

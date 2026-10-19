@@ -48,12 +48,12 @@ describe('device endpoints', () => {
     })
 
     it('registers via POST to api/v3/devices with the serialized body', async () => {
-        await registerDevice('mainnet', registration)
+        await registerDevice('live', registration)
 
         expect(mockedQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                deployment: 'live',
                 method: 'POST',
                 url: 'api/v3/devices',
                 data: {
@@ -74,18 +74,18 @@ describe('device endpoints', () => {
     })
 
     it('returns the response payload', async () => {
-        const result = await registerDevice('mainnet', registration)
+        const result = await registerDevice('live', registration)
 
         expect(result).toEqual({ id: 'new-id' })
     })
 
     it('deletes via DELETE to api/v3/devices with a text response', async () => {
-        await deleteDevice('mainnet', { id: 'DEV-1' })
+        await deleteDevice('live', { id: 'DEV-1' })
 
         expect(mockedQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                deployment: 'live',
                 method: 'DELETE',
                 url: 'api/v3/devices',
                 data: { id: 'DEV-1' },

@@ -11,7 +11,7 @@
  */
 
 import { Dialog, useTheme } from '@rneui/themed'
-import { formatDatetime, type Network } from '@perawallet/wallet-core-shared'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
 import {
@@ -28,10 +28,12 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { PermissionItem } from '@modules/walletconnect'
-import { useSettingsWalletConnectDetailsScreen } from './useSettingsWalletConnectDetailsScreen'
+import {
+    useSettingsWalletConnectDetailsScreen,
+    type ConnectedNetworkLabel,
+} from './useSettingsWalletConnectDetailsScreen'
 import { useStyles } from './styles'
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -42,28 +44,28 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     'WalletConnectSettingsDetails'
 >
 
-// `custom` names a runtime-configurable node slot, not a network a user picks.
-const ConnectedNetworks = ({ networks }: { networks: Network[] }) => {
+const ConnectedNetworks = ({
+    networks,
+}: {
+    networks: ConnectedNetworkLabel[]
+}) => {
     const styles = useStyles()
-    const networkLabel = useNetworkLabel()
-    const textStyleFor = (network: Network) => {
-        if (network === 'mainnet') return styles.mainnetText
-        if (network === 'testnet') return styles.testnetText
+    const textStyleFor = (tone: ConnectedNetworkLabel['tone']) => {
+        if (tone === 'mainnet') return styles.mainnetText
+        if (tone === 'testnet') return styles.testnetText
         return styles.otherNetworkText
     }
 
     return (
         <PWView style={styles.networkContainer}>
-            {networks
-                .filter(network => network !== 'custom')
-                .map(network => (
-                    <PWText
-                        key={network}
-                        style={textStyleFor(network)}
-                    >
-                        {networkLabel(network)}
-                    </PWText>
-                ))}
+            {networks.map(network => (
+                <PWText
+                    key={network.key}
+                    style={textStyleFor(network.tone)}
+                >
+                    {network.label}
+                </PWText>
+            ))}
         </PWView>
     )
 }
@@ -148,19 +150,17 @@ export const SettingsWalletConnectDetailsScreen = ({
                         <PWText>
                             {t('walletconnect.settings.connected_accounts')}
                         </PWText>
-                        {connectedAccounts.map(account => (
+                        {connectedAccounts.map(({ account, networks }) => (
                             <PWView
                                 style={styles.accountRow}
-                                key={account?.id}
+                                key={account.id}
                             >
                                 <AccountDisplay
                                     account={account}
                                     showChevron={false}
                                     style={styles.accountDisplay}
                                 />
-                                <ConnectedNetworks
-                                    networks={connection.networks}
-                                />
+                                <ConnectedNetworks networks={networks} />
                             </PWView>
                         ))}
                     </PWView>

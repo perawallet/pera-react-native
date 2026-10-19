@@ -11,7 +11,6 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-config'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
@@ -82,17 +81,13 @@ describe('assertTransactionsMatchNetwork', () => {
         ]
 
         expect(() =>
-            assertTransactionsMatchNetwork(
-                transactions,
-                Networks.custom,
-                runtimeHash,
-            ),
+            assertTransactionsMatchNetwork(transactions, 'custom', runtimeHash),
         ).not.toThrow()
 
         expect(() =>
             assertTransactionsMatchNetwork(
                 transactions,
-                Networks.custom,
+                'custom',
                 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0=',
             ),
         ).toThrow(GenesisHashMismatchError)

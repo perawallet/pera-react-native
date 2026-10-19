@@ -11,9 +11,9 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { nameServiceContractTests } from '@perawallet/wallet-core-nfd/testing'
 import { algorandNameServiceAdapter } from '../adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const VALID = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
 
@@ -33,7 +33,7 @@ nameServiceContractTests(() => algorandNameServiceAdapter, {
         params: {
             name: 'fixture.algo',
             address: VALID,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         },
         arrangeUnreachable: () => {
             fetchMock.mockRejectedValue(new TypeError('Network request failed'))

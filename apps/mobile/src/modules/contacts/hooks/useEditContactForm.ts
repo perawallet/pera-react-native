@@ -33,6 +33,7 @@ import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useIsContactBackedUp } from '@modules/cloud-backup'
 import { trackEvent, ContactsEvent } from '@analytics'
+import { contactFamilyOf } from '../utils/contactFamily'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -76,17 +77,18 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const route = useRoute<RouteProp<ContactsStackParamsList, 'EditContact'>>()
     const routeAddress = route.params?.address
     const routeLabel = route.params?.label
+    const family = contactFamilyOf(route.params?.chainId)
     const targetContact = useMemo<NewContact | null>(() => {
         if (!routeAddress) return selectedContact
         return (
             contacts.find(
-                contact => contact.addresses.algorand === routeAddress,
+                contact => contact.addresses[family] === routeAddress,
             ) ?? {
-                addresses: { algorand: routeAddress },
+                addresses: { [family]: routeAddress },
                 name: routeLabel ?? '',
             }
         )
-    }, [routeAddress, routeLabel, contacts, selectedContact])
+    }, [family, routeAddress, routeLabel, contacts, selectedContact])
 
     const form = useContactForm(targetContact)
     const targetId = targetContact?.id ?? ''

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, afterEach } from 'vitest'
 import { installAbortSignalThrowIfAborted } from '../abortSignal'
 

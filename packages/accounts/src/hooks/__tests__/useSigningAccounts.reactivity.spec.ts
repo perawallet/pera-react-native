@@ -30,7 +30,7 @@ describe('useSigningAccounts', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         registerFakeAccountsChain()
     })
 

@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { buildBackupRequestProof } from '../crypto/buildBackupRequestProof'
 import { withBackupAuthSecretKey } from '../credentials/keyStorage'
 import type { BackupId, DeviceId } from '../models'
 import { API_PREFIX, backupRoot } from './constants'
 
 type SignedRequestParams<TData> = {
-    network: Network
     method: 'GET' | 'POST' | 'PUT' | 'DELETE'
     backupId: BackupId
     pathSuffix: string
@@ -35,7 +34,6 @@ export class BackupAuthKeyMissingError extends Error {
 }
 
 export const signedBackupRequest = async <TResponse, TData = unknown>({
-    network,
     method,
     backupId,
     pathSuffix,
@@ -62,7 +60,6 @@ export const signedBackupRequest = async <TResponse, TData = unknown>({
 
     const response = await queryClient<TResponse>({
         backend: 'backup',
-        network,
         method,
         url,
         ...(body !== undefined ? { body } : {}),

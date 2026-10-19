@@ -24,10 +24,7 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import {
-    getChainDescriptor,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import { useNavigation } from '@react-navigation/native'
@@ -87,7 +84,6 @@ export const useSendDestinationRouter = () => {
         isError: isExternalQueryError,
     } = useOnChainAccountStateQuery(pendingExternalAddress ?? '', scope)
 
-    const { network } = useNetwork()
     const canUseAssetInbox = useCapability({
         chain: { chainId: scope.chainId, capability: 'assetInbox' },
     })
@@ -98,7 +94,7 @@ export const useSendDestinationRouter = () => {
     // Pera-backed networks. Block the route up front instead of landing the
     // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
-        if (!canUseAssetInbox || getArc59Config(network) === null) {
+        if (!canUseAssetInbox || getArc59Config(scope) === null) {
             showToast({
                 title: t('send_funds.destination.inbox_unavailable_title'),
                 body: t('send_funds.destination.inbox_unavailable_body'),
@@ -108,7 +104,7 @@ export const useSendDestinationRouter = () => {
         }
         setSendMode('sendArc59')
         navigation.navigate('ARC59SendSummary')
-    }, [canUseAssetInbox, network, showToast, t, setSendMode, navigation])
+    }, [canUseAssetInbox, scope, showToast, t, setSendMode, navigation])
 
     useEffect(() => {
         if (!pendingExternalAddress || !selectedAsset) return

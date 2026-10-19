@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { fetchArc59SendSummary, fetchArc59AssetRequests } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -44,7 +45,7 @@ describe('fetchArc59SendSummary', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             method: 'GET',
             url: `/v1/asa-inboxes/summary/send-flow/${RECEIVER}/${ASSET_ID}/`,
         })
@@ -56,7 +57,12 @@ describe('fetchArc59SendSummary', () => {
         await fetchArc59SendSummary('mainnet', RECEIVER, ASSET_ID)
 
         expect(queryClient).toHaveBeenCalledWith(
-            expect.objectContaining({ network: 'mainnet' }),
+            expect.objectContaining({
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
+            }),
         )
     })
 
@@ -166,7 +172,7 @@ describe('fetchArc59AssetRequests', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             method: 'GET',
             url: '/v1/asa-inboxes/requests/ADDR1/',
         })

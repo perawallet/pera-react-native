@@ -103,12 +103,12 @@ describe('withLedgerSession', () => {
         const result = await withLedgerSession(
             makeAccount(),
             ADDRESS,
-            { registry, callbacks: { onPhaseChange } },
+            { registry, chainId: 'algorand', callbacks: { onPhaseChange } },
             operation,
         )
 
         expect(result).toBe('signed')
-        expect(provider.connect).toHaveBeenCalledWith('device-1')
+        expect(provider.connect).toHaveBeenCalledWith('device-1', 'algorand')
         expect(transport.getAddress).toHaveBeenCalledWith(3, false)
         expect(operation).toHaveBeenCalledWith({
             transport,
@@ -124,6 +124,17 @@ describe('withLedgerSession', () => {
         expect(transport.disconnect).toHaveBeenCalledTimes(1)
     })
 
+    it('connects the device for the session chain', async () => {
+        await withLedgerSession(
+            makeAccount(),
+            ADDRESS,
+            { registry, chainId: 'ethereum' },
+            vi.fn(),
+        )
+
+        expect(provider.connect).toHaveBeenCalledWith('device-1', 'ethereum')
+    })
+
     it('throws transport_unavailable without reporting onError when no provider matches', async () => {
         const onError = vi.fn()
         const operation = vi.fn()
@@ -133,6 +144,7 @@ describe('withLedgerSession', () => {
             ADDRESS,
             {
                 registry: createHardwareWalletRegistry(),
+                chainId: 'algorand',
                 callbacks: { onError },
             },
             operation,
@@ -157,6 +169,7 @@ describe('withLedgerSession', () => {
                 ADDRESS,
                 {
                     registry,
+                    chainId: 'algorand',
                     callbacks: { signal: controller.signal, onError },
                 },
                 vi.fn(),
@@ -181,7 +194,7 @@ describe('withLedgerSession', () => {
             withLedgerSession(
                 makeAccount(),
                 ADDRESS,
-                { registry, callbacks: { onError } },
+                { registry, chainId: 'algorand', callbacks: { onError } },
                 operation,
             ),
         ).rejects.toBeInstanceOf(LedgerAddressMismatchError)
@@ -196,7 +209,12 @@ describe('withLedgerSession', () => {
         vi.mocked(provider.connect).mockReturnValue(new Promise(() => {}))
 
         await expect(
-            withLedgerSession(makeAccount(), ADDRESS, { registry }, vi.fn()),
+            withLedgerSession(
+                makeAccount(),
+                ADDRESS,
+                { registry, chainId: 'algorand' },
+                vi.fn(),
+            ),
         ).rejects.toBeInstanceOf(LedgerDeviceNotFoundError)
     })
 
@@ -207,7 +225,7 @@ describe('withLedgerSession', () => {
             withLedgerSession(
                 makeAccount(),
                 ADDRESS,
-                { registry, callbacks: { onError } },
+                { registry, chainId: 'algorand', callbacks: { onError } },
                 async () => {
                     throw new LedgerAppOutdatedError()
                 },
@@ -222,7 +240,7 @@ describe('withLedgerSession', () => {
         const promise = withLedgerSession(
             makeAccount(),
             ADDRESS,
-            { registry, callbacks: { onError } },
+            { registry, chainId: 'algorand', callbacks: { onError } },
             async () => {
                 throw new Error('boom')
             },
@@ -250,7 +268,7 @@ describe('withLedgerSession', () => {
         await withLedgerSession(
             makeAccount(),
             ADDRESS,
-            { registry },
+            { registry, chainId: 'algorand' },
             async () => 'ok',
         )
 
@@ -271,7 +289,7 @@ describe('withLedgerSession', () => {
             withLedgerSession(
                 makeAccount(),
                 ADDRESS,
-                { registry },
+                { registry, chainId: 'algorand' },
                 ({ guard }) => {
                     const pending = guard.race(new Promise<never>(() => {}))
                     fireDisconnect()
@@ -293,7 +311,11 @@ describe('withLedgerSession', () => {
         const promise = withLedgerSession(
             makeAccount(),
             ADDRESS,
-            { registry, callbacks: { signal: controller.signal } },
+            {
+                registry,
+                chainId: 'algorand',
+                callbacks: { signal: controller.signal },
+            },
             () =>
                 new Promise<string>(resolve => {
                     release = () => resolve('done')
@@ -319,7 +341,7 @@ describe('withLedgerSession', () => {
             withLedgerSession(
                 makeAccount(),
                 ADDRESS,
-                { registry },
+                { registry, chainId: 'algorand' },
                 async () => 'ok',
             ),
         ).resolves.toBe('ok')

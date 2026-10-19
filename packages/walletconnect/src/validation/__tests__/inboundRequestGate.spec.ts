@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
 import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
@@ -63,7 +62,7 @@ const KNOWN = ['AAAA', 'BBBB']
 const signTxnPayload = (params: unknown) => ({ id: 1, params })
 
 const baseInput = {
-    network: Networks.mainnet,
+    scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
     sessionChainId: AlgorandWalletConnectChainId.mainnet as number | undefined,
     knownAddresses: KNOWN,
 }
@@ -156,7 +155,7 @@ describe('gateSignDataRequest', () => {
     it('rejects a payload with no numeric id', () => {
         const result = gateSignDataRequest({
             payload: { params: {} },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
@@ -166,7 +165,7 @@ describe('gateSignDataRequest', () => {
     it('rejects when params is an array (the algo_signTxn envelope shape arriving on the wrong method)', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: [{}] },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
@@ -176,7 +175,7 @@ describe('gateSignDataRequest', () => {
     it('rejects a chain id for the other network', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: AlgorandWalletConnectChainId.testnet,
         })
         expect(result).toMatchObject({
@@ -190,7 +189,7 @@ describe('gateSignDataRequest', () => {
     it('rejects an unknown session with a session-not-found reason, not the wrong-network one', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: undefined,
         })
         expect(result).toEqual({
@@ -205,7 +204,7 @@ describe('gateSignDataRequest', () => {
         const payload = { data: 'ZGF0YQ==' }
         const result = gateSignDataRequest({
             payload: { id: 1, params: payload },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
 
@@ -220,7 +219,7 @@ describe('gateSignDataRequest', () => {
         })
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result).toEqual({

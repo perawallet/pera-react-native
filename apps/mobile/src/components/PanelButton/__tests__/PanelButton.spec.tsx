@@ -30,18 +30,6 @@ describe('PanelButton', () => {
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 
-    it('renders the title correctly', () => {
-        render(
-            <PanelButton
-                title='Button Title'
-                titleWeight='h4'
-                onPress={() => {}}
-            />,
-        )
-
-        expect(screen.getByText('Button Title')).toBeTruthy()
-    })
-
     it('renders the description when provided', () => {
         render(
             <PanelButton
@@ -122,24 +110,7 @@ describe('PanelButton', () => {
         expect(screen.queryByText('NEW')).toBeNull()
     })
 
-    it('renders the learn-more link and fires its own onPress without triggering the row onPress', () => {
-        const onPress = vi.fn()
-        const onLearnMore = vi.fn()
-        render(
-            <PanelButton
-                title='Quantum'
-                titleWeight='h3'
-                learnMore={{ label: 'Learn more', onPress: onLearnMore }}
-                onPress={onPress}
-            />,
-        )
-
-        fireEvent.click(screen.getByText('Learn more'))
-        expect(onLearnMore).toHaveBeenCalledTimes(1)
-        expect(onPress).not.toHaveBeenCalled()
-    })
-
-    it('renders the badge alongside the learn-more link', () => {
+    it('renders the learn-more link beside the badge and fires its own onPress without triggering the row onPress', () => {
         const onPress = vi.fn()
         const onLearnMore = vi.fn()
         render(

@@ -22,7 +22,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 
 // Minimal structural view of algosdk's SimulateResponse — only the inner-txn
 // path we walk. Structural typing keeps us decoupled from the SDK's model

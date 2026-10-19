@@ -65,7 +65,6 @@ describe('signedBackupRequest', () => {
 
     it('attaches signed auth headers and percent-encodes the backupId in the url', async () => {
         await signedBackupRequest({
-            network: 'mainnet',
             method: 'GET',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/manifest',
@@ -91,7 +90,6 @@ describe('signedBackupRequest', () => {
 
     it('sends and hashes the same body bytes for POST', async () => {
         await signedBackupRequest({
-            network: 'mainnet',
             method: 'POST',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/items/read',
@@ -115,7 +113,6 @@ describe('signedBackupRequest', () => {
 
     it('forwards query params without including them in the signed path', async () => {
         await signedBackupRequest({
-            network: 'mainnet',
             method: 'GET',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/delta',
@@ -143,7 +140,6 @@ describe('signedBackupRequest', () => {
 
         await expect(
             signedBackupRequest({
-                network: 'mainnet',
                 method: 'GET',
                 backupId: 'did:pera:ADDR',
                 pathSuffix: '/manifest',

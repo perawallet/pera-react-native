@@ -40,6 +40,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
     },
     {
+        file: 'packages/dapp/src/handler.ts',
+        text: 'scope.chainId === deps.chainId',
+        reason: 'Matches whichever chain the handler was built for, never a named chain.',
+    },
+    {
         file: 'packages/walletconnect/src/v2/handler.ts',
         text: 'event.params.chainId !== activeChainId',
         reason: "WalletConnect's chainId is a CAIP-2 string, not a ChainId.",
@@ -112,7 +117,7 @@ const ALLOWED: readonly Allowed[] = [
     {
         file: 'packages/deeplinks/src/pera-link-chain.ts',
         text: "'algorand'",
-        reason: "Pera links name no chain yet and every one issued so far is Algorand's; this file is their one legacy default.",
+        reason: "A Pera link without chain= is Algorand's, as every link issued before the param was; this file is their one legacy default.",
     },
     {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',

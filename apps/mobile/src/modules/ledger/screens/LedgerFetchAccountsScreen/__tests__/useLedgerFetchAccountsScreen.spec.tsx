@@ -80,7 +80,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -129,6 +129,19 @@ describe('useLedgerFetchAccountsScreen - connecting state', () => {
 
         expect(result.current.isDiscovering).toBe(true)
         expect(result.current.progress).toEqual({ current: 1, total: null })
+    })
+
+    it('discovers for the legacy chain until the flow carries a choice', async () => {
+        mocks.connectAndDiscoverAccounts.mockReturnValue(new Promise(() => {}))
+
+        renderHook(() => useLedgerFetchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mocks.connectAndDiscoverAccounts).toHaveBeenCalled()
+        })
+        expect(mocks.connectAndDiscoverAccounts.mock.calls[0][0]).toMatchObject(
+            { chainId: 'algorand' },
+        )
     })
 
     it('exposes the device name for the connecting copy', () => {

@@ -58,9 +58,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => mockNetwork,
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 describe('useUpdateAccount', () => {
     beforeEach(() => {

@@ -12,7 +12,6 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { registerBackup } from '../api'
 import type { BackupId, DeviceId } from '../models'
 
@@ -20,7 +19,6 @@ type RegisterCloudBackupParams = {
     mnemonic: string[]
     salt: string
     deviceId: DeviceId
-    network: Network
 }
 
 export type RegisterCloudBackupResult = {
@@ -36,7 +34,6 @@ export const registerCloudBackup = async ({
     mnemonic,
     salt,
     deviceId,
-    network,
 }: RegisterCloudBackupParams): Promise<RegisterCloudBackupResult> => {
     // Lazy import keeps tweetnacl/@noble/argon2 out of the startup module graph.
     const { buildBackupRegisterProof, deriveBackupKeys } =
@@ -54,7 +51,7 @@ export const registerCloudBackup = async ({
             authSecretKey,
         })
 
-        await registerBackup(network, {
+        await registerBackup({
             backup_id: backupId,
             public_key: publicKey,
             device_id: deviceId,

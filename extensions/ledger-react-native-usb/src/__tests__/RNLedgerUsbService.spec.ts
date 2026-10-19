@@ -68,11 +68,12 @@ const NANO_X_DESCRIPTOR = {
 
 const connectToFirstDevice = async (
     descriptor: typeof NANO_S_PLUS_DESCRIPTOR = NANO_S_PLUS_DESCRIPTOR,
+    chainId = 'test',
 ) => {
     transportListMock.mockResolvedValue([descriptor])
     return new RNLedgerUsbService()
         .createTransportProvider()
-        .connect('ignored-by-usb')
+        .connect('ignored-by-usb', chainId)
 }
 
 describe('RNLedgerUsbService', () => {
@@ -209,7 +210,7 @@ describe('RNLedgerUsbService', () => {
     test('connect rejects when no Ledger is connected over USB', async () => {
         const provider = new RNLedgerUsbService().createTransportProvider()
 
-        await expect(provider.connect('any-id')).rejects.toBeInstanceOf(
+        await expect(provider.connect('any-id', 'test')).rejects.toBeInstanceOf(
             LedgerUsbNoDeviceError,
         )
         expect(transportOpenMock).not.toHaveBeenCalled()
@@ -224,7 +225,7 @@ describe('RNLedgerUsbService', () => {
         await expect(
             new RNLedgerUsbService()
                 .createTransportProvider()
-                .connect(String(NANO_X_DESCRIPTOR.productId)),
+                .connect(String(NANO_X_DESCRIPTOR.productId), 'test'),
         ).rejects.toBeInstanceOf(LedgerUsbMultipleDevicesError)
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
@@ -234,7 +235,7 @@ describe('RNLedgerUsbService', () => {
 
         await new RNLedgerUsbService()
             .createTransportProvider()
-            .connect('stale-id-from-before-replug')
+            .connect('stale-id-from-before-replug', 'test')
 
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DESCRIPTOR)
     })
@@ -247,6 +248,19 @@ describe('RNLedgerUsbService', () => {
 
         expect(driverOpenMock).toHaveBeenCalledWith(rawTransport)
         expect(transport).toBe(openedTransport)
+    })
+
+    test('opens only the driver of the chain it connects for', async () => {
+        const otherOpen = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
+        ledgerAppDriverRegistry.register({ chainId: 'other', open: otherOpen })
+
+        await connectToFirstDevice(undefined, 'other')
+        expect(otherOpen).toHaveBeenCalledTimes(1)
+        expect(driverOpenMock).not.toHaveBeenCalled()
+
+        await connectToFirstDevice(undefined, 'test')
+        expect(driverOpenMock).toHaveBeenCalledTimes(1)
+        expect(otherOpen).toHaveBeenCalledTimes(1)
     })
 
     test('throws before touching the device when no app driver is registered', async () => {

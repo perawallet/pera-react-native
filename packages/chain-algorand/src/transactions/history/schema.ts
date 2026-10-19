@@ -12,7 +12,6 @@
 
 import { z } from 'zod'
 import { logger, uint64IdSchema } from '@perawallet/wallet-core-shared'
-import type { TransactionType } from '@perawallet/wallet-core-transactions'
 
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as
@@ -88,13 +87,13 @@ export const transactionInterpretedMeaningSchema = z.object({
 })
 
 /**
- * Deliberately a bare string, NOT `z.nativeEnum(TransactionTypes)` — the same
+ * Deliberately a bare string, NOT an enum of known types — the same
  * call the indexer path makes (see `indexer/schema.ts`). A type the app does
  * not model yet (whatever the next consensus upgrade adds) must still reach
  * the renderers, which all have a `default:` branch for exactly that.
  * Validating against the enum here drops the row instead. Do not tighten this.
  */
-const txTypeSchema = z.string().transform(value => value as TransactionType)
+const txTypeSchema = z.string()
 
 /**
  * Schema for a single transaction item from API response

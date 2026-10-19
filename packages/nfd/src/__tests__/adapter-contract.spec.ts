@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fakeNameServiceAdapter } from './fakeNameServiceAdapter'
 import { nameServiceContractTests } from './adapter-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The Error a fetch polyfill rejects with on abort.
 const abortError = (): Error =>
@@ -36,7 +36,7 @@ nameServiceContractTests(() => adapter, {
         params: {
             name: 'fixture.algo',
             address: 'A'.repeat(58),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         },
         arrangeUnreachable: () => {
             isReachable = false

@@ -29,7 +29,7 @@ export type AccountChainStateRow = {
     chainData: AccountChainState
 }
 
-/** `network` is the raw column; read it through `scopeFromNetworkColumn`. */
+/** `network` is the raw scope key; decode it with `parseScopeKey`. */
 export type StoredAccountChainStateRow = AccountChainStateRow & {
     network: ChainScopeKey
 }
@@ -50,14 +50,14 @@ export async function upsertAccountChainState({
     nativeBalance,
     chainData,
 }: UpsertAccountChainStateParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const now = Date.now()
 
     await db
         .insert(AccountChainStateSchema)
         .values({
             accountAddress,
-            network,
+            scope: scopeKey,
             nativeBalance,
             chainData,
             updatedAt: now,
@@ -65,7 +65,7 @@ export async function upsertAccountChainState({
         .onConflictDoUpdate({
             target: [
                 AccountChainStateSchema.accountAddress,
-                AccountChainStateSchema.network,
+                AccountChainStateSchema.scope,
             ],
             set: { nativeBalance, chainData, updatedAt: now },
         })
@@ -83,7 +83,7 @@ export async function getAccountChainStateRow({
     accountAddress,
     scope,
 }: GetAccountChainStateParams): Promise<Optional<AccountChainStateRow>> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountChainStateSchema.accountAddress,
@@ -94,7 +94,7 @@ export async function getAccountChainStateRow({
         .where(
             and(
                 eq(AccountChainStateSchema.accountAddress, accountAddress),
-                eq(AccountChainStateSchema.network, network),
+                eq(AccountChainStateSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -109,7 +109,7 @@ export async function getAllAccountChainStateRows({
     return db
         .select({
             accountAddress: AccountChainStateSchema.accountAddress,
-            network: AccountChainStateSchema.network,
+            network: AccountChainStateSchema.scope,
             nativeBalance: AccountChainStateSchema.nativeBalance,
             chainData: AccountChainStateSchema.chainData,
         })

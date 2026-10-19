@@ -12,8 +12,8 @@
 
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { toAlgorandChainState } from '../chain-state'
 
@@ -24,7 +24,10 @@ import { toAlgorandChainState } from '../chain-state'
 export const seedAuthority = (
     address: string,
     authorityAddress: string | null,
-    scope: ChainScope = scopeForLegacyNetwork('mainnet'),
+    scope: ChainScope = {
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const,
 ): void =>
     useAccountChainStateStore
         .getState()

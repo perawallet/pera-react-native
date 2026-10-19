@@ -14,7 +14,6 @@ import {
     CHAIN_IDS,
     InvalidScopeKeyError,
     parseScopeKey,
-    scopeFromNetworkColumn,
     toScopeKey,
     type AccountChainState,
     type ChainScope,
@@ -86,7 +85,7 @@ export async function hydrateAccountChainStates({
         for (const row of await getAllAccountChainStateRows({ db })) {
             let scope: ChainScope
             try {
-                scope = scopeFromNetworkColumn(row.network)
+                scope = parseScopeKey(row.network)
             } catch (error) {
                 if (!(error instanceof InvalidScopeKeyError)) throw error
                 logger.warn(

@@ -169,7 +169,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-    useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
 

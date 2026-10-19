@@ -115,18 +115,6 @@ describe('v2.handleRequest', () => {
         })
     })
 
-    it('routes wallet_switchEthereumChain on its first positional param', () => {
-        expect(
-            v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [
-                { chainId: '0x1' },
-            ]),
-        ).toEqual({
-            kind: 'operation',
-            type: 'switch-network',
-            params: { chainId: '0x1' },
-        })
-    })
-
     it('answers eth_accounts and eth_requestAccounts with the addresses', () => {
         for (const method of [
             ETHEREUM_WC_V2_METHOD.accounts,
@@ -149,7 +137,65 @@ describe('v2.handleRequest', () => {
     })
 })
 
+describe('wallet_switchEthereumChain', () => {
+    const switchTo = (chainId: unknown) =>
+        v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [{ chainId }])
+
+    // Mode-blind: whether the target is the selected network is the handler's call.
+    it.each([
+        ['0x1', 'mainnet'],
+        ['0xaa36a7', 'sepolia'],
+        ['0xAA36A7', 'sepolia'],
+    ])('routes %s to %s', (chainId, networkId) => {
+        expect(switchTo(chainId)).toEqual({ kind: 'switch-network', networkId })
+    })
+
+    it('refuses a chain the wallet does not declare as unrecognized, 4902', () => {
+        expect(switchTo('0x89')).toMatchObject({
+            kind: 'refused',
+            error: { code: 4902 },
+        })
+    })
+
+    it.each([
+        ['no params', undefined],
+        ['an empty list', []],
+        ['no chain id', [{}]],
+        ['a decimal chain id', [{ chainId: '1' }]],
+        ['a bare 0x', [{ chainId: '0x' }]],
+        ['a non-string chain id', [{ chainId: 1 }]],
+        ['a non-object entry', ['0x1']],
+    ])('refuses %s as invalid params, -32602', (_name, params) => {
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, params),
+        ).toMatchObject({ kind: 'refused', error: { code: -32_602 } })
+    })
+
+    it('never lists wallet_addEthereumChain, so it is refused as unsupported', () => {
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.addChain, [
+                { chainId: '0x89' },
+            ]),
+        ).toEqual({ kind: 'unsupported' })
+    })
+})
+
+describe('v2.sessionEvents.chainChangedData', () => {
+    const events = v2.sessionEvents
+    if (!events) throw new Error('Ethereum emits session events')
+
+    it('is the hex chain id of a declared network, and null for any other', () => {
+        expect(events.chainChangedData('mainnet')).toBe('0x1')
+        expect(events.chainChangedData('sepolia')).toBe('0xaa36a7')
+        expect(events.chainChangedData('custom')).toBeNull()
+    })
+})
+
 describe('toWireResult', () => {
+    it('answers a switch with null, which is what wallet_switchEthereumChain returns', () => {
+        expect(support.toWireResult({ type: 'switch-network' })).toBeNull()
+    })
+
     it('answers a sent transaction with its hash', () => {
         expect(
             support.toWireResult({ type: 'send-transaction', txId: '0xabc' }),

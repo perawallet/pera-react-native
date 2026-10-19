@@ -102,7 +102,10 @@ const errorSubscription: {
 const scoped = (pairingId: string): ErrorScope => ({ pairingId })
 
 /** What the composition root injects, per handler kind. */
-type V1Options = { getNetwork: () => string }
+type V1Options = {
+    chainId: string
+    getNetworkId: (chainId: string) => string
+}
 type V2Options = {
     getNetworkId: (chainId: string) => string
     isDappConnectEnabled: (chainId: string) => boolean
@@ -123,6 +126,11 @@ const mockCreateV2 = vi.fn((options: V2Options) => ({
     options,
 }))
 const mockRegister = vi.fn((_handler: { kind: string }) => {})
+const mockUnwatchWalletNotices = vi.fn()
+const mockWatchWalletNotices = vi.fn((_registry: object) => {
+    return mockUnwatchWalletNotices
+})
+const mockUseSigningAdapter = vi.fn()
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     importLegacyConnections: mockImport,
@@ -160,7 +168,10 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
             }
         },
     }),
-    useConnectionSigningAdapter: vi.fn(),
+    useConnectionSigningAdapter: mockUseSigningAdapter,
+    // The real one subscribes to the account and network stores, which the
+    // unit environment does not provide.
+    watchWalletNotices: mockWatchWalletNotices,
 }))
 
 const showToast = vi.fn()
@@ -256,6 +267,9 @@ describe('useConnectionsProvider', () => {
         mockRegister.mockClear()
         mockCreateV1.mockClear()
         mockCreateV2.mockClear()
+        mockWatchWalletNotices.mockClear()
+        mockUnwatchWalletNotices.mockClear()
+        mockUseSigningAdapter.mockClear()
         proposalSubscription.listener = null
         errorSubscription.listener = null
         requestBottomSheet.mockClear()
@@ -340,6 +354,28 @@ describe('useConnectionsProvider', () => {
 
     // `useDeleteAllData` also runs from `AutoLockGuard`, which sits above
     // this provider, so the context is out of reach there.
+    it('feeds the registry the wallet notices while mounted, and stops on unmount', () => {
+        const { result, unmount } = renderHook(() => useConnectionsProvider())
+
+        expect(mockWatchWalletNotices).toHaveBeenCalledTimes(1)
+        expect(mockWatchWalletNotices).toHaveBeenCalledWith(result.current)
+        expect(mockUnwatchWalletNotices).not.toHaveBeenCalled()
+
+        unmount()
+
+        expect(mockUnwatchWalletNotices).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands the signing adapter the network-switch prompt', () => {
+        renderHook(() => useConnectionsProvider())
+
+        expect(mockUseSigningAdapter).toHaveBeenCalledWith(
+            expect.anything(),
+            'algorand',
+            { confirmNetworkSwitch: expect.any(Function) },
+        )
+    })
+
     it('publishes the registry for callers mounted above the provider', () => {
         expect(getActiveConnectionRegistry()).toBeNull()
 
@@ -379,7 +415,9 @@ describe('useConnectionsProvider', () => {
         expect(v2.keyValueStorage).toBe(keyValueStorage)
         // Injected rather than defaulted, so neither handler pulls the
         // Algorand runtime into a consumer's graph.
-        expect(mockCreateV1.mock.calls[0][0].getNetwork).toBeTypeOf('function')
+        const v1 = mockCreateV1.mock.calls[0][0]
+        expect(v1.chainId).toBe('algorand')
+        expect(v1.getNetworkId).toBeTypeOf('function')
         expect(v2.getNetworkId).toBeTypeOf('function')
         expect(v2.isDappConnectEnabled).toBeTypeOf('function')
     })
@@ -388,7 +426,7 @@ describe('useConnectionsProvider', () => {
         renderHook(() => useConnectionsProvider())
         const { getNetworkId } = mockCreateV2.mock.calls[0][0]
 
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
 
         expect(getNetworkId('algorand')).toBe('testnet')
     })

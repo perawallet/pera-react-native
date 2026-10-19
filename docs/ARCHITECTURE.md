@@ -219,7 +219,7 @@ before a socket opens when its scope has no Pera deployment, or when it names a 
 scope does not list, so the failure is structural and instant rather than a timeout.
 
 Reads whose answer is obtainable from algod or the indexer must therefore branch on
-`isPeraBackedNetwork(network)` and take the public path, rather than swallowing the error as an empty
+`hasPeraBackend(scope)` and take the public path, rather than swallowing the error as an empty
 result. Swallowing it is indistinguishable from a genuine empty result in the UI, which is how a
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.

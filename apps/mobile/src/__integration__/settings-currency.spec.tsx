@@ -16,11 +16,11 @@ import { http, HttpResponse } from 'msw'
 import { getPeraDeploymentConfig } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The "integration" Vitest project's setup file opts out of the global
 // @perawallet/wallet-core-* mocks — see apps/mobile/vitest.integration-setup.ts.
@@ -83,10 +83,10 @@ describe('Flow: Settings → Currency selection', () => {
 
     describe('on a network with no Pera backend of its own', () => {
         afterEach(() => {
-            useNetworkStore.getState().setNetwork(Networks.mainnet)
+            useNetworkStore.getState().setMode('live')
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'Given developer mode on %s, when the screen mounts, then the developer deployment serves the full list',
             async network => {
                 const requested: string[] = []
@@ -96,7 +96,10 @@ describe('Flow: Settings → Currency selection', () => {
                         return HttpResponse.json(USD_EUR_GBP)
                     }),
                 )
-                useNetworkStore.getState().setNetwork(network)
+                useNetworkStore.getState().setMode('developer')
+                useNetworkStore
+                    .getState()
+                    .selectNetwork(LEGACY_CHAIN_ID, network)
 
                 renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
 

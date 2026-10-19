@@ -12,33 +12,34 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { useTestnetIndicator } from '../useTestnetIndicator.web'
 
 const mockNetworkState = vi.hoisted(() => ({
-    network: 'mainnet' as Network,
+    network: 'mainnet' as NetworkId,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({
-        network: mockNetworkState.network,
-        isMainnet: mockNetworkState.network === 'mainnet',
-        isTestnet: mockNetworkState.network === 'testnet',
+    useSelectedScope: () => ({
+        chainId: 'algorand',
+        networkId: mockNetworkState.network,
     }),
+    useWalletDeployment: () =>
+        mockNetworkState.network === 'mainnet' ? 'live' : 'developer',
 }))
 
 vi.mock('@hooks/useLanguage')
 
-const mockNetwork = (network: Network) => {
+const mockNetwork = (network: NetworkId) => {
     mockNetworkState.network = network
 }
 
 describe('useTestnetIndicator', () => {
     it('is hidden on MainNet', () => {
-        mockNetwork(Networks.mainnet)
+        mockNetwork('mainnet')
 
         const { result } = renderHook(() => useTestnetIndicator())
 
@@ -51,13 +52,13 @@ describe('useTestnetIndicator', () => {
         // identity function, so the resolved "label" a mocked hook test can
         // observe is the i18n key itself, not the localized string.
         const expected: Record<string, string> = {
-            [Networks.testnet]: 'common.network_label.testnet',
-            [Networks.betanet]: 'common.network_label.betanet',
-            [Networks.custom]: 'common.network_label.custom',
+            ['testnet']: 'common.network_label.testnet',
+            ['betanet']: 'common.network_label.betanet',
+            ['custom']: 'common.network_label.custom',
         }
 
         for (const [network, label] of Object.entries(expected)) {
-            mockNetwork(network as Network)
+            mockNetwork(network as NetworkId)
 
             const { result } = renderHook(() => useTestnetIndicator())
 

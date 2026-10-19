@@ -397,7 +397,8 @@
         "backup_warning_continue": "Oui, continuer",
         "backup_warning_cancel": "Non, conserver le compte",
         "remove_rekey_error_title": "Suppression impossible",
-        "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)"
+        "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)",
+        "view_private_key": "Voir la clé privée"
     },
     "account_info": {
         "min_balance": "Solde min.",
@@ -468,6 +469,11 @@
             "error_title": "Impossible de récupérer la passphrase",
             "error_body": "Une erreur s’est produite. Veuillez réessayer."
         }
+    },
+    "reveal_private_key": {
+        "title": "Clé privée",
+        "body": "Toute personne disposant de cette clé contrôle le compte. Ne la partagez jamais.",
+        "error_title": "Impossible d’afficher la clé privée"
     },
     "banners": {
         "dismiss": "Ne plus afficher"
@@ -2141,6 +2147,16 @@
             "pera_card_option_description": "Dépensez vos cryptos dans le monde réel avec la Pera Card",
             "see_other_options": "Voir les autres options"
         },
+        "import_private_key": {
+            "title": "Importer une clé privée",
+            "body": "Saisissez la clé privée du compte {{chain}}.",
+            "input_label": "Clé privée",
+            "invalid": "Cette clé privée n’est pas valide",
+            "submit": "Importer le compte",
+            "error_title": "Impossible d’importer le compte",
+            "backup_included": "Ce compte est inclus dans votre sauvegarde cloud.",
+            "backup_not_included": "Ce compte n’est dans aucune sauvegarde cloud. Pour le récupérer plus tard, utilisez « Voir la clé privée » dans les options du compte et conservez la clé en lieu sûr."
+        },
         "import_account_options": {
             "title": "Importer un\ncompte",
             "recover_wallet_title": "Récupérer un wallet",
@@ -3043,6 +3059,18 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "spend_approval": {
+            "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
+            "spend_warning_bold": "Ne signez que si vous faites confiance à cette application.",
+            "spender_caption": "Adresse autorisée : {{address}}",
+            "unlimited_warning": "Le montant est illimité : l’adresse autorisée peut prendre tous les tokens de ce type que vous détenez.",
+            "long_deadline_warning": "Cette autorisation dure plus d’un an.",
+            "no_deadline_warning": "Cette autorisation n’expire jamais.",
+            "spender_label": "Adresse autorisée",
+            "unlimited": "Illimité",
+            "deadline_label": "Date limite",
+            "never": "Jamais"
+        },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
             "description": "Une demande de signature de données est une demande de signature de données arbitraires. Elle est couramment utilisée par les services pour vérifier la propriété d’un compte et n’entraîne aucuns frais.",
@@ -3357,6 +3385,11 @@
         },
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
+        },
+        "switch_network": {
+            "title": "Autoriser l’accès au réseau ?",
+            "body": "{{name}} souhaite utiliser vos comptes {{chain}} sur {{network}}.",
+            "confirm": "Autoriser"
         },
         "settings": {
             "empty_title": "Aucune session WalletConnect",

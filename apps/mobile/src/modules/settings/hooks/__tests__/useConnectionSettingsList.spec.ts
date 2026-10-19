@@ -24,8 +24,11 @@ vi.mock('@hooks/useErrorToast', () => ({
 }))
 
 const mockDisconnect = vi.fn()
-const mockNetworksFor = vi.fn((connection: Connection) =>
-    connection.id === 'conn-a' ? ['mainnet', 'testnet'] : ['testnet'],
+const algorand = (networkId: string) => ({ chainId: 'algorand', networkId })
+const mockScopesFor = vi.fn((connection: Connection) =>
+    connection.id === 'conn-a'
+        ? [algorand('mainnet'), algorand('testnet')]
+        : [algorand('testnet')],
 )
 const mockMethodsFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a' ? ['algo_signTxn'] : [],
@@ -38,7 +41,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
     useConnectionsStore: vi.fn(),
     useConnectionRegistry: () => ({
         disconnect: mockDisconnect,
-        networksFor: mockNetworksFor,
+        scopesFor: mockScopesFor,
         methodsFor: mockMethodsFor,
     }),
 }))
@@ -103,19 +106,19 @@ describe('useConnectionSettingsList', () => {
         )
     })
 
-    // The registry's handler decides which networks a record is usable on;
+    // The registry's handler decides which scopes a record is usable on;
     // the read path must not decode a wire chain id itself.
-    it('asks the registry which networks each connection is usable on', () => {
+    it('asks the registry which scopes each connection is usable on', () => {
         const { result } = renderHook(() => useConnectionSettingsList())
 
         const byId = Object.fromEntries(
             result.current.connections.map(row => [row.id, row.networks]),
         )
         expect(byId).toEqual({
-            'conn-a': ['mainnet', 'testnet'],
-            'conn-b': ['testnet'],
+            'conn-a': [algorand('mainnet'), algorand('testnet')],
+            'conn-b': [algorand('testnet')],
         })
-        expect(mockNetworksFor).toHaveBeenCalledWith(connectionA)
+        expect(mockScopesFor).toHaveBeenCalledWith(connectionA)
     })
 
     // Same reason: the approved methods live under a kind-specific key (v1

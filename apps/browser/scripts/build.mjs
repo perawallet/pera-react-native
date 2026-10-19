@@ -393,15 +393,15 @@ rmSync(path.join(dist, 'index.html'))
 // 4. Manifest. The CSP is generated rather than committed so each build only
 // trusts its own environment's frame origins. Imported here, not at the top,
 // because packages/config is rebuilt against the fresh generated-env above.
-const { config, getIframeOrigins, getNetworkConfig, Networks } =
+const { config, getIframeOrigins, getPeraDeploymentConfig } =
     await import('@perawallet/wallet-core-config')
 const frameUrls = [
     config.discoverBaseUrl,
     config.integrityCheckOrigin,
     config.termsOfServiceUrl,
-    // Networks with no Pera deployment have no Bidali and contribute ''.
-    ...Object.values(Networks)
-        .map(network => getNetworkConfig(network).bidaliBaseUrl)
+    // A deployment the build has no Bidali host for contributes ''.
+    ...['live', 'developer']
+        .map(deployment => getPeraDeploymentConfig(deployment).bidaliBaseUrl)
         .filter(Boolean),
 ]
 const unparseableFrameUrls = frameUrls.filter(

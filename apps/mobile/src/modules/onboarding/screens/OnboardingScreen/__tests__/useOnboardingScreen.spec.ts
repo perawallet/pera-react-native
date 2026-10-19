@@ -83,9 +83,7 @@ vi.mock('../../../components/TermsAndConditionsSheet', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast: vi.fn() }) }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 
 describe('useOnboardingScreen — double-tap guard', () => {
     beforeEach(() => {

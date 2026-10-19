@@ -33,7 +33,7 @@ import {
     type UnsignedTransaction,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
@@ -93,10 +93,10 @@ const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 // fee shown is the most the signature authorises, so review needs both.
 const readCall = (
     unsigned: UnsignedTransaction,
-    context: ReviewContext,
+    context?: ReviewContext,
 ): Call => {
     const { from, transaction } = readEthereumTransaction(unsigned)
-    if (toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
+    if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
         )
@@ -212,6 +212,21 @@ const verifiedTokenTransfer = (
     })
     if (expected.toLowerCase() !== call.data.toLowerCase()) return undefined
     return { contract: call.to, to, amount: toDecimal(units) }
+}
+
+/** The view a review screen reads, or null for a payload review would refuse. Never a verified token transfer: that needs the request's summary. */
+export const ethereumViewOf = (
+    unsigned: UnsignedTransaction,
+): Nullable<EthereumTransactionView> => {
+    try {
+        const call = readCall(unsigned)
+        return viewOf(
+            call,
+            call.to && size(call.data) === 0 ? 'transfer' : 'contract-call',
+        )
+    } catch {
+        return null
+    }
 }
 
 /** A native transfer when there is a `to` and no calldata, else a contract call. */

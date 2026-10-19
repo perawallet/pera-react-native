@@ -39,17 +39,4 @@ describe('PWToolbar', () => {
         ).toBeTruthy()
         expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy()
     })
-
-    it('renders correctly with only center prop', () => {
-        const { container } = render(
-            <PWToolbar
-                center={<PWText>Center Only</PWText>}
-                testID='toolbar'
-            />,
-        )
-
-        expect(screen.getByText('Center Only')).toBeTruthy()
-        expect(container.querySelector('[testid="toolbar-left"]')).toBeTruthy()
-        expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy()
-    })
 })

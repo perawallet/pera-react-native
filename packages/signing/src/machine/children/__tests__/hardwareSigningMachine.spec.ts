@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createActor, fromCallback, waitFor } from 'xstate'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { LEDGER_CONFIRMATION_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
 import { hardwareSigningMachine } from '../hardwareSigningMachine'
 import {
@@ -21,13 +20,14 @@ import {
     HARDWARE_BACKGROUND_GRACE_MS,
 } from '../appStateTracker'
 import type { HardwareSigningInput } from '../hardwareSigningMachine.context'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const makeInput = (
     overrides: Partial<HardwareSigningInput> = {},
 ): HardwareSigningInput => ({
     groups: [],
     allAccounts: [],
-    scope: scopeForLegacyNetwork('mainnet'),
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
     totalTxs: 1,

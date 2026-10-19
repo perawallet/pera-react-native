@@ -95,7 +95,7 @@ const enterEmailAndCountry = async () => {
 describe('Flow: Card onboarding — email + country', () => {
     beforeAll(() => {
         // The waitlist call sends the device id; the harness defaults to mainnet.
-        useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('live', DEVICE_ID)
     })
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()

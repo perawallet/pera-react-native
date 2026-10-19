@@ -17,11 +17,11 @@
 //
 // An unknown URL gets an empty set, which PWWebView.web treats as "create no
 // bridge host at all" rather than one nothing can authenticate against.
+import { WALLET_MODES } from '@perawallet/wallet-core-chain-contract'
 import {
     config,
     getIframeOrigins,
-    getNetworkConfig,
-    Networks,
+    getPeraDeploymentConfig,
 } from '@perawallet/wallet-core-config'
 
 const safeOrigin = (url: string): string | null => {
@@ -38,11 +38,10 @@ const safeOrigin = (url: string): string | null => {
 // the two can't drift out of lockstep as future surfaces are added here.
 const knownSurfaceBases = (): string[] => [
     config.discoverBaseUrl,
-    // Every network's Bidali origin. Networks with no Pera deployment
-    // contribute `''`, which is inert downstream — safeOrigin('') returns
-    // null — so the effective set is still MainNet's and TestNet's origins.
-    ...Object.values(Networks).map(
-        network => getNetworkConfig(network).bidaliBaseUrl,
+    // Every deployment's Bidali origin. One the build has no host for
+    // contributes `''`, which is inert downstream — safeOrigin('') returns null.
+    ...WALLET_MODES.map(
+        deployment => getPeraDeploymentConfig(deployment).bidaliBaseUrl,
     ),
 ]
 

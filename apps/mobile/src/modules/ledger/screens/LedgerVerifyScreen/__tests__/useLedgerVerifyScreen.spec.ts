@@ -21,7 +21,6 @@ import {
 import {
     addressCodecs,
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -216,6 +215,7 @@ describe('useLedgerVerifyScreen', () => {
         await waitFor(() => expect(result.current.areAllVerified).toBe(true))
         expect(mockVerify).toHaveBeenCalledTimes(1)
         expect(mockVerify).toHaveBeenCalledWith(expect.anything(), 0)
+        expect(mockConnect).toHaveBeenCalledWith('dev', 'algorand')
         expect(result.current.verifyTargets).toEqual([
             {
                 address: 'LEDGER0',
@@ -258,9 +258,12 @@ describe('useLedgerVerifyScreen', () => {
         )
         expect(hw?.custody.kind).toBe('hardware')
         expect(watch?.custody.kind).toBe('watch')
-        expect(authorityOf(watch!, scopeForLegacyNetwork('mainnet'))).toBe(
-            'LEDGER0',
-        )
+        expect(
+            authorityOf(watch!, {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).toBe('LEDGER0')
         expect(
             accounts.filter(a => a.chains.algorand?.address === 'ALREADY'),
         ).toHaveLength(1)
@@ -560,7 +563,10 @@ describe('useLedgerVerifyScreen', () => {
             expect(auth?.custody.kind).toBe('hardware')
             expect(rekeyed?.custody.kind).toBe('watch')
             expect(
-                authorityOf(rekeyed!, scopeForLegacyNetwork('mainnet')),
+                authorityOf(rekeyed!, {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             ).toBe('LEDGER0')
         })
 

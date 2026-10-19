@@ -13,11 +13,11 @@
 import { describe, it, expect } from 'vitest'
 import {
     queryKeyReferencesScope,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { currencyQueryKeys, getCurrenciesQueryKey } from '../querykeys'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 describe('getCurrenciesQueryKey', () => {
     it.each(['live', 'developer'] as const)(
@@ -49,10 +49,10 @@ describe('currencyQueryKeys', () => {
             ),
         ).toBe(true)
         expect(
-            queryKeyReferencesScope(
-                currencyQueryKeys.nativeUsdPrice(MAINNET),
-                scopeForLegacyNetwork('testnet'),
-            ),
+            queryKeyReferencesScope(currencyQueryKeys.nativeUsdPrice(MAINNET), {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const),
         ).toBe(false)
         for (const key of [
             currencyQueryKeys.list('live'),

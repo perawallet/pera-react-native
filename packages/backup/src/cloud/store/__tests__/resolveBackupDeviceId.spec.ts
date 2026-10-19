@@ -18,10 +18,13 @@ const { deviceIDs } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => ({ deviceIDs }) },
-    deviceIdFor: (
+    deviceIdForDeployment: (
         state: { deviceIDs: Map<string, string | null> },
-        network: string,
-    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+        deployment: string,
+    ) =>
+        state.deviceIDs.get(
+            deployment === 'live' ? 'algorand/mainnet' : 'algorand/testnet',
+        ) ?? null,
 }))
 
 import { useCloudBackupStore } from '../store'
@@ -40,15 +43,15 @@ describe('resolveBackupDeviceId', () => {
             salt: 'c2FsdA==',
             deviceId: 'registered-device',
         })
-        expect(resolveBackupDeviceId('mainnet')).toBe('registered-device')
+        expect(resolveBackupDeviceId('live')).toBe('registered-device')
     })
 
-    test('falls back to the current network device id when none was pinned', () => {
-        expect(resolveBackupDeviceId('mainnet')).toBe('push-device')
+    test('falls back to the current deployment device id when none was pinned', () => {
+        expect(resolveBackupDeviceId('live')).toBe('push-device')
     })
 
-    test('is null when the network has no device id either', () => {
+    test('is null when the deployment has no device id either', () => {
         deviceIDs.clear()
-        expect(resolveBackupDeviceId('mainnet')).toBeNull()
+        expect(resolveBackupDeviceId('live')).toBeNull()
     })
 })

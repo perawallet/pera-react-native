@@ -37,7 +37,6 @@ import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     encodeToBase64,
     logger,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -63,9 +62,10 @@ import {
     requestSwapProposal,
     requestSwapSignatures,
 } from './swapExecutionHelpers'
+import { type AlgorandNetworkId } from '../network-id'
 
 export type AlgorandSwapExecutionContext = SwapExecutionContext & {
-    network: Network
+    network: AlgorandNetworkId
     algorandClient: ReturnType<typeof getAlgorandClient>
     /** Asset opt-in minimum balance, in microAlgos. */
     assetMbr: bigint

@@ -19,7 +19,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getRowsByChainData,
     getTransactionHistory,
@@ -27,6 +27,8 @@ import {
     setChainDataValue,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { algorandHistoryDataOf } from '../../history-data'
+import { flatHistoryItem } from './history-item'
 import {
     CLOSE_AMOUNT_PATH,
     CLOSE_TO_PATH,
@@ -38,7 +40,7 @@ import { registerAlgorandHistoryCodec } from './register-history-codec'
 const TAG = '0018_drop_transaction_algorand_columns'
 const NETWORK = 'algorand/mainnet'
 const ADDRESS = 'ACCT1'
-const scope = scopeForLegacyNetwork('mainnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 const migrationsBefore = Object.fromEntries(
     Object.entries(migrations).filter(([tag]) => tag < TAG),
@@ -113,7 +115,7 @@ describe('history rows cached before chain_data existed', () => {
             closeAmount: null,
         }
         const expected: TransactionHistoryItem[] = [
-            {
+            flatHistoryItem({
                 ...base,
                 id: 'CLOSE',
                 txType: 'pay',
@@ -127,8 +129,8 @@ describe('history rows cached before chain_data existed', () => {
                 applicationId: null,
                 innerTransactionCount: null,
                 swapGroupDetail: null,
-            },
-            {
+            }),
+            flatHistoryItem({
                 ...base,
                 id: 'SWAP',
                 txType: 'appl',
@@ -152,7 +154,7 @@ describe('history rows cached before chain_data existed', () => {
                     amountIn: new Decimal(1000000),
                     amountOut: new Decimal(5000000),
                 },
-            },
+            }),
         ]
         expect(items).toEqual(expected)
     })
@@ -175,7 +177,9 @@ describe('history rows cached before chain_data existed', () => {
             accountAddress: ADDRESS,
             scope,
         })
-        expect(close.closeAmount).toEqual(new Decimal('50854132929'))
+        expect(algorandHistoryDataOf(close).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
         expect(await closeRowsMissingAmount()).toEqual([])
     })
 

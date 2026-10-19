@@ -30,11 +30,15 @@ import {
     isOutgoingFor,
     transactionStatusNotice,
     type TransactionHistoryItem,
-    type TransactionSwapGroupDetail,
 } from '@perawallet/wallet-core-transactions'
 import { classifyDisplayableTransaction } from '../blockchain/utils/transactions'
 import { algorandDescriptor } from '../descriptor'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
+import {
+    algorandHistoryDataOf,
+    type AlgorandHistoryData,
+    type AlgorandSwapGroupDetail,
+} from './history-data'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     APP_CALL_TITLE_KEY,
@@ -88,13 +92,14 @@ const formatAmount = (baseUnits: Decimal, decimals: number): string => {
  */
 const netTransferAmount = (
     item: TransactionHistoryItem,
+    data: AlgorandHistoryData,
     address: string,
     isOut: boolean,
 ): Decimal => {
     const paid = item.amount ?? new Decimal(0)
-    const closed = item.closeAmount ?? new Decimal(0)
+    const closed = data.closeAmount ?? new Decimal(0)
     if (isOut) return paid.add(closed)
-    if (item.closeTo && item.closeTo === address) {
+    if (data.closeTo && data.closeTo === address) {
         return item.receiver === address ? paid.add(closed) : closed
     }
     return paid
@@ -116,7 +121,7 @@ const NATIVE_DISPLAY: AssetDisplayHint = {
     decimals: algorandDescriptor.nativeAsset.decimals,
 }
 
-const swapSummary = (swap: TransactionSwapGroupDetail): TransactionSummary => {
+const swapSummary = (swap: AlgorandSwapGroupDetail): TransactionSummary => {
     const assetIn = resolveAlgorandAssetFacts(swap.assetInId, {
         unitName: swap.assetInUnitName,
         decimals: swap.assetInDecimals,
@@ -172,9 +177,10 @@ export const summarizeAlgorandHistoryItem = (
     item: TransactionHistoryItem,
     address: string,
 ): TransactionSummary => {
-    const summary = item.swapGroupDetail
-        ? swapSummary(item.swapGroupDetail)
-        : classifiedSummary(item, address)
+    const data = algorandHistoryDataOf(item)
+    const summary = data.swapGroupDetail
+        ? swapSummary(data.swapGroupDetail)
+        : classifiedSummary(item, data, address)
     const interpretedTitle = item.interpretedMeaning?.title
     const notice = transactionStatusNotice(
         item.status,
@@ -191,12 +197,13 @@ export const summarizeAlgorandHistoryItem = (
 
 const classifiedSummary = (
     item: TransactionHistoryItem,
+    data: AlgorandHistoryData,
     address: string,
 ): TransactionSummary => {
     const isOut = isOutgoingFor(item, address)
     const counterparty =
         (isOut ? item.receiver : getDebitedAddress(item)) ?? undefined
-    const hasAmount = item.amount !== null || item.closeAmount !== null
+    const hasAmount = item.amount !== null || data.closeAmount !== null
     const amountOn = (
         assetRef: AssetRef,
         display: AssetDisplayHint,
@@ -205,7 +212,7 @@ const classifiedSummary = (
             ? {
                   amount: {
                       assetRef,
-                      value: netTransferAmount(item, address, isOut),
+                      value: netTransferAmount(item, data, address, isOut),
                       display,
                   },
               }
@@ -285,9 +292,9 @@ const classifiedSummary = (
                         decimals: impact.fractionDecimals,
                     }),
                 })),
-                ...((item.innerTransactionCount ?? 0) > 0 && {
+                ...((data.innerTransactionCount ?? 0) > 0 && {
                     subtitle: text(INNER_TRANSACTION_COUNT, {
-                        innerCount: String(item.innerTransactionCount),
+                        innerCount: String(data.innerTransactionCount),
                     }),
                 }),
             }

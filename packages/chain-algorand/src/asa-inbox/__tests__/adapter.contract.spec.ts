@@ -11,7 +11,6 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
 
 // Builders stubbed to succeed with a real mainnet transaction, so a rejection
@@ -48,8 +47,9 @@ vi.mock('../../transactions/builders', () => ({
 }))
 
 import { algorandSendFlowAdapter } from '../../transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const scope = scopeForLegacyNetwork('mainnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const claim = {
     scope,
     sender: 'SENDER',

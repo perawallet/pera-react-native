@@ -16,7 +16,7 @@ import {
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf } from '../../network-id'
 import type { PeraTransactionSigner } from '../models'
 import { selectAlgorandCustomNetwork } from '../store'
 import { createWalletAlgorandClient } from '../utils/createWalletAlgorandClient'

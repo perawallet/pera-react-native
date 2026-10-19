@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { dappRequestContractTests } from '@perawallet/wallet-core-connections/testing'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import { algorandDappRequestAdapter } from '../dappRequestAdapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 dappRequestContractTests(() => algorandDappRequestAdapter, {
     overCapTransactionParams: {
@@ -23,10 +23,15 @@ dappRequestContractTests(() => algorandDappRequestAdapter, {
         })),
     },
     disclosed: {
-        scope: scopeForLegacyNetwork('custom'),
-        customGenesisHash: getNetworkConfig('mainnet').genesisHash,
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+        customGenesisHash: getAlgorandChainConfig({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const).genesisHash,
         reportedAs: 'mainnet',
     },
-    undisclosed: { scope: scopeForLegacyNetwork('custom') },
+    undisclosed: {
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+    },
     walletConnect: { networkWithCaip2: 'mainnet', v1ChainId: 4160 },
 })

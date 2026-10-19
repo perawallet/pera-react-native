@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { z } from 'zod'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_ITEMS_PER_PAGE,
@@ -26,6 +24,7 @@ import {
     type AssetLookup,
 } from './transformers'
 import { amountish } from './schema'
+import { algorandScope, type AlgorandNetworkId } from '../../../network-id'
 
 /**
  * Resolves display facts (name/unit/decimals) for every asset referenced in a
@@ -35,17 +34,14 @@ import { amountish } from './schema'
  */
 const buildAssetLookup = async (
     response: unknown,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetLookup> => {
     const lookup: AssetLookup = new Map()
     const ids = collectAssetIds(response)
 
     const settled = await Promise.allSettled(
         ids.map(async id => {
-            const asset = await fetchOnChainAsset(
-                id,
-                scopeForLegacyNetwork(network),
-            )
+            const asset = await fetchOnChainAsset(id, algorandScope(network))
             return { id, asset }
         }),
     )
@@ -66,7 +62,7 @@ const buildAssetLookup = async (
 const toResult = async (
     raw: unknown,
     accountAddress: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<TransactionHistoryResult> => {
     const assets = await buildAssetLookup(raw, network)
     return transformTransactionHistoryResponse(
@@ -81,7 +77,7 @@ const toResult = async (
  */
 export const fetchIndexerTransactionHistory = async (params: {
     accountAddress: string
-    network: Network
+    network: AlgorandNetworkId
     assetId?: string
     afterTime?: string
     beforeTime?: string
@@ -134,7 +130,7 @@ export const fetchIndexerTransactionHistory = async (params: {
 export const fetchMoreIndexerTransactions = async (params: {
     accountAddress: string
     nextToken: string
-    network: Network
+    network: AlgorandNetworkId
     assetId?: string
     afterTime?: string
     beforeTime?: string
@@ -192,7 +188,7 @@ const closeAmountLookupSchema = z.object({
  */
 export const fetchIndexerCloseAmount = async (
     txId: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<string | null> => {
     const response = await fetchNodeJson(
         network,

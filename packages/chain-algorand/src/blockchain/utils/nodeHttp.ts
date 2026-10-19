@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getAlgorandChainConfig,
     type AlgorandChainConfig,
-    type Network,
 } from '@perawallet/wallet-core-config'
 import {
     PeraNetworkError,
@@ -27,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getAlgorandChainContext } from '../../chain-context'
 import { TimeoutHttpClient } from './TimeoutHttpClient'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 export type AlgorandNodeBackend = 'algod' | 'indexer'
 
@@ -88,7 +85,7 @@ const toNetworkError = (error: unknown): unknown => {
  * node applies to the next request. Resolves to `undefined` for an empty body.
  */
 export const fetchNodeJson = async (
-    target: ChainScope | Network,
+    target: ChainScope | AlgorandNetworkId,
     backend: AlgorandNodeBackend,
     path: string,
     {
@@ -96,8 +93,7 @@ export const fetchNodeJson = async (
         signal,
     }: { params?: Record<string, unknown>; signal?: AbortSignal } = {},
 ): Promise<unknown> => {
-    const scope =
-        typeof target === 'string' ? scopeForLegacyNetwork(target) : target
+    const scope = typeof target === 'string' ? algorandScope(target) : target
     try {
         const client = createNodeHttpClient(
             algorandNodeOf(getAlgorandChainConfig(scope), backend),

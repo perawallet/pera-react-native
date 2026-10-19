@@ -73,12 +73,15 @@ const emitScannedDevice = (device: typeof NANO_X_DEVICE = NANO_X_DEVICE) => {
     })
 }
 
-const scanAndConnect = async (device: typeof NANO_X_DEVICE = NANO_X_DEVICE) => {
+const scanAndConnect = async (
+    device: typeof NANO_X_DEVICE = NANO_X_DEVICE,
+    chainId = 'test',
+) => {
     emitScannedDevice(device)
     const provider = new LedgerWebBleService().createTransportProvider()
     const discovered: { id: string }[] = []
     provider.scan(d => discovered.push(d))
-    return provider.connect(discovered[0].id)
+    return provider.connect(discovered[0].id, chainId)
 }
 
 describe('LedgerWebBleService', () => {
@@ -221,7 +224,7 @@ describe('LedgerWebBleService', () => {
 
     test('connect passes the raw id through when it was not scanned in this session', async () => {
         const provider = new LedgerWebBleService().createTransportProvider()
-        await provider.connect('some-other-id')
+        await provider.connect('some-other-id', 'test')
 
         expect(transportOpenMock).toHaveBeenCalledWith('some-other-id')
     })
@@ -231,9 +234,9 @@ describe('LedgerWebBleService', () => {
             canShowDevicePicker: () => false,
         }).createTransportProvider()
 
-        await expect(provider.connect('some-other-id')).rejects.toBeInstanceOf(
-            LedgerDevicePickerUnavailableError,
-        )
+        await expect(
+            provider.connect('some-other-id', 'test'),
+        ).rejects.toBeInstanceOf(LedgerDevicePickerUnavailableError)
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
 
@@ -245,7 +248,7 @@ describe('LedgerWebBleService', () => {
         const discovered: { id: string }[] = []
         provider.scan(d => discovered.push(d))
 
-        await provider.connect(discovered[0].id)
+        await provider.connect(discovered[0].id, 'test')
 
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_X_DEVICE)
     })
@@ -258,6 +261,19 @@ describe('LedgerWebBleService', () => {
 
         expect(driverOpenMock).toHaveBeenCalledWith(rawTransport)
         expect(transport).toBe(openedTransport)
+    })
+
+    test('opens only the driver of the chain it connects for', async () => {
+        const otherOpen = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
+        ledgerAppDriverRegistry.register({ chainId: 'other', open: otherOpen })
+
+        await scanAndConnect(undefined, 'other')
+        expect(otherOpen).toHaveBeenCalledTimes(1)
+        expect(driverOpenMock).not.toHaveBeenCalled()
+
+        await scanAndConnect(undefined, 'test')
+        expect(driverOpenMock).toHaveBeenCalledTimes(1)
+        expect(otherOpen).toHaveBeenCalledTimes(1)
     })
 
     test('throws before touching the device when no app driver is registered', async () => {

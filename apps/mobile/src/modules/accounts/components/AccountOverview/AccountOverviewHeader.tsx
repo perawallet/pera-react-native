@@ -143,24 +143,9 @@ export const AccountOverviewHeader = ({
                                     <PWText
                                         variant='h4'
                                         style={styles.dateDisplay}
+                                        numberOfLines={1}
                                     >
-                                        {formatDatetime(
-                                            selectedPoint.datetime,
-                                            undefined,
-                                            'medium',
-                                            'date',
-                                        )}
-                                    </PWText>
-                                    <PWText
-                                        variant='h4'
-                                        style={styles.dateDisplay}
-                                    >
-                                        {formatDatetime(
-                                            selectedPoint.datetime,
-                                            undefined,
-                                            'medium',
-                                            'time',
-                                        )}
+                                        {formatDatetime(selectedPoint.datetime)}
                                     </PWText>
                                 </PWView>
                             )}

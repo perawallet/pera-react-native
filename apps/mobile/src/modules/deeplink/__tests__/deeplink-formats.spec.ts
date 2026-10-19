@@ -332,7 +332,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useCapability', async () =>
@@ -449,6 +448,7 @@ const cases: Case[] = [
                 params: {
                     address: ADDRESS,
                     label: LABEL,
+                    chainId: 'algorand',
                 },
             })
         },
@@ -465,6 +465,7 @@ const cases: Case[] = [
                 params: {
                     address: ADDRESS,
                     label: LABEL,
+                    chainId: 'algorand',
                 },
             })
         },

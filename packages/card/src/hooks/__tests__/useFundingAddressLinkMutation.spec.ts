@@ -27,14 +27,14 @@ const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useFundingAddressLinkMutation } from '../useFundingAddressLinkMutation'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('testnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

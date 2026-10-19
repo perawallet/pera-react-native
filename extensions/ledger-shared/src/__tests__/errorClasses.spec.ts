@@ -215,6 +215,29 @@ const ROWS: Record<string, Row> = {
         message: 'The Ledger Fixture app must be updated to sign this request',
         metadata: meta(MEDIUM, false, expected),
     },
+    LedgerBlindSigningRequiredError: {
+        ErrorClass: ledgerErrors.LedgerBlindSigningRequiredError,
+        args: [],
+        build: cause =>
+            new ledgerErrors.LedgerBlindSigningRequiredError({
+                appName: 'Fixture',
+                originalError: cause,
+            }),
+        message: 'Blind signing must be enabled in the Ledger Fixture app',
+        metadata: meta(MEDIUM, true, expected),
+    },
+    LedgerOperationUnsupportedError: {
+        ErrorClass: ledgerErrors.LedgerOperationUnsupportedError,
+        args: [],
+        build: cause =>
+            new ledgerErrors.LedgerOperationUnsupportedError({
+                appName: 'Fixture',
+                operation: 'signData',
+                originalError: cause,
+            }),
+        message: 'The Ledger Fixture app does not support signData',
+        metadata: meta(MEDIUM, false),
+    },
 }
 
 const construct = (
@@ -279,6 +302,9 @@ describe('Ledger app errors without an app name', () => {
         )
         expect(new ledgerErrors.LedgerAppOutdatedError().message).toBe(
             'The Ledger app must be updated to sign this request',
+        )
+        expect(new ledgerErrors.LedgerBlindSigningRequiredError().message).toBe(
+            'Blind signing must be enabled in the Ledger app',
         )
     })
 

@@ -164,10 +164,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: { genesisId: 'mainnet-v1.0' },
-    }),
 }))
 
 const mockImportAccount = vi.fn()
@@ -492,6 +488,14 @@ describe('useDeepLink', () => {
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
+        // Error toasts fire on a 400ms timer; a real one outlives its test and
+        // lands in a later test's `mockErrorToast` assertions.
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    afterEach(() => {
+        vi.clearAllTimers()
+        vi.useRealTimers()
     })
 
     it('should validate deeplink', () => {
@@ -540,6 +544,7 @@ describe('useDeepLink', () => {
             type: DeeplinkType.ADD_CONTACT,
             address: 'addr1',
             label: 'Label1',
+            target: { chainId: 'algorand' },
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -556,6 +561,7 @@ describe('useDeepLink', () => {
             params: {
                 address: 'addr1',
                 label: 'Label1',
+                chainId: 'algorand',
             },
         })
     })
@@ -565,6 +571,7 @@ describe('useDeepLink', () => {
             type: DeeplinkType.EDIT_CONTACT,
             address: 'addr1',
             label: 'Label1',
+            target: { chainId: 'algorand' },
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -581,8 +588,79 @@ describe('useDeepLink', () => {
             params: {
                 address: 'addr1',
                 label: 'Label1',
+                chainId: 'algorand',
             },
         })
+    })
+
+    it('refuses a Pera link whose chain= names a network other than the selected one', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ADD_CONTACT,
+            sourceUrl:
+                'perawallet://app/add-contact?chain=algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe&address=addr1',
+            address: 'addr1',
+            target: { chainId: 'algorand', networkId: 'testnet' },
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/add-contact',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('keeps running a chain URI that names a network on the selected one', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ADD_CONTACT,
+            sourceUrl: 'algorand://net:testnet/addr1',
+            address: 'addr1',
+            target: { chainId: 'algorand', networkId: 'testnet' },
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'algorand://net:testnet/addr1',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+            screen: 'AddContact',
+            params: { address: 'addr1', label: undefined, chainId: 'algorand' },
+        })
+    })
+
+    it("refuses a Pera link whose chain= the app doesn't know", async () => {
+        ;(parseDeeplink as Mock).mockReturnValue(null)
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/add-contact?chain=eip155:999999&address=0xabc',
+                false,
+                'deeplink',
+                onError,
+            )
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
+        expect(onError).toHaveBeenCalled()
     })
 
     it('should handle replaceCurrentScreen in navigateToScreen', async () => {
@@ -590,6 +668,7 @@ describe('useDeepLink', () => {
             type: DeeplinkType.ADD_CONTACT,
             address: 'addr1',
             label: 'Label1',
+            target: { chainId: 'algorand' },
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -608,6 +687,7 @@ describe('useDeepLink', () => {
                 params: {
                     address: 'addr1',
                     label: 'Label1',
+                    chainId: 'algorand',
                 },
             },
         )

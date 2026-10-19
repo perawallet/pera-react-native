@@ -14,8 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { seedAuthority } from '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
@@ -102,7 +102,7 @@ describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
         useAccountChainStateStore.getState().resetState()
         registerFakeBroadcaster({
             createSubmitTransport: () =>
@@ -363,7 +363,10 @@ describe('transportActor', () => {
             addresses: ['p1', 'p2'],
             version: 1,
         })
-        seedAuthority(J1_ADDRESS, J2_ADDRESS, scopeForLegacyNetwork('testnet'))
+        seedAuthority(J1_ADDRESS, J2_ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const authAccount = multisigAccount(J2_ADDRESS, {
             threshold: 2,
             addresses: ['p3', 'p4'],
@@ -405,11 +408,10 @@ describe('transportActor', () => {
         const MSIG_AUTH_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
         const rekeyedSender: WalletAccount = mockAlgo25Account
-        seedAuthority(
-            MOCK_ADDRESS,
-            MSIG_AUTH_ADDRESS,
-            scopeForLegacyNetwork('testnet'),
-        )
+        seedAuthority(MOCK_ADDRESS, MSIG_AUTH_ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const msigAuth = multisigAccount(MSIG_AUTH_ADDRESS, {
             threshold: 2,
             addresses: ['p1', 'p2'],
@@ -449,11 +451,10 @@ describe('transportActor', () => {
         // hop must not be followed for transport keying either.
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
         const rekeyedParticipant: WalletAccount = mockAlgo25Account
-        seedAuthority(
-            MOCK_ADDRESS,
-            'SOMEOTHERAUTH',
-            scopeForLegacyNetwork('testnet'),
-        )
+        seedAuthority(MOCK_ADDRESS, 'SOMEOTHERAUTH', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const source: SourceMetadata = {
             type: 'multisig-cosign',
             signRequestId: 'sign-req-2',

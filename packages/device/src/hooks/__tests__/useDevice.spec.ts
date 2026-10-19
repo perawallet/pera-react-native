@@ -11,10 +11,10 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, act } from '@testing-library/react'
 import { createWrapper } from '@test-utils'
-import { PeraNetworkError, type Network } from '@perawallet/wallet-core-shared'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import type { DeviceAccountRegistration } from '../../models'
 
 // Mock the registration transport and the raw endpoint separately:
@@ -63,19 +63,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn().mockReturnValue({
-        network: 'mainnet',
-        setNetwork: vi.fn(),
-    }),
+    useWalletDeployment: vi.fn().mockReturnValue('live'),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         defaultNetwork: 'mainnet',
-    },
-    Networks: {
-        testnet: 'testnet',
-        mainnet: 'mainnet',
     },
 }))
 
@@ -102,9 +95,12 @@ const accounts: DeviceAccountRegistration[] = [
 ]
 
 /** Seed helpers written against the real store surface (`useDeviceStore.getState()`). */
-const seedDeviceId = async (network: Network, id: string): Promise<void> => {
+const seedDeviceId = async (
+    deployment: WalletMode,
+    id: string,
+): Promise<void> => {
     const { useDeviceStore } = await import('../../store')
-    useDeviceStore.getState().setDeviceID(network, id)
+    useDeviceStore.getState().setDeviceID(deployment, id)
 }
 
 const seedPushToken = async (token: string | null): Promise<void> => {
@@ -119,19 +115,17 @@ const seedPushToken = async (token: string | null): Promise<void> => {
  * `useDevice()` consumer, not just the instance a test mounts — so a
  * leaked, never-settled entry from an earlier test would wedge every later
  * registration on the same network.
- * 2. The mocked `useNetwork` is a module-scope `vi.fn()`. `vi.clearAllMocks()`
- * clears its recorded calls but keeps its return value, and
- * `vi.resetModules()` does not re-run the `vi.mock` factory — so a test
- * that switches to testnet leaks testnet into every test after it. Pin it
- * back to mainnet here; the two tests that need a switch set it themselves
+ * 2. The mocked `useWalletDeployment` is a module-scope `vi.fn()`.
+ * `vi.clearAllMocks()` clears its recorded calls but keeps its return value,
+ * and `vi.resetModules()` does not re-run the `vi.mock` factory — so a test
+ * that switches to developer leaks developer into every test after it. Pin
+ * it back to live here; the tests that need a switch set it themselves
  * afterwards.
  */
 const importUseDevice = async () => {
-    const { useNetwork } = await import('@perawallet/wallet-core-chain-shared')
-    vi.mocked(useNetwork).mockReturnValue({
-        network: 'mainnet',
-        setNetwork: vi.fn(),
-    } as never)
+    const { useWalletDeployment } =
+        await import('@perawallet/wallet-core-chain-shared')
+    vi.mocked(useWalletDeployment).mockReturnValue('live')
 
     const { useDevice, clearRegistrationQueuesForTests } =
         await import('../useDevice')
@@ -169,32 +163,6 @@ describe('services/device/hooks', () => {
         expect(result.current.pushToken).toBe('NEW_TOKEN')
     })
 
-    test('useDeviceID returns correct device ID for network', async () => {
-        vi.resetModules()
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../useDeviceID')
-
-        useDeviceStore.getState().resetState()
-
-        const { result: store } = renderHook(() => useDeviceStore())
-
-        act(() => {
-            store.current.setDeviceID('mainnet', 'test-id-mainnet')
-            store.current.setDeviceID('testnet', 'test-id-testnet')
-        })
-
-        const { result: resultMainnet } = renderHook(() =>
-            useDeviceID('mainnet'),
-        )
-        expect(resultMainnet.current).toBe('test-id-mainnet')
-
-        const { result: resultTestnet } = renderHook(() =>
-            useDeviceID('testnet'),
-        )
-        expect(resultTestnet.current).toBe('test-id-testnet')
-    })
-
     // The only test here that re-imports the whole graph AND drains a queued
     // registration: 0.7s to 2.4s locally against 5-41ms for its siblings, and
     // Bitrise runs this package ~6x slower (3s local, 19s there), so the 5s
@@ -218,7 +186,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
-            network: 'mainnet',
+            deployment: 'live',
             data: {
                 accounts,
                 platform: 'ios',
@@ -269,7 +237,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'DEV-1')
+        await seedDeviceId('live', 'DEV-1')
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
@@ -280,7 +248,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({ id: 'DEV-1' }),
         })
     })
@@ -303,7 +271,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({ pushToken: '' }),
         })
     })
@@ -327,9 +295,7 @@ describe('services/device/hooks', () => {
             'Device create response carried no id',
         )
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')) ?? null,
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet') ?? null,
         ).toBeNull()
     })
 
@@ -340,7 +306,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'STALE')
+        await seedDeviceId('live', 'STALE')
 
         mockedRegisterDeviceMutation
             .mockRejectedValueOnce(
@@ -359,13 +325,11 @@ describe('services/device/hooks', () => {
 
         expect(outcome).toEqual({ createdNew: true })
         expect(mockedRegisterDeviceMutation).toHaveBeenLastCalledWith({
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.not.objectContaining({ id: expect.anything() }),
         })
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('FRESH')
     })
 
@@ -380,8 +344,8 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'MIGRATED-1')
-        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+        await seedDeviceId('live', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
 
         mockedRegisterDeviceMutation
             .mockRejectedValueOnce(
@@ -398,18 +362,51 @@ describe('services/device/hooks', () => {
         })
 
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('FRESH-1')
         expect(
-            useDeviceStore.getState().deviceIdOrigins[
-                scopeKeyForLegacyNetwork('mainnet')
-            ],
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
         ).toBe('recreated')
         expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
             'migrated_device_id_replaced',
             { network: 'mainnet', reason: 'not_found' },
+        )
+    })
+
+    test('the replacement event on the developer deployment carries the testnet tier', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+        const { useWalletDeployment } =
+            await import('@perawallet/wallet-core-chain-shared')
+        vi.mocked(useWalletDeployment).mockReturnValue('developer')
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('developer', 'MIGRATED-2')
+        useDeviceStore.getState().setDeviceIdOrigin('developer', 'migrated')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
+            )
+            .mockResolvedValueOnce({ id: 'FRESH-2' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
+            deployment: 'developer',
+            data: expect.objectContaining({ id: 'MIGRATED-2' }),
+        })
+        expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
+            'migrated_device_id_replaced',
+            { network: 'testnet', reason: 'not_found' },
         )
     })
 
@@ -420,7 +417,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'stale-id')
+        await seedDeviceId('live', 'stale-id')
 
         mockedRegisterDeviceMutation
             .mockRejectedValueOnce(
@@ -437,15 +434,11 @@ describe('services/device/hooks', () => {
         })
 
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('FRESH-3')
         expect(mockLogEvent).not.toHaveBeenCalled()
         expect(
-            useDeviceStore.getState().deviceIdOrigins[
-                scopeKeyForLegacyNetwork('mainnet')
-            ],
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
         ).toBeUndefined()
     })
 
@@ -456,8 +449,8 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'MIGRATED-1')
-        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+        await seedDeviceId('live', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
@@ -470,14 +463,10 @@ describe('services/device/hooks', () => {
 
         expect(outcome).toEqual({ createdNew: false })
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('MIGRATED-1')
         expect(
-            useDeviceStore.getState().deviceIdOrigins[
-                scopeKeyForLegacyNetwork('mainnet')
-            ],
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
         ).toBe('migrated')
         expect(mockLogEvent).not.toHaveBeenCalled()
     })
@@ -491,8 +480,8 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'MIGRATED-1')
-        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+        await seedDeviceId('live', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
 
         mockedRegisterDeviceMutation
             .mockRejectedValueOnce(
@@ -509,14 +498,10 @@ describe('services/device/hooks', () => {
         })
 
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('MIGRATED-1')
         expect(
-            useDeviceStore.getState().deviceIdOrigins[
-                scopeKeyForLegacyNetwork('mainnet')
-            ],
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
         ).toBe('migrated')
         expect(mockLogEvent).not.toHaveBeenCalled()
     })
@@ -528,7 +513,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'DEV-1')
+        await seedDeviceId('live', 'DEV-1')
         await seedPushToken('test-fcm-token')
 
         mockedRegisterDeviceMutation
@@ -547,7 +532,7 @@ describe('services/device/hooks', () => {
         })
 
         const expectedPayload = {
-            network: 'mainnet',
+            deployment: 'live',
             data: {
                 accounts,
                 platform: 'ios',
@@ -590,7 +575,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'V1-ISSUED')
+        await seedDeviceId('live', 'V1-ISSUED')
         await seedPushToken('test-fcm-token')
 
         mockedRegisterDeviceMutation
@@ -618,7 +603,7 @@ describe('services/device/hooks', () => {
         // The retry replays the same id-less create — not a fresh payload,
         // and emphatically not the stale id again.
         const idLessCreate = {
-            network: 'mainnet',
+            deployment: 'live',
             data: {
                 accounts,
                 platform: 'ios',
@@ -639,9 +624,7 @@ describe('services/device/hooks', () => {
         // The device healed: the id from the retry is persisted, so the next
         // registration takes the update path instead of creating again.
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('FRESH')
     })
 
@@ -652,7 +635,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'DEV-1')
+        await seedDeviceId('live', 'DEV-1')
 
         mockedRegisterDeviceMutation.mockRejectedValueOnce(
             new PeraNetworkError('client', { status: 422 }),
@@ -702,28 +685,23 @@ describe('services/device/hooks', () => {
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
     })
 
-    // (final review, Finding 1): `registerDevice` captures the
-    // network at *enqueue* time, but the write used to resolve its URL from
-    // the mutation's own `useNetwork()` at *execution* time. Queued behind an
-    // in-flight request, a mainnet registration could therefore run after the
-    // user switched to testnet, POST mainnet's device id to the testnet
-    // backend (unknown id → 404 → re-create) and write the resulting testnet
-    // id back into mainnet's store slot.
-    test('targets the network captured when the call was enqueued, not the one current when it runs', async () => {
+    // `registerDevice` captures the deployment at *enqueue* time. Resolving it
+    // at *execution* time instead would let a live registration queued behind
+    // an in-flight request run after the user switched to developer, POST the
+    // live device id to the developer backend (unknown id → 404 → re-create)
+    // and write the resulting developer id back into the live store slot.
+    test('targets the deployment captured when the call was enqueued, not the one current when it runs', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
-        const { useNetwork } =
+        const { useWalletDeployment } =
             await import('@perawallet/wallet-core-chain-shared')
 
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-            setNetwork: vi.fn(),
-        } as never)
+        vi.mocked(useWalletDeployment).mockReturnValue('live')
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'MAINNET-DEV')
+        await seedDeviceId('live', 'MAINNET-DEV')
 
         let resolveFirst: (value: { id: string }) => void = () => {}
         const firstResponse = new Promise<{ id: string }>(resolve => {
@@ -753,11 +731,8 @@ describe('services/device/hooks', () => {
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
 
-        // The user switches networks while the second call is still queued.
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'testnet',
-            setNetwork: vi.fn(),
-        } as never)
+        // The user switches deployments while the second call is still queued.
+        vi.mocked(useWalletDeployment).mockReturnValue('developer')
         rerender()
 
         await act(async () => {
@@ -767,18 +742,16 @@ describe('services/device/hooks', () => {
         })
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
-        // The queued write still goes to mainnet, carrying mainnet's id.
-        // Resolving the network at execution time would send this id to the
-        // testnet backend instead.
+        // The queued write still goes to live, carrying the live id.
+        // Resolving the deployment at execution time would send this id to the
+        // developer backend instead.
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({ id: 'MAINNET-DEV' }),
         })
-        // ...and no id leaked into the other network's slot.
+        // ...and no id leaked into the other deployment's slot.
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('testnet')) ?? null,
+            useDeviceStore.getState().deviceIDs.get('algorand/testnet') ?? null,
         ).toBeNull()
     })
 
@@ -858,14 +831,14 @@ describe('services/device/hooks', () => {
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
         // Exactly one id-less create...
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(1, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.not.objectContaining({ id: expect.anything() }),
         })
         // ...and instance B's own accounts still reach the backend, via a
         // follow-up carrying the id instance A's create minted — because B's
         // queued task re-reads the store and finds it.
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({
                 id: 'SHARED-ID',
                 accounts: accountsB,
@@ -874,9 +847,7 @@ describe('services/device/hooks', () => {
         expect(firstOutcome).toEqual({ createdNew: true })
         expect(secondOutcome).toEqual({ createdNew: false })
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('SHARED-ID')
     })
 
@@ -895,7 +866,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('mainnet', 'DEV-1')
+        await seedDeviceId('live', 'DEV-1')
 
         const accountsA: DeviceAccountRegistration[] = [
             {
@@ -964,14 +935,14 @@ describe('services/device/hooks', () => {
         // the scenario this guards — is always the last write the server
         // sees.
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(1, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({
                 accounts: accountsA,
                 id: 'DEV-1',
             }),
         })
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({
                 accounts: accountsB,
                 id: 'DEV-1',
@@ -1019,25 +990,20 @@ describe('services/device/hooks', () => {
         expect(outcome).toEqual({ createdNew: true })
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('RECOVERED')
     })
 
-    test('concurrent id-less creates for different networks do not interfere with each other', async () => {
+    test('concurrent id-less creates for different deployments do not interfere with each other', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
-        const { useNetwork } =
+        const { useWalletDeployment } =
             await import('@perawallet/wallet-core-chain-shared')
 
         useDeviceStore.getState().resetState()
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-            setNetwork: vi.fn(),
-        } as never)
+        vi.mocked(useWalletDeployment).mockReturnValue('live')
 
         let resolveMainnet: (value: { id: string }) => void = () => {}
         const mainnetCreate = new Promise<{ id: string }>(resolve => {
@@ -1063,10 +1029,7 @@ describe('services/device/hooks', () => {
         // The network switches to testnet — a different queue key, so this
         // fires its own independent (fast) create rather than waiting on
         // mainnet's.
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'testnet',
-            setNetwork: vi.fn(),
-        } as never)
+        vi.mocked(useWalletDeployment).mockReturnValue('developer')
         rerender()
 
         await act(async () => {
@@ -1074,16 +1037,12 @@ describe('services/device/hooks', () => {
         })
 
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('testnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/testnet'),
         ).toBe('TESTNET-ID')
         // Mainnet's create hasn't resolved yet — still pending, not
         // discarded.
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')) ?? null,
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet') ?? null,
         ).toBeNull()
 
         // Once it resolves, mainnet's id is persisted too. A late write for
@@ -1096,9 +1055,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(
-            useDeviceStore
-                .getState()
-                .deviceIDs.get(scopeKeyForLegacyNetwork('mainnet')),
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
         ).toBe('MAINNET-ID')
     })
 
@@ -1141,33 +1098,33 @@ describe('services/device/hooks', () => {
         expect(secondOutcome).toEqual({ createdNew: false })
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            deployment: 'live',
             data: expect.objectContaining({ id: 'FRESH-ID' }),
         })
     })
 
-    test('clears the previous network push token via a register carrying that id', async () => {
+    test('clears the previous deployment push token via a register carrying that id', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('testnet', 'OLD-DEV')
+        await seedDeviceId('developer', 'OLD-DEV')
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
         })
 
         await act(async () => {
-            await result.current.clearDevicePushToken('testnet')
+            await result.current.clearDevicePushToken('developer')
         })
 
-        // Routed via the raw endpoint with the *target* network, not the
-        // mutation hook (which captures the current network). `accounts` is
-        // sent empty so the new network's address list can't accidentally
+        // Routed via the raw endpoint with the *target* deployment, not the
+        // mutation hook (which captures the current deployment). `accounts` is
+        // sent empty so the new deployment's address list can't accidentally
         // overwrite the old device record.
-        expect(mockedRegisterDeviceEndpoint).toHaveBeenCalledWith('testnet', {
+        expect(mockedRegisterDeviceEndpoint).toHaveBeenCalledWith('developer', {
             id: 'OLD-DEV',
             pushToken: '',
             platform: 'ios',
@@ -1178,7 +1135,7 @@ describe('services/device/hooks', () => {
         })
     })
 
-    test('clearDevicePushToken is a no-op when target network has no device ID', async () => {
+    test('clearDevicePushToken is a no-op when the target deployment has no device ID', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -1191,7 +1148,7 @@ describe('services/device/hooks', () => {
         })
 
         await act(async () => {
-            await result.current.clearDevicePushToken('testnet')
+            await result.current.clearDevicePushToken('developer')
         })
 
         expect(mockedRegisterDeviceEndpoint).not.toHaveBeenCalled()
@@ -1207,7 +1164,7 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         useDeviceStore.getState().resetState()
-        await seedDeviceId('testnet', 'stale-id')
+        await seedDeviceId('developer', 'stale-id')
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
@@ -1215,7 +1172,7 @@ describe('services/device/hooks', () => {
 
         await expect(
             act(async () => {
-                await result.current.clearDevicePushToken('testnet')
+                await result.current.clearDevicePushToken('developer')
             }),
         ).resolves.not.toThrow()
     })

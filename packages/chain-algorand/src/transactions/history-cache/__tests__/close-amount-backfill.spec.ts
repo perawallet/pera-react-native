@@ -18,14 +18,16 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getTransactionHistory,
     historyChainAdapters,
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { algorandNetworkOf } from '../../../legacy-network'
+import { algorandHistoryDataOf } from '../../history-data'
+import { flatHistoryItem, type FlatHistoryItem } from './history-item'
+import { algorandNetworkOf } from '../../../network-id'
 import { fetchIndexerCloseAmount } from '../../history/indexer/endpoints'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
@@ -35,27 +37,28 @@ vi.mock('../../history/indexer/endpoints', () => ({
 }))
 
 const makeTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem => ({
-    id: 'TX001',
-    txType: 'pay',
-    sender: 'SENDER_ADDR',
-    receiver: 'RECEIVER_ADDR',
-    confirmedRound: 12345,
-    roundTime: 1700000000,
-    fee: new Decimal(1000),
-    groupId: null,
-    amount: new Decimal(0),
-    closeTo: 'CLOSE_ADDR',
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
-    asset: null,
-    swapGroupDetail: null,
-    interpretedMeaning: null,
-    balanceImpacts: [],
-    ...overrides,
-})
+    overrides: Partial<FlatHistoryItem> = {},
+): TransactionHistoryItem =>
+    flatHistoryItem({
+        id: 'TX001',
+        txType: 'pay',
+        sender: 'SENDER_ADDR',
+        receiver: 'RECEIVER_ADDR',
+        confirmedRound: 12345,
+        roundTime: 1700000000,
+        fee: new Decimal(1000),
+        groupId: null,
+        amount: new Decimal(0),
+        closeTo: 'CLOSE_ADDR',
+        closeAmount: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        balanceImpacts: [],
+        ...overrides,
+    })
 
 describe('backfillMissingCloseAmounts', () => {
     let db: Database
@@ -79,27 +82,29 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         const fetchCloseAmount = vi.fn().mockResolvedValue('50854132929')
 
         await backfillMissingCloseAmounts({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             accountAddress: 'ACCT1',
             fetchCloseAmount,
         })
 
-        expect(fetchCloseAmount).toHaveBeenCalledWith(
-            'TXSTALE',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        expect(fetchCloseAmount).toHaveBeenCalledWith('TXSTALE', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
-        expect(row.closeAmount).toEqual(new Decimal('50854132929'))
+        expect(algorandHistoryDataOf(row).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 
     it('leaves the row unhealed (and does not throw) when the lookup fails', async () => {
@@ -107,14 +112,17 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         const fetchCloseAmount = vi.fn().mockRejectedValue(new Error('offline'))
 
         await expect(
             backfillMissingCloseAmounts({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 accountAddress: 'ACCT1',
                 fetchCloseAmount,
             }),
@@ -123,11 +131,11 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         // Still null — the row keeps matching the backfill predicate, so the
         // next sync pass retries naturally.
-        expect(row.closeAmount).toBeNull()
+        expect(algorandHistoryDataOf(row).closeAmount).toBeNull()
     })
 
     it('does not fetch anything when no rows need healing', async () => {
@@ -140,13 +148,13 @@ describe('backfillMissingCloseAmounts', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         const fetchCloseAmount = vi.fn()
 
         await backfillMissingCloseAmounts({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             accountAddress: 'ACCT1',
             fetchCloseAmount,
         })
@@ -159,13 +167,16 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         const fetchCloseAmount = vi.fn().mockResolvedValue(null)
         const run = () =>
             backfillMissingCloseAmounts({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 accountAddress: 'ACCT1',
                 fetchCloseAmount,
             })
@@ -177,9 +188,9 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
-        expect(row.closeAmount).toBeNull()
+        expect(algorandHistoryDataOf(row).closeAmount).toBeNull()
     })
 
     it('only heals the rows linked to the syncing account', async () => {
@@ -187,13 +198,13 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'THEIRS' })],
             accountAddress: 'ACCT2',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         const fetchCloseAmount = vi.fn()
 
         await backfillMissingCloseAmounts({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             accountAddress: 'ACCT1',
             fetchCloseAmount,
         })
@@ -206,25 +217,30 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         vi.mocked(fetchIndexerCloseAmount).mockResolvedValue('50854132929')
 
         await backfillMissingCloseAmounts({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             accountAddress: 'ACCT1',
         })
 
         expect(fetchIndexerCloseAmount).toHaveBeenCalledWith(
             'TXSTALE',
-            algorandNetworkOf(scopeForLegacyNetwork('mainnet')),
+            algorandNetworkOf({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
-        expect(row.closeAmount).toEqual(new Decimal('50854132929'))
+        expect(algorandHistoryDataOf(row).closeAmount).toEqual(
+            new Decimal('50854132929'),
+        )
     })
 })

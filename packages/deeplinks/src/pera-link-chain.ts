@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     addressCodecs,
     type AssetRef,
@@ -18,13 +19,12 @@ import {
     type ChainPaymentData,
 } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from './chain-adapter'
-import type { ChainLinkTarget } from './models'
-import { readBaseUnits } from './utils'
+import type { ChainLinkTarget, DeeplinkParseFailure } from './models'
+import { readBaseUnits, readPeraAppLink } from './utils'
 
 /**
- * Pera links name no chain, and every one issued so far belongs to this one.
- * This file is the only place that says so, so a link that names its own chain
- * replaces it here and nowhere else.
+ * A Pera link without `chain=` targets this chain: every link issued before the
+ * param existed is Algorand's. This file is the only place that says so.
  */
 export const PERA_LINK_CHAIN_ID = 'algorand' satisfies ChainId
 
@@ -32,17 +32,83 @@ export const peraLinkTarget = (): ChainLinkTarget => ({
     chainId: PERA_LINK_CHAIN_ID,
 })
 
+/** The `perawallet://app/<path>` paths that read `chain=`; every other path ignores it. */
+const CHAIN_SCOPED_PATHS: ReadonlySet<string> = new Set([
+    'add-contact',
+    'edit-contact',
+    'register-watch-account',
+    'add-watch-account',
+    'receiver-account-selection',
+    'address-actions',
+    'asset-transfer',
+    'asset-opt-in',
+    'asset-detail',
+    'account-detail',
+    'swap',
+    'buy',
+    'sell',
+])
+
+export const isChainScopedPeraPath = (path: string): boolean =>
+    CHAIN_SCOPED_PATHS.has(path)
+
+export type PeraLinkChainFailure =
+    | Extract<DeeplinkParseFailure, 'unsupported-network'>
+    | 'chain-unavailable'
+
+export type PeraLinkTargetResolution =
+    | { ok: true; target: ChainLinkTarget }
+    | { ok: false; reason: PeraLinkChainFailure }
+
+/** `chain` is the raw CAIP-2 param; absent means the legacy chain with no network. */
+export const resolvePeraLinkTarget = (
+    chain: string | undefined,
+): PeraLinkTargetResolution => {
+    if (chain === undefined) return { ok: true, target: peraLinkTarget() }
+
+    const { chains } = getProvider()
+    const resolved = chains.byCaip2(chain)
+    if (!resolved) return { ok: false, reason: 'unsupported-network' }
+    if (chains.isSwitchedOff(resolved.chainId)) {
+        return { ok: false, reason: 'chain-unavailable' }
+    }
+    return {
+        ok: true,
+        target: { chainId: resolved.chainId, networkId: resolved.network.id },
+    }
+}
+
+/**
+ * Why a Pera app link's `chain=` can't be honoured, else `undefined`. The
+ * parser only answers "no link", so callers ask this to tell the user the
+ * chain is unsupported instead of treating the link as noise.
+ */
+export const peraLinkChainFailure = (
+    url: string,
+): PeraLinkChainFailure | undefined => {
+    const link = readPeraAppLink(url)
+    if (!link || !isChainScopedPeraPath(link.action)) return undefined
+    const resolution = resolvePeraLinkTarget(link.params.chain)
+    return resolution.ok ? undefined : resolution.reason
+}
+
 /** The parsers pass optional params straight through, so an absent one is simply not an address. */
 export const isPeraLinkAddress = (address: string | undefined): boolean =>
     !!address &&
     addressCodecs.has(PERA_LINK_CHAIN_ID) &&
     addressCodecs.get(PERA_LINK_CHAIN_ID).isValid(address)
 
-/** `undefined` when the id is not one the chain spells, or its adapter isn't registered. */
-export const toPeraLinkAssetRef = (raw: string): AssetRef | undefined =>
-    deeplinkAdapters.has(PERA_LINK_CHAIN_ID)
-        ? deeplinkAdapters.get(PERA_LINK_CHAIN_ID).toAssetRef(raw)
+/** `undefined` when the id is not one the target chain spells, or its adapter isn't registered. */
+export const toLinkAssetRef = (
+    target: ChainLinkTarget,
+    raw: string,
+): AssetRef | undefined =>
+    deeplinkAdapters.has(target.chainId)
+        ? deeplinkAdapters.get(target.chainId).toAssetRef(raw)
         : undefined
+
+export const toPeraLinkAssetRef = (raw: string): AssetRef | undefined =>
+    toLinkAssetRef(peraLinkTarget(), raw)
 
 export type PeraKeyregParams = {
     sender: string

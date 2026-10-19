@@ -18,11 +18,11 @@ import React from 'react'
 const { fetchCardStatus } = vi.hoisted(() => ({ fetchCardStatus: vi.fn() }))
 vi.mock('../../api/card', () => ({ fetchCardStatus }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardStatusQuery } from '../useCardStatusQuery'
 import { CardStatus, CardType, type Card } from '../../models'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 const card: Card = {
     id: 'card_1',

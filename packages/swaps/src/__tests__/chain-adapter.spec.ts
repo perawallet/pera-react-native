@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     submitCosignedSwapGroup,
@@ -32,16 +32,27 @@ describe('swapAdapterFor', () => {
         const adapter = fakeSwapAdapter()
         swapChainAdapters.register(adapter)
 
-        expect(swapAdapterFor(scopeForLegacyNetwork('testnet'))).toBe(adapter)
+        expect(
+            swapAdapterFor({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const),
+        ).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => swapAdapterFor(scopeForLegacyNetwork('mainnet'))).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
-        expect(() => swapAdapterFor(scopeForLegacyNetwork('mainnet'))).toThrow(
-            'No swap adapter is registered for chain "algorand"',
-        )
+        expect(() =>
+            swapAdapterFor({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).toThrow(ChainAdapterNotRegisteredError)
+        expect(() =>
+            swapAdapterFor({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).toThrow('No swap adapter is registered for chain "algorand"')
     })
 })
 
@@ -58,7 +69,10 @@ describe('submitCosignedSwapGroup', () => {
         submit.mockResolvedValue(['TX1'])
         swapChainAdapters.register(fakeSwapAdapter())
         const signed = [new Uint8Array([1])]
-        const scope = scopeForLegacyNetwork('mainnet')
+        const scope = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
 
         const txIds = await submitCosignedSwapGroup(scope, signed)
 
@@ -72,9 +86,10 @@ describe('submitCosignedSwapGroup', () => {
         )
 
         await expect(
-            submitCosignedSwapGroup(scopeForLegacyNetwork('mainnet'), [
-                new Uint8Array([1]),
-            ]),
+            submitCosignedSwapGroup(
+                { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+                [new Uint8Array([1])],
+            ),
         ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
         expect(submit).not.toHaveBeenCalled()
     })

@@ -11,7 +11,7 @@
  */
 
 import { queryClient } from './query-client'
-import type { Network } from '../models/base-types'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export type AccountFastLookup = {
     address: string
@@ -49,11 +49,11 @@ export type RawFastLookupResponse = {
  */
 export const fetchAccountExists = async (
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<boolean> => {
     const response = await queryClient<RawFastLookupResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: getAccountFastLookupEndpointPath(address),
     })
@@ -62,13 +62,13 @@ export const fetchAccountExists = async (
 
 export const fetchAccountFastLookup = async (
     addresses: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<AccountFastLookupResponse> => {
     const tasks = addresses.map(async (address): Promise<AccountFastLookup> => {
         try {
             const response = await queryClient<RawFastLookupResponse>({
                 backend: 'pera',
-                network,
+                scope,
                 method: 'GET',
                 url: getAccountFastLookupEndpointPath(address),
             })

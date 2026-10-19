@@ -446,8 +446,8 @@ describe('Flow: Account management', () => {
         // env's default network isn't pinned here) so the registration
         // reuses it rather than minting a new one; the shared afterEach
         // resets it for other tests.
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
         // Sanity: notifications are enabled by default — we want to
         // observe the toggle flipping a fresh account, not the
         // recovery from a prior disabled state.

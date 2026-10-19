@@ -397,7 +397,8 @@
         "backup_warning_continue": "Yes, continue",
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
-        "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)"
+        "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
+        "view_private_key": "View private key"
     },
     "account_info": {
         "min_balance": "Min Balance",
@@ -468,6 +469,11 @@
             "error_title": "Could not retrieve passphrase",
             "error_body": "Something went wrong. Please try again."
         }
+    },
+    "reveal_private_key": {
+        "title": "Private key",
+        "body": "Anyone with this key controls the account. Never share it.",
+        "error_title": "Couldn't show the private key"
     },
     "banners": {
         "dismiss": "Don't show again"
@@ -2141,6 +2147,16 @@
             "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
         },
+        "import_private_key": {
+            "title": "Import private key",
+            "body": "Enter the {{chain}} account's private key.",
+            "input_label": "Private key",
+            "invalid": "This isn't a valid private key",
+            "submit": "Import Account",
+            "error_title": "Couldn't import the account",
+            "backup_included": "This account is included in your cloud backup.",
+            "backup_not_included": "This account isn't in a cloud backup. To recover it later, use View private key in the account's options and keep the key somewhere safe."
+        },
         "import_account_options": {
             "title": "Import an\naccount",
             "recover_wallet_title": "Recover a wallet",
@@ -3043,6 +3059,18 @@
             "typed_data_warning_title": "This signature can move your tokens",
             "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
+        "spend_approval": {
+            "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
+            "spend_warning_bold": "Only sign if you trust this application.",
+            "spender_caption": "Spender: {{address}}",
+            "unlimited_warning": "The amount is unlimited, so the spender can take all of this token you hold.",
+            "long_deadline_warning": "This permission lasts more than a year.",
+            "no_deadline_warning": "This permission never expires.",
+            "spender_label": "Spender",
+            "unlimited": "Unlimited",
+            "deadline_label": "Deadline",
+            "never": "Never"
+        },
         "arbitrary_data_details": {
             "unnamed": "Someone",
             "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",
@@ -3357,6 +3385,11 @@
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
+        },
+        "switch_network": {
+            "title": "Allow network access?",
+            "body": "{{name}} wants to use your {{chain}} accounts on {{network}}.",
+            "confirm": "Allow"
         },
         "settings": {
             "empty_title": "No WalletConnect Sessions",

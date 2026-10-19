@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import {
-    scopeForLegacyNetwork,
-    type ChainId,
+import type {
+    ChainId,
+    ChainScope,
+    NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
+    walletNoticeChainId,
     type ConnectionHandler,
     type ConnectionProposal,
     type DappRequestChainAdapter,
@@ -28,7 +30,6 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -68,7 +69,7 @@ export type DappHandlerDeps = {
      * chain, so it is fixed per handler.
      */
     chainId: ChainId
-    getNetwork: () => Network
+    getNetworkId: (chainId: ChainId) => NetworkId
     getCustomNetworkGenesisHash: () => string | undefined
     /**
      * The wallet's current signing-capable accounts. Read on every answer, not
@@ -212,6 +213,11 @@ export const createDappConnectionHandler = (
             ? dappRequestChainAdapters.get(deps.chainId)
             : undefined
 
+    const activeScope = (): ChainScope => ({
+        chainId: deps.chainId,
+        networkId: deps.getNetworkId(deps.chainId),
+    })
+
     const deliver = (
         respond: DappRespond,
         response: JsonRpcResponse,
@@ -286,7 +292,7 @@ export const createDappConnectionHandler = (
             )
         }
         const network = adapter.resolveReportedNetwork(
-            scopeForLegacyNetwork(deps.getNetwork()),
+            activeScope(),
             deps.getCustomNetworkGenesisHash(),
         )
         if (!network) {
@@ -517,7 +523,7 @@ export const createDappConnectionHandler = (
         }
         const params = isRecord(request.params) ? request.params : {}
         const network = adapter.resolveReportedNetwork(
-            scopeForLegacyNetwork(deps.getNetwork()),
+            activeScope(),
             deps.getCustomNetworkGenesisHash(),
         )
         if (!network) {
@@ -638,6 +644,38 @@ export const createDappConnectionHandler = (
         })
     }
 
+    // Never widens what the page was approved for: only the connection's own
+    // addresses still in the wallet are reported.
+    const notificationFor = async (
+        id: ConnectionId,
+        notice: WalletNotice,
+    ): Promise<{ method: string; params: Record<string, unknown> } | null> => {
+        if (notice.type === 'network-changed') {
+            const network = chainAdapter()?.resolveReportedNetwork(
+                notice.scope,
+                deps.getCustomNetworkGenesisHash(),
+            )
+            return network
+                ? {
+                      method: DAPP_NOTIFICATIONS.networkChanged,
+                      params: { network },
+                  }
+                : null
+        }
+        const connection = await getConnection(id)
+        if (!connection?.accounts.some(a => notice.changed.includes(a))) {
+            return null
+        }
+        return {
+            method: DAPP_NOTIFICATIONS.accountsChanged,
+            params: {
+                accounts: connection.accounts.filter(a =>
+                    notice.accounts.includes(a),
+                ),
+            },
+        }
+    }
+
     const restore = async (): Promise<DappConnection[]> =>
         (await store().list()).filter(isDappConnection)
 
@@ -661,19 +699,15 @@ export const createDappConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
-        matchesNetwork: () => true,
+        matchesChainScope: (_, scope) => scope.chainId === deps.chainId,
         methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
-            const notification =
-                notice.type === 'accounts-changed'
-                    ? {
-                          method: DAPP_NOTIFICATIONS.accountsChanged,
-                          params: { accounts: notice.accounts },
-                      }
-                    : {
-                          method: DAPP_NOTIFICATIONS.networkChanged,
-                          params: { network: notice.network },
-                      }
+            // The protocol carries one chain, fixed per handler.
+            if (!new Set([deps.chainId]).has(walletNoticeChainId(notice))) {
+                return
+            }
+            const notification = await notificationFor(id, notice)
+            if (!notification) return
             await deps.transport.notify(id, { jsonrpc: '2.0', ...notification })
         },
     }

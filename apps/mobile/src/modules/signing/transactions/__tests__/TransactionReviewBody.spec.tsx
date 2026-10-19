@@ -152,6 +152,7 @@ const REVIEW_KINDS: Record<AlgorandDisplayFixtureKind, ReviewExpectation> = {
     },
 }
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: asserts what the user sees before signing, the security boundary of the review
 describe('TransactionReviewBody', () => {
     beforeEach(() => {
         mockPipeline.distinctWarnings = []

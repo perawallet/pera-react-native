@@ -53,7 +53,7 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { EMPTY_ALGORAND_HISTORY_DATA } from '@perawallet/wallet-core-chain-algorand/transactions'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
@@ -62,8 +62,12 @@ import { useAccountHistory } from '@modules/accounts/components/AccountHistory/u
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
@@ -86,16 +90,11 @@ const TX_PAYMENT: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 100,
     roundTime: 1_700_000_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(1_000_000), // 1 ALGO
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 
@@ -107,21 +106,16 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 99,
     roundTime: 1_699_900_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(2_500_000),
-    closeTo: null,
-    closeAmount: null,
     asset: {
         assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
         decimals: 6,
     },
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 
@@ -136,16 +130,11 @@ const TX_STATE_PROOF: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 98,
     roundTime: 1_699_800_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: null,
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 
@@ -181,7 +170,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_PAYMENT, TX_ASSET_TRANSFER],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
     })
 
@@ -402,13 +391,16 @@ describe('Flow: View transactions → tap into details', () => {
             ...TX_PAYMENT,
             id: 'TXCLOSEOUT000000000000000000000000000000000000000003',
             amount: new Decimal(0),
-            closeTo: HD_TEST_ADDRESS,
-            closeAmount: new Decimal(50_854_132_929),
+            chainData: {
+                ...EMPTY_ALGORAND_HISTORY_DATA,
+                closeTo: HD_TEST_ADDRESS,
+                closeAmount: new Decimal(50_854_132_929),
+            },
         }
         await upsertTransactions({
             items: [closeOutTx],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         const lookupSpy = vi.fn(() =>
@@ -513,23 +505,18 @@ describe('Flow: View transactions → tap into details', () => {
                 // not date bucketing. Base is noon UTC so the 25-minute
                 // span doesn't cross midnight in any reasonable TZ.
                 roundTime: 1_700_049_600 - i * 60,
-                swapGroupDetail: null,
+                chainData: null,
                 interpretedMeaning: null,
                 fee: new Decimal(1000),
-                groupId: null,
                 amount: new Decimal(1_000_000),
-                closeTo: null,
-                closeAmount: null,
                 asset: null,
-                applicationId: null,
-                innerTransactionCount: null,
                 balanceImpacts: [],
             }),
         )
         await upsertTransactions({
             items: fullPage,
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         // Pera transaction-history endpoint. The endpoint URL is
@@ -632,7 +619,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_STATE_PROOF],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         const lookupSpy = vi.fn(() =>

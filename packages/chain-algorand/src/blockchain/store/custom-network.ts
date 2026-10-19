@@ -13,7 +13,6 @@
 import {
     CUSTOM_NETWORK_ID,
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     toScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -29,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { fetchGenesisFromNode } from '../utils/fetchGenesisFromNode'
+import { algorandScope } from '../../network-id'
 
 export type AlgorandCustomNetwork = CustomNetwork & CustomNetworkConfig
 
@@ -71,8 +71,8 @@ export const clearCustomNetwork = (): void =>
         .getState()
         .clearCustomNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
 
-// A literal, not Networks.custom: module load must not touch the config enum.
-const CUSTOM_SCOPE_KEY = toScopeKey(scopeForLegacyNetwork('custom'))
+// A literal: module load must not touch config.
+const CUSTOM_SCOPE_KEY = toScopeKey(algorandScope('custom'))
 
 // config resolves chain endpoints but cannot import the store, so the saved
 // node reaches getChainConfig through this reader.

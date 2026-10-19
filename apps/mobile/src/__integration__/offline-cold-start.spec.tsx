@@ -69,10 +69,7 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 import { useNetworkStatusStore } from '@modules/network'
@@ -102,16 +99,11 @@ const CACHED_TX: TransactionHistoryItem = {
     assetSender: null,
     confirmedRound: 100,
     roundTime: 1_700_000_000,
-    swapGroupDetail: null,
+    chainData: null,
     interpretedMeaning: null,
     fee: new Decimal(1000),
-    groupId: null,
     amount: new Decimal(1_000_000), // 1 ALGO
-    closeTo: null,
-    closeAmount: null,
     asset: null,
-    applicationId: null,
-    innerTransactionCount: null,
     balanceImpacts: [],
 }
 
@@ -130,24 +122,24 @@ const wrapperWithClient = () => {
 const seedPreviouslySyncedAccount = async () => {
     await seedAlgorandAccountState({
         accountAddress: addressOf(ACCOUNT),
-        scope: scopeForLegacyNetwork(NETWORK),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         nativeBalance: new Decimal(10_000_000), // 10 ALGO
         minBalance: new Decimal(100_000),
     })
     await insertAssetHolding({
         accountAddress: addressOf(ACCOUNT),
         assetId: '0',
-        scope: scopeForLegacyNetwork(NETWORK),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         amount: new Decimal('10000000'), // 10 ALGO in base units
     })
     await upsertAssetPrices({
         prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
-        scope: scopeForLegacyNetwork(NETWORK),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
     })
     await upsertTransactions({
         items: [CACHED_TX],
         accountAddress: addressOf(ACCOUNT),
-        scope: scopeForLegacyNetwork(NETWORK),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
     })
 }
 
@@ -234,7 +226,11 @@ describe('Flow: Cold start with no connectivity', () => {
         useNetworkStatusStore.getState().setHasInternet(false)
 
         const { result } = renderHook(
-            () => useCurrency(scopeForLegacyNetwork('mainnet')),
+            () =>
+                useCurrency({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             { wrapper: wrapperWithClient() },
         )
 
@@ -256,14 +252,14 @@ describe('Flow: Cold start with no connectivity', () => {
         // the total unknown.
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(10_000_000), // 10 ALGO
             minBalance: new Decimal(100_000),
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT),
             assetId: '0',
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             amount: new Decimal('10000000'),
         })
 
@@ -345,7 +341,7 @@ describe('Flow: Cold start with no connectivity', () => {
         // Balance row only — no transactions were ever synced.
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(0),
             minBalance: new Decimal(100_000),
         })

@@ -26,13 +26,13 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card', () => api)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardStatus, type Card } from '../../models/card'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>

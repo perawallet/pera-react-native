@@ -10,15 +10,21 @@
  limitations under the License
  */
 
-import { deviceIdFor, useDeviceStore } from '@perawallet/wallet-core-device'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import {
+    deviceIdForDeployment,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import type { DeviceId } from '../models'
 import { useCloudBackupStore } from './store'
 
-/** The id the backup was configured with, falling back to the current network's
- *  device id for state persisted before that id was pinned. The device store is
- *  keyed per network while the backup service is a single global endpoint, so
- *  reading it directly makes a network switch change what we send. */
-export const resolveBackupDeviceId = (network: Network): DeviceId | null =>
+/** The id the backup was configured with, falling back to the current
+ *  deployment's device id for state persisted before that id was pinned. The
+ *  device store is keyed per deployment while the backup service is a single
+ *  global endpoint, so reading it directly makes a deployment switch change
+ *  what we send. */
+export const resolveBackupDeviceId = (
+    deployment: WalletMode,
+): DeviceId | null =>
     useCloudBackupStore.getState().deviceId ??
-    deviceIdFor(useDeviceStore.getState(), network)
+    deviceIdForDeployment(useDeviceStore.getState(), deployment)

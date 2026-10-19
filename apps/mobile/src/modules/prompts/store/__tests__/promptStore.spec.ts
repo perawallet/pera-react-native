@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { usePromptStore } from '../promptStore'

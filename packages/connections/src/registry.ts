@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import {
-    logger,
-    Networks,
-    toError,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { configuredScopes } from '@perawallet/wallet-core-config'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionId,
@@ -31,6 +27,7 @@ import type {
     ConnectionProposal,
     InboundMessage,
     RawInboundMessage,
+    WalletNotice,
 } from './models'
 import { validateRawMessage } from './validate'
 
@@ -46,7 +43,7 @@ export interface ConnectionRegistryClient {
     /** Empty when nothing claims the URI. Never contains the URI itself. */
     describeUri(uri: string): Record<string, string | null>
     /** Empty for a kind with no registered handler. */
-    networksFor(connection: Connection): Network[]
+    scopesFor(connection: Connection): ChainScope[]
     /**
      * The methods the connection was approved for, as its handler reads them.
      * Empty for a kind with no registered handler.
@@ -78,7 +75,22 @@ export interface ConnectionRegistry extends ConnectionRegistryClient {
      * requests themselves and would otherwise fail silently.
      */
     reportError(error: Error, scope?: ConnectionErrorScope): void
+    /**
+     * Pushes a wallet-initiated notice to every active connection whose
+     * handler declares `notify`; the handler decides whether it concerns the
+     * session. A no-op while not live, and never rejects.
+     */
+    notify(notice: WalletNotice): Promise<void>
 }
+
+/** The configured scopes the handler accepts the connection on. */
+export const chainScopesServedBy = (
+    handler: ConnectionHandler,
+    connection: Connection,
+): ChainScope[] =>
+    configuredScopes().filter(scope =>
+        handler.matchesChainScope(connection, scope),
+    )
 
 export const createConnectionRegistry = (options: {
     store: ConnectionStoreAPI
@@ -380,12 +392,9 @@ export const createConnectionRegistry = (options: {
             handler?.abandonPairing?.(pairingId)
         },
         describeUri: uri => claimingHandler(uri)?.describeUri?.(uri) ?? {},
-        networksFor: connection => {
+        scopesFor: connection => {
             const handler = handlers.get(connection.kind)
-            if (!handler) return []
-            return Object.values(Networks).filter(network =>
-                handler.matchesNetwork(connection, network),
-            )
+            return handler ? chainScopesServedBy(handler, connection) : []
         },
         methodsFor: connection =>
             handlers.get(connection.kind)?.methodsFor(connection) ?? [],
@@ -427,5 +436,33 @@ export const createConnectionRegistry = (options: {
             return () => void errorListeners.delete(listener)
         },
         reportError: emitError,
+        notify: async notice => {
+            if (!isLive) return
+            try {
+                const active = (await store.list()).filter(
+                    connection => connection.status === 'active',
+                )
+                const results = await Promise.allSettled(
+                    active.map(async connection =>
+                        handlers
+                            .get(connection.kind)
+                            ?.notify?.(connection.id, notice),
+                    ),
+                )
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        logger.warn('[connections] notify failed', {
+                            kind: active[index].kind,
+                            id: active[index].id,
+                            error: toError(result.reason),
+                        })
+                    }
+                })
+            } catch (error) {
+                logger.warn('[connections] notify could not list connections', {
+                    error: toError(error),
+                })
+            }
+        },
     }
 }

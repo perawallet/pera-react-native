@@ -124,10 +124,13 @@ vi.mock('@perawallet/wallet-core-device', () => ({
             deviceIDs: new Map([['algorand/mainnet', 'dev-id']]),
         }),
     },
-    deviceIdFor: (
+    deviceIdForDeployment: (
         state: { deviceIDs: Map<string, string | null> },
-        network: string,
-    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+        deployment: string,
+    ) =>
+        state.deviceIDs.get(
+            deployment === 'live' ? 'algorand/mainnet' : 'algorand/testnet',
+        ) ?? null,
 }))
 
 vi.mock('../../store', () => ({
@@ -238,7 +241,7 @@ const subscribeTo =
     }
 
 const makeSources = (): BackupSyncSources => ({
-    getNetwork: () => 'mainnet',
+    getDeployment: () => 'live',
     listAccounts: () => accountsState.current as never,
     subscribeAccounts: subscribeTo(accountsListeners as never),
     listContacts: () => contactsState.current as never,

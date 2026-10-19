@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let mockIdCounter = 0

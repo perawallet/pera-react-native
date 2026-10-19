@@ -13,15 +13,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useCardAutoDraw } from '../useCardAutoDraw'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('testnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 const account = { address: 'FUNDING' } as WalletAccount

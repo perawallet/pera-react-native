@@ -20,7 +20,6 @@ import {
     type MintedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     algo25SignKeyId,
     mnemonicWordsToIndices,
@@ -35,6 +34,7 @@ import { algorandAddressCodec } from '../address-codec'
 import { algorandAccountExists } from '../discovery'
 import { algorandQuantumDerivation } from '../quantum'
 import { algorandSingleKeyAccounts } from '../single-key-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const keystore = vi.hoisted(() => ({
     getKey: vi.fn(),
@@ -73,7 +73,7 @@ const LEGACY_ADDRESS =
 const ALGO25_ADDRESS =
     'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
 
-const scope = scopeForLegacyNetwork('mainnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const ALGO25_PUBLIC_KEY = new Uint8Array(32).fill(7)
 const QUANTUM_PUBLIC_KEY = new Uint8Array(1793).fill(9)
 // Stored so a realm without keystore access can still describe the account.

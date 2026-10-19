@@ -15,8 +15,7 @@ import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     networkTierForMode,
     rekeyLegacyNetworkRecord,
-    scopeForLegacyNetwork,
-    scopeKeyForLegacyNetwork,
+    scopeFromNetworkColumn,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -26,7 +25,6 @@ import { peraDeploymentOf } from '@perawallet/wallet-core-config'
 import {
     guardedPersist,
     registerStore,
-    type Network,
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -66,20 +64,16 @@ export const migrateDeviceState = (
     return state
 }
 
-export const deviceIdFor = (
-    state: Pick<DeviceState, 'deviceIDs'>,
-    network: Network,
-): Nullable<string> =>
-    state.deviceIDs?.get(toScopeKey(scopeForLegacyNetwork(network))) ?? null
+// Ids keep the key the v2 migration gave them: the deployment's Algorand tier.
+const deviceStorageKey = (deployment: WalletMode): ChainScopeKey =>
+    toScopeKey(scopeFromNetworkColumn(networkTierForMode(deployment)))
 
-/**
- * A device id belongs to a Pera deployment, never a chain. Stored under the
- * deployment's Algorand tier key, the key it had while ids were per network.
- */
+/** A device id belongs to a Pera deployment, never a chain. */
 export const deviceIdForDeployment = (
     state: Pick<DeviceState, 'deviceIDs'>,
     deployment: WalletMode,
-): Nullable<string> => deviceIdFor(state, networkTierForMode(deployment))
+): Nullable<string> =>
+    state.deviceIDs?.get(deviceStorageKey(deployment)) ?? null
 
 /** The id of the deployment serving the scope; every chain of a tier shares it. */
 export const deviceIdForScope = (
@@ -94,14 +88,14 @@ export const deviceIdForScope = (
 
 export const deviceIdOriginFor = (
     state: Pick<DeviceState, 'deviceIdOrigins'>,
-    network: Network,
+    deployment: WalletMode,
 ): DeviceIdOrigin | undefined =>
-    state.deviceIdOrigins[scopeKeyForLegacyNetwork(network)]
+    state.deviceIdOrigins[deviceStorageKey(deployment)]
 
 const initialState = {
     deviceIDs: new Map<ChainScopeKey, Nullable<string>>(),
     pushToken: null as Nullable<string>,
-    pendingRegistrationNetworks: [] as Network[],
+    pendingRegistrationDeployments: [] as WalletMode[],
     deviceIdOrigins: {} as Partial<Record<ChainScopeKey, DeviceIdOrigin>>,
 }
 
@@ -114,25 +108,31 @@ export const useDeviceStore: UseBoundStore<
             setPushToken: (token: Nullable<string>) => {
                 set({ pushToken: token })
             },
-            setDeviceID: (network: Network, id: Nullable<string>) => {
+            setDeviceID: (deployment: WalletMode, id: Nullable<string>) => {
                 const deviceIDs = new Map(get().deviceIDs)
-                deviceIDs.set(scopeKeyForLegacyNetwork(network), id)
+                deviceIDs.set(deviceStorageKey(deployment), id)
                 set({ deviceIDs })
             },
-            setRegistrationPending: (network: Network, isPending: boolean) => {
-                const current = get().pendingRegistrationNetworks
-                if (isPending === current.includes(network)) return
+            setRegistrationPending: (
+                deployment: WalletMode,
+                isPending: boolean,
+            ) => {
+                const current = get().pendingRegistrationDeployments
+                if (isPending === current.includes(deployment)) return
                 set({
-                    pendingRegistrationNetworks: isPending
-                        ? [...current, network]
-                        : current.filter(pending => pending !== network),
+                    pendingRegistrationDeployments: isPending
+                        ? [...current, deployment]
+                        : current.filter(pending => pending !== deployment),
                 })
             },
-            setDeviceIdOrigin: (network: Network, origin: DeviceIdOrigin) => {
+            setDeviceIdOrigin: (
+                deployment: WalletMode,
+                origin: DeviceIdOrigin,
+            ) => {
                 set({
                     deviceIdOrigins: {
                         ...get().deviceIdOrigins,
-                        [scopeKeyForLegacyNetwork(network)]: origin,
+                        [deviceStorageKey(deployment)]: origin,
                     },
                 })
             },
@@ -148,7 +148,7 @@ export const useDeviceStore: UseBoundStore<
             storage: () => getProvider().keyValueStorage,
             version: 2,
             migrate: migrateDeviceState,
-            // pendingRegistrationNetworks is deliberately not persisted: the
+            // pendingRegistrationDeployments is deliberately not persisted: the
             // mount effect re-registers on every cold start anyway, and a
             // rehydrated pending flag would arm the retry subscriptions before
             // that first attempt resolves.

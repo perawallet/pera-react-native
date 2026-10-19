@@ -80,7 +80,7 @@ export async function upsertTransactions({
     accountAddress,
     scope,
 }: UpsertTransactionsParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -93,11 +93,11 @@ export async function upsertTransactions({
             .insert(TransactionsSchema)
             .values({
                 ...row,
-                network,
+                scope: scopeKey,
                 updatedAt: now,
             })
             .onConflictDoUpdate({
-                target: [TransactionsSchema.network, TransactionsSchema.id],
+                target: [TransactionsSchema.scope, TransactionsSchema.id],
                 set: {
                     txType: row.txType,
                     sender: row.sender,
@@ -134,7 +134,7 @@ export async function upsertTransactions({
             .values({
                 accountAddress,
                 transactionId: item.id,
-                network,
+                scope: scopeKey,
                 assetId: assetId || null,
                 roundTime: item.roundTime,
             })
@@ -144,7 +144,7 @@ export async function upsertTransactions({
                 target: [
                     AccountTransactionsSchema.accountAddress,
                     AccountTransactionsSchema.transactionId,
-                    AccountTransactionsSchema.network,
+                    AccountTransactionsSchema.scope,
                 ],
                 set: { roundTime: item.roundTime },
             })
@@ -202,10 +202,10 @@ export async function getTransactionHistory({
     afterTime,
     beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
-        eq(AccountTransactionsSchema.network, network),
+        eq(AccountTransactionsSchema.scope, scopeKey),
     ]
 
     if (assetId !== undefined) {
@@ -265,10 +265,7 @@ export async function getTransactionHistory({
                     AccountTransactionsSchema.transactionId,
                     TransactionsSchema.id,
                 ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
+                eq(AccountTransactionsSchema.scope, TransactionsSchema.scope),
             ),
         )
         .where(and(...conditions))
@@ -326,7 +323,7 @@ export async function getRowsByChainData({
 }: GetRowsByChainDataParams): Promise<
     Array<{ id: string; roundTime: number }>
 > {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     return (
         db
             .select({
@@ -343,14 +340,14 @@ export async function getRowsByChainData({
                         TransactionsSchema.id,
                     ),
                     eq(
-                        AccountTransactionsSchema.network,
-                        TransactionsSchema.network,
+                        AccountTransactionsSchema.scope,
+                        TransactionsSchema.scope,
                     ),
                 ),
             )
             .where(
                 and(
-                    eq(TransactionsSchema.network, network),
+                    eq(TransactionsSchema.scope, scopeKey),
                     eq(
                         AccountTransactionsSchema.accountAddress,
                         accountAddress,
@@ -401,7 +398,7 @@ export async function getChainDataValue({
         .where(
             and(
                 eq(TransactionsSchema.id, id),
-                eq(TransactionsSchema.network, toScopeKey(scope)),
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
             ),
         )
         .all()
@@ -423,7 +420,7 @@ export async function setChainDataValue({
         .where(
             and(
                 eq(TransactionsSchema.id, id),
-                eq(TransactionsSchema.network, toScopeKey(scope)),
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
             ),
         )
         .run()
@@ -440,7 +437,7 @@ export async function getLatestTransactionRoundTime({
     accountAddress,
     scope,
 }: GetLatestTransactionRoundTimeParams): Promise<Nullable<number>> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({
             maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,
@@ -449,7 +446,7 @@ export async function getLatestTransactionRoundTime({
         .where(
             and(
                 eq(AccountTransactionsSchema.accountAddress, accountAddress),
-                eq(AccountTransactionsSchema.network, network),
+                eq(AccountTransactionsSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -488,10 +485,7 @@ export async function deleteTransactionsForAccount({
                     AccountTransactionsSchema.transactionId,
                     TransactionsSchema.id,
                 ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
+                eq(AccountTransactionsSchema.scope, TransactionsSchema.scope),
             ),
         )
 

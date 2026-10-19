@@ -43,7 +43,6 @@ const LEGACY_KEY = 'accounts/X'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const deps = () => ({
-    network: 'mainnet' as const,
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey,
@@ -86,7 +85,7 @@ describe('pullBackupDeltas', () => {
         // Return no item bodies so applyDeltas advances the cursor without needing a real decrypt.
         readItems.mockResolvedValue([])
         const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
-        expect(fetchDelta).toHaveBeenCalledWith('mainnet', 'b', 'dev', 0)
+        expect(fetchDelta).toHaveBeenCalledWith('b', 'dev', 0)
         expect(next.lastSyncedSeq).toBe(9)
     })
 

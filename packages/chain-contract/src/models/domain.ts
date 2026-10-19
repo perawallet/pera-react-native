@@ -70,6 +70,27 @@ export type ChainHoldingNative = {
     isFrozen: boolean
 }
 
+/**
+ * Asset data only its own chain reads, persisted on the asset's node row. A
+ * chain package adds its member, discriminated by `family`.
+ */
+export type ChainAssetData = {
+    family: 'algorand'
+    creatorAddress: string
+}
+
+/**
+ * Attempt data only its own chain reads, persisted on the submission attempt.
+ * A chain package adds its member, discriminated by `family`. Record it only
+ * when the chain's reconciler can settle the attempt by it: an attempt carrying
+ * it never ages out of the ledger's guards.
+ */
+export type ChainSubmissionData = {
+    family: 'algorand'
+    /** A last-valid round of the group; the group can't land after any member's. */
+    lastValid: number
+}
+
 export type AccountChainState =
     | {
           family: 'algorand'
@@ -364,12 +385,31 @@ export type MessageTreeNode =
     | { label: string; value: string }
     | { label: string; children: MessageTreeNode[] }
 
+export interface SpendAllowance {
+    assetRef: AssetRef
+    /** Base units of assetRef; absent when unlimited. */
+    amount?: Decimal
+}
+
+export interface SpendApproval {
+    /** Requester-supplied, in the chain's address format. */
+    spender: string
+    /** One per asset, in message order; never empty. */
+    allowances: SpendAllowance[]
+    /** Unix ms after which the approval can't be used; absent when it never lapses. */
+    deadline?: number
+    /** deadline is absent or more than a year after the summary was built. */
+    isLongLived: boolean
+}
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
     /** Set for kind `'typed-data'`: the signed fields, in schema order. */
     tree?: MessageTreeNode[]
+    /** Set on kind `'typed-data'` when signing lets someone else move the signer's assets. */
+    spendApproval?: SpendApproval
 }
 
 export interface MessageRequest {

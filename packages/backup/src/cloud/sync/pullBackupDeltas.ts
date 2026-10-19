@@ -27,7 +27,6 @@ import type { SyncEngineDeps } from './types'
 export const pullBackupDeltas = async (
     deps: Pick<
         SyncEngineDeps,
-        | 'network'
         | 'backupId'
         | 'deviceId'
         | 'encryptionKey'
@@ -45,7 +44,7 @@ export const pullBackupDeltas = async (
     const { deltas, rebuiltThroughSeq } = await fetchDeltaOrRebuild(
         deps,
         state,
-        () => fetchManifest(deps.network, deps.backupId, deps.deviceId),
+        () => fetchManifest(deps.backupId, deps.deviceId),
     )
 
     /* The socket has to refuse what `syncBackup` refuses, or an `itemsUpdated`
@@ -66,7 +65,6 @@ export const pullBackupDeltas = async (
         state,
         deltas,
         deps: {
-            network: deps.network,
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,

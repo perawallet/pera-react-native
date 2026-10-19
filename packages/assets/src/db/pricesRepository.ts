@@ -39,13 +39,13 @@ export async function upsertAssetPrices({
     prices,
     scope,
 }: UpsertAssetPricesParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (prices.length === 0) return
 
     const now = Date.now()
     const rows = prices.map(price => ({
         assetId: price.assetId,
-        network,
+        scope: scopeKey,
         usdPrice: price.usdPrice,
         updatedAt: now,
     }))
@@ -55,7 +55,7 @@ export async function upsertAssetPrices({
             .insert(AssetPricesSchema)
             .values(chunk)
             .onConflictDoUpdate({
-                target: [AssetPricesSchema.assetId, AssetPricesSchema.network],
+                target: [AssetPricesSchema.assetId, AssetPricesSchema.scope],
                 set: {
                     usdPrice: sql`excluded.usd_price`,
                     updatedAt: sql`excluded.updated_at`,
@@ -76,7 +76,7 @@ export async function getAssetPricesByIds({
     assetIds,
     scope,
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const rows = await db
@@ -88,7 +88,7 @@ export async function getAssetPricesByIds({
         .where(
             and(
                 inArray(AssetPricesSchema.assetId, assetIds),
-                eq(AssetPricesSchema.network, network),
+                eq(AssetPricesSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -108,13 +108,13 @@ export async function recordPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const now = Date.now()
     const rows = assetIds.map(assetId => ({
         assetId,
-        network,
+        scope: scopeKey,
         attemptedAt: now,
     }))
 
@@ -125,7 +125,7 @@ export async function recordPriceMisses({
             .onConflictDoUpdate({
                 target: [
                     AssetPriceMissesSchema.assetId,
-                    AssetPriceMissesSchema.network,
+                    AssetPriceMissesSchema.scope,
                 ],
                 set: { attemptedAt: sql`excluded.attempted_at` },
             })
@@ -139,7 +139,7 @@ export async function clearPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     await forEachWriteChunk(assetIds, async chunk => {
@@ -148,7 +148,7 @@ export async function clearPriceMisses({
             .where(
                 and(
                     inArray(AssetPriceMissesSchema.assetId, chunk),
-                    eq(AssetPriceMissesSchema.network, network),
+                    eq(AssetPriceMissesSchema.scope, scopeKey),
                 ),
             )
             .run()
@@ -167,7 +167,7 @@ export async function deleteAssetPrices({
     assetIds,
     scope,
 }: DeleteAssetPricesParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     await forEachWriteChunk(assetIds, async chunk => {
@@ -176,7 +176,7 @@ export async function deleteAssetPrices({
             .where(
                 and(
                     inArray(AssetPricesSchema.assetId, chunk),
-                    eq(AssetPricesSchema.network, network),
+                    eq(AssetPricesSchema.scope, scopeKey),
                 ),
             )
             .run()

@@ -26,7 +26,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import algosdk from 'algosdk'
 import { verifyCompressed } from 'falcon-1024'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import {
     openApprovalSurface,
     selectAccountAndArmConnect,
@@ -237,7 +237,10 @@ test('a dApp signing request from the quantum account returns a valid Falcon pqs
         dappPage.evaluate(() => window.pera.getEmptySignatures()),
     ).resolves.toEqual(connected.emptySignatures)
 
-    const { genesisHash } = getNetworkConfig(Networks.mainnet)
+    const { genesisHash } = getAlgorandChainConfig({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
         sender: quantumAddress,
         receiver: quantumAddress,

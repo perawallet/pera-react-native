@@ -15,10 +15,7 @@ import { decodeAddress } from 'algosdk'
 
 import { buildArc59SendViaInboxTxs } from '../buildArc59SendViaInboxTxs'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    PeraServiceUnavailableError,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     populateAppCallResources,
     type AlgorandClient,
@@ -44,9 +41,9 @@ vi.mock('@perawallet/wallet-core-config', () => {
     }
     return {
         config,
-        getArc59Config: (network: string) => {
-            if (network === 'mainnet') return config.arc59.mainnet
-            if (network === 'betanet') return null
+        getArc59Config: (scope: { networkId: string }) => {
+            if (scope.networkId === 'mainnet') return config.arc59.mainnet
+            if (scope.networkId === 'betanet') return null
             return config.arc59.testnet
         },
     }
@@ -117,7 +114,7 @@ describe('buildArc59SendViaInboxTxs', () => {
         client: { algod: object }
     }
 
-    let network: Network = 'testnet'
+    let network: 'mainnet' | 'testnet' | 'betanet' = 'testnet'
     const ctx = () => ({
         algokit: mockAlgokit as unknown as AlgorandClient,
         network,

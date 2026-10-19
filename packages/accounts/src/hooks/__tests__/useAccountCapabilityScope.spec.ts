@@ -76,7 +76,7 @@ describe('useAccountCapabilityScope', () => {
         gate.swapOn = new Set(['algorand'])
         getProvider().chains.register(descriptor('algorand'), ALL_ON)
         getProvider().chains.register(descriptor('ethereum'), ALL_ON)
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
     })
 
     it('scopes to the chain the account is on, at its selected network', () => {
@@ -138,7 +138,7 @@ describe('useAccountCapabilityScope', () => {
         )
 
         act(() => {
-            useNetworkStore.getState().setNetwork('testnet')
+            useNetworkStore.getState().setMode('developer')
         })
 
         expect(result.current).toEqual({

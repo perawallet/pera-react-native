@@ -28,11 +28,12 @@ type Argon2Fn = (
 ) => void
 
 /**
- * `crypto.argon2` arrived in Node 24 and reaches the app through
- * react-native-quick-crypto. On anything older the cloud-backup KDF would throw
- * before a flow test could reach the network. This stands in with a
- * deterministic SHA-256 stream: same inputs, same output, so derived ids stay
- * stable within a run. It is NOT Argon2 and proves nothing about the KDF itself.
+ * A deterministic SHA-256 stream in place of Argon2: same inputs, same output,
+ * so derived ids stay stable within a run. It is NOT Argon2 and proves nothing
+ * about the KDF itself; the backup package's reference-vector spec pins that.
+ * Flow tests use it even on Node 24+, where the real one exists, because the
+ * production cost (256 MiB, 3 passes per derivation) made the cloud-backup
+ * flows the slowest specs in the suite and timed them out under load.
  */
 const standInArgon2: Argon2Fn = (_algorithm, params, callback) => {
     let derived = Buffer.alloc(0)
@@ -45,11 +46,9 @@ const standInArgon2: Argon2Fn = (_algorithm, params, callback) => {
             .digest()
         derived = Buffer.concat([derived, block])
     }
-    callback(null, derived.subarray(0, params.tagLength))
+    // Async like the real primitive, so flows still render their pending state.
+    setImmediate(() => callback(null, derived.subarray(0, params.tagLength)))
 }
 
-// A local export shadows the star export above, so without this the real
-// implementation would stay hidden on the Node versions that have one. The
-// types declare `argon2` unconditionally; only Node 24+ ships it at runtime.
-export const argon2: Argon2Fn =
-    (nodeCrypto.argon2 as Argon2Fn | undefined) ?? standInArgon2
+// Shadows the star export above, which would otherwise expose Node's own.
+export const argon2: Argon2Fn = standInArgon2

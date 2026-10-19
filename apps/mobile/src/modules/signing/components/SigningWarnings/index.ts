@@ -11,3 +11,5 @@
  */
 
 export { SigningWarnings } from './SigningWarnings'
+export { WarningRow } from './WarningRow'
+export type { WarningRowProps } from './WarningRow'

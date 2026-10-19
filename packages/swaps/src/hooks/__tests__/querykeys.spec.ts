@@ -14,12 +14,12 @@ import { describe, test, expect } from 'vitest'
 import type { Query } from '@tanstack/react-query'
 import {
     queryKeyReferencesScope,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { getInvalidateSwapHistoryPredicate, swapQueryKeys } from '../querykeys'
 
-const mainnet = scopeForLegacyNetwork('mainnet')
-const testnet = scopeForLegacyNetwork('testnet')
+const mainnet = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('swaps/hooks/querykeys', () => {
     test('every builder carries the scope object in its key', () => {

@@ -115,7 +115,7 @@ describe('submit from quantum account over algod transport', () => {
 
     beforeEach(async () => {
         await resetTestDatabase()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         await seedAlgoAsset('mainnet')
 
         resetTestKeystore()

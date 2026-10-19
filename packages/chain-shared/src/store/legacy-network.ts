@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-// Everything here serves the legacy single-network shape: the `network` shim,
-// `setNetwork`, and the v1 and v2 formats it was persisted in. It goes when
-// that shape does, and nothing else in the store depends on a chain.
+// Everything here serves the pre-mode single-network formats: the v1 and v2
+// blobs, `config.defaultNetwork` and the hydrate-time check of the Algorand
+// override. Nothing else in the store depends on a chain.
 
 import {
     CUSTOM_NETWORK_ID,
@@ -54,12 +54,11 @@ export const withLegacyOverride = (
 }
 
 /**
- * Checked on hydrate, before any chain registers, because the shim is
- * persisted from it. An unknown override (a device that picked 'fnet' before
- * the custom slot replaced it) reaches `getNetworkConfig`, which throws
- * `UnconfiguredScopeError` in every render that reads it. A `'custom'`
- * override without a complete saved node resolves every endpoint to `''`, and
- * `useAlgorandClient` throws during render.
+ * Checked on hydrate, before any chain registers. An unknown override (a
+ * device that picked 'fnet' before the custom slot replaced it) reaches
+ * `getAlgorandChainConfig`, which throws `UnconfiguredScopeError` in every
+ * render that reads it. A `'custom'` override without a complete saved node
+ * resolves every endpoint to `''`, and `useAlgorandClient` throws during render.
  */
 export const isLegacyOverrideUsable = (
     override: unknown,
@@ -97,8 +96,7 @@ const migrateV1 = (persisted: unknown): unknown => ({
 
 /**
  * Keyed on v2's legacy-chain entry, not `globalNetwork`: every v2 writer kept
- * the two in step, and the entry is what `network` returned, so the shim and
- * the extension worker see the same network afterwards.
+ * the two in step.
  */
 const migrateV2 = (persisted: unknown): unknown => {
     const state = (persisted ?? {}) as {

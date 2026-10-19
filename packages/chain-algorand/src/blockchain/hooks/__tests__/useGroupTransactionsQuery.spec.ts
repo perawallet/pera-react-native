@@ -14,10 +14,10 @@ import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { useGroupTransactionsQuery } from '../useGroupTransactionsQuery'
 import { useAlgorandClient } from '../useAlgorandClient'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Mock dependencies
 vi.mock('../useAlgorandClient')
@@ -65,7 +65,10 @@ describe('useGroupTransactionsQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         queryClient = new QueryClient({
             defaultOptions: {
@@ -191,7 +194,10 @@ describe('useGroupTransactionsQuery', () => {
     })
 
     test('refetches when network changes', async () => {
-        mocks.useSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         const { result, rerender } = renderHook(
             () =>
@@ -208,7 +214,10 @@ describe('useGroupTransactionsQuery', () => {
 
         // Switch network — query key changes, so React Query refetches
         mockSearchForTransactions.mockClear()
-        mocks.useSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         rerender()
 
         await waitFor(() =>

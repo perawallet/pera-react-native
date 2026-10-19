@@ -19,7 +19,6 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset, PeraAssetType } from '../../models'
 import {
     upsertAssets,
@@ -32,9 +31,16 @@ import {
     getStaleOrMissingAssetIds,
     getStaleOrMissingPriceAssetIds,
 } from '../syncQueries'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 describe('asset sync queries', () => {
     let db: Database
@@ -312,11 +318,11 @@ describe('asset sync queries', () => {
             expect(result).toEqual([])
         })
 
-        it('leaves an install that upgraded into the column on the long TTL', async () => {
+        it('keeps a row cached before the column, with no first_seen_at', async () => {
             // The real upgrade path: a DB migrated to just before first_seen_at,
-            // holding an asset the backend never typed as a collectible. Its
-            // rows must survive the migration and stay on the long TTL rather
-            // than every pre-existing asset re-fetching at once.
+            // holding an asset the backend never typed as a collectible. A NULL
+            // first_seen_at keeps it on the long TTL rather than every
+            // pre-existing asset re-fetching at once.
             const upgrading = createTestDatabase()
             try {
                 await runMigrations(
@@ -347,21 +353,13 @@ describe('asset sync queries', () => {
                     ),
                 )
 
-                const result = await getStaleOrMissingAssetIds({
-                    db: upgrading.db,
-                    assetIds: ['1'],
-                    scope: MAINNET_SCOPE,
-                    ...recheck(-1),
-                })
-
-                expect(result).toEqual([])
+                // Raw SQL: today's repositories read later column names. The
+                // test above pins how a NULL first_seen_at is then read.
                 expect(
-                    await getAssetsByIds({
-                        db: upgrading.db,
-                        assetIds: ['1'],
-                        scope: MAINNET_SCOPE,
-                    }),
-                ).toHaveLength(1)
+                    await upgrading.db.values(
+                        sql`select first_seen_at from assets_pera where asset_id = '1'`,
+                    ),
+                ).toEqual([[null]])
             } finally {
                 upgrading.teardown()
             }

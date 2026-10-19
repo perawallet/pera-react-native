@@ -46,7 +46,6 @@ const fetched = (key: BackupItemKey): FetchedItem => ({
 })
 
 const deps = (plaintextByKey: Record<BackupItemKey, string>) => ({
-    network: 'mainnet' as const,
     backupId: 'did:pera:B',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),

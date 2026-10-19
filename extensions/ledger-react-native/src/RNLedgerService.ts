@@ -212,10 +212,13 @@ export class RNLedgerService implements HardwareWalletService {
                 return () => subscription.unsubscribe()
             },
 
-            async connect(deviceId: string): Promise<LedgerTransport> {
+            async connect(
+                deviceId: string,
+                chainId: string,
+            ): Promise<LedgerTransport> {
                 // Resolved at connect, not when the transport registers: the
                 // chain package registers its driver after the transports.
-                const appDriver = ledgerAppDriverRegistry.resolve()
+                const appDriver = ledgerAppDriverRegistry.resolve(chainId)
                 // Reads the observed adapter state, NOT
                 // `TransportBLE.isSupported()` — that only reports whether the
                 // native module is linked and resolves true regardless of radio

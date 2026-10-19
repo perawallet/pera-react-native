@@ -45,7 +45,7 @@ const account = (
 beforeEach(() => {
     registerFakeAccountsChain()
     useAccountChainStateStore.getState().resetState()
-    useNetworkStore.getState().setNetwork('mainnet')
+    useNetworkStore.getState().setMode('live')
 })
 
 describe('signer resolution', () => {
@@ -72,7 +72,7 @@ describe('signer resolution', () => {
     it('asks the adapter on the selected network', () => {
         const a = account('A')
         const { adapter } = fakeAccountsChain()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
 
         getAuthAccount(a, [a], FAKE_CHAIN_ID)
         resolveSignerForAccount(a, [a], FAKE_CHAIN_ID)

@@ -22,6 +22,7 @@ import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDeviceBusyError,
@@ -32,6 +33,7 @@ import {
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
     LedgerNoAccountsFoundError,
+    LedgerOperationUnsupportedError,
     LedgerPermissionDeniedError,
     LedgerProviderNotFoundError,
     LedgerPublicKeyReadError,
@@ -203,6 +205,36 @@ describe('classifyLedgerAppError', () => {
         expect(result).toBeInstanceOf(LedgerDeviceLockedError)
     })
 
+    it('names the app that needs blind signing when its profile lists the word', () => {
+        const blindApp = { ...app, blindSigningRequiredStatusCodes: [0x6998] }
+        const original = createErrorWithStatus(0x6998)
+
+        const result = classifyLedgerAppError(original, blindApp)
+
+        expect(result).toBeInstanceOf(LedgerBlindSigningRequiredError)
+        expect(result.message).toBe(
+            'Blind signing must be enabled in the Ledger Fixture app',
+        )
+        expect(result.originalError).toBe(original)
+    })
+
+    it('leaves a blind-signing word to the fallback when the profile omits it', () => {
+        expect(
+            classifyLedgerAppError(createErrorWithStatus(0x6998), app),
+        ).toBeInstanceOf(LedgerConnectionError)
+    })
+
+    it('classifies a rejection before blind signing when a profile lists both', () => {
+        const both = {
+            ...app,
+            blindSigningRequiredStatusCodes: [0x6999],
+        }
+
+        expect(
+            classifyLedgerAppError(createErrorWithStatus(0x6999), both),
+        ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+
     it("does not treat another app's reject code as a rejection", () => {
         expect(
             classifyLedgerAppError(createErrorWithStatus(0x6986), app),
@@ -362,6 +394,10 @@ describe('expected-error classification', () => {
         ['LedgerNetworkError', new LedgerNetworkError()],
         ['LedgerUsbNoDeviceError', new LedgerUsbNoDeviceError()],
         ['LedgerAppOutdatedError', new LedgerAppOutdatedError()],
+        [
+            'LedgerBlindSigningRequiredError',
+            new LedgerBlindSigningRequiredError(),
+        ],
         ['LedgerNoAccountsFoundError', new LedgerNoAccountsFoundError()],
         ['LedgerUnsupportedDeviceError', new LedgerUnsupportedDeviceError()],
     ]
@@ -380,6 +416,13 @@ describe('expected-error classification', () => {
             new LedgerProviderNotFoundError('no provider'),
         ],
         ['LedgerUsbMultipleDevicesError', new LedgerUsbMultipleDevicesError()],
+        [
+            'LedgerOperationUnsupportedError',
+            new LedgerOperationUnsupportedError({
+                appName: 'Fixture',
+                operation: 'signData',
+            }),
+        ],
     ]
 
     it.each(EXPECTED)('%s is expected', (_name, error) => {

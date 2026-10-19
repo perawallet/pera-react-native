@@ -109,7 +109,7 @@ addresses before approving, because any extension page can send on the control s
   pairs.
 
 A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
-and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
+and `scopesFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
 <!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
@@ -123,12 +123,21 @@ goes only under the namespace whose chain's address codec accepts it (no codec, 
 request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
 requests never read the capability, so turning it off leaves them listed and revocable.
 
+The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
+account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
+declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
+
+A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. A target
+that is not the chain's selected network is refused. The selected network is answered at once if the
+session holds it, since approval was consent to it; otherwise the user is asked before it is added to
+the session.
+
 ## The `dapp` handler
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
 the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
-`disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
+`disconnect` all key on one value. It matches every network of its own chain (`matchesChainScope`) and
 reports the active network at connect time instead.
 
 The handler is transport-agnostic through `DappTransport`: the extension supplies one over

@@ -18,7 +18,6 @@ import {
     populateAppCallResources,
     type AlgorandClient,
 } from '@algorandfoundation/algokit-utils'
-import type { Network } from '@perawallet/wallet-core-shared'
 
 vi.mock('@algorandfoundation/algokit-utils', () => ({
     // Identity passthrough: the populated ATC is the one composer.build()
@@ -40,8 +39,10 @@ vi.mock('@perawallet/wallet-core-config', () => {
     }
     return {
         config,
-        getArc59Config: (network: string) =>
-            network === 'mainnet' ? config.arc59.mainnet : config.arc59.testnet,
+        getArc59Config: (scope: { networkId: string }) =>
+            scope.networkId === 'mainnet'
+                ? config.arc59.mainnet
+                : config.arc59.testnet,
     }
 })
 
@@ -106,7 +107,7 @@ describe('ARC-59 claim and reject builders', () => {
         client: { algod: { accountInformation: Mock } }
     }
 
-    let network: Network = 'testnet'
+    let network: 'mainnet' | 'testnet' = 'testnet'
     const ctx = () => ({
         algokit: mockAlgokit as unknown as AlgorandClient,
         network,

@@ -17,7 +17,7 @@ import {
     type HandlerContractPeer,
 } from '@perawallet/wallet-core-connections/testing'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
-import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { createWalletConnectV2Handler } from '../handler'
 import {
     ADDRESS,
@@ -68,7 +68,7 @@ const makeHandler = (): ConnectionHandler => {
         return walletKit
     }
     return createWalletConnectV2Handler({
-        getNetworkId: () => Networks.mainnet,
+        getNetworkId: () => 'mainnet',
         isDappConnectEnabled: () => true,
         projectId: 'test-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),

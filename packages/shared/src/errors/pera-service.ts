@@ -12,12 +12,10 @@
 
 import {
     i18nKey,
-    scopeForLegacyNetwork,
     type ChainScope,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraService } from '@perawallet/wallet-core-config'
-import type { Network } from '../models/base-types'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 /**
@@ -42,17 +40,11 @@ export class PeraServiceUnavailableError extends AppError {
     public readonly targetKey: string
     public readonly service: PeraService | undefined
 
-    /** A `Network` target is a legacy Algorand network. */
     constructor(
-        target: ChainScope | Network | { deployment: WalletMode },
+        target: ChainScope | { deployment: WalletMode },
         service?: PeraService,
     ) {
-        const scope =
-            typeof target === 'string'
-                ? scopeForLegacyNetwork(target)
-                : 'deployment' in target
-                  ? undefined
-                  : target
+        const scope = 'deployment' in target ? undefined : target
         // Plain interpolation, not toScopeKey: building this error must never throw.
         const targetKey =
             scope === undefined

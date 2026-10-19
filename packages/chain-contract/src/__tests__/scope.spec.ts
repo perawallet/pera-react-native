@@ -19,14 +19,12 @@ import {
     type ChainScope,
 } from '../models/identity'
 import {
+    LEGACY_CHAIN_ID,
     LEGACY_SCOPES,
-    legacyNetworkOf,
     parseScopeKey,
     queryKeyReferencesScope,
     rekeyLegacyNetworkRecord,
-    scopeForLegacyNetwork,
     scopeFromNetworkColumn,
-    scopeKeyForLegacyNetwork,
     toScopeKey,
 } from '../scope'
 
@@ -102,36 +100,26 @@ describe('parseScopeKey', () => {
     })
 })
 
-describe('scopeForLegacyNetwork', () => {
-    it.each([
-        ['mainnet', 'algorand/mainnet'],
-        ['testnet', 'algorand/testnet'],
-        ['betanet', 'algorand/betanet'],
-        ['custom', 'algorand/custom'],
-    ] as const)('maps %s to %s', (network, key) => {
-        const scope = scopeForLegacyNetwork(network)
-
-        expect(scope).toEqual({ chainId: 'algorand', networkId: network })
-        expect(toScopeKey(scope)).toBe(key)
-    })
-})
-
 describe('network column encoding', () => {
     it.each(LEGACY_NETWORKS)(
         'stores the Algorand %s scope as its scope key',
         network => {
-            expect(toScopeKey(scopeForLegacyNetwork(network))).toBe(
-                `algorand/${network}`,
-            )
+            expect(
+                toScopeKey({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const),
+            ).toBe(`algorand/${network}`)
         },
     )
 
     it.each(LEGACY_NETWORKS)(
         'decodes a bare %s value to the Algorand scope',
         network => {
-            expect(scopeFromNetworkColumn(network)).toEqual(
-                scopeForLegacyNetwork(network),
-            )
+            expect(scopeFromNetworkColumn(network)).toEqual({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: network,
+            } as const)
         },
     )
 
@@ -158,13 +146,16 @@ describe('network column encoding', () => {
 describe('LEGACY_SCOPES', () => {
     it('holds the Algorand scope of every legacy network', () => {
         expect(LEGACY_SCOPES).toEqual(
-            LEGACY_NETWORKS.map(scopeForLegacyNetwork),
+            LEGACY_NETWORKS.map(networkId => ({
+                chainId: LEGACY_CHAIN_ID,
+                networkId,
+            })),
         )
     })
 })
 
 describe('queryKeyReferencesScope', () => {
-    const testnet = scopeForLegacyNetwork('testnet')
+    const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
     it('matches the scope in the scope field of an object element', () => {
         const key = ['assets', { assetId: '1', scope: testnet }]
@@ -179,7 +170,10 @@ describe('queryKeyReferencesScope', () => {
     })
 
     it('does not match a key for another scope', () => {
-        const mainnet = scopeForLegacyNetwork('mainnet')
+        const mainnet = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
         const key = ['assets', { assetId: '1', scope: mainnet }, mainnet]
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(false)
@@ -210,36 +204,6 @@ describe('queryKeyReferencesScope', () => {
         const key = ['assets', null, { assetId: '1' }]
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(false)
-    })
-})
-
-describe('scopeKeyForLegacyNetwork', () => {
-    it.each(LEGACY_NETWORKS)('keys %s under the Algorand chain', network => {
-        expect(scopeKeyForLegacyNetwork(network)).toBe(`algorand/${network}`)
-    })
-})
-
-describe('legacyNetworkOf', () => {
-    it.each(LEGACY_NETWORKS)('round-trips the Algorand %s scope', network => {
-        expect(legacyNetworkOf(scopeForLegacyNetwork(network))).toBe(network)
-    })
-
-    it('rejects a network of the legacy chain that has no legacy value', () => {
-        expect(() =>
-            legacyNetworkOf({ chainId: 'algorand', networkId: 'custom-9f3a' }),
-        ).toThrow(InvalidScopeKeyError)
-    })
-
-    it('rejects another chain', () => {
-        expect(() => legacyNetworkOf(UNKNOWN_CHAIN_SCOPE)).toThrow(
-            InvalidScopeKeyError,
-        )
-    })
-
-    it('rejects a chain that has no legacy networks', () => {
-        expect(() =>
-            legacyNetworkOf({ chainId: 'ethereum', networkId: 'mainnet' }),
-        ).toThrow(InvalidScopeKeyError)
     })
 })
 

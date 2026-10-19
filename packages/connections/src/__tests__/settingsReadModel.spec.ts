@@ -11,11 +11,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import {
     toConnectionSettingsRow,
     sortConnectionSettingsRows,
 } from '../settingsReadModel'
+
+const MAINNET: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const baseConnection: Connection = {
     id: 'conn-1',
@@ -34,9 +38,7 @@ const baseConnection: Connection = {
 
 describe('toConnectionSettingsRow', () => {
     it('maps a Connection record onto the settings read model', () => {
-        expect(
-            toConnectionSettingsRow(baseConnection, ['mainnet'], []),
-        ).toEqual({
+        expect(toConnectionSettingsRow(baseConnection, [MAINNET], [])).toEqual({
             id: 'conn-1',
             kind: 'walletconnect-v1',
             title: 'Some Dapp',
@@ -48,7 +50,7 @@ describe('toConnectionSettingsRow', () => {
             lastActiveAt: 1_700_000_500_000,
             peer: baseConnection.peer,
             permissions: [],
-            networks: ['mainnet'],
+            networks: [MAINNET],
             protocolVersion: 1,
         })
     })
@@ -74,11 +76,11 @@ describe('toConnectionSettingsRow', () => {
     it('carries the handler-resolved networks and never a wire chain id', () => {
         const row = toConnectionSettingsRow(
             { ...baseConnection, metadata: { chainId: 4160 } },
-            ['mainnet', 'testnet'],
+            [MAINNET, TESTNET],
             [],
         )
 
-        expect(row.networks).toEqual(['mainnet', 'testnet'])
+        expect(row.networks).toEqual([MAINNET, TESTNET])
         expect(row).not.toHaveProperty('chainId')
     })
 

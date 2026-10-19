@@ -13,7 +13,7 @@
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     InvalidScopeKeyError,
-    scopeFromNetworkColumn,
+    parseScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, runAccountCleanups } from '@perawallet/wallet-core-shared'
 import {
@@ -74,7 +74,7 @@ export async function cleanupRemovedAccountData({
     for (const [network, hadIds] of hadByNetwork) {
         let scope
         try {
-            scope = scopeFromNetworkColumn(network)
+            scope = parseScopeKey(network)
         } catch (error) {
             // The account's rows are already gone, so an unreadable network
             // must not stop the other networks' pruning or the registered cleanups.

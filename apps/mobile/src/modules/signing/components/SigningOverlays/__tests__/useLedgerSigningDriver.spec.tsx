@@ -34,9 +34,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =

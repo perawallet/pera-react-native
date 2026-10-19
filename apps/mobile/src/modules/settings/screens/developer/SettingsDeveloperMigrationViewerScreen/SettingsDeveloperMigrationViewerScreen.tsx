@@ -48,7 +48,7 @@ import { useMigrationStepVersions } from './useMigrationStepVersions'
 
 export const SettingsDeveloperMigrationViewerScreen = () => {
     const styles = useStyles()
-    const { data, isLoading, error, isMigrationComplete, refresh } =
+    const { renderState, isMigrationComplete, refresh } =
         useSettingsDeveloperMigrationViewerScreen()
     const {
         run: runMigrationFlow,
@@ -69,7 +69,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
 
     const isAnyMigrationRunning = isMigrating
 
-    if (isLoading) {
+    if (renderState.kind === 'loading') {
         return (
             <PWView style={styles.centered}>
                 <PWText>Loading…</PWText>
@@ -77,11 +77,11 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
         )
     }
 
-    if (error) {
+    if (renderState.kind === 'error') {
         return (
             <PWView style={styles.centered}>
                 <PWText variant='h4'>Failed to read legacy data</PWText>
-                <PWText>{error.message}</PWText>
+                <PWText>{renderState.message}</PWText>
                 <PWButton
                     variant='secondary'
                     title='Refresh'
@@ -91,7 +91,9 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
         )
     }
 
-    if (!data) return null
+    if (renderState.kind === 'empty') return null
+
+    const { data } = renderState
 
     return (
         <PWScrollView

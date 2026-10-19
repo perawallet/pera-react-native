@@ -12,14 +12,15 @@
 
 import { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { algorandHistoryDataOf } from './history-data'
 
 const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
     toBigInt(amount ?? new Decimal(0))
 
 const toCloseAmountBigInt = (
-    closeAmount: TransactionHistoryItem['closeAmount'],
+    closeAmount: Nullable<Decimal>,
 ): bigint | undefined =>
     closeAmount === null ? undefined : toBigInt(closeAmount)
 
@@ -36,6 +37,7 @@ const toCloseAmountBigInt = (
 export const mapHistoryItemToDisplayableTransaction = (
     item: TransactionHistoryItem,
 ): PeraDisplayableTransaction | null => {
+    const data = algorandHistoryDataOf(item)
     const base: PeraDisplayableTransaction = {
         id: item.id,
         txType: item.txType,
@@ -58,8 +60,8 @@ export const mapHistoryItemToDisplayableTransaction = (
                 paymentTransaction: {
                     amount: toAmountBigInt(item.amount),
                     receiver: item.receiver ?? '',
-                    closeRemainderTo: item.closeTo ?? undefined,
-                    closeAmount: toCloseAmountBigInt(item.closeAmount),
+                    closeRemainderTo: data.closeTo ?? undefined,
+                    closeAmount: toCloseAmountBigInt(data.closeAmount),
                 },
             }
         }
@@ -73,8 +75,8 @@ export const mapHistoryItemToDisplayableTransaction = (
                     assetId: BigInt(item.asset.assetId),
                     amount: toAmountBigInt(item.amount),
                     receiver: item.receiver ?? '',
-                    closeTo: item.closeTo ?? undefined,
-                    closeAmount: toCloseAmountBigInt(item.closeAmount),
+                    closeTo: data.closeTo ?? undefined,
+                    closeAmount: toCloseAmountBigInt(data.closeAmount),
                     sender: item.assetSender ?? undefined,
                 },
             }
@@ -82,9 +84,9 @@ export const mapHistoryItemToDisplayableTransaction = (
         case 'appl': {
             return {
                 ...base,
-                innerTransactionCount: item.innerTransactionCount ?? undefined,
+                innerTransactionCount: data.innerTransactionCount ?? undefined,
                 applicationTransaction: {
-                    applicationId: BigInt(item.applicationId ?? '0'),
+                    applicationId: BigInt(data.applicationId ?? '0'),
                 },
             }
         }

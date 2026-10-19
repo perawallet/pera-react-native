@@ -57,13 +57,6 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 // Mutable for the same reason as `mockCapabilities`: `custom` has an empty
 // explorerUrl by design, and that case needs to be reachable per-test.
 const { mockNetworkConfig } = vi.hoisted(() => ({
@@ -74,7 +67,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual = (await importOriginal()) as Record<string, unknown>
     return {
         ...actual,
-        getNetworkConfig: () => mockNetworkConfig,
+        getAlgorandChainConfig: () => mockNetworkConfig,
     }
 })
 

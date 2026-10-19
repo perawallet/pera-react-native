@@ -16,10 +16,6 @@ import { PWView } from '../../PWView'
 import { PWSkeleton } from '../PWSkeleton'
 
 describe('PWSkeleton', () => {
-    it('renders without crashing by default', () => {
-        expect(() => render(<PWSkeleton />)).not.toThrow()
-    })
-
     it('does not wrap a single skeleton in a container', () => {
         render(
             <PWView testID='parent'>

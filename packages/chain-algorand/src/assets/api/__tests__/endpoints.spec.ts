@@ -35,6 +35,7 @@ import {
     fetchIndexerAssetDetails,
 } from '../endpoints'
 import { searchAssets } from '../search-endpoints'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const validAsset = {
     asset_id: 123,
@@ -84,7 +85,10 @@ describe('assets endpoints', () => {
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 method: 'POST',
                 url: '/v2/assets/',
                 body: '{"device_id":98765,"asset_ids":["1","2","3"],"include_deleted":true}',

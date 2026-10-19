@@ -30,9 +30,9 @@ export default defineConfig({
         conditions: ['default'],
         alias: {
             // Source, not `dist`, so tests cannot pass against a stale build
-            // artifact. Both aliases are load-bearing: shared re-exports
-            // `Networks` from packages/config, so aliasing shared alone still
-            // resolves that re-export through config's own dist.
+            // artifact. Both aliases are load-bearing: shared imports
+            // packages/config, so aliasing shared alone still resolves config
+            // through its own dist.
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',

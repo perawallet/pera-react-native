@@ -166,12 +166,25 @@ export const dappRequestContractTests = (
                         }
                     })
 
-                    it('routes every signing method to an operation', () => {
+                    // A request with no params may be refused outright (a malformed
+                    // network switch); it is never answered as public data.
+                    it('routes every signing method to something the user is asked about, or refuses it', () => {
                         for (const method of v2.signingMethods) {
-                            expect(v2.handleRequest(method, []).kind).toBe(
+                            expect([
                                 'operation',
-                            )
+                                'switch-network',
+                                'refused',
+                            ]).toContain(v2.handleRequest(method, []).kind)
                         }
+                    })
+
+                    it('answers a chain-changed event with data for a network with a CAIP-2 id', () => {
+                        if (!v2.sessionEvents) return
+                        expect(
+                            v2.sessionEvents.chainChangedData(
+                                fixtures.walletConnect.networkWithCaip2,
+                            ),
+                        ).not.toBeNull()
                     })
 
                     it('routes every other served method to public data', () => {

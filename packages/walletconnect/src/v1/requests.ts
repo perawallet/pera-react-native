@@ -11,12 +11,8 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletOperationType } from '@perawallet/wallet-core-connections'
 import {
     connectionScope,
@@ -85,10 +81,10 @@ const requestAgeMs = (requestId: number): number | undefined =>
 export const createV1RequestHandlers = (deps: {
     kit: HandlerKit
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>
-    getNetwork: () => Network
+    getScope: () => ChainScope
     answeredRequests: WalletConnectV1AnsweredRequests
 }): V1RequestHandlers => {
-    const { kit, connectors, getNetwork, answeredRequests } = deps
+    const { kit, connectors, getScope, answeredRequests } = deps
     const { reportError, store, recordActivity, requireContext } = kit
 
     // Requests surfaced and not yet answered. Memory only: one lost to an app
@@ -215,7 +211,7 @@ export const createV1RequestHandlers = (deps: {
         }
 
         // The gate already required a registered adapter for this network.
-        const support = walletConnectSupportFor(getNetwork())
+        const support = walletConnectSupportFor(getScope())
         if (!support) {
             const unsupported = new WalletConnectInvalidNetworkError()
             rejectToPeer(connection.id, requestId, unsupported)
@@ -225,7 +221,7 @@ export const createV1RequestHandlers = (deps: {
 
         requireContext().onMessage({
             kind: 'request',
-            chainId: scopeForLegacyNetwork(getNetwork()).chainId,
+            chainId: getScope().chainId,
             connectionId: connection.id,
             correlationId: String(requestId),
             sourceType: 'walletconnect',
@@ -337,7 +333,7 @@ export const createV1RequestHandlers = (deps: {
 
         const verdict = gateSignTxnRequest({
             payload,
-            network: getNetwork(),
+            scope: getScope(),
             sessionChainId: connection.metadata.chainId,
             knownAddresses: connection.accounts,
         })
@@ -371,13 +367,13 @@ export const createV1RequestHandlers = (deps: {
         if (!opened) return
         const { request, connection } = opened
         if (!claimRequest(connection.id, request.id, 'algo_signData')) return
-        const network = getNetwork()
+        const scope = getScope()
 
         // `gateSignDataRequest` rejects the legacy array shape outright, so that
         // branch gets only the chain check; the registry validates its payload.
         const verdict: GateResult = Array.isArray(request.params)
-            ? isV1ChainIdAcceptable(connection.metadata.chainId, network) &&
-              legacyItemChainIdsAcceptable(request.params, network)
+            ? isV1ChainIdAcceptable(connection.metadata.chainId, scope) &&
+              legacyItemChainIdsAcceptable(request.params, scope)
                 ? { ok: true }
                 : {
                       ok: false,
@@ -386,7 +382,7 @@ export const createV1RequestHandlers = (deps: {
                   }
             : gateSignDataRequest({
                   payload,
-                  network,
+                  scope,
                   sessionChainId: connection.metadata.chainId,
               })
         if (!verdict.ok) {
@@ -417,16 +413,9 @@ export const createV1RequestHandlers = (deps: {
         )
         if (!opened) return
         const { request, connection } = opened
-        const network = getNetwork()
-        const result = isV1ChainIdAcceptable(
-            connection.metadata.chainId,
-            network,
-        )
-            ? emptySignaturesResult(
-                  request.params,
-                  connection.accounts,
-                  scopeForLegacyNetwork(network),
-              )
+        const scope = getScope()
+        const result = isV1ChainIdAcceptable(connection.metadata.chainId, scope)
+            ? emptySignaturesResult(request.params, connection.accounts, scope)
             : null
 
         try {

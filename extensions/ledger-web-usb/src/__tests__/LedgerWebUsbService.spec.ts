@@ -85,12 +85,13 @@ const emitScannedDevice = (
 
 const scanAndConnect = async (
     device: typeof NANO_S_PLUS_DEVICE = NANO_S_PLUS_DEVICE,
+    chainId = 'test',
 ) => {
     emitScannedDevice(device)
     const provider = new LedgerWebUsbService().createTransportProvider()
     const discovered: { id: string }[] = []
     provider.scan(d => discovered.push(d))
-    return provider.connect(discovered[0].id)
+    return provider.connect(discovered[0].id, chainId)
 }
 
 describe('LedgerWebUsbService', () => {
@@ -207,6 +208,7 @@ describe('LedgerWebUsbService', () => {
 
         const transport = await provider.connect(
             `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+            'test',
         )
 
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DEVICE)
@@ -221,6 +223,7 @@ describe('LedgerWebUsbService', () => {
 
         await provider.connect(
             `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+            'test',
         )
 
         expect(TransportWebHIDMock).toHaveBeenCalledWith(alreadyOpenDevice)
@@ -231,7 +234,7 @@ describe('LedgerWebUsbService', () => {
         const provider = new LedgerWebUsbService().createTransportProvider()
         transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
 
-        await provider.connect('9999:9999')
+        await provider.connect('9999:9999', 'test')
 
         expect(transportRequestMock).toHaveBeenCalled()
         expect(transportOpenMock).not.toHaveBeenCalled()
@@ -243,9 +246,9 @@ describe('LedgerWebUsbService', () => {
         }).createTransportProvider()
         transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
 
-        await expect(provider.connect('9999:9999')).rejects.toBeInstanceOf(
-            LedgerDevicePickerUnavailableError,
-        )
+        await expect(
+            provider.connect('9999:9999', 'test'),
+        ).rejects.toBeInstanceOf(LedgerDevicePickerUnavailableError)
         expect(transportRequestMock).not.toHaveBeenCalled()
     })
 
@@ -257,6 +260,7 @@ describe('LedgerWebUsbService', () => {
 
         await provider.connect(
             `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+            'test',
         )
 
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DEVICE)
@@ -268,7 +272,7 @@ describe('LedgerWebUsbService', () => {
             new Error('navigator.hid is not supported'),
         )
 
-        await provider.connect('unknown-id')
+        await provider.connect('unknown-id', 'test')
 
         expect(transportRequestMock).toHaveBeenCalled()
     })
@@ -281,6 +285,19 @@ describe('LedgerWebUsbService', () => {
 
         expect(driverOpenMock).toHaveBeenCalledWith(rawTransport)
         expect(transport).toBe(openedTransport)
+    })
+
+    test('opens only the driver of the chain it connects for', async () => {
+        const otherOpen = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
+        ledgerAppDriverRegistry.register({ chainId: 'other', open: otherOpen })
+
+        await scanAndConnect(undefined, 'other')
+        expect(otherOpen).toHaveBeenCalledTimes(1)
+        expect(driverOpenMock).not.toHaveBeenCalled()
+
+        await scanAndConnect(undefined, 'test')
+        expect(driverOpenMock).toHaveBeenCalledTimes(1)
+        expect(otherOpen).toHaveBeenCalledTimes(1)
     })
 
     test('throws before touching the device when no app driver is registered', async () => {

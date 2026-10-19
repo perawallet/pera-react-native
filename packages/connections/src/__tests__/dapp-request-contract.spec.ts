@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '../dappRequest'
 import { dappRequestContractTests } from './dapp-request-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAX_TXNS = 2
 
@@ -70,9 +70,11 @@ const fixtureAdapter: DappRequestChainAdapter = {
 dappRequestContractTests(() => fixtureAdapter, {
     overCapTransactionParams: { txns: [1, 2, 3] },
     disclosed: {
-        scope: scopeForLegacyNetwork('testnet'),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
         reportedAs: 'testnet',
     },
-    undisclosed: { scope: scopeForLegacyNetwork('custom') },
+    undisclosed: {
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+    },
     walletConnect: { networkWithCaip2: 'testnet', v1ChainId: 4160 },
 })

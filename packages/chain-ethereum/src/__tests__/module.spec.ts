@@ -46,6 +46,7 @@ const ENABLED = [
     'pricing',
     'watchAccounts',
     'privateKeys',
+    'dappConnect',
     'cloudBackup',
 ]
 

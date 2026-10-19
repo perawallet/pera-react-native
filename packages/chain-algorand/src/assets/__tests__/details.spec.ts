@@ -13,10 +13,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
 
 const mocks = vi.hoisted(() => ({
     fetchAssetDetails: vi.fn(),
@@ -93,20 +92,20 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('pera metadata wins on testnet, preserving current behaviour', async () => {
-        const asset = await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.testnet),
-        )
+        const asset = await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         expect(asset.decimals).toBe(peraDecimals)
         expect(asset.name).toBe('USDC')
     })
 
     it('indexer wins on chain-intrinsics for a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.betanet),
-        )
+        const asset = await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'betanet',
+        } as const)
 
         expect(asset.decimals).toBe(indexerDecimals)
         expect(asset.name).toBe('FnetThing')
@@ -121,10 +120,10 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('pera still supplies its own metadata on a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.betanet),
-        )
+        const asset = await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'betanet',
+        } as const)
 
         expect(asset.peraMetadata?.verificationTier).toBe(
             PeraAssetVerificationTier.verified,
@@ -157,10 +156,10 @@ describe('fetchAssetFromApis', () => {
             logo: 'https://public-logo.png',
         })
 
-        const asset = await fetchAssetFromApis(
-            '123',
-            scopeForLegacyNetwork(Networks.mainnet),
-        )
+        const asset = await fetchAssetFromApis('123', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(asset.peraMetadata?.isFavorited).toBe(true)
         expect(asset.peraMetadata?.isPriceAlertEnabled).toBe(true)
@@ -168,26 +167,29 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('persists the chain-intrinsics half so the next read is DB-local', async () => {
-        await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.testnet),
-        )
+        await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         expect(mocks.upsertNodeAssets).toHaveBeenCalledTimes(1)
         const { items, scope } = mocks.upsertNodeAssets.mock.calls[0][0]
         expect(items).toHaveLength(1)
         expect(items[0].assetId).toBe('10458941')
-        expect(scope).toEqual(scopeForLegacyNetwork(Networks.testnet))
+        expect(scope).toEqual({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
     })
 
     it('does not persist a merge built only from defaults (every lane failed)', async () => {
         mocks.fetchAssetDetails.mockRejectedValue(new Error('down'))
         mocks.fetchIndexerAssetDetails.mockRejectedValue(new Error('down'))
 
-        const asset = await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.testnet),
-        )
+        const asset = await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         expect(asset.assetId).toBe('10458941')
         expect(mocks.upsertNodeAssets).not.toHaveBeenCalled()
@@ -196,10 +198,10 @@ describe('fetchAssetFromApis', () => {
     it('still returns the merged asset when the persist itself fails', async () => {
         mocks.upsertNodeAssets.mockRejectedValue(new Error('db locked'))
 
-        const asset = await fetchAssetFromApis(
-            '10458941',
-            scopeForLegacyNetwork(Networks.testnet),
-        )
+        const asset = await fetchAssetFromApis('10458941', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         expect(asset.name).toBe('USDC')
     })
@@ -236,7 +238,7 @@ describe('fetchOnChainAsset', () => {
             },
         })
 
-        const asset = await fetchOnChainAsset('55', Networks.mainnet)
+        const asset = await fetchOnChainAsset('55', 'mainnet')
 
         expect(asset).toEqual(
             expect.objectContaining({
@@ -272,7 +274,7 @@ describe('fetchAssetAuthorities', () => {
             indexerResponse({ freeze: 'FREEZEADDR', clawback: 'CLAWADDR' }),
         )
 
-        expect(await fetchAssetAuthorities('123', Networks.mainnet)).toEqual({
+        expect(await fetchAssetAuthorities('123', 'mainnet')).toEqual({
             hasFreeze: true,
             hasClawback: true,
             freezeAddress: 'FREEZEADDR',
@@ -283,7 +285,7 @@ describe('fetchAssetAuthorities', () => {
     it('reports none when the addresses are absent', async () => {
         mocks.fetchIndexerAssetDetails.mockResolvedValue(indexerResponse({}))
 
-        expect(await fetchAssetAuthorities('123', Networks.mainnet)).toEqual({
+        expect(await fetchAssetAuthorities('123', 'mainnet')).toEqual({
             hasFreeze: false,
             hasClawback: false,
             freezeAddress: null,
@@ -296,7 +298,7 @@ describe('fetchAssetAuthorities', () => {
             indexerResponse({ freeze: ZERO_ADDRESS, clawback: ZERO_ADDRESS }),
         )
 
-        expect(await fetchAssetAuthorities('123', Networks.mainnet)).toEqual({
+        expect(await fetchAssetAuthorities('123', 'mainnet')).toEqual({
             hasFreeze: false,
             hasClawback: false,
             freezeAddress: null,
@@ -309,7 +311,7 @@ describe('fetchAssetAuthorities', () => {
             indexerResponse({ freeze: 'FREEZEADDR' }),
         )
 
-        const authorities = await fetchAssetAuthorities('123', Networks.mainnet)
+        const authorities = await fetchAssetAuthorities('123', 'mainnet')
 
         expect(authorities.hasFreeze).toBe(true)
         expect(authorities.freezeAddress).toBe('FREEZEADDR')

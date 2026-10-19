@@ -34,18 +34,15 @@ import {
 import { http, HttpResponse } from 'msw'
 
 import {
-    Networks,
     PeraServiceUnavailableError,
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getAlgorandClient,
     setCustomNetwork,
     clearCustomNetwork,
     getExpectedGenesisHash,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
 import { fetchAssets } from '@perawallet/wallet-core-chain-algorand/assets'
@@ -53,6 +50,11 @@ import { assertTransactionsMatchNetwork } from '@perawallet/wallet-core-chain-al
 import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 
 import { server } from '@test-utils/msw-server'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    getAlgorandChainConfig,
+    getPeraServicesConfig,
+} from '@perawallet/wallet-core-config'
 
 // Both betanet and custom are covered because chain truth reaches the client
 // stack two different ways: betanet's endpoints and genesis come from baked
@@ -70,7 +72,10 @@ const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 // Still needed even though betanet/custom no longer borrow it: the history
 // test below registers this as a handler to prove Pera's transaction feed is
 // never consulted for TestNet-adjacent data on those networks.
-const TESTNET_PERA = getNetworkConfig(Networks.testnet).backendUrl
+const TESTNET_PERA = getPeraServicesConfig({
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const).backendUrl
 
 const BETANET_GENESIS = 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0='
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
@@ -84,7 +89,7 @@ const CUSTOM_GENESIS = 'MvoAmMBVQX32w2gqkfMKShsYCbYio8wyepw6Zk5CgOw='
 
 type NetworkFixture = {
     label: string
-    network: typeof Networks.betanet | typeof Networks.custom
+    network: 'betanet' | 'custom'
     algodUrl: string
     indexerUrl: string
     genesisHash: string
@@ -95,7 +100,7 @@ type NetworkFixture = {
 const FIXTURES: NetworkFixture[] = [
     {
         label: 'betanet (baked config)',
-        network: Networks.betanet,
+        network: 'betanet',
         algodUrl: BETANET_ALGOD,
         indexerUrl: BETANET_INDEXER,
         genesisHash: BETANET_GENESIS,
@@ -105,7 +110,7 @@ const FIXTURES: NetworkFixture[] = [
     },
     {
         label: 'custom (runtime store overlay)',
-        network: Networks.custom,
+        network: 'custom',
         algodUrl: CUSTOM_ALGOD,
         indexerUrl: CUSTOM_INDEXER,
         genesisHash: CUSTOM_GENESIS,
@@ -161,11 +166,12 @@ describe.each(FIXTURES)(
         beforeEach(() => {
             requested.length = 0
             configure()
-            useNetworkStore.getState().setNetwork(network)
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork(LEGACY_CHAIN_ID, network)
         })
 
         afterEach(() => {
-            useNetworkStore.getState().setNetwork(Networks.mainnet)
+            useNetworkStore.getState().setMode('live')
             clearCustomNetwork()
         })
 
@@ -194,7 +200,10 @@ describe.each(FIXTURES)(
                 requested.some(url =>
                     matchesBase(
                         url,
-                        getNetworkConfig(Networks.testnet).algodUrl,
+                        getAlgorandChainConfig({
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'testnet',
+                        } as const).algodUrl,
                     ),
                 ),
             ).toBe(false)
@@ -217,7 +226,10 @@ describe.each(FIXTURES)(
                 requested.some(url =>
                     matchesBase(
                         url,
-                        getNetworkConfig(Networks.testnet).backendUrl,
+                        getPeraServicesConfig({
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: 'testnet',
+                        } as const).backendUrl,
                     ),
                 ),
             ).toBe(false)
@@ -269,7 +281,10 @@ describe.each(FIXTURES)(
 
             const result = await fetchTransactionHistory({
                 accountAddress: ADDRESS,
-                scope: scopeForLegacyNetwork(network),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const,
             })
 
             const ids = result.transactions.map(transaction => transaction.id)

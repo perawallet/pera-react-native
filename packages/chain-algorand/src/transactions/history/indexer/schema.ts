@@ -48,7 +48,7 @@ const applicationLegSchema = z.object({
 // it with different requiredness, so the difference stays visible at both
 // definition sites rather than smuggled through a shared default.
 const sharedTransactionFields = {
-    // Deliberately a bare `z.string()`, NOT `z.nativeEnum(TransactionTypes)`.
+    // Deliberately a bare `z.string()`, NOT an enum of known types.
     // The app has generic fallbacks for unspecialized transaction types, so
     // constraining this would make an unrecognized type fail validation and be
     // dropped as an unparseable row — hiding a transaction the UI could have

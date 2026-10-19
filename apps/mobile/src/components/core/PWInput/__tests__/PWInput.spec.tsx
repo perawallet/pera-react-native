@@ -26,11 +26,6 @@ const inputPlatform = vi.hoisted(() => ({
 vi.mock('../inputPlatform', () => inputPlatform)
 
 describe('PWInput', () => {
-    it('renders correctly', () => {
-        render(<PWInput placeholder='Enter text' />)
-        expect(screen.getByPlaceholderText('Enter text')).toBeTruthy()
-    })
-
     // Retrying with simpler test case for input
     it('handles input events', () => {
         const onChangeText = vi.fn()

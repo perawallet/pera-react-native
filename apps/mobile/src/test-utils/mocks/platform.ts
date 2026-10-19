@@ -324,7 +324,6 @@ vi.mock('@perawallet/wallet-extension-platform', async importOriginal => ({
     >()),
     createCrashReportingErrorReporter: vi.fn(() => vi.fn()),
     useID: vi.fn(() => 'id'),
-    useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({
         getDeviceLocale: vi.fn(() => 'en-US'),
         getAppVersion: vi.fn(() => '1.0.0'),

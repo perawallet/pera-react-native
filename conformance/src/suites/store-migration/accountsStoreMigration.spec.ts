@@ -31,10 +31,10 @@ import {
     LEGACY_CHAIN_ID,
     toScopeKey,
     type ChainScope,
+    CUSTOM_NETWORK_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     migrations,
     runMigrations,
@@ -140,7 +140,10 @@ describe('accounts-store migration conformance', () => {
         scope = await localNetScope()
         // A user on LocalNet has the custom network selected, which is the
         // scope a lone scalar authority settles under.
-        useNetworkStore.getState().setNetwork(Networks.custom)
+        useNetworkStore.getState().setMode('developer')
+        useNetworkStore
+            .getState()
+            .selectNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
         const { minFee } = await getConformanceClient()
             .client.algod.getTransactionParams()
             .do()

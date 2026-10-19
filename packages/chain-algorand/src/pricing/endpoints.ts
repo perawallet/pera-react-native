@@ -10,19 +10,20 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { assetPricesResponseSchema, type AssetPricesResponse } from './schema'
+import { type AlgorandNetworkId, algorandScope } from '../network-id'
 
 // Capped by the endpoint's own asset_ids validation.
 export const ASSET_PRICES_MAX_IDS_PER_REQUEST = 100
 
 export const fetchAssetPrices = async (
     assetIDs: string[],
-    network: Network,
+    network: AlgorandNetworkId,
 ) => {
     const response = await queryClient<AssetPricesResponse, string[]>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: `/api/v3/asset-prices`,
         params: {

@@ -32,7 +32,7 @@ export type DiscoverAccountsOptions = {
 }
 
 /**
- * Sequentially discovers Algorand accounts on a connected Ledger device.
+ * Sequentially discovers the accounts on a connected Ledger device.
  *
  * Gap/ceiling semantics live in `@perawallet/wallet-core-hardware-wallet`
  * (the layer that owns the scan loop): with an `isAccountOnChain` probe the

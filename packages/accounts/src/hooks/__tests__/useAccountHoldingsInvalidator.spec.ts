@@ -13,13 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { Query } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAccountHoldingsInvalidator } from '../useAccountHoldingsInvalidator'
 import {
     getAccountBalancesQueryKey,
     getAccountHoldingsPageQueryKey,
     getInvalidateAccountHoldingsPredicate,
 } from '../querykeys'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mockInvalidateQueries = vi.fn()
 vi.mock('@tanstack/react-query', () => ({
@@ -44,14 +44,14 @@ describe('useAccountHoldingsInvalidator', () => {
     })
 
     it('matches holdings-page keys and leaves other account keys alone', () => {
-        const holdings = getAccountHoldingsPageQueryKey(
-            'ADDRESS',
-            scopeForLegacyNetwork('mainnet'),
-        )
-        const balances = getAccountBalancesQueryKey(
-            'ADDRESS',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const holdings = getAccountHoldingsPageQueryKey('ADDRESS', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
+        const balances = getAccountBalancesQueryKey('ADDRESS', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(getInvalidateAccountHoldingsPredicate(asQuery(holdings))).toBe(
             true,

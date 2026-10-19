@@ -27,7 +27,7 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         assetId: text('asset_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
         /** The chain's own data about the holding; null when it has none. */
@@ -36,7 +36,7 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     },
     table => [
         primaryKey({
-            columns: [table.accountAddress, table.assetId, table.network],
+            columns: [table.accountAddress, table.assetId, table.scope],
         }),
     ],
 )
@@ -45,7 +45,7 @@ export const AccountChainStateSchema = sqliteTable(
     'account_chain_state',
     {
         accountAddress: text('account_address').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         /** Base units of the chain's native asset. */
         nativeBalance: decimalColumn('native_balance').notNull(),
         chainData: decimalJsonColumn<AccountChainState>('chain_data').notNull(),
@@ -53,7 +53,7 @@ export const AccountChainStateSchema = sqliteTable(
     },
     table => [
         primaryKey({
-            columns: [table.accountAddress, table.network],
+            columns: [table.accountAddress, table.scope],
         }),
     ],
 )

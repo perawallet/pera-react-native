@@ -99,7 +99,6 @@ import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     decodeFromBase64,
     encodeToBase64,
-    Networks,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -747,7 +746,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         beforeEach(async () => {
             await resetTestDatabase()
             await seedAlgoAsset('mainnet')
-            useNetworkStore.getState().setNetwork(Networks.mainnet)
+            useNetworkStore.getState().setMode('live')
             signSpy = vi
                 .spyOn(getProvider().key.store, 'sign')
                 .mockResolvedValue(VISIBLE_SIGNATURE)

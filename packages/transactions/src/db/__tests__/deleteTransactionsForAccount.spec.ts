@@ -21,7 +21,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, deleteTransactionsForAccount } from '../repository'
 import { TransactionsSchema } from '../schema'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { historyChainAdapters } from '../../history-adapter'
 import { fixtureHistoryAdapter } from '../../__tests__/fixture-chain-data'
 
@@ -33,13 +33,9 @@ const makeTx = (id: string): TransactionHistoryItem => ({
     confirmedRound: 12345,
     roundTime: 1700000000,
     fee: new Decimal(1000),
-    groupId: null,
+    chainData: null,
     amount: new Decimal(5000000),
-    closeTo: null,
-    applicationId: null,
-    innerTransactionCount: null,
     asset: null,
-    swapGroupDetail: null,
     interpretedMeaning: null,
     balanceImpacts: [],
 })
@@ -74,13 +70,13 @@ describe('deleteTransactionsForAccount', () => {
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_ONLY_A')],
             accountAddress: 'ACCT_A',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_ONLY_B')],
             accountAddress: 'ACCT_B',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         await deleteTransactionsForAccount({ db, accountAddress: 'ACCT_A' })
@@ -94,13 +90,13 @@ describe('deleteTransactionsForAccount', () => {
             db,
             items: [makeTx('TX_MAIN')],
             accountAddress: 'ACCT_A',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_TEST')],
             accountAddress: 'ACCT_A',
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
         })
 
         await deleteTransactionsForAccount({ db, accountAddress: 'ACCT_A' })

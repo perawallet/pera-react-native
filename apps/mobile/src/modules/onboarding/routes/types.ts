@@ -15,6 +15,7 @@ import type {
     LocalKeySeed,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
@@ -82,6 +83,8 @@ export type ImportFlowParamList = {
         account?: WalletAccount
         /** Override the post-naming destination (defaults to exit-to-Home). */
         returnTo?: PostCreateReturnTarget
+        /** The chain whose address names the account; defaults to the legacy chain. */
+        chainId?: ChainId
     }>
     ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
@@ -147,6 +150,7 @@ export type AddAccountStackParamList = ImportFlowParamList & {
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget
     }>
+    ImportPrivateKey: { chainId: ChainId }
     WatchInfo: undefined
     WatchAccount: Optional<{
         // Set by the watch-account / register-watch-account deeplinks so the

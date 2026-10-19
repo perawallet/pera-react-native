@@ -24,7 +24,7 @@ import {
     getNfdsByAddresses,
     getStaleOrMissingAddresses,
 } from '../repository'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ADDR_A = 'A'.repeat(58)
 const ADDR_B = 'B'.repeat(58)
@@ -50,7 +50,10 @@ describe('nfd repository', () => {
         it('persists positive entries and reads them back', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -66,7 +69,10 @@ describe('nfd repository', () => {
             const row = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             expect(row).not.toBeNull()
@@ -78,14 +84,20 @@ describe('nfd repository', () => {
         it('persists negative entries (no NFD) as cached null', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [{ address: ADDR_A, name: null }],
             })
 
             const row = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             expect(row).not.toBeNull()
@@ -96,7 +108,10 @@ describe('nfd repository', () => {
             const row = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
             expect(row).toBeNull()
         })
@@ -106,7 +121,10 @@ describe('nfd repository', () => {
             vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -121,13 +139,19 @@ describe('nfd repository', () => {
             const first = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             vi.setSystemTime(new Date('2026-01-02T00:00:00Z'))
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -142,7 +166,10 @@ describe('nfd repository', () => {
             const second = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             expect(second?.name?.name).toBe('alice2.algo')
@@ -152,7 +179,10 @@ describe('nfd repository', () => {
         it('isolates entries per network', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -166,7 +196,10 @@ describe('nfd repository', () => {
             })
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('testnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -182,12 +215,18 @@ describe('nfd repository', () => {
             const mainnetRow = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
             const testnetRow = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('testnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const,
             })
 
             expect(mainnetRow?.name?.name).toBe('alice.algo')
@@ -197,13 +236,19 @@ describe('nfd repository', () => {
         it('no-op on empty entries', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [],
             })
             const row = await getNfdByAddress({
                 db,
                 address: ADDR_A,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
             expect(row).toBeNull()
         })
@@ -214,21 +259,24 @@ describe('nfd repository', () => {
     it('stores the scope key in nfd_cache', async () => {
         await upsertNfdEntries({
             db,
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             entries: [{ address: ADDR_A, name: null }],
         })
 
         const rows = (await db.all(
-            sql.raw('select network from nfd_cache'),
+            sql.raw('select scope from nfd_cache'),
         )) as Array<[string]>
-        expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
+        expect(rows.map(([scope]) => scope)).toEqual(['algorand/testnet'])
     })
 
     describe('getNfdsByAddresses', () => {
         it('returns rows for the requested subset only', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -244,7 +292,10 @@ describe('nfd repository', () => {
             const rows = await getNfdsByAddresses({
                 db,
                 addresses: [ADDR_A, ADDR_C],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
 
             expect(rows).toHaveLength(1)
@@ -255,7 +306,10 @@ describe('nfd repository', () => {
             const rows = await getNfdsByAddresses({
                 db,
                 addresses: [],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             })
             expect(rows).toEqual([])
         })
@@ -265,7 +319,10 @@ describe('nfd repository', () => {
         it('returns missing addresses', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -277,7 +334,10 @@ describe('nfd repository', () => {
             const result = await getStaleOrMissingAddresses({
                 db,
                 addresses: [ADDR_A, ADDR_B, ADDR_C],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 ttlMs: 60_000,
             })
 
@@ -289,7 +349,10 @@ describe('nfd repository', () => {
             vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -303,7 +366,10 @@ describe('nfd repository', () => {
             const result = await getStaleOrMissingAddresses({
                 db,
                 addresses: [ADDR_A],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 ttlMs: 60_000,
             })
 
@@ -313,7 +379,10 @@ describe('nfd repository', () => {
         it('skips fresh addresses regardless of positive or negative cache', async () => {
             await upsertNfdEntries({
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 entries: [
                     {
                         address: ADDR_A,
@@ -326,7 +395,10 @@ describe('nfd repository', () => {
             const result = await getStaleOrMissingAddresses({
                 db,
                 addresses: [ADDR_A, ADDR_B],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 ttlMs: 60 * 60 * 1000,
             })
 

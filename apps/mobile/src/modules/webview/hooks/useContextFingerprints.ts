@@ -11,10 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import {
-    useSelectedScope,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
@@ -34,7 +31,7 @@ export function useContextFingerprints(): ContextFingerprints {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isDarkMode = useIsDarkMode()
     const { preferredCurrency } = useCurrency(scope)
-    const { network } = useNetwork()
+    const network = scope.networkId
     const { currentLanguage } = useLanguage()
     const accounts = useAllAccounts()
 

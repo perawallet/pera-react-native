@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 // The persisted React Query cache is plaintext, so nothing secret may persist.
 // QUERY_PREFIX_POLICY defaults to "never", which makes a new module safe on day
 // one; this sweep is what makes it deliberate, by failing until someone

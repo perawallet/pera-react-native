@@ -57,12 +57,7 @@ describe('fetchDelta', () => {
             ],
         })
 
-        const result = await fetchDelta(
-            'mainnet',
-            'did:pera:ADDR',
-            'device-1',
-            0,
-        )
+        const result = await fetchDelta('did:pera:ADDR', 'device-1', 0)
 
         expect(result).toEqual([
             {
@@ -80,12 +75,7 @@ describe('fetchDelta', () => {
     it('returns an empty array when the response has no entries', async () => {
         signedBackupRequestMock.mockResolvedValue({})
 
-        const result = await fetchDelta(
-            'mainnet',
-            'did:pera:ADDR',
-            'device-1',
-            0,
-        )
+        const result = await fetchDelta('did:pera:ADDR', 'device-1', 0)
 
         expect(result).toEqual([])
     })
@@ -96,7 +86,7 @@ describe('fetchDelta', () => {
         )
 
         await expect(
-            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 42),
+            fetchDelta('did:pera:ADDR', 'device-1', 42),
         ).rejects.toMatchObject({ name: 'FromSeqTooOldError', fromSeq: 42 })
     })
 
@@ -106,7 +96,7 @@ describe('fetchDelta', () => {
         )
 
         await expect(
-            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 42),
+            fetchDelta('did:pera:ADDR', 'device-1', 42),
         ).rejects.not.toBeInstanceOf(FromSeqTooOldError)
     })
 })
@@ -118,14 +108,12 @@ describe('fetchItem', () => {
         signedBackupRequestMock.mockResolvedValue('ENCRYPTED_PAYLOAD')
 
         const result = await fetchItem(
-            'mainnet',
             'did:pera:ADDR',
             'device-1',
             'accounts/ADDR',
         )
 
         expect(signedBackupRequestMock).toHaveBeenCalledWith({
-            network: 'mainnet',
             method: 'GET',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
@@ -150,7 +138,6 @@ describe('upsertItem', () => {
         signedBackupRequestMock.mockResolvedValue({ new_ver: 2, seq: 7 })
 
         const result = await upsertItem(
-            'mainnet',
             'did:pera:ADDR',
             'device-1',
             'accounts/ADDR',
@@ -158,7 +145,6 @@ describe('upsertItem', () => {
         )
 
         expect(signedBackupRequestMock).toHaveBeenCalledWith({
-            network: 'mainnet',
             method: 'PUT',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
@@ -188,14 +174,12 @@ describe('batchUpsertItems', () => {
         signedBackupRequestMock.mockResolvedValue({ results: [] })
 
         const result = await batchUpsertItems(
-            'mainnet',
             'did:pera:ADDR',
             'device-1',
             request,
         )
 
         expect(signedBackupRequestMock).toHaveBeenCalledWith({
-            network: 'mainnet',
             method: 'POST',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/items/upsert',
@@ -213,14 +197,12 @@ describe('deleteItem', () => {
         signedBackupRequestMock.mockResolvedValue({ seq: 9 })
 
         const result = await deleteItem(
-            'mainnet',
             'did:pera:ADDR',
             'device-1',
             'accounts/ADDR',
         )
 
         expect(signedBackupRequestMock).toHaveBeenCalledWith({
-            network: 'mainnet',
             method: 'DELETE',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
@@ -238,14 +220,9 @@ describe('destroyBackup', () => {
             backup_id: 'did:pera:ADDR',
         })
 
-        const result = await destroyBackup(
-            'mainnet',
-            'did:pera:ADDR',
-            'device-1',
-        )
+        const result = await destroyBackup('did:pera:ADDR', 'device-1')
 
         expect(signedBackupRequestMock).toHaveBeenCalledWith({
-            network: 'mainnet',
             method: 'DELETE',
             backupId: 'did:pera:ADDR',
             pathSuffix: '',
@@ -274,7 +251,7 @@ describe('response validation', () => {
         })
 
         await expect(
-            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 0),
+            fetchDelta('did:pera:ADDR', 'device-1', 0),
         ).rejects.toBeInstanceOf(BackupResponseParseError)
     })
 
@@ -294,7 +271,7 @@ describe('response validation', () => {
         })
 
         await expect(
-            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 0),
+            fetchDelta('did:pera:ADDR', 'device-1', 0),
         ).rejects.toBeInstanceOf(BackupResponseParseError)
     })
 
@@ -312,12 +289,7 @@ describe('response validation', () => {
             ],
         })
 
-        const [entry] = await fetchDelta(
-            'mainnet',
-            'did:pera:ADDR',
-            'device-1',
-            0,
-        )
+        const [entry] = await fetchDelta('did:pera:ADDR', 'device-1', 0)
 
         expect(entry.hash).toBeNull()
     })
@@ -333,7 +305,7 @@ describe('response validation', () => {
         })
 
         await expect(
-            fetchManifest('mainnet', 'did:pera:ADDR', 'device-1'),
+            fetchManifest('did:pera:ADDR', 'device-1'),
         ).rejects.toThrow(/last_seq/)
     })
 
@@ -351,7 +323,7 @@ describe('response validation', () => {
             ],
         })
 
-        const result = await readItems('mainnet', 'did:pera:ADDR', 'device-1', [
+        const result = await readItems('did:pera:ADDR', 'device-1', [
             'accounts/A',
             'accounts/B',
         ])
@@ -372,7 +344,7 @@ describe('response validation', () => {
         })
 
         await expect(
-            batchUpsertItems('mainnet', 'did:pera:ADDR', 'device-1', {
+            batchUpsertItems('did:pera:ADDR', 'device-1', {
                 device_id: 'device-1',
                 items: [],
             }),

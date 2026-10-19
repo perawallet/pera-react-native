@@ -56,9 +56,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 
 type BuildOpts = {
     type?: 'transactions' | 'arbitrary-data' | 'auth-data'

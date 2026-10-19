@@ -24,6 +24,7 @@ import type { Banner } from '@perawallet/wallet-core-banners'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { BannerIcon } from '../BannerIcon'
 import { useStyles } from './styles'
+import { getCompactText } from './utils'
 
 export type CompactBannerProps = {
     primary: Banner
@@ -31,9 +32,6 @@ export type CompactBannerProps = {
     onPress: () => void
     testID?: string
 }
-
-const getCompactText = (banner: Banner): string =>
-    banner.title ?? banner.subtitle ?? banner.buttonLabel ?? ''
 
 // Subtle attention pulse on the text. Dims the text opacity briefly every
 // ~10s so the eye is drawn back to the strip without the bar feeling busy.

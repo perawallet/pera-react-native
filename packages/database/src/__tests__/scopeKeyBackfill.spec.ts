@@ -103,10 +103,11 @@ const seedLegacyRows = async (db: Database): Promise<void> => {
 const countByNetwork = async (
     db: Database,
     table: string,
+    column: 'network' | 'scope' = 'network',
 ): Promise<Record<string, number>> => {
     const rows = await db.values<[string, number]>(
         sql.raw(
-            `SELECT network, COUNT(*) FROM ${table} GROUP BY network ORDER BY network`,
+            `SELECT ${column}, COUNT(*) FROM ${table} GROUP BY ${column} ORDER BY ${column}`,
         ),
     )
     return Object.fromEntries(rows)
@@ -243,10 +244,12 @@ describe('scope key backfill migration', () => {
                 if (table === 'submission_attempts') continue
                 // 0013 drops it.
                 if (table === 'account_balances') continue
-                expect(await countByNetwork(test.db, table)).toEqual({})
+                expect(await countByNetwork(test.db, table, 'scope')).toEqual(
+                    {},
+                )
             }
             expect(
-                await countByNetwork(test.db, 'submission_attempts'),
+                await countByNetwork(test.db, 'submission_attempts', 'scope'),
             ).toEqual({
                 'algorand/betanet': 1,
                 'algorand/custom': 1,

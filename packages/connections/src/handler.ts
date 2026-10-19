@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,
@@ -91,7 +91,7 @@ export interface ConnectionHandler<
      */
     restore(): Promise<TConnection[]>
 
-    matchesNetwork(connection: TConnection, network: Network): boolean
+    matchesChainScope(connection: TConnection, scope: ChainScope): boolean
 
     /**
      * The methods this connection was approved for, as the settings panel
@@ -106,6 +106,10 @@ export interface ConnectionHandler<
      */
     describeUri?(uri: string): Record<string, string | null>
 
-    /** Present only if the protocol can push wallet-initiated messages. */
+    /**
+     * Present only if the protocol can push wallet-initiated messages. Each
+     * handler decides relevance: resolves without sending when the session
+     * lacks the notice's chain, and never widens the accounts the session holds.
+     */
     notify?(id: ConnectionId, notice: WalletNotice): Promise<void>
 }

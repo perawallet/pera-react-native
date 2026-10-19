@@ -145,14 +145,20 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: mkStore(stores.device),
-    deviceIdFor: (
+    deviceIdForDeployment: (
         state: { deviceIDs: Map<string, string | null> },
-        network: string,
-    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+        deployment: string,
+    ) =>
+        state.deviceIDs.get(
+            deployment === 'live' ? 'algorand/mainnet' : 'algorand/testnet',
+        ) ?? null,
     deviceIdOriginFor: (
         state: { deviceIdOrigins: Record<string, string | undefined> },
-        network: string,
-    ) => state.deviceIdOrigins[`algorand/${network}`],
+        deployment: string,
+    ) =>
+        state.deviceIdOrigins[
+            deployment === 'live' ? 'algorand/mainnet' : 'algorand/testnet'
+        ],
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -162,10 +168,6 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
-vi.mock('@perawallet/wallet-core-config', () => ({
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
-}))
-
 vi.mock('@perawallet/wallet-core-security', () => ({
     PIN_RECORD_KEY_ID: 'PIN_KEY',
     BIOMETRIC_BLOB_KEY_ID: 'BIO_KEY',

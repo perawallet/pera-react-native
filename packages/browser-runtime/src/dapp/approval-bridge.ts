@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { SourceType } from '@perawallet/wallet-core-connections'
 import { pendingCapacityBreach } from '@perawallet/wallet-core-connections/capacity'
 import type {
@@ -45,7 +44,7 @@ export type PendingApproval =
           proposalId: string
           connectionKind: ConnectionKind
           peer: ConnectionPeer
-          /** Chain-reported network ids (`ChainScope['networkId']`), not the legacy `Network`. */
+          /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
           requested: { networks: string[]; methods: string[] }
           expiresAt: number
           // Browser-verified origin of the requesting tab; absent for a
@@ -82,7 +81,7 @@ export type PendingApproval =
           faviconUrl?: string
           reason: ConnectionErrorReason
           peer?: ConnectionPeer
-          activeNetwork?: Network
+          activeNetwork?: NetworkId
       }
     | ({
           kind: 'passkey-create'
@@ -273,7 +272,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         faviconUrl?: string
         reason: ConnectionErrorReason
         peer?: ConnectionPeer
-        activeNetwork?: Network
+        activeNetwork?: NetworkId
     }): Promise<void> {
         const settled = this.awaitApproval<unknown>({
             ...ctx,

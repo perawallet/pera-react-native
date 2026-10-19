@@ -27,15 +27,32 @@ describe('chainSupport with no chain adapter registered', () => {
     })
 
     it('walletConnectSupportFor returns null rather than throwing', () => {
-        expect(walletConnectSupportFor('mainnet')).toBeNull()
+        expect(
+            walletConnectSupportFor({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBeNull()
     })
 
     it('isV1ChainIdAcceptable fails closed to false', () => {
-        expect(isV1ChainIdAcceptable(4160, 'mainnet')).toBe(false)
-        expect(isV1ChainIdAcceptable(undefined, 'mainnet')).toBe(false)
+        expect(
+            isV1ChainIdAcceptable(4160, {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBe(false)
+        expect(
+            isV1ChainIdAcceptable(undefined, {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        ).toBe(false)
     })
 
     it('v1NetworksFor fails closed to an empty list', () => {
-        expect(v1NetworksFor(4160)).toEqual([])
+        expect(
+            v1NetworksFor({ chainId: 'algorand', networkId: 'mainnet' }, 4160),
+        ).toEqual([])
     })
 })

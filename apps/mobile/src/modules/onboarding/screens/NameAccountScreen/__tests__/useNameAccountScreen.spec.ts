@@ -23,7 +23,18 @@ const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
 const mockUpdateAccount = vi.fn()
 
-let mockRouteParams: Optional<{ account?: unknown; returnTo?: unknown }>
+let mockRouteParams: Optional<{
+    account?: unknown
+    returnTo?: unknown
+    chainId?: string
+}>
+const mockStoredAccounts = vi.hoisted(() => ({ accounts: [] as unknown[] }))
+const mockGetAccountDisplayName = vi.hoisted(() =>
+    vi.fn(
+        (account: { name?: string }, _chainId: string) =>
+            account?.name ?? 'Account 1',
+    ),
+)
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -52,15 +63,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: Object.assign(
         vi.fn(() => ({})),
         {
-            getState: vi.fn(() => ({ accounts: [] })),
+            getState: vi.fn(() => ({
+                accounts: mockStoredAccounts.accounts,
+            })),
         },
     ),
     useSelectedAccountId: () => ({
         selectedAccountId: null,
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
-    getAccountDisplayName: (account: { name?: string }) =>
-        account?.name ?? 'Account 1',
+    getAccountDisplayName: mockGetAccountDisplayName,
     hdIndexOf: () => undefined,
     signingKeyOn: () => undefined,
     chainAccountOf: (
@@ -121,6 +133,47 @@ describe('useNameAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams = undefined
+        mockStoredAccounts.accounts = []
+    })
+
+    describe('on another chain', () => {
+        const CHAIN_ID = 'second-chain'
+        const account = {
+            id: 'chain-1',
+            chains: { [CHAIN_ID]: { address: '0xabc', keyPairId: 'kp' } },
+            custody: { kind: 'local', seed: null },
+        }
+
+        it("names the account from that chain's address", () => {
+            mockRouteParams = { account, chainId: CHAIN_ID }
+
+            renderHook(() => useNameAccountScreen())
+
+            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
+                account,
+                CHAIN_ID,
+            )
+        })
+
+        it('updates an account already stored under its id instead of adding it again', async () => {
+            mockStoredAccounts.accounts = [account]
+            mockRouteParams = { account, chainId: CHAIN_ID }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            act(() => {
+                result.current.handleNameChange('Named')
+            })
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockUpdateAccount).toHaveBeenCalledWith({
+                ...account,
+                name: 'Named',
+            })
+            expect(mockSaveAccount).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('chain-1')
+        })
     })
 
     it('initializes with default wallet name when no account is passed', () => {

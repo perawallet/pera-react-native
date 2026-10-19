@@ -59,10 +59,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -131,7 +131,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper },
@@ -167,7 +170,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper },
@@ -183,7 +189,7 @@ describe('useSubmitRekeyMutation', () => {
             reason: 'submission_pending',
         })
         expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             sender: 'SRC',
             intentKey: { kind: 'rekey', address: 'SRC' },
             // Bounded like the swap guard: a row with no decodable validity
@@ -207,7 +213,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper },
@@ -241,7 +250,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             {
@@ -290,7 +302,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             {
@@ -314,7 +329,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             {
@@ -347,7 +365,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             {
@@ -409,7 +430,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result, rerender } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper: productionLikeWrapper },
@@ -451,7 +475,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper },
@@ -490,7 +517,10 @@ describe('useSubmitRekeyMutation', () => {
         const { result } = renderHook(
             () =>
                 useSubmitRekeyMutation({
-                    scope: scopeForLegacyNetwork('testnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     signingMetadata: SIGNING_METADATA,
                 }),
             { wrapper },

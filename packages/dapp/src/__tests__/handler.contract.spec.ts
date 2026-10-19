@@ -47,7 +47,7 @@ runHandlerContractTests(
         return createDappConnectionHandler({
             transport,
             chainId: 'algorand',
-            getNetwork: () => 'mainnet',
+            getNetworkId: () => 'mainnet',
             getCustomNetworkGenesisHash: () => undefined,
             getAccounts: () => [{ address: 'AAAA', name: 'A' }],
         })

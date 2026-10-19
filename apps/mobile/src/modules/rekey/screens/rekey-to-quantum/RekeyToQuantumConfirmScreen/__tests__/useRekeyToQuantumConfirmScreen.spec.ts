@@ -10,38 +10,20 @@
  limitations under the License
  */
 
-// The confirm/warning/submit behavior itself is covered by the shared
-// `useRekeyConfirmScreen` consumers' specs; this spec pins the wrapper's own
-// wiring — route params in, quantum success route out.
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { renderHook } from '@testing-library/react'
+import { config } from '@perawallet/wallet-core-config'
 import { useRekeyToQuantumConfirmScreen } from '../useRekeyToQuantumConfirmScreen'
+
+import type {
+    RekeyConfirmConfig,
+    UseRekeyConfirmScreenResult,
+} from '../../../../hooks/useRekeyConfirmScreen'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
-    }),
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: vi.fn(),
-    }),
-}))
-
-vi.mock('@hooks/useErrorToast', () => ({
-    useErrorToast: () => ({
-        showError: vi.fn(),
-    }),
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
     }),
 }))
 
@@ -56,80 +38,44 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...actual,
-        useFindAccountByAddress: (address: string) => {
-            if (address === 'SRC')
-                return {
-                    chains: { algorand: { address: 'SRC' } },
-                    name: 'Source',
-                    custody: { kind: 'local', seed: null },
-                }
-            if (address === 'TGT')
-                return {
-                    chains: { algorand: { address: 'TGT' } },
-                    name: 'Target',
-                    custody: { kind: 'local', seed: 'quantum' },
-                }
-            return undefined
-        },
-    }
-})
-
-const mockSubmitAsync = vi.fn()
-vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-transactions')
-    >()),
-    useSubmitRekeyMutation: () => ({
-        submitAsync: mockSubmitAsync,
-        isPending: false,
-    }),
-    useRekeyTransactionFeeQuery: () => ({
-        feeAlgos: new Decimal('0.001'),
-        isPending: false,
-    }),
-    useRekeyFeePreflight: () => ({ isUnderfunded: false }),
-}))
-
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({
-        request: vi.fn(),
-        requestByType: vi.fn(),
-        dismiss: vi.fn(),
-        dismissAll: vi.fn(),
-    }),
+const mockUseRekeyConfirmScreen =
+    vi.fn<(rekeyConfig: RekeyConfirmConfig) => UseRekeyConfirmScreenResult>()
+vi.mock('../../../../hooks/useRekeyConfirmScreen', () => ({
+    useRekeyConfirmScreen: (rekeyConfig: RekeyConfirmConfig) =>
+        mockUseRekeyConfirmScreen(rekeyConfig),
 }))
 
 describe('useRekeyToQuantumConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        registerAlgorandAccountsAdapter()
     })
 
-    it('handleConfirmPress submits the routed addresses and navigates to the quantum success screen', async () => {
-        mockSubmitAsync.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useRekeyToQuantumConfirmScreen())
+    it('passes the routed addresses and the quantum support URL and warning copy to the shared confirm hook', () => {
+        renderHook(() => useRekeyToQuantumConfirmScreen())
 
-        await act(async () => {
-            result.current.handleConfirmPress()
-        })
-
-        await waitFor(() => {
-            expect(mockSubmitAsync).toHaveBeenCalledWith({
+        expect(mockUseRekeyConfirmScreen).toHaveBeenCalledWith(
+            expect.objectContaining({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
-            })
-        })
+                targetAddress: 'TGT',
+                supportUrl: config.quantumAccountSupportUrl,
+                warningCopy: {
+                    titleKey: 'rekey.to_quantum.confirm.replace_warning.title',
+                    bodyKey: 'rekey.to_quantum.confirm.replace_warning.body',
+                    confirmKey:
+                        'rekey.to_quantum.confirm.replace_warning.confirm',
+                    cancelKey:
+                        'rekey.to_quantum.confirm.replace_warning.cancel',
+                },
+                warningTestID: 'rekey-to-quantum-previous-rekey-warning-sheet',
+            }),
+        )
+    })
+
+    it('navigates to the quantum success screen from onSubmitSuccess', () => {
+        renderHook(() => useRekeyToQuantumConfirmScreen())
+
+        mockUseRekeyConfirmScreen.mock.calls[0][0].onSubmitSuccess('SRC')
+
         expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
             screen: 'RekeyToQuantumSuccess',
             params: { sourceAddress: 'SRC' },

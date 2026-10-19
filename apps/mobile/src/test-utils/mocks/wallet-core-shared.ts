@@ -429,12 +429,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         DEFAULT_PRECISION: 2,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
-        Networks: {
-            mainnet: 'mainnet',
-            testnet: 'testnet',
-            betanet: 'betanet',
-            custom: 'custom',
-        },
         // Must mirror packages/shared/src/models/base-types.ts — period pills
         // render from this list, so a missing member silently drops a pill.
         HISTORY_PERIODS: ['one-day', 'one-week', 'one-month', 'one-year'],

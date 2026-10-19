@@ -31,6 +31,7 @@ import m0015 from './0015_submission_attempts_nonce.sql?raw'
 import m0016 from './0016_submission_attempts_history_entry.sql?raw'
 import m0017 from './0017_submission_attempts_max_fee.sql?raw'
 import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
+import m0019 from './0019_chain_data_scope_columns.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -84,4 +85,7 @@ export const migrations: MigrationConfig = {
     // Rebuilt by copy so chain_data can be NOT NULL. A row without a valid
     // document gets one built from the old columns; one with it keeps it, since every write path wrote both.
     '0018_drop_transaction_algorand_columns': m0018,
+    // Copied in SQL before the drops so a pending attempt keeps its validity
+    // window; the renames carry primary keys and indexes along.
+    '0019_chain_data_scope_columns': m0019,
 }

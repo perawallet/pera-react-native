@@ -28,10 +28,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 import {
-    scopeForLegacyNetwork,
     type PeraTransaction,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
-import { config, Networks } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 
 import {
     createAlgo25Account,
@@ -112,7 +112,7 @@ describe('quantum fee coverage conformance', () => {
                     findFundedIndices({
                         ...params,
                         accounts,
-                        network: Networks.custom,
+                        network: 'custom',
                     }),
             },
         )
@@ -236,7 +236,10 @@ describe('quantum fee coverage conformance', () => {
             const account = rekeyed.walletAccount
             // What the account syncer records once it reads the chain's `auth-addr`.
             useAccountChainStateStore.getState().setAccountChainState(
-                scopeForLegacyNetwork(config.defaultNetwork),
+                {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: config.defaultNetwork,
+                } as const,
                 rekeyed.address,
                 algorandAccountsAdapter.toChainState({
                     authorityAddress: pq.address,

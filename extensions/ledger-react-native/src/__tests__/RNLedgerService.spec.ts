@@ -284,7 +284,7 @@ describe('RNLedgerService', () => {
 
             const transport = await new RNLedgerService()
                 .createTransportProvider()
-                .connect('device-id')
+                .connect('device-id', 'test')
 
             expect(transportOpenMock).toHaveBeenCalledWith('device-id')
             expect(driverOpenMock).toHaveBeenCalledWith(
@@ -294,13 +294,33 @@ describe('RNLedgerService', () => {
             expect(transport).toBe(openedTransport)
         })
 
+        test('opens only the driver of the chain it connects for', async () => {
+            transportOpenMock.mockResolvedValue({ close: transportCloseMock })
+            const provider = new RNLedgerService().createTransportProvider()
+            const otherOpen = vi.fn<LedgerAppDriver['open']>(
+                () => openedTransport,
+            )
+            ledgerAppDriverRegistry.register({
+                chainId: 'other',
+                open: otherOpen,
+            })
+
+            await provider.connect('device-id', 'other')
+            expect(otherOpen).toHaveBeenCalledTimes(1)
+            expect(driverOpenMock).not.toHaveBeenCalled()
+
+            await provider.connect('device-id', 'test')
+            expect(driverOpenMock).toHaveBeenCalledTimes(1)
+            expect(otherOpen).toHaveBeenCalledTimes(1)
+        })
+
         test('throws before opening the device when no app driver is registered', async () => {
             ledgerAppDriverRegistry.reset()
 
             await expect(
                 new RNLedgerService()
                     .createTransportProvider()
-                    .connect('device-id'),
+                    .connect('device-id', 'test'),
             ).rejects.toBeInstanceOf(LedgerAppDriverNotRegisteredError)
             expect(transportOpenMock).not.toHaveBeenCalled()
         })
@@ -311,7 +331,7 @@ describe('RNLedgerService', () => {
             await expect(
                 new RNLedgerService()
                     .createTransportProvider()
-                    .connect('device-id'),
+                    .connect('device-id', 'test'),
             ).rejects.toThrow()
         })
 
@@ -321,7 +341,7 @@ describe('RNLedgerService', () => {
             await expect(
                 new RNLedgerService()
                     .createTransportProvider()
-                    .connect('device-id'),
+                    .connect('device-id', 'test'),
             ).rejects.toBeInstanceOf(LedgerDeviceNotFoundError)
         })
     })
@@ -345,9 +365,9 @@ describe('RNLedgerService', () => {
             vi.mocked(permissionsCheckMock).mockResolvedValue(false)
             const service = new RNLedgerService()
             const provider = service.createTransportProvider()
-            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
-                LedgerPermissionDeniedError,
-            )
+            await expect(
+                provider.connect('device-id', 'test'),
+            ).rejects.toBeInstanceOf(LedgerPermissionDeniedError)
         })
 
         it('proceeds to TransportBLE.open when BLE is supported and permissions are granted', async () => {
@@ -360,7 +380,7 @@ describe('RNLedgerService', () => {
             vi.mocked(transportOpenMock).mockResolvedValueOnce(fakeBleTransport)
             const service = new RNLedgerService()
             const provider = service.createTransportProvider()
-            const transport = await provider.connect('device-id')
+            const transport = await provider.connect('device-id', 'test')
             expect(transportOpenMock).toHaveBeenCalledWith('device-id')
             expect(transport).toBeDefined()
         })
@@ -442,9 +462,9 @@ describe('RNLedgerService', () => {
             })
 
             const provider = new RNLedgerService().createTransportProvider()
-            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
-                LedgerBluetoothDisabledError,
-            )
+            await expect(
+                provider.connect('device-id', 'test'),
+            ).rejects.toBeInstanceOf(LedgerBluetoothDisabledError)
         })
 
         it('proceeds past the pre-flight when the adapter is powered on', async () => {
@@ -455,7 +475,7 @@ describe('RNLedgerService', () => {
             transportOpenMock.mockResolvedValue({ close: transportCloseMock })
 
             const provider = new RNLedgerService().createTransportProvider()
-            await provider.connect('device-id')
+            await provider.connect('device-id', 'test')
 
             expect(transportOpenMock).toHaveBeenCalledWith('device-id')
         })
@@ -496,7 +516,7 @@ describe('RNLedgerService', () => {
             // a generic connection failure with Bluetooth simply switched off.
             const { provider, getObserver } = await loadFreshService()
 
-            const connectPromise = provider.connect('device-id')
+            const connectPromise = provider.connect('device-id', 'test')
             getObserver()?.next({ type: 'PoweredOff', available: false })
 
             await expect(connectPromise).rejects.toThrow(
@@ -513,7 +533,7 @@ describe('RNLedgerService', () => {
                     close: transportCloseMock,
                 })
 
-                const connectPromise = provider.connect('device-id')
+                const connectPromise = provider.connect('device-id', 'test')
                 await vi.advanceTimersByTimeAsync(1100)
                 await connectPromise
 

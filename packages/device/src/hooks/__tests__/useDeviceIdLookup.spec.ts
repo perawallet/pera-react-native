@@ -36,7 +36,9 @@ describe('device/hooks/useDeviceIdLookup', () => {
 
     test('returns the id stored under the scope', () => {
         act(() => {
-            useDeviceStore.getState().setDeviceID('testnet', 'device-test-456')
+            useDeviceStore
+                .getState()
+                .setDeviceID('developer', 'device-test-456')
         })
 
         const { result } = renderHook(() => useDeviceIdLookup())
@@ -48,7 +50,7 @@ describe('device/hooks/useDeviceIdLookup', () => {
 
     test('returns null for a scope with no id', () => {
         act(() => {
-            useDeviceStore.getState().setDeviceID('mainnet', 'device-main-123')
+            useDeviceStore.getState().setDeviceID('live', 'device-main-123')
         })
 
         const { result } = renderHook(() => useDeviceIdLookup())
@@ -65,7 +67,7 @@ describe('device/hooks/useDeviceIdLookup', () => {
         const { result } = renderHook(() => useDeviceIdLookup())
 
         act(() => {
-            useDeviceStore.getState().setDeviceID('mainnet', 'device-new-123')
+            useDeviceStore.getState().setDeviceID('live', 'device-new-123')
         })
 
         expect(

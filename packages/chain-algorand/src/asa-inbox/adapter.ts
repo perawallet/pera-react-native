@@ -12,7 +12,7 @@
 
 import { createWalletAlgorandClient } from '../blockchain'
 import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import {
     fetchArc59AssetRequests,
     fetchArc59SendSummary,

@@ -14,7 +14,7 @@ import type { AssetsChainAdapter } from '@perawallet/wallet-core-assets'
 import { isNativeAsset } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { ASSET_PRICES_MAX_IDS_PER_REQUEST } from '../pricing/endpoints'
 import { fetchPeraUsdPrices } from '../pricing/provider'
 import {
@@ -23,6 +23,7 @@ import {
     fetchOnChainAsset,
 } from './details'
 import { algorandAssetIdOf } from './asset-ref'
+import { algorandAssetChainData } from './chain-data'
 import { ALGORAND_NATIVE_ASSET } from './native-asset'
 import { searchAssetPage } from './search'
 import { fetchAndPersistAssets } from './sync/asset-syncer'
@@ -32,6 +33,7 @@ export const algorandAssetsAdapter: AssetsChainAdapter = {
     priceProvider: 'pera',
     maxPriceIdsPerRequest: ASSET_PRICES_MAX_IDS_PER_REQUEST,
     getNativeAsset: () => ALGORAND_NATIVE_ASSET,
+    chainData: algorandAssetChainData,
     // Async so a scope or ref that is not Algorand's rejects rather than
     // throwing past a caller's `.catch`.
     syncAssets: async (refs, scope) => {

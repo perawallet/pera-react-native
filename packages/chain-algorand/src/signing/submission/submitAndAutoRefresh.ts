@@ -16,8 +16,7 @@ import type {
     SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     SubmissionError,
@@ -35,7 +34,7 @@ import type {
 } from './types'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
-import { toRound } from '../submission-ledger'
+import { algorandSubmissionChainData, toRound } from '../submission-ledger'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import {
     decodeSignedTransaction,
@@ -46,6 +45,7 @@ import {
     LANDING_CHECK_ROUNDS_TO_WAIT,
     waitForAlgodConfirmation,
 } from './waitForAlgodConfirmation'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 const VERIFY_ATTEMPTS = 2
 const VERIFY_RETRY_DELAY_MS = 2000
@@ -73,7 +73,7 @@ export interface SubmitAndAutoRefreshCoreInput {
     /** Injectable delay between verification attempts (tests). */
     sleep?: (ms: number) => Promise<void>
     walletAddresses: readonly string[]
-    network: Network
+    network: AlgorandNetworkId
     /**
      * Invoked after confirmation with the wallet-held addresses that
      * participated in the submitted group. Not invoked if confirmation
@@ -81,7 +81,7 @@ export interface SubmitAndAutoRefreshCoreInput {
      */
     onConfirmed: (
         affectedAddresses: string[],
-        network: Network,
+        network: AlgorandNetworkId,
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTransaction[]
     /**
@@ -200,14 +200,16 @@ const recordLedgerRow = async (
     await runLedgerBestEffort(async () => {
         attemptId = await recordSubmissionAttempt({
             db: input.db,
-            scope: scopeForLegacyNetwork(input.network),
+            scope: algorandScope(input.network),
             txIds,
             flow: input.ledger?.flow ?? 'generic',
             intentKey: input.ledger?.intentKey,
             // Fall back to the group's first sender so generic flows still
             // scope their pending history row to the right account.
             sender: input.ledger?.sender ?? firstTxn?.sender?.toString(),
-            lastValid: toRound(firstTxn?.lastValid),
+            chainData: algorandSubmissionChainData(
+                toRound(firstTxn?.lastValid),
+            ),
         })
     })
     return attemptId
@@ -312,7 +314,7 @@ const backgroundConfirmAndRefresh = async (
  */
 export const submitAndAutoRefresh = async (
     // The network `algokit` points at; the selected one may have moved on since signing.
-    network: Network,
+    network: AlgorandNetworkId,
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
     signedTxns: PeraSignedTransaction[],
@@ -343,10 +345,7 @@ export const submitAndAutoRefresh = async (
         network,
         onConfirmed: (addresses, networkAtSubmission) => {
             const handler = getOnConfirmedHandler()
-            return handler?.(
-                addresses,
-                scopeForLegacyNetwork(networkAtSubmission),
-            )
+            return handler?.(addresses, algorandScope(networkAtSubmission))
         },
         signedTxns,
         ledger: {
@@ -365,7 +364,7 @@ export const submitAndAutoRefresh = async (
  * given, since re-encoding a signature another encoder made can change them.
  */
 export const submitSignedAndAutoRefresh = (
-    network: Network,
+    network: AlgorandNetworkId,
     algokit: AlgokitClientInterface,
     signed: SignedTransaction[],
     options?: SubmitAndAutoRefreshOptions,

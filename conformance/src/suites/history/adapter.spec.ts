@@ -14,14 +14,14 @@ import { Decimal } from 'decimal.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { algorandNetworkOf } from '@perawallet/wallet-core-chain-algorand/legacy-network'
+import { algorandNetworkOf } from '@perawallet/wallet-core-chain-algorand/network-id'
 import { buildTransferTxs } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
 import {
     fetchMoreTransactions,
     fetchTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/transactions/history'
+import { algorandHistoryDataOf } from '@perawallet/wallet-core-chain-algorand/transactions/history-data'
 import { fetchIndexerCloseAmount } from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/endpoints'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
@@ -52,7 +52,7 @@ import { localNetScope } from '../../harness/scope'
  */
 describe('history adapter conformance', () => {
     let scope: ChainScope
-    let network: Network
+    let network: ReturnType<typeof algorandNetworkOf>
     let keyStore: ConformanceKeyStore
     let sender: ConformanceAccount
     let receiver: ConformanceAccount
@@ -141,8 +141,10 @@ describe('history adapter conformance', () => {
             accountAddress: closer.address,
         })
         const closeRow = transactions.find(txn => txn.id === close.txId)
-        expect(closeRow?.closeTo).toBe(receiver.address)
+        expect(closeRow).toBeDefined()
+        const closeData = algorandHistoryDataOf(closeRow!)
+        expect(closeData.closeTo).toBe(receiver.address)
         expect(closeRow?.amount).toEqual(new Decimal(0))
-        expect(closeRow?.closeAmount).toEqual(new Decimal(swept.toString()))
+        expect(closeData.closeAmount).toEqual(new Decimal(swept.toString()))
     })
 })

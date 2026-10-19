@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { Decimal } from 'decimal.js'
 import {
     PeraAssetVerificationTier,
