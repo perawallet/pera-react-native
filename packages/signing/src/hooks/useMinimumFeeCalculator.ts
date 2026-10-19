@@ -12,7 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import type { AssignFeeToGroup } from '../chain-adapter'
+import { registeredPlanners, type AssignFeeToGroup } from '../chain-adapter'
 import { usePlannerHook } from './usePlannerHook'
 
 export type UseMinimumFeeCalculatorResult = {
@@ -41,3 +41,16 @@ export const useMinimumFeeCalculator = (
         planner.useAssignFeeToGroup(),
     ),
 })
+
+/** For a caller that learns the chain only when it acts, such as a deeplink handler. */
+export const useMinimumFeeCalculatorFor = (): ((
+    chainId: ChainId,
+) => AssignFeeToGroup) => {
+    // Every planner's hook runs on every render, so the hooks called never
+    // depend on which chain the caller later asks for.
+    const byChain = new Map<ChainId, AssignFeeToGroup>()
+    for (const planner of registeredPlanners()) {
+        byChain.set(planner.chainId, planner.useAssignFeeToGroup())
+    }
+    return chainId => byChain.get(chainId) ?? keepFees
+}

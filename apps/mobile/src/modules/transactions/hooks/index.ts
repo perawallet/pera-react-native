@@ -12,6 +12,11 @@
 
 export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
 export { useSendScope } from './send-funds/useSendScope'
+export { useSendAccountResolver } from './send-funds/useSendAccountResolver'
+export {
+    resolveSendAccount,
+    type SendAccountResolution,
+} from './send-funds/resolveSendAccount'
 export {
     useClaimAssetsStore,
     useClaimAssets,

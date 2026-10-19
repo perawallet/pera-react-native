@@ -23,6 +23,7 @@ const { mockNavigate, mockShowError } = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountsChainAdapters: { has: () => true },
     detectImportKind: vi.fn(),
     setPendingImportMnemonic: vi.fn(),
 }))

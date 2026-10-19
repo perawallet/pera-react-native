@@ -159,12 +159,20 @@
             "body_keyreg": "Não conseguimos criar a transação de registro de chaves.",
             "body_keyreg_unknown_account": "Este registro de chaves é de uma conta que você não tem nesta wallet. Adicione a conta primeiro e escaneie novamente.",
             "body_keyreg_cannot_sign": "Esta conta não pode assinar transações na Pera. O registro precisa da chave privada da conta, não de uma cópia somente leitura.",
-            "body_keyreg_network_mismatch": "Este registro é para uma rede Algorand diferente da que sua wallet está usando. Troque de rede e escaneie novamente.",
+            "title_network_mismatch": "Rede incorreta",
+            "body_network_mismatch": "Troque para {{network}} para abrir este link.",
+            "title_no_account": "Nenhuma conta para este link",
+            "body_no_account": "Você não tem uma conta {{chain}}.",
+            "title_unsupported": "Link não suportado",
+            "body_unsupported_on_chain": "A Pera não consegue abrir este link em {{chain}}.",
             "title_recover": "Não foi possível importar a conta",
             "body_recover": "Não conseguimos importar a conta a partir deste QR.",
             "body_recover_duplicate": "Esta conta já está na sua wallet.",
             "title_timeout": "Demorou muito",
             "body_timeout": "A solicitação não foi concluída em tempo. Verifique sua conexão e tente novamente."
+        },
+        "select_chain": {
+            "title": "Em qual blockchain está este endereço?"
         }
     },
     "address_actions": {
@@ -2828,6 +2836,9 @@
             "title": "Saldo mínimo",
             "message": "Esta conta não tem o saldo mínimo exigido de {{amount}} ALGO para esta operação.",
             "done": "Concluir"
+        },
+        "select_sender": {
+            "title": "Enviar de"
         }
     },
     "settings": {

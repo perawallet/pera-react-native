@@ -159,12 +159,20 @@
             "body_keyreg": "Die Schlüsselregistrierungs-Transaktion konnte nicht erstellt werden.",
             "body_keyreg_unknown_account": "Diese Schlüsselregistrierung gehört zu einem Konto, das sich nicht in diesem Wallet befindet. Füge das Konto zuerst hinzu und scanne dann erneut.",
             "body_keyreg_cannot_sign": "Dieses Konto kann in Pera keine Transaktionen signieren. Für die Registrierung wird der private Schlüssel des Kontos benötigt, nicht nur eine Beobachtungskopie.",
-            "body_keyreg_network_mismatch": "Diese Registrierung gilt für ein anderes Algorand-Netzwerk als das deiner Wallet. Wechsle das Netzwerk und scanne erneut.",
+            "title_network_mismatch": "Falsches Netzwerk",
+            "body_network_mismatch": "Wechsle zu {{network}}, um diesen Link zu öffnen.",
+            "title_no_account": "Kein Konto für diesen Link",
+            "body_no_account": "Du hast kein {{chain}}-Konto.",
+            "title_unsupported": "Link nicht unterstützt",
+            "body_unsupported_on_chain": "Pera kann diesen Link auf {{chain}} nicht öffnen.",
             "title_recover": "Konto konnte nicht importiert werden",
             "body_recover": "Das Konto konnte nicht aus diesem QR-Code importiert werden.",
             "body_recover_duplicate": "Dieses Konto befindet sich bereits in deinem Wallet.",
             "title_timeout": "Zeitüberschreitung",
             "body_timeout": "Die Anfrage wurde nicht rechtzeitig abgeschlossen. Überprüfe deine Netzwerkverbindung und versuche es erneut."
+        },
+        "select_chain": {
+            "title": "Auf welcher Blockchain ist diese Adresse?"
         }
     },
     "address_actions": {
@@ -2804,6 +2812,9 @@
             "title": "Mindestguthaben",
             "message": "Dieses Konto verfügt nicht über das für diesen Vorgang erforderliche Mindestguthaben von {{amount}} ALGO.",
             "done": "Fertig"
+        },
+        "select_sender": {
+            "title": "Senden von"
         }
     },
     "settings": {

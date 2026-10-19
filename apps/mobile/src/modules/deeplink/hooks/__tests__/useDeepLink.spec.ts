@@ -50,6 +50,14 @@ const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
     mockDispatch: vi.fn(),
 }))
 
+const sendAccount = vi.hoisted(() => ({
+    resolution: {
+        kind: 'selected',
+        account: { id: 'selected' },
+    } as unknown,
+    pick: vi.fn(),
+}))
+
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
         navigate: mockNavigate,
@@ -122,13 +130,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // path is a passthrough no-op. Real fee behavior is covered by
     // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
-    useMinimumFeeCalculator: () => ({
-        assignFeeToGroup: async ({
+    useMinimumFeeCalculatorFor:
+        () =>
+        () =>
+        async ({ transactions }: { transactions: unknown[] }) => ({
             transactions,
-        }: {
-            transactions: unknown[]
-        }) => ({ transactions, adjustments: [] }),
-    }),
+            adjustments: [],
+        }),
 }))
 
 const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
@@ -158,6 +166,12 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
+        displayName: chainId === 'algorand' ? 'Algorand' : 'Ethereum',
+        networks: [
+            { id: 'mainnet', displayName: 'MainNet' },
+            { id: 'testnet', displayName: 'TestNet' },
+        ],
+        protocol: { requiresAssetOptIn: chainId === 'algorand' },
         nativeAsset: {
             ref: { chainId, assetId: chainId === 'algorand' ? '0' : 'native' },
         },
@@ -187,6 +201,7 @@ const accountsState = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountsChainAdapters: { has: () => true },
     useSelectedAccount: () => ({
         id: 'selected',
         custody: { kind: 'watch' },
@@ -425,6 +440,10 @@ const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
 }))
 
 vi.mock('@modules/transactions', () => ({
+    useSendAccountResolver: () => ({
+        resolve: () => sendAccount.resolution,
+        pick: sendAccount.pick,
+    }),
     useSendFundsStore: {
         getState: () => ({
             reset: mockSendFundsReset,
@@ -473,6 +492,10 @@ afterEach(() => {
 describe('useDeepLink', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        sendAccount.resolution = {
+            kind: 'selected',
+            account: { id: 'selected' },
+        }
         // The listener's cold-start guard is module-level (shared across all
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
@@ -611,14 +634,16 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockErrorToast).toHaveBeenCalledWith(
-            'common.network_unavailable.title',
-            'common.network_unavailable.generic_body',
-        )
         expect(mockNavigate).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_network_mismatch',
+                'deeplink.error.body_network_mismatch',
+            ),
+        )
     })
 
-    it('keeps running a chain URI that names a network on the selected one', async () => {
+    it('refuses a chain URI that names a network other than the selected one', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ADD_CONTACT,
             sourceUrl: 'algorand://net:testnet/addr1',
@@ -635,7 +660,32 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_network_mismatch',
+                'deeplink.error.body_network_mismatch',
+            ),
+        )
+    })
+
+    it('runs a chain URI that names the selected network', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ADD_CONTACT,
+            sourceUrl: 'algorand://net:mainnet/addr1',
+            address: 'addr1',
+            target: { chainId: 'algorand', networkId: 'mainnet' },
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'algorand://net:mainnet/addr1',
+                false,
+                'deeplink',
+            )
+        })
+
         expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
             screen: 'AddContact',
             params: { address: 'addr1', label: undefined, chainId: 'algorand' },
@@ -1306,7 +1356,7 @@ describe('useDeepLink', () => {
         // sheet first.
         expect(mockRequestByType).toHaveBeenCalledWith(
             'asset-opt-in-account-selection',
-            {},
+            { chainId: 'algorand' },
             expect.anything(),
         )
     })
@@ -1347,7 +1397,7 @@ describe('useDeepLink', () => {
         // The sheet is open...
         expect(mockRequestByType).toHaveBeenCalledWith(
             'asset-opt-in-account-selection',
-            {},
+            { chainId: 'algorand' },
             expect.anything(),
         )
         // ...and the scanner was already told to close, without waiting for it.
@@ -1506,12 +1556,7 @@ describe('useDeepLink', () => {
         it.each([
             [DeeplinkType.DISCOVER_PATH, 'discover'],
             [DeeplinkType.STAKING, 'staking'],
-            [DeeplinkType.SWAP, 'swap'],
-            [DeeplinkType.ADD_WATCH_ACCOUNT, 'watchAccounts'],
-            [DeeplinkType.SHARED_ACCOUNT_IMPORT, 'multisig'],
             [DeeplinkType.SIGN_REQUEST, 'multisig'],
-            [DeeplinkType.ASSET_OPT_IN, 'manageAssets'],
-            [DeeplinkType.ASSET_INBOX, 'assetInbox'],
             [DeeplinkType.WALLET_CONNECT, 'dappConnect'],
             [DeeplinkType.LIQUID_AUTH, 'liquidAuth'],
             [DeeplinkType.PERA_WEB_IMPORT, 'peraWebImport'],
@@ -1544,6 +1589,52 @@ describe('useDeepLink', () => {
                 expect(mockErrorToast).toHaveBeenCalledWith(
                     'common.network_unavailable.title',
                     'common.network_unavailable.generic_body',
+                )
+            },
+        )
+
+        // A type that names a chain is checked on that chain alone.
+        it.each([
+            [DeeplinkType.TRANSFER, 'send'],
+            [DeeplinkType.RECEIVER_ACCOUNT_SELECTION, 'send'],
+            [DeeplinkType.CHAIN_ACTION, 'send'],
+            [DeeplinkType.SWAP, 'swap'],
+            [DeeplinkType.ADD_WATCH_ACCOUNT, 'watchAccounts'],
+            [DeeplinkType.SHARED_ACCOUNT_IMPORT, 'multisig'],
+            [DeeplinkType.ASSET_OPT_IN, 'manageAssets'],
+            [DeeplinkType.ASSET_INBOX, 'assetInbox'],
+        ] as const)(
+            'refuses %s as not supported on its chain while %s is off',
+            async (type, capability) => {
+                capabilityState.turnOff(capability)
+                ;(parseDeeplink as Mock).mockReturnValue({
+                    type,
+                    sourceUrl: 'perawallet://app',
+                    target: { chainId: 'algorand' },
+                })
+                const onError = vi.fn()
+                const onSuccess = vi.fn()
+                const { result } = renderHook(() => useDeepLink())
+
+                await act(async () => {
+                    await result.current.handleDeepLink(
+                        'perawallet://app',
+                        false,
+                        'deeplink',
+                        onError,
+                        onSuccess,
+                    )
+                })
+
+                expect(onError).toHaveBeenCalledTimes(1)
+                expect(onSuccess).not.toHaveBeenCalled()
+                expect(mockNavigate).not.toHaveBeenCalled()
+                expect(mockRequestByType).not.toHaveBeenCalled()
+                await vi.waitFor(() =>
+                    expect(mockErrorToast).toHaveBeenCalledWith(
+                        'deeplink.error.title_unsupported',
+                        'deeplink.error.body_unsupported_on_chain',
+                    ),
                 )
             },
         )
@@ -1792,6 +1883,7 @@ describe('useDeepLink', () => {
     it('should handle ACCOUNT_DETAIL deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ACCOUNT_DETAIL,
+            target: { chainId: 'algorand' },
             address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -2040,6 +2132,7 @@ describe('useDeepLink', () => {
     it('should open Bidali bottom sheet for SELL deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.SELL,
+            target: { chainId: 'algorand' },
             address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -2185,6 +2278,7 @@ describe('useDeepLink', () => {
     it('should handle RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            target: { chainId: 'algorand' },
             address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -2212,6 +2306,7 @@ describe('useDeepLink', () => {
     it('should open account-actions bottom sheet for ADDRESS_ACTIONS deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ADDRESS_ACTIONS,
+            target: { chainId: 'algorand' },
             address: 'recipient1',
             label: 'Friend',
         })
@@ -2234,6 +2329,7 @@ describe('useDeepLink', () => {
             {
                 address: 'recipient1',
                 label: 'Friend',
+                chainId: 'algorand',
             },
             { enablePanDownToClose: true },
         )
@@ -2242,6 +2338,7 @@ describe('useDeepLink', () => {
     it('should open send-funds bottom sheet for RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            target: { chainId: 'algorand' },
             address: 'recipient1',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -2597,8 +2694,10 @@ describe('useDeepLink', () => {
         )
     })
 
-    describe('chains routing cannot reach yet', () => {
+    describe('chain-aware routing', () => {
         const ETHEREUM_ADDRESS = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+        const ETHEREUM_ACCOUNT = { id: 'eth-account' }
+        const OTHER_ETHEREUM_ACCOUNT = { id: 'other-eth-account' }
 
         // Claims `refused:` and refuses it for a reason other than `malformed`.
         const refusingAdapter: DeeplinkChainAdapter = {
@@ -2615,79 +2714,191 @@ describe('useDeepLink', () => {
 
         const ethereumTransfer = {
             type: DeeplinkType.TRANSFER,
+            sourceUrl: `ethereum:${ETHEREUM_ADDRESS}?value=1`,
             target: { chainId: 'ethereum' },
             receiverAddress: ETHEREUM_ADDRESS,
         }
 
-        it('refuses a link whose chain is not the legacy chain, with the unavailable toast', async () => {
-            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+        const dispatch = async (
+            url: string,
+            source: 'qr' | 'notification' = 'qr',
+        ) => {
             const onError = vi.fn()
+            const onSuccess = vi.fn()
             const { result } = renderHook(() => useDeepLink())
-
             await act(async () => {
                 await result.current.handleDeepLink(
-                    `ethereum:${ETHEREUM_ADDRESS}?value=1`,
+                    url,
                     false,
-                    'qr',
+                    source,
                     onError,
+                    onSuccess,
                 )
             })
+            return { onError, onSuccess }
+        }
 
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                expect.stringContaining('common.network_unavailable'),
-                expect.stringContaining('common.network_unavailable'),
+        it('opens a prefilled send from the resolved account on the link chain', async () => {
+            sendAccount.resolution = {
+                kind: 'single',
+                account: ETHEREUM_ACCOUNT,
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onSuccess } = await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                'eth-account',
             )
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'ethereum',
+                assetId: 'native',
+            })
+            expect(mockSetDestination).toHaveBeenCalledWith(ETHEREUM_ADDRESS)
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                expect.anything(),
+                expect.anything(),
+            )
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+        })
+
+        it('shows the no-account error and opens nothing when the chain has no account that can send', async () => {
+            sendAccount.resolution = { kind: 'none' }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onError, onSuccess } = await dispatch(
+                ethereumTransfer.sourceUrl,
+            )
+
             expect(onError).toHaveBeenCalledTimes(1)
-            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(onSuccess).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            await vi.waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_no_account',
+                    'deeplink.error.body_no_account',
+                ),
+            )
+        })
+
+        it('asks which account sends when several can, without holding the scanner open', async () => {
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            sendAccount.pick.mockResolvedValue(OTHER_ETHEREUM_ACCOUNT)
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onSuccess } = await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+            expect(sendAccount.pick).toHaveBeenCalledWith('ethereum', [
+                ETHEREUM_ACCOUNT,
+                OTHER_ETHEREUM_ACCOUNT,
+            ])
+            await vi.waitFor(() =>
+                expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                    'other-eth-account',
+                ),
+            )
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                expect.anything(),
+                expect.anything(),
+            )
+        })
+
+        it('opens no send when the account picker is dismissed', async () => {
+            sendAccount.resolution = {
+                kind: 'picker',
+                accounts: [ETHEREUM_ACCOUNT, OTHER_ETHEREUM_ACCOUNT],
+            }
+            sendAccount.pick.mockResolvedValue(undefined)
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            await dispatch(ethereumTransfer.sourceUrl)
+            await act(async () => {})
+
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
         })
 
-        it('reports such a link as valid but unavailable', () => {
+        it('refuses a link naming a network other than its chain selected one, opening nothing', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                ...ethereumTransfer,
+                target: { chainId: 'ethereum', networkId: 'testnet' },
+            })
+
+            const { onError } = await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            await vi.waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_network_mismatch',
+                    'deeplink.error.body_network_mismatch',
+                ),
+            )
+        })
+
+        it('refuses a link whose chain has the capability off as not supported there', async () => {
+            capabilityState.turnOff('send')
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onError } = await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            await vi.waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_unsupported',
+                    'deeplink.error.body_unsupported_on_chain',
+                ),
+            )
+        })
+
+        it('refuses an opt-in on a chain whose assets need none as not supported', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.ASSET_OPT_IN,
+                sourceUrl: 'ethereum:x',
+                target: { chainId: 'ethereum' },
+                assetRef: { chainId: 'ethereum', assetId: ETHEREUM_ADDRESS },
+            })
+
+            const { onError } = await dispatch('ethereum:x')
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            await vi.waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_unsupported',
+                    'deeplink.error.body_unsupported_on_chain',
+                ),
+            )
+        })
+
+        it('reports another chain link as valid and available', () => {
             ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
             const { result } = renderHook(() => useDeepLink())
 
             expect(result.current.isValidDeepLink('ethereum:x')).toBe(true)
-            expect(result.current.isDeepLinkAvailable('ethereum:x')).toBe(false)
+            expect(result.current.isDeepLinkAvailable('ethereum:x')).toBe(true)
         })
 
-        it('refuses a link an adapter claims but cannot read, instead of calling it invalid', async () => {
-            ;(parseDeeplink as Mock).mockReturnValue(null)
-            deeplinkAdapters.register(refusingAdapter)
-            const onError = vi.fn()
-            const { result } = renderHook(() => useDeepLink())
+        it.each(['algorand', 'ethereum'] as const)(
+            'calls a link the %s adapter claims but cannot read invalid',
+            chainId => {
+                ;(parseDeeplink as Mock).mockReturnValue(null)
+                deeplinkAdapters.register({ ...refusingAdapter, chainId })
+                const { result } = renderHook(() => useDeepLink())
 
-            expect(result.current.isValidDeepLink('refused:abc')).toBe(true)
-            expect(result.current.isDeepLinkAvailable('refused:abc')).toBe(
-                false,
-            )
-
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    'refused:abc',
+                expect(result.current.isValidDeepLink('refused:abc')).toBe(
                     false,
-                    'qr',
-                    onError,
                 )
-            })
-
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                expect.stringContaining('common.network_unavailable'),
-                expect.stringContaining('common.network_unavailable'),
-            )
-            expect(onError).toHaveBeenCalledTimes(1)
-        })
-
-        it('keeps calling a link the legacy chain refuses invalid, as before', () => {
-            ;(parseDeeplink as Mock).mockReturnValue(null)
-            deeplinkAdapters.register({
-                ...refusingAdapter,
-                chainId: 'algorand',
-            })
-            const { result } = renderHook(() => useDeepLink())
-
-            expect(result.current.isValidDeepLink('refused:abc')).toBe(false)
-            expect(result.current.isDeepLinkAvailable('refused:abc')).toBe(true)
-        })
+            },
+        )
 
         it('keeps calling text no adapter claims invalid', () => {
             ;(parseDeeplink as Mock).mockReturnValue(null)
@@ -2697,28 +2908,100 @@ describe('useDeepLink', () => {
             expect(result.current.isValidDeepLink('hello')).toBe(false)
         })
 
-        it('refuses silently when the link came from a notification', async () => {
+        it('refuses a wrong-network link silently when it came from a notification', async () => {
             ;(parseDeeplink as Mock).mockReturnValue({
                 type: DeeplinkType.ASSET_DETAIL,
-                target: { chainId: 'ethereum' },
+                sourceUrl: 'ethereum:x',
+                target: { chainId: 'ethereum', networkId: 'testnet' },
                 address: ETHEREUM_ADDRESS,
                 assetRef: { chainId: 'ethereum', assetId: 'native' },
             })
-            const onError = vi.fn()
-            const { result } = renderHook(() => useDeepLink())
 
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    'ethereum:x',
-                    false,
-                    'notification',
-                    onError,
-                )
-            })
+            const { onError } = await dispatch('ethereum:x', 'notification')
+            await new Promise(resolve => setTimeout(resolve, 450))
 
             expect(mockErrorToast).not.toHaveBeenCalled()
             expect(onError).toHaveBeenCalledTimes(1)
             expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('matches a detail link to the account on the link chain', async () => {
+            accountsState.accounts = [
+                {
+                    id: 'algo-account',
+                    chains: { algorand: { address: 'shared' } },
+                },
+                {
+                    id: 'eth-account',
+                    chains: { ethereum: { address: 'shared' } },
+                },
+            ]
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.ACCOUNT_DETAIL,
+                sourceUrl: 'perawallet://app',
+                target: { chainId: 'ethereum' },
+                address: 'shared',
+            })
+
+            await dispatch('perawallet://app')
+
+            expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                'eth-account',
+            )
+        })
+
+        describe('with an address more than one chain accepts', () => {
+            const ALGORAND_ADDRESS =
+                '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+
+            beforeEach(() => {
+                addressCodecs.register({
+                    ...addressCodecs.get('algorand'),
+                    chainId: 'ethereum',
+                })
+                ;(parseDeeplink as Mock).mockReturnValue(null)
+            })
+
+            it('asks which chain, then offers that chain actions', async () => {
+                mockRequestByType.mockResolvedValueOnce('ethereum')
+
+                const { onSuccess } = await dispatch(ALGORAND_ADDRESS)
+
+                expect(onSuccess).toHaveBeenCalledTimes(1)
+                expect(mockRequestByType).toHaveBeenCalledWith(
+                    'deeplink-chain-selection',
+                    { chainIds: ['algorand', 'ethereum'] },
+                    expect.anything(),
+                )
+                await vi.waitFor(() =>
+                    expect(mockRequestByType).toHaveBeenCalledWith(
+                        'account-actions',
+                        {
+                            address: ALGORAND_ADDRESS,
+                            label: undefined,
+                            chainId: 'ethereum',
+                        },
+                        expect.anything(),
+                    ),
+                )
+            })
+
+            it('offers nothing when the chain picker is dismissed', async () => {
+                mockRequestByType.mockResolvedValueOnce(undefined)
+
+                await dispatch(ALGORAND_ADDRESS)
+                await act(async () => {})
+
+                expect(mockRequestByType).toHaveBeenCalledTimes(1)
+            })
+
+            it('reports the address as a valid link', () => {
+                const { result } = renderHook(() => useDeepLink())
+
+                expect(result.current.isValidDeepLink(ALGORAND_ADDRESS)).toBe(
+                    true,
+                )
+            })
         })
     })
 })

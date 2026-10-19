@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     type IconName,
     PWDivider,
@@ -27,6 +28,8 @@ import { useAccountActions } from './useAccountActions'
 export type AccountActionsContentProps = {
     address: string
     label?: string
+    /** The address's chain; its capabilities decide which actions show. */
+    chainId?: ChainId
 }
 
 type ActionRow = {
@@ -40,18 +43,25 @@ type ActionRow = {
 export const AccountActionsContent = ({
     address,
     label,
+    chainId,
 }: AccountActionsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
         existingContacts,
+        canSend,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
         addContact,
         editContact,
-    } = useAccountActions({ address, label, onClose: dismiss })
+    } = useAccountActions({
+        address,
+        label,
+        chainId,
+        onClose: dismiss,
+    })
 
     const contactActions: ActionRow[] =
         existingContacts.length > 0
@@ -75,13 +85,17 @@ export const AccountActionsContent = ({
               ]
 
     const actions: ActionRow[] = [
-        {
-            id: 'send-transaction',
-            icon: 'transactions/send',
-            title: t('address_actions.send_transaction'),
-            subtitle: t('address_actions.send_transaction_subtitle'),
-            onPress: openSendTransaction,
-        },
+        ...(canSend
+            ? [
+                  {
+                      id: 'send-transaction',
+                      icon: 'transactions/send' as const,
+                      title: t('address_actions.send_transaction'),
+                      subtitle: t('address_actions.send_transaction_subtitle'),
+                      onPress: openSendTransaction,
+                  },
+              ]
+            : []),
         ...(canAddWatchAccount
             ? [
                   {

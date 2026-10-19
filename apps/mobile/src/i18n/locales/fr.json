@@ -159,12 +159,20 @@
             "body_keyreg": "Nous n’avons pas pu créer la transaction d’enregistrement de clé.",
             "body_keyreg_unknown_account": "Cet enregistrement de clé concerne un compte qui ne figure pas dans ce wallet. Ajoutez d’abord le compte, puis scannez à nouveau.",
             "body_keyreg_cannot_sign": "Ce compte ne peut pas signer de transactions dans Pera. L’enregistrement nécessite la clé privée du compte, et non une copie en lecture seule.",
-            "body_keyreg_network_mismatch": "Cet enregistrement concerne un réseau Algorand différent de celui de votre wallet. Changez de réseau, puis scannez à nouveau.",
+            "title_network_mismatch": "Mauvais réseau",
+            "body_network_mismatch": "Passez sur {{network}} pour ouvrir ce lien.",
+            "title_no_account": "Aucun compte pour ce lien",
+            "body_no_account": "Vous n’avez pas de compte {{chain}}.",
+            "title_unsupported": "Lien non pris en charge",
+            "body_unsupported_on_chain": "Pera ne peut pas ouvrir ce lien sur {{chain}}.",
             "title_recover": "Impossible d’importer le compte",
             "body_recover": "Nous n’avons pas pu importer le compte depuis ce QR code.",
             "body_recover_duplicate": "Ce compte figure déjà dans votre wallet.",
             "title_timeout": "Délai dépassé",
             "body_timeout": "La requête n’a pas abouti à temps. Vérifiez votre connexion réseau et réessayez."
+        },
+        "select_chain": {
+            "title": "Sur quelle blockchain se trouve cette adresse ?"
         }
     },
     "address_actions": {
@@ -2812,6 +2820,9 @@
             "title": "Solde minimum",
             "message": "Ce compte ne dispose pas du solde minimum requis de {{amount}} ALGO pour cette opération.",
             "done": "Terminé"
+        },
+        "select_sender": {
+            "title": "Envoyer depuis"
         }
     },
     "settings": {

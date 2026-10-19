@@ -11,15 +11,25 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import {
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
-import { useSendFundsStore } from '@modules/transactions'
+import {
+    useSendAccountResolver,
+    useSendFundsStore,
+} from '@modules/transactions'
 
 type UseAccountActionsParams = {
     address: string
     label?: string
+    /** Without one, the address's chain is unknown and actions aren't narrowed. */
+    chainId?: ChainId
     onClose: () => void
 }
 
@@ -30,6 +40,7 @@ type UseAccountActionsResult = {
      * "Add New Contact" when there are none.
      */
     existingContacts: Contact[]
+    canSend: boolean
     canAddWatchAccount: boolean
     openSendTransaction: () => void
     openWatchAddress: () => void
@@ -40,12 +51,24 @@ type UseAccountActionsResult = {
 export const useAccountActions = ({
     address,
     label,
+    chainId,
     onClose,
 }: UseAccountActionsParams): UseAccountActionsResult => {
     const navigation = useAppNavigation()
     const { requestByType } = useBottomSheet()
     const { contacts, setSelectedContact } = useContacts()
-    const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
+    const { resolve: resolveSender, pick: pickSender } =
+        useSendAccountResolver()
+    const canAddWatchAccount = useCapability(
+        chainId
+            ? { chain: { chainId, capability: 'watchAccounts' } }
+            : { anyChain: 'watchAccounts' },
+    )
+    const isSendOnChain = useCapability(
+        chainId ? { chain: { chainId, capability: 'send' } } : {},
+    )
+    const canSend =
+        isSendOnChain && (!chainId || resolveSender(chainId).kind !== 'none')
 
     const existingContacts = useMemo(
         // The address may be on any chain, so any of a contact's families can hold it.
@@ -54,26 +77,43 @@ export const useAccountActions = ({
         [contacts, address],
     )
 
+    const openSendFrom = useCallback(
+        (sender: WalletAccount | undefined) => {
+            // The send runs on the selected account's chain.
+            if (sender)
+                useAccountsStore.getState().setSelectedAccountId(sender.id)
+            const sendFundsStore = useSendFundsStore.getState()
+            sendFundsStore.reset()
+            sendFundsStore.setDestination(address)
+            void requestByType(
+                'send-funds',
+                {},
+                {
+                    size: 'modal',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            )
+        },
+        [address, requestByType],
+    )
+
     const openSendTransaction = useCallback(() => {
-        // Prefill the destination via the send-funds store, then open the
-        // SendFunds bottom sheet — same pattern as the deeplink ALGO/ASSET
-        // transfer handlers.
-        const sendFundsStore = useSendFundsStore.getState()
-        sendFundsStore.reset()
-        sendFundsStore.setDestination(address)
-
         onClose()
-
-        void requestByType(
-            'send-funds',
-            {},
-            {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        )
-    }, [address, onClose, requestByType])
+        if (!chainId) {
+            openSendFrom(undefined)
+            return
+        }
+        const resolution = resolveSender(chainId)
+        if (resolution.kind === 'none') return
+        if (resolution.kind !== 'picker') {
+            openSendFrom(resolution.account)
+            return
+        }
+        void pickSender(chainId, resolution.accounts).then(sender => {
+            if (sender) openSendFrom(sender)
+        })
+    }, [chainId, onClose, openSendFrom, pickSender, resolveSender])
 
     const openWatchAddress = useCallback(() => {
         onClose()
@@ -87,9 +127,9 @@ export const useAccountActions = ({
         onClose()
         navigation.navigate('Contacts', {
             screen: 'AddContact',
-            params: { address, label },
+            params: { address, label, chainId },
         })
-    }, [address, label, navigation, onClose])
+    }, [address, label, chainId, navigation, onClose])
 
     const editContact = useCallback(
         (contact: Contact) => {
@@ -105,6 +145,7 @@ export const useAccountActions = ({
 
     return {
         existingContacts,
+        canSend,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,

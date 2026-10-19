@@ -29,3 +29,4 @@ export {
 export { useDeepLink } from './hooks/useDeepLink'
 export { useSendFundsDeeplink } from './handlers/useSendFundsDeeplink'
 export { useDeeplinkListener } from './hooks/useDeeplinkListener'
+export { ChainSelectionContent } from './components/ChainSelectionContent'

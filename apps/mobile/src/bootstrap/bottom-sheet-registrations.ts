@@ -30,18 +30,20 @@
  * fire.
  */
 
-import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AccountActionsContent } from '@modules/accounts'
 import {
     OptInAccountSelectionContent,
     OptInConfirmationContent,
 } from '@modules/assets'
 import { registerBottomSheet } from '@modules/bottom-sheet'
+import { ChainSelectionContent } from '@modules/deeplink'
 import { BidaliContent } from '@modules/gift-card/routes'
 import {
     PasskeyBiometricRequiredContent,
     PasskeyHDWalletRequiredContent,
 } from '@modules/settings'
+import { SendAccountSelectionContent } from '@modules/transactions'
 import { SendFundsContent } from '@modules/transactions/routes'
 
 export const registerAppBottomSheets = (): void => {
@@ -52,6 +54,8 @@ export const registerAppBottomSheets = (): void => {
     )
     registerBottomSheet('account-actions', AccountActionsContent)
     registerBottomSheet('send-funds', SendFundsContent)
+    registerBottomSheet('send-account-selection', SendAccountSelectionContent)
+    registerBottomSheet('deeplink-chain-selection', ChainSelectionContent)
     registerBottomSheet('bidali', BidaliContent)
     registerBottomSheet(
         'passkey-biometric-required',
@@ -68,16 +72,26 @@ declare module '@modules/bottom-sheet' {
         'asset-opt-in': {
             assetId: string
             accountAddress: string
+            chainId?: ChainId
         }
         'asset-opt-in-account-selection': {
             highlightedAddress?: string
+            chainId?: ChainId
         }
         'account-actions': {
             address: string
             label?: string
+            chainId?: ChainId
         }
         'send-funds': {
             asset?: AssetRef
+        }
+        'send-account-selection': {
+            chainId: ChainId
+            accountIds: string[]
+        }
+        'deeplink-chain-selection': {
+            chainIds: ChainId[]
         }
         // BidaliContent takes no props — it owns its own internal navigator
         // and account selection. Empty record keeps the registry typed.
