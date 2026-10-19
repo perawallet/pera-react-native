@@ -84,8 +84,7 @@ export const useAccountAssetsQuery = (
         // but never across accounts, networks or a different set of chains.
         placeholderData: (previousRows, previousQuery) =>
             previousQuery &&
-            sourcesSignature(sourcesOfKey(previousQuery.queryKey)) ===
-                signature
+            sourcesSignature(sourcesOfKey(previousQuery.queryKey)) === signature
                 ? previousRows
                 : undefined,
         // SQLite is the source of truth; run the queryFn even while offline

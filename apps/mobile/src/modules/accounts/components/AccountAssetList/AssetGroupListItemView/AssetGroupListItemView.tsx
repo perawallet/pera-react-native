@@ -13,12 +13,7 @@
 import React, { useMemo } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { Decimal } from 'decimal.js'
-import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { assetFromHoldingLiteRow } from '@perawallet/wallet-core-accounts'
@@ -51,7 +46,9 @@ const AssetGroupListItemViewBase = ({
 
     const icon = useMemo(() => {
         const [first] = members
-        return first ? assetFromHoldingLiteRow(first, first.scope.chainId) : null
+        return first
+            ? assetFromHoldingLiteRow(first, first.scope.chainId)
+            : null
     }, [members])
 
     // One unknown member makes the whole value unknown: a partial sum would

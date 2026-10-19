@@ -82,12 +82,9 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(
-            () => useAccountAssetsQuery([SOURCE]),
-            {
-                wrapper: wrapper(),
-            },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery([SOURCE]), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -113,12 +110,9 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(
-            () => useAccountAssetsQuery([SOURCE]),
-            {
-                wrapper: wrapper(),
-            },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery([SOURCE]), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -192,7 +186,10 @@ describe('useAccountAssetsQuery', () => {
         const { result, rerender } = renderHook(
             ({ sources }: { sources: (typeof SOURCE)[] }) =>
                 useAccountAssetsQuery(sources),
-            { wrapper: wrapper(), initialProps: { sources: [SOURCE, ETH_SOURCE] } },
+            {
+                wrapper: wrapper(),
+                initialProps: { sources: [SOURCE, ETH_SOURCE] },
+            },
         )
         await waitFor(() => expect(result.current.holdings).toEqual(rows))
         mockGetAccountHoldingsLite.mockReturnValueOnce(new Promise(() => {}))

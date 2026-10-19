@@ -307,7 +307,7 @@ describe('useAccountAssetList', () => {
             expect(result.current.showChainBadges).toBe(false)
         })
 
-        it("offers All and one chip per chain the account is on", () => {
+        it('offers All and one chip per chain the account is on', () => {
             registerEthereum()
 
             const { result } = renderHook(() =>
@@ -405,9 +405,7 @@ describe('useAccountAssetList', () => {
             )
 
             act(() => result.current.setSearchFilter('0xA0'))
-            await act(
-                () => new Promise(resolve => setTimeout(resolve, 200)),
-            )
+            await act(() => new Promise(resolve => setTimeout(resolve, 200)))
 
             expect(vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]).toEqual(
                 expect.objectContaining({ search: '0xA0' }),

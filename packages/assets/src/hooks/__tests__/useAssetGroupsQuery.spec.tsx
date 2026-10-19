@@ -48,7 +48,9 @@ describe('useAssetGroupsQuery', () => {
         registry.register(
             {
                 id: 'ethereum',
-                networks: [{ id: 'mainnet', tier: 'mainnet', caip2: 'eip155:1' }],
+                networks: [
+                    { id: 'mainnet', tier: 'mainnet', caip2: 'eip155:1' },
+                ],
             } as unknown as ChainDescriptor,
             Object.fromEntries(
                 CHAIN_CAPABILITIES.map(capability => [capability, true]),

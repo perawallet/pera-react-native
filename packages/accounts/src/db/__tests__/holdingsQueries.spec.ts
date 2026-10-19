@@ -480,7 +480,10 @@ describe('account holdings queries', () => {
         })
 
         describe('across sources', () => {
-            const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+            const ETH_SCOPE = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            } as const
             const TESTNET_SCOPE = {
                 chainId: LEGACY_CHAIN_ID,
                 networkId: 'testnet',
@@ -503,7 +506,10 @@ describe('account holdings queries', () => {
                 await upsertAssets({
                     db,
                     scope: ETH_SCOPE,
-                    items: [richAsset('0xE', 'Ether'), richAsset('0xT', 'Token')],
+                    items: [
+                        richAsset('0xE', 'Ether'),
+                        richAsset('0xT', 'Token'),
+                    ],
                 })
                 await upsertAssetPrices({
                     db,
@@ -528,9 +534,7 @@ describe('account holdings queries', () => {
                     sortMode: 'balanceDesc',
                 })
 
-                expect(
-                    rows.map(r => [r.scope.chainId, r.assetId]),
-                ).toEqual([
+                expect(rows.map(r => [r.scope.chainId, r.assetId])).toEqual([
                     ['algorand', '300'],
                     ['algorand', '200'],
                     ['ethereum', '0xE'],
@@ -558,9 +562,9 @@ describe('account holdings queries', () => {
                     sources: [ALGO_SOURCE],
                 })
 
-                expect(
-                    rows.every(r => r.scope.networkId === 'mainnet'),
-                ).toBe(true)
+                expect(rows.every(r => r.scope.networkId === 'mainnet')).toBe(
+                    true,
+                )
             })
 
             it('searches across sources', async () => {
@@ -574,9 +578,9 @@ describe('account holdings queries', () => {
             })
 
             it('returns nothing for no sources', async () => {
-                expect(await getAccountHoldingsLite({ db, sources: [] })).toEqual(
-                    [],
-                )
+                expect(
+                    await getAccountHoldingsLite({ db, sources: [] }),
+                ).toEqual([])
             })
         })
     })

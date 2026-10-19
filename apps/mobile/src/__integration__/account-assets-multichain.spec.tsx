@@ -69,7 +69,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-const ALGO_SCOPE: ChainScope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
+const ALGO_SCOPE: ChainScope = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+}
 
 const ETH_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 // Calls itself USDC, but no group names it.
@@ -100,7 +103,10 @@ const USDC_GROUP = {
     symbol: 'USDC',
     logo_url: null,
     members: [
-        { chain_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k', asset_id: USDC_TEST_ASSET.assetId },
+        {
+            chain_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+            asset_id: USDC_TEST_ASSET.assetId,
+        },
         { chain_id: 'eip155:1', asset_id: ETH_USDC },
     ],
 }

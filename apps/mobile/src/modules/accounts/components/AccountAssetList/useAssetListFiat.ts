@@ -85,11 +85,6 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
                 value,
             }
         },
-        [
-            preferredCurrency,
-            fallbackCurrency,
-            usdToPreferred,
-            fallbackRate,
-        ],
+        [preferredCurrency, fallbackCurrency, usdToPreferred, fallbackRate],
     )
 }

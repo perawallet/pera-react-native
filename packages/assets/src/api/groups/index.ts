@@ -12,7 +12,4 @@
 
 export { fetchAssetGroups } from './endpoints'
 export { toAssetGroups } from './transformers'
-export {
-    assetGroupsResponseSchema,
-    type AssetGroupsResponse,
-} from './schema'
+export { assetGroupsResponseSchema, type AssetGroupsResponse } from './schema'

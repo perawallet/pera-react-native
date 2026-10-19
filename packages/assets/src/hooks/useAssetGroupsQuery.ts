@@ -14,7 +14,11 @@ import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { fetchAssetGroups, toAssetGroups, type AssetGroupsResponse } from '../api'
+import {
+    fetchAssetGroups,
+    toAssetGroups,
+    type AssetGroupsResponse,
+} from '../api'
 import type { AssetGroup } from '../models'
 import { getAssetGroupsQueryKey } from './querykeys'
 

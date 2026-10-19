@@ -113,7 +113,7 @@ describe('useAccountHoldingSources', () => {
         expect(result.current.map(s => s.scope.chainId)).toEqual(['algorand'])
     })
 
-    it("leaves out a chain whose kill switch is on", () => {
+    it('leaves out a chain whose kill switch is on', () => {
         register('algorand', 'ethereum')
         vi.spyOn(getProvider().chains, 'isSwitchedOff').mockImplementation(
             chainId => chainId === 'ethereum',

@@ -442,7 +442,13 @@ export const useAccountAssetList = ({
             handleOptOut,
             isSwipeable,
         }),
-        [isReadOnly, canManageAssets, goToAssetScreen, handleOptOut, isSwipeable],
+        [
+            isReadOnly,
+            canManageAssets,
+            goToAssetScreen,
+            handleOptOut,
+            isSwipeable,
+        ],
     )
 
     return {

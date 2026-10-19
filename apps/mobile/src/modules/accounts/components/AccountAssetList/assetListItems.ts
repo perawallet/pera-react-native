@@ -56,7 +56,9 @@ const sumDisplayAmount = (
     for (const member of members) {
         const asset = assetFromHoldingLiteRow(member, member.scope.chainId)
         if (!asset) return null
-        total = total.plus(baseUnitsToDisplayUnits(member.amount, asset.decimals))
+        total = total.plus(
+            baseUnitsToDisplayUnits(member.amount, asset.decimals),
+        )
     }
     return total
 }
@@ -115,7 +117,11 @@ export const buildAssetListItems = ({
         })
         if (isExpanded) {
             for (const member of members) {
-                items.push({ kind: 'holding', row: member, isGroupMember: true })
+                items.push({
+                    kind: 'holding',
+                    row: member,
+                    isGroupMember: true,
+                })
             }
         }
     }
