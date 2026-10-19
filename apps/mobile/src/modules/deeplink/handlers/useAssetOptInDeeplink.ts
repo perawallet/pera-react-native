@@ -11,16 +11,18 @@
  */
 
 import { useCallback } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type AssetOptInDeeplinkParams = {
+    chainId: ChainId
     assetId: string
     /**
      * Sender carried by the deep link. When present it's used directly; when
@@ -32,6 +34,24 @@ export type AssetOptInDeeplinkParams = {
 export type AssetOptInDeeplinkHandler = (
     params: AssetOptInDeeplinkParams,
 ) => Promise<void>
+
+type OptIn = ReturnType<typeof useAssetOptInMutation>['optIn']
+
+const useOptInOn = (chainId: ChainId): OptIn =>
+    useAssetOptInMutation(useSelectedScope(chainId)).optIn
+
+// Every opt-in chain's mutation is created on every render, in registry order,
+// so the hooks called never depend on which chain a link names.
+const useOptInByChain = (): ReadonlyMap<ChainId, OptIn> => {
+    const byChain = new Map<ChainId, OptIn>()
+    for (const descriptor of getProvider().chains.list()) {
+        if (descriptor.protocol.requiresAssetOptIn) {
+            // oxlint-disable-next-line react-hooks/rules-of-hooks -- the registry is fixed after bootstrap, so every render calls the same hooks in the same order
+            byChain.set(descriptor.id, useOptInOn(descriptor.id))
+        }
+    }
+    return byChain
+}
 
 const SHEET_OPTIONS = {
     // PWSheetLayout only scrolls when it owns the container: needs
@@ -54,21 +74,24 @@ const SHEET_OPTIONS = {
  */
 export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
     const { requestByType } = useBottomSheetStore()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { optIn } = useAssetOptInMutation(scope)
+    const optInByChain = useOptInByChain()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
 
     return useCallback(
-        async ({ assetId, address }) => {
+        async ({ chainId, assetId, address }) => {
+            // The dispatcher refuses a chain without opt-in before this runs.
+            const optIn = optInByChain.get(chainId)
+            if (!optIn) return
+
             // 1. Resolve the sender. A link without an address must prompt.
             let sender = address
             if (!sender) {
                 const selected = await requestByType<
                     'asset-opt-in-account-selection',
                     string
-                >('asset-opt-in-account-selection', {}, SHEET_OPTIONS)
+                >('asset-opt-in-account-selection', { chainId }, SHEET_OPTIONS)
                 // Dismissed without picking — abort silently.
                 if (!selected) return
                 sender = selected
@@ -77,7 +100,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             // 2. Confirm the opt-in (shows the asset and fee being signed).
             const confirmation = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: sender },
+                { assetId, accountAddress: sender, chainId },
                 SHEET_OPTIONS,
             )
             if (confirmation !== 'confirm') return
@@ -97,6 +120,6 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
                 showError(error, t('add_asset.opt_in.failed_title'))
             }
         },
-        [requestByType, optIn, showToast, showError, t],
+        [requestByType, optInByChain, showToast, showError, t],
     )
 }

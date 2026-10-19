@@ -120,12 +120,6 @@ const transactionsGroup = (sourceType?: SourceType) =>
 
 const MESSAGE_GROUP = groupOf({ type: 'arbitrary-data', data: [] })
 
-const ALGORAND_GROUP = groupOf({
-    type: 'transactions',
-    transactions: [],
-    indicesToSign: [],
-})
-
 beforeEach(() => {
     vi.spyOn(getProvider().chains, 'capabilities').mockReturnValue(CAPABILITIES)
 })
@@ -223,14 +217,6 @@ describe('bridgeTransactionReviewer', () => {
                 transactions: [],
             })
             expect(reviewer.decoder.decode).not.toHaveBeenCalled()
-        })
-
-        it('refuses Algorand-shaped transactions', async () => {
-            await expect(
-                bridgeTransactionReviewer(
-                    fakeTransactionReviewer(),
-                ).decoder.decode(ALGORAND_GROUP, CONTEXT),
-            ).rejects.toBeInstanceOf(InvalidSignableDataError)
         })
 
         it("turns the chain's refusal into a non-retryable invalid-data error", async () => {

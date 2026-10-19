@@ -40,6 +40,7 @@ import type {
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { asUnsignedAlgorandTransaction } from '../../../__tests__/transactions'
 
 const HARDWARE_ADDRESS =
     'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
@@ -51,16 +52,19 @@ const hardwareAccount = ledgerAccount(HARDWARE_ADDRESS)
 
 const nonHardwareAccount = algo25Account(OTHER_ADDRESS)
 
+const senderOnlyTransaction = (sender: string) =>
+    asUnsignedAlgorandTransaction({
+        sender: { toString: () => sender },
+    } as never)
+
 const makeGroup = (
     signerAddress: string = HARDWARE_ADDRESS,
 ): AnalyzedSignableGroup =>
     ({
         data: {
             type: 'transactions',
-            transactions: [
-                { sender: { toString: () => signerAddress } } as never,
-            ],
-            indicesToSign: [0],
+            transactions: [senderOnlyTransaction(signerAddress)],
+            chainData: { algorand: { indicesToSign: [0] } },
         },
         source: { type: 'local' },
         signerAddress,
@@ -286,13 +290,13 @@ describe('hardwareSignActor', () => {
         const twoTxGroup = (): AnalyzedSignableGroup => {
             const group = makeGroup()
             group.data = {
-                ...group.data,
+                type: 'transactions',
                 transactions: [
-                    { sender: { toString: () => HARDWARE_ADDRESS } } as never,
-                    { sender: { toString: () => HARDWARE_ADDRESS } } as never,
+                    senderOnlyTransaction(HARDWARE_ADDRESS),
+                    senderOnlyTransaction(HARDWARE_ADDRESS),
                 ],
-                indicesToSign: [0, 1],
-            } as never
+                chainData: { algorand: { indicesToSign: [0, 1] } },
+            }
             return group
         }
         mocks.sign.mockImplementation(

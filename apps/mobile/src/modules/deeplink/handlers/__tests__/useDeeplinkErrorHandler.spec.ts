@@ -24,7 +24,10 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     // i18n echoes the key in tests so we can assert on the mapping directly.
-    useLanguage: () => ({ t: (key: string) => key }),
+    useLanguage: () => ({
+        t: (key: string, values?: Record<string, string>) =>
+            values ? `${key}:${JSON.stringify(values)}` : key,
+    }),
 }))
 
 describe('useDeeplinkErrorHandler', () => {
@@ -35,6 +38,23 @@ describe('useDeeplinkErrorHandler', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+    })
+
+    it('fills the copy with the names it is given', () => {
+        const { result } = renderHook(() => useDeeplinkErrorHandler())
+
+        act(() => {
+            result.current({
+                variant: 'no-account',
+                values: { chain: 'Ethereum' },
+            })
+            vi.runAllTimers()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'deeplink.error.title_no_account:{"chain":"Ethereum"}',
+            'deeplink.error.body_no_account:{"chain":"Ethereum"}',
+        )
     })
 
     it.each([
@@ -73,6 +93,21 @@ describe('useDeeplinkErrorHandler', () => {
             'timeout',
             'deeplink.error.title_timeout',
             'deeplink.error.body_timeout',
+        ],
+        [
+            'network-mismatch',
+            'deeplink.error.title_network_mismatch',
+            'deeplink.error.body_network_mismatch',
+        ],
+        [
+            'no-account',
+            'deeplink.error.title_no_account',
+            'deeplink.error.body_no_account',
+        ],
+        [
+            'unsupported-on-chain',
+            'deeplink.error.title_unsupported',
+            'deeplink.error.body_unsupported_on_chain',
         ],
     ] as const)('maps variant "%s" to (%s, %s)', (variant, title, body) => {
         const { result } = renderHook(() => useDeeplinkErrorHandler())

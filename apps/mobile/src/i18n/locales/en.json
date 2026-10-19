@@ -159,12 +159,20 @@
             "body_keyreg": "We couldn't build the key-registration transaction.",
             "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
             "body_keyreg_cannot_sign": "This account can't sign transactions in Pera. Key registration needs the account's private key, not a watch-only copy.",
-            "body_keyreg_network_mismatch": "This key registration is for a different Algorand network than the one your wallet is on. Switch networks, then scan again.",
+            "title_network_mismatch": "Wrong network",
+            "body_network_mismatch": "Switch to {{network}} to open this link.",
+            "title_no_account": "No account for this link",
+            "body_no_account": "You don't have a {{chain}} account.",
+            "title_unsupported": "Link not supported",
+            "body_unsupported_on_chain": "Pera can't open this link on {{chain}}.",
             "title_recover": "Couldn't import account",
             "body_recover": "We couldn't import the account from this QR.",
             "body_recover_duplicate": "This account is already in your wallet.",
             "title_timeout": "Took too long",
             "body_timeout": "The request didn't complete in time. Check your network and try again."
+        },
+        "select_chain": {
+            "title": "Which blockchain is this address on?"
         }
     },
     "address_actions": {
@@ -2816,6 +2824,9 @@
             "title": "Minimum Balance",
             "message": "This account doesn't have the required minimum balance of {{amount}} ALGO for this operation.",
             "done": "Done"
+        },
+        "select_sender": {
+            "title": "Send from"
         }
     },
     "settings": {

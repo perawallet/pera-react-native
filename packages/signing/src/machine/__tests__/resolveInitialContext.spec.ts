@@ -23,7 +23,8 @@ import {
     registerAlgorandRulesAs,
     seedAuthority,
 } from '../../__tests__/registerAlgorandAccounts'
-import { Address, Transaction, assignGroupID } from 'algosdk'
+import { Address, type Transaction, assignGroupID } from 'algosdk'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
     ChainAdapterNotRegisteredError,
@@ -75,6 +76,12 @@ const dappAddr = makeTestAddress(2)
 const makePayment = (sender: Address, amount: bigint): Transaction =>
     makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
+const neutralPayment = (sender: Address, amount: bigint) =>
+    asUnsignedAlgorandTransaction(makePayment(sender, amount))
+
+const asNeutral = (transactions: Transaction[]) =>
+    transactions.map(transaction => asUnsignedAlgorandTransaction(transaction))
+
 const USER_ADDRESS = userAddr.toString()
 const userAccount = algo25Account(USER_ADDRESS, { keyPairId: 'key-1' })
 
@@ -89,6 +96,10 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as unknown as SigningMachineInput
+
+beforeEach(() => {
+    registerFakeTransactionPlanner(fakeAlgorandTransactionPlanner())
+})
 
 describe('resolveInitialContext — group integrity validation', () => {
     it('passes when txs is the wallet subset and groupContext carries the full atomic group', () => {
@@ -105,8 +116,8 @@ describe('resolveInitialContext — group integrity validation', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'walletconnect',
-            txs: [fullGroup[0]],
-            groupContext: fullGroup,
+            txs: asNeutral([fullGroup[0]]),
+            chainData: { algorand: { groupContext: asNeutral(fullGroup) } },
         }
 
         expect(() => resolveInitialContext(baseInput(request))).not.toThrow()
@@ -122,7 +133,7 @@ describe('resolveInitialContext — group integrity validation', () => {
             id: 'req-2',
             type: 'transactions',
             transport: 'algod',
-            txs: fullGroup,
+            txs: asNeutral(fullGroup),
         }
 
         expect(() => resolveInitialContext(baseInput(request))).not.toThrow()
@@ -143,8 +154,8 @@ describe('resolveInitialContext — group integrity validation', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'walletconnect',
-            txs: [stale[0]],
-            groupContext: stale,
+            txs: asNeutral([stale[0]]),
+            chainData: { algorand: { groupContext: asNeutral(stale) } },
         }
 
         expect(() => resolveInitialContext(baseInput(request))).toThrow(
@@ -167,7 +178,7 @@ describe('resolveInitialContext — source callbacks', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'walletconnect',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
             approve,
             reject,
             approveSignedBytes,
@@ -189,7 +200,7 @@ describe('resolveInitialContext — source callbacks', () => {
             id: 'req-local-algod',
             type: 'transactions',
             transport: 'algod',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
         }
 
         const context = resolveInitialContext(baseInput(request))
@@ -209,7 +220,7 @@ describe('resolveInitialContext — source callbacks', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'walletconnect',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
             approve: txApprove,
         }
 
@@ -218,7 +229,7 @@ describe('resolveInitialContext — source callbacks', () => {
 
         const signed = [{ sig: new Uint8Array([1]) }] as never
         await callbacks?.approve?.({
-            signedData: { type: 'transactions', signed },
+            signedData: { type: 'signed-transactions', signed },
         } as never)
 
         expect(txApprove).toHaveBeenCalledWith(signed, undefined)
@@ -231,7 +242,7 @@ describe('resolveInitialContext — source callbacks', () => {
             type: 'transactions',
             transport: 'algod',
             sourceType: 'gift-card',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
             approve: txApprove,
         }
 
@@ -240,7 +251,7 @@ describe('resolveInitialContext — source callbacks', () => {
 
         const signed = [{ sig: new Uint8Array([1]) }] as never
         await callbacks?.approve?.(
-            { signedData: { type: 'transactions', signed } } as never,
+            { signedData: { type: 'signed-transactions', signed } } as never,
             { txIds: ['TX1'] },
         )
 
@@ -256,7 +267,7 @@ describe('resolveInitialContext — source callbacks', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'multisig-cosign',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
         }
 
         expect(() => resolveInitialContext(baseInput(request))).toThrow(
@@ -271,7 +282,7 @@ describe('resolveInitialContext — source callbacks', () => {
             transport: 'callback',
             sourceType: 'multisig-cosign',
             signRequestId: 'sr-42',
-            txs: [makePayment(userAddr, 1n)],
+            txs: [neutralPayment(userAddr, 1n)],
         }
 
         const context = resolveInitialContext(baseInput(request))
@@ -547,9 +558,13 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             id: 'req-hw',
             type: 'transactions',
             transport: 'algod',
-            txs: [makePayment(new Address(new Uint8Array(32).fill(3)), 1n)],
-            // Override the signer so it lands on the hardware account.
-            signerOverrides: new Map([[0, hwAddr]]),
+            txs: [neutralPayment(new Address(new Uint8Array(32).fill(3)), 1n)],
+            chainData: {
+                algorand: {
+                    // Override the signer so it lands on the hardware account.
+                    signerOverrides: new Map([[0, hwAddr]]),
+                },
+            },
         }
 
         expect(() =>
@@ -568,8 +583,12 @@ describe('resolveInitialContext — signer account not found', () => {
             id: 'req-no-signer',
             type: 'transactions',
             transport: 'algod',
-            txs: [makePayment(strangerAddr, 1n)],
-            signerOverrides: new Map([[0, strangerAddr.toString()]]),
+            txs: [neutralPayment(strangerAddr, 1n)],
+            chainData: {
+                algorand: {
+                    signerOverrides: new Map([[0, strangerAddr.toString()]]),
+                },
+            },
         }
 
         // The signer is in txs but not in allAccounts; buildSignableGroups
@@ -958,6 +977,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         const algorand: TransactionSignRequest = {
             id: 'req-algorand',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
             sourceType: 'walletconnect',
             txs,
@@ -997,10 +1017,9 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
     const ledgerAuth = () =>
         ledgerAccount(authAddr.toString(), 0, {}, { id: 'auth' })
 
-    it('signs the same indices under the same signers as the request in Algorand form', () => {
-        const { algorand, neutral } = bothShapes(fullGroup())
+    it('groups each transaction under the account it signs for, following its signer override', () => {
+        const { neutral } = bothShapes(fullGroup())
 
-        const expected = resolveInitialContext(withAccounts(algorand))
         const context = resolveInitialContext(withAccounts(neutral))
 
         expect(
@@ -1008,13 +1027,37 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
                 g.signerAddress,
                 g.originalIndices,
             ]),
-        ).toEqual(
-            expected.signableGroups?.map(g => [
-                g.signerAddress,
-                g.originalIndices,
+        ).toEqual([
+            [USER_ADDRESS, [0, 1]],
+            [authAddr.toString(), [2]],
+        ])
+        expect(context.groupSigners).toEqual(
+            new Map([
+                [USER_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
+                [authAddr.toString(), { custody: 'local', scheme: 'ed25519' }],
             ]),
         )
-        expect(context.groupSigners).toEqual(expected.groupSigners)
+    })
+
+    it('refuses a request whose transactions are in the Algorand shape', () => {
+        const { algorand } = bothShapes(fullGroup())
+
+        expect(() => resolveInitialContext(withAccounts(algorand))).toThrow(
+            InvalidSignableDataError,
+        )
+    })
+
+    it('refuses an empty request as having nothing to sign', () => {
+        const request: TransactionSignRequest = {
+            id: 'req-empty',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [],
+        }
+
+        expect(() => resolveInitialContext(withAccounts(request))).toThrow(
+            CannotSignError,
+        )
     })
 
     it("carries each group's indices and request bytes as its Algorand group facts", () => {
@@ -1042,26 +1085,54 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         ])
     })
 
-    it("signs a request whose signers sign in different ways through the chain's own signers, as in Algorand form", () => {
-        const { algorand, neutral } = bothShapes(fullGroup())
+    it("signs a request whose signers sign in different ways through the chain's own signers", () => {
+        const { neutral } = bothShapes(fullGroup())
 
-        const expected = resolveInitialContext(
-            withAccounts(algorand, ledgerAuth()),
-        )
         const context = resolveInitialContext(
             withAccounts(neutral, ledgerAuth()),
         )
 
-        const shapeOf = (groups: typeof context.signableGroups) =>
-            groups?.map(({ signerAddress, originalIndices, data }) => ({
-                signerAddress,
-                originalIndices,
-                data,
-            }))
-        expect(shapeOf(context.signableGroups)).toEqual(
-            shapeOf(expected.signableGroups),
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: USER_ADDRESS,
+                originalIndices: [0, 1],
+                data: {
+                    type: 'transactions',
+                    transactions: [neutral.txs[0], neutral.txs[1]],
+                    chainData: {
+                        algorand: {
+                            indicesToSign: [0, 1],
+                            rawTransactionsBase64: ['raw-0', 'raw-2'],
+                        },
+                    },
+                },
+                shouldUseChainSigner: true,
+            }),
+            expect.objectContaining({
+                signerAddress: authAddr.toString(),
+                originalIndices: [2],
+                data: {
+                    type: 'transactions',
+                    transactions: [neutral.txs[2]],
+                    chainData: {
+                        algorand: {
+                            indicesToSign: [0],
+                            rawTransactionsBase64: ['raw-3'],
+                        },
+                    },
+                },
+                shouldUseChainSigner: true,
+            }),
+        ])
+        expect(context.groupSigners).toEqual(
+            new Map([
+                [USER_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
+                [
+                    authAddr.toString(),
+                    { custody: 'hardware', scheme: 'ed25519' },
+                ],
+            ]),
         )
-        expect(context.groupSigners).toEqual(expected.groupSigners)
     })
 
     it('refuses a full group whose transactions no longer hash to their group id', () => {

@@ -30,7 +30,7 @@ import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
 import { canSignArc60, isQuantumAccount } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
-    algorandSignableDataOf,
+    readAlgorandTransactionsData,
     algorandSignedForAddresses,
     algorandTransactionsOf,
     readableAlgorandTransaction,
@@ -154,7 +154,7 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
             ? validateCosignSubsetIntegrity(algorand)
             : validateTransactionGroupIntegrity(algorand)
     },
-    readTransactionsData: algorandSignableDataOf,
+    readTransactionsData: readAlgorandTransactionsData,
     signedForAddresses: algorandSignedForAddresses,
     mergeSigningResults,
     signedTransactionsOf: algorandSignedTransactionsOf,

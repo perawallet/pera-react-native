@@ -46,7 +46,7 @@ const makeGroup = (signerAddress: string): SignableGroup =>
         data: {
             type: 'transactions',
             transactions: [],
-            indicesToSign: [],
+            chainData: { algorand: { indicesToSign: [] } },
         },
         source: { type: 'local' },
         signerAddress,

@@ -80,6 +80,7 @@ const fixture: ChainDescriptor = {
         supportsNativeMultisig: true,
         supportsRekey: true,
         hasTokenApproval: false,
+        requiresAssetOptIn: true,
     },
     explorer: {
         accountUrl: (networkId, address) =>

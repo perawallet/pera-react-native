@@ -24,6 +24,12 @@ import {
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
 import { seedAuthority } from '../../../accounts/__tests__/seedAuthority'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../__tests__/transactions'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -38,13 +44,16 @@ const mockAlgo25Account: WalletAccount = {
     },
 } as unknown as WalletAccount
 
-const mockTransaction = { txn: {} } as never
+const mockTransaction = makeTestPaymentTx(makeTestAddress(1), {
+    receiver: makeTestAddress(2),
+    genesisHash: MAINNET_GENESIS_HASH,
+})
 
 const mockGroup: AnalyzedSignableGroup = {
     data: {
         type: 'transactions',
-        transactions: [mockTransaction],
-        indicesToSign: [0],
+        transactions: [asUnsignedAlgorandTransaction(mockTransaction)],
+        chainData: { algorand: { indicesToSign: [0] } },
     },
     source: { type: 'local' },
     signerAddress: MOCK_ADDRESS,
@@ -85,14 +94,12 @@ describe('signLocalKeyGroups', () => {
         }
         expect(result.signers).toHaveLength(1)
         expect(result.signers[0].address).toBe(MOCK_ADDRESS)
-        if (mockGroup.data.type === 'transactions') {
-            expect(signTransactions).toHaveBeenCalledWith(
-                mockGroup.data.transactions,
-                mockGroup.data.indicesToSign,
-                mockAlgo25Account,
-                { chainId: 'algorand', networkId: 'mainnet' },
-            )
-        }
+        expect(signTransactions).toHaveBeenCalledWith(
+            [mockTransaction],
+            [0],
+            mockAlgo25Account,
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
     })
 
     it('rejects when signTransactions throws', async () => {

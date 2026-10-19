@@ -108,6 +108,14 @@ const {
     mockShowSignRequest: vi.fn(),
 }))
 
+const sendAccount = vi.hoisted(() => ({
+    resolution: {
+        kind: 'selected',
+        account: { id: 'selected' },
+    } as unknown,
+    pick: vi.fn(),
+}))
+
 vi.mock('@modules/multisig', () => ({
     usePendingSignaturesSheet: () => ({
         showSignRequest: mockShowSignRequest,
@@ -175,6 +183,7 @@ const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountsChainAdapters: { has: () => true },
     useSelectedAccount: () => mockWalletAccounts[0],
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
@@ -255,13 +264,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // is a passthrough no-op. Real fee behavior is covered by
     // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
-    useMinimumFeeCalculator: () => ({
-        assignFeeToGroup: async ({
+    useMinimumFeeCalculatorFor:
+        () =>
+        () =>
+        async ({ transactions }: { transactions: unknown[] }) => ({
             transactions,
-        }: {
-            transactions: unknown[]
-        }) => ({ transactions, adjustments: [] }),
-    }),
+            adjustments: [],
+        }),
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
@@ -311,6 +320,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock('@modules/transactions', () => ({
+    useSendAccountResolver: () => ({
+        resolve: () => sendAccount.resolution,
+        pick: sendAccount.pick,
+    }),
     useSendFundsStore: {
         getState: () => ({
             reset: mockSendFundsReset,
@@ -326,6 +339,12 @@ vi.mock('@modules/transactions', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
+        displayName: chainId === 'algorand' ? 'Algorand' : 'Ethereum',
+        networks: [
+            { id: 'mainnet', displayName: 'MainNet' },
+            { id: 'testnet', displayName: 'TestNet' },
+        ],
+        protocol: { requiresAssetOptIn: chainId === 'algorand' },
         nativeAsset: {
             ref: { chainId, assetId: chainId === 'algorand' ? '0' : 'native' },
         },
@@ -510,6 +529,7 @@ const cases: Case[] = [
                 {
                     address: ADDRESS,
                     label: undefined,
+                    chainId: 'algorand',
                 },
                 { enablePanDownToClose: true },
             )
@@ -627,7 +647,7 @@ const cases: Case[] = [
         () => {
             expect(mockRequestByType).toHaveBeenCalledWith(
                 'asset-opt-in-account-selection',
-                {},
+                { chainId: 'algorand' },
                 // PWSheetLayout only scrolls with autoCreateContainer:false + bounded auto size.
                 {
                     size: 'auto',
@@ -815,6 +835,7 @@ const cases: Case[] = [
                 {
                     address: ADDRESS,
                     label: undefined,
+                    chainId: 'algorand',
                 },
                 { enablePanDownToClose: true },
             )
@@ -1009,6 +1030,10 @@ afterEach(() => {
 describe('deeplink format coverage', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        sendAccount.resolution = {
+            kind: 'selected',
+            account: { id: 'selected' },
+        }
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
@@ -1104,27 +1129,65 @@ describe('deeplink format coverage', () => {
         extra?.()
     })
 
-    it('refuses an ethereum: payment with the unavailable error and opens no send sheet', async () => {
-        registerEthereumChain()
-        const onError = vi.fn()
-        const { result } = renderHook(() => useDeepLink())
+    describe('ethereum: links', () => {
+        const RECIPIENT = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+        const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
-        await act(async () => {
-            await result.current.handleDeepLink(
-                'ethereum:0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359@1?value=1',
-                false,
-                'qr',
-                onError,
+        const dispatch = async (url: string) => {
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(url, false, 'qr', onError)
+            })
+            return { onError }
+        }
+
+        beforeEach(() => {
+            registerEthereumChain()
+            sendAccount.resolution = {
+                kind: 'single',
+                account: { id: 'eth-account' },
+            }
+        })
+
+        it('opens a prefilled ether send from the Ethereum account', async () => {
+            await dispatch(`ethereum:${RECIPIENT}@1?value=1`)
+
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('eth-account')
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'ethereum',
+                assetId: 'native',
+            })
+            expect(mockSetDestination).toHaveBeenCalledWith(RECIPIENT)
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                expect.any(Object),
+                expect.any(Object),
             )
         })
 
-        expect(mockErrorToast).toHaveBeenCalledWith(
-            expect.stringContaining('common.network_unavailable'),
-            expect.stringContaining('common.network_unavailable'),
-        )
-        expect(onError).toHaveBeenCalledTimes(1)
-        expect(mockSendFundsReset).not.toHaveBeenCalled()
-        expect(mockRequestByType).not.toHaveBeenCalled()
+        it('opens a prefilled ERC-20 send from the Ethereum account', async () => {
+            await dispatch(
+                `ethereum:${TOKEN}@1/transfer?address=${RECIPIENT}&uint256=12500000`,
+            )
+
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('eth-account')
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'ethereum',
+                assetId: TOKEN,
+            })
+            expect(mockSetDestination).toHaveBeenCalledWith(RECIPIENT)
+        })
+
+        it('refuses a payment for another network and opens no send sheet', async () => {
+            const { onError } = await dispatch(
+                `ethereum:${RECIPIENT}@11155111?value=1`,
+            )
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockSendFundsReset).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+        })
     })
 
     it('parses + dispatches every test fixture without throwing', () => {

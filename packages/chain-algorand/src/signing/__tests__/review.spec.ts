@@ -55,6 +55,7 @@ import {
     makeTestAddress,
     makeTestAssetTransferTx,
     makeTestPaymentTx,
+    payloadTransactionOf,
 } from './transactions'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
@@ -73,18 +74,27 @@ const context: AnalysisContext = {
 const transactionsGroup = (
     transactions: Transaction[],
     {
-        signer = WALLET,
+        authorizer,
         rawTransactionsBase64,
-    }: { signer?: Address; rawTransactionsBase64?: string[] } = {},
+    }: { authorizer?: Address; rawTransactionsBase64?: string[] } = {},
 ): SignableGroup =>
     ({
-        signerAddress: signer.toString(),
+        signerAddress: (authorizer ?? transactions[0].sender).toString(),
         source: { type: 'local' },
         data: {
             type: 'transactions',
-            transactions,
-            indicesToSign: transactions.map((_, i) => i),
-            rawTransactionsBase64,
+            transactions: transactions.map(txn =>
+                asUnsignedAlgorandTransaction(
+                    txn,
+                    authorizer && { authorizer: authorizer.toString() },
+                ),
+            ),
+            chainData: {
+                algorand: {
+                    indicesToSign: transactions.map((_, i) => i),
+                    rawTransactionsBase64,
+                },
+            },
         },
     }) as unknown as SignableGroup
 
@@ -211,7 +221,9 @@ const signed = (warningTypes: AnalysisWarning['type'][] = []): Expected => ({
 
 const feesOf = (group: SignableGroup): bigint =>
     group.data.type === 'transactions'
-        ? group.data.transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+        ? group.data.transactions
+              .map(payloadTransactionOf)
+              .reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
         : 0n
 
 const CASES: [string, SignableGroup, Expected][] = [
@@ -226,7 +238,7 @@ const CASES: [string, SignableGroup, Expected][] = [
     ['a rekey', transactionsGroup([KINDS.rekey]), signed(['rekey'])],
     [
         'a rekey a wallet account authorises for another sender',
-        transactionsGroup([KINDS.foreignSenderRekey]),
+        transactionsGroup([KINDS.foreignSenderRekey], { authorizer: WALLET }),
         signed(['rekey']),
     ],
     [
@@ -248,7 +260,7 @@ const CASES: [string, SignableGroup, Expected][] = [
     ],
     [
         'a rekey no wallet account signs',
-        transactionsGroup([KINDS.rekey], { signer: OTHER }),
+        transactionsGroup([KINDS.foreignSenderRekey]),
         {
             isCharged: false,
             warningTypes: [],
@@ -378,27 +390,6 @@ describe('algorandReviewerAdapter review parts', () => {
         ).rejects.toBeInstanceOf(GenesisHashMismatchError)
     })
 
-    it('reviews a chain-neutral transaction as the Algorand transaction it carries', async () => {
-        const neutral = {
-            signerAddress: WALLET.toString(),
-            source: { type: 'local' },
-            data: {
-                type: 'transactions',
-                transactions: [
-                    {
-                        ...makeUnsignedAlgorandTransaction(),
-                        payload: { transaction: KINDS.rekey },
-                    },
-                ],
-                chainData: {},
-            },
-        } as unknown as SignableGroup
-
-        expect(await review(neutral)).toEqual(
-            await review(transactionsGroup([KINDS.rekey])),
-        )
-    })
-
     it('lists every multisig participant the wallet holds as a signer', async () => {
         const addresses = [WALLET, SECOND, OTHER].map(a => a.toString())
         const msig = generateMultisigAddress(1, 2, addresses)
@@ -448,11 +439,12 @@ describe('algorandReviewerAdapter review parts', () => {
     })
 
     it('reports any other failure as an analysis error', async () => {
-        const unreadable = {
-            get fee(): never {
+        const unreadable = makeTestPaymentTx(WALLET, { receiver: OTHER })
+        Object.defineProperty(unreadable, 'fee', {
+            get(): never {
                 throw new Error('unreadable transaction')
             },
-        } as unknown as Transaction
+        })
 
         await expect(
             review(transactionsGroup([unreadable])),

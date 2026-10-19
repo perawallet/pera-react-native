@@ -24,7 +24,9 @@ type Variant =
     | 'keyreg'
     | 'keyreg-unknown-account'
     | 'keyreg-cannot-sign'
-    | 'keyreg-network-mismatch'
+    | 'network-mismatch'
+    | 'no-account'
+    | 'unsupported-on-chain'
     | 'recover'
     | 'recover_duplicate'
     | 'timeout'
@@ -33,6 +35,8 @@ export type ShowDeeplinkErrorParams = {
     variant: Variant
     parsedType?: string
     error?: unknown
+    /** Display names the copy interpolates: `network` or `chain`. */
+    values?: Record<string, string>
 }
 
 export type ShowDeeplinkError = (params: ShowDeeplinkErrorParams) => void
@@ -66,9 +70,17 @@ const MESSAGE_KEYS: Record<Variant, { title: I18nKey; body: I18nKey }> = {
         title: i18nKey('deeplink.error.title_keyreg'),
         body: i18nKey('deeplink.error.body_keyreg_cannot_sign'),
     },
-    'keyreg-network-mismatch': {
-        title: i18nKey('deeplink.error.title_keyreg'),
-        body: i18nKey('deeplink.error.body_keyreg_network_mismatch'),
+    'network-mismatch': {
+        title: i18nKey('deeplink.error.title_network_mismatch'),
+        body: i18nKey('deeplink.error.body_network_mismatch'),
+    },
+    'no-account': {
+        title: i18nKey('deeplink.error.title_no_account'),
+        body: i18nKey('deeplink.error.body_no_account'),
+    },
+    'unsupported-on-chain': {
+        title: i18nKey('deeplink.error.title_unsupported'),
+        body: i18nKey('deeplink.error.body_unsupported_on_chain'),
     },
     recover: {
         title: i18nKey('deeplink.error.title_recover'),
@@ -96,7 +108,7 @@ export const useDeeplinkErrorHandler = (): ShowDeeplinkError => {
     const { errorToast } = useToast()
 
     return useCallback(
-        ({ variant, error }) => {
+        ({ variant, error, values }) => {
             const isTimeout =
                 error instanceof Error &&
                 'tag' in error &&
@@ -105,7 +117,7 @@ export const useDeeplinkErrorHandler = (): ShowDeeplinkError => {
             const { title, body } = MESSAGE_KEYS[effectiveVariant]
 
             setTimeout(() => {
-                errorToast(t(title), t(body))
+                errorToast(t(title, values), t(body, values))
             }, TOAST_DEFER_MS)
         },
         [errorToast, t],

@@ -39,10 +39,9 @@ import {
     SIGNING_ERROR_KEYS,
     SigningError,
 } from '../../../pipeline/errors'
-import {
-    isUnsignedTransactionsData,
-    type AnalyzedSignableGroup,
-    type SigningResult,
+import type {
+    AnalyzedSignableGroup,
+    SigningResult,
 } from '../../../pipeline/types'
 import { resolveSignerCredential } from '../../utils/resolveSignerCredential'
 
@@ -126,10 +125,7 @@ export const signPlannedGroups = async ({
 
     const results: SigningResult[] = []
     for (const group of groups) {
-        if (
-            group.data.type !== 'transactions' ||
-            !isUnsignedTransactionsData(group.data)
-        ) {
+        if (group.data.type !== 'transactions') {
             throw new InvalidSignableDataError(
                 'only chain-neutral transactions are signed through a planner',
             )

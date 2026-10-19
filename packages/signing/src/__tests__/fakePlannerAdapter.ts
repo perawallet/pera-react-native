@@ -28,7 +28,6 @@ import {
 } from '../chain-adapter'
 import { isUnsignedTransaction } from '../models'
 import { InvalidSignableDataError } from '../pipeline/errors'
-import { isUnsignedTransactionsData } from '../pipeline/types'
 
 const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
@@ -125,21 +124,16 @@ export const fakePlannerAdapter = (
               )
             : undefined,
     ),
-    readTransactionsData: vi.fn(data =>
-        isUnsignedTransactionsData(data)
-            ? {
-                  type: 'transactions' as const,
-                  transactions: payloadTransactions(data.transactions),
-                  indicesToSign:
-                      data.chainData.algorand?.indicesToSign ??
-                      data.transactions.map((_, index) => index),
-                  ...(data.chainData.algorand?.rawTransactionsBase64 && {
-                      rawTransactionsBase64:
-                          data.chainData.algorand.rawTransactionsBase64,
-                  }),
-              }
-            : data,
-    ),
+    readTransactionsData: vi.fn(data => ({
+        transactions: payloadTransactions(data.transactions),
+        indicesToSign:
+            data.chainData.algorand?.indicesToSign ??
+            data.transactions.map((_, index) => index),
+        ...(data.chainData.algorand?.rawTransactionsBase64 && {
+            rawTransactionsBase64:
+                data.chainData.algorand.rawTransactionsBase64,
+        }),
+    })),
     mergeSigningResults: vi.fn(results => results[0]),
     signedTransactionsOf: vi.fn(({ signedData }) => {
         if (signedData.type !== 'signed-transactions') {

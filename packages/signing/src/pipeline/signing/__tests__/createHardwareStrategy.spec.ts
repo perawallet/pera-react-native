@@ -97,8 +97,10 @@ const makeGroup = (
 ): AnalyzedSignableGroup => ({
     data: {
         type: 'transactions',
-        transactions: transactions as never[],
-        indicesToSign,
+        transactions: transactions.map(transaction =>
+            asUnsignedAlgorandTransaction(transaction as never),
+        ),
+        chainData: { algorand: { indicesToSign } },
     },
     source: { type: 'local' },
     signerAddress,
@@ -851,32 +853,33 @@ describe('createHardwareStrategy', () => {
             expect(passed.constructor.name).toBe('SigningError')
         })
 
-        it('signs a chain-neutral group as the Algorand transactions its payloads carry', async () => {
+        it("signs the transactions and indices the chain's planner adapter reads from the group", async () => {
+            const readTxn = mockTransaction()
+            const planner = registerFakePlannerAdapter({
+                readTransactionsData: vi.fn(() => ({
+                    transactions: [readTxn, readTxn],
+                    indicesToSign: [1],
+                })),
+            })
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
                 chainId: 'algorand',
             })
-            const txns = [mockTransaction(), mockTransaction()]
-            const algorandResult = await strategy.sign(
-                makeGroup(txns, [1]),
-                makeLedgerAccount(),
-            )
-            const group = {
-                ...makeGroup([], []),
-                data: {
-                    type: 'transactions' as const,
-                    transactions: txns.map(txn =>
-                        asUnsignedAlgorandTransaction(txn),
-                    ),
-                    chainData: { algorand: { indicesToSign: [1] } },
-                },
-            } as unknown as AnalyzedSignableGroup
+            const group = makeGroup([mockTransaction()], [0])
 
             const result = await strategy.sign(group, makeLedgerAccount())
 
-            expect(result).toEqual(algorandResult)
+            expect(planner.readTransactionsData).toHaveBeenCalledWith(
+                group.data,
+            )
+            expect(encodeTransaction).toHaveBeenCalledTimes(1)
+            expect(encodeTransaction).toHaveBeenCalledWith(readTxn)
+            expect(result.signers[0].signatures).toEqual([
+                null,
+                Buffer.from(MOCK_SIGNATURE).toString('base64'),
+            ])
         })
 
         it('refuses chain-neutral transactions on a chain no planner adapter reads, without touching the device', async () => {

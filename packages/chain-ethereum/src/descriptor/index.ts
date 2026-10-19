@@ -83,6 +83,7 @@ export const ethereumDescriptor: ChainDescriptor = {
         supportsNativeMultisig: false,
         supportsRekey: false,
         hasTokenApproval: true,
+        requiresAssetOptIn: false,
     },
     explorer: {
         accountUrl: explorerLink('address'),

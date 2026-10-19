@@ -126,7 +126,10 @@ export {
     useSuggestedMinFeeQuery,
 } from './hooks/chainFees'
 export { useMinFeeForSender } from './hooks/useMinFeeForSender'
-export { useMinimumFeeCalculator } from './hooks/useMinimumFeeCalculator'
+export {
+    useMinimumFeeCalculator,
+    useMinimumFeeCalculatorFor,
+} from './hooks/useMinimumFeeCalculator'
 export {
     ProgramSigningUnsupportedError,
     useProgramSigner,
@@ -197,7 +200,6 @@ export { bridgeTransactionReviewer } from './pipeline/transactionReviewerBridge'
 export {
     isExternalCallbackSource,
     isInteractiveSource,
-    isUnsignedTransactionsData,
     type AlgorandGroupData,
     type AnalysisContext,
     type AnalysisWarning,
@@ -206,9 +208,8 @@ export {
     type AuthDataPayload,
     type AuthDataSignableData,
     type AuthData,
+    type ChainSignerTransactions,
     type DecodedGroup,
-    type PeraTransactionsSignableData,
-    type TransactionSignableData,
     type UnsignedTransactionsSignableData,
     type RejectReason,
     type DataTransport,

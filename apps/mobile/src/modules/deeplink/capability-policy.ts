@@ -10,47 +10,45 @@
  limitations under the License
  */
 
+import {
+    chainRequirementOf,
+    DeeplinkType,
+} from '@perawallet/wallet-core-deeplinks'
 import type { CapabilityRequirement } from '@hooks/useCapability'
-import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
+import type { RouteCapability } from '@routes/capabilities'
+import { isDevE2eFixtureDeeplink } from './dev-e2e-fixture-parser'
+import { isDevLocaleTourDeeplink } from './dev-locale-tour-parser'
 import type { AppDeeplink } from './types'
 
 /**
- * What a deeplink needs before it may navigate: a deeplink must never reach a
- * screen its capability removed. `null` means it needs nothing.
- *
- * Exhaustive `Record` like `DEEPLINK_NOTIFICATION_POLICY`: a new `DeeplinkType`
- * fails to compile until it is classified. `useDeepLink` checks `CARDS` and
- * `SELL` beside this table, since their flag hooks already fold in the capability.
+ * The app route a deeplink lands on, which must be on before it may navigate.
+ * The chain capability half lives with the link types in
+ * `DEEPLINK_CHAIN_CAPABILITY`. `useDeepLink` checks `CARDS` and `SELL` beside
+ * both, since their flag hooks already fold in the capability.
  */
-export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
+export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     DeeplinkType,
-    CapabilityRequirement | null
+    RouteCapability | null
 > = {
-    [DeeplinkType.DISCOVER_PATH]: {
-        platform: 'discoverTab',
-        anyChain: 'discover',
-    },
-    [DeeplinkType.STAKING]: { platform: 'staking', anyChain: 'staking' },
-    [DeeplinkType.SWAP]: { platform: 'swapTab', anyChain: 'swap' },
-    [DeeplinkType.BUY]: { platform: 'fundTab' },
-    [DeeplinkType.ADD_WATCH_ACCOUNT]: { anyChain: 'watchAccounts' },
-    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: {
-        platform: 'sharedAccounts',
-        anyChain: 'multisig',
-    },
-    [DeeplinkType.SIGN_REQUEST]: { anyChain: 'multisig' },
-    [DeeplinkType.ASSET_OPT_IN]: { anyChain: 'manageAssets' },
-    [DeeplinkType.ASSET_INBOX]: { anyChain: 'assetInbox' },
-    [DeeplinkType.WALLET_CONNECT]: { anyChain: 'dappConnect' },
-    [DeeplinkType.LIQUID_AUTH]: { anyChain: 'liquidAuth' },
-    [DeeplinkType.PERA_WEB_IMPORT]: { anyChain: 'peraWebImport' },
+    [DeeplinkType.SWAP]: 'swapTab',
+    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: 'sharedAccounts',
+    [DeeplinkType.BUY]: 'fundTab',
+    [DeeplinkType.DISCOVER_PATH]: 'discoverTab',
+    [DeeplinkType.STAKING]: 'staking',
 
+    [DeeplinkType.TRANSFER]: null,
+    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
+    [DeeplinkType.CHAIN_ACTION]: null,
+    [DeeplinkType.ASSET_OPT_IN]: null,
+    [DeeplinkType.ASSET_INBOX]: null,
+    [DeeplinkType.ADD_WATCH_ACCOUNT]: null,
+    [DeeplinkType.SIGN_REQUEST]: null,
+    [DeeplinkType.WALLET_CONNECT]: null,
+    [DeeplinkType.LIQUID_AUTH]: null,
+    [DeeplinkType.PERA_WEB_IMPORT]: null,
+    [DeeplinkType.ADDRESS_ACTIONS]: null,
     [DeeplinkType.ADD_CONTACT]: null,
     [DeeplinkType.EDIT_CONTACT]: null,
-    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
-    [DeeplinkType.ADDRESS_ACTIONS]: null,
-    [DeeplinkType.TRANSFER]: null,
-    [DeeplinkType.CHAIN_ACTION]: null,
     [DeeplinkType.RECOVER_ADDRESS]: null,
     [DeeplinkType.ASSET_DETAIL]: null,
     [DeeplinkType.ASSET_TRANSACTIONS]: null,
@@ -63,10 +61,15 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     [DeeplinkType.HOME]: null,
 }
 
-const REQUIREMENT_BY_TYPE: Partial<
-    Record<AppDeeplink['type'], CapabilityRequirement | null>
-> = DEEPLINK_CAPABILITY_REQUIREMENTS
-
+/** The link's route and chain requirements together; null when it needs neither. */
 export const capabilityRequirementForDeeplink = (
-    type: AppDeeplink['type'],
-): CapabilityRequirement | null => REQUIREMENT_BY_TYPE[type] ?? null
+    link: AppDeeplink,
+): CapabilityRequirement | null => {
+    if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
+        return null
+    }
+    const platform = DEEPLINK_ROUTE_REQUIREMENTS[link.type] ?? undefined
+    const chainRequirement = chainRequirementOf(link)
+    if (!platform && !chainRequirement) return null
+    return { platform, ...chainRequirement }
+}

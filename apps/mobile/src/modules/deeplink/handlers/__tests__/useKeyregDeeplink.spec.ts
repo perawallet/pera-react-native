@@ -56,17 +56,18 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({
+    getSelectedScope: (chainId: string) => ({
         chainId,
         networkId: mockNetwork.current,
+    }),
+    getChainDescriptor: () => ({
+        networks: [{ id: 'testnet', displayName: 'TestNet' }],
     }),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
-    useMinimumFeeCalculator: () => ({
-        assignFeeToGroup: mockAssignFeeToGroup,
-    }),
+    useMinimumFeeCalculatorFor: () => () => mockAssignFeeToGroup,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -234,7 +235,8 @@ describe('useKeyregDeeplink', () => {
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    variant: 'keyreg-network-mismatch',
+                    variant: 'network-mismatch',
+                    values: { network: 'TestNet' },
                 }),
             )
             expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()

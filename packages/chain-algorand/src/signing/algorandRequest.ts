@@ -20,13 +20,12 @@ import {
     InvalidSignableDataError,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
-    isUnsignedTransactionsData,
     reviewGroupOf,
-    type PeraTransactionsSignableData,
+    type ChainSignerTransactions,
     type ReviewGroup,
-    type TransactionSignableData,
     type TransactionSignRequest,
     type UnsignedTransactionSignRequest,
+    type UnsignedTransactionsSignableData,
 } from '@perawallet/wallet-core-signing'
 import { readAlgorandTransaction } from './planner'
 
@@ -102,14 +101,12 @@ export const algorandTransactionsOf = (
             : transaction,
     )
 
-export const algorandSignableDataOf = (
-    data: TransactionSignableData,
-): PeraTransactionsSignableData => {
-    if (!isUnsignedTransactionsData(data)) return data
+export const readAlgorandTransactionsData = (
+    data: UnsignedTransactionsSignableData,
+): ChainSignerTransactions => {
     const transactions = algorandTransactionsOf(data.transactions)
     const algorand = data.chainData.algorand
     return {
-        type: 'transactions',
         transactions,
         indicesToSign:
             algorand?.indicesToSign ?? transactions.map((_, index) => index),

@@ -11,15 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    getSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { ChainActionDeeplink } from '@perawallet/wallet-core-deeplinks'
 import {
-    useMinimumFeeCalculator,
+    useMinimumFeeCalculatorFor,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { buildKeyRegistrationTx } from '@perawallet/wallet-core-transactions'
@@ -108,14 +110,14 @@ const checkSigningEligibility = (
 }
 
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
-    const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
+    const assignFeeFor = useMinimumFeeCalculatorFor()
 
     return useCallback(
         async ({ chainData, target }: ChainActionDeeplink) => {
+            const scope = getSelectedScope(target.chainId)
             if (!addressCodecs.get(target.chainId).isValid(chainData.sender)) {
                 showError({
                     variant: 'keyreg',
@@ -143,15 +145,20 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 return
             }
 
-            // The transaction is built against the ACTIVE network, so a
-            // cross-chain scan produces a valid-looking txn for the wrong
-            // chain that no downstream genesis-hash check can catch. Fail
-            // closed on anything that doesn't name the active network.
+            // The dispatcher refuses this first; kept here because the txn is
+            // built on the selected network and carries its genesis hash, so a
+            // wrong-network keyreg looks valid to every later check.
             if (target.networkId && target.networkId !== scope.networkId) {
                 showError({
-                    variant: 'keyreg-network-mismatch',
+                    variant: 'network-mismatch',
                     parsedType: 'KEYREG',
                     error: `Deeplink targets ${target.networkId}, wallet is on ${scope.networkId}`,
+                    values: {
+                        network:
+                            getChainDescriptor(target.chainId).networks.find(
+                                ({ id }) => id === target.networkId,
+                            )?.displayName ?? target.networkId,
+                    },
                 })
                 return
             }
@@ -227,7 +234,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // Adds a quantum sender's PQ surcharge (mirrors the WC/webview
                 // enqueue path); a non-quantum sender is a free no-op — same
                 // reference, no network traffic.
-                const { transactions, adjustments } = await assignFeeToGroup({
+                const { transactions, adjustments } = await assignFeeFor(
+                    scope.chainId,
+                )({
                     transactions: [tx],
                 })
                 // MUST be 'deeplink', not 'local': only an interactive source
@@ -262,6 +271,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 })
             }
         },
-        [addSignRequest, allAccounts, assignFeeToGroup, showError, scope],
+        [addSignRequest, allAccounts, assignFeeFor, showError],
     )
 }

@@ -26,9 +26,14 @@ export type CurrencyPrice = {
 
 export type CurrenciesList = Currency[]
 
-export type CurrenciesStore = BaseStoreState & {
+export type CurrencyPreference = {
     preferredCurrency: string
-    setPreferredCurrency: (currency: string) => void
     fallbackCurrency: string
-    setFallbackCurrency: (currency: string) => void
 }
+
+export type CurrenciesStore = BaseStoreState &
+    CurrencyPreference & {
+        setPreferredCurrency: (currency: string) => void
+        setFallbackCurrency: (currency: string) => void
+        setCurrencyPreference: (preference: CurrencyPreference) => void
+    }

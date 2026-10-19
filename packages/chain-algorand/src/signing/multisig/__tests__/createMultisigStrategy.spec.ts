@@ -74,7 +74,11 @@ const makeSigningResultWithSigs = (
 const makeAnalyzedGroup = (): AnalyzedSignableGroup =>
     ({
         source: { type: 'walletConnect' },
-        data: { type: 'transactions', transactions: [], indicesToSign: [] },
+        data: {
+            type: 'transactions',
+            transactions: [],
+            chainData: { algorand: { indicesToSign: [] } },
+        },
         analysis: {
             totalFees: 0n,
             warnings: [],

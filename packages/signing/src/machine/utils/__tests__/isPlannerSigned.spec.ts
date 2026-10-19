@@ -82,14 +82,10 @@ describe('isPlannerSigned', () => {
         },
     )
 
-    it('never plans a group in the Algorand shape', () => {
+    it("leaves a group marked for the chain's own signer to the chain", () => {
         const group: SignableGroup = {
             ...neutralGroup(),
-            data: {
-                type: 'transactions',
-                transactions: [transaction],
-                indicesToSign: [0],
-            },
+            shouldUseChainSigner: true,
         }
 
         expect(isPlannerSigned(group, ED25519_LOCAL, 'algorand')).toBe(false)

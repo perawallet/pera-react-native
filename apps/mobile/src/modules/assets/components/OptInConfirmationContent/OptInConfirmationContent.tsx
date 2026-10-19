@@ -17,7 +17,10 @@ import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
@@ -33,20 +36,26 @@ export type OptInConfirmationContentProps = {
      * fee; pass 0 for sponsored (fee-delegated) opt-ins.
      */
     fee?: Decimal
+    chainId?: ChainId
 }
 
 export const OptInConfirmationContent = ({
     assetId,
     accountAddress,
     fee,
+    chainId = LEGACY_CHAIN_ID,
 }: OptInConfirmationContentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve } = useBottomSheetResult<'confirm'>()
-    const { resolvedFee } = useOptInConfirmationContent(accountAddress, fee)
+    const { resolvedFee } = useOptInConfirmationContent(
+        accountAddress,
+        fee,
+        chainId,
+    )
 
     const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = assets?.get(assetId)

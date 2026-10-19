@@ -10,22 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import { seedAuthority } from '../../__tests__/registerAlgorandAccounts'
 import {
     chainAccountOf,
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SignableGroup } from '../../pipeline/types'
-import { buildGroupSignerMap, resolveInitialContext } from '../actions'
-import type { SigningMachineInput } from '../context'
-import type { TransactionSignRequest } from '../../models'
-import {
-    makeTestAddress,
-    makeTestPaymentTx,
-} from '../../__tests__/transactions'
+import { buildGroupSignerMap } from '../actions'
 import {
     TEST_CHAIN_ID,
     algo25Account,
@@ -93,7 +86,7 @@ const buildGroup = (
     data: {
         type: 'transactions',
         transactions: [],
-        indicesToSign: [],
+        chainData: { algorand: { indicesToSign: [] } },
     },
     signerAddress: PARTICIPANT,
     ...overrides,
@@ -364,74 +357,5 @@ describe('buildGroupSignerMap', () => {
                 /signer account not found/,
             )
         })
-    })
-})
-
-describe('quantum-signed transactions over the callback transport', () => {
-    // A quantum (post-quantum) signature is just a `PeraSignedTransaction`
-    // with `pqsig` set instead of `sig` (deleted the
-    // `QuantumSignedTransaction` byte carrier) — so there is nothing
-    // carrier-specific left for the callback transport to special-case; a
-    // signed array with a pqsig entry forwards exactly like an all-`sig`
-    // one.
-    const plainSigned = (id: string): PeraSignedTransaction =>
-        ({ txn: { sender: id } }) as unknown as PeraSignedTransaction
-
-    const pqSigned = (): PeraSignedTransaction =>
-        ({
-            txn: { sender: 'Q' },
-            pqsig: { sig: new Uint8Array([1, 2, 3]) },
-        }) as unknown as PeraSignedTransaction
-
-    const userAddr = makeTestAddress(11)
-    const dappAddr = makeTestAddress(12)
-    const userAccount = algo25Account(userAddr.toString(), {
-        keyPairId: 'key-quantum-cb',
-    })
-
-    const baseInput = (request: TransactionSignRequest): SigningMachineInput =>
-        ({
-            request,
-            allAccounts: [userAccount],
-            signTransactions: vi.fn(),
-            signArbitraryData: vi.fn(),
-            signAuthData: vi.fn(),
-            createTransport: vi.fn(),
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            encodeTransaction: vi.fn(),
-        }) as unknown as SigningMachineInput
-
-    it('forwards a mixed signed array containing a pqsig-signed transaction to the approve callback unchanged', async () => {
-        const txApprove = vi.fn(async () => undefined)
-        const request: TransactionSignRequest = {
-            id: 'req-quantum-cb',
-            type: 'transactions',
-            transport: 'callback',
-            sourceType: 'walletconnect',
-            txs: [
-                makeTestPaymentTx(userAddr, {
-                    receiver: dappAddr,
-                    amount: 1n,
-                }),
-            ],
-            approve: txApprove,
-        }
-
-        const context = resolveInitialContext(baseInput(request))
-        const { callbacks } = context.signableGroups![0].source
-
-        const signed: PeraSignedTransaction[] = [plainSigned('A'), pqSigned()]
-
-        await callbacks?.approve?.({
-            signedData: { type: 'transactions', signed },
-            signers: [
-                {
-                    address: chainAccountOf(userAccount, TEST_CHAIN_ID)!
-                        .address,
-                },
-            ],
-        } as never)
-
-        expect(txApprove).toHaveBeenCalledWith(signed, undefined)
     })
 })

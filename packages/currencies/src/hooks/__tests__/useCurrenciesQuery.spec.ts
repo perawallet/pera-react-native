@@ -16,17 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCurrenciesQuery } from '../useCurrenciesQuery'
 import React from 'react'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
-
-const DESCRIPTORS = {
-    algorand: { displayName: 'Algorand', nativeAsset: { symbol: 'ALGO' } },
-    ethereum: { displayName: 'Ethereum', nativeAsset: { symbol: 'ETH' } },
-} as const
-
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getChainDescriptor: (chainId: keyof typeof DESCRIPTORS) =>
-        DESCRIPTORS[chainId],
     useWalletDeployment: () => 'live',
 }))
 
@@ -56,53 +46,37 @@ describe('useCurrenciesQuery', () => {
             children,
         )
 
-    it.each([
-        [ALGORAND_TESTNET, { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' }],
-        [ETHEREUM_SEPOLIA, { id: 'ETH', name: 'Ethereum', symbol: 'ETH' }],
-    ])(
-        'requests the deployment list and prepends the scope native currency (%o)',
-        async (scope, nativeCurrency) => {
-            const mockData = [
-                { id: 'USD', name: 'US Dollar', symbol: '$' },
-                { id: 'EUR', name: 'Euro', symbol: '€' },
-            ]
-            mockFetchCurrenciesList.mockResolvedValue(mockData)
+    it('lists the deployment fiat currencies only', async () => {
+        const mockData = [
+            { id: 'USD', name: 'US Dollar', symbol: '$' },
+            { id: 'EUR', name: 'Euro', symbol: '€' },
+        ]
+        mockFetchCurrenciesList.mockResolvedValue(mockData)
 
-            const { result } = renderHook(() => useCurrenciesQuery(scope), {
-                wrapper,
-            })
+        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
 
-            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-            expect(mockFetchCurrenciesList).toHaveBeenCalledWith(
-                expect.objectContaining({ deployment: 'live' }),
-            )
-            expect(result.current.data).toEqual([nativeCurrency, ...mockData])
-        },
-    )
+        expect(mockFetchCurrenciesList).toHaveBeenCalledWith(
+            expect.objectContaining({ deployment: 'live' }),
+        )
+        expect(result.current.data).toEqual(mockData)
+    })
 
     it('handles empty response', async () => {
         mockFetchCurrenciesList.mockResolvedValue([])
 
-        const { result } = renderHook(
-            () => useCurrenciesQuery(ALGORAND_TESTNET),
-            { wrapper },
-        )
+        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data).toEqual([
-            { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' },
-        ])
+        expect(result.current.data).toEqual([])
     })
 
     it('handles loading state', () => {
         mockFetchCurrenciesList.mockImplementation(() => new Promise(() => {}))
 
-        const { result } = renderHook(
-            () => useCurrenciesQuery(ALGORAND_TESTNET),
-            { wrapper },
-        )
+        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
 
         expect(result.current.isPending).toBe(true)
     })

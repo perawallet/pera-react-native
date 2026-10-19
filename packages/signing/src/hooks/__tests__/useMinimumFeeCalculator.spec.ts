@@ -16,7 +16,10 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
-import { useMinimumFeeCalculator } from '../useMinimumFeeCalculator'
+import {
+    useMinimumFeeCalculator,
+    useMinimumFeeCalculatorFor,
+} from '../useMinimumFeeCalculator'
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
@@ -72,5 +75,33 @@ describe('useMinimumFeeCalculator', () => {
 
         expect(result.current.assignFeeToGroup).not.toBe(assignFeeToGroup)
         expect(chainHook).toHaveBeenCalledTimes(2)
+    })
+})
+
+describe('useMinimumFeeCalculatorFor', () => {
+    const assignFeeToGroup = vi.fn(async () => assigned)
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerFakePlannerAdapter({
+            useAssignFeeToGroup: () => assignFeeToGroup,
+        })
+    })
+
+    it("returns the named chain's assigner, chosen after render", () => {
+        const { result } = renderHook(() => useMinimumFeeCalculatorFor())
+
+        expect(result.current('algorand')).toBe(assignFeeToGroup)
+    })
+
+    it('keeps the fees of a group on a chain with no planner', async () => {
+        const { result } = renderHook(() => useMinimumFeeCalculatorFor())
+
+        const outcome = await result.current('fixturehex' as ChainId)({
+            transactions,
+        })
+
+        expect(outcome.transactions).toBe(transactions)
+        expect(assignFeeToGroup).not.toHaveBeenCalled()
     })
 })

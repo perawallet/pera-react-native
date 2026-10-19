@@ -15,10 +15,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import {
-    isUnsignedTransactionsData,
-    type SignableGroup,
-} from '../../pipeline/types'
+import type { SignableGroup } from '../../pipeline/types'
 import type { SignerCredential } from './resolveSignerCredential'
 
 /**
@@ -35,7 +32,7 @@ export const isPlannerSigned = (
     if (
         credential?.custody !== 'local' ||
         group.data.type !== 'transactions' ||
-        !isUnsignedTransactionsData(group.data) ||
+        group.shouldUseChainSigner ||
         group.source.type === 'multisig-cosign'
     ) {
         return false

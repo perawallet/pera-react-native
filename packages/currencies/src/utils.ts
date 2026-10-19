@@ -11,9 +11,13 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { FIAT_DECIMAL_PLACES } from './constants'
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    isAlgoAssetName,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { FIAT_DECIMAL_PLACES, USD_CURRENCY_ID } from './constants'
+import type { CurrencyPreference } from './models'
 
 /**
  * Converts a fiat amount to an asset amount via the asset's USD price and the
@@ -61,3 +65,18 @@ export const areRatesUsable = (
     fiatRate !== null &&
     fiatRate.greaterThan(0) &&
     assetDecimals !== null
+
+export const toFiatCurrencyPreference = (
+    preference: CurrencyPreference,
+): CurrencyPreference => {
+    // ALGO is the only non-fiat ever offered as a preference, so it is the only one checked.
+    if (!isAlgoAssetName(preference.preferredCurrency)) return preference
+
+    const { fallbackCurrency } = preference
+    const isFiatFallback =
+        fallbackCurrency.length > 0 && !isAlgoAssetName(fallbackCurrency)
+    return {
+        preferredCurrency: isFiatFallback ? fallbackCurrency : USD_CURRENCY_ID,
+        fallbackCurrency: ALGO_ASSET_NAME,
+    }
+}
