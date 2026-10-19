@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import {
     bootstrapPasskeyAutofill,
+    passkeysQueryKeyRoot,
     type PasskeyAutofillService,
 } from '@perawallet/wallet-core-passkeys'
 import {
@@ -23,6 +24,7 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { queryClient } from '@providers/queryClient'
 
 const PASSKEY_INTENT_ACTIONS = {
     getPasskeyAction: 'com.algorand.perarn.passkeyautofill.GET_PASSKEY',
@@ -87,6 +89,11 @@ export const usePasskeyAutofillLifecycle = (): void => {
                         step: 'passkeyAutofillReconcile',
                     }),
                 )
+            // iOS lists passkeys from this query alone, and its provider stamps
+            // last-use out-of-process, so the cached rows go stale on return.
+            void queryClient.invalidateQueries({
+                queryKey: passkeysQueryKeyRoot,
+            })
             runPasskeyAutofillBootstrap().catch(err =>
                 logger.error(err as Error, {
                     step: 'passkeyAutofillRefresh',
