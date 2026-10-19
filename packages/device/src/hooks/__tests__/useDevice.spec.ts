@@ -210,8 +210,11 @@ describe('services/device/hooks', () => {
         const useDevice = await importUseDevice()
 
         await seedPushToken('test-fcm-token')
-        useCurrenciesStore.getState().setPreferredCurrency('ALGO')
-        useCurrenciesStore.getState().setFallbackCurrency('EUR')
+        // Raw state: the setters no longer write ALGO.
+        useCurrenciesStore.setState({
+            preferredCurrency: 'ALGO',
+            fallbackCurrency: 'EUR',
+        })
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
