@@ -113,7 +113,7 @@ Unlock Debug Tools
     ...                count on a longer gap). Re-locating the element per tap can exceed that on a
     ...                loaded device, so the point is resolved once and tapped by coordinate.
     # The footer stays in the lower quarter even scrolled to the end, which Swipe Until In View refuses.
-    Scroll Into View    settings_app_version    by=resourceId
+    Scroll Into View    settings_app_version
     ${loc}=    Get Element Location    ${SETTINGS_APP_VERSION}
     ${size}=    Get Element Size    ${SETTINGS_APP_VERSION}
     VAR    @{point}    ${{int($loc['x'] + $size['width'] / 2)}}    ${{int($loc['y'] + $size['height'] / 2)}}

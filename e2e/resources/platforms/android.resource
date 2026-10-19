@@ -15,7 +15,7 @@ ${ANDROID_UDID}         ${EMPTY}
 # Give each device its own port when several run in parallel.
 ${ANDROID_SYSTEM_PORT}  8201
 ${WEBVIEW}             xpath=//android.webkit.WebView
-${MENU_TAB}             xpath=//*[@content-desc='Menu' or @name='Menu']
+${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @content-desc='Menu' or @name='Menu']
 
 
 *** Keywords ***
@@ -70,16 +70,21 @@ Get Text In Container
     RETURN    ${text}
 
 Get Test ID
-    # UiAutomator2 reports an accessibility label as content-desc; its name attribute is empty.
+    # A bare testID is a resource-id here; content-desc only carries an accessibility label,
+    # and reading that instead returned the row's spoken text ("E2E, LNVFD...SWQRA, Algo, 0.00"),
+    # which then went into a deeplink as if it were an address.
     [Arguments]    ${element}
-    ${id}=    Get Element Attribute    ${element}    content-desc
+    ${id}=    Get Element Attribute    ${element}    resource-id
+    IF    not $id
+        ${id}=    Get Element Attribute    ${element}    content-desc
+    END
     RETURN    ${id}
 
 Scroll Into View
     [Documentation]    Scrolls the first scrollable until the element with this test ID is on screen,
     ...                in one driver call (UiScrollable) instead of a swipe-and-look loop. A bare
     ...                testID (no accessibility label) is a resource-id on Android: pass by=resourceId.
-    [Arguments]    ${test_id}    ${by}=description
+    [Arguments]    ${test_id}    ${by}=resourceId
     ${selector}=    Set Variable    new UiSelector().${by}("${test_id}")
     Wait Until Page Contains Element
     ...    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(${selector})    timeout=10s

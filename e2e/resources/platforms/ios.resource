@@ -96,7 +96,8 @@ Scroll Into View
     [Documentation]    Swipes until the element reports itself visible. iOS lists off-screen rows too,
     ...                so presence is not enough. mobile: scrollToElement fails on this XCUITest
     ...                (unrecognized selector), and mobile: scroll toVisible stops at its own count.
-    [Arguments]    ${test_id}    ${by}=description
+    # ${by} exists only to match the Android adapter's signature; xpath covers both here.
+    [Arguments]    ${test_id}    ${by}=resourceId
     Wait Until Page Contains Element    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    timeout=10s
     FOR    ${i}    IN RANGE    8
         ${visible}=    Get Element Attribute    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    visible

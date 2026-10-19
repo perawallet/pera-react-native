@@ -69,7 +69,7 @@ Scroll To
     [Arguments]    ${locator}
     ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
     IF    ${bare}
-        Scroll Into View    ${bare}[0]    by=resourceId
+        Scroll Into View    ${bare}[0]
     ELSE
         Scroll Into View    ${locator.split('=', 1)[1]}
     END
@@ -148,7 +148,7 @@ Search Currency
 Select Currency
     [Arguments]    ${code}
     Search Currency    ${code}
-    Tap    xpath=//*[@resource-id='settings_currency_item_${{ $code.lower() }' or @name='settings_currency_item_${{ $code.lower() }' or @content-desc='settings_currency_item_${{ $code.lower() }']}
+    Tap    xpath=//*[@resource-id='settings_currency_item_${{ $code.lower() }}' or @name='settings_currency_item_${{ $code.lower() }}' or @content-desc='settings_currency_item_${{ $code.lower() }}']}
     Main Currency Should Be    ${code}
 
 Main Currency Should Be
