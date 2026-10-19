@@ -97,6 +97,16 @@ describe('useAssetGroupsQuery', () => {
         ])
     })
 
+    it('sends no request while disabled', () => {
+        const { result } = renderHook(
+            () => useAssetGroupsQuery({ enabled: false }),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        expect(mocks.fetchAssetGroups).not.toHaveBeenCalled()
+        expect(result.current.groups).toEqual([])
+    })
+
     it('yields no groups when the request fails', async () => {
         mocks.fetchAssetGroups.mockRejectedValue(new Error('500'))
 

@@ -26,18 +26,29 @@ const ASSET_GROUPS_STALE_TIME_MS = 60 * 60 * 1000
 
 const EMPTY_GROUPS: AssetGroup[] = []
 
+export type UseAssetGroupsQueryParams = {
+    /** Off where nothing could group, so the request isn't sent at all. */
+    enabled?: boolean
+}
+
 export type UseAssetGroupsQueryResult = {
     groups: AssetGroup[]
     isPending: boolean
 }
 
 /** A failed read yields no groups, so callers fall back to ungrouped assets. */
-export const useAssetGroupsQuery = (): UseAssetGroupsQueryResult => {
+export const useAssetGroupsQuery = ({
+    enabled = true,
+}: UseAssetGroupsQueryParams = {}): UseAssetGroupsQueryResult => {
     const deployment = useWalletDeployment()
     const query = useQuery({
         queryKey: getAssetGroupsQueryKey(deployment),
         queryFn: () => fetchAssetGroups(deployment),
+        enabled,
         staleTime: ASSET_GROUPS_STALE_TIME_MS,
+        // A failed read isn't retried each time a list mounts: every failure
+        // is logged, and the list is whole without groups.
+        retryOnMount: false,
         select: useCallback(
             (data: AssetGroupsResponse) =>
                 toAssetGroups(data, getProvider().chains),
