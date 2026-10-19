@@ -12,12 +12,14 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
+const mockUseAssetGroupsQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
@@ -34,6 +36,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     nativeAssetFor: (chainId: string) => ({
         assetId: chainId === 'algorand' ? '0' : 'native',
+    }),
+    useAssetGroupsQuery: mockUseAssetGroupsQuery,
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: {
+            has: () => true,
+            get: () => ({
+                descriptor: { networks: [{ id: 'mainnet', tier: 'mainnet' }] },
+            }),
+        },
     }),
 }))
 
@@ -78,6 +92,10 @@ describe('useAccountAssetSelectionList', () => {
         })
         mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
             assetBalances: [],
+            isPending: false,
+        })
+        mockUseAssetGroupsQuery.mockReturnValue({
+            groups: [],
             isPending: false,
         })
     })
@@ -229,5 +247,133 @@ describe('useAccountAssetSelectionList', () => {
             'ethereum:0xTOKEN',
             'algorand:31566704',
         ])
+    })
+
+    describe('grouping', () => {
+        const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
+        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
+        const USDC_GROUP = {
+            id: 'usdc',
+            name: 'USD Coin',
+            symbol: 'USDC',
+            logoUrl: null,
+            members: [
+                { scope: ALGORAND, assetId: '31566704' },
+                { scope: ETHEREUM, assetId: '0xa0b8' },
+            ],
+        }
+        const usdc = (scope: typeof ALGORAND, assetId: string, amount: string) => ({
+            assetId,
+            scope,
+            amount: new Decimal(amount),
+            usdPrice: new Decimal(1),
+            fiatValue: new Decimal(amount),
+            restriction: null,
+            asset: { assetId, name: 'USD Coin', unitName: 'USDC', decimals: 6 },
+        })
+        const algoUsdc = usdc(ALGORAND, '31566704', '2.5')
+        const ethUsdc = usdc(ETHEREUM, '0xa0b8', '1.5')
+
+        const renderAcrossChains = (
+            params: Parameters<typeof useAccountAssetSelectionList>[0] = {},
+        ) => {
+            mockUseSelectedAccount.mockReturnValue({
+                chains: {
+                    algorand: { address: 'TEST_ADDRESS' },
+                    ethereum: { address: '0xabc' },
+                },
+            })
+            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+                assetBalances: [algoUsdc, ethUsdc],
+                isPending: false,
+            })
+            mockUseAssetGroupsQuery.mockReturnValue({
+                groups: [USDC_GROUP],
+                isPending: false,
+            })
+            return renderHook(
+                ({ isVisible }) =>
+                    useAccountAssetSelectionList({
+                        isAcrossChains: true,
+                        isVisible,
+                        ...params,
+                    }),
+                { initialProps: { isVisible: true as Optional<boolean> } },
+            )
+        }
+
+        it('folds one asset held on two chains into a group whose members are the selectable rows', () => {
+            const { result } = renderAcrossChains()
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'group',
+            ])
+
+            act(() => result.current.toggleGroupExpanded('usdc'))
+
+            expect(
+                result.current.items.map(item =>
+                    item.kind === 'group'
+                        ? `group:${item.group.id}`
+                        : `${item.isGroupMember ? 'member' : 'row'}:${item.holding.scope.chainId}`,
+                ),
+            ).toEqual(['group:usdc', 'member:algorand', 'member:ethereum'])
+        })
+
+        it('lists a lone search match of a group as a plain row', () => {
+            const { result } = renderAcrossChains()
+
+            act(() => result.current.setSearchFilter('0xa0b8'))
+
+            expect(result.current.items).toEqual([
+                { kind: 'holding', holding: ethUsdc, isGroupMember: false },
+            ])
+        })
+
+        it('drops to a plain row when the filter leaves one member', () => {
+            const { result } = renderAcrossChains({
+                filterAsset: item => item.assetId !== '31566704',
+            })
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'holding',
+            ])
+        })
+
+        it("doesn't ask for groups when the list holds one chain", () => {
+            renderHook(() => useAccountAssetSelectionList({}))
+
+            expect(mockUseAssetGroupsQuery.mock.lastCall?.[0]).toEqual({
+                enabled: false,
+            })
+        })
+
+        it('lists every holding as before when the endpoint has no groups', () => {
+            const { result } = renderAcrossChains()
+            mockUseAssetGroupsQuery.mockReturnValue({
+                groups: [],
+                isPending: false,
+            })
+            act(() => result.current.setSearchFilter('USD'))
+
+            expect(result.current.items).toEqual(
+                result.current.filteredBalanceData.map(holding => ({
+                    kind: 'holding',
+                    holding,
+                    isGroupMember: false,
+                })),
+            )
+            expect(result.current.items).toHaveLength(2)
+        })
+
+        it('collapses its groups when the picker is hidden', () => {
+            const { result, rerender } = renderAcrossChains()
+            act(() => result.current.toggleGroupExpanded('usdc'))
+            expect(result.current.items).toHaveLength(3)
+
+            rerender({ isVisible: false })
+
+            expect(result.current.items).toHaveLength(1)
+        })
     })
 })
