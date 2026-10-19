@@ -10,31 +10,62 @@
  limitations under the License
  */
 
-import { PWRadioButton, PWView } from '@components/core'
+import { PWButton, PWRadioButton, PWText, PWView } from '@components/core'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 import type { NodeSettingsNetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
+import { useStyles } from './styles'
 
 export type NodeSettingsRowProps = {
     chainId: ChainId
     row: NodeSettingsNetworkRow
     onSelect: () => void
+    onOverrideEndpoint: () => void
 }
 
 export const NodeSettingsRow = ({
     chainId,
     row,
     onSelect,
+    onOverrideEndpoint,
 }: NodeSettingsRowProps) => {
-    // Unstyled wrapper: a bare radio in a column, with a `_row` testID for
-    // on-device automation distinct from the radio's own `_radio` testID.
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const testIdPrefix = `node_settings_${chainId}_${row.networkId}`
+
+    // The `_row` testID is for on-device automation, distinct from the
+    // radio's own `_radio` testID.
     return (
-        <PWView testID={`node_settings_${chainId}_${row.networkId}_row`}>
+        <PWView testID={`${testIdPrefix}_row`}>
             <PWRadioButton
-                testID={`node_settings_${chainId}_${row.networkId}_radio`}
-                title={row.label}
+                testID={`${testIdPrefix}_radio`}
                 onPress={onSelect}
                 isSelected={row.isSelected}
-            />
+            >
+                <PWText>{row.label}</PWText>
+                {row.endpointHost !== undefined && (
+                    <PWText
+                        variant='caption'
+                        testID={`${testIdPrefix}_endpoint`}
+                    >
+                        {row.isEndpointOverridden
+                            ? t(
+                                  'settings.developer.node_settings.endpoint_overridden',
+                                  { host: row.endpointHost },
+                              )
+                            : row.endpointHost}
+                    </PWText>
+                )}
+            </PWRadioButton>
+            {row.canOverrideEndpoint && (
+                <PWButton
+                    testID={`${testIdPrefix}_override_button`}
+                    variant='linkNeutral'
+                    title={t('settings.developer.node_settings.override_endpoint')}
+                    onPress={onOverrideEndpoint}
+                    style={styles.overrideButton}
+                />
+            )}
         </PWView>
     )
 }

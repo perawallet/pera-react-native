@@ -2924,7 +2924,16 @@
                 "genesis_id_required": "Fetch or enter the genesis ID",
                 "save": "Save and switch",
                 "cancel": "Cancel",
-                "reset": "Reset to defaults"
+                "reset": "Reset to defaults",
+                "override_endpoint": "Override RPC",
+                "endpoint_overridden": "{{host}} (override)",
+                "endpoint_sheet_title": "{{network}} RPC",
+                "endpoint_current": "Currently {{host}}",
+                "endpoint_url_label": "RPC URL",
+                "endpoint_wrong_network": "This RPC serves a different network. Enter one for {{network}}.",
+                "endpoint_unreachable": "Could not reach that RPC.",
+                "endpoint_save": "Save",
+                "endpoint_reset": "Reset to configured RPC"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",

@@ -32,6 +32,9 @@ export const useStyles = makeStyles(theme => {
         fetchButton: {
             alignSelf: 'flex-start',
         },
+        overrideButton: {
+            alignSelf: 'flex-start',
+        },
         errorText: {
             color: theme.colors.error,
         },
