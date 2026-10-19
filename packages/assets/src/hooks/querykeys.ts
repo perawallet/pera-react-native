@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
@@ -127,6 +130,12 @@ export const getAssetAuthoritiesQueryKey = (
     assetId: string,
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'authorities', { assetId, scope }]
+
+export const getAssetGroupsQueryKey = (deployment: WalletMode) => [
+    MODULE_PREFIX,
+    'groups',
+    { deployment },
+]
 
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({

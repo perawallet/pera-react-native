@@ -21,3 +21,8 @@ export {
     type MockToggleAssetFavoriteParams,
     type MockToggleAssetPriceAlertParams,
 } from './api/settings/msw-handlers'
+
+export {
+    mockAssetGroups,
+    type MockAssetGroupsParams,
+} from './api/groups/msw-handlers'
