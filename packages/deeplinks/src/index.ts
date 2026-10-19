@@ -62,6 +62,19 @@ export {
 } from './links'
 export { isNotificationAllowedDeeplinkType } from './notification-policy'
 export { isOriginGatedDeeplinkType } from './page-initiated-policy'
+export {
+    chainRequirementOf,
+    DEEPLINK_CHAIN_CAPABILITY,
+    unsupportedLinkChainOf,
+    type DeeplinkChainCapability,
+    type DeeplinkChainRequirement,
+} from './capability-policy'
+export {
+    addressCandidatesOf,
+    isUnsupportedChainLink,
+    linkNetworkMismatchOf,
+    type AddressCandidates,
+} from './link-routing'
 export { buildDeeplink, type BuildDeeplinkInput } from './builders'
 export {
     PERAWALLET_SCHEME,

@@ -10,57 +10,42 @@
  limitations under the License
  */
 
-import type { ChainCapability } from '@perawallet/wallet-core-chain-contract'
-import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
+import {
+    chainRequirementOf,
+    DeeplinkType,
+} from '@perawallet/wallet-core-deeplinks'
 import type { CapabilityRequirement } from '@hooks/useCapability'
 import type { RouteCapability } from '@routes/capabilities'
+import { isDevE2eFixtureDeeplink } from './dev-e2e-fixture-parser'
+import { isDevLocaleTourDeeplink } from './dev-locale-tour-parser'
 import type { AppDeeplink } from './types'
 
-export type DeeplinkCapabilityRequirement = {
-    platform?: RouteCapability
-    /** Checked on the chain the link targets. */
-    chain?: ChainCapability
-    /** Only for a type that names no chain; held when any chain has it. */
-    anyChain?: ChainCapability
-}
-
 /**
- * What a deeplink needs before it may navigate: a deeplink must never reach a
- * screen its capability removed. `null` means it needs nothing.
- *
- * Exhaustive `Record` like `DEEPLINK_NOTIFICATION_POLICY`: a new `DeeplinkType`
- * fails to compile until it is classified. `useDeepLink` checks `CARDS` and
- * `SELL` beside this table, since their flag hooks already fold in the capability.
+ * The app route a deeplink lands on, which must be on before it may navigate.
+ * The chain capability half lives with the link types in
+ * `DEEPLINK_CHAIN_CAPABILITY`. `useDeepLink` checks `CARDS` and `SELL` beside
+ * both, since their flag hooks already fold in the capability.
  */
-export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
+export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     DeeplinkType,
-    DeeplinkCapabilityRequirement | null
+    RouteCapability | null
 > = {
-    [DeeplinkType.TRANSFER]: { chain: 'send' },
-    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: { chain: 'send' },
-    // Key registration signs and submits a transaction from the link's sender.
-    [DeeplinkType.CHAIN_ACTION]: { chain: 'send' },
-    [DeeplinkType.ASSET_OPT_IN]: { chain: 'manageAssets' },
-    [DeeplinkType.ASSET_INBOX]: { chain: 'assetInbox' },
-    [DeeplinkType.ADD_WATCH_ACCOUNT]: { chain: 'watchAccounts' },
-    [DeeplinkType.SWAP]: { platform: 'swapTab', chain: 'swap' },
-    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: {
-        platform: 'sharedAccounts',
-        chain: 'multisig',
-    },
-    [DeeplinkType.BUY]: { platform: 'fundTab' },
+    [DeeplinkType.SWAP]: 'swapTab',
+    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: 'sharedAccounts',
+    [DeeplinkType.BUY]: 'fundTab',
+    [DeeplinkType.DISCOVER_PATH]: 'discoverTab',
+    [DeeplinkType.STAKING]: 'staking',
 
-    [DeeplinkType.DISCOVER_PATH]: {
-        platform: 'discoverTab',
-        anyChain: 'discover',
-    },
-    [DeeplinkType.STAKING]: { platform: 'staking', anyChain: 'staking' },
-    [DeeplinkType.SIGN_REQUEST]: { anyChain: 'multisig' },
-    [DeeplinkType.WALLET_CONNECT]: { anyChain: 'dappConnect' },
-    [DeeplinkType.LIQUID_AUTH]: { anyChain: 'liquidAuth' },
-    [DeeplinkType.PERA_WEB_IMPORT]: { anyChain: 'peraWebImport' },
-
-    // The action sheet filters its own actions by the address's chain.
+    [DeeplinkType.TRANSFER]: null,
+    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
+    [DeeplinkType.CHAIN_ACTION]: null,
+    [DeeplinkType.ASSET_OPT_IN]: null,
+    [DeeplinkType.ASSET_INBOX]: null,
+    [DeeplinkType.ADD_WATCH_ACCOUNT]: null,
+    [DeeplinkType.SIGN_REQUEST]: null,
+    [DeeplinkType.WALLET_CONNECT]: null,
+    [DeeplinkType.LIQUID_AUTH]: null,
+    [DeeplinkType.PERA_WEB_IMPORT]: null,
     [DeeplinkType.ADDRESS_ACTIONS]: null,
     [DeeplinkType.ADD_CONTACT]: null,
     [DeeplinkType.EDIT_CONTACT]: null,
@@ -76,24 +61,15 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     [DeeplinkType.HOME]: null,
 }
 
-const REQUIREMENT_BY_TYPE: Partial<
-    Record<AppDeeplink['type'], DeeplinkCapabilityRequirement | null>
-> = DEEPLINK_CAPABILITY_REQUIREMENTS
-
-/** The link's requirement with `chain` bound to the chain the link targets. */
+/** The link's route and chain requirements together; null when it needs neither. */
 export const capabilityRequirementForDeeplink = (
     link: AppDeeplink,
 ): CapabilityRequirement | null => {
-    const requirement = REQUIREMENT_BY_TYPE[link.type]
-    if (!requirement) return null
-    const { platform, chain, anyChain } = requirement
-    const target = 'target' in link ? link.target : undefined
-    return {
-        platform,
-        anyChain,
-        ...(chain &&
-            target && {
-                chain: { chainId: target.chainId, capability: chain },
-            }),
+    if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
+        return null
     }
+    const platform = DEEPLINK_ROUTE_REQUIREMENTS[link.type] ?? undefined
+    const chainRequirement = chainRequirementOf(link)
+    if (!platform && !chainRequirement) return null
+    return { platform, ...chainRequirement }
 }

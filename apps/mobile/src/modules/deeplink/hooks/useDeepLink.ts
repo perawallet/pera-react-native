@@ -16,14 +16,16 @@ import { logger, type Maybe } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
+    addressCandidatesOf,
     buildDeeplink,
     DeeplinkType,
     isNotificationAllowedDeeplinkType,
     isPeraOwnedDeeplink,
-    peraLinkChainFailure,
-    resolveChainDeeplink,
+    isUnsupportedChainLink,
+    linkNetworkMismatchOf,
+    unsupportedLinkChainOf,
+    type AddressCandidates,
     type BuildDeeplinkInput,
-    type ChainDeeplinkIntent,
     type ChainLinkTarget,
     type LinkSource,
 } from '@perawallet/wallet-core-deeplinks'
@@ -90,51 +92,6 @@ type UseDeepLinkResult = {
     handleDeepLink: HandleDeepLink
     parseDeeplink: typeof parseDeeplink
     buildDeeplink: (input: BuildDeeplinkInput) => string
-}
-
-// A switched-off chain claimed the link, so it is refused with a toast rather
-// than ignored as "not a link".
-const isUnsupportedChainLink = (url: string): boolean => {
-    if (peraLinkChainFailure(url)) return true
-    const resolution = resolveChainDeeplink(url)
-    return (
-        resolution.status === 'failed' &&
-        resolution.reason === 'chain-unavailable'
-    )
-}
-
-type AddressIntent = Extract<ChainDeeplinkIntent, { kind: 'address' }>
-
-type AddressCandidates = { address: string; chainIds: ChainId[] }
-
-// A raw address more than one codec accepts parses to nothing: which chain it
-// is on is the user's call, never a guess from its shape.
-const addressCandidatesOf = (url: string): Maybe<AddressCandidates> => {
-    const resolution = resolveChainDeeplink(url)
-    if (resolution.status !== 'resolved') return undefined
-    const intents = resolution.intents.filter(
-        (intent): intent is AddressIntent => intent.kind === 'address',
-    )
-    const [first] = intents
-    if (!first || intents.length < 2) return undefined
-    if (intents.length !== resolution.intents.length) return undefined
-    return {
-        address: first.address,
-        chainIds: intents.map(intent => intent.target.chainId),
-    }
-}
-
-const targetOf = (link: AppDeeplink): Maybe<ChainLinkTarget> =>
-    'target' in link ? link.target : undefined
-
-// A link never switches network, so one naming a network other than its
-// chain's selected one is refused; a link naming none runs on the selected one.
-const mismatchedTargetOf = (link: AppDeeplink): Maybe<ChainLinkTarget> => {
-    const target = targetOf(link)
-    if (!target?.networkId) return undefined
-    return target.networkId === getSelectedScope(target.chainId).networkId
-        ? undefined
-        : target
 }
 
 const networkNameOf = ({ chainId, networkId }: ChainLinkTarget): string =>
@@ -204,7 +161,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
             return undefined
         }
-        const mismatched = mismatchedTargetOf(link)
+        const mismatched = linkNetworkMismatchOf(
+            link,
+            chainId => getSelectedScope(chainId).networkId,
+        )
         if (mismatched) return { kind: 'network-mismatch', target: mismatched }
         // CARDS and SELL gate on flag hooks that already fold in their capability.
         if (link.type === DeeplinkType.CARDS) {
@@ -213,14 +173,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (link.type === DeeplinkType.SELL) {
             return isGiftCardsEnabled ? undefined : { kind: 'unavailable' }
         }
-        if (
-            link.type === DeeplinkType.ASSET_OPT_IN &&
-            !getChainDescriptor(link.target.chainId).protocol.requiresAssetOptIn
-        ) {
-            return {
-                kind: 'unsupported-on-chain',
-                chainId: link.target.chainId,
-            }
+        const unsupportedChainId = unsupportedLinkChainOf(link)
+        if (unsupportedChainId) {
+            return { kind: 'unsupported-on-chain', chainId: unsupportedChainId }
         }
         const requirement = capabilityRequirementForDeeplink(link)
         if (!requirement || isAllowed(requirement)) return undefined
