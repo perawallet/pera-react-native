@@ -17,7 +17,7 @@ catalog:
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.16
   "@babel/runtime": ^7.29.2
-  "@expo/app-integrity": ~57.0.0
+  "@expo/app-integrity": ~58.0.2
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
