@@ -40,7 +40,6 @@ export {
 } from './hooks/useGroupedHoldings'
 export {
     buildGroupedHoldingItems,
-    findGroupedMembers,
     groupedHoldingItemKey,
     isMainnetScope,
     spansChains,

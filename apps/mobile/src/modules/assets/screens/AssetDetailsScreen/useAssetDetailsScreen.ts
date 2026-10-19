@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useEffect, useMemo } from 'react'
 import {
     chainAccountOf,
     getAccountDisplayName,
-    useAccountHoldingSources,
-    useAccountHoldingsAcrossChainsQuery,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useAssetGroupsQuery,
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -32,7 +27,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainDisplayNameOf,
     getChainDescriptor,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
@@ -42,11 +36,8 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
-import type { FilterOption } from '@components/FilterSelection'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import type { AccountStackParamsList } from '@modules/accounts'
 import { chainUiFor } from '@modules/chain-ui'
-import { findGroupedMembers } from '../../utils/groupedHoldings'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
@@ -69,10 +60,6 @@ export type UseAssetDetailsScreenResult = {
     headerSecondary: Optional<string>
     assetDetailsDisplay: AssetDetailsDisplay
     about: Nullable<AssetAboutDisplay>
-    /** One per network the account holds this asset's group on; empty below two. */
-    networkOptions: FilterOption<ChainId>[]
-    /** Swaps the screen to that network's holding in place. */
-    selectNetwork: (chainId: ChainId) => void
 }
 
 export const useAssetDetailsScreen = ({
@@ -82,10 +69,6 @@ export const useAssetDetailsScreen = ({
 }: UseAssetDetailsScreenParams): UseAssetDetailsScreenResult => {
     const account = useSelectedAccount()
     const scope = useSelectedScope(chainId)
-    const navigation =
-        useNavigation<
-            NativeStackNavigationProp<AccountStackParamsList, 'AssetDetails'>
-        >()
     const {
         data: asset,
         isPending,
@@ -121,43 +104,6 @@ export const useAssetDetailsScreen = ({
         { enabled: !!address, chainId },
     )
 
-    // Groups only fold across chains, so an account on one chain never asks.
-    const holdingSources = useAccountHoldingSources(account)
-    const isNetworkSwitchable = !isCollectible && holdingSources.length > 1
-    const { groups } = useAssetGroupsQuery({ enabled: isNetworkSwitchable })
-    const { assetBalances } = useAccountHoldingsAcrossChainsQuery(
-        isNetworkSwitchable ? account : null,
-    )
-    const assetIdByNetwork = useMemo(() => {
-        const members = isNetworkSwitchable
-            ? findGroupedMembers({
-                  holdings: assetBalances,
-                  groups,
-                  ref: { chainId, assetId },
-              })
-            : []
-        return new Map(
-            members.map(member => [member.scope.chainId, member.assetId]),
-        )
-    }, [isNetworkSwitchable, assetBalances, groups, chainId, assetId])
-    const networkOptions = useMemo(
-        (): FilterOption<ChainId>[] =>
-            [...assetIdByNetwork.keys()].map(networkChainId => ({
-                value: networkChainId,
-                label: chainDisplayNameOf(networkChainId) ?? networkChainId,
-                testID: `asset_network_chip_${networkChainId}`,
-            })),
-        [assetIdByNetwork],
-    )
-    const selectNetwork = useCallback(
-        (nextChainId: ChainId) => {
-            const nextAssetId = assetIdByNetwork.get(nextChainId)
-            if (nextAssetId === undefined) return
-            navigation.setParams({ chainId: nextChainId, assetId: nextAssetId })
-        },
-        [assetIdByNetwork, navigation],
-    )
-
     // Screen-view tracking (screen_asset_detail) is centralized in the
     // navigator's screenListeners (see routes/listeners.ts). This effect only
     // fires the asset-specific "Show" event, which carries the asset id.
@@ -188,7 +134,5 @@ export const useAssetDetailsScreen = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
-        networkOptions,
-        selectNetwork,
     }
 }

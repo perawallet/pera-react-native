@@ -63,7 +63,6 @@ export const AccountAssetList = ({
         setSelectedChainId,
         showChainBadges,
         toggleGroupExpanded,
-        openGroup,
         convertFiat,
         isPending,
         isReadOnly,
@@ -85,7 +84,6 @@ export const AccountAssetList = ({
                     <AssetGroupRow
                         item={item}
                         convertFiat={convertFiat}
-                        onPress={() => openGroup(item)}
                         onToggleExpanded={() =>
                             toggleGroupExpanded(item.group.id)
                         }
@@ -119,7 +117,6 @@ export const AccountAssetList = ({
             convertFiat,
             showChainBadges,
             toggleGroupExpanded,
-            openGroup,
             styles.groupItem,
         ],
     )

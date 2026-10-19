@@ -15,7 +15,6 @@ import type { AssetGroup, PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     networkTierOf,
     toScopeKey,
-    type AssetRef,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -49,7 +48,6 @@ export type GroupedHoldingItem<T> =
           members: GroupedHoldingMember<T>[]
           /** Display units; null while any member's metadata hasn't synced. */
           amount: Nullable<Decimal>
-          largestMember: T
           isExpanded: boolean
       }
 
@@ -62,12 +60,6 @@ export type BuildGroupedHoldingItemsParams<T extends GroupableHolding> = {
     adapter: GroupableHoldingAdapter<T>
     /** A holding this rejects stays a plain row whatever group it belongs to. */
     isGroupable?: (scope: ChainScope) => boolean
-}
-
-export type FindGroupedMembersParams<T extends GroupableHolding> = {
-    holdings: T[]
-    groups: AssetGroup[]
-    ref: AssetRef
 }
 
 // A test network's holdings never fold into a group with mainnet ones.
@@ -144,29 +136,6 @@ const sumDisplayAmount = <T>(
     return total
 }
 
-const usdValueOf = <T>({
-    displayAmount,
-    usdPrice,
-}: GroupedHoldingMember<T>): Nullable<Decimal> =>
-    displayAmount === null || usdPrice === null
-        ? null
-        : displayAmount.mul(usdPrice)
-
-// One conversion factor applies to every member, so the USD order is the
-// order in the user's currency too.
-const largestOf = <T>(members: GroupedHoldingMember<T>[]): T => {
-    let largest = members[0]!
-    let largestValue = usdValueOf(largest)
-    for (const member of members.slice(1)) {
-        const value = usdValueOf(member)
-        if (value !== null && (largestValue === null || value.gt(largestValue))) {
-            largest = member
-            largestValue = value
-        }
-    }
-    return largest.holding
-}
-
 /**
  * Folds holdings the groups name into one group item at the first member's
  * sorted position, followed by its members when expanded. Only groups with two
@@ -214,7 +183,6 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
             group,
             members,
             amount: sumDisplayAmount(members),
-            largestMember: largestOf(members),
             isExpanded,
         })
         if (isExpanded) {
@@ -236,25 +204,3 @@ export const groupedHoldingItemKey = <T extends GroupableHolding>(
     item.kind === 'group'
         ? `group|${item.group.id}`
         : holdingKey(item.holding.scope, item.holding.assetId)
-
-/** Empty unless two or more members of `ref`'s group are held. */
-export const findGroupedMembers = <T extends GroupableHolding>({
-    holdings,
-    groups,
-    ref,
-}: FindGroupedMembersParams<T>): T[] => {
-    if (groups.length === 0) return []
-    const { holdingGroups, membersOf } = collectGroupMembers(
-        holdings,
-        groups,
-        isMainnetScope,
-    )
-    const index = holdings.findIndex(
-        holding =>
-            holding.assetId === ref.assetId &&
-            holding.scope.chainId === ref.chainId,
-    )
-    const group = index === -1 ? undefined : holdingGroups[index]
-    const members = group ? (membersOf.get(group.id) ?? []) : []
-    return members.length < 2 ? [] : members
-}

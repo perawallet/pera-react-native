@@ -27,8 +27,4 @@ export const useStyles = makeStyles(theme => ({
     headerSubtitle: {
         color: theme.colors.textGray,
     },
-    networkChips: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.md,
-    },
 }))

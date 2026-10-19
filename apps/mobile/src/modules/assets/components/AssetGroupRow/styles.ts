@@ -34,9 +34,6 @@ export const useStyles = makeStyles(theme => ({
     subtitle: {
         color: theme.colors.textGray,
     },
-    toggle: {
-        alignSelf: 'flex-start',
-    },
     networkStack: {
         flexDirection: 'row',
         alignItems: 'center',

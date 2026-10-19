@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
-import type {
-    GestureResponderEvent,
-    StyleProp,
-    ViewStyle,
-} from 'react-native'
+import React from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
@@ -33,8 +29,6 @@ import { useStyles } from './styles'
 export type AssetGroupRowProps<T extends GroupableHolding> = {
     item: AssetGroupItem<T>
     convertFiat: AssetFiatConverter
-    /** Unset: the whole row toggles, as in pickers where a group isn't selectable. */
-    onPress?: () => void
     onToggleExpanded: () => void
     style?: StyleProp<ViewStyle>
 }
@@ -42,7 +36,6 @@ export type AssetGroupRowProps<T extends GroupableHolding> = {
 const AssetGroupRowBase = <T extends GroupableHolding>({
     item,
     convertFiat,
-    onPress,
     onToggleExpanded,
     style,
 }: AssetGroupRowProps<T>) => {
@@ -52,44 +45,14 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
 
     const { icon, chainIds, fiat } = useAssetGroupRow({ item, convertFiat })
 
-    // Nested in the row's touchable: on web the click would otherwise bubble
-    // up and open the asset too.
-    const handleTogglePress = useCallback(
-        (event: GestureResponderEvent) => {
-            event.stopPropagation()
-            onToggleExpanded()
-        },
-        [onToggleExpanded],
-    )
-
     if (!icon) {
         return <AssetRowSkeleton />
     }
 
-    const toggle = (
-        <PWView style={styles.networksRow}>
-            <PWText
-                variant='body'
-                style={styles.subtitle}
-                numberOfLines={1}
-            >
-                {isExpanded
-                    ? t('account_details.assets.hide_networks')
-                    : t('account_details.assets.see_networks')}
-            </PWText>
-            <PWIcon
-                name='chevron-down'
-                size='xs'
-                style={isExpanded ? styles.chevronExpanded : undefined}
-            />
-            <NetworkIconStack chainIds={chainIds} />
-        </PWView>
-    )
-
     return (
         <PWTouchableOpacity
             testID={`asset_group_row_${group.id}`}
-            onPress={onPress ?? onToggleExpanded}
+            onPress={onToggleExpanded}
             style={[styles.container, style]}
         >
             <AssetIcon
@@ -105,17 +68,23 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                 >
                     {group.name}
                 </PWText>
-                {onPress ? (
-                    <PWTouchableOpacity
-                        testID={`asset_group_toggle_${group.id}`}
-                        onPress={handleTogglePress}
-                        style={styles.toggle}
+                <PWView style={styles.networksRow}>
+                    <PWText
+                        variant='body'
+                        style={styles.subtitle}
+                        numberOfLines={1}
                     >
-                        {toggle}
-                    </PWTouchableOpacity>
-                ) : (
-                    toggle
-                )}
+                        {isExpanded
+                            ? t('account_details.assets.hide_networks')
+                            : t('account_details.assets.see_networks')}
+                    </PWText>
+                    <PWIcon
+                        name='chevron-down'
+                        size='xs'
+                        style={isExpanded ? styles.chevronExpanded : undefined}
+                    />
+                    <NetworkIconStack chainIds={chainIds} />
+                </PWView>
             </PWView>
             <PWView style={styles.amountContainer}>
                 {/* The group's symbol is the unit; the figure carries none, as

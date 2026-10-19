@@ -15,7 +15,6 @@ import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
 import { EmptyView } from '@components/EmptyView'
-import { FilterSelection } from '@components/FilterSelection'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -63,8 +62,6 @@ const AssetDetailsContent = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
-        networkOptions,
-        selectNetwork,
     } = useAssetDetailsScreen({
         assetId,
         chainId,
@@ -121,15 +118,6 @@ const AssetDetailsContent = ({
             style={styles.contentContainer}
             testID='asset_details_screen'
         >
-            {networkOptions.length > 0 && (
-                <FilterSelection
-                    options={networkOptions}
-                    selectedValue={chainId}
-                    onSelect={selectNetwork}
-                    contentContainerStyle={styles.networkChips}
-                    testID='asset_network_chips'
-                />
-            )}
             <Tab.Navigator>
                 <Tab.Screen
                     name='Holdings'

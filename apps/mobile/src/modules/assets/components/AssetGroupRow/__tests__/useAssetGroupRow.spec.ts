@@ -51,7 +51,6 @@ const groupOf = (
     },
     members,
     amount: null,
-    largestMember: members[0]!.holding,
     isExpanded: false,
 })
 

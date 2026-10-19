@@ -57,7 +57,6 @@ import {
     useAssetListFiatConverter,
     useGroupedHoldings,
     type AssetFiatConverter,
-    type AssetGroupItem,
     type GroupableHoldingAdapter,
     type GroupedHoldingItem,
 } from '@modules/assets'
@@ -82,8 +81,6 @@ type UseAccountAssetListResult = {
     /** Rows name their network while the list spans chains. */
     showChainBadges: boolean
     toggleGroupExpanded: (groupId: string) => void
-    /** Opens the network holding the most of the group. */
-    openGroup: (item: AssetGroupItem<AccountHoldingsLiteRow>) => void
     convertFiat: AssetFiatConverter
     isPending: boolean
     isReadOnly: boolean
@@ -310,12 +307,6 @@ export const useAccountAssetList = ({
         [headerState, navigation],
     )
 
-    const openGroup = useCallback(
-        (item: AssetGroupItem<AccountHoldingsLiteRow>) =>
-            goToAssetScreen(item.largestMember),
-        [goToAssetScreen],
-    )
-
     const handleOptOut = useCallback(
         async (item: AccountHoldingsLiteRow) => {
             const result = await requestBottomSheet<'confirm'>({
@@ -461,7 +452,6 @@ export const useAccountAssetList = ({
         setSelectedChainId,
         showChainBadges: selectedChainId === null && sources.length > 1,
         toggleGroupExpanded,
-        openGroup,
         convertFiat,
         isPending,
         isReadOnly,

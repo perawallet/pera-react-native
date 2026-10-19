@@ -273,7 +273,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isPending: false,
     })),
     useSingleAssetDetailsQuery: vi.fn(() => ({ data: null, isPending: false })),
-    useAssetGroupsQuery: vi.fn(() => ({ groups: [], isPending: false })),
     useInvalidateAssetPrices: vi.fn(() => ({ invalidate: vi.fn() })),
     useToggleAssetFavoriteMutation: vi.fn(() => ({
         toggleAssetFavorite: vi.fn(),

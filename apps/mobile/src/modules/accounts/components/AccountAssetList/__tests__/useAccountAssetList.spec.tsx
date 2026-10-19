@@ -394,7 +394,7 @@ describe('useAccountAssetList', () => {
             ])
         })
 
-        it("opens a group on the network holding the most of it, even when that sorts second", () => {
+        it("expands a group in place to each network's holding, opening nothing", () => {
             registerEthereum()
             mockGroups.current = [
                 {
@@ -430,14 +430,24 @@ describe('useAccountAssetList', () => {
             )
             const [group] = result.current.items
             if (group?.kind !== 'group') throw new Error('expected a group')
-
-            act(() => result.current.openGroup(group))
-
             expect(group.amount?.toString()).toBe('4')
-            expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
-                assetId: '0xA0b8',
-                chainId: 'ethereum',
-            })
+
+            act(() => result.current.toggleGroupExpanded('usdc'))
+
+            expect(
+                result.current.items.map(item =>
+                    item.kind === 'group'
+                        ? `group:${item.isExpanded}`
+                        : `${item.holding.scope.chainId}:${item.holding.assetId}`,
+                ),
+            ).toEqual(['group:true', 'algorand:31566704', 'ethereum:0xA0b8'])
+            expect(mockNavigate).not.toHaveBeenCalled()
+
+            act(() => result.current.toggleGroupExpanded('usdc'))
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'group',
+            ])
         })
 
         it('asks for asset groups only where they could fold something', () => {

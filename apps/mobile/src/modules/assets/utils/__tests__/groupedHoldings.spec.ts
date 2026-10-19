@@ -20,7 +20,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     buildGroupedHoldingItems,
-    findGroupedMembers,
     groupedHoldingItemKey,
     spansChains,
     type GroupableHoldingAdapter,
@@ -208,42 +207,6 @@ describe('buildGroupedHoldingItems', () => {
             { kind: 'holding', holding: ethUsdc, isGroupMember: false },
         ])
     })
-
-    it('picks the member worth the most in USD, even when it sorts second', () => {
-        const smallAlgo = holding(ALGO_MAINNET, '31566704', '1000000')
-        const bigEth = holding(ETH_MAINNET, '0xA0b8', '3000000000000000000', 18)
-
-        expect(groupAt(build([smallAlgo, bigEth]), 0).largestMember).toBe(
-            bigEth,
-        )
-    })
-
-    it('ranks a member with no USD price below a priced one', () => {
-        const unpricedBig = holding(
-            ALGO_MAINNET,
-            '31566704',
-            '9000000',
-            6,
-            null,
-        )
-        const pricedSmall = holding(
-            ETH_MAINNET,
-            '0xA0b8',
-            '1000000000000000000',
-            18,
-        )
-
-        expect(
-            groupAt(build([unpricedBig, pricedSmall]), 0).largestMember,
-        ).toBe(pricedSmall)
-    })
-
-    it('keeps list order between members of equal value', () => {
-        const first = holding(ALGO_MAINNET, '31566704', '1000000')
-        const second = holding(ETH_MAINNET, '0xA0b8', '1000000000000000000', 18)
-
-        expect(groupAt(build([first, second]), 0).largestMember).toBe(first)
-    })
 })
 
 describe('groupedHoldingItemKey', () => {
@@ -277,59 +240,5 @@ describe('spansChains', () => {
                 holding(ETH_MAINNET, '0xA0b8', '1'),
             ]),
         ).toBe(true)
-    })
-})
-
-describe('findGroupedMembers', () => {
-    const algoUsdc = holding(ALGO_MAINNET, '31566704', '1')
-    const ethUsdc = holding(ETH_MAINNET, '0xA0b8', '1')
-
-    it("lists the held members of the asset's group", () => {
-        expect(
-            findGroupedMembers({
-                holdings: [ethUsdc, holding(ALGO_MAINNET, '0', '1'), algoUsdc],
-                groups: [USDC_GROUP],
-                ref: { chainId: 'algorand', assetId: '31566704' },
-            }),
-        ).toEqual([ethUsdc, algoUsdc])
-    })
-
-    it('is empty when only one member is held', () => {
-        expect(
-            findGroupedMembers({
-                holdings: [algoUsdc],
-                groups: [USDC_GROUP],
-                ref: { chainId: 'algorand', assetId: '31566704' },
-            }),
-        ).toEqual([])
-    })
-
-    it('is empty for an asset no group names', () => {
-        expect(
-            findGroupedMembers({
-                holdings: [algoUsdc, ethUsdc],
-                groups: [USDC_GROUP],
-                ref: { chainId: 'algorand', assetId: '0' },
-            }),
-        ).toEqual([])
-    })
-
-    it('leaves out a held member on a test network', () => {
-        const testnetUsdc = holding(ALGO_TESTNET, '31566704', '1')
-        const groupWithTestnet: AssetGroup = {
-            ...USDC_GROUP,
-            members: [
-                { scope: ALGO_TESTNET, assetId: '31566704' },
-                USDC_GROUP.members[1]!,
-            ],
-        }
-
-        expect(
-            findGroupedMembers({
-                holdings: [testnetUsdc, ethUsdc],
-                groups: [groupWithTestnet],
-                ref: { chainId: 'ethereum', assetId: '0xA0b8' },
-            }),
-        ).toEqual([])
     })
 })

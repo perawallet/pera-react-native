@@ -20,38 +20,40 @@ import {
     it,
     vi,
 } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
+import { View } from 'react-native'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 import {
-    insertAssetHolding,
-    upsertAccountChainState,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    nativeAssetFor,
-    upsertAssetPrices,
-    upsertAssets,
-} from '@perawallet/wallet-core-assets'
 import { mockAssetGroups } from '@perawallet/wallet-core-assets/test-handlers'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { waitPastDoublePressGuard } from '@test-utils/rnw'
 import {
     resetTestDatabase,
-    seedAlgoAsset,
-    seedAlgorandAccountState,
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
+import {
+    ETH_USDC,
+    LOOKALIKE,
+    seedHoldings,
+    TWO_CHAIN_ACCOUNT,
+    USDC_GROUP,
+} from './__fixtures__/multichainHoldings'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The integration setup registers whichever chains config enables.
@@ -67,27 +69,6 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
-const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-const ALGO_SCOPE: ChainScope = {
-    chainId: LEGACY_CHAIN_ID,
-    networkId: 'mainnet',
-}
-
-const ETH_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-// Calls itself USDC, but no group names it.
-const LOOKALIKE = '0x1111111111111111111111111111111111111111'
-
-const TWO_CHAIN_ACCOUNT: WalletAccount = {
-    id: 'two-chains',
-    custody: { kind: 'local', seed: null },
-    chains: {
-        algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' },
-        ethereum: { address: ETH_ADDRESS, keyPairId: 'e-key' },
-    },
-    name: 'Both chains',
-}
-
 const ALGORAND_ACCOUNT: WalletAccount = {
     id: 'algo-only',
     custody: { kind: 'local', seed: null },
@@ -97,102 +78,25 @@ const ALGORAND_ACCOUNT: WalletAccount = {
     name: 'Algo only',
 }
 
-const USDC_GROUP = {
-    id: 'usdc',
-    name: 'USD Coin',
-    symbol: 'USDC',
-    logo_url: null,
-    members: [
-        {
-            chain_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
-            asset_id: USDC_TEST_ASSET.assetId,
-        },
-        { chain_id: 'eip155:1', asset_id: ETH_USDC },
-    ],
-}
-
-// 10 ALGO and 2.5 USDC on Algorand; 1.5 ETH, 1.5 USDC and 7 of the lookalike
-// on Ethereum.
-const seedHoldings = async () => {
-    await seedAlgoAsset('mainnet')
-    await upsertAssets({ items: [USDC_TEST_ASSET], scope: ALGO_SCOPE })
-    await seedAlgorandAccountState({
-        accountAddress: ALGO25_TEST_ADDRESS,
-        scope: ALGO_SCOPE,
-        nativeBalance: new Decimal(10_000_000),
-    })
-    await insertAssetHolding({
-        accountAddress: ALGO25_TEST_ADDRESS,
-        assetId: '0',
-        scope: ALGO_SCOPE,
-        amount: new Decimal('10000000'),
-    })
-    await insertAssetHolding({
-        accountAddress: ALGO25_TEST_ADDRESS,
-        assetId: USDC_TEST_ASSET.assetId,
-        scope: ALGO_SCOPE,
-        amount: new Decimal('2500000'),
-    })
-
-    const ether = nativeAssetFor('ethereum')
-    await upsertAssets({
-        items: [
-            ether,
-            {
-                ...ether,
-                assetId: ETH_USDC,
-                name: 'USD Coin',
-                unitName: 'USDC',
-                decimals: 6,
-            },
-            {
-                ...ether,
-                assetId: LOOKALIKE,
-                name: 'USD Coin',
-                unitName: 'USDC',
-                decimals: 6,
-            },
-        ],
-        scope: ETH_SCOPE,
-    })
-    await upsertAccountChainState({
-        accountAddress: ETH_ADDRESS,
-        scope: ETH_SCOPE,
-        nativeBalance: new Decimal('1500000000000000000'),
-        chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
-    })
-    for (const [assetId, amount] of [
-        [ether.assetId, '1500000000000000000'],
-        [ETH_USDC, '1500000'],
-        [LOOKALIKE, '7000000'],
-    ] as const) {
-        await insertAssetHolding({
-            accountAddress: ETH_ADDRESS,
-            assetId,
-            scope: ETH_SCOPE,
-            amount: new Decimal(amount),
-        })
-    }
-    await upsertAssetPrices({
-        prices: [
-            { assetId: '0', usdPrice: new Decimal('0.30') },
-            { assetId: USDC_TEST_ASSET.assetId, usdPrice: new Decimal('1') },
-        ],
-        scope: ALGO_SCOPE,
-    })
-    await upsertAssetPrices({
-        prices: [
-            { assetId: ether.assetId, usdPrice: new Decimal('2000') },
-            { assetId: ETH_USDC, usdPrice: new Decimal('1') },
-        ],
-        scope: ETH_SCOPE,
-    })
-}
+const AssetDetailsStub = ({
+    route,
+}: {
+    route: { params: { assetId: string; chainId: ChainId } }
+}) => (
+    <View
+        testID={`asset-details-${route.params.chainId}-${route.params.assetId}`}
+    />
+)
 
 const renderList = (account: WalletAccount) =>
     renderWithNavigation(
         () => <AccountAssetList account={account} />,
         'AccountAssetListHost',
+        {
+            additionalScreens: [
+                { name: 'AssetDetails', component: AssetDetailsStub },
+            ],
+        },
     )
 
 const resetListView = () =>
@@ -241,7 +145,7 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.getByTestId(`asset_row_${LOOKALIKE}`)).toBeTruthy()
     })
 
-    it('Given the grouped row, when it is pressed, then the holding on each network shows under it with its chain', async () => {
+    it('Given the grouped row, when it is pressed, then it expands in place with the holding on each network under it, and pressing it again collapses it', async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         renderList(TWO_CHAIN_ACCOUNT)
 
@@ -251,8 +155,32 @@ describe("Flow: One account's assets across chains", () => {
             `asset_row_${USDC_TEST_ASSET.assetId}`,
         )
         const ethereumMember = screen.getByTestId(`asset_row_${ETH_USDC}`)
-        expect(algorandMember.textContent).toContain('Algorand')
-        expect(ethereumMember.textContent).toContain('Ethereum')
+        expect(
+            within(algorandMember).getByTestId('network_label_algorand'),
+        ).toBeTruthy()
+        expect(
+            within(ethereumMember).getByTestId('network_label_ethereum'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId(/^asset-details-/)).toBeNull()
+
+        await waitPastDoublePressGuard()
+        fireEvent.click(screen.getByTestId('asset_group_row_usdc'))
+
+        await waitFor(() => {
+            expect(screen.queryByTestId(`asset_row_${ETH_USDC}`)).toBeNull()
+        })
+    })
+
+    it("Given the expanded group, when one network's row is pressed, then that network's details open", async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+
+        fireEvent.click(await screen.findByTestId('asset_group_row_usdc'))
+        fireEvent.click(await screen.findByTestId(`asset_row_${ETH_USDC}`))
+
+        expect(
+            await screen.findByTestId(`asset-details-ethereum-${ETH_USDC}`),
+        ).toBeTruthy()
     })
 
     it('Given the Ethereum chip, when it is selected, then only Ethereum holdings show and nothing is grouped', async () => {
