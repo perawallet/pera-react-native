@@ -13,8 +13,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { Decimal } from 'decimal.js'
 import {
+    useAssetGroupsQuery,
     useSingleAssetDetailsQuery,
+    type AssetGroup,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
@@ -30,6 +33,9 @@ const mocks = vi.hoisted(() => ({
     account: null as WalletAccount | null,
     trackEvent: vi.fn(),
     useResolvedAddress: vi.fn(),
+    setParams: vi.fn(),
+    holdingSourceCount: 1,
+    assetBalances: [] as unknown[],
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -37,6 +43,17 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useSelectedAccount: () => mocks.account,
+    useAccountHoldingSources: () =>
+        Array.from({ length: mocks.holdingSourceCount }),
+    useAccountHoldingsAcrossChainsQuery: () => ({
+        assetBalances: mocks.assetBalances,
+        isPending: false,
+    }),
+}))
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
+    useNavigation: () => ({ setParams: mocks.setParams }),
 }))
 
 vi.mock('@hooks/useResolvedAddress', () => ({
@@ -81,6 +98,8 @@ describe('useAssetDetailsScreen', () => {
         vi.clearAllMocks()
         registerEthereumChain()
         mocks.account = ethereumAccount()
+        mocks.holdingSourceCount = 1
+        mocks.assetBalances = []
         mocks.useResolvedAddress.mockReturnValue({
             displayName: TRUNCATED_ETH_ADDRESS,
             isNfd: false,
@@ -256,5 +275,106 @@ describe('useAssetDetailsScreen', () => {
         })
         expect(result.current.isLoading).toBe(false)
         expect(result.current.headerPrimary).toBe('No Address Found')
+    })
+
+    describe('network switching', () => {
+        const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
+        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
+        const ETH_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+        const USDC_GROUP: AssetGroup = {
+            id: 'usdc',
+            name: 'USD Coin',
+            symbol: 'USDC',
+            logoUrl: null,
+            members: [
+                { scope: ALGORAND, assetId: ASA_ID },
+                { scope: ETHEREUM, assetId: ETH_USDC },
+            ],
+        } as AssetGroup
+        const balance = (scope: typeof ALGORAND, assetId: string) => ({
+            scope,
+            assetId,
+            amount: new Decimal(1),
+        })
+
+        const renderGrouped = (isCollectible = false) => {
+            mocks.holdingSourceCount = 2
+            mocks.assetBalances = [
+                balance(ALGORAND, ASA_ID),
+                balance(ETHEREUM, ETH_USDC),
+            ]
+            vi.mocked(useAssetGroupsQuery).mockReturnValue({
+                groups: [USDC_GROUP],
+                isPending: false,
+            })
+            mockAsset({ data: assetFixture(ASA_ID) })
+            return renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ASA_ID,
+                    chainId: 'algorand',
+                    isCollectible,
+                }),
+            )
+        }
+
+        it('offers a chip per network the account holds the grouped asset on', () => {
+            const { result } = renderGrouped()
+
+            expect(result.current.networkOptions).toEqual([
+                {
+                    value: 'algorand',
+                    label: 'Algorand',
+                    testID: 'asset_network_chip_algorand',
+                },
+                {
+                    value: 'ethereum',
+                    label: 'Ethereum',
+                    testID: 'asset_network_chip_ethereum',
+                },
+            ])
+        })
+
+        it("switches to the other network's holding in place", () => {
+            const { result } = renderGrouped()
+
+            result.current.selectNetwork('ethereum')
+
+            expect(mocks.setParams).toHaveBeenCalledWith({
+                chainId: 'ethereum',
+                assetId: ETH_USDC,
+            })
+        })
+
+        it('offers no chips when the account holds the asset on one network', () => {
+            const { result, rerender } = renderGrouped()
+            mocks.assetBalances = [balance(ALGORAND, ASA_ID)]
+
+            rerender()
+
+            expect(result.current.networkOptions).toEqual([])
+        })
+
+        it('offers no chips without groups, and never asks on one chain', () => {
+            mockAsset({ data: assetFixture(ASA_ID) })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ASA_ID,
+                    chainId: 'algorand',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.networkOptions).toEqual([])
+            expect(vi.mocked(useAssetGroupsQuery).mock.lastCall?.[0]).toEqual({
+                enabled: false,
+            })
+        })
+
+        it('offers no chips for a collectible', () => {
+            const { result } = renderGrouped(true)
+
+            expect(result.current.networkOptions).toEqual([])
+        })
     })
 })
