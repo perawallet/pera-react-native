@@ -21,8 +21,11 @@ import {
     isNotificationAllowedDeeplinkType,
     isPeraOwnedDeeplink,
     linkTargetOf,
+    peraLinkChainFailure,
+    readPeraAppLink,
     resolveChainDeeplink,
     type BuildDeeplinkInput,
+    type ChainLinkTarget,
     type LinkSource,
 } from '@perawallet/wallet-core-deeplinks'
 import { parseDeeplink } from '../parser'
@@ -48,7 +51,10 @@ import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getSelectedScope,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
@@ -94,6 +100,7 @@ const ROUTABLE_LINK_CHAINS: ReadonlySet<ChainId> = new Set([LEGACY_CHAIN_ID])
 // toast rather than ignored as "not a link". A routable chain's own refusals
 // keep their old outcome.
 const isUnsupportedChainLink = (url: string): boolean => {
+    if (peraLinkChainFailure(url)) return true
     const resolution = resolveChainDeeplink(url)
     return (
         resolution.status === 'failed' &&
@@ -102,12 +109,25 @@ const isUnsupportedChainLink = (url: string): boolean => {
     )
 }
 
+// Handlers act on the selected network, so a Pera link whose `chain=` names
+// another one (TestNet while on MainNet) is refused rather than run there.
+// Chain URIs naming a network (`algorand://net:testnet/…`) keep running on the
+// selected network, as they always have.
+const isOnSelectedNetwork = (link: AppDeeplink, target: ChainLinkTarget) =>
+    !target.networkId ||
+    readPeraAppLink(link.sourceUrl) === null ||
+    target.networkId === getSelectedScope(target.chainId).networkId
+
 const isRoutableLink = (link: AppDeeplink): boolean => {
     if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
         return true
     }
     const target = linkTargetOf(link)
-    return !target || ROUTABLE_LINK_CHAINS.has(target.chainId)
+    if (!target) return true
+    return (
+        ROUTABLE_LINK_CHAINS.has(target.chainId) &&
+        isOnSelectedNetwork(link, target)
+    )
 }
 
 // Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
@@ -283,6 +303,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         params: {
                             address: parsedData.address,
                             label: parsedData.label,
+                            chainId: parsedData.target.chainId,
                         },
                     })
                     break
@@ -294,6 +315,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         params: {
                             address: parsedData.address,
                             label: parsedData.label,
+                            chainId: parsedData.target.chainId,
                         },
                     })
                     break

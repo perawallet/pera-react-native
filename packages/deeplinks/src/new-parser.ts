@@ -39,9 +39,11 @@ import {
     type HomeDeeplink,
 } from './links'
 import {
+    isChainScopedPeraPath,
     peraLinkTarget,
+    resolvePeraLinkTarget,
+    toLinkAssetRef,
     toPeraKeyregAction,
-    toPeraLinkAssetRef,
     toPeraPaymentData,
 } from './pera-link-chain'
 import {
@@ -78,12 +80,19 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
 
     const cleanPath = path.replace(/\/$/, '')
 
+    // Algorand-only and chain-agnostic paths ignore `chain=`.
+    const resolution = isChainScopedPeraPath(cleanPath)
+        ? resolvePeraLinkTarget(params.chain)
+        : { ok: true as const, target: peraLinkTarget() }
+    if (!resolution.ok) return null
+    const { target } = resolution
+
     if (cleanPath === 'add-contact') {
         if (!params.address) return null
         return {
             type: DeeplinkType.ADD_CONTACT,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             label: params.label,
         } as AddContactDeeplink
@@ -94,7 +103,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.EDIT_CONTACT,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             label: params.label,
         } as EditContactDeeplink
@@ -111,7 +120,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.ADD_WATCH_ACCOUNT,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             label: params.label,
         } as AddWatchAccountDeeplink
@@ -122,7 +131,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as ReceiverAccountSelectionDeeplink
     }
@@ -132,7 +141,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             label: params.label,
         } as AddressActionsDeeplink
@@ -143,7 +152,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         // An absent asset id means the native asset; a present one the chain
         // can't spell makes the link unrecognized.
         const assetRef = params.assetId
-            ? toPeraLinkAssetRef(params.assetId)
+            ? toLinkAssetRef(target, params.assetId)
             : undefined
         if (params.assetId && !assetRef) return null
 
@@ -153,7 +162,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.TRANSFER,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             receiverAddress: params.receiverAddress,
             assetRef,
             amount,
@@ -187,7 +196,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.CHAIN_ACTION,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             chainData,
         } as ChainActionDeeplink
     }
@@ -218,13 +227,13 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
 
     if (cleanPath === 'asset-opt-in') {
         const assetRef = params.assetId
-            ? toPeraLinkAssetRef(params.assetId)
+            ? toLinkAssetRef(target, params.assetId)
             : undefined
         if (!assetRef) return null
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             assetRef,
             address: params.address,
         } as AssetOptInDeeplink
@@ -232,13 +241,13 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
 
     if (cleanPath === 'asset-detail') {
         const assetRef = params.assetId
-            ? toPeraLinkAssetRef(params.assetId)
+            ? toLinkAssetRef(target, params.assetId)
             : undefined
         if (!params.address || !assetRef) return null
         return {
             type: DeeplinkType.ASSET_DETAIL,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             assetRef,
         } as AssetDetailDeeplink
@@ -249,7 +258,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.ASSET_INBOX,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as AssetInboxDeeplink
     }
@@ -292,13 +301,13 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.SWAP,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
             assetInRef: params.assetInId
-                ? toPeraLinkAssetRef(params.assetInId)
+                ? toLinkAssetRef(target, params.assetInId)
                 : undefined,
             assetOutRef: params.assetOutId
-                ? toPeraLinkAssetRef(params.assetOutId)
+                ? toLinkAssetRef(target, params.assetOutId)
                 : undefined,
         } as SwapDeeplink
     }
@@ -307,7 +316,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.BUY,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as BuyDeeplink
     }
@@ -316,7 +325,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.SELL,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as SellDeeplink
     }
@@ -326,7 +335,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.ACCOUNT_DETAIL,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as AccountDetailDeeplink
     }
@@ -339,7 +348,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         return {
             type: DeeplinkType.SHARED_ACCOUNT_IMPORT,
             sourceUrl: url,
-            target: peraLinkTarget(),
+            target,
             address: params.address,
         } as SharedAccountImportDeeplink
     }
