@@ -42,21 +42,19 @@ export const EndpointOverrideSheet = ({
     const { resolve, dismiss } = useBottomSheetResult<void>()
 
     const errorMessage = (error: EndpointOverrideSheetError | undefined) => {
-        switch (error) {
-            case 'invalid-url':
-                return t(INVALID_ENDPOINT_MESSAGE_KEY)
-            case 'wrong-network':
-                return t(
-                    'settings.developer.node_settings.endpoint_wrong_network',
-                    { network: sheet.networkName },
-                )
-            case 'unreachable':
-                return t(
-                    'settings.developer.node_settings.endpoint_unreachable',
-                )
-            default:
-                return undefined
+        if (error === 'invalid-url') {
+            return t(INVALID_ENDPOINT_MESSAGE_KEY)
         }
+        if (error === 'wrong-network') {
+            return t(
+                'settings.developer.node_settings.endpoint_wrong_network',
+                { network: sheet.networkName },
+            )
+        }
+        if (error === 'unreachable') {
+            return t('settings.developer.node_settings.endpoint_unreachable')
+        }
+        return undefined
     }
 
     const handleSaveAndClose = async () => {
