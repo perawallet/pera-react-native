@@ -27,6 +27,7 @@ import {
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import {
+    parseScopeKey,
     toScopeKey,
     type ChainHoldingNative,
     type ChainId,
@@ -50,13 +51,14 @@ export type AccountHoldingsPageRow = {
     isFavorited: boolean
 }
 
-export type GetAccountHoldingsPageParams = {
+/** One address on one scope: an account's holdings there. */
+export type AccountHoldingSource = { address: string; scope: ChainScope }
+
+type HoldingsReadParams = {
     db?: Database
-    accountAddress: string
-    scope: ChainScope
     /** Sort order applied in SQL. Defaults to balanceDesc. */
     sortMode?: AssetSortMode
-    /** Case-insensitive substring match against name / unit name. */
+    /** Case-insensitive substring match against name, unit name or asset id. */
     search?: string
     /** Page size. Omit for an unbounded read (all matching holdings). */
     limit?: number
@@ -64,15 +66,25 @@ export type GetAccountHoldingsPageParams = {
     offset?: number
 } & AccountHoldingsFilters
 
+export type GetAccountHoldingsPageParams = HoldingsReadParams & {
+    accountAddress: string
+    scope: ChainScope
+}
+
+export type GetAccountHoldingsLiteParams = HoldingsReadParams & {
+    sources: readonly AccountHoldingSource[]
+}
+
 /**
  * Sorting (favorites first, then value/name with unsynced NULLs last),
- * filtering, searching and windowing all happen in SQL. Returns raw columns;
- * callers decide how much of each row to materialize.
+ * filtering, searching and windowing all happen in SQL, across every source in
+ * one statement: the value sort is in USD, so rows from different scopes order
+ * against each other. Returns raw columns; callers decide how much of each row
+ * to materialize.
  */
 async function queryHoldingRows({
     db = getDatabase(),
-    accountAddress,
-    scope,
+    sources,
     sortMode = 'balanceDesc',
     search,
     hideZeroBalance,
@@ -81,11 +93,16 @@ async function queryHoldingRows({
     excludeAssetTypes,
     limit,
     offset,
-}: GetAccountHoldingsPageParams) {
-    const scopeKey = toScopeKey(scope)
+}: GetAccountHoldingsLiteParams) {
     const conditions = [
-        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.scope, scopeKey),
+        or(
+            ...sources.map(({ address, scope }) =>
+                and(
+                    eq(AccountAssetHoldingsSchema.accountAddress, address),
+                    eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
+                ),
+            ),
+        )!,
     ]
 
     if (hideZeroBalance) {
@@ -121,6 +138,7 @@ async function queryHoldingRows({
             or(
                 like(AssetsNodeSchema.name, `%${term}%`),
                 like(AssetsNodeSchema.unitName, `%${term}%`),
+                like(AccountAssetHoldingsSchema.assetId, `%${term}%`),
             )!,
         )
     }
@@ -163,6 +181,7 @@ async function queryHoldingRows({
     let query = db
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
+            scope: AccountAssetHoldingsSchema.scope,
             amount: AccountAssetHoldingsSchema.amount,
             native: AccountAssetHoldingsSchema.native,
             ...peraAssetJoinColumns(),
@@ -188,15 +207,20 @@ async function queryHoldingRows({
  * Fully enriched — every row parses metadata into a `PeraAsset`. Use where the
  * whole result is consumed at once.
  */
-export async function getAccountHoldingsPage(
-    params: GetAccountHoldingsPageParams,
-): Promise<AccountHoldingsPageRow[]> {
-    const rows = await queryHoldingRows(params)
+export async function getAccountHoldingsPage({
+    accountAddress,
+    scope,
+    ...params
+}: GetAccountHoldingsPageParams): Promise<AccountHoldingsPageRow[]> {
+    const rows = await queryHoldingRows({
+        ...params,
+        sources: [{ address: accountAddress, scope }],
+    })
     return rows.map(r => ({
         assetId: r.assetId,
         amount: r.amount,
         native: r.native,
-        asset: peraAssetFromJoinRow(r, params.scope.chainId),
+        asset: peraAssetFromJoinRow(r, scope.chainId),
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
         isFavorited: !!r.isFavorited,
     }))
@@ -204,6 +228,8 @@ export async function getAccountHoldingsPage(
 
 /** Raw holdings row that defers `PeraAsset` materialization to the consumer. */
 export type AccountHoldingsLiteRow = PeraAssetJoinRow & {
+    /** The scope the holding was read from. */
+    scope: ChainScope
     /** Amount in base units. */
     amount: Decimal
     isFavorited: boolean
@@ -218,11 +244,13 @@ export type AccountHoldingsLiteRow = PeraAssetJoinRow & {
  * during sync. Visible rows enrich lazily via {@link assetFromHoldingLiteRow}.
  */
 export async function getAccountHoldingsLite(
-    params: GetAccountHoldingsPageParams,
+    params: GetAccountHoldingsLiteParams,
 ): Promise<AccountHoldingsLiteRow[]> {
+    if (params.sources.length === 0) return []
     const rows = await queryHoldingRows(params)
-    return rows.map(({ native: _native, ...r }) => ({
+    return rows.map(({ native: _native, scope, ...r }) => ({
         ...r,
+        scope: parseScopeKey(scope),
         isFavorited: !!r.isFavorited,
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
     }))

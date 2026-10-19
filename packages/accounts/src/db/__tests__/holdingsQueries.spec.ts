@@ -31,6 +31,7 @@ import {
 } from '../holdingsRepository'
 import {
     getAccountHoldingsPage,
+    getAccountHoldingsLite,
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
@@ -472,6 +473,115 @@ describe('account holdings queries', () => {
             expect(apple?.usdPrice?.toString()).toBe('3')
             const zebra = rows.find(r => r.assetId === '300')
             expect(zebra?.isFavorited).toBe(true)
+        })
+
+        it('searches by asset id', async () => {
+            expect(await pageIds({ search: '30' })).toEqual(['300'])
+        })
+
+        describe('across sources', () => {
+            const ETH_SCOPE = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            } as const
+            const TESTNET_SCOPE = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const
+            const ETH_SOURCE = { address: '0xETH', scope: ETH_SCOPE }
+            const ALGO_SOURCE = { address: 'ADDR1', scope: MAINNET_SCOPE }
+
+            beforeEach(async () => {
+                // Ether '0xE' worth 2.5, token '0xT' worth 0.5: they interleave
+                // with the Algorand rows (3, 2, 1) by USD value.
+                await refreshAccountHoldings({
+                    db,
+                    accountAddress: '0xETH',
+                    scope: ETH_SCOPE,
+                    holdings: [
+                        { assetId: '0xE', amount: new Decimal(2_500_000) },
+                        { assetId: '0xT', amount: new Decimal(500_000) },
+                    ],
+                })
+                await upsertAssets({
+                    db,
+                    scope: ETH_SCOPE,
+                    items: [
+                        richAsset('0xE', 'Ether'),
+                        richAsset('0xT', 'Token'),
+                    ],
+                })
+                await upsertAssetPrices({
+                    db,
+                    scope: ETH_SCOPE,
+                    prices: [
+                        { assetId: '0xE', usdPrice: new Decimal('1') },
+                        { assetId: '0xT', usdPrice: new Decimal('1') },
+                    ],
+                })
+                await refreshAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR1',
+                    scope: TESTNET_SCOPE,
+                    holdings: [{ assetId: '0', amount: new Decimal(1) }],
+                })
+            })
+
+            it('orders rows from every source by one USD value and tags each with its scope', async () => {
+                const rows = await getAccountHoldingsLite({
+                    db,
+                    sources: [ALGO_SOURCE, ETH_SOURCE],
+                    sortMode: 'balanceDesc',
+                })
+
+                expect(rows.map(r => [r.scope.chainId, r.assetId])).toEqual([
+                    ['algorand', '300'],
+                    ['algorand', '200'],
+                    ['ethereum', '0xE'],
+                    ['algorand', '100'],
+                    ['algorand', '0'],
+                    ['ethereum', '0xT'],
+                ])
+            })
+
+            it('reads only the sources it is given', async () => {
+                const rows = await getAccountHoldingsLite({
+                    db,
+                    sources: [ETH_SOURCE],
+                })
+
+                expect(rows.map(r => r.assetId)).toEqual(['0xE', '0xT'])
+                expect(rows.every(r => r.scope.chainId === 'ethereum')).toBe(
+                    true,
+                )
+            })
+
+            it('keeps another network of the same chain out', async () => {
+                const rows = await getAccountHoldingsLite({
+                    db,
+                    sources: [ALGO_SOURCE],
+                })
+
+                expect(rows.every(r => r.scope.networkId === 'mainnet')).toBe(
+                    true,
+                )
+            })
+
+            it('searches across sources', async () => {
+                const rows = await getAccountHoldingsLite({
+                    db,
+                    sources: [ALGO_SOURCE, ETH_SOURCE],
+                    search: 'tok',
+                })
+
+                expect(rows.map(r => r.assetId)).toEqual(['0xT'])
+            })
+
+            it('returns nothing for no sources', async () => {
+                expect(
+                    await getAccountHoldingsLite({ db, sources: [] }),
+                ).toEqual([])
+            })
         })
     })
 

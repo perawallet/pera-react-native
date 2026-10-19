@@ -31,6 +31,8 @@ export type SwipeableAssetItemProps = {
     chainId: ChainId
     isNativeAsset: boolean
     isSwipeEnabled: boolean
+    /** Shown beside the name when the list spans chains. */
+    chainName?: string
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
     onOptOut: (item: AccountHoldingsLiteRow) => void
@@ -41,6 +43,7 @@ const SwipeableAssetItemInner = ({
     chainId,
     isNativeAsset,
     isSwipeEnabled,
+    chainName,
     convertFiat,
     onPress,
     onOptOut,
@@ -79,6 +82,7 @@ const SwipeableAssetItemInner = ({
                 holding={item}
                 chainId={chainId}
                 isNativeAsset={isNativeAsset}
+                chainName={chainName}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -110,6 +114,7 @@ const SwipeableAssetItemInner = ({
                     holding={item}
                     chainId={chainId}
                     isNativeAsset={isNativeAsset}
+                    chainName={chainName}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}

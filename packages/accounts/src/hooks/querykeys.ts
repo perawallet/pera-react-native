@@ -13,6 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { AccountAddress } from '../models'
+import type { AccountHoldingSource } from '../db'
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'accounts'
@@ -48,15 +49,21 @@ export const getAccountFundedNetworksQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'funded-networks', { address, scope }]
 
+// One `{ address, scope }` element per source, so the address- and
+// scope-scoped invalidations reach the key through any of its sources.
 export const getAccountHoldingsPageQueryKey = (
-    address: string,
-    scope: ChainScope,
+    sources: readonly AccountHoldingSource[],
     params?: {
         filters?: AccountBalancesQueryKeyFilters
         sortMode?: string
         search?: string
     },
-) => [MODULE_PREFIX, 'holdings-page', { address, scope, ...params }]
+): unknown[] => [
+    MODULE_PREFIX,
+    'holdings-page',
+    ...sources.map(({ address, scope }) => ({ address, scope })),
+    { ...params },
+]
 
 export const getAccountCollectiblesQueryKey = (
     address: string,

@@ -45,6 +45,7 @@ const SearchableListSheetInner = <T,>(
         snapThreshold: _snapThreshold,
         onScrollEndDrag: _onScrollEndDrag,
         inBottomSheet: _inBottomSheet,
+        searchAccessory: _searchAccessory,
         children: _children,
         ...listProps
     } = props

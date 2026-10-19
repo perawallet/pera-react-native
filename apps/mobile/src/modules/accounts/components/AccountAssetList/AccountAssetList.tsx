@@ -15,20 +15,21 @@ import React, { useCallback } from 'react'
 import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import type {
-    WalletAccount,
-    AccountHoldingsLiteRow,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { findNativeAsset } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 import { EmptyView } from '@components/EmptyView'
+import { FilterSelection } from '@components/FilterSelection'
 import { SearchableList } from '@components/SearchableList'
 import { AssetRowSkeleton } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
+import { AssetGroupListItemView } from './AssetGroupListItemView'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
-import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
+import { assetListItemKey, type AssetListItem } from './assetListItems'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -49,10 +50,13 @@ export const AccountAssetList = ({
     const { t } = useLanguage()
 
     const {
-        chainId,
-        nativeAssetId,
         isChainSwitchedOff,
-        holdings,
+        items,
+        chainFilterOptions,
+        selectedChainId,
+        setSelectedChainId,
+        showChainBadges,
+        toggleGroupExpanded,
         convertFiat,
         isPending,
         isReadOnly,
@@ -68,28 +72,57 @@ export const AccountAssetList = ({
     } = useAccountAssetList({ account, t })
 
     const renderItem = useCallback(
-        ({ item }: { item: AccountHoldingsLiteRow }) => {
-            const isNativeAsset = item.assetId === nativeAssetId
-            const isSwipeable =
-                !renderItemProps.isReadOnly &&
-                renderItemProps.canManageAssets &&
-                !isNativeAsset &&
-                item.amount.isZero()
+        ({ item }: { item: AssetListItem }) => {
+            if (item.kind === 'group') {
+                return (
+                    <AssetGroupListItemView
+                        item={item}
+                        convertFiat={convertFiat}
+                        onPress={() => toggleGroupExpanded(item.group.id)}
+                        style={styles.groupItem}
+                    />
+                )
+            }
 
+            const { row } = item
+            const { chainId } = row.scope
             return (
                 <SwipeableAssetItem
-                    item={item}
+                    item={row}
                     chainId={chainId}
-                    isNativeAsset={isNativeAsset}
-                    isSwipeEnabled={isSwipeable}
+                    isNativeAsset={
+                        findNativeAsset(chainId)?.assetId === row.assetId
+                    }
+                    isSwipeEnabled={renderItemProps.isSwipeable(row)}
+                    chainName={
+                        showChainBadges || item.isGroupMember
+                            ? chainDisplayNameOf(chainId)
+                            : undefined
+                    }
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
                 />
             )
         },
-        [nativeAssetId, chainId, renderItemProps, convertFiat],
+        [
+            renderItemProps,
+            convertFiat,
+            showChainBadges,
+            toggleGroupExpanded,
+            styles.groupItem,
+        ],
     )
+
+    const chainFilter =
+        chainFilterOptions.length > 0 ? (
+            <FilterSelection
+                options={chainFilterOptions}
+                selectedValue={selectedChainId}
+                onSelect={setSelectedChainId}
+                testID='asset_network_filter'
+            />
+        ) : undefined
 
     const listHeader = (
         <PWView style={styles.headerContainer}>
@@ -146,13 +179,12 @@ export const AccountAssetList = ({
             <SearchableList
                 pauseSyncOnInteraction
                 ref={listRef}
-                data={holdings}
+                data={items}
                 renderItem={renderItem}
+                getItemType={assetListItemType}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
-                keyExtractor={item =>
-                    assetRefKey({ chainId, assetId: item.assetId })
-                }
+                keyExtractor={assetListItemKey}
                 // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags
@@ -170,6 +202,7 @@ export const AccountAssetList = ({
                     'account_details.assets.search_placeholder',
                 )}
                 onSearchChange={setSearchFilter}
+                searchAccessory={chainFilter}
                 ListEmptyComponent={
                     isChainSwitchedOff ? null : isPending ? (
                         <AssetRowSkeleton count={8} />
@@ -184,6 +217,8 @@ export const AccountAssetList = ({
         </PWView>
     )
 }
+
+const assetListItemType = (item: AssetListItem) => item.kind
 
 const ItemSeparator = () => {
     const styles = useStyles()

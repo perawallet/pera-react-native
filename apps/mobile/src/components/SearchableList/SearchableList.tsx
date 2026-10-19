@@ -80,6 +80,11 @@ export type SearchableListProps<T> = Omit<
     snapThreshold?: number
     /** Autofocus the search input. Only honored in `inBottomSheet` mode. */
     autoFocusSearch?: boolean
+    /**
+     * Drawn under the search input inside its sticky cell, so it pins with the
+     * search and stays visible over an empty list. Ignored in `inBottomSheet` mode.
+     */
+    searchAccessory?: React.ReactNode
 }
 
 // Branches to the dedicated sheet path; otherwise the full-screen render with
@@ -121,6 +126,7 @@ const SearchableListFullInner = <T,>(
         onSearchChange,
         SearchInputComponent = SearchInput,
         snapThreshold = DEFAULT_SNAP_THRESHOLD,
+        searchAccessory,
         onScroll,
         onScrollEndDrag,
         ItemSeparatorComponent: CallerSeparator,
@@ -228,29 +234,38 @@ const SearchableListFullInner = <T,>(
                 // it doesn't fight handleEnterSearch focusing the overlay.
                 return (
                     <PWView style={styles.searchSticky}>
-                        <SearchInputTrigger
-                            onPress={handleEnterSearch}
-                            value={currentValue}
-                            placeholder={searchPlaceholder}
-                            SearchInputComponent={SearchInputComponent}
-                            displayStyle={
-                                showOverlay
-                                    ? styles.searchOverlayHidden
-                                    : undefined
-                            }
-                            dismissKeyboardOnPress={false}
-                            accessibilityElementsHidden
-                            importantForAccessibility='no-hide-descendants'
-                        />
-                        {/* Transparent tap target over the visible clear (X):
-                            clears in place without pinning. Rendered last so it
-                            sits above the body Pressable. */}
-                        {currentValue ? (
-                            <Pressable
-                                style={styles.searchClearHitArea}
-                                onPress={handleClearQuery}
-                                accessibilityLabel='Clear search'
+                        {/* Bounds the clear hit area to the input, so it never
+                            covers the accessory below. */}
+                        <PWView>
+                            <SearchInputTrigger
+                                onPress={handleEnterSearch}
+                                value={currentValue}
+                                placeholder={searchPlaceholder}
+                                SearchInputComponent={SearchInputComponent}
+                                displayStyle={
+                                    showOverlay
+                                        ? styles.searchOverlayHidden
+                                        : undefined
+                                }
+                                dismissKeyboardOnPress={false}
+                                accessibilityElementsHidden
+                                importantForAccessibility='no-hide-descendants'
                             />
+                            {/* Transparent tap target over the visible clear (X):
+                                clears in place without pinning. Rendered last so
+                                it sits above the body Pressable. */}
+                            {currentValue ? (
+                                <Pressable
+                                    style={styles.searchClearHitArea}
+                                    onPress={handleClearQuery}
+                                    accessibilityLabel='Clear search'
+                                />
+                            ) : null}
+                        </PWView>
+                        {searchAccessory != null ? (
+                            <PWView style={styles.searchAccessory}>
+                                {searchAccessory}
+                            </PWView>
                         ) : null}
                     </PWView>
                 )
@@ -275,6 +290,8 @@ const SearchableListFullInner = <T,>(
             ListHeaderComponent,
             handleHeaderLayout,
             styles.searchSticky,
+            styles.searchAccessory,
+            searchAccessory,
             styles.searchClearHitArea,
             styles.searchOverlayHidden,
         ],

@@ -23,6 +23,11 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountAssetsQuery } from '../useAccountAssetsQuery'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const SOURCE = { address: 'ADDR1', scope: SCOPE }
+const ETH_SOURCE = {
+    address: '0xADDR',
+    scope: { chainId: 'ethereum', networkId: 'mainnet' } as ChainScope,
+}
 
 const mockGetAccountHoldingsLite = vi.fn()
 vi.mock('../../db', () => ({
@@ -77,12 +82,9 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(
-            () => useAccountAssetsQuery('ADDR1', SCOPE),
-            {
-                wrapper: wrapper(),
-            },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery([SOURCE]), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -108,12 +110,9 @@ describe('useAccountAssetsQuery', () => {
         ]
         mockGetAccountHoldingsLite.mockResolvedValue(rows)
 
-        const { result } = renderHook(
-            () => useAccountAssetsQuery('ADDR1', SCOPE),
-            {
-                wrapper: wrapper(),
-            },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery([SOURCE]), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -132,7 +131,7 @@ describe('useAccountAssetsQuery', () => {
 
         renderHook(
             () =>
-                useAccountAssetsQuery('ADDR1', SCOPE, {
+                useAccountAssetsQuery([SOURCE], {
                     sortMode: 'alphabeticalAsc',
                     search: 'algo',
                     filters: { hideZeroBalance: true },
@@ -145,12 +144,59 @@ describe('useAccountAssetsQuery', () => {
         )
         expect(mockGetAccountHoldingsLite).toHaveBeenCalledWith(
             expect.objectContaining({
-                accountAddress: 'ADDR1',
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                sources: [SOURCE],
                 sortMode: 'alphabeticalAsc',
                 search: 'algo',
                 hideZeroBalance: true,
             }),
         )
+    })
+
+    it('does not read when there are no sources', async () => {
+        const { result } = renderHook(() => useAccountAssetsQuery([]), {
+            wrapper: wrapper(),
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockGetAccountHoldingsLite).not.toHaveBeenCalled()
+        expect(result.current.holdings).toEqual([])
+    })
+
+    it('holds the previous rows while the search changes over the same sources', async () => {
+        const rows = [{ assetId: '0' }]
+        mockGetAccountHoldingsLite.mockResolvedValueOnce(rows)
+        const { result, rerender } = renderHook(
+            ({ search }: { search: string }) =>
+                useAccountAssetsQuery([SOURCE, ETH_SOURCE], { search }),
+            { wrapper: wrapper(), initialProps: { search: '' } },
+        )
+        await waitFor(() => expect(result.current.holdings).toEqual(rows))
+        mockGetAccountHoldingsLite.mockReturnValueOnce(new Promise(() => {}))
+
+        rerender({ search: 'al' })
+
+        expect(result.current.isPlaceholderData).toBe(true)
+        expect(result.current.holdings).toEqual(rows)
+    })
+
+    it('drops the previous rows when the sources change', async () => {
+        const rows = [{ assetId: '0' }]
+        mockGetAccountHoldingsLite.mockResolvedValueOnce(rows)
+        const { result, rerender } = renderHook(
+            ({ sources }: { sources: (typeof SOURCE)[] }) =>
+                useAccountAssetsQuery(sources),
+            {
+                wrapper: wrapper(),
+                initialProps: { sources: [SOURCE, ETH_SOURCE] },
+            },
+        )
+        await waitFor(() => expect(result.current.holdings).toEqual(rows))
+        mockGetAccountHoldingsLite.mockReturnValueOnce(new Promise(() => {}))
+
+        rerender({ sources: [ETH_SOURCE] })
+
+        expect(result.current.isPlaceholderData).toBe(false)
+        expect(result.current.holdings).toEqual([])
     })
 })

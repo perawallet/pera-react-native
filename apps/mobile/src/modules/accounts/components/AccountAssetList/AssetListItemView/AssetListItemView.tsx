@@ -13,6 +13,7 @@
 import React, { useMemo } from 'react'
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
+import { ChainBadge } from '@components/ChainBadge'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
 import {
@@ -38,6 +39,8 @@ export type AssetListItemViewProps = {
     chainId: ChainId
     /** The account chain's native asset, which shows its currency symbol. */
     isNativeAsset: boolean
+    /** Shown beside the name when the list spans chains. */
+    chainName?: string
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -56,6 +59,7 @@ const AssetListItemViewBase = ({
     holding,
     chainId,
     isNativeAsset,
+    chainName,
     convertFiat,
     onPress,
     style,
@@ -74,8 +78,13 @@ const AssetListItemViewBase = ({
     )
 
     const fiat = useMemo(
-        () => convertFiat(holding.assetId, holding.usdPrice, amount),
-        [convertFiat, holding.assetId, holding.usdPrice, amount],
+        () =>
+            convertFiat(
+                { chainId, assetId: holding.assetId },
+                holding.usdPrice,
+                amount,
+            ),
+        [convertFiat, chainId, holding.assetId, holding.usdPrice, amount],
     )
 
     const collectibleItem = useMemo(() => {
@@ -142,6 +151,9 @@ const AssetListItemViewBase = ({
         <AssetItemView
             asset={asset}
             right={balance}
+            titleAccessory={
+                chainName ? <ChainBadge name={chainName} /> : undefined
+            }
             showFavorite
             showDeletedLabel
             copyableAssetId

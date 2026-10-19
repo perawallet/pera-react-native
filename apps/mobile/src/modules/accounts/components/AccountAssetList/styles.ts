@@ -23,6 +23,10 @@ export const useStyles = makeStyles(theme => ({
     rootContainer: {
         gap: 0,
     },
+    // Matches the spacing SwipeableAssetItem gives a single asset's row.
+    groupItem: {
+        marginVertical: theme.spacing.lg,
+    },
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,

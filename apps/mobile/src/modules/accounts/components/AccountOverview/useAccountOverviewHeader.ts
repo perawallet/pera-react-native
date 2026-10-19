@@ -11,22 +11,28 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     addressOn,
     type AccountBalanceHistoryItem,
+    useAccountHoldingSources,
     useAccountScope,
     useAccountSummaryQuery,
+    useAccountValueTotalsQuery,
     useAllAccounts,
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    isTestTierScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
-    useChainCapability,
+    useChainCapabilityCheck,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
     type ChainAvailability,
@@ -45,12 +51,20 @@ export type UseAccountOverviewHeaderResult = {
     availability: ChainAvailability
     /** Undefined for a chain this build doesn't register. */
     chainName: Optional<string>
-    /** The account's chain has balance history to plot; the chart and trend hide without it. */
+    /**
+     * Every chain the account holds assets on has balance history. The chart
+     * plots only those chains, so once the total counts another it would
+     * contradict it.
+     */
     hasBalanceHistory: boolean
-    /** `null` when unknown — renders as a placeholder, not 0. */
-    portfolioNativeValue: Nullable<Decimal>
-    /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
+    /**
+     * Across every chain the account is on, leaving out test-network holdings
+     * once a second chain is registered. `null` while any counted value or the
+     * preferred-currency rate is unknown — renders as a placeholder, not 0.
+     */
     portfolioPreferredValue: Nullable<Decimal>
+    /** False when every chain the account is on is a test network: there's no fiat total to show. */
+    hasFiatTotal: boolean
     /** False while held assets are still enriching — the total is still settling. */
     isBalanceComplete: boolean
     isPending: boolean
@@ -70,30 +84,72 @@ export const useAccountOverviewHeader = (
 ): UseAccountOverviewHeaderResult => {
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const availability = useChainAvailability(scope.chainId)
-    const hasBalanceHistory = useChainCapability(
-        scope.chainId,
-        'balanceHistory',
+    const sources = useAccountHoldingSources(account)
+    const check = useChainCapabilityCheck()
+    const hasBalanceHistory =
+        sources.length > 0 &&
+        sources.every(source =>
+            check({
+                chain: {
+                    chainId: source.scope.chainId,
+                    capability: 'balanceHistory',
+                },
+            }),
+        )
+    // Test-network holdings never count as money (once a second chain is
+    // registered), so they stay out of the total.
+    const countedSources = useMemo(
+        () =>
+            sources.filter(
+                source => !isTestTierScope(getProvider().chains, source.scope),
+            ),
+        [sources],
     )
+    const hasFiatTotal = countedSources.length > 0
     const chainName = chainDisplayNameOf(scope.chainId)
     const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency(currencyScope)
     const canSign = useCanSignWith(account, scope.chainId)
-    // Cheap SQL-aggregate total — no full-holdings materialization for the header.
-    const {
-        nativeAmount,
-        portfolioNativeValue,
-        portfolioUsdValue,
-        isComplete,
-        isPending,
-    } = useAccountSummaryQuery(addressOn(account, scope), scope)
+    // Cheap SQL aggregates — no full-holdings materialization for the header.
+    const { nativeAmount, isComplete } = useAccountSummaryQuery(
+        addressOn(account, scope),
+        scope,
+    )
+    const valuedAccounts = useMemo(() => [account], [account])
+    const { accountValueTotals, isPending } = useAccountValueTotalsQuery(
+        valuedAccounts,
+        currencyScope,
+        availability.isAvailable,
+    )
+    // Summed over the chains the list and chart read, not every chain the
+    // account has an entry on: a switched-off chain's last-synced value would
+    // otherwise inflate the headline. One unknown value makes the total unknown.
+    const portfolioFiatValue = useMemo(
+        () =>
+            countedSources.reduce<Nullable<Decimal>>((total, source) => {
+                const fiatValue =
+                    accountValueTotals.get(source.address)?.fiatValue ?? null
+                return total === null || fiatValue === null
+                    ? null
+                    : total.plus(fiatValue)
+            }, new Decimal(0)),
+        [countedSources, accountValueTotals],
+    )
     const allAccounts = useAllAccounts()
-    // Show the "get started" empty state only for a lone account with no native balance
-    // (a brand-new wallet). Any funded account, or any account in a multi-
-    // account wallet, shows its balance (even 0) — gated on data, not value.
-    const isOnlyEmptyAccount = allAccounts.length <= 1 && nativeAmount.isZero()
+    // The account's own chain is the first source (registry order), and keeps
+    // today's native-balance test; any other chain counts once it holds value.
+    const isEmptyOnOtherChains = sources.slice(1).every(source => {
+        const nativeValue = accountValueTotals.get(source.address)?.nativeValue
+        return nativeValue !== null && (nativeValue?.isZero() ?? true)
+    })
+    // Show the "get started" empty state only for a lone account with nothing
+    // on any chain (a brand-new wallet). Any funded account, or any account in a
+    // multi-account wallet, shows its balance (even 0) — gated on data, not value.
+    const isOnlyEmptyAccount =
+        allAccounts.length <= 1 && nativeAmount.isZero() && isEmptyOnOtherChains
     const portfolioPreferredValue = useMemo(
-        () => usdToPreferred(portfolioUsdValue),
-        [usdToPreferred, portfolioUsdValue],
+        () => usdToPreferred(portfolioFiatValue),
+        [usdToPreferred, portfolioFiatValue],
     )
 
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -119,8 +175,8 @@ export const useAccountOverviewHeader = (
         availability,
         chainName,
         hasBalanceHistory,
-        portfolioNativeValue,
         portfolioPreferredValue,
+        hasFiatTotal,
         isBalanceComplete: isComplete,
         isPending,
         period,

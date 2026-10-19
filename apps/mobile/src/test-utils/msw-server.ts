@@ -18,6 +18,7 @@ import {
     mockAlgodSimulate,
     mockAlgodStatusAfterBlock,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { mockAssetGroups } from '@perawallet/wallet-core-assets/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
@@ -66,6 +67,9 @@ export const server = setupServer(
     // decline a group already on chain. Unhandled, that is a real node
     // round-trip holding each review sheet back by up to the check's timeout.
     mockAlgodSimulate(),
+    // Any account's asset list reads the curated asset groups; none here, so
+    // lists stay ungrouped unless a test supplies some via server.use.
+    mockAssetGroups({ response: { results: [] } }),
 )
 
 export type UnhandledRequestMode = 'warn' | 'bypass'

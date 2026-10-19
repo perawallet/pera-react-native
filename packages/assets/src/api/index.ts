@@ -12,3 +12,4 @@
 
 export * from './prices'
 export * from './settings'
+export * from './groups'

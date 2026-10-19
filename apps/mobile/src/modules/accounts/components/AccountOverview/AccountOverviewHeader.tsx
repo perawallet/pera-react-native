@@ -12,13 +12,13 @@
 
 import { useCallback } from 'react'
 import {
+    PWBadge,
     PWLoadingIndicator,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { AssetAmount } from '@components/AssetAmount'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
@@ -53,8 +53,8 @@ export const AccountOverviewHeader = ({
         availability,
         chainName,
         hasBalanceHistory,
-        portfolioNativeValue,
         portfolioPreferredValue,
+        hasFiatTotal,
         isPending,
         period,
         setPeriod,
@@ -92,18 +92,26 @@ export const AccountOverviewHeader = ({
                         style={styles.valueBarContainer}
                     >
                         <PWView style={styles.valueBar}>
-                            <AssetAmount
-                                testID='portfolio_primary_value'
-                                variant='h1'
-                                value={
-                                    selectedPoint
-                                        ? selectedPoint.nativeValue
-                                        : portfolioNativeValue
-                                }
-                                asset={availability.nativeAsset}
-                                style={styles.primaryCurrency}
-                                isLoading={isPending}
-                            />
+                            {hasFiatTotal ? (
+                                <PreferredAmount
+                                    testID='portfolio_primary_value'
+                                    variant='h1'
+                                    value={
+                                        selectedPoint
+                                            ? selectedPoint.preferredValue
+                                            : portfolioPreferredValue
+                                    }
+                                    style={styles.primaryCurrency}
+                                    isLoading={isPending}
+                                />
+                            ) : (
+                                // Test funds aren't money: no fiat total, just
+                                // the tier.
+                                <PWBadge
+                                    variant='testnet'
+                                    value={t('common.network_label.testnet')}
+                                />
+                            )}
                             {/* The total is still settling while held assets
                                 enrich — show a spinner rather than implying the
                                 shown balance is final. */}
@@ -117,20 +125,6 @@ export const AccountOverviewHeader = ({
                                 )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
-                            <PreferredAmount
-                                variant='h4'
-                                style={styles.valueTitle}
-                                value={
-                                    selectedPoint
-                                        ? selectedPoint.preferredValue
-                                        : portfolioPreferredValue
-                                }
-                                density='compact'
-                                showSymbol
-                                prefix='≈ '
-                                isLoading={isPending}
-                            />
-
                             {hasBalanceHistory && !selectedPoint && (
                                 <WealthTrend
                                     account={account}
@@ -201,8 +195,8 @@ export const AccountOverviewHeader = ({
         togglePrivacyMode,
         styles,
         selectedPoint,
-        portfolioNativeValue,
         portfolioPreferredValue,
+        hasFiatTotal,
         isPending,
         isBalanceComplete,
         account,
