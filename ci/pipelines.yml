@@ -188,6 +188,11 @@ pipelines:
           VALIDATE_PROFILE: web
           ENVIRONMENT: production
           APP_ENV: production
+          # Build-time: switching these off again takes a new store release.
+          # Enrolment stays off until integrity.perawallet.app serves the check
+          # page: each popup open would otherwise try a page that is not there.
+          WEB_INTEGRITY_MINT_ENABLED: 'true'
+          WEB_INTEGRITY_BEARER_ENABLED: 'true'
           # As android's: the same 1000, so the extension's build number stays
           # above Bitrise's and in step with the mobile builds of the tag.
           BUILD_NUMBER_OFFSET: '1000'
@@ -247,7 +252,10 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
-          # See web-production.
+          # See web-production, for both the integrity flags and the offset.
+          WEB_INTEGRITY_MINT_ENABLED: 'true'
+          WEB_INTEGRITY_ENROL_ENABLED: 'true'
+          WEB_INTEGRITY_BEARER_ENABLED: 'true'
           BUILD_NUMBER_OFFSET: '1000'
         secrets: *web_secrets
         timeout_minutes: 30
