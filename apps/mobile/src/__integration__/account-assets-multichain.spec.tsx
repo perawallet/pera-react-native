@@ -21,8 +21,7 @@ import {
     vi,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { View } from 'react-native'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useRoute } from '@react-navigation/native'
 
 import {
     useAccountsStore,
@@ -72,15 +71,16 @@ const ALGORAND_ACCOUNT: WalletAccount = {
     name: 'Algo only',
 }
 
-const AssetDetailsStub = ({
-    route,
-}: {
-    route: { params: { assetId: string; chainId: ChainId } }
-}) => (
-    <View
-        testID={`asset-details-${route.params.chainId}-${route.params.assetId}`}
-    />
-)
+const AssetDetailsStub = () => {
+    const route = useRoute() as unknown as {
+        params: { assetId: string; chainId: string }
+    }
+    return (
+        <span data-testid='asset_details_stub'>
+            {`${route.params.chainId}:${route.params.assetId}`}
+        </span>
+    )
+}
 
 const renderList = (account: WalletAccount) =>
     renderWithNavigation(
@@ -139,7 +139,7 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.getByTestId(`asset_row_${LOOKALIKE}`)).toBeTruthy()
     })
 
-    it('Given the grouped row, when it is pressed, then it expands in place with the holding on each network under it, and pressing it again collapses it', async () => {
+    it('Given the grouped row, when it is pressed, then the holding on each network shows under it with its network', async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         renderList(TWO_CHAIN_ACCOUNT)
 
@@ -155,26 +155,36 @@ describe("Flow: One account's assets across chains", () => {
         expect(
             within(ethereumMember).getByTestId('network_label_ethereum'),
         ).toBeTruthy()
-        expect(screen.queryByTestId(/^asset-details-/)).toBeNull()
+        expect(screen.queryByTestId('asset_details_stub')).toBeNull()
+    })
 
+    it('Given the expanded group, when it is pressed again, then it collapses without opening any detail', async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+        fireEvent.click(await screen.findByTestId('asset_group_row_usdc'))
+        await screen.findByTestId(`asset_row_${ETH_USDC}`)
         await waitPastDoublePressGuard()
+
         fireEvent.click(screen.getByTestId('asset_group_row_usdc'))
 
         await waitFor(() => {
             expect(screen.queryByTestId(`asset_row_${ETH_USDC}`)).toBeNull()
         })
+        expect(
+            screen.queryByTestId(`asset_row_${USDC_TEST_ASSET.assetId}`),
+        ).toBeNull()
+        expect(screen.queryByTestId('asset_details_stub')).toBeNull()
     })
 
-    it("Given the expanded group, when one network's row is pressed, then that network's details open", async () => {
+    it("Given the expanded group, when its Ethereum row is pressed, then Ethereum's own asset detail opens", async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         renderList(TWO_CHAIN_ACCOUNT)
-
         fireEvent.click(await screen.findByTestId('asset_group_row_usdc'))
+
         fireEvent.click(await screen.findByTestId(`asset_row_${ETH_USDC}`))
 
-        expect(
-            await screen.findByTestId(`asset-details-ethereum-${ETH_USDC}`),
-        ).toBeTruthy()
+        const details = await screen.findByTestId('asset_details_stub')
+        expect(details.textContent).toBe(`ethereum:${ETH_USDC}`)
     })
 
     it('Given the Ethereum chip, when it is selected, then only Ethereum holdings show and nothing is grouped', async () => {
