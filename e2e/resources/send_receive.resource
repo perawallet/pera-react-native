@@ -45,6 +45,7 @@ ${SEND_NEXT_BUTTON}                 xpath=//*[@resource-id='send_input_next_butt
 ${SEND_MAX_BUTTON}                  xpath=//*[@resource-id='send_input_max_button' or @name='send_input_max_button' or @content-desc='send_input_max_button']
 ${ADDRESS_SEARCH_INPUT}             xpath=//*[@resource-id='address_search_input' or @name='address_search_input' or @content-desc='address_search_input']
 ${SEND_CONFIRM_SLIDE}               xpath=//*[@resource-id='send_confirm_button' or @name='send_confirm_button' or @content-desc='send_confirm_button']
+${SEND_CONFIRM_AMOUNT}              xpath=//*[@resource-id='send_confirm_amount' or @name='send_confirm_amount' or @content-desc='send_confirm_amount']
 ${SEND_SUCCESS_DONE}                xpath=//*[@resource-id='send_success-primary' or @name='send_success-primary' or @content-desc='send_success-primary']
 
 
@@ -225,3 +226,15 @@ Choose Own Address As Recipient
     Dismiss Keyboard
     Tap    ${row}
     Wait Until Page Contains Element    ${SEND_CONFIRM_SLIDE}    timeout=25s
+
+Confirmation Should Show Amount
+    [Documentation]    Reads the amount off the confirmation screen rather than trusting that the
+    ...                numpad taps landed. Enter Amount only checks Next became enabled, which any
+    ...                non-zero value does, so a send of the wrong amount passed every assertion
+    ...                this flow had.
+    [Arguments]    ${expected}
+    Wait Until Page Contains Element    ${SEND_CONFIRM_AMOUNT}    timeout=25s
+    ${shown}=    Get Text    ${SEND_CONFIRM_AMOUNT}
+    ${digits}=    Evaluate    __import__('re').sub(r'[^0-9.]', '', $shown)
+    Should Be Equal As Numbers    ${digits}    ${expected}
+    ...    msg=The confirmation screen shows "${shown}", not the ${expected} that was entered.

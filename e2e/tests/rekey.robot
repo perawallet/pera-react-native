@@ -32,7 +32,7 @@ Rekey To Standard Is Blocked On An Unfunded Source
     Rekey Should Be Blocked As Underfunded    ${STANDARD_UNDERFUNDED}    ${STANDARD_CONFIRM_CTA}
 
 Rekey To Standard Can Be Confirmed From A Funded Source
-    [Tags]    id:rekey.standard.funded-confirm    p1    needs-funded
+    [Tags]    id:rekey.standard.funded-confirm    p1    needs-funded    excludefromci
     Skip Unless Env Set    E2E_FUNDED_MNEMONIC    E2E_FUNDED_ADDRESS
     Use Account From Environment    E2E_FUNDED_MNEMONIC    ${FUNDED_ADDRESS}
     Open Standard Rekey Intro
@@ -77,7 +77,7 @@ Rescan Rekeyed Settles Without An Error
     Open Rescan Rekeyed
 
 Rescan Lists The Account Rekeyed To This One
-    [Tags]    id:rekey.rescan.select-list    p2    needs-funded
+    [Tags]    id:rekey.rescan.select-list    p2    needs-funded    excludefromci
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
@@ -87,7 +87,7 @@ Rescan Lists The Account Rekeyed To This One
     Page Should Contain Element    ${RESCAN_SKIP}
 
 Skipping Rescan Adds Nothing And Returns Home
-    [Tags]    id:rekey.rescan.skip    p2    needs-funded
+    [Tags]    id:rekey.rescan.skip    p2    needs-funded    excludefromci
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
@@ -99,5 +99,5 @@ Skipping Rescan Adds Nothing And Returns Home
     Page Should Not Contain Element    ${row}
 
 Undo Rekey Confirmation Opens For A Rekeyed Account
-    [Tags]    id:rekey.undo.confirm    p1    needs-funded    needs-testid
+    [Tags]    id:rekey.undo.confirm    p1    needs-funded    needs-testid    excludefromci
     Skip    The account info card's Undo rekey link has no testID, and reaching it needs an already-rekeyed account.

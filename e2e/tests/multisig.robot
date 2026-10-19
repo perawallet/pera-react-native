@@ -8,7 +8,8 @@ Resource            ../resources/multisig.resource
 Suite Setup         Start From Wallet Account Only
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
-Test Teardown       Clean Up Test Accounts    ${NAME_MANAGED}
+Test Teardown       Run Keywords    Capture Failure Screenshot
+...                 AND    Clean Up Test Accounts    ${NAME_MANAGED}
 Test Tags           multisig
 
 
