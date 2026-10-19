@@ -16,7 +16,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
     type FeeEstimate,
     type TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
@@ -29,7 +29,7 @@ import {
     type TransferFeeEstimateInput,
 } from '../useTransferFeeEstimateQuery'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const INTENT: TransferIntent = {
     kind: 'transfer',
     from: 'SENDER',
