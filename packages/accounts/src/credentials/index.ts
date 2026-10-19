@@ -39,3 +39,8 @@ export {
     nextChainPosition,
     seedMintableScheme,
 } from './eligibility'
+export {
+    formatPrivateKey,
+    isValidPrivateKeyInput,
+    parsePrivateKey,
+} from './private-key-codec'

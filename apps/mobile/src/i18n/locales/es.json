@@ -397,7 +397,8 @@
         "backup_warning_continue": "Sí, continuar",
         "backup_warning_cancel": "No, conservar la cuenta",
         "remove_rekey_error_title": "No se puede eliminar la cuenta",
-        "remove_rekey_error_message": "No puedes eliminar esta cuenta antes de eliminar sus {{count}} cuenta(s) con rekey"
+        "remove_rekey_error_message": "No puedes eliminar esta cuenta antes de eliminar sus {{count}} cuenta(s) con rekey",
+        "view_private_key": "Ver clave privada"
     },
     "account_info": {
         "min_balance": "Saldo mín.",
@@ -468,6 +469,11 @@
             "error_title": "No se pudo obtener la passphrase",
             "error_body": "Se produjo un error. Vuelve a intentarlo."
         }
+    },
+    "reveal_private_key": {
+        "title": "Clave privada",
+        "body": "Quien tenga esta clave controla la cuenta. Nunca la compartas.",
+        "error_title": "No se pudo mostrar la clave privada"
     },
     "banners": {
         "dismiss": "No volver a mostrar"
@@ -2140,6 +2146,16 @@
             "pera_card_option_title": "Añadir cuenta de Pera Card",
             "pera_card_option_description": "Gasta tus criptos en el mundo real con la Pera Card",
             "see_other_options": "Ver otras opciones"
+        },
+        "import_private_key": {
+            "title": "Importar clave privada",
+            "body": "Introduce la clave privada de la cuenta de {{chain}}.",
+            "input_label": "Clave privada",
+            "invalid": "Esta no es una clave privada válida",
+            "submit": "Importar cuenta",
+            "error_title": "No se pudo importar la cuenta",
+            "backup_included": "Esta cuenta está incluida en tu copia de seguridad en la nube.",
+            "backup_not_included": "Esta cuenta no está en ninguna copia de seguridad en la nube. Para recuperarla más adelante, usa Ver clave privada en las opciones de la cuenta y guarda la clave en un lugar seguro."
         },
         "import_account_options": {
             "title": "Importar una\ncuenta",

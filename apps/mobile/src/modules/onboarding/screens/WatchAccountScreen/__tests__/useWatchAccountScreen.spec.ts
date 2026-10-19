@@ -252,6 +252,7 @@ describe('useWatchAccountScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: expectedAccount,
+            chainId: 'algorand',
         })
     })
 
@@ -341,6 +342,7 @@ describe('useWatchAccountScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: expectedAccount,
+            chainId: 'algorand',
         })
     })
 
@@ -383,6 +385,7 @@ describe('useWatchAccountScreen', () => {
             expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
             expect(mockPush).toHaveBeenCalledWith('NameAccount', {
                 account: expectedAccount,
+                chainId: FIXTURE_CHAIN_ID,
             })
         })
 

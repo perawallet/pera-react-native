@@ -397,6 +397,14 @@ export interface AccountsChainAdapter {
         keyPairId: string,
         domain: string,
     ): Promise<Uint8Array>
+    /**
+     * The key bytes of user-entered text. Throws the chain's validation error,
+     * which never carries the input. The caller zeroes the result. Absent on a
+     * chain that imports no raw private keys.
+     */
+    parsePrivateKey?(input: string): Uint8Array
+    /** The text a user copies into another wallet; `privateKey` is left untouched. */
+    formatPrivateKey?(privateKey: Uint8Array): string
     /** Absent on a chain whose signing authority can't move to another account. */
     readonly authority?: AccountAuthorityOps
     /** `account` need not be in `accounts`; whatever signs for it must be. */

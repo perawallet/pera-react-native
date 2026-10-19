@@ -60,6 +60,7 @@ export type PWInputProps = {
     returnKeyType?: RNEInputProps['returnKeyType']
     autoCapitalize?: RNEInputProps['autoCapitalize']
     autoComplete?: RNEInputProps['autoComplete']
+    importantForAutofill?: RNEInputProps['importantForAutofill']
     autoCorrect?: boolean
     spellCheck?: boolean
     /**

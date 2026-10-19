@@ -16,7 +16,11 @@ import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { createFakeChainKeyStore } from '@perawallet/wallet-core-chain-contract/testing'
 import { createEthereumAccountsAdapter } from '../adapter'
 import { ethereumKeyDerivation } from '../key-derivation'
-import { revealEthereumPrivateKey } from '../private-key'
+import {
+    formatEthereumPrivateKey,
+    parseEthereumPrivateKey,
+    revealEthereumPrivateKey,
+} from '../private-key'
 
 const adapter = createEthereumAccountsAdapter({} as ChainContext)
 
@@ -77,5 +81,10 @@ describe('createEthereumAccountsAdapter', () => {
 
     it('reveals a private key through the keystore export', () => {
         expect(adapter.revealPrivateKey).toBe(revealEthereumPrivateKey)
+    })
+
+    it('parses and formats private keys as hex', () => {
+        expect(adapter.parsePrivateKey).toBe(parseEthereumPrivateKey)
+        expect(adapter.formatPrivateKey).toBe(formatEthereumPrivateKey)
     })
 })

@@ -21,6 +21,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '@packages/chain-algorand/src/capability-defaults'
 import { ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
 import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
 import { ethereumAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
@@ -88,6 +92,17 @@ export const registerEthereumChain = (): void => {
     if (!addressCodecs.has(ETHEREUM_CHAIN_ID)) {
         addressCodecs.register(ethereumAddressCodec)
     }
+}
+
+/** Back to the unit registry's starting point, Algorand alone at its shipped defaults. */
+export const restoreAlgorandOnlyChains = (): void => {
+    const { chains } = getProvider()
+    chains.reset()
+    chains.register(
+        algorandDescriptor,
+        algorandCapabilityDefaults,
+        algorandCapabilityRestrictions,
+    )
 }
 
 const ALGORAND_ADDRESS_SHAPE = /^[0-9a-zA-Z]{58}$/

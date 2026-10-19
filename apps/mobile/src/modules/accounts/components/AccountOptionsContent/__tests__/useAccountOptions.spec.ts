@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { trackEvent, AccountOptionsEvent } from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
@@ -26,6 +26,11 @@ import {
 } from '@test-utils/algorandAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -53,9 +58,12 @@ const { mockUseCanSignWith } = vi.hoisted(() => ({
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
-const { mockOpenViewPassphraseFlow } = vi.hoisted(() => ({
-    mockOpenViewPassphraseFlow: vi.fn(),
-}))
+const { mockOpenViewPassphraseFlow, mockOpenRevealPrivateKeyFlow } = vi.hoisted(
+    () => ({
+        mockOpenViewPassphraseFlow: vi.fn(),
+        mockOpenRevealPrivateKeyFlow: vi.fn(),
+    }),
+)
 const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
     () => ({
         mockToggleAccountNotification: vi.fn(),
@@ -97,6 +105,9 @@ vi.mock('@hooks/useAccountNotificationToggle', () => ({
 vi.mock('@modules/view-passphrase', () => ({
     useViewPassphraseFlow: () => ({
         openViewPassphraseFlow: mockOpenViewPassphraseFlow,
+    }),
+    useRevealPrivateKeyFlow: () => ({
+        openRevealPrivateKeyFlow: mockOpenRevealPrivateKeyFlow,
     }),
 }))
 
@@ -399,6 +410,77 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+    })
+
+    describe('an imported private-key account', () => {
+        const privateKeyAccount: WalletAccount = {
+            id: 'acc-pk',
+            chains: {
+                [ETHEREUM_CHAIN_ID]: { address: '0xabc', keyPairId: 'key-pk' },
+            },
+            custody: { kind: 'local', seed: null },
+        }
+
+        const idsFor = (account: WalletAccount): string[] => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current.options.map(o => o.id)
+        }
+
+        beforeEach(registerEthereumChain)
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('offers View private key', () => {
+            expect(idsFor(privateKeyAccount)).toContain('view-private-key')
+        })
+
+        it('offers it for no HD, Algo25 or watch account', () => {
+            const hdAccount: WalletAccount = {
+                id: 'acc-hd',
+                chains: { algorand: { address: 'HDADDRESS', keyPairId: 'k' } },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            }
+            for (const account of [hdAccount, algo25Account, watchAccount]) {
+                expect(idsFor(account)).not.toContain('view-private-key')
+            }
+        })
+
+        it('hides it when private keys are off on the chain', () => {
+            setCapabilityOverrides({ privateKeys: false }, ETHEREUM_CHAIN_ID)
+
+            expect(idsFor(privateKeyAccount)).not.toContain('view-private-key')
+        })
+
+        it('dismisses the menu, then opens the reveal flow on the chain', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: privateKeyAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            act(() => {
+                result.current.options
+                    .find(o => o.id === 'view-private-key')
+                    ?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockOpenRevealPrivateKeyFlow).toHaveBeenCalledWith(
+                'acc-pk',
+                ETHEREUM_CHAIN_ID,
+            )
         })
     })
 

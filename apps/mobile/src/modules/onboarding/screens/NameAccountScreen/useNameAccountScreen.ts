@@ -62,6 +62,7 @@ export const useNameAccountScreen = () => {
     const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
+    const chainId = route.params?.chainId ?? LEGACY_CHAIN_ID
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
 
@@ -86,7 +87,7 @@ export const useNameAccountScreen = () => {
     }, [accounts, seedIdOf, scope.chainId])
 
     const initialWalletName = account
-        ? getAccountDisplayName(account, scope.chainId)
+        ? getAccountDisplayName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
 
     const [walletDisplay, setWalletDisplay] =
@@ -122,17 +123,21 @@ export const useNameAccountScreen = () => {
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
             const namedAccount = { ...targetAccount, name: walletDisplay }
+            const storedAccounts = useAccountsStore.getState().accounts
             const targetAddress = chainAccountOf(
                 targetAccount,
-                scope.chainId,
+                chainId,
             )?.address
+            // Watched, derived and imported accounts are persisted before
+            // naming, so naming updates them rather than adding a duplicate.
             const isAlreadyInStore =
-                targetAddress !== undefined &&
-                !!findAccountByAddressOn(
-                    useAccountsStore.getState().accounts,
-                    scope.chainId,
-                    targetAddress,
-                )
+                storedAccounts.some(a => a.id === targetAccount.id) ||
+                (targetAddress !== undefined &&
+                    !!findAccountByAddressOn(
+                        storedAccounts,
+                        chainId,
+                        targetAddress,
+                    ))
 
             if (isAlreadyInStore) {
                 updateAccount(namedAccount)
