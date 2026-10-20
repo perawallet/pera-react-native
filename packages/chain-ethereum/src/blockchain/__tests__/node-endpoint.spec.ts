@@ -80,10 +80,9 @@ describe('createEvmNodeEndpointAdapter', () => {
             BASE,
         )
 
+        expect(adapter.chainId).toBe('base')
         await adapter.checkOverride?.('sepolia', 'https://my-node.rpc.test/')
-
-        expect(adapter.chainId).toBe(BASE.row.id)
-        expect(checkEvmRpcChainId).toHaveBeenCalledWith(
+        expect(checkEvmRpcChainId).toHaveBeenLastCalledWith(
             'https://my-node.rpc.test/',
             'sepolia',
             TIMEOUTS,
