@@ -19,11 +19,13 @@ import {
     type ChainActionData,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    deeplinkAdapters,
     DeeplinkType,
     type ChainActionDeeplink,
     type ChainLinkTarget,
 } from '@perawallet/wallet-core-deeplinks'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 
 const {
     mockAddSignRequest,
@@ -60,7 +62,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         chainId,
         networkId: mockNetwork.current,
     }),
-    getChainDescriptor: () => ({
+    getChainDescriptor: (chainId: string) => ({
+        displayName: chainId === 'algorand' ? 'Algorand' : 'Ethereum',
         networks: [{ id: 'testnet', displayName: 'TestNet' }],
     }),
 }))
@@ -82,25 +85,36 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         mockResolveSignerForAccount(account, accounts),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     generateOrderedUniqueId: () => 'test-sign-request-id',
-    decodeFromBase64: (s: string) => Uint8Array.from(Buffer.from(s, 'base64')),
-    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
 }))
 
 vi.mock('../useDeeplinkErrorHandler', () => ({
     useDeeplinkErrorHandler: () => mockShowError,
 }))
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    buildKeyRegistrationTx: (params: { kind: string }) =>
-        params.kind === 'offline'
-            ? mockOfflineKeyRegistration(params)
-            : mockOnlineKeyRegistration(params),
-}))
+// The real Algorand chain action runs; only the AlgoKit build and the
+// unsigned-transaction wrapping below it are stubbed.
+vi.mock('@packages/chain-algorand/src/transactions/builders', async () =>
+    (
+        await import('@test-utils/algorand-chain-action-mock')
+    ).algorandKeyregBuilderMock(
+        mockOfflineKeyRegistration,
+        mockOnlineKeyRegistration,
+    ),
+)
 
-import { useKeyregDeeplink } from '../useKeyregDeeplink'
+vi.mock('@packages/chain-algorand/src/signing/unsignedTransaction', async () =>
+    (
+        await import('@test-utils/algorand-chain-action-mock')
+    ).algorandUnsignedTransactionMock(),
+)
+
+import { useChainActionDeeplink } from '../useChainActionDeeplink'
 
 const VALID_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
@@ -146,10 +160,11 @@ const seedSenderInWallet = () => {
     ]
 }
 
-describe('useKeyregDeeplink', () => {
+describe('useChainActionDeeplink', () => {
     beforeEach(() => {
         // Base32 shape only, enough to tell a valid sender from an invalid one.
         registerLegacyAddressCodec(address => /^[A-Z2-7]{58}$/.test(address))
+        registerDeeplinkAdapters()
         mockAddSignRequest.mockReset()
         mockShowError.mockReset()
         mockOnlineKeyRegistration.mockReset()
@@ -176,11 +191,31 @@ describe('useKeyregDeeplink', () => {
     afterEach(() => {
         mockAllAccounts.current = []
         addressCodecs.reset()
+        deeplinkAdapters.reset()
     })
 
     describe('preflight gating', () => {
+        it("refuses a chain whose deeplink adapter builds no chain action, with the chain's name", async () => {
+            seedSenderInWallet()
+            const { result } = renderHook(() => useChainActionDeeplink())
+
+            await act(async () => {
+                await result.current(
+                    baseOfflineDeeplink({}, { chainId: 'ethereum' }),
+                )
+            })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'unsupported-on-chain',
+                    values: { chain: 'Ethereum' },
+                }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
         it('rejects an invalid sender address with the "keyreg" error variant and does not queue a sign request', async () => {
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -200,7 +235,7 @@ describe('useKeyregDeeplink', () => {
 
         it('rejects a sender we don\'t hold with the "keyreg-unknown-account" variant', async () => {
             // mockAllAccounts left empty — wallet doesn't have the sender.
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -222,7 +257,7 @@ describe('useKeyregDeeplink', () => {
         it('rejects a keyreg whose target network is not the active one', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -246,7 +281,7 @@ describe('useKeyregDeeplink', () => {
         it('accepts a target naming the active network', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -270,7 +305,7 @@ describe('useKeyregDeeplink', () => {
             seedSenderInWallet()
             mockResolveSignerForAccount.mockReturnValue({ kind: 'watch' })
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -289,7 +324,7 @@ describe('useKeyregDeeplink', () => {
             seedSenderInWallet()
             mockResolveSignerForAccount.mockReturnValue({ kind: 'authIsWatch' })
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -311,7 +346,7 @@ describe('useKeyregDeeplink', () => {
                 authorityAddress: 'AUTH',
             })
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -326,7 +361,7 @@ describe('useKeyregDeeplink', () => {
         it('rejects an online keyreg missing any of the participation key fields with the "keyreg" variant', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             // sprfkey omitted → online keyreg requires every key field.
             await act(async () => {
@@ -350,7 +385,7 @@ describe('useKeyregDeeplink', () => {
         it('builds an offline keyreg and queues a deeplink-source sign request', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -384,7 +419,7 @@ describe('useKeyregDeeplink', () => {
         it('builds an online keyreg with every participation field forwarded to the chain adapter', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -415,7 +450,7 @@ describe('useKeyregDeeplink', () => {
             // empty.
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -462,7 +497,7 @@ describe('useKeyregDeeplink', () => {
             ]
             quantumRaise(adjustments)
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -497,7 +532,7 @@ describe('useKeyregDeeplink', () => {
                 },
             ])
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -519,7 +554,7 @@ describe('useKeyregDeeplink', () => {
         it("passes a non-quantum sender's dApp fee through with no adjustments", async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(
@@ -541,7 +576,7 @@ describe('useKeyregDeeplink', () => {
         it('leaves the fee undefined for a non-quantum sender with no dApp fee', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())
@@ -563,7 +598,7 @@ describe('useKeyregDeeplink', () => {
             const buildErr = new Error('algod refused to compute params')
             mockOfflineKeyRegistration.mockRejectedValueOnce(buildErr)
 
-            const { result } = renderHook(() => useKeyregDeeplink())
+            const { result } = renderHook(() => useChainActionDeeplink())
 
             await act(async () => {
                 await result.current(baseOfflineDeeplink())

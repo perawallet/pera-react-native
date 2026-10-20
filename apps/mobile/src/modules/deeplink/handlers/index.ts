@@ -17,8 +17,8 @@ export type {
     SendFundsDeeplinkHandler,
     SendFundsDeeplinkPrefill,
 } from './useSendFundsDeeplink'
-export { useKeyregDeeplink } from './useKeyregDeeplink'
-export type { KeyregDeeplinkHandler } from './useKeyregDeeplink'
+export { useChainActionDeeplink } from './useChainActionDeeplink'
+export type { ChainActionDeeplinkHandler } from './useChainActionDeeplink'
 export { useBrowserDeeplink } from './useBrowserDeeplink'
 export type { BrowserDeeplinkHandler } from './useBrowserDeeplink'
 export { useDiscoverPathDeeplink } from './useDiscoverPathDeeplink'

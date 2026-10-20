@@ -263,7 +263,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // Non-quantum in every fixture here — the calculator's real fast path
     // is a passthrough no-op. Real fee behavior is covered by
     // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
-    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
+    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useChainActionDeeplink.spec.ts.
     useMinimumFeeCalculatorFor:
         () =>
         () =>
@@ -274,16 +274,28 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
-// the real transactions package isn't loaded into this unit test's graph. The
-// keyreg handler builds through the chain adapter, so the mock routes each
-// keyreg kind to its builder spy.
+// the real transactions package isn't loaded into this unit test's import
+// graph.
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
-    buildKeyRegistrationTx: (params: { kind: string }) =>
-        params.kind === 'offline'
-            ? mockOfflineKeyRegistration(params)
-            : mockOnlineKeyRegistration(params),
 }))
+
+// The Algorand deeplink adapter's chain action runs for real; only the AlgoKit
+// build and the unsigned-transaction wrapping below it are stubbed.
+vi.mock('@packages/chain-algorand/src/transactions/builders', async () =>
+    (
+        await import('@test-utils/algorand-chain-action-mock')
+    ).algorandKeyregBuilderMock(
+        mockOfflineKeyRegistration,
+        mockOnlineKeyRegistration,
+    ),
+)
+
+vi.mock('@packages/chain-algorand/src/signing/unsignedTransaction', async () =>
+    (
+        await import('@test-utils/algorand-chain-action-mock')
+    ).algorandUnsignedTransactionMock(),
+)
 
 vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
     useConnectionPairing: () => ({
