@@ -131,7 +131,25 @@ describe('useQRViewScreen', () => {
         expect(useAccountCapabilityScope).toHaveBeenCalledWith(
             algorandAccount,
             'receive',
+            undefined,
         )
+    })
+
+    it('resolves the pinned chain when the flow was opened for one', () => {
+        ;(useReceiveFunds as Mock).mockReturnValue({
+            selectedAccount: ethereumAccount,
+            chainId: 'ethereum',
+        })
+        vi.mocked(useAccountCapabilityScope).mockReturnValue(ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(useAccountCapabilityScope).toHaveBeenCalledWith(
+            ethereumAccount,
+            'receive',
+            'ethereum',
+        )
+        expect(result.current.paymentUri).toBe('stub:0XABC@sepolia')
     })
 
     it('encodes an Algorand account through its chain codec', () => {

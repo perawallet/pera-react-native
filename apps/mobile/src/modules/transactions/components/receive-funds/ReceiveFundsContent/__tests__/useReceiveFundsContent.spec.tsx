@@ -35,6 +35,7 @@ const mockAccount: WalletAccount = {
 const mockSetSelectedAccount = vi.fn()
 const mockSetCanSelectAccount = vi.fn()
 const mockSetOnFinished = vi.fn()
+const mockSetChainId = vi.fn()
 const mockReset = vi.fn()
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -52,6 +53,7 @@ describe('useReceiveFundsContent', () => {
             canSelectAccount: true,
             setSelectedAccount: mockSetSelectedAccount,
             setCanSelectAccount: mockSetCanSelectAccount,
+            setChainId: mockSetChainId,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAccount: undefined,
@@ -71,6 +73,7 @@ describe('useReceiveFundsContent', () => {
             canSelectAccount: true,
             setSelectedAccount: mockSetSelectedAccount,
             setCanSelectAccount: mockSetCanSelectAccount,
+            setChainId: mockSetChainId,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAccount: mockAccount,
@@ -94,6 +97,20 @@ describe('useReceiveFundsContent', () => {
         renderHook(() => useReceiveFundsContent(mockAccount), { wrapper })
 
         expect(mockSetSelectedAccount).toHaveBeenCalledWith(mockAccount)
+    })
+
+    it('pins the chain it is given', () => {
+        renderHook(() => useReceiveFundsContent(mockAccount, 'ethereum'), {
+            wrapper,
+        })
+
+        expect(mockSetChainId).toHaveBeenCalledWith('ethereum')
+    })
+
+    it('leaves a chain pinned before the sheet opened when given none', () => {
+        renderHook(() => useReceiveFundsContent(mockAccount), { wrapper })
+
+        expect(mockSetChainId).not.toHaveBeenCalled()
     })
 
     it('sets onFinished callback', () => {
@@ -150,6 +167,7 @@ describe('useReceiveFundsContent', () => {
             canSelectAccount: false,
             setSelectedAccount: mockSetSelectedAccount,
             setCanSelectAccount: mockSetCanSelectAccount,
+            setChainId: mockSetChainId,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAccount: mockAccount,

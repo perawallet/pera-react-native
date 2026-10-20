@@ -34,8 +34,19 @@ describe('useReceiveFunds', () => {
         const { result } = renderHook(() => useReceiveFunds())
 
         expect(result.current.selectedAccount).toBeUndefined()
+        expect(result.current.chainId).toBeUndefined()
         expect(result.current.canSelectAccount).toBe(true)
         expect(result.current.onFinished).toBeUndefined()
+    })
+
+    it('sets the pinned chain', () => {
+        const { result } = renderHook(() => useReceiveFunds())
+
+        act(() => {
+            result.current.setChainId('ethereum')
+        })
+
+        expect(result.current.chainId).toBe('ethereum')
     })
 
     it('sets selected account', () => {
@@ -75,6 +86,7 @@ describe('useReceiveFunds', () => {
 
         act(() => {
             result.current.setSelectedAccount(mockAccount)
+            result.current.setChainId('ethereum')
             result.current.setCanSelectAccount(false)
             result.current.setOnFinished(mockCallback)
         })
@@ -88,6 +100,7 @@ describe('useReceiveFunds', () => {
         })
 
         expect(result.current.selectedAccount).toBeUndefined()
+        expect(result.current.chainId).toBeUndefined()
         expect(result.current.canSelectAccount).toBe(true)
         expect(result.current.onFinished).toBeUndefined()
     })
