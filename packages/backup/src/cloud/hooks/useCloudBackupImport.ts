@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    AddressMismatchError,
     buildAccount,
     chainAccountOf,
     DuplicateAccountError,
@@ -28,7 +29,9 @@ import {
     type MultiSigAccount,
     type WalletAccount,
     type WatchAccount,
+    withEnablement,
     withMultisigParameters,
+    type ChainEnabledBy,
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
@@ -100,6 +103,15 @@ const nameField = (
     customName: string | null | undefined,
 ): { name: string } | Record<string, never> =>
     customName ? { name: customName } : {}
+
+/** A record that carries enablement restores its entries as `'restore'`; one
+ *  written before enablement was recorded restores them as created. */
+const restoreStampOf = (
+    payload: PulledAccount['addressPayload'],
+): ChainEnabledBy =>
+    'enabledBy' in payload && payload.enabledBy !== undefined
+        ? 'restore'
+        : 'created'
 
 const assertValidAddress = (chainId: ChainId, address: string): void => {
     if (!addressCodecs.get(chainId).isValid(address)) {
@@ -435,25 +447,44 @@ const importHdChainAccount = async (
         { account: payload.account, keyIndex: payload.keyIndex },
         payload.customName || undefined,
         payload.address,
+        restoreStampOf(payload),
     )
     return useAccountsStore.getState().accounts.length > before ? 1 : 0
 }
 
 /** The key is hex only until it is decoded here, and the bytes are zeroed
- *  whether or not the import succeeds. */
+ *  whether or not the import succeeds. The account's one secret serves every
+ *  chain entry: the first imports the key and the rest join the account it
+ *  created, the key's address on each chain checked against the entry.
+ *  Returns 1 when the call created the account. */
 const importStandaloneKeyAccount = async (
     chainId: ChainId,
     payload: StandaloneKeyAddressPayload,
     secretsPayload: SecretsBackupPayload | null,
-): Promise<void> => {
+    groupHolder: WalletAccount | undefined,
+): Promise<number> => {
     if (
-        !secretsPayload ||
-        !('privateKey' in secretsPayload) ||
-        secretsPayload.chain !== chainId
+        groupHolder &&
+        hasCustody(groupHolder, 'local') &&
+        groupHolder.custody.seed === null
     ) {
+        const joined = await useAccountsStore
+            .getState()
+            .enableChain(groupHolder.id, chainId, restoreStampOf(payload))
+        const address = chainAccountOf(joined, chainId)?.address
+        if (
+            address === undefined ||
+            !isSameAddress(chainId, address, payload.address)
+        ) {
+            throw new AddressMismatchError(payload.address, address ?? '')
+        }
+        return 0
+    }
+    if (!secretsPayload || !('privateKey' in secretsPayload)) {
         throw new Error('standaloneKey account missing private key secret')
     }
     const privateKey = hexToBytes(secretsPayload.privateKey)
+    const before = useAccountsStore.getState().accounts.length
     try {
         await useAccountsStore
             .getState()
@@ -462,10 +493,12 @@ const importStandaloneKeyAccount = async (
                 privateKey,
                 payload.customName || undefined,
                 payload.address,
+                { enabledBy: restoreStampOf(payload), shouldDiscover: false },
             )
     } finally {
         zeroBytes(privateKey)
     }
+    return useAccountsStore.getState().accounts.length > before ? 1 : 0
 }
 
 /** A watch account on several chains comes as one entry per chain; the first
@@ -486,7 +519,10 @@ const attachWatchChain = (
     assertValidAddress(chainId, address)
     context.replaceAccount({
         ...holder,
-        chains: { ...holder.chains, [chainId]: { address } },
+        chains: {
+            ...holder.chains,
+            [chainId]: withEnablement({ address }, 'created'),
+        },
     })
     return true
 }
@@ -578,12 +614,12 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.standaloneKey: {
-            await importStandaloneKeyAccount(
+            return importStandaloneKeyAccount(
                 chainId,
                 addressPayload,
                 secretsPayload,
+                groupHolder,
             )
-            return 1
         }
 
         default: {
@@ -693,6 +729,29 @@ const createsAccount = (entries: PulledAccount[]): boolean =>
             addressPayload.type !== BackupAccountType.hdSeed,
     )
 
+/**
+ * Builders stamp what they write as created; an entry from a record that
+ * carries enablement is restamped here, once its group is in.
+ */
+const stampRestoredEntries = (
+    context: ImportContext,
+    accountId: string,
+    chainIds: readonly ChainId[],
+): void => {
+    const holder = useAccountsStore
+        .getState()
+        .accounts.find(account => account.id === accountId)
+    if (!holder || chainIds.length === 0) return
+    const enabledAt = Date.now()
+    const chains = { ...holder.chains }
+    for (const chainId of chainIds) {
+        const entry = chains[chainId]
+        if (entry)
+            chains[chainId] = { ...entry, enabledAt, enabledBy: 'restore' }
+    }
+    context.replaceAccount({ ...holder, chains })
+}
+
 const importBatch = async (
     context: ImportContext,
     pulled: PulledAccount[],
@@ -714,8 +773,10 @@ const importBatch = async (
         failed: [...failures],
     }
 
+    const restoredAccountIds = new Set<string>()
     for (const entries of groups) {
         let groupHolder: WalletAccount | undefined
+        const restoredChains: ChainId[] = []
         for (const account of entries) {
             try {
                 summary.imported += await importOneAccount(
@@ -724,6 +785,9 @@ const importBatch = async (
                     seedKeyIdByFirstDerivedAddress,
                     groupHolder,
                 )
+                if (restoreStampOf(account.addressPayload) === 'restore') {
+                    restoredChains.push(chainOf(context, account))
+                }
             } catch (error) {
                 if (error instanceof DuplicateAccountError) {
                     summary.skippedDuplicate += 1
@@ -738,10 +802,21 @@ const importBatch = async (
             }
             groupHolder ??= holderOf(context, account)
         }
+        if (groupHolder) {
+            restoredAccountIds.add(groupHolder.id)
+            stampRestoredEntries(context, groupHolder.id, restoredChains)
+        }
         if (createsAccount(entries)) {
             done += 1
             onProgress?.(done, total)
         }
+    }
+
+    // Sequential, and after every group: a probe enables chains on an account
+    // the rest of the batch could otherwise still be joining entries to.
+    const { discoverChains } = useAccountsStore.getState()
+    for (const accountId of restoredAccountIds) {
+        await discoverChains(accountId)
     }
 
     summary.failed = dedupeFailuresByAddress(summary.failed)

@@ -11,8 +11,9 @@
  */
 
 import {
-    buildAccount,
+    buildAccount as buildStampedAccount,
     type AccountChains,
+    type BuildAccountInput,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
@@ -36,6 +37,23 @@ export type GoldenAccountKind = keyof typeof GOLDEN_ACCOUNT_ITEMS
 export type GoldenMultichainKind = keyof typeof GOLDEN_MULTICHAIN_ITEMS
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
+// Accounts as held before chain entries recorded their enablement, so the
+// goldens stay the bytes every earlier build wrote; serializeAccountItems.spec
+// pins the two fields an entry that carries it adds.
+const buildAccount = (input: BuildAccountInput): WalletAccount => {
+    const account = buildStampedAccount(input)
+    return {
+        ...account,
+        chains: Object.fromEntries(
+            Object.entries(account.chains).map(([chainId, entry]) => {
+                if (!entry) return [chainId, entry]
+                const { enabledAt: _at, enabledBy: _by, ...rest } = entry
+                return [chainId, rest]
+            }),
+        ),
+    }
+}
 
 // Stands in for an entry on a chain this build doesn't back up, which must
 // never reach the record. It isn't a `ChainId` member, hence the widening cast.

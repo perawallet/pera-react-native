@@ -20,6 +20,7 @@ import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
     registerAlgorandAccountsAdapter,
     registerEthereumAccountsAdapter,
+    registerBaseBackupChain,
     registerEthereumBackupChain,
 } from '../../../__tests__/backupChainFixtures'
 
@@ -159,6 +160,40 @@ describe('serializeAccountForBackup', () => {
             privateKey: KEY_HEX,
         })
         expect(bytes.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('files one secret for a key enabled on two chains, under the first chain in record order', async () => {
+        registerBaseBackupChain()
+        const resolvePrivateKey = vi.fn(async () => keyBytes())
+        const twoChains = buildAccount({
+            id: 'key',
+            custody: { kind: 'local', seed: null },
+            chainId: 'ethereum',
+            chains: {
+                ethereum: { address: '0xkey', keyPairId: 'eth-raw' },
+                base: { address: '0xkey', keyPairId: 'eth-raw' },
+            },
+        })
+
+        const serialized = await serializeAccountForBackup(twoChains, {
+            ...deps,
+            resolvePrivateKey,
+        })
+
+        expect(resolvePrivateKey).toHaveBeenCalledExactlyOnceWith(
+            'base',
+            'eth-raw',
+        )
+        expect(serialized?.secrets?.payload).toEqual({
+            type: 'standaloneKey',
+            chain: 'base',
+            address: '0xkey',
+            privateKey: KEY_HEX,
+        })
+        expect(serialized?.record.payload.chains.map(c => c.chain)).toEqual([
+            'base',
+            'ethereum',
+        ])
     })
 
     it('reads no key for a private-key account on no chain this build backs up', async () => {

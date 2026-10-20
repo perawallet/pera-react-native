@@ -73,7 +73,7 @@ import {
     type SettingsBackupPayload,
     type SyncItemState,
 } from '../models'
-import { canRestoreRecordEntry, isBackupChain } from '../sync/backupChains'
+import { canRestoreRecordEntry } from '../sync/backupChains'
 import type { PulledContact, PulledPasskey } from '../sync/types'
 
 const READ_BATCH_SIZE = 50
@@ -104,7 +104,7 @@ export type PulledSettings = {
 export type SkippedItem = {
     key: BackupItemKey
     /** `newer`: a record only a newer client can restore. */
-    reason: 'decrypt' | 'parse' | 'chain' | 'newer'
+    reason: 'decrypt' | 'parse' | 'newer'
 }
 
 export type PullBackupItemsResult = {
@@ -322,15 +322,6 @@ const collectItemPayloads = (
             if (isContactRecordReadable(parsed.payload))
                 contactRecords.push(parsed.payload)
             else skipped.push({ key: item.key, reason: 'newer' })
-            continue
-        }
-
-        const chain =
-            parsed.kind === 'secrets' && 'chain' in parsed.payload
-                ? (parsed.payload.chain as ChainId)
-                : null
-        if (chain !== null && !isBackupChain(chain)) {
-            skipped.push({ key: item.key, reason: 'chain' })
             continue
         }
 

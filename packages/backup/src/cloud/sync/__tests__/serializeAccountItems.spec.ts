@@ -58,8 +58,11 @@ const watchAccount = (chains: WalletAccount['chains']): WalletAccount =>
         chains,
     })
 
-const ALGO = { algorand: { address: 'ALGO', keyPairId: 'algo-key' } }
-const ETH = { ethereum: { address: '0xeth', keyPairId: 'eth-key' } }
+const CREATED = { enabledAt: 3, enabledBy: 'created' } as const
+const ALGO = {
+    algorand: { address: 'ALGO', keyPairId: 'algo-key', ...CREATED },
+}
+const ETH = { ethereum: { address: '0xeth', keyPairId: 'eth-key', ...CREATED } }
 
 describe('buildAccountRecord', () => {
     beforeEach(() => {
@@ -88,6 +91,7 @@ describe('buildAccountRecord', () => {
                     change: 0,
                     keyIndex: 1,
                     derivationType: 9,
+                    ...CREATED,
                 },
                 {
                     chain: 'ethereum',
@@ -96,6 +100,7 @@ describe('buildAccountRecord', () => {
                     seedFirstDerivedAddress: 'SEED',
                     account: 0,
                     keyIndex: 1,
+                    ...CREATED,
                 },
             ],
         })
@@ -128,22 +133,49 @@ describe('buildAccountRecord', () => {
         expect(
             buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
         ).toEqual([
-            { chain: 'ethereum', type: 'standaloneKey', address: '0xeth' },
+            {
+                chain: 'ethereum',
+                type: 'standaloneKey',
+                address: '0xeth',
+                ...CREATED,
+            },
         ])
     })
 
     it('writes one watch record across its chains, in chain-id order', () => {
         const account = watchAccount({
-            ethereum: { address: '0xw' },
-            algorand: { address: 'W' },
+            ethereum: { address: '0xw', enabledAt: 9, enabledBy: 'discovery' },
+            algorand: { address: 'W', ...CREATED },
         })
 
         expect(
             buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
         ).toEqual([
-            { chain: 'algorand', type: 'watch', address: 'W' },
-            { chain: 'ethereum', type: 'watch', address: '0xw' },
+            { chain: 'algorand', type: 'watch', address: 'W', ...CREATED },
+            {
+                chain: 'ethereum',
+                type: 'watch',
+                address: '0xw',
+                enabledAt: 9,
+                enabledBy: 'discovery',
+            },
         ])
+    })
+
+    it('writes no enablement for an entry that carries none', () => {
+        const account = watchAccount({ algorand: { address: 'W' } })
+        const {
+            enabledAt: _at,
+            enabledBy: _by,
+            ...unstamped
+        } = account.chains.algorand ?? { address: 'W' }
+
+        expect(
+            buildAccountRecord(
+                { ...account, chains: { algorand: unstamped } },
+                { updatedAt: UPDATED_AT },
+            )?.chains,
+        ).toEqual([{ chain: 'algorand', type: 'watch', address: 'W' }])
     })
 
     it("carries a hardware account's device on its Algorand entry", () => {
@@ -160,7 +192,7 @@ describe('buildAccountRecord', () => {
                 accountIndex: 2,
             },
             chainId: 'algorand',
-            chains: { algorand: { address: 'L' } },
+            chains: { algorand: { address: 'L', ...CREATED } },
         })
 
         expect(
@@ -175,6 +207,7 @@ describe('buildAccountRecord', () => {
                 accountIndex: 2,
                 manufacturer: 'ledger',
                 transportType: 'ble',
+                ...CREATED,
             },
         ])
     })

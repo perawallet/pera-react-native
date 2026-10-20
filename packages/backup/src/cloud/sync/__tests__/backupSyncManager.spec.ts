@@ -162,7 +162,16 @@ vi.mock('../../store', () => ({
 
 // Empty stubs keep the real store packages out of the module graph; the
 // manager reaches their state only through the injected sources.
-vi.mock('@perawallet/wallet-core-accounts', () => ({}))
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    CHAIN_ENABLED_BY: (
+        await vi.importActual<
+            Pick<
+                typeof import('@perawallet/wallet-core-accounts'),
+                'CHAIN_ENABLED_BY'
+            >
+        >('@perawallet/wallet-core-accounts/credentials-model')
+    ).CHAIN_ENABLED_BY,
+}))
 vi.mock('@perawallet/wallet-core-contacts', () => ({}))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
