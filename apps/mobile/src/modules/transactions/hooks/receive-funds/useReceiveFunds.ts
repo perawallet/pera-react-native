@@ -12,15 +12,19 @@
 
 import { create } from 'zustand'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 type ReceiveFundsState = {
     selectedAccount?: WalletAccount
+    /** Pins the QR to this chain; unset resolves the account's own receive chain. */
+    chainId?: ChainId
     canSelectAccount: boolean
     onFinished?: () => void
 }
 
 type ReceiveFundsActions = {
     setSelectedAccount: (account?: WalletAccount) => void
+    setChainId: (chainId?: ChainId) => void
     setCanSelectAccount: (canSelect: boolean) => void
     setOnFinished: (fn: () => void) => void
     reset: () => void
@@ -30,6 +34,7 @@ type ReceiveFundsStore = ReceiveFundsState & ReceiveFundsActions
 
 const initialState: ReceiveFundsState = {
     selectedAccount: undefined,
+    chainId: undefined,
     canSelectAccount: true,
     onFinished: undefined,
 }
@@ -37,6 +42,7 @@ const initialState: ReceiveFundsState = {
 export const useReceiveFundsStore = create<ReceiveFundsStore>()(set => ({
     ...initialState,
     setSelectedAccount: account => set({ selectedAccount: account }),
+    setChainId: chainId => set({ chainId }),
     setCanSelectAccount: canSelect => set({ canSelectAccount: canSelect }),
     setOnFinished: fn => set({ onFinished: fn }),
     reset: () => set(initialState),
@@ -44,9 +50,11 @@ export const useReceiveFundsStore = create<ReceiveFundsStore>()(set => ({
 
 type UseReceiveFundsResult = {
     selectedAccount?: WalletAccount
+    chainId?: ChainId
     canSelectAccount: boolean
     onFinished?: () => void
     setSelectedAccount: (account?: WalletAccount) => void
+    setChainId: (chainId?: ChainId) => void
     setCanSelectAccount: (canSelect: boolean) => void
     setOnFinished: (fn: () => void) => void
     reset: () => void
@@ -54,6 +62,7 @@ type UseReceiveFundsResult = {
 
 export const useReceiveFunds = (): UseReceiveFundsResult => {
     const selectedAccount = useReceiveFundsStore(state => state.selectedAccount)
+    const chainId = useReceiveFundsStore(state => state.chainId)
     const canSelectAccount = useReceiveFundsStore(
         state => state.canSelectAccount,
     )
@@ -61,6 +70,7 @@ export const useReceiveFunds = (): UseReceiveFundsResult => {
     const setSelectedAccount = useReceiveFundsStore(
         state => state.setSelectedAccount,
     )
+    const setChainId = useReceiveFundsStore(state => state.setChainId)
     const setCanSelectAccount = useReceiveFundsStore(
         state => state.setCanSelectAccount,
     )
@@ -69,9 +79,11 @@ export const useReceiveFunds = (): UseReceiveFundsResult => {
 
     return {
         selectedAccount,
+        chainId,
         canSelectAccount,
         onFinished,
         setSelectedAccount,
+        setChainId,
         setCanSelectAccount,
         setOnFinished,
         reset,

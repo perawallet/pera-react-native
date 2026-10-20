@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useLayoutEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions/hooks'
@@ -22,10 +23,13 @@ type UseReceiveFundsContentResult = {
 
 export const useReceiveFundsContent = (
     account: Optional<WalletAccount>,
+    chainId?: ChainId,
 ): UseReceiveFundsContentResult => {
     const {
         canSelectAccount,
         setSelectedAccount,
+        setChainId,
+        chainId: selectedChainId,
         setCanSelectAccount,
         setOnFinished,
         reset,
@@ -43,12 +47,19 @@ export const useReceiveFundsContent = (
                 setSelectedAccount(account)
             }
         }
+        // An unset chain leaves the store alone: a caller may have pinned it before opening the sheet.
+        if (chainId !== undefined && selectedChainId !== chainId) {
+            setChainId(chainId)
+        }
     }, [
         account,
+        chainId,
         setCanSelectAccount,
         setSelectedAccount,
+        setChainId,
         canSelectAccount,
         selectedAccount?.id,
+        selectedChainId,
     ])
 
     const handleFinished = useCallback(() => {

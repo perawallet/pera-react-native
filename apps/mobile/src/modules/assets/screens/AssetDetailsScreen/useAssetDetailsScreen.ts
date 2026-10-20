@@ -14,6 +14,7 @@ import { useEffect, useMemo } from 'react'
 import {
     chainAccountOf,
     getAccountDisplayName,
+    useAccountHoldingSources,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -28,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getChainDescriptor,
+    useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -60,6 +62,8 @@ export type UseAssetDetailsScreenResult = {
     headerSecondary: Optional<string>
     assetDetailsDisplay: AssetDetailsDisplay
     about: Nullable<AssetAboutDisplay>
+    isNetworkLineVisible: boolean
+    isMarketsTabVisible: boolean
 }
 
 export const useAssetDetailsScreen = ({
@@ -95,6 +99,11 @@ export const useAssetDetailsScreen = ({
                 : null,
         [asset, assetDetailsDisplay, scope, descriptor, chainId, assetId],
     )
+
+    // The same test Home uses for its chain badges, so both screens agree on when a chain needs naming.
+    const isNetworkLineVisible = useAccountHoldingSources(account).length > 1
+    // Market data comes from the chain's pricing; without it the tab would only ever be empty.
+    const isMarketsTabVisible = useChainCapability(chainId, 'pricing')
 
     const address = account
         ? chainAccountOf(account, chainId)?.address
@@ -134,5 +143,7 @@ export const useAssetDetailsScreen = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
+        isNetworkLineVisible,
+        isMarketsTabVisible,
     }
 }

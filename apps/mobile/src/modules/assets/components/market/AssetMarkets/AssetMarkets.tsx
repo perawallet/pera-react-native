@@ -29,6 +29,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
+import { NetworkLabel } from '../../AssetGroupRow'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
@@ -65,6 +66,7 @@ export type AssetMarketsProps = {
     scope: ChainScope
     assetDetailsDisplay: AssetDetailsDisplay
     about: AssetAboutDisplay
+    isNetworkLineVisible?: boolean
 }
 
 const Loading = () => {
@@ -83,6 +85,7 @@ export const AssetMarkets = ({
     scope,
     assetDetailsDisplay,
     about,
+    isNetworkLineVisible = false,
 }: AssetMarketsProps) => {
     const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
     const styles = useStyles()
@@ -162,6 +165,9 @@ export const AssetMarkets = ({
                         />
                     </PWView>
                 </PWView>
+                {isNetworkLineVisible && (
+                    <NetworkLabel chainId={scope.chainId} />
+                )}
                 <PWView style={styles.priceContainer}>
                     <PWView>
                         {selectedPoint ? (

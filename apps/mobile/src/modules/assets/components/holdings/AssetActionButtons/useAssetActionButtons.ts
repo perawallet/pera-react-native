@@ -24,6 +24,7 @@ export type UseAssetActionButtonsResult = {
     canSwap: boolean
     canBuy: boolean
     canSend: boolean
+    canReceive: boolean
 }
 
 export const useAssetActionButtons = (
@@ -36,11 +37,12 @@ export const useAssetActionButtons = (
     const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
     // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
+    const canReceiveOnChain = useChainCapability(chainId, 'receive')
+    const isOnChain = !account || chainAccountOf(account, chainId) !== undefined
     return {
         canSwap: swapChainId === chainId,
         canBuy: onrampChainId === chainId,
-        canSend:
-            canSendOnChain &&
-            (!account || chainAccountOf(account, chainId) !== undefined),
+        canSend: canSendOnChain && isOnChain,
+        canReceive: canReceiveOnChain && isOnChain,
     }
 }

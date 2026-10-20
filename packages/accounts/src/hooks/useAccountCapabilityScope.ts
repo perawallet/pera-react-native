@@ -53,23 +53,38 @@ export const useCapabilityChainResolver = (
     )
 }
 
-/** The account's chain for `capability` at that chain's selected network; null when it has none. */
+/**
+ * The account's chain for `capability` at that chain's selected network; null when it has none.
+ * `chainId` pins the resolution to that chain; it never falls back to another.
+ */
 export const useAccountCapabilityScope = (
     account: Nullable<WalletAccount>,
     capability: ChainCapability,
+    chainId?: ChainId,
 ): Nullable<ChainScope> => {
     const chainOf = useCapabilityChainResolver(capability)
-    const chainId = account ? chainOf(account) : undefined
+    const check = useChainCapabilityCheck()
+    const resolvePinned = (owner: WalletAccount, pinned: ChainId) =>
+        getProvider().chains.has(pinned) &&
+        check({ chain: { chainId: pinned, capability } }) &&
+        chainAccountOf(owner, pinned) !== undefined
+            ? pinned
+            : undefined
+    const resolvedChainId = !account
+        ? undefined
+        : chainId === undefined
+          ? chainOf(account)
+          : resolvePinned(account, chainId)
     const networkId = useNetworkStore(state =>
-        chainId === undefined
+        resolvedChainId === undefined
             ? undefined
-            : selectChainNetworkId(state, chainId),
+            : selectChainNetworkId(state, resolvedChainId),
     )
     return useMemo(
         () =>
-            chainId === undefined || networkId === undefined
+            resolvedChainId === undefined || networkId === undefined
                 ? null
-                : { chainId, networkId },
-        [chainId, networkId],
+                : { chainId: resolvedChainId, networkId },
+        [resolvedChainId, networkId],
     )
 }

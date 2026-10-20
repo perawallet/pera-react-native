@@ -17,6 +17,7 @@ import {
 
 import { useEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
@@ -27,12 +28,16 @@ import { useReceiveFundsContent } from './useReceiveFundsContent'
 
 export type ReceiveFundsContentProps = {
     account?: WalletAccount
+    chainId?: ChainId
 }
 
-export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
+export const ReceiveFundsContent = ({
+    account,
+    chainId,
+}: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    useReceiveFundsContent(account)
+    useReceiveFundsContent(account, chainId)
 
     // Tracked in-screen rather than via the navigator's screenListeners: this
     // is rendered as a bottom sheet (its own NavigationContainer below), not a

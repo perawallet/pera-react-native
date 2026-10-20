@@ -62,12 +62,17 @@ const NO_RECEIVE_TARGET: ReceiveTarget = {
 }
 
 export const useQRViewScreen = (): UseQRViewScreenResult => {
-    const { selectedAccount, canSelectAccount, onFinished } = useReceiveFunds()
+    const { selectedAccount, chainId, canSelectAccount, onFinished } =
+        useReceiveFunds()
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
-    const scope = useAccountCapabilityScope(selectedAccount ?? null, 'receive')
+    const scope = useAccountCapabilityScope(
+        selectedAccount ?? null,
+        'receive',
+        chainId,
+    )
 
     const { accountName, address, paymentUri } = useMemo((): ReceiveTarget => {
         if (!selectedAccount || !scope || !addressCodecs.has(scope.chainId)) {
