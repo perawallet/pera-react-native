@@ -13,7 +13,7 @@
 import {
     canSignWith,
     chainAccountOf,
-    eligibleChains,
+    eligibleChainsInFamily,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -30,11 +30,11 @@ type ResolveSendAccountParams = {
     chainId: ChainId
 }
 
-/** A local key the chain can be enabled on signs there once it is. */
+/** A local key the chain can be enabled on, in a family it is already on, signs there once it is. */
 const canEnableToSend = (account: WalletAccount, chainId: ChainId): boolean =>
     account.custody.kind === 'local' &&
     !chainAccountOf(account, chainId) &&
-    eligibleChains(account).includes(chainId)
+    eligibleChainsInFamily(account).includes(chainId)
 
 /**
  * Which account a send on `chainId` goes out from: one enabled there that

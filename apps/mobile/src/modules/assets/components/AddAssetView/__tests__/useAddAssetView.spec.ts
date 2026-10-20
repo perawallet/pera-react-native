@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             selector({ getSelectedAccount: mockGetSelectedAccount }),
         ),
         useEnableChain: () => mockEnableChain,
-        eligibleChains: mockEligibleChains,
+        eligibleChainsInFamily: mockEligibleChains,
         useAccountBalancesQuery: vi.fn(() => ({
             accountBalances: new Map([
                 [
@@ -246,6 +246,26 @@ describe('useAddAssetView', () => {
 
             expect(mockEnableChain).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
+        })
+
+        it('leaves a hardware account alone, since a new chain needs its device', async () => {
+            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
+            mockGetSelectedAccount.mockReturnValue({
+                ...ethereumOnly,
+                custody: {
+                    kind: 'hardware',
+                    device: { deviceId: 'd' },
+                    accountIndex: 0,
+                },
+            })
+            const { result } = renderHook(() => useAddAssetView())
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+
+            expect(mockEnableChain).not.toHaveBeenCalled()
+            expect(mockShowError).not.toHaveBeenCalled()
         })
 
         it('shows why when the chain cannot be enabled', async () => {

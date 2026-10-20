@@ -12,6 +12,7 @@
 
 import type { ComponentType } from 'react'
 import type { SvgProps } from 'react-native-svg'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     ChainFamily,
     ChainId,
@@ -26,7 +27,7 @@ export type ChainUi = {
     assetDetails?: AssetDetailsDisplay
     sendConfirmation?: SendConfirmationDisplay
     /** The chain's logo; a chain without one shows initials of its name. */
-    icon?: (chainId: ChainId) => ComponentType<SvgProps> | undefined
+    icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

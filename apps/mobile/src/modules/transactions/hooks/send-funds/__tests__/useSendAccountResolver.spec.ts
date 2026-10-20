@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     canSignWith: (account: WalletAccount) => !unsignable.has(account.id),
-    eligibleChains: (account: WalletAccount) => [
+    eligibleChainsInFamily: (account: WalletAccount) => [
         ...Object.keys(account.chains),
         ...(enableable.get(account.id) ?? []),
     ],

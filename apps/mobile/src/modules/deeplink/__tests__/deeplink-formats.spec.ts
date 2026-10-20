@@ -193,6 +193,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: string,
     ) => (account.chains === undefined ? {} : account.chains[chainId]),
     useEnableChain: () => mockEnableChain,
+    // Such a fixture's first chain is the first registered one.
+    accountChainIdOf: (
+        account: { chains?: Record<string, unknown> },
+        registered: readonly string[],
+    ) =>
+        account.chains === undefined
+            ? registered[0]
+            : registered.find(id => account.chains?.[id] !== undefined),
     useSelectedAccount: () => mockWalletAccounts[0],
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,

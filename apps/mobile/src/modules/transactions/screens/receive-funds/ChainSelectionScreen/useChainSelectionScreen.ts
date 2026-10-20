@@ -24,6 +24,7 @@ import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
@@ -47,6 +48,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
     const enableChain = useEnableChain()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
+    const isMounted = useIsMounted()
     const [enablingChainId, setEnablingChainId] = useState<Optional<ChainId>>()
     // State lags a second tap that lands before the re-render.
     const isEnablingRef = useRef(false)
@@ -85,16 +87,18 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
                         chainId,
                         'user',
                     )
+                    if (!isMounted()) return
                     setSelectedAccount(account)
                     setSelectedChainId(chainId)
                     navigation.navigate('QRView')
                 } catch (error) {
+                    if (!isMounted()) return
                     showError(error, t('errors.general.title'), {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     })
                 } finally {
                     isEnablingRef.current = false
-                    setEnablingChainId(undefined)
+                    if (isMounted()) setEnablingChainId(undefined)
                 }
             })()
         },
@@ -105,6 +109,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
             setSelectedChainId,
             navigation,
             enableChain,
+            isMounted,
             showError,
             t,
         ],

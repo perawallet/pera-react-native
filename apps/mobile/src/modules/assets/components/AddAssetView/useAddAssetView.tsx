@@ -16,7 +16,7 @@ import {
     useAccountsStore,
     useEnableChain,
     chainAccountOf,
-    eligibleChains,
+    eligibleChainsInFamily,
 } from '@perawallet/wallet-core-accounts'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
@@ -127,11 +127,14 @@ export const useAddAssetView = (
         [setSearchQuery],
     )
 
-    // Adding an asset on a chain the account could be on, but isn't yet,
-    // enables that chain first: the user has started using it there.
+    // Starting to add an asset on a chain a local key could be on, but
+    // isn't yet, enables that chain: the user has started using it there.
     const resolveSender = useCallback(async (): Promise<string | undefined> => {
         if (selectedAddress || !selectedAccount) return selectedAddress
-        if (!eligibleChains(selectedAccount).includes(scope.chainId)) {
+        if (
+            selectedAccount.custody.kind !== 'local' ||
+            !eligibleChainsInFamily(selectedAccount).includes(scope.chainId)
+        ) {
             return undefined
         }
         const account = await enableChain(

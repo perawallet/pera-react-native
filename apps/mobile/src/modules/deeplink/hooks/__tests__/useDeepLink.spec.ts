@@ -211,6 +211,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: string,
     ) => (account.chains === undefined ? {} : account.chains[chainId]),
     useEnableChain: () => mockEnableChain,
+    // Such a fixture's first chain is the first registered one.
+    accountChainIdOf: (
+        account: { chains?: Record<string, unknown> },
+        registered: readonly string[],
+    ) =>
+        account.chains === undefined
+            ? registered[0]
+            : registered.find(id => account.chains?.[id] !== undefined),
     useSelectedAccount: () => ({
         id: 'selected',
         custody: { kind: 'watch' },
@@ -2309,6 +2317,39 @@ describe('useDeepLink', () => {
                 enableCloseOnBackdropPress: false,
                 autoCreateContainer: false,
             },
+        )
+    })
+
+    it("names the link chain's native asset when the sender's first chain is another one, so send opens on the link's chain", async () => {
+        sendAccount.resolution = {
+            kind: 'single',
+            account: {
+                id: 'both-chains',
+                chains: {
+                    algorand: { address: 'A'.repeat(58) },
+                    ethereum: { address: '0xabc' },
+                },
+            },
+        }
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            target: { chainId: 'ethereum' },
+            address: '0xreceiver',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/receiver-selection',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { asset: { chainId: 'ethereum', assetId: 'native' } },
+            expect.anything(),
         )
     })
 

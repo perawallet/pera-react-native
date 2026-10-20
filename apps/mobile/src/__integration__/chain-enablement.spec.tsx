@@ -190,7 +190,9 @@ describe('Flow: an account enables chains as it is used on them', () => {
             screen.getAllByText(
                 'receive_funds.chain_selection.eligible_subtitle',
             ),
-        ).toHaveLength(6)
+        ).toHaveLength(5)
+        // Algorand is another family: a receive doesn't add it in passing.
+        expect(screen.queryByTestId('receive_chain_row_algorand')).toBeNull()
 
         fireEvent.click(screen.getByTestId('receive_chain_row_base'))
 
