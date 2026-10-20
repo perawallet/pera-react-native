@@ -171,8 +171,8 @@ export const useSigningStore: UseBoundStore<
                 STORE_NAME,
                 () => getProvider().keyValueStorage,
             ),
-            // bigint and Map fields on PeraTransaction (fee, amount, assetId,
-            // etc.) need the typed JSON round-trip, not plain JSON.
+            // bigint and Map fields in sign requests (fees, signer overrides)
+            // need the typed JSON round-trip, not plain JSON.
             serialize: value => stringifyTypedJson(value),
             deserialize: raw => parseTypedJson(raw),
             version: STORE_VERSION,

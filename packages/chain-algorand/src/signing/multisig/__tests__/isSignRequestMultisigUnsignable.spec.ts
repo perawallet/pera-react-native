@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Address } from 'algosdk'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigUnsignable } from '@perawallet/wallet-core-accounts'
@@ -35,15 +36,26 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     isMultisigUnsignable: vi.fn(() => false),
 }))
 
-const SIGNER = 'MS_ADDR'
+const SIGNER = makeTestAddress(20).toString()
+const MSIG_LATER = makeTestAddress(21).toString()
+const MSIG_OVERRIDE = makeTestAddress(22).toString()
+
+const sentBy = (sender: string) =>
+    asUnsignedAlgorandTransaction(
+        makeTestPaymentTx(Address.fromString(sender), {
+            receiver: makeTestAddress(7),
+            genesisHash: MAINNET_GENESIS_HASH,
+        }),
+    )
 
 const txRequest = (overrides: object = {}): SignRequest =>
     ({
         id: 'r1',
         type: 'transactions',
-        txs: [{ sender: SIGNER }],
+        transport: 'algod',
+        txs: [sentBy(SIGNER)],
         ...overrides,
-    }) as unknown as SignRequest
+    }) as SignRequest
 
 const accounts: WalletAccount[] = [multisigAccount(SIGNER, null)]
 
@@ -168,7 +180,10 @@ describe('isSignRequestMultisigUnsignable', () => {
 
     it('returns false when the request has no resolvable signer', () => {
         expect(
-            isSignRequestMultisigUnsignable(txRequest({ txs: [{}] }), accounts),
+            isSignRequestMultisigUnsignable(
+                txRequest({ txs: [makeUnsignedAlgorandTransaction()] }),
+                accounts,
+            ),
         ).toBe(false)
     })
 
@@ -182,14 +197,14 @@ describe('isSignRequestMultisigUnsignable', () => {
         // A mixed group must not bypass the up-front block just because its
         // first transaction has a signable sender.
         vi.mocked(isMultisigUnsignable).mockImplementation(
-            account => algorandAddressOf(account) === 'MSIG_LATER',
+            account => algorandAddressOf(account) === MSIG_LATER,
         )
         const request = txRequest({
-            txs: [{ sender: SIGNER }, { sender: 'MSIG_LATER' }],
+            txs: [sentBy(SIGNER), sentBy(MSIG_LATER)],
         })
         const allAccounts = [
             multisigAccount(SIGNER, null),
-            multisigAccount('MSIG_LATER', null),
+            multisigAccount(MSIG_LATER, null),
         ]
 
         expect(isSignRequestMultisigUnsignable(request, allAccounts)).toBe(true)
@@ -197,15 +212,17 @@ describe('isSignRequestMultisigUnsignable', () => {
 
     it('resolves per-transaction signer overrides when collecting signers', () => {
         vi.mocked(isMultisigUnsignable).mockImplementation(
-            account => algorandAddressOf(account) === 'MSIG_OVERRIDE',
+            account => algorandAddressOf(account) === MSIG_OVERRIDE,
         )
         const request = txRequest({
-            txs: [{ sender: SIGNER }, { sender: SIGNER }],
-            signerOverrides: new Map([[1, 'MSIG_OVERRIDE']]),
+            txs: [sentBy(SIGNER), sentBy(SIGNER)],
+            chainData: {
+                algorand: { signerOverrides: new Map([[1, MSIG_OVERRIDE]]) },
+            },
         })
         const allAccounts = [
             multisigAccount(SIGNER, null),
-            multisigAccount('MSIG_OVERRIDE', null),
+            multisigAccount(MSIG_OVERRIDE, null),
         ]
 
         expect(isSignRequestMultisigUnsignable(request, allAccounts)).toBe(true)

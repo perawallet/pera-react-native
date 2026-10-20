@@ -44,7 +44,11 @@ import {
     makeUnsignedTransaction,
 } from '../../../__tests__/transactions'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
-import type { AnalyzedSignableGroup } from '../../types'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AnalyzedSignableGroup,
+    UnsignedTransactionsSignableData,
+} from '../../types'
 import type {
     HardwareRef,
     HardwareWalletAccount,
@@ -111,6 +115,12 @@ const makeGroup = (
         riskLevel: 'low',
     },
 })
+
+const unsignedOf = (
+    group: AnalyzedSignableGroup,
+    index: number,
+): UnsignedTransaction =>
+    (group.data as UnsignedTransactionsSignableData).transactions[index]
 
 const MOCK_SIGNATURE = new Uint8Array([1, 2, 3, 4])
 
@@ -184,8 +194,11 @@ describe('createHardwareStrategy', () => {
     describe('sign', () => {
         it("assembles through the strategy chain's planner, never Algorand's", async () => {
             const assembleSignedTransaction = vi.fn(
-                (txn: unknown, signature?: { sig: Uint8Array }) =>
-                    ({ txn, sig: signature?.sig }) as never,
+                (transaction: UnsignedTransaction) => ({
+                    scope: transaction.scope,
+                    id: 'signed',
+                    bytes: new Uint8Array(),
+                }),
             )
             plannerChainAdapters.register(
                 fakePlannerAdapter({
@@ -228,11 +241,15 @@ describe('createHardwareStrategy', () => {
             expect(result.signedData.type).toBe('transactions')
             if (result.signedData.type === 'transactions') {
                 expect(result.signedData.signed).toHaveLength(2)
-                expect(result.signedData.signed[0].sig).toEqual(MOCK_SIGNATURE)
-                expect(result.signedData.signed[1].sig).toEqual(MOCK_SIGNATURE)
+                expect(result.signedData.signed[0].bytes).toEqual(
+                    MOCK_SIGNATURE,
+                )
+                expect(result.signedData.signed[1].bytes).toEqual(
+                    MOCK_SIGNATURE,
+                )
             }
-            // signers[].signatures is populated from each signed txn's `sig`
-            // field so the multisig cosign transport can post them to the
+            // signers[].signatures is populated from each device signature
+            // so the multisig cosign transport can post them to the
             // backend's `responses[].signatures`. The cosign-specific path is
             // verified in its own test below.
             const expectedSig = Buffer.from(MOCK_SIGNATURE).toString('base64')
@@ -348,9 +365,15 @@ describe('createHardwareStrategy', () => {
             const result = await strategy.sign(group, account)
 
             if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].sig).toBeUndefined()
-                expect(result.signedData.signed[1].sig).toEqual(MOCK_SIGNATURE)
-                expect(result.signedData.signed[2].sig).toBeUndefined()
+                expect(result.signedData.signed[0].bytes).toEqual(
+                    new Uint8Array(),
+                )
+                expect(result.signedData.signed[1].bytes).toEqual(
+                    MOCK_SIGNATURE,
+                )
+                expect(result.signedData.signed[2].bytes).toEqual(
+                    new Uint8Array(),
+                )
             }
             expect(mockTransport.signTransaction).toHaveBeenCalledTimes(1)
         })
@@ -370,7 +393,7 @@ describe('createHardwareStrategy', () => {
             await strategy.sign(group, account)
 
             expect(planner.assembleSignedTransaction).toHaveBeenCalledWith(
-                txns[0],
+                unsignedOf(group, 0),
                 { sig: MOCK_SIGNATURE, signerAddress: SIGNER_ADDRESS },
             )
         })
@@ -389,7 +412,7 @@ describe('createHardwareStrategy', () => {
             await strategy.sign(group, makeLedgerAccount())
 
             expect(planner.assembleSignedTransaction).toHaveBeenCalledWith(
-                txns[0],
+                unsignedOf(group, 0),
             )
         })
 

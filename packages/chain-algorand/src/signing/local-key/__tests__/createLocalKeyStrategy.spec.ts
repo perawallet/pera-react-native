@@ -19,10 +19,17 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedAlgorandTransaction,
+    signedAlgorandTransaction,
+    testSignature,
 } from '../../__tests__/transactions'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    encodeToBase64,
+    ErrorCategory,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { KeyNotFoundError } from '@perawallet/wallet-core-kms'
 import {
     SigningError,
@@ -62,6 +69,10 @@ const TRANSACTIONS = [1n, 2n].map(amount =>
         amount,
         genesisHash: MAINNET_GENESIS_HASH,
     }),
+)
+
+const UNSIGNED = TRANSACTIONS.map(transaction =>
+    asUnsignedAlgorandTransaction(transaction),
 )
 
 const makeTransactionGroup = (): AnalyzedSignableGroup => ({
@@ -116,10 +127,11 @@ describe('createLocalKeyStrategy', () => {
     beforeEach(() => {
         signTransactions = vi
             .fn()
-            .mockResolvedValue([
-                { blob: new Uint8Array() },
-                { blob: new Uint8Array() },
-            ])
+            .mockResolvedValue(
+                TRANSACTIONS.map(transaction =>
+                    signedAlgorandTransaction(transaction),
+                ),
+            )
         signArbitraryData = vi.fn().mockResolvedValue([new Uint8Array([1])])
         signAuthData = vi.fn().mockResolvedValue(new Uint8Array([2]))
         errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
@@ -162,8 +174,8 @@ describe('createLocalKeyStrategy', () => {
     describe('sign - transactions', () => {
         test('signs a chain-neutral group as the Algorand transactions its payloads carry', async () => {
             const signed = [
-                { txn: TRANSACTIONS[0] },
-                { txn: TRANSACTIONS[1], sig: new Uint8Array([1, 2, 3]) },
+                signedAlgorandTransaction(TRANSACTIONS[0]),
+                signedAlgorandTransaction(TRANSACTIONS[1], testSignature(1)),
             ]
             signTransactions.mockResolvedValue(signed)
             const neutralGroup: AnalyzedSignableGroup = {
@@ -183,14 +195,19 @@ describe('createLocalKeyStrategy', () => {
             )
 
             expect(signTransactions).toHaveBeenLastCalledWith(
-                TRANSACTIONS,
+                UNSIGNED,
                 [1],
                 standaloneAccount,
                 ALGORAND_MAINNET,
             )
             expect(result).toEqual({
                 signedData: { type: 'transactions', signed },
-                signers: [{ address: 'ADDR', signatures: [null, 'AQID'] }],
+                signers: [
+                    {
+                        address: 'ADDR',
+                        signatures: [null, encodeToBase64(testSignature(1))],
+                    },
+                ],
                 originalIndices: [3, 4],
             })
         })
@@ -232,8 +249,8 @@ describe('createLocalKeyStrategy', () => {
             expect(callbacks.onProgress).toHaveBeenCalledWith(2, 2)
             expect(callbacks.onSigningComplete).toHaveBeenCalled()
             expect(result.signedData.type).toBe('transactions')
-            // signatures are derived from each signed txn's `sig` field; the
-            // mock returns objects without `sig` so signatures are null.
+            // signatures are read off each signed envelope; the mock returns
+            // unsigned ones, so signatures are null.
             // The cosign-signature population path is verified in its own
             // test below.
             expect(result.signers).toEqual([
@@ -247,7 +264,7 @@ describe('createLocalKeyStrategy', () => {
             // the local signer — without this, signing falls back to
             // tx.sender lookup and breaks multisig cosign.
             expect(signTransactions).toHaveBeenCalledWith(
-                TRANSACTIONS,
+                UNSIGNED,
                 group.data.type === 'transactions'
                     ? group.data.chainData.algorand?.indicesToSign
                     : undefined,
@@ -268,7 +285,7 @@ describe('createLocalKeyStrategy', () => {
 
             expect(result.signedData.type).toBe('transactions')
             expect(signTransactions).toHaveBeenCalledWith(
-                TRANSACTIONS,
+                UNSIGNED,
                 group.data.type === 'transactions'
                     ? group.data.chainData.algorand?.indicesToSign
                     : undefined,
@@ -278,15 +295,15 @@ describe('createLocalKeyStrategy', () => {
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {
-            // Real KMS hooks return PeraSignedTransaction with `sig` set —
-            // the multisig cosign transport reads `signers[].signatures`
+            // A real signer's envelope carries `sig`; the multisig cosign
+            // transport reads `signers[].signatures`
             // (NOT `signedData`) when posting to /joint-accounts/.../responses.
             // Without this, the request body is `signatures: [[]]` and the
             // backend rejects with "Lengths of transaction list and
             // signature list should be equal."
             signTransactions.mockResolvedValue([
-                { txn: {}, sig: new Uint8Array([1, 2, 3]) },
-                { txn: {}, sig: new Uint8Array([4, 5, 6]) },
+                signedAlgorandTransaction(TRANSACTIONS[0], testSignature(1)),
+                signedAlgorandTransaction(TRANSACTIONS[1], testSignature(2)),
             ])
 
             const result = await makeStrategy().sign(
@@ -297,8 +314,8 @@ describe('createLocalKeyStrategy', () => {
             expect(result.signers).toHaveLength(1)
             expect(result.signers[0].address).toBe('ADDR')
             expect(result.signers[0].signatures).toEqual([
-                Buffer.from([1, 2, 3]).toString('base64'),
-                Buffer.from([4, 5, 6]).toString('base64'),
+                encodeToBase64(testSignature(1)),
+                encodeToBase64(testSignature(2)),
             ])
         })
 

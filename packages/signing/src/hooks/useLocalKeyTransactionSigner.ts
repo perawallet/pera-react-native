@@ -12,14 +12,11 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import type {
-    ChainScope,
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { localKeySignerAdapterFor } from '../chain-adapter'
+import {
+    localKeySignerAdapterFor,
+    type LocalSigningFunction,
+} from '../chain-adapter'
 
 export type UseLocalKeyTransactionSignerResult = {
     /**
@@ -31,17 +28,11 @@ export type UseLocalKeyTransactionSignerResult = {
      * own (un-rekey-resolved) account. This hook signs with whatever account
      * it receives and does NOT follow rekey internally.
      *
-     * Do NOT look the account up from `txn.sender`: for multisig cosign and
-     * ARC-0001 explicit-`signers` flows, the signer differs from the
-     * transaction sender, and lookup-by-sender would either pick the wrong
-     * account or none at all.
+     * Do NOT look the account up from the transaction's sender: for multisig
+     * cosign and a dApp-named signer, the signer differs from the sender, and
+     * lookup-by-sender would either pick the wrong account or none at all.
      */
-    signTransactions: (
-        txnGroup: PeraTransaction[],
-        indexesToSign: number[],
-        account: WalletAccount,
-        scope: ChainScope,
-    ) => Promise<PeraSignedTransaction[]>
+    signTransactions: LocalSigningFunction
 }
 
 /**
@@ -53,13 +44,8 @@ export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
 
-        const signTransactions = useCallback(
-            async (
-                txnGroup: PeraTransaction[],
-                indexesToSign: number[],
-                account: WalletAccount,
-                scope: ChainScope,
-            ): Promise<PeraSignedTransaction[]> =>
+        const signTransactions = useCallback<LocalSigningFunction>(
+            async (transactions, indexesToSign, account, scope) =>
                 localKeySignerAdapterFor(scope).signTransactions(
                     {
                         signPayloads: (keyPairId, payloads) =>
@@ -70,7 +56,7 @@ export const useLocalKeyTransactionSigner =
                             ),
                         getPQSigningInfo,
                     },
-                    txnGroup,
+                    transactions,
                     indexesToSign,
                     account,
                 ),

@@ -15,11 +15,6 @@ import {
     type ChainAdapterRegistry,
     type ChainId,
     type ChainScope,
-    type Arc0001ResolveContext,
-    type Arc0001ResolveResult,
-    type Arc0001SignTxnsRequest,
-    type PeraSignedTransaction,
-    type PeraTransaction,
     type SignedTransaction,
     type TransactionNative,
     type UnsignedTransaction,
@@ -34,12 +29,14 @@ import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wa
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
     FeeAdjustment,
+    ReviewGroup,
     SignRequest,
+    SignRequestGroupFacts,
     TransactionSignRequest,
     UnsignedTransactionSignRequest,
     TransactionWarning,
 } from './models'
-import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequest'
+import type { ExternalSignTxnTransport } from './hooks/useEnqueueDappSignRequest'
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     AnalysisContext,
@@ -157,13 +154,9 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
-    /**
-     * The review model of one unsigned transaction. Takes the Algorand shape
-     * too, so a request in it renders until every source builds the
-     * chain-neutral one. Null for a transaction the chain can't read.
-     */
+    /** The review model of one unsigned transaction; null for one the chain can't read. */
     toTransactionNative(
-        transaction: PeraTransaction | UnsignedTransaction,
+        transaction: UnsignedTransaction,
     ): Nullable<TransactionNative>
 }
 
@@ -222,7 +215,7 @@ export type AssignFeeToGroupParams = {
     transactions: UnsignedTransaction[]
     /** Indices into `transactions` the wallet will sign; defaults to all */
     signableIndices?: number[]
-    /** Subset-position → authorizer address (ARC-0001 `signers`) */
+    /** Subset-position → the authorizer address the dApp named */
     signerOverrides?: Map<number, string>
     /** A dApp set the fees, so they may already price this wallet's signers. */
     isExternallyPriced?: boolean
@@ -300,9 +293,36 @@ export type BalanceImpact = {
     createdAssets: BalanceImpactCreatedAsset[]
 }
 
-export type DappSignRequest = Arc0001SignTxnsRequest
-export type DappResolveContext = Arc0001ResolveContext
-export type DappResolveResult = Arc0001ResolveResult
+/** A dApp's request to sign transactions, as it sent it. */
+export type DappSignRequest = {
+    /** Chain-native; only the scope's planner reads it. */
+    payload: unknown
+}
+
+export type DappResolveContext = {
+    /** Addresses the wallet can sign for. Candidates outside this set are skipped, their result slot null. */
+    signableAddresses: Set<string>
+    /**
+     * Optional gate. A candidate in `signableAddresses` but not here is skipped
+     * like a third-party sender, not named in an error, so a session bound to
+     * its approved accounts learns nothing of the wallet's other accounts.
+     */
+    authorizedAddresses?: Set<string>
+    /**
+     * Local multisig addresses. A transaction such an address sends is signed
+     * as the multisig itself, whatever signer the dApp names: the dApp can't
+     * enumerate the wallet's local participants, so the propose flow collects
+     * their signatures.
+     */
+    multisigAddresses?: ReadonlySet<string>
+    maxTransactions?: number
+}
+
+/** A dApp sign request after its chain checked it and chose who signs. */
+export type DappResolveResult = {
+    /** Chain-native; only the planner that resolved it reads it. */
+    payload: unknown
+}
 
 export type GroupFeeReview = {
     /** In display units of the native token. */
@@ -339,11 +359,11 @@ export type LocalKeySigningDeps = {
 
 /** `scope` picks the chain's local-key signer, which reads the scheme off the account's key. */
 export type LocalSigningFunction = (
-    txnGroup: PeraSignedTransaction['txn'][],
+    transactions: UnsignedTransaction[],
     indexesToSign: number[],
     account: WalletAccount,
     scope: ChainScope,
-) => Promise<PeraSignedTransaction[]>
+) => Promise<SignedTransaction[]>
 
 export type LocalArbitrarySigningFunction = (
     account: WalletAccount,
@@ -434,11 +454,11 @@ export type GetDeviceIdFn = () => string | undefined
 export type CreateDraftSignRequestInput = {
     multisigAddress: string
     /**
-     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed as signed only
-     * because it comes straight from `SigningResult`. Only `.txn` is read, to
-     * encode the unprefixed msgpack bytes the propose API expects.
+     * Unsigned envelopes, typed as signed only because they come straight from
+     * `SigningResult`. Only the transaction each carries is read, through the
+     * planner's `unsignedTransactionBytesOf`, for the bytes the propose API expects.
      */
-    signedTransactions: PeraSignedTransaction[]
+    signedTransactions: SignedTransaction[]
     proposeType: MultisigProposeMode
     source: SourceMetadata
 }
@@ -732,7 +752,9 @@ export interface PlannerChainAdapter {
      * Wire bytes without the signing-domain prefix. A hardware device signs
      * these, adding the prefix itself, and the multisig backend stores them.
      */
-    encodeUnsignedTransaction(transaction: PeraTransaction): Uint8Array
+    encodeUnsignedTransaction(transaction: UnsignedTransaction): Uint8Array
+    /** The transaction a signed envelope carries, encoded as `encodeUnsignedTransaction` encodes it. */
+    unsignedTransactionBytesOf(signed: SignedTransaction): Uint8Array
     reviewGroupFees(
         transactions: TransactionNative[],
         signableAddresses: Set<string>,
@@ -746,7 +768,7 @@ export interface PlannerChainAdapter {
     needsSimulation(transactions: TransactionNative[]): boolean
     /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
     simulateGroup(
-        groupTxs: PeraTransaction[] | UnsignedTransaction[],
+        groupTxs: UnsignedTransaction[],
         scope: ChainScope,
     ): Promise<TransactionNative[]>
 
@@ -764,7 +786,7 @@ export interface PlannerChainAdapter {
      * so `isCosigner` is the one sanctioned relaxation.
      */
     validateGroup(
-        transactions: PeraTransaction[] | UnsignedTransaction[],
+        transactions: UnsignedTransaction[],
         options: { isCosigner: boolean },
     ): void
     /**
@@ -784,6 +806,27 @@ export interface PlannerChainAdapter {
     signedForAddresses(
         request: UnsignedTransactionSignRequest,
     ): string[] | undefined
+    /**
+     * The chain data of a group {@link signedForAddresses} keys by account:
+     * `indices` are the group's slots in `request.txs`.
+     */
+    signableGroupChainData(
+        request: UnsignedTransactionSignRequest,
+        indices: number[],
+    ): object
+    /** The facts the request's source sent beside `txs`, read from its `chainData`. */
+    reviewGroupOf(request: UnsignedTransactionSignRequest): ReviewGroup
+    /** `facts` as this chain keeps them in a request's `chainData`. */
+    signRequestChainData(facts: SignRequestGroupFacts): unknown
+    /**
+     * What a request handed off to a multisig sign request needs to answer its
+     * dApp after an app kill. Undefined when no dApp waits on the answer.
+     */
+    handoffDeliveryOf(
+        request: UnsignedTransactionSignRequest,
+    ): Optional<
+        Omit<NonNullable<SourceMetadata['handoffDelivery']>, 'clientId'>
+    >
     mergeSigningResults(results: SigningResult[]): SigningResult
     /**
      * A transaction result as the chain's wire-encoded signed transactions,
@@ -796,14 +839,15 @@ export interface PlannerChainAdapter {
     ): Nullable<SignedTransaction>[]
 
     /**
-     * The signed-transaction envelope for `txn`. Unsigned when `signature` is
-     * absent; the authorizing signer is recorded only when `signerAddress`
-     * differs from the sender, so the node can find the key that signed.
+     * The signed-transaction envelope for `transaction`. Unsigned when
+     * `signature` is absent; the authorizing signer is recorded only when
+     * `signerAddress` differs from the sender, so the node can find the key
+     * that signed.
      */
     assembleSignedTransaction(
-        txn: PeraTransaction,
+        transaction: UnsignedTransaction,
         signature?: { sig: Uint8Array; signerAddress: string },
-    ): PeraSignedTransaction
+    ): SignedTransaction
 
     createMultisigStrategy(
         options: CreateMultisigStrategyOptions,
@@ -885,10 +929,10 @@ export interface LocalKeySignerChainAdapter {
      */
     signTransactions(
         deps: LocalKeySigningDeps,
-        txnGroup: PeraTransaction[],
+        transactions: UnsignedTransaction[],
         indexesToSign: number[],
         account: WalletAccount,
-    ): Promise<PeraSignedTransaction[]>
+    ): Promise<SignedTransaction[]>
     createStrategy(options: LocalKeyStrategyOptions): SigningStrategy
     signGroups(input: LocalKeySignerInput): Promise<SigningResult[]>
 }

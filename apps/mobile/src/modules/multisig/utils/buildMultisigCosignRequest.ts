@@ -21,7 +21,10 @@ import {
     multisigAdapterFor,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
-import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
+import {
+    plannerChainAdapters,
+    type UnsignedTransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
@@ -113,13 +116,13 @@ export const buildMultisigCosignRequest = ({
         sourceType: 'multisig-cosign',
         signRequestId: signRequest.id,
         txs,
-        chainData: {
-            algorand: {
+        chainData: plannerChainAdapters
+            .get(scope.chainId)
+            .signRequestChainData({
                 rawTransactionsBase64,
                 signerOverrides: new Map(
                     txs.map((_, index) => [index, signerAddress] as const),
                 ),
-            },
-        },
+            }),
     }
 }

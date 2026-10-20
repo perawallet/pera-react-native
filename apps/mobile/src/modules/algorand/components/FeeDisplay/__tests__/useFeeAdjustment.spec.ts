@@ -17,6 +17,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useFeeAdjustment } from '../useFeeAdjustment'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
@@ -45,6 +46,7 @@ const mockPipeline = (overrides: Record<string, unknown>): void => {
 
 describe('useFeeAdjustment', () => {
     beforeEach(() => {
+        registerAlgorandPlannerAdapter()
         vi.clearAllMocks()
         mockPipeline({})
     })
