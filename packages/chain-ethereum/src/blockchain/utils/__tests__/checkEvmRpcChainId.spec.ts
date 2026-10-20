@@ -15,6 +15,7 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { checkEvmRpcChainId } from '../checkEvmRpcChainId'
 import { evmRpcHandlers } from '../../msw-handlers'
+import { BASE, ETHEREUM } from '../../../__tests__/evm-chains'
 
 const RPC = 'https://my-node.rpc.test/'
 const TIMEOUTS = { readMs: 1_000, submitMs: 1_000 }
@@ -34,7 +35,7 @@ describe('checkEvmRpcChainId', () => {
         )
 
         await expect(
-            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, ETHEREUM),
         ).resolves.toBe('matches')
     })
 
@@ -47,7 +48,7 @@ describe('checkEvmRpcChainId', () => {
         )
 
         await expect(
-            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, ETHEREUM),
         ).resolves.toBe('wrong-network')
     })
 
@@ -55,7 +56,7 @@ describe('checkEvmRpcChainId', () => {
         server.use(...evmRpcHandlers({ rpcUrl: RPC }))
 
         await expect(
-            checkEvmRpcChainId(RPC, 'holesky', TIMEOUTS),
+            checkEvmRpcChainId(RPC, 'holesky', TIMEOUTS, ETHEREUM),
         ).resolves.toBe('wrong-network')
     })
 
@@ -63,7 +64,7 @@ describe('checkEvmRpcChainId', () => {
         server.use(http.post(RPC, () => HttpResponse.json({}, { status: 500 })))
 
         await expect(
-            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, ETHEREUM),
         ).resolves.toBe('unreachable')
     })
 
@@ -71,7 +72,33 @@ describe('checkEvmRpcChainId', () => {
         server.use(http.post(RPC, () => HttpResponse.error()))
 
         await expect(
-            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS),
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, ETHEREUM),
         ).resolves.toBe('unreachable')
+    })
+
+    it("matches a Base node against Base's own EIP-155 id", async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC,
+                responses: { eth_chainId: '0x14a34' },
+            }),
+        )
+
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, BASE),
+        ).resolves.toBe('matches')
+    })
+
+    it('refuses an Ethereum Sepolia node for Base Sepolia', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC,
+                responses: { eth_chainId: '0xaa36a7' },
+            }),
+        )
+
+        await expect(
+            checkEvmRpcChainId(RPC, 'sepolia', TIMEOUTS, BASE),
+        ).resolves.toBe('wrong-network')
     })
 })

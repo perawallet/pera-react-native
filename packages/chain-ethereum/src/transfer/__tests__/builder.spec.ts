@@ -48,11 +48,12 @@ import {
     evmRpcHandlers,
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
-import { ethereumCapabilityDefaults } from '../../capability-defaults'
-import { ethereumPlannerAdapter } from '../../signing/adapter'
-import { ethereumReviewerAdapter } from '../../signing/review'
+import { evmCapabilityDefaults as ethereumCapabilityDefaults } from '../../capability-defaults'
+import { createEvmPlannerAdapter } from '../../signing/adapter'
+import { createEthereumReviewer } from '../../signing/review'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { createEthereumTransferAdapter } from '../builder'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { createEvmTransferAdapter } from '../builder'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
 
 // The empty pool by default, so the node's pending count decides the nonce.
@@ -98,7 +99,9 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const adapter = createEthereumTransferAdapter(testChainContext())
+const adapter = createEvmTransferAdapter(testChainContext(), ETHEREUM)
+const ethereumPlannerAdapter = createEvmPlannerAdapter(ETHEREUM)
+const ethereumReviewerAdapter = createEthereumReviewer({ chain: ETHEREUM })
 
 const useRpc = (responses: NonNullable<EvmRpcFixtures['responses']> = {}) =>
     server.use(
@@ -367,4 +370,55 @@ describe('a transfer the adapter builds, reviewed as the wallet built it', () =>
             ).toBe(true)
         },
     )
+})
+
+describe('a transfer built for Base', () => {
+    const base = createEvmTransferAdapter(
+        testChainContext({ chain: BASE }),
+        BASE,
+    )
+    const intentOn = (assetId: string): TransferIntent => ({
+        ...nativeIntent,
+        assetRef: { chainId: 'base', assetId },
+    })
+
+    beforeEach(() => {
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([])
+        // The gas price oracle's getL1Fee and getOperatorFee each answer 1000 wei.
+        useRpc({ eth_call: toHex(1000n, { size: 32 }) })
+    })
+
+    it.each([
+        ['mainnet', 8453],
+        ['sepolia', 84532],
+    ] as const)("carries %s's EIP-155 id", async (tier, eip155ChainId) => {
+        const scope = evmScopeOf(
+            BASE,
+            tier === 'mainnet' ? 'mainnet' : 'testnet',
+        )
+        const adapterOn = createEvmTransferAdapter(
+            {
+                ...testChainContext({ chain: BASE }),
+                getEndpoints: () => ({ [scope.networkId]: TEST_RPC_URL }),
+            },
+            BASE,
+        )
+
+        const [built] = await adapterOn.build(intentOn('native'), { scope })
+
+        expect(built?.scope).toEqual(scope)
+        expect(
+            (built?.payload as EthereumTransactionPayload).transaction.chainId,
+        ).toBe(eip155ChainId)
+    })
+
+    it("refuses an intent for another EVM chain's asset", async () => {
+        await expect(
+            base.build(nativeIntent, { scope: evmScopeOf(BASE) }),
+        ).rejects.toThrow(InvalidSendParamsError)
+    })
+
+    it("refuses a scope that isn't Base's", async () => {
+        await expect(base.build(intentOn('native'), context)).rejects.toThrow()
+    })
 })

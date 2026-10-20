@@ -10,14 +10,20 @@
  limitations under the License
  */
 
+import { describe } from 'vitest'
 import { toHex } from 'viem'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { messageSignerContractTests } from '@perawallet/wallet-core-signing/testing'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    ethereumMessageSignerAdapter,
+    createEvmMessageSignerAdapter,
     personalSignMessageRequest,
     typedDataMessageRequest,
 } from '../messages'
+import {
+    eip155IdOf,
+    EVM_TEST_CHAINS,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
 import {
     ETHEREUM_SIGNER_ACCOUNT,
     MAIL_TYPED_DATA,
@@ -25,20 +31,32 @@ import {
     vectorSignature,
 } from './fixtures'
 
-const scope: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-
-messageSignerContractTests(() => ethereumMessageSignerAdapter, {
-    scope,
-    account: ETHEREUM_SIGNER_ACCOUNT,
-    accounts: [ETHEREUM_SIGNER_ACCOUNT],
-    requests: [
+for (const chain of EVM_TEST_CHAINS) {
+    const scope = evmScopeOf(chain)
+    const adapter = createEvmMessageSignerAdapter(chain)
+    const account: WalletAccount = {
+        ...ETHEREUM_SIGNER_ACCOUNT,
+        chains: { [chain.row.id]: ETHEREUM_SIGNER_ACCOUNT.chains.ethereum },
+    }
+    const requests = [
         personalSignMessageRequest(scope, SENDER, toHex('hello world')),
-        typedDataMessageRequest(scope, SENDER, MAIL_TYPED_DATA),
-    ],
-    malformedRequest: typedDataMessageRequest(scope, SENDER, {
-        primaryType: 'Mail',
-    }),
-    unsupportedMethod: 'eth_sign',
-    otherSigner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    sign: request => vectorSignature(request.payload),
-})
+        typedDataMessageRequest(scope, SENDER, {
+            ...MAIL_TYPED_DATA,
+            domain: { ...MAIL_TYPED_DATA.domain, chainId: eip155IdOf(chain) },
+        }),
+    ]
+    describe(chain.row.id, () => {
+        messageSignerContractTests(() => adapter, {
+            scope,
+            account,
+            accounts: [account],
+            requests,
+            malformedRequest: typedDataMessageRequest(scope, SENDER, {
+                primaryType: 'Mail',
+            }),
+            unsupportedMethod: 'eth_sign',
+            otherSigner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            sign: request => vectorSignature(request.payload),
+        })
+    })
+}

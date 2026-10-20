@@ -18,7 +18,7 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
 import { summarizeEthereumHistoryItem } from './summarize'
@@ -34,6 +34,7 @@ const toRecords = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
+    chain: EvmChain,
 ): TransactionRecord[] => {
     const id = recordId(item)
     if (id === undefined) return []
@@ -44,7 +45,7 @@ const toRecords = (
             status: item.status === 'success' ? 'confirmed' : 'failed',
             timestamp: Date.parse(item.block_time),
             fee: item.fee === null ? undefined : new Decimal(item.fee),
-            summary: summarizeEthereumHistoryItem(item, address, scope),
+            summary: summarizeEthereumHistoryItem(item, address, scope, chain),
             chainData: { family: 'evm' },
         },
     ]
@@ -54,19 +55,23 @@ const toRecords = (
  * Newest first. A page can be empty and still have `next`. Mined rows only:
  * JSON-RPC can't enumerate history, so there is no fallback.
  */
-export const getEthereumTransactionHistory = async (
+export const getEvmTransactionHistory = async (
+    chain: EvmChain,
     address: string,
     scope: ChainScope,
     page?: PageRef,
 ): Promise<Page<TransactionRecord>> => {
-    const { items, next } = await fetchHistoryPage(scope, address, page)
+    const { items, next } = await fetchHistoryPage(scope, chain, address, page)
     return {
-        items: items.flatMap(item => toRecords(item, address, scope)),
+        items: items.flatMap(item => toRecords(item, address, scope, chain)),
         ...(next !== null && { next: { cursor: next } }),
     }
 }
 
-export const ethereumHistoryAdapter: HistoryChainAdapter = {
-    chainId: ETHEREUM_CHAIN_ID,
-    getTransactionHistory: getEthereumTransactionHistory,
-}
+export const createEvmHistoryAdapter = (
+    chain: EvmChain,
+): HistoryChainAdapter => ({
+    chainId: chain.row.id,
+    getTransactionHistory: (address, scope, page) =>
+        getEvmTransactionHistory(chain, address, scope, page),
+})

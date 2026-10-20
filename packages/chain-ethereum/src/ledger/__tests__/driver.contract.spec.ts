@@ -21,10 +21,13 @@ vi.mock('@ledgerhq/hw-app-eth', () => ({
     },
 }))
 
-import { ethereumLedgerAppDriver } from '../driver'
+import { createEvmLedgerAppDriver } from '../driver'
+import { EVM_TEST_CHAINS } from '../../__tests__/evm-chains'
 
-ledgerAppDriverContractTests(() => ethereumLedgerAppDriver, {
-    arrangeExchangeFailure: error => {
-        getAppConfiguration.mockRejectedValueOnce(error)
-    },
-})
+for (const chain of EVM_TEST_CHAINS) {
+    ledgerAppDriverContractTests(() => createEvmLedgerAppDriver(chain), {
+        arrangeExchangeFailure: error => {
+            getAppConfiguration.mockRejectedValueOnce(error)
+        },
+    })
+}

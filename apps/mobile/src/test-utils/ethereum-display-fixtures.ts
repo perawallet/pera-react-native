@@ -18,7 +18,8 @@ import {
     type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { evmCapabilityDefaults as ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEthereumReviewer } from '@packages/chain-ethereum/src/signing/review'
 
 export type EthereumDisplayFixtureKind =
@@ -134,14 +135,13 @@ export const buildEthereumUnsignedTransaction = (
 export const reviewEthereumFixture = async (
     kind: EthereumDisplayFixtureKind,
 ): Promise<TransactionNative> => {
-    const { transactions } = await createEthereumReviewer().decoder.decode(
-        [buildEthereumUnsignedTransaction(kind)],
-        {
-            scope: SCOPE,
-            heldAddresses: [ETHEREUM_FIXTURE_SENDER],
-            isWalletBuilt: kind === 'token-transfer',
-            capabilities: ethereumCapabilityDefaults,
-        },
-    )
+    const { transactions } = await createEthereumReviewer({
+        chain: evmChainOf('ethereum'),
+    }).decoder.decode([buildEthereumUnsignedTransaction(kind)], {
+        scope: SCOPE,
+        heldAddresses: [ETHEREUM_FIXTURE_SENDER],
+        isWalletBuilt: kind === 'token-transfer',
+        capabilities: ethereumCapabilityDefaults,
+    })
     return transactions[0].native
 }

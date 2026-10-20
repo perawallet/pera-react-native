@@ -38,9 +38,9 @@ import {
     type MessageSignKind,
     type MessageSignerChainAdapter,
 } from '@perawallet/wallet-core-signing'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { ETHEREUM_WC_V2_METHOD } from '../connect/walletConnect'
 import { isRecord } from './adapter'
 import {
@@ -250,7 +250,10 @@ const describePersonalSign = (payload: unknown): MessageSummary => {
         : { kind: 'text', title, preview: text }
 }
 
-const describeTypedData = (payload: unknown): MessageSummary => {
+const describeTypedData = (
+    payload: unknown,
+    chain: EvmChain,
+): MessageSummary => {
     const title = { key: TITLE_KEY }
     let typedData: TypedDataDefinition
     let tree: MessageTreeNode[]
@@ -260,7 +263,7 @@ const describeTypedData = (payload: unknown): MessageSummary => {
     } catch {
         return { kind: 'raw', title }
     }
-    const spendApproval = spendApprovalOf(typedData, Date.now())
+    const spendApproval = spendApprovalOf(typedData, Date.now(), chain)
     return {
         kind: 'typed-data',
         title,
@@ -270,23 +273,28 @@ const describeTypedData = (payload: unknown): MessageSummary => {
     }
 }
 
-const describe = (request: MessageRequest): MessageSummary => {
-    if (request.method === PERSONAL_SIGN) {
-        return describePersonalSign(request.payload)
+const describeWith =
+    (chain: EvmChain) =>
+    (request: MessageRequest): MessageSummary => {
+        if (request.method === PERSONAL_SIGN) {
+            return describePersonalSign(request.payload)
+        }
+        if (request.method === SIGN_TYPED_DATA_V4) {
+            return describeTypedData(request.payload, chain)
+        }
+        throw new Error(`Unsupported message method ${request.method}`)
     }
-    if (request.method === SIGN_TYPED_DATA_V4) {
-        return describeTypedData(request.payload)
-    }
-    throw new Error(`Unsupported message method ${request.method}`)
-}
 
-const typedDataDigestFor = (request: MessageRequest): TaggedDigest => {
+const typedDataDigestFor = (
+    request: MessageRequest,
+    chain: EvmChain,
+): TaggedDigest => {
     const typedData = readTypedData(request.payload)
     const domainChainId = typedData.domain?.chainId
     // A signature over another chain's domain would be valid there.
     if (
         domainChainId !== undefined &&
-        BigInt(domainChainId) !== BigInt(eip155ChainIdOf(request.scope))
+        BigInt(domainChainId) !== BigInt(eip155ChainIdOf(request.scope, chain))
     ) {
         throw new Error(
             `The typed data is for EIP-155 chain ${domainChainId}, not ${request.scope.networkId}`,
@@ -299,42 +307,44 @@ const typedDataDigestFor = (request: MessageRequest): TaggedDigest => {
     }
 }
 
-const plan = (
-    request: MessageRequest,
-    { account }: MessagePlanContext,
-): SigningRequest[] => {
-    const ownAddress = chainAccountOf(account, ETHEREUM_CHAIN_ID)?.address
-    const refuse = (reason: string) =>
-        new CannotSignError(ownAddress ?? request.signer, reason)
-    if (request.scope.chainId !== ETHEREUM_CHAIN_ID) {
-        throw refuse(
-            `not an Ethereum message request: ${request.scope.chainId}`,
-        )
+const planWith =
+    (chain: EvmChain) =>
+    (
+        request: MessageRequest,
+        { account }: MessagePlanContext,
+    ): SigningRequest[] => {
+        const ownAddress = chainAccountOf(account, chain.row.id)?.address
+        const refuse = (reason: string) =>
+            new CannotSignError(ownAddress ?? request.signer, reason)
+        if (request.scope.chainId !== chain.row.id) {
+            throw refuse(
+                `not a message request for ${chain.row.displayName}: ${request.scope.chainId}`,
+            )
+        }
+        if (!supports(request.method)) {
+            throw refuse(`unsupported message method ${request.method}`)
+        }
+        if (!ownAddress) {
+            throw refuse(`the account has no ${chain.row.displayName} address`)
+        }
+        if (!areEvmAddressesEqual(request.signer, ownAddress)) {
+            throw refuse(`the request names ${request.signer} as its signer`)
+        }
+        const digest =
+            request.method === PERSONAL_SIGN
+                ? personalMessageDigest({
+                      raw: readPersonalSign(request.payload).message,
+                  })
+                : typedDataDigestFor(request, chain)
+        return [
+            {
+                requestIndex: 0,
+                signer: ownAddress,
+                scheme: 'secp256k1',
+                payload: digest.digest,
+            },
+        ]
     }
-    if (!supports(request.method)) {
-        throw refuse(`unsupported message method ${request.method}`)
-    }
-    if (!ownAddress) {
-        throw refuse('the account has no Ethereum address')
-    }
-    if (!ethereumAddressCodec.areEqual(request.signer, ownAddress)) {
-        throw refuse(`the request names ${request.signer} as its signer`)
-    }
-    const digest =
-        request.method === PERSONAL_SIGN
-            ? personalMessageDigest({
-                  raw: readPersonalSign(request.payload).message,
-              })
-            : typedDataDigestFor(request)
-    return [
-        {
-            requestIndex: 0,
-            signer: ownAddress,
-            scheme: 'secp256k1',
-            payload: digest.digest,
-        },
-    ]
-}
 
 const assemble = (
     request: MessageRequest,
@@ -346,10 +356,10 @@ const assemble = (
         signatures.length !== 1 ||
         signature.requestIndex !== 0 ||
         signature.scheme !== 'secp256k1' ||
-        !ethereumAddressCodec.areEqual(signature.signer, request.signer)
+        !areEvmAddressesEqual(signature.signer, request.signer)
     ) {
         throw new Error(
-            'An Ethereum message takes exactly one secp256k1 signature, from its signer',
+            'An EVM message takes exactly one secp256k1 signature, from its signer',
         )
     }
     const tag = request.method === PERSONAL_SIGN ? 'eip191-message' : 'eip712'
@@ -364,16 +374,18 @@ const assemble = (
     }
 }
 
-export const ethereumMessageSignerAdapter: MessageSignerChainAdapter = {
-    chainId: ETHEREUM_CHAIN_ID,
+export const createEvmMessageSignerAdapter = (
+    chain: EvmChain,
+): MessageSignerChainAdapter => ({
+    chainId: chain.row.id,
     // Local keys only.
     canSign: (account, kind) =>
         isSignableKind(kind) &&
-        signingKeyOn(account, ETHEREUM_CHAIN_ID) !== undefined,
+        signingKeyOn(account, chain.row.id) !== undefined,
     // Every EVM verifier recovers a secp256k1 signature.
     signsVerifiably: (_account, kind) => isSignableKind(kind),
     supports,
-    describe,
-    plan,
+    describe: describeWith(chain),
+    plan: planWith(chain),
     assemble,
-}
+})

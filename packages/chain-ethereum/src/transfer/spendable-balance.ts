@@ -27,9 +27,8 @@ import {
     type SpendableBalance,
     type SpendableBalanceInput,
 } from '@perawallet/wallet-core-transactions'
-import { ethereumAddressCodec } from '../accounts/address-codec'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
+import type { EvmChain } from '../chains/types'
 
 const ZERO = new Decimal(0)
 
@@ -50,8 +49,7 @@ const unsynced = (
           )
 
 const isSameAsset = (a: AssetRef, b: AssetRef): boolean =>
-    a.chainId === b.chainId &&
-    ethereumAddressCodec.areEqual(a.assetId, b.assetId)
+    a.chainId === b.chainId && areEvmAddressesEqual(a.assetId, b.assetId)
 
 const outflowOf = (inFlight: readonly InFlightSpend[], asset: AssetRef) =>
     sumOf(
@@ -62,60 +60,64 @@ const outflowOf = (inFlight: readonly InFlightSpend[], asset: AssetRef) =>
         ),
     )
 
-// Ethereum has no reserve and no close-out. What stands between the balance
-// and MAX is the gas, paid in ether, and what earlier sends already spend: the
+// An EVM chain has no reserve and no close-out. What stands between the balance
+// and MAX is the fee, paid in the native coin, and what earlier sends already spend: the
 // node queues the next send behind them and prices it against the same balance.
-export const readEthereumSpendableBalance = async ({
-    account,
-    asset,
-    scope,
-    fee,
-    inFlight = [],
-}: SpendableBalanceInput): Promise<SpendableBalance> => {
-    const address = addressOn(account, scope)
-    if (
-        scope.chainId !== ETHEREUM_CHAIN_ID ||
-        asset.chainId !== ETHEREUM_CHAIN_ID ||
-        !address
-    ) {
-        throw new InvalidSendParamsError()
-    }
-
-    // Read before the holdings: the sync writes the chain state first, so a
-    // read straddling a sync pairs an older nonce with newer holdings, which
-    // keeps a mined send held back for a tick rather than freeing an unmined one.
-    const row = await getAccountChainStateRow({
-        accountAddress: address,
+export const createEvmSpendableBalance =
+    (chain: EvmChain) =>
+    async ({
+        account,
+        asset,
         scope,
-    })
-    const latestNonce =
-        row?.chainData.family === 'evm' ? row.chainData.nonce.latest : undefined
-    const pending = unsynced(inFlight, latestNonce)
+        fee,
+        inFlight = [],
+    }: SpendableBalanceInput): Promise<SpendableBalance> => {
+        const address = addressOn(account, scope)
+        if (
+            scope.chainId !== chain.row.id ||
+            asset.chainId !== chain.row.id ||
+            !address
+        ) {
+            throw new InvalidSendParamsError()
+        }
 
-    if (!isNativeAsset(asset, ethereumDescriptor)) {
-        const holdings = await getAccountHoldings({
+        // Read before the holdings: the sync writes the chain state first, so a
+        // read straddling a sync pairs an older nonce with newer holdings, which
+        // keeps a mined send held back for a tick rather than freeing an unmined one.
+        const row = await getAccountChainStateRow({
             accountAddress: address,
             scope,
         })
-        const balance =
-            holdings.find(holding =>
-                ethereumAddressCodec.areEqual(holding.assetId, asset.assetId),
-            )?.amount ?? ZERO
-        const reserved = outflowOf(pending, asset)
+        const latestNonce =
+            row?.chainData.family === 'evm'
+                ? row.chainData.nonce.latest
+                : undefined
+        const pending = unsynced(inFlight, latestNonce)
+
+        if (!isNativeAsset(asset, chain.descriptor)) {
+            const holdings = await getAccountHoldings({
+                accountAddress: address,
+                scope,
+            })
+            const balance =
+                holdings.find(holding =>
+                    areEvmAddressesEqual(holding.assetId, asset.assetId),
+                )?.amount ?? ZERO
+            const reserved = outflowOf(pending, asset)
+            return {
+                balance,
+                max: Decimal.max(balance.sub(reserved), ZERO),
+                reserved,
+            }
+        }
+
+        const balance = row?.nativeBalance ?? ZERO
+        const reserved = outflowOf(pending, asset).add(
+            sumOf(pending.map(spend => spend.maxFee ?? ZERO)),
+        )
         return {
             balance,
-            max: Decimal.max(balance.sub(reserved), ZERO),
+            max: Decimal.max(balance.sub(reserved).sub(fee), ZERO),
             reserved,
         }
     }
-
-    const balance = row?.nativeBalance ?? ZERO
-    const reserved = outflowOf(pending, asset).add(
-        sumOf(pending.map(spend => spend.maxFee ?? ZERO)),
-    )
-    return {
-        balance,
-        max: Decimal.max(balance.sub(reserved).sub(fee), ZERO),
-        reserved,
-    }
-}

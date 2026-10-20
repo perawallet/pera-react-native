@@ -32,7 +32,7 @@ import {
     type SubmissionFlow,
     type SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { isTransactionKnownToNode } from './submission'
 
 // A just-broadcast transaction can be briefly unknown to a load-balanced RPC.
@@ -41,18 +41,11 @@ export const DROPPED_GRACE_MS = 5 * 60_000
 /** Bounded per pass; survivors are probed on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
 
-const settleHandlers = new Map<SubmissionFlow, SubmissionSettledHandler>()
-
-export const setEthereumSubmissionSettledHandler = (
-    flow: SubmissionFlow,
-    handler: SubmissionSettledHandler | null,
-): void => {
-    if (handler === null) {
-        settleHandlers.delete(flow)
-    } else {
-        settleHandlers.set(flow, handler)
-    }
-}
+/** One per broadcaster: a handler set for one chain's flow must not hear another chain's rows. */
+export type SubmissionSettledHandlers = Map<
+    SubmissionFlow,
+    SubmissionSettledHandler
+>
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
@@ -103,6 +96,7 @@ const probe = async (
 }
 
 const notifySettled = async (
+    settleHandlers: SubmissionSettledHandlers,
     attempt: SubmissionAttempt,
     scope: ChainScope,
     verdict: Verdict,
@@ -124,16 +118,20 @@ const notifySettled = async (
 }
 
 export type ReconcileEthereumSubmissionsParams = {
+    chain: EvmChain
+    settleHandlers: SubmissionSettledHandlers
     getClient: (scope: ChainScope) => PublicClient
     db?: Database
     limit?: number
 }
 
 /**
- * Settles open Ethereum ledger rows from node evidence. Never throws: the sync
+ * Settles the chain's open ledger rows from node evidence. Never throws: the sync
  * tick calls it, and a failure leaves the row open for the next one.
  */
 export const reconcileEthereumSubmissions = async ({
+    chain,
+    settleHandlers,
     getClient,
     db,
     limit = DEFAULT_PASS_LIMIT,
@@ -143,7 +141,7 @@ export const reconcileEthereumSubmissions = async ({
     try {
         open = await getOpenSubmissionAttempts({
             db,
-            chainId: ETHEREUM_CHAIN_ID,
+            chainId: chain.row.id,
             limit,
         })
     } catch (error) {
@@ -166,7 +164,7 @@ export const reconcileEthereumSubmissions = async ({
                 summary.probed++
                 const verdict = await probe(attempt, client)
                 if (verdict === null) return
-                await notifySettled(attempt, scope, verdict)
+                await notifySettled(settleHandlers, attempt, scope, verdict)
                 await resolveSubmissionAttempt({
                     db,
                     id: attempt.id,

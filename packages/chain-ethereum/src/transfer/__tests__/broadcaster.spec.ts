@@ -51,8 +51,9 @@ import {
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
-import { createEthereumBroadcasterAdapter } from '../broadcaster'
+import { createEvmBroadcasterAdapter } from '../broadcaster'
 import { submitEthereumTransactions } from '../submission'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BYTES = hexToBytes(VIEM_TRANSFER_NONCE_0)
@@ -68,10 +69,10 @@ afterAll(() => server.close())
 const useRpc = (responses: EvmRpcFixtures['responses'] = {}) =>
     server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL, responses }))
 
-const adapter = createEthereumBroadcasterAdapter(testChainContext(), {
+const adapter = createEvmBroadcasterAdapter(testChainContext(), ETHEREUM, {
     confirmationTimeoutMs: 200,
 })
-const client = () => createEvmClient(SCOPE, testChainContext())
+const client = () => createEvmClient(SCOPE, testChainContext(), ETHEREUM)
 
 const signed = (data: SigningResult['signedData']): SigningResult => ({
     signedData: data,
@@ -294,7 +295,7 @@ describe('Ethereum broadcaster adapter', () => {
             })
 
             await expect(
-                submitEthereumTransactions(client(), [BYTES]),
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
             ).resolves.toEqual([HASH])
         })
 
@@ -307,7 +308,7 @@ describe('Ethereum broadcaster adapter', () => {
             })
 
             await expect(
-                submitEthereumTransactions(client(), [BYTES]),
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
             ).rejects.toMatchObject({ classification: 'rejected-by-node' })
         })
 
@@ -318,7 +319,7 @@ describe('Ethereum broadcaster adapter', () => {
             })
 
             await expect(
-                submitEthereumTransactions(client(), [BYTES]),
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
             ).rejects.toMatchObject({
                 classification: 'rejected-by-node',
                 nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
@@ -335,7 +336,7 @@ describe('Ethereum broadcaster adapter', () => {
             })
 
             await expect(
-                submitEthereumTransactions(client(), [BYTES]),
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
             ).rejects.toMatchObject({ classification: 'unknown-outcome' })
         })
     })

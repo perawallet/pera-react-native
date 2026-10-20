@@ -14,8 +14,16 @@ import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { hexToBytes } from 'viem'
 import { addressCodecContractTests } from '@perawallet/wallet-core-chain-contract/testing'
-import { ethereumAddressCodec as codec } from '../address-codec'
-import { ethereumDescriptor } from '../../descriptor'
+import { createEvmAddressCodec } from '../address-codec'
+import {
+    BASE,
+    ETHEREUM,
+    EVM_TEST_CHAINS,
+    POLYGON,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+
+const codec = createEvmAddressCodec(ETHEREUM)
 
 const HARDHAT_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const HARDHAT_PUBLIC_KEY = hexToBytes(
@@ -34,28 +42,30 @@ const EIP55_VECTORS = [
     '0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb',
 ]
 
-addressCodecContractTests(() => codec, {
-    publicKey: HARDHAT_PUBLIC_KEY,
-    deriveOpts: { scheme: 'secp256k1', networkId: 'mainnet' },
-    equivalentSpellings: [
-        '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
-        '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
-    ],
-    invalid: [
-        '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD',
-        '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA',
-        '5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
-        '0x' + 'g'.repeat(40),
-        'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
-    ],
-    foreignUri:
-        'algorand://EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
-    paymentUriOpts: {
-        networkId: 'sepolia',
-        assetRef: { chainId: 'ethereum', assetId: TOKEN },
-        amount: new Decimal('1500000'),
-    },
-})
+for (const chain of EVM_TEST_CHAINS) {
+    addressCodecContractTests(() => createEvmAddressCodec(chain), {
+        publicKey: HARDHAT_PUBLIC_KEY,
+        deriveOpts: { scheme: 'secp256k1', networkId: 'mainnet' },
+        equivalentSpellings: [
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
+            '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+        ],
+        invalid: [
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD',
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA',
+            '5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
+            '0x' + 'g'.repeat(40),
+            'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
+        ],
+        foreignUri:
+            'algorand://EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM',
+        paymentUriOpts: {
+            networkId: evmScopeOf(chain, 'testnet').networkId,
+            assetRef: { chainId: chain.row.id, assetId: TOKEN },
+            amount: new Decimal('1500000'),
+        },
+    })
+}
 
 describe('EIP-55', () => {
     it.each(EIP55_VECTORS)('accepts and round-trips %s', vector => {
@@ -157,7 +167,7 @@ describe('toPaymentUri', () => {
     it('treats the native asset ref as a plain payment', () => {
         expect(
             codec.toPaymentUri(HARDHAT_ADDRESS, {
-                assetRef: ethereumDescriptor.nativeAsset.ref,
+                assetRef: ETHEREUM.descriptor.nativeAsset.ref,
                 amount: new Decimal(5),
             }),
         ).toBe(`ethereum:${HARDHAT_ADDRESS}?value=5`)
@@ -243,5 +253,46 @@ describe('parsePaymentUri', () => {
         ['an ENS name', 'ethereum:pay-vitalik.eth'],
     ])('declines %s', (_label, uri) => {
         expect(codec.parsePaymentUri(uri)).toBeUndefined()
+    })
+})
+
+describe('payment URIs on another EVM chain', () => {
+    const base = createEvmAddressCodec(BASE)
+
+    it("emits the chain's own EIP-155 id", () => {
+        expect(
+            base.toPaymentUri(HARDHAT_ADDRESS, { networkId: 'mainnet' }),
+        ).toBe(`ethereum:${HARDHAT_ADDRESS}@8453`)
+        expect(
+            base.toPaymentUri(HARDHAT_ADDRESS, { networkId: 'sepolia' }),
+        ).toBe(`ethereum:${HARDHAT_ADDRESS}@84532`)
+    })
+
+    it('reads a link for its own chain', () => {
+        expect(
+            base.parsePaymentUri(`ethereum:${HARDHAT_ADDRESS}@84532`),
+        ).toEqual({ address: HARDHAT_ADDRESS, networkId: 'sepolia' })
+    })
+
+    it("leaves another chain's link to that chain's codec", () => {
+        const uri = `ethereum:${HARDHAT_ADDRESS}@137`
+
+        expect(base.parsePaymentUri(uri)).toBeUndefined()
+        expect(createEvmAddressCodec(POLYGON).parsePaymentUri(uri)).toEqual({
+            address: HARDHAT_ADDRESS,
+            networkId: 'mainnet',
+        })
+    })
+
+    it('reads a link without a chain id as its own', () => {
+        expect(base.parsePaymentUri(`ethereum:${HARDHAT_ADDRESS}`)).toEqual({
+            address: HARDHAT_ADDRESS,
+        })
+    })
+
+    it('rejects an EIP-155 id no chain owns', () => {
+        expect(
+            base.parsePaymentUri(`ethereum:${HARDHAT_ADDRESS}@999999`),
+        ).toBeUndefined()
     })
 })

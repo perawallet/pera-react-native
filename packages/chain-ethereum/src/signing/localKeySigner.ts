@@ -15,7 +15,7 @@ import {
     SigningError,
     type LocalKeySignerChainAdapter,
 } from '@perawallet/wallet-core-signing'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 
 const REASON =
     'Ethereum signs through its transaction planner and message signer, not the local-key strategy'
@@ -25,8 +25,10 @@ const unsupported = (): Promise<never> =>
 
 // The legs take Algorand-shaped transactions and groups, which Ethereum can't
 // express, so a request that reaches them is refused instead of signed.
-export const ethereumLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
-    chainId: ETHEREUM_CHAIN_ID,
+export const createEvmLocalKeySignerAdapter = (
+    chain: EvmChain,
+): LocalKeySignerChainAdapter => ({
+    chainId: chain.row.id,
     signTransactions: unsupported,
     createStrategy: () => ({
         canSign: () => false,
@@ -34,4 +36,4 @@ export const ethereumLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
             Promise.reject(new CannotSignError(account.id, REASON)),
     }),
     signGroups: unsupported,
-}
+})

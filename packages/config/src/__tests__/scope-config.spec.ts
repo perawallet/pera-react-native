@@ -12,6 +12,7 @@
 
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
+    EVM_CHAIN_NETWORKS,
     LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
@@ -358,27 +359,28 @@ describe('hasPeraService', () => {
 })
 
 describe('configuredScopes', () => {
-    test('lists the Algorand scopes in network order, then the Ethereum ones', () => {
+    test('lists the Algorand scopes in network order, then every EVM network in table order', () => {
         expect(configuredScopes()).toStrictEqual([
             ...['mainnet', 'testnet', 'betanet', 'custom'].map(network => ({
                 chainId: 'algorand',
                 networkId: network,
             })),
-            { chainId: 'ethereum', networkId: 'mainnet' },
-            { chainId: 'ethereum', networkId: 'sepolia' },
+            ...Object.entries(EVM_CHAIN_NETWORKS).flatMap(
+                ([chainId, { networks }]) =>
+                    networks.map(network => ({
+                        chainId,
+                        networkId: network.id,
+                    })),
+            ),
         ])
+        expect(configuredScopes()).toContainEqual({
+            chainId: 'base',
+            networkId: 'sepolia',
+        })
     })
 })
 
-type EthereumValues = Partial<
-    Pick<
-        typeof config,
-        | 'ethereumMainnetRpcUrl'
-        | 'ethereumSepoliaRpcUrl'
-        | 'ethereumMainnetPeraServices'
-        | 'ethereumSepoliaPeraServices'
-    >
->
+type EthereumValues = Partial<typeof config>
 
 // `config` is frozen at import, so a configured value needs fresh modules.
 const withEthereumConfig = async (values: EthereumValues) => {
@@ -524,6 +526,56 @@ describe('ethereum scopes', () => {
         expect(freshFor(ETHEREUM_MAINNET).size).toBe(0)
         expect(fresh(ETHEREUM_MAINNET)).toStrictEqual(NO_PERA_SERVICES)
         expect(freshDeployment(ETHEREUM_MAINNET)).toBeUndefined()
+    })
+})
+
+describe('a scope generated from the EVM table', () => {
+    afterEach(() => {
+        vi.doUnmock('../main')
+        vi.resetModules()
+    })
+
+    const BASE_MAINNET: ChainScope = { chainId: 'base', networkId: 'mainnet' }
+    const BASE_SEPOLIA: ChainScope = { chainId: 'base', networkId: 'sepolia' }
+
+    test('reads its RPC URL and services from its own fields', async () => {
+        const { getChainConfig: fresh, peraServicesFor: freshFor } =
+            await withEthereumConfig({
+                baseSepoliaRpcUrl: 'https://base-sepolia.rpc.example',
+                baseSepoliaPeraServices: ['assets'],
+            })
+
+        expect(fresh(BASE_SEPOLIA)).toStrictEqual({
+            rpcUrl: 'https://base-sepolia.rpc.example',
+        })
+        expect(freshFor(BASE_SEPOLIA)).toStrictEqual(new Set(['assets']))
+    })
+
+    test('without services has no Pera backend, as betanet has none', async () => {
+        const { hasPeraBackend: fresh, peraDeploymentOf: freshDeployment } =
+            await withEthereumConfig({})
+
+        expect(fresh(BASE_MAINNET)).toBe(false)
+        expect(freshDeployment(BASE_MAINNET)).toBeUndefined()
+    })
+
+    test('without an RPC URL is unconfigured', async () => {
+        const { getChainConfig: fresh, UnconfiguredScopeError: FreshError } =
+            await withEthereumConfig({ baseMainnetRpcUrl: '' })
+
+        expect(() => fresh(BASE_MAINNET)).toThrow(FreshError)
+    })
+
+    test("is served by its tier's deployment", async () => {
+        const { peraDeploymentOf: fresh } = await withEthereumConfig({
+            polygonMainnetPeraServices: ['assets'],
+            polygonAmoyPeraServices: ['assets'],
+        })
+
+        expect(fresh({ chainId: 'polygon', networkId: 'mainnet' })).toBe('live')
+        expect(fresh({ chainId: 'polygon', networkId: 'amoy' })).toBe(
+            'developer',
+        )
     })
 })
 

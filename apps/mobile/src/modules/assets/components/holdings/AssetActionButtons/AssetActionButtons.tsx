@@ -19,7 +19,7 @@ import { useCallback } from 'react'
 import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSendFunds } from '@modules/transactions'
+import { useReceiveFunds, useSendFunds } from '@modules/transactions'
 import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
@@ -59,23 +59,49 @@ export const AssetActionButtons = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const isReadOnly = !useCanSignWith(account, chainId)
     const { setSelectedAsset, setCanSelectAsset } = useSendFunds()
+    const {
+        setSelectedAccount: setReceiveAccount,
+        setCanSelectAccount: setCanSelectReceiveAccount,
+        setChainId: setReceiveChainId,
+    } = useReceiveFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const { canSwap, canBuy, canSend } = useAssetActionButtons(account, chainId)
+    const { canSwap, canBuy, canSend, canReceive } = useAssetActionButtons(
+        account,
+        chainId,
+    )
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
+        // The sheet picks its first screen on its first render, before its own effects can write the store.
+        if (account) {
+            setCanSelectReceiveAccount(false)
+            setReceiveAccount(account)
+            setReceiveChainId(chainId)
+        }
         void requestBottomSheet({
-            contents: <ReceiveFundsContent account={account ?? undefined} />,
+            contents: (
+                <ReceiveFundsContent
+                    account={account ?? undefined}
+                    chainId={chainId}
+                />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, account])
+    }, [
+        requestBottomSheet,
+        account,
+        chainId,
+        setCanSelectReceiveAccount,
+        setReceiveAccount,
+        setReceiveChainId,
+    ])
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
@@ -150,14 +176,16 @@ export const AssetActionButtons = ({
                     style={styles.buttonTwo}
                     testID='asset_detail_copy_address_button'
                 />
-                <RoundButton
-                    title={t('asset_details.action_buttons.receive')}
-                    icon='inflow'
-                    variant='secondary'
-                    onPress={openReceiveFunds}
-                    style={styles.buttonTwo}
-                    testID='asset_detail_receive_button'
-                />
+                {canReceive && (
+                    <RoundButton
+                        title={t('asset_details.action_buttons.receive')}
+                        icon='inflow'
+                        variant='secondary'
+                        onPress={openReceiveFunds}
+                        style={styles.buttonTwo}
+                        testID='asset_detail_receive_button'
+                    />
+                )}
             </PWView>
         )
     }
@@ -198,14 +226,16 @@ export const AssetActionButtons = ({
                     testID='asset_detail_send_button'
                 />
             )}
-            <RoundButton
-                title={t('asset_details.action_buttons.receive')}
-                icon='inflow'
-                variant='secondary'
-                onPress={openReceiveFunds}
-                style={styles.buttonFour}
-                testID='asset_detail_receive_button'
-            />
+            {canReceive && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.receive')}
+                    icon='inflow'
+                    variant='secondary'
+                    onPress={openReceiveFunds}
+                    style={styles.buttonFour}
+                    testID='asset_detail_receive_button'
+                />
+            )}
         </PWView>
     )
 }

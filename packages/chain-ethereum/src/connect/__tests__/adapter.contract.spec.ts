@@ -12,16 +12,23 @@
 
 import { dappRequestContractTests } from '@perawallet/wallet-core-connections/testing'
 import { testChainContext } from '../../__tests__/context'
+import { EVM_TEST_CHAINS, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
 
-dappRequestContractTests(
-    () => createEthereumDappRequestAdapter(testChainContext()),
-    {
-        disclosed: {
-            scope: { chainId: 'ethereum', networkId: 'sepolia' },
-            reportedAs: 'sepolia',
+for (const chain of EVM_TEST_CHAINS) {
+    const testnet = evmScopeOf(chain, 'testnet')
+    dappRequestContractTests(
+        () =>
+            createEthereumDappRequestAdapter(
+                testChainContext({ chain }),
+                chain,
+            ),
+        {
+            disclosed: { scope: testnet, reportedAs: testnet.networkId },
+            undisclosed: {
+                scope: { chainId: chain.row.id, networkId: 'custom' },
+            },
+            walletConnect: { networkWithCaip2: 'mainnet' },
         },
-        undisclosed: { scope: { chainId: 'ethereum', networkId: 'custom' } },
-        walletConnect: { networkWithCaip2: 'mainnet' },
-    },
-)
+    )
+}

@@ -12,13 +12,41 @@
 
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import {
+    EVM_CHAIN_NETWORKS,
+    type EvmChainId,
+} from '@perawallet/wallet-core-chain-contract'
 
-import { getConfig, overrideEnvironmentMap, type Config } from '../main'
+import {
+    evmConfigKeys,
+    getConfig,
+    overrideEnvironmentMap,
+    type Config,
+} from '../main'
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
+
+type ScopeConfigKeys = {
+    chainId: string
+    networkId: string
+    rpcUrlEnv: string
+    rpcUrlKey: string
+    peraServicesEnv: string
+    peraServicesKey: string
+}
+
+const evmTooling = createRequire(import.meta.url)(
+    '../../../../tools/dev/evm-config-keys.cjs',
+) as {
+    evmChainConfigKeys: () => { capabilitiesEnv: string }[]
+    evmScopeConfigKeys: () => ScopeConfigKeys[]
+}
+
+const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
 /**
  * Env var names the script's production guard refuses to leave unset, read out
@@ -33,12 +61,18 @@ const guardedEnvVars = (): string[] => {
 
 const TURBO_JSON = join(__dirname, '../../../../turbo.json')
 
-const appendedEnvVars = (): string[] =>
-    [
+// The literal lines, plus the EVM lines the script generates from the table.
+const appendedEnvVars = (): string[] => [
+    ...[
         ...readFileSync(SCRIPT, 'utf8').matchAll(
             /^append_config "([A-Z0-9_]+)"/gm,
         ),
-    ].map(match => match[1])
+    ].map(match => match[1]),
+    ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesEnv),
+    ...evmTooling
+        .evmScopeConfigKeys()
+        .flatMap(keys => [keys.rpcUrlEnv, keys.peraServicesEnv]),
+]
 
 const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
     globalEnv.some(entry =>
@@ -146,6 +180,85 @@ describe('tools/dev/generate-config.sh', () => {
         expect(output).toContain('chainIds: "algorand"')
         expect(output).toContain('chainAlgorandCapabilities: "send,receive"')
         expect(output).toContain('chainEthereumCapabilities: "send"')
+    })
+
+    test('names every EVM scope key and env var as the config schema does', () => {
+        const expected = EVM_CHAIN_IDS.flatMap(chainId =>
+            EVM_CHAIN_NETWORKS[chainId].networks.map(network => {
+                const keys = evmConfigKeys(chainId, network.id)
+                return {
+                    chainId,
+                    networkId: network.id,
+                    rpcUrlEnv: keys.rpcUrlEnv,
+                    rpcUrlKey: keys.rpcUrl,
+                    peraServicesEnv: keys.peraServicesEnv,
+                    peraServicesKey: keys.peraServices,
+                }
+            }),
+        )
+
+        expect(evmTooling.evmScopeConfigKeys()).toEqual(expected)
+        for (const keys of expected) {
+            expect(overrideEnvironmentMap[keys.rpcUrlKey]).toBe(keys.rpcUrlEnv)
+        }
+    })
+
+    test('emits the capability list of a chain added to the EVM table', () => {
+        const output = run({ CHAIN_BASE_CAPABILITIES: 'send' })
+
+        expect(output).toContain('chainBaseCapabilities: "send"')
+    })
+
+    describe('a chain added to the EVM table', () => {
+        const BASE_ENDPOINTS = {
+            BASE_MAINNET_RPC_URL: 'https://base.rpc.example',
+            BASE_SEPOLIA_RPC_URL: 'https://base-sepolia.rpc.example',
+        }
+
+        test('emits its RPC URLs and Pera service lists', () => {
+            const output = run({
+                CHAINS: 'algorand,base',
+                ...BASE_ENDPOINTS,
+                BASE_MAINNET_PERA_SERVICES: 'assets,history',
+            })
+
+            expect(output).toContain(
+                'baseMainnetRpcUrl: "https://base.rpc.example"',
+            )
+            expect(output).toContain(
+                'baseSepoliaRpcUrl: "https://base-sepolia.rpc.example"',
+            )
+            expect(output).toContain(
+                'baseMainnetPeraServices: "assets,history"',
+            )
+        })
+
+        test.each(['BASE_MAINNET_RPC_URL', 'BASE_SEPOLIA_RPC_URL'])(
+            'fails a build that ships it with %s unset',
+            variable => {
+                expect(
+                    runExpectingFailure({
+                        CHAINS: 'algorand,base',
+                        ...BASE_ENDPOINTS,
+                        [variable]: '',
+                    }),
+                ).toMatch(
+                    new RegExp(`${variable} is unset but CHAINS ships base`),
+                )
+            },
+        )
+
+        test('does not ask a build without it for its RPC URLs', () => {
+            expect(() =>
+                run({
+                    CHAINS: 'algorand,ethereum',
+                    ETHEREUM_MAINNET_RPC_URL: 'https://mainnet.rpc.example',
+                    ETHEREUM_SEPOLIA_RPC_URL: 'https://sepolia.rpc.example',
+                    BASE_MAINNET_RPC_URL: '',
+                    BASE_SEPOLIA_RPC_URL: '',
+                }),
+            ).not.toThrow()
+        })
     })
 
     describe('ethereum endpoints', () => {

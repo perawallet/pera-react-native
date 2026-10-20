@@ -21,9 +21,13 @@ import {
     type ChainRegistry,
     type ChainScope,
     type ChainSetupConfig,
+    type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
+import {
+    ethereumModule,
+    evmChainModules,
+} from '@perawallet/wallet-core-chain-ethereum'
 
 const PRODUCTION_ALGORAND_CAPABILITIES = {
     send: true,
@@ -94,7 +98,7 @@ const mocks = vi.hoisted(() => ({
     peraServicesFor: vi.fn(),
     registerModule: vi.fn(),
     registerEthereumModule: vi.fn(),
-    ethereumChainModule: undefined as ChainModule | undefined,
+    evmChainModules: {} as Partial<Record<EvmChainId, ChainModule>>,
     readCapabilityOverrides: vi.fn((): ChainCapabilityOverrides => ({})),
     networkGetState: vi.fn(),
     kmsCore: { deriveFromSeed: vi.fn(), importRawKey: vi.fn(), sign: vi.fn() },
@@ -156,9 +160,9 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
 })
 
 // A getter so each test decides whether the Metro gate left the real module in.
-vi.mock('../ethereum-chain-module', () => ({
-    get ethereumChainModule() {
-        return mocks.ethereumChainModule
+vi.mock('../evm-chain-modules', () => ({
+    get evmChainModules() {
+        return mocks.evmChainModules
     },
 }))
 
@@ -181,9 +185,8 @@ const contextGivenToEthereum = (): ChainContext => {
         enabled: ['algorand', 'ethereum'],
         capabilities: {},
     }
-    mocks.ethereumChainModule = {
-        ...ethereumModule,
-        register: mocks.registerEthereumModule,
+    mocks.evmChainModules = {
+        ethereum: { ...ethereumModule, register: mocks.registerEthereumModule },
     }
     registerChainAdapters()
     return mocks.registerEthereumModule.mock.calls[0]?.[0] as ChainContext
@@ -195,7 +198,7 @@ describe('registerChainAdapters', () => {
         pinnedHostRegistry.reset()
         mocks.provider.chains = createChainRegistry()
         mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
-        mocks.ethereumChainModule = ethereumModule
+        mocks.evmChainModules = { ethereum: ethereumModule }
         mocks.readCapabilityOverrides.mockReturnValue({})
         mocks.networkGetState.mockReturnValue({
             mode: 'live',
@@ -236,9 +239,36 @@ describe('registerChainAdapters', () => {
     })
 
     it('fails loudly when the build lists Ethereum but Metro stubbed its module', () => {
-        mocks.ethereumChainModule = undefined
+        mocks.evmChainModules = {}
         mocks.config.chains = {
             enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        expect(() => registerChainAdapters()).toThrow(
+            /no chain module was supplied/,
+        )
+    })
+
+    it('registers another EVM chain the build lists through the same table', () => {
+        mocks.evmChainModules = evmChainModules
+        mocks.config.chains = {
+            enabled: ['algorand', 'base'],
+            capabilities: {},
+        }
+
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.get('base').descriptor).toBe(
+            evmChainModules.base.descriptor,
+        )
+        expect(mocks.provider.chains.has('ethereum')).toBe(false)
+    })
+
+    it('fails loudly when the build lists Base but Metro stubbed the EVM modules', () => {
+        mocks.evmChainModules = {}
+        mocks.config.chains = {
+            enabled: ['algorand', 'base'],
             capabilities: {},
         }
 

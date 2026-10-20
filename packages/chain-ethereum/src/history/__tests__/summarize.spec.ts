@@ -17,6 +17,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { evmHistoryItem } from '../api/msw-handlers'
 import { evmHistoryItemSchema, type EvmHistoryItem } from '../api/schema'
 import { summarizeEthereumHistoryItem } from '../summarize'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ME = '0x00000000000000000000000000000000000000aa'
@@ -41,7 +42,7 @@ const leg = (from: string, to: string, value = '250') => ({
 })
 
 const summarize = (item: EvmHistoryItem, address = ME) =>
-    summarizeEthereumHistoryItem(item, address, SCOPE)
+    summarizeEthereumHistoryItem(item, address, SCOPE, ETHEREUM)
 
 describe('summarizeEthereumHistoryItem', () => {
     it('reads an ETH send as an outgoing transfer', () => {

@@ -25,12 +25,26 @@ const DEVELOPER_GALLERY_MODULES = [
 ]
 
 // Every app entry into the chain-ethereum package: the bootstrap module, which
-// chain-adapters.ts reaches it through, and Ethereum's chain UI, which the
+// chain-adapters.ts reaches it through, and the EVM chain UI, which the
 // chain-UI registry reaches it through. Swapping them drops viem.
-const ETHEREUM_CHAIN_MODULES = [
-    'src/bootstrap/ethereum-chain-module',
+const EVM_CHAIN_MODULES = [
+    'src/bootstrap/evm-chain-modules',
     'src/modules/ethereum/chain-ui',
 ]
+
+// The chains chain-ethereum serves, from the network table the app registers.
+const EVM_CHAIN_IDS = Object.keys(
+    require('../../packages/chain-contract/src/models/evm-networks.json'),
+)
+
+/**
+ * Whether a build's chain list ships any EVM chain, and so needs viem.
+ *
+ * @param {readonly string[]} chainIds
+ * @returns {boolean}
+ */
+const listsEvmChain = chainIds =>
+    chainIds.some(chainId => EVM_CHAIN_IDS.includes(chainId))
 
 // The E2E fixture deeplink's only entry points. It rewrites wallet state on
 // command, so it ships only in a bundle built for a device test run.
@@ -118,9 +132,10 @@ const toStubMap = (projectRoot, modulePaths) =>
 module.exports = {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    ETHEREUM_CHAIN_MODULES,
+    EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     isE2eFixturesIncluded,
+    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,

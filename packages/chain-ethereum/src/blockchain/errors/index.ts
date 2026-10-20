@@ -12,4 +12,4 @@
 
 export { EvmError, isEvmError, type EvmErrorParams } from './EvmError'
 export { EvmErrorCode } from './evmErrorCodes'
-export { toEvmError } from './toEvmError'
+export { evmErrorCodeOf, toEvmError } from './toEvmError'

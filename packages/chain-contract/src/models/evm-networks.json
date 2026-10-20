@@ -1,0 +1,98 @@
+{
+    "ethereum": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 1
+            },
+            {
+                "id": "sepolia",
+                "tier": "testnet",
+                "displayName": "Sepolia",
+                "eip155ChainId": 11155111
+            }
+        ]
+    },
+    "base": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 8453
+            },
+            {
+                "id": "sepolia",
+                "tier": "testnet",
+                "displayName": "Sepolia",
+                "eip155ChainId": 84532
+            }
+        ]
+    },
+    "bsc": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 56
+            },
+            {
+                "id": "testnet",
+                "tier": "testnet",
+                "displayName": "Testnet",
+                "eip155ChainId": 97
+            }
+        ]
+    },
+    "arbitrum": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 42161
+            },
+            {
+                "id": "sepolia",
+                "tier": "testnet",
+                "displayName": "Sepolia",
+                "eip155ChainId": 421614
+            }
+        ]
+    },
+    "avalanche": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 43114
+            },
+            {
+                "id": "fuji",
+                "tier": "testnet",
+                "displayName": "Fuji",
+                "eip155ChainId": 43113
+            }
+        ]
+    },
+    "polygon": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 137
+            },
+            {
+                "id": "amoy",
+                "tier": "testnet",
+                "displayName": "Amoy",
+                "eip155ChainId": 80002
+            }
+        ]
+    }
+}

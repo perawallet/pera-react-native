@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     CHAIN_CAPABILITIES,
+    CHAIN_IDS,
     createChainRegistry,
     type ChainCapabilities,
     type ChainDescriptor,
@@ -106,10 +107,14 @@ describe('readCapabilityOverrides', () => {
         useRemote({})
     })
 
+    // Every chain is read, so every chain has a layer entry.
+    const emptyLayer = (): Record<string, object> =>
+        Object.fromEntries(CHAIN_IDS.map(chainId => [chainId, {}]))
+
     test('gives no overrides while every blob is empty', () => {
         expect(readCapabilityOverrides()).toEqual({
-            remote: { algorand: {}, ethereum: {} },
-            developer: { algorand: {}, ethereum: {} },
+            remote: emptyLayer(),
+            developer: emptyLayer(),
             chainEnabled: {},
         })
     })
@@ -118,8 +123,8 @@ describe('readCapabilityOverrides', () => {
         useRemote({ [KEY]: '{"capabilities":{"staking":false}}' })
 
         expect(readCapabilityOverrides().remote).toEqual({
+            ...emptyLayer(),
             algorand: { staking: false },
-            ethereum: {},
         })
     })
 
@@ -127,8 +132,8 @@ describe('readCapabilityOverrides', () => {
         setDeveloper('{"capabilities":{"staking":true}}')
 
         expect(readCapabilityOverrides().developer).toEqual({
+            ...emptyLayer(),
             algorand: { staking: true },
-            ethereum: {},
         })
     })
 
@@ -138,7 +143,7 @@ describe('readCapabilityOverrides', () => {
 
         const overrides = readCapabilityOverrides()
 
-        expect(overrides.developer).toEqual({ algorand: {}, ethereum: {} })
+        expect(overrides.developer).toEqual(emptyLayer())
         expect(overrides.chainEnabled).toEqual({})
     })
 

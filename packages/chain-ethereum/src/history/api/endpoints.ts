@@ -17,6 +17,7 @@ import type {
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
+import type { EvmChain } from '../../chains/types'
 import {
     evmHistoryItemSchema,
     evmHistoryPageSchema,
@@ -39,11 +40,12 @@ export type EvmHistoryPage = {
 
 /**
  * Newest first; rows this client can't read are dropped. Rejects with
- * `UnknownEvmNetworkError` for a scope that isn't Ethereum, and with
+ * `UnknownEvmNetworkError` for a scope that isn't the chain's, and with
  * `PeraNetworkError` or `PeraServiceUnavailableError` from `queryClient`.
  */
 export const fetchHistoryPage = async (
     scope: ChainScope,
+    chain: EvmChain,
     address: string,
     page?: PageRef,
 ): Promise<EvmHistoryPage> => {
@@ -52,7 +54,7 @@ export const fetchHistoryPage = async (
         service: HISTORY_SERVICE,
         scope,
         method: 'GET',
-        url: historyPath(eip155ChainIdOf(scope), address.toLowerCase()),
+        url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
         params: page && {
             cursor: page.cursor,
             ...(page.limit !== undefined && {

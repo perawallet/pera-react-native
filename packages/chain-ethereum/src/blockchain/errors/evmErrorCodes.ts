@@ -69,6 +69,7 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
     },
     insufficient_funds: {
         titleKey: i18nKey('errors.evm.insufficient_funds.title'),
+        // lanekeep-ignore-next-line pera/error-params-match-copy reason: toEvmError always sets params.symbol, the chain's native coin
         messageKey: i18nKey('errors.evm.insufficient_funds.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,

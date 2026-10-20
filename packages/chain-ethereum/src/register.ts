@@ -23,7 +23,11 @@ import {
     keyDerivations,
     transactionPlanners,
     transactionReviewers,
+    type AddressCodec,
     type ChainContext,
+    type KeyDerivation,
+    type TransactionPlanner,
+    type TransactionReviewer,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
@@ -35,70 +39,131 @@ import {
     messageSignerChainAdapters,
     reviewerChainAdapters,
     type BroadcasterChainAdapter,
+    type LocalKeySignerChainAdapter,
+    type MessageSignerChainAdapter,
+    type ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import {
     nodeEndpointAdapters,
     type NodeEndpointAdapter,
 } from '@perawallet/wallet-core-chain-shared'
-import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import {
+    deeplinkAdapters,
+    type DeeplinkChainAdapter,
+} from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
     transferChainAdapters,
+    type HistoryChainAdapter,
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
-import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
+import {
+    ledgerAppDriverRegistry,
+    type LedgerAppDriver,
+} from '@perawallet/wallet-extension-hardware-wallet'
 import {
     createEthereumAccountsAdapter,
-    ethereumAddressCodec,
-    ethereumKeyDerivation,
+    createEvmAddressCodec,
+    createEvmKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
-import { createEthereumNodeEndpointAdapter } from './blockchain/node-endpoint'
+import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
+import type { EvmChain } from './chains/types'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
-import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
-import { ethereumHistoryAdapter } from './history'
-import { ethereumLedgerAppDriver } from './ledger/driver'
-import { ethereumPlannerAdapter } from './signing/adapter'
-import { ethereumLocalKeySignerAdapter } from './signing/localKeySigner'
-import { ethereumMessageSignerAdapter } from './signing/messages'
-import { ethereumReviewerAdapter } from './signing/review'
-import { ethereumSigningReviewerAdapter } from './signing/signingReviewer'
+import { createEvmDeeplinkAdapter } from './deeplinks/adapter'
+import { createEvmHistoryAdapter } from './history'
+import { createEvmLedgerAppDriver } from './ledger/driver'
+import { createEvmPlannerAdapter } from './signing/adapter'
+import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
+import { createEvmMessageSignerAdapter } from './signing/messages'
+import { createEthereumReviewer } from './signing/review'
+import { createEvmSigningReviewerAdapter } from './signing/signingReviewer'
 import {
-    createEthereumBroadcasterAdapter,
-    createEthereumTransferAdapter,
+    createEvmBroadcasterAdapter,
+    createEvmTransferAdapter,
 } from './transfer'
 
-// The registries ignore a repeat of the same instance but reject a new one, so
-// the context-bound adapters are built once; every context the app hands in
-// reads the same live stores.
-let accountsAdapter: AccountsChainAdapter | undefined
-let assetsAdapter: AssetsChainAdapter | undefined
-let transferAdapter: TransferChainAdapter | undefined
-let broadcasterAdapter: BroadcasterChainAdapter | undefined
-let dappRequestAdapter: DappRequestChainAdapter | undefined
-let nodeEndpointAdapter: NodeEndpointAdapter | undefined
+type EvmChainAdapters = {
+    addressCodec: AddressCodec
+    keyDerivation: KeyDerivation
+    planner: TransactionPlanner
+    reviewer: TransactionReviewer
+    signingReviewer: ReviewerChainAdapter
+    localKeySigner: LocalKeySignerChainAdapter
+    messageSigner: MessageSignerChainAdapter
+    accounts: AccountsChainAdapter
+    assets: AssetsChainAdapter
+    transfer: TransferChainAdapter
+    broadcaster: BroadcasterChainAdapter
+    history: HistoryChainAdapter
+    dappRequest: DappRequestChainAdapter
+    nodeEndpoint: NodeEndpointAdapter
+    deeplink: DeeplinkChainAdapter
+    ledgerDriver: LedgerAppDriver
+}
 
-export const registerChain = (ctx: ChainContext): void => {
-    accountsAdapter ??= createEthereumAccountsAdapter(ctx)
-    assetsAdapter ??= createEthereumAssetsAdapter(ctx)
-    transferAdapter ??= createEthereumTransferAdapter(ctx)
-    broadcasterAdapter ??= createEthereumBroadcasterAdapter(ctx)
-    dappRequestAdapter ??= createEthereumDappRequestAdapter(ctx)
-    nodeEndpointAdapter ??= createEthereumNodeEndpointAdapter(ctx)
-    addressCodecs.register(ethereumAddressCodec)
-    keyDerivations.register(ethereumKeyDerivation)
-    transactionPlanners.register(ethereumPlannerAdapter)
-    transactionReviewers.register(ethereumReviewerAdapter)
-    reviewerChainAdapters.register(ethereumSigningReviewerAdapter)
-    localKeySignerChainAdapters.register(ethereumLocalKeySignerAdapter)
-    messageSignerChainAdapters.register(ethereumMessageSignerAdapter)
-    accountsChainAdapters.register(accountsAdapter)
-    assetsChainAdapters.register(assetsAdapter)
-    transferChainAdapters.register(transferAdapter)
-    broadcasterChainAdapters.register(broadcasterAdapter)
-    historyChainAdapters.register(ethereumHistoryAdapter)
-    dappRequestChainAdapters.register(dappRequestAdapter)
-    nodeEndpointAdapters.register(nodeEndpointAdapter)
-    deeplinkAdapters.register(ethereumDeeplinkAdapter)
-    ledgerAppDriverRegistry.register(ethereumLedgerAppDriver)
+const buildAdapters = (
+    ctx: ChainContext,
+    chain: EvmChain,
+): EvmChainAdapters => {
+    const reviewer = createEthereumReviewer({ chain })
+    return {
+        addressCodec: createEvmAddressCodec(chain),
+        keyDerivation: createEvmKeyDerivation(chain),
+        planner: createEvmPlannerAdapter(chain),
+        reviewer,
+        signingReviewer: createEvmSigningReviewerAdapter(chain, reviewer),
+        localKeySigner: createEvmLocalKeySignerAdapter(chain),
+        messageSigner: createEvmMessageSignerAdapter(chain),
+        accounts: createEthereumAccountsAdapter(ctx, chain),
+        assets: createEthereumAssetsAdapter(ctx, chain),
+        transfer: createEvmTransferAdapter(ctx, chain),
+        broadcaster: createEvmBroadcasterAdapter(ctx, chain),
+        history: createEvmHistoryAdapter(chain),
+        dappRequest: createEthereumDappRequestAdapter(ctx, chain),
+        nodeEndpoint: createEvmNodeEndpointAdapter(ctx, chain),
+        deeplink: createEvmDeeplinkAdapter(chain),
+        ledgerDriver: createEvmLedgerAppDriver(chain),
+    }
+}
+
+// Only one adapter may claim a scheme, and every EVM chain shares EIP-681's.
+const isSchemeClaimed = (chain: EvmChain): boolean =>
+    deeplinkAdapters
+        .list()
+        .some(adapter =>
+            adapter.schemes.some(scheme =>
+                chain.descriptor.uriSchemes.includes(scheme),
+            ),
+        )
+
+export const createEvmChainRegistration = (
+    chain: EvmChain,
+): ((ctx: ChainContext) => void) => {
+    // The registries ignore a repeat of the same instance but reject a new one,
+    // so the adapters are built on the first registration; every context the
+    // app hands in reads the same live stores.
+    let adapters: EvmChainAdapters | undefined
+    return ctx => {
+        adapters ??= buildAdapters(ctx, chain)
+        addressCodecs.register(adapters.addressCodec)
+        keyDerivations.register(adapters.keyDerivation)
+        transactionPlanners.register(adapters.planner)
+        transactionReviewers.register(adapters.reviewer)
+        reviewerChainAdapters.register(adapters.signingReviewer)
+        localKeySignerChainAdapters.register(adapters.localKeySigner)
+        messageSignerChainAdapters.register(adapters.messageSigner)
+        accountsChainAdapters.register(adapters.accounts)
+        assetsChainAdapters.register(adapters.assets)
+        transferChainAdapters.register(adapters.transfer)
+        broadcasterChainAdapters.register(adapters.broadcaster)
+        historyChainAdapters.register(adapters.history)
+        dappRequestChainAdapters.register(adapters.dappRequest)
+        nodeEndpointAdapters.register(adapters.nodeEndpoint)
+        ledgerAppDriverRegistry.register(adapters.ledgerDriver)
+        // The first EVM chain registered serves every EVM chain's links.
+        if (!isSchemeClaimed(chain)) {
+            deeplinkAdapters.register(adapters.deeplink)
+        }
+    }
 }

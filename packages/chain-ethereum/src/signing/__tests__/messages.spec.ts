@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { UnknownEvmNetworkError } from '../../blockchain'
 import {
-    ethereumMessageSignerAdapter,
+    createEvmMessageSignerAdapter,
     personalSignMessageRequest,
     typedDataMessageRequest,
 } from '../messages'
@@ -40,6 +40,7 @@ import {
     VIEM_PERA,
     vectorSignature,
 } from './fixtures'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const OTHER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
@@ -47,7 +48,7 @@ const context = {
     account: ETHEREUM_SIGNER_ACCOUNT,
     accounts: [ETHEREUM_SIGNER_ACCOUNT],
 }
-const adapter = ethereumMessageSignerAdapter
+const adapter = createEvmMessageSignerAdapter(ETHEREUM)
 
 const personal = (message: Hex, signer = SENDER, scope = MAINNET) =>
     personalSignMessageRequest(scope, signer, message)

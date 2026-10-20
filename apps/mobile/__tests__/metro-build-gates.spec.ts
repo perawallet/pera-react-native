@@ -17,9 +17,10 @@ import { describe, expect, it } from 'vitest'
 import {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    ETHEREUM_CHAIN_MODULES,
+    EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     isE2eFixturesIncluded,
+    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,
@@ -102,11 +103,23 @@ describe('isDeveloperGalleryIncluded', () => {
     })
 })
 
-describe('ethereum chain module stubs', () => {
-    it('maps the gated module to an existing stub beside it', () => {
-        const stubs = toStubMap(PROJECT_ROOT, ETHEREUM_CHAIN_MODULES)
+describe('listsEvmChain', () => {
+    it.each([
+        [['algorand', 'ethereum'], true],
+        [['algorand', 'base'], true],
+        [['polygon'], true],
+        [['algorand'], false],
+        [[], false],
+    ])('reads %j as %s', (chainIds, expected) => {
+        expect(listsEvmChain(chainIds)).toBe(expected)
+    })
+})
 
-        expect(Object.keys(stubs)).toHaveLength(ETHEREUM_CHAIN_MODULES.length)
+describe('EVM chain module stubs', () => {
+    it('maps the gated module to an existing stub beside it', () => {
+        const stubs = toStubMap(PROJECT_ROOT, EVM_CHAIN_MODULES)
+
+        expect(Object.keys(stubs)).toHaveLength(EVM_CHAIN_MODULES.length)
         for (const [real, stub] of Object.entries(stubs)) {
             expect(existsSync(real)).toBe(true)
             expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))

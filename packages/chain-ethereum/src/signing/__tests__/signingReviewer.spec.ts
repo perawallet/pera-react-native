@@ -17,7 +17,10 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import { ethereumSigningReviewerAdapter as reviewer } from '../signingReviewer'
+import { createEvmSigningReviewerAdapter } from '../signingReviewer'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+
+const reviewer = createEvmSigningReviewerAdapter(ETHEREUM)
 import { readEthereumNative } from '../transaction-view'
 import { SENDER, TRANSFER } from './fixtures'
 

@@ -38,6 +38,7 @@ import {
     TEST_RPC_URL,
     testChainContext,
 } from '../../__tests__/context'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -120,6 +121,7 @@ const countRpcRequests = (): { count: number } => {
 const readAll = (accounts: readonly Hex[] = ACCOUNTS) => {
     const ops = createEthereumAccountStateOps(
         testChainContext({ services: ['assets'] }),
+        ETHEREUM,
     )
     return Promise.allSettled(
         accounts.map(account => ops.fetchAccountState(account, SCOPE, HINT)),
@@ -152,6 +154,7 @@ describe('fetchAccountState batching', () => {
         server.use(...fixtures())
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
             { readWindowMs: 20 },
         )
         const blockReads: number[] = []
@@ -214,6 +217,7 @@ describe('fetchAccountState batching', () => {
         server.use(...fixtures())
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const reads = await Promise.allSettled([

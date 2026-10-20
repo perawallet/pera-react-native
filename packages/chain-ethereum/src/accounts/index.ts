@@ -15,8 +15,8 @@ export {
     createEthereumAccountStateOps,
     type EthereumAccountStateOps,
 } from './account-state'
-export { ethereumAddressCodec } from './address-codec'
-export { ethereumKeyDerivation } from './key-derivation'
+export { createEvmAddressCodec } from './address-codec'
+export { createEvmKeyDerivation } from './key-derivation'
 export {
     InvalidPrivateKeyError,
     parseEthereumPrivateKey,

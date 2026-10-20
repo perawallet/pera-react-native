@@ -25,7 +25,7 @@ import {
     LedgerOperationUnsupportedError,
     LedgerSigningError,
 } from '@perawallet/wallet-extension-ledger-shared'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import { normalizeEvmAddress } from '../accounts/address-codec'
 import { ethereumHdPath } from '../accounts/hd-derivation'
 import { ETHEREUM_LEDGER_APP } from './app'
 
@@ -103,7 +103,7 @@ export const createEthereumLedgerTransport = (
                     verify,
                 )
                 return {
-                    address: ethereumAddressCodec.normalize(result.address),
+                    address: normalizeEvmAddress(result.address),
                     publicKey: hexToBytes(`0x${result.publicKey}`),
                     accountIndex,
                 }

@@ -240,6 +240,11 @@ describe('config/main', () => {
         expect(config.chainRequestTimeouts).toEqual({
             algorand: { readMs: 10_000, submitMs: 30_000 },
             ethereum: { readMs: 15_000, submitMs: 30_000 },
+            base: { readMs: 15_000, submitMs: 30_000 },
+            bsc: { readMs: 15_000, submitMs: 30_000 },
+            arbitrum: { readMs: 15_000, submitMs: 30_000 },
+            avalanche: { readMs: 15_000, submitMs: 30_000 },
+            polygon: { readMs: 15_000, submitMs: 30_000 },
         })
         expect(config.signingTransportTimeout).toBe(60_000)
     })
