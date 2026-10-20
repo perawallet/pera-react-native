@@ -163,7 +163,7 @@ decision rather than an error, so every signing failure — a user rejection
 included — reaches the page as `-32603`, and a cancelled
 `signTransactions`/`signData` cannot be told apart from a wallet fault.
 
-ARC-0001's numeric codes do not reach `code` either. `Arc0001Error` keeps
+ARC-0001's numeric codes do not reach `code` either. Algorand's ARC-0001 error keeps
 4100/4200/4300 in a `code` field that no throw site folds into the message, and
 the handler maps only a cancel and the registry's `invalid-payload`, so the
 number is not recoverable from the page at all — only the human-readable message
@@ -176,7 +176,7 @@ deny-by-default allowlist keyed on `error.name`, because an error class not
 named in it may interpolate wallet-held data, and it truncates whatever it
 allows at `MAX_ERROR_LENGTH` (200 characters). The codec allows only
 `UserCancelledError` on its own; each chain adapter adds its protocol errors
-(`Arc0001Error` for Algorand). A `-32002` reject reason is not
+(Algorand's ARC-0001 error). A `-32002` reject reason is not
 filtered that way: `sanitizeRejectReason` strips control characters and
 truncates at the same limit, so its length and encoding are bounded but its
 content is not. An error rebuilt as `new Error(message)` crossing a realm hop
