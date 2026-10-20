@@ -121,7 +121,7 @@ export const useSettingsCurrencyScreen =
             isRateUnavailableOffline,
             isIntegrityBlocked,
             retryCurrencies: () => {
-                refetch()
+                void refetch()
             },
         }
     }
