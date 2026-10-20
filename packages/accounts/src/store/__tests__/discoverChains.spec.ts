@@ -139,17 +139,62 @@ describe('discoverChains', () => {
     })
 
     test('removes a key it derived only to probe a chain that turned out inactive', async () => {
+        vi.mocked(
+            families.derivations.get(POLYGON)!.deriveAccount,
+        ).mockResolvedValueOnce({
+            keyPairId: 'polygon-only-key',
+            publicKey: new Uint8Array([1]),
+            address: EVM_KEY_ADDRESS,
+        })
         families.active.add(BASE)
         state().setAccounts([hdAccount()])
 
         await state().discoverChains('hd')
 
         expect(getProvider().key.store.remove).toHaveBeenCalledWith(
-            familyHdKeyId('hd-seed', 'algorand', 0, 0),
+            'polygon-only-key',
         )
         expect(getProvider().key.store.remove).not.toHaveBeenCalledWith(
             familyHdKeyId('hd-seed', 'evm', 0, 0),
         )
+    })
+
+    test('probes only the families the account is already on', async () => {
+        families.active.add(ALGORAND).add(BASE)
+        state().setAccounts([hdAccount()])
+
+        await expect(state().discoverChains('hd')).resolves.toEqual([BASE])
+        expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
+        expect(
+            families.derivations.get(ALGORAND)?.deriveAccount,
+        ).not.toHaveBeenCalled()
+    })
+
+    test('lets an enable on the same account wait for a probe in flight', async () => {
+        let releaseProbe: () => void = () => {}
+        families.checkActivity.get(BASE)!.mockImplementationOnce(
+            (addresses: string[]) =>
+                new Promise(resolve => {
+                    releaseProbe = () =>
+                        resolve(new Map(addresses.map(a => [a, false])))
+                }),
+        )
+        state().setAccounts([hdAccount()])
+
+        const discovery = state().discoverChains('hd')
+        const enabling = state().enableChain('hd', ALGORAND, 'user')
+        await vi.waitFor(() =>
+            expect(families.checkActivity.get(BASE)).toHaveBeenCalled(),
+        )
+
+        expect(
+            families.derivations.get(ALGORAND)?.deriveAccount,
+        ).not.toHaveBeenCalled()
+        releaseProbe()
+        await discovery
+        await expect(enabling).resolves.toMatchObject({
+            chains: { [ALGORAND]: { enabledBy: 'user' } },
+        })
     })
 
     test('leaves off a chain whose address another account already holds', async () => {

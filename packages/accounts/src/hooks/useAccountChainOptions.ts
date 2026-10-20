@@ -17,7 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import { chainAccountOf } from '../credentials/accessors'
-import { eligibleChains } from '../credentials/eligibility'
+import { eligibleChainsInFamily } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
 
 export type AccountChainOption = {
@@ -28,14 +28,15 @@ export type AccountChainOption = {
 
 /**
  * The chains a flow can use the account on: its enabled chains, then the ones
- * it could enable, each in registry order and limited to `isOn`. A hardware
- * account offers only its enabled chains, since a new one needs its device.
+ * it could enable in a family it is already on, each in registry order and
+ * limited to `isOn`. A hardware account offers only its enabled chains, since
+ * a new one needs its device.
  */
 export const accountChainOptions = (
     account: WalletAccount,
     isOn: (chainId: ChainId) => boolean,
 ): AccountChainOption[] => {
-    const options = eligibleChains(account)
+    const options = eligibleChainsInFamily(account)
         .filter(isOn)
         .map(chainId => ({
             chainId,

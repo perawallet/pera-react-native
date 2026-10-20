@@ -46,7 +46,7 @@ describe('accountChainOptions', () => {
         registerChainFamilies()
     })
 
-    test('lists the enabled chains first, then the eligible ones, each in registry order', () => {
+    test('lists the enabled chains first, then the eligible ones in the same family, each in registry order', () => {
         const hd = buildTestAccount(TEST_CUSTODY.hd, {
             [POLYGON]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
             [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
@@ -55,7 +55,6 @@ describe('accountChainOptions', () => {
         expect(accountChainOptions(hd, everyChain)).toEqual([
             { chainId: ETHEREUM, isEnabled: true },
             { chainId: POLYGON, isEnabled: true },
-            { chainId: ALGORAND, isEnabled: false },
             ...EVM_CHAINS.filter(
                 chainId => chainId !== ETHEREUM && chainId !== POLYGON,
             ).map(chainId => ({ chainId, isEnabled: false })),

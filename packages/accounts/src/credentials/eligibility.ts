@@ -150,6 +150,25 @@ export const eligibleChains = (account: WalletAccount): ChainId[] => {
         .map(({ id }) => id)
 }
 
+/**
+ * The eligible chains in a family the account is already enabled in: what a
+ * first use or a discovery probe may add without crossing chain families. A
+ * new family stays an explicit step, so an existing single-family account
+ * behaves as it did before more chains were registered.
+ */
+export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
+    const { chains } = getProvider()
+    const families = new Set(
+        chains
+            .list()
+            .filter(({ id }) => chainAccountOf(account, id) !== undefined)
+            .map(({ family }) => family),
+    )
+    return eligibleChains(account).filter(id =>
+        families.has(chains.get(id).descriptor.family),
+    )
+}
+
 /** Whether the chain imports an account from raw private-key bytes. */
 export const canImportRawKey = (chainId: ChainId): boolean => {
     const { chains } = getProvider()

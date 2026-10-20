@@ -38,6 +38,8 @@ export type RecordedAuthorities = Partial<
 export type EnableChainOptions = {
     /** A hardware account's address on the chain, read from its device; required for hardware custody. */
     deviceAddress?: string
+    /** The address the caller holds for the account there; a different derived address throws before anything is written. */
+    expectedAddress?: string
 }
 
 export type PrivateKeyImportOptions = {
@@ -127,8 +129,10 @@ export type AccountsState = BaseStoreState & {
      * already enabled there. Throws `AccountNotFoundError`,
      * `ChainNotEligibleError` when the custody can't reach the chain,
      * `DeviceAddressRequiredError` for a hardware account without
-     * `options.deviceAddress`, and `DuplicateAccountError` when another
-     * account holds the address there.
+     * `options.deviceAddress`, `AddressMismatchError` when the address isn't
+     * `options.expectedAddress`, and `DuplicateAccountError` when another
+     * account holds the address there. Chain changes on one account run one
+     * at a time.
      */
     enableChain: (
         accountId: string,
@@ -137,10 +141,10 @@ export type AccountsState = BaseStoreState & {
         options?: EnableChainOptions,
     ) => Promise<WalletAccount>
     /**
-     * Probes each eligible chain the account isn't enabled on once for
-     * activity and enables the active ones as `'discovery'`. Never rejects; a
-     * chain whose probe fails reads as inactive. Resolves to the chains it
-     * enabled.
+     * Probes each eligible chain in a family the account is already on, and
+     * not enabled on yet, once for activity and enables the active ones as
+     * `'discovery'`. Never rejects; a chain whose probe fails reads as
+     * inactive. Resolves to the chains it enabled.
      */
     discoverChains: (accountId: string) => Promise<ChainId[]>
     /**

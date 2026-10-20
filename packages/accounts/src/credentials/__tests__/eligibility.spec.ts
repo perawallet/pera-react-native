@@ -42,6 +42,7 @@ import {
 import {
     canDerive,
     eligibleChains,
+    eligibleChainsInFamily,
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
@@ -467,5 +468,30 @@ describe('eligibleChains', () => {
         })
 
         expect(eligibleChains(key)).toEqual([ETHEREUM])
+    })
+})
+
+describe('eligibleChainsInFamily', () => {
+    beforeEach(() => {
+        registerChainFamilies()
+    })
+
+    test('keeps the eligible chains in the families the account is on', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(eligibleChainsInFamily(hd)).toEqual(EVM_CHAINS)
+    })
+
+    test('offers an Algorand-only HD account nothing new', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            ['algorand' as ChainId]: {
+                address: ALGORAND_ADDRESS,
+                keyPairId: 'k',
+            },
+        })
+
+        expect(eligibleChainsInFamily(hd)).toEqual(['algorand'])
     })
 })

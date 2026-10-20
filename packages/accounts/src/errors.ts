@@ -72,6 +72,14 @@ export class WalletCannotDeriveError extends AccountError {
     }
 }
 
+export class InvalidChainAddressError extends AccountError {
+    constructor(chainId: ChainId) {
+        super(`Not an address on ${chainId}`, undefined, {
+            params: { chainId },
+        })
+    }
+}
+
 export class AccountNotFoundError extends AccountError {
     constructor(accountId: string) {
         super(`No account ${accountId} in the wallet`, undefined, {

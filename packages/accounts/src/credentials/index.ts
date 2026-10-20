@@ -39,6 +39,7 @@ export {
     canDerive,
     canImportRawKey,
     eligibleChains,
+    eligibleChainsInFamily,
     findAddressHolder,
     findPathHolder,
     nextChainPosition,

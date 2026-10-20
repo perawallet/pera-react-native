@@ -60,6 +60,7 @@ import {
     canImportRawKey,
     chainAccountOf,
     eligibleChains,
+    eligibleChainsInFamily,
     findAddressHolder,
     findPathHolder,
     isKeyReferenced,
@@ -70,12 +71,12 @@ import {
 } from '../credentials'
 import { standaloneKeySchemes } from '../credentials/eligibility'
 import {
-    AccountError,
     AccountNotFoundError,
     AddressMismatchError,
     ChainNotEligibleError,
     DeviceAddressRequiredError,
     DuplicateAccountError,
+    InvalidChainAddressError,
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
 } from '../errors'
@@ -665,7 +666,7 @@ const withDiscoveredChains = async (
     draft: WalletAccount,
     accounts: readonly WalletAccount[],
 ): Promise<{ account: WalletAccount; unusedKeys: string[] }> => {
-    const eligible = eligibleChains(draft)
+    const eligible = eligibleChainsInFamily(draft)
     if (eligible.length < 2) return { account: draft, unusedKeys: [] }
     const { active, unusedKeys } = await probeChainEntries(draft, eligible)
     const enabledAt = Date.now()
@@ -688,6 +689,28 @@ const removeUnreferencedKeys = async (
     for (const keyPairId of new Set(keyPairIds)) {
         await removeUnreferencedKey(accounts, keyPairId)
     }
+}
+
+const accountQueues = new Map<string, Promise<unknown>>()
+
+/**
+ * Runs one chain change at a time per account. A probe drops the keys it
+ * derived for inactive chains; run beside an enable that derives the same
+ * key, it could drop that key before the enable's entry references it.
+ */
+const queuedFor = <T>(accountId: string, run: () => Promise<T>): Promise<T> => {
+    const queued = (accountQueues.get(accountId) ?? Promise.resolve())
+        .catch(() => undefined)
+        .then(run)
+    accountQueues.set(accountId, queued)
+    void queued
+        .catch(() => undefined)
+        .finally(() => {
+            if (accountQueues.get(accountId) === queued) {
+                accountQueues.delete(accountId)
+            }
+        })
+    return queued
 }
 
 const findAccountById = (
@@ -870,7 +893,7 @@ export const useAccountsStore: UseBoundStore<
                 const scope = scopeOn(chainId)
                 const codec = addressCodecs.get(chainId)
                 if (!codec.isValid(address, scope.networkId)) {
-                    throw new AccountError(`Not an address on ${chainId}`)
+                    throw new InvalidChainAddressError(chainId)
                 }
                 const normalized = codec.normalize(address)
                 const { accounts } = get()
@@ -898,85 +921,108 @@ export const useAccountsStore: UseBoundStore<
                 get().addAccount(account)
                 return account
             },
-            enableChain: async (accountId, chainId, enabledBy, options) => {
-                const account = findAccountById(get().accounts, accountId)
-                if (chainAccountOf(account, chainId)) return account
-                if (!eligibleChains(account).includes(chainId)) {
-                    throw new ChainNotEligibleError(accountId, chainId)
-                }
-                const entry = await resolveChainEntry(account, chainId, options)
-                try {
-                    // Read after the derivation: the store can change across the await.
-                    const { accounts } = get()
-                    const current = findAccountById(accounts, accountId)
-                    if (chainAccountOf(current, chainId)) return current
-                    const holder = findAddressHolder(
-                        accounts,
-                        scopeOn(chainId),
-                        entry.address,
-                    )
-                    if (holder) {
-                        throw new DuplicateAccountError(entry.address, holder)
-                    }
-                    const next = withChainEntry(accounts, accountId, {
-                        [chainId]: withEnablement(entry, enabledBy),
-                    })
-                    get().setAccounts(next)
-                    return findAccountById(next, accountId)
-                } catch (error) {
-                    if (entry.keyPairId !== undefined) {
-                        await removeUnreferencedKey(
-                            get().accounts,
-                            entry.keyPairId,
-                        )
-                    }
-                    throw error
-                }
-            },
-            discoverChains: async (accountId: string) => {
-                try {
+            enableChain: (accountId, chainId, enabledBy, options) =>
+                queuedFor(accountId, async () => {
                     const account = findAccountById(get().accounts, accountId)
-                    if (account.custody.kind === 'hardware') return []
-                    const candidates = eligibleChains(account).filter(
-                        chainId => !chainAccountOf(account, chainId),
-                    )
-                    if (candidates.length === 0) return []
-                    const { active, unusedKeys } = await probeChainEntries(
+                    if (chainAccountOf(account, chainId)) return account
+                    if (!eligibleChains(account).includes(chainId)) {
+                        throw new ChainNotEligibleError(accountId, chainId)
+                    }
+                    const entry = await resolveChainEntry(
                         account,
-                        candidates,
+                        chainId,
+                        options,
                     )
-                    const { accounts } = get()
-                    const current = accounts.find(a => a.id === accountId)
-                    const enabledAt = Date.now()
-                    const additions: AccountChains = {}
-                    for (const [chainId, entry] of active) {
-                        if (
-                            current &&
-                            !chainAccountOf(current, chainId) &&
-                            !holdsAddressOn(accounts, entry.address, chainId)
-                        ) {
-                            additions[chainId] = withEnablement(
-                                entry,
-                                'discovery',
-                                enabledAt,
+                    try {
+                        assertExpectedAddress(
+                            chainId,
+                            entry.address,
+                            options?.expectedAddress,
+                        )
+                        // Read after the derivation: the store can change across the await.
+                        const { accounts } = get()
+                        const current = findAccountById(accounts, accountId)
+                        if (chainAccountOf(current, chainId)) return current
+                        const holder = findAddressHolder(
+                            accounts,
+                            scopeOn(chainId),
+                            entry.address,
+                        )
+                        if (holder) {
+                            throw new DuplicateAccountError(
+                                entry.address,
+                                holder,
                             )
                         }
+                        const next = withChainEntry(accounts, accountId, {
+                            [chainId]: withEnablement(entry, enabledBy),
+                        })
+                        get().setAccounts(next)
+                        return findAccountById(next, accountId)
+                    } catch (error) {
+                        if (entry.keyPairId !== undefined) {
+                            await removeUnreferencedKey(
+                                get().accounts,
+                                entry.keyPairId,
+                            )
+                        }
+                        throw error
                     }
-                    const enabled = Object.keys(additions) as ChainId[]
-                    if (enabled.length > 0) {
-                        get().setAccounts(
-                            withChainEntry(accounts, accountId, additions),
+                }),
+            discoverChains: (accountId: string) =>
+                queuedFor(accountId, async () => {
+                    try {
+                        const account = findAccountById(
+                            get().accounts,
+                            accountId,
                         )
+                        if (account.custody.kind === 'hardware') return []
+                        const candidates = eligibleChainsInFamily(
+                            account,
+                        ).filter(chainId => !chainAccountOf(account, chainId))
+                        if (candidates.length === 0) return []
+                        const { active, unusedKeys } = await probeChainEntries(
+                            account,
+                            candidates,
+                        )
+                        const { accounts } = get()
+                        const current = accounts.find(a => a.id === accountId)
+                        const enabledAt = Date.now()
+                        const additions: AccountChains = {}
+                        for (const [chainId, entry] of active) {
+                            if (
+                                current &&
+                                !chainAccountOf(current, chainId) &&
+                                !holdsAddressOn(
+                                    accounts,
+                                    entry.address,
+                                    chainId,
+                                )
+                            ) {
+                                additions[chainId] = withEnablement(
+                                    entry,
+                                    'discovery',
+                                    enabledAt,
+                                )
+                            } else if (entry.keyPairId !== undefined) {
+                                unusedKeys.push(entry.keyPairId)
+                            }
+                        }
+                        const enabled = Object.keys(additions) as ChainId[]
+                        if (enabled.length > 0) {
+                            get().setAccounts(
+                                withChainEntry(accounts, accountId, additions),
+                            )
+                        }
+                        await removeUnreferencedKeys(get().accounts, unusedKeys)
+                        return enabled
+                    } catch (error) {
+                        logger.warn(
+                            `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
+                        )
+                        return []
                     }
-                    await removeUnreferencedKeys(get().accounts, unusedKeys)
-                    return enabled
-                } catch (error) {
-                    logger.warn(
-                        `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-                    )
-                    return []
-                }
-            },
+                }),
             addChainAccount: async (
                 walletId,
                 chainId,

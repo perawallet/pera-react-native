@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, test } from 'vitest'
-import { AccountError, DuplicateAccountError } from '../../errors'
+import { DuplicateAccountError, InvalidChainAddressError } from '../../errors'
 import { buildTestAccount, TEST_CUSTODY } from '../../__tests__/accountFactory'
 import {
     ALGORAND,
@@ -106,7 +106,7 @@ describe('importWatchAccount', () => {
     test("refuses an address the chain's codec rejects", async () => {
         await expect(
             state().importWatchAccount(ALGORAND, EVM_KEY_ADDRESS),
-        ).rejects.toBeInstanceOf(AccountError)
+        ).rejects.toBeInstanceOf(InvalidChainAddressError)
         expect(state().accounts).toEqual([])
     })
 })

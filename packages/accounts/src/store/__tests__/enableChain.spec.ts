@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import {
     AccountNotFoundError,
+    AddressMismatchError,
     ChainNotEligibleError,
     DeviceAddressRequiredError,
     DuplicateAccountError,
@@ -191,6 +192,17 @@ describe('enableChain', () => {
             address: EVM_KEY_ADDRESS,
             enabledBy: 'user',
         })
+    })
+
+    test("refuses, before writing anything, an address that isn't the one the caller holds", async () => {
+        state().setAccounts([keyAccount()])
+
+        await expect(
+            state().enableChain('key', BASE, 'restore', {
+                expectedAddress: `0x${'ab'.repeat(20)}`,
+            }),
+        ).rejects.toBeInstanceOf(AddressMismatchError)
+        expect(state().accounts[0].chains[BASE]).toBeUndefined()
     })
 
     test('refuses a chain the custody cannot reach', async () => {
