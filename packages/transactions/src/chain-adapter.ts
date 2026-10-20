@@ -210,9 +210,6 @@ export interface SendFlowChainAdapter {
         ): Promise<UnsignedTransaction[]>
     }
     rekey?: { buildTx(params: RekeyTxParams): Promise<UnsignedTransaction> }
-    keyRegistration?: {
-        buildTx(params: KeyRegistrationTxParams): Promise<UnsignedTransaction>
-    }
     /** The fee `transaction` pays as built, in base units of the native asset. */
     transactionFee(transaction: UnsignedTransaction): Decimal
 }
@@ -220,12 +217,7 @@ export interface SendFlowChainAdapter {
 export const sendFlowChainAdapters =
     createChainAdapterRegistry<SendFlowChainAdapter>('send flow')
 
-type SendFlowFeature =
-    | 'express'
-    | 'assetInbox'
-    | 'assetHolding'
-    | 'rekey'
-    | 'keyRegistration'
+type SendFlowFeature = 'express' | 'assetInbox' | 'assetHolding' | 'rekey'
 
 /** Throws {@link PeraServiceUnavailableError} when the chain lacks the feature. */
 export const sendFlowFeatureFor = <K extends SendFlowFeature>(
@@ -237,8 +229,3 @@ export const sendFlowFeatureFor = <K extends SendFlowFeature>(
 
     return value as NonNullable<SendFlowChainAdapter[K]>
 }
-
-export const buildKeyRegistrationTx = async (
-    params: KeyRegistrationTxParams,
-): Promise<UnsignedTransaction> =>
-    sendFlowFeatureFor(params.scope, 'keyRegistration').buildTx(params)

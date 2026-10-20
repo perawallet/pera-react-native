@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import {
+    deeplinkAdapters,
+    type DeeplinkChainAdapter,
+} from '@perawallet/wallet-core-deeplinks'
 import { algorandDeeplinkAdapter } from '@packages/chain-algorand/src/deeplinks/adapter'
 import { ethereumDeeplinkAdapter } from '@packages/chain-ethereum/src/deeplinks/adapter'
 
@@ -18,11 +21,20 @@ import { ethereumDeeplinkAdapter } from '@packages/chain-ethereum/src/deeplinks/
  * Registers the real chain adapters, from source, so a spec parses links the
  * way the app does. Kept apart from `chain-fixtures` so specs that import those
  * don't load the adapters. Callers reset `deeplinkAdapters` afterwards.
+ *
+ * `buildChainAction` replaces the builder of every adapter that has one, so a
+ * spec parses real links without building real transactions.
  */
-export const registerDeeplinkAdapters = (): void => {
+export const registerDeeplinkAdapters = ({
+    buildChainAction,
+}: Pick<DeeplinkChainAdapter, 'buildChainAction'> = {}): void => {
     for (const adapter of [algorandDeeplinkAdapter, ethereumDeeplinkAdapter]) {
         if (!deeplinkAdapters.has(adapter.chainId)) {
-            deeplinkAdapters.register(adapter)
+            deeplinkAdapters.register(
+                buildChainAction && adapter.buildChainAction
+                    ? { ...adapter, buildChainAction }
+                    : adapter,
+            )
         }
     }
 }

@@ -200,6 +200,15 @@ export const deeplinkAdapterContractTests = (
             }
         })
 
+        it('builds every chain-action intent it produces', () => {
+            const producesChainAction = okIntents().some(
+                intent => intent.kind === 'chain-action',
+            )
+            if (producesChainAction) {
+                expect(makeAdapter().buildChainAction).toBeTypeOf('function')
+            }
+        })
+
         it('carries payment amounts as non-negative integers in base units', () => {
             for (const intent of okIntents()) {
                 if (intent.kind === 'payment' && intent.amount) {

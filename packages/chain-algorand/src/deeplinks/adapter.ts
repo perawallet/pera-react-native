@@ -36,6 +36,7 @@ import {
     UNSUPPORTED_NETWORK,
     type Arc90Uri,
 } from './arc90'
+import { buildAlgorandChainAction } from './chain-action'
 
 const SCHEMES = ['algorand', 'algo', 'algorand-wc'] as const
 
@@ -224,4 +225,5 @@ export const algorandDeeplinkAdapter: DeeplinkChainAdapter = {
             : parseArc90(input)
     },
     toAssetRef: toAlgorandAssetRef,
+    buildChainAction: buildAlgorandChainAction,
 }

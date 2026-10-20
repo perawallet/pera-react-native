@@ -45,7 +45,11 @@ vi.mock('react-native', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    // The deeplinks package's errors extend AppError at load time.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/shared/src/errors/base')
+    >('../../../../../../../packages/shared/src/errors/base')),
     logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }))
 

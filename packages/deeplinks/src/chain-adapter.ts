@@ -13,9 +13,17 @@
 import {
     createChainAdapterRegistry,
     type AssetRef,
+    type ChainActionData,
     type ChainAdapterRegistry,
     type ChainId,
+    type ChainScope,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 import type { DeeplinkParseResult } from './models'
 
 export interface DeeplinkChainAdapter {
@@ -28,6 +36,34 @@ export interface DeeplinkChainAdapter {
     parse(input: string): DeeplinkParseResult
     /** Maps a chain-native asset id as a link spells it, or `undefined`. Never throws. */
     toAssetRef(raw: string): AssetRef | undefined
+    /**
+     * Builds the transaction a `chain-action` intent asks for; required of a
+     * chain whose `parse` produces one. Throws {@link ChainActionBuildError}
+     * when the link's fields can't make a transaction.
+     */
+    buildChainAction?(
+        chainData: ChainActionData,
+        ctx: { scope: ChainScope },
+    ): Promise<UnsignedTransaction>
+}
+
+export type ChainActionBuildFailure = 'missing-fields'
+
+/** The link, not the network, is at fault: retrying the same link fails the same way. */
+export class ChainActionBuildError extends AppError {
+    readonly reason: ChainActionBuildFailure
+
+    constructor(reason: ChainActionBuildFailure, message: string) {
+        super(message, {
+            severity: ErrorSeverity.MEDIUM,
+            category: ErrorCategory.VALIDATION,
+            recoverable: false,
+            // A malformed link from a third party, not a wallet fault.
+            expected: true,
+            params: { reason },
+        })
+        this.reason = reason
+    }
 }
 
 export class DuplicateDeeplinkSchemeError extends Error {

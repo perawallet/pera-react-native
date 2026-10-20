@@ -43,7 +43,6 @@ vi.mock('../../transactions/builders', () => ({
     buildOptInTxs: vi.fn(payment),
     buildOptOutTxs: vi.fn(payment),
     buildRekeyTx: vi.fn(async () => (await payment())[0]),
-    buildKeyRegistrationTx: vi.fn(async () => (await payment())[0]),
 }))
 
 import { algorandSendFlowAdapter } from '../../transactions'
@@ -106,5 +105,4 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         rekeyToAddress: 'AUTH',
         minFee: 1000n,
     },
-    keyRegistration: { kind: 'offline', scope, sender: 'SENDER' },
 })
