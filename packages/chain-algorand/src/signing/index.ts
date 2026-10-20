@@ -19,6 +19,11 @@ export {
 } from './adapter'
 export { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 export {
+    algorandRequestDataOf,
+    type AlgorandGroupData,
+    type AlgorandRequestData,
+} from './requestChainData'
+export {
     algorandSignedTransactionsOf,
     signedAlgorandTransactionFromBytes,
     toSignedAlgorandTransaction,

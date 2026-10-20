@@ -14,7 +14,7 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 
 let mockIdCounter = 0
 vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => ({
@@ -43,6 +43,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import {
+    plannerChainAdapters,
+    type SignRequestGroupFacts,
+} from '@perawallet/wallet-core-signing'
+import { registerFakePlannerAdapter } from '@packages/signing/src/__tests__/fakePlannerAdapter'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
 const txFrom = (sender = 'MULTISIG'): UnsignedTransaction =>
@@ -81,8 +86,18 @@ const buildSignRequest = (
     ...overrides,
 })
 
+// The chain keeps the facts its own way; this fake keeps them as given.
+const factsOf = (result: { chainData?: unknown }) =>
+    result.chainData as SignRequestGroupFacts
+
 describe('buildMultisigCosignRequest', () => {
+    afterEach(() => plannerChainAdapters.reset())
+
     beforeEach(() => {
+        registerFakePlannerAdapter({
+            chainId: 'algorand',
+            signRequestChainData: facts => facts,
+        })
         vi.mocked(authorityOf).mockReset()
         mocks.validateSignRequest.mockReset()
         mocks.validateSignRequest.mockReturnValue({ kind: 'valid' })
@@ -125,10 +140,7 @@ describe('buildMultisigCosignRequest', () => {
             { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
         )
         expect(result.txs).toHaveLength(2)
-        expect(result.chainData?.algorand?.rawTransactionsBase64).toEqual([
-            'dHgx',
-            'dHgy',
-        ])
+        expect(factsOf(result).rawTransactionsBase64).toEqual(['dHgx', 'dHgy'])
     })
 
     it('routes every tx to the same signer via signerOverrides', () => {
@@ -139,7 +151,7 @@ describe('buildMultisigCosignRequest', () => {
             localAccounts: [],
         })
 
-        const signerOverrides = result.chainData?.algorand?.signerOverrides
+        const { signerOverrides } = factsOf(result)
         expect(signerOverrides?.get(0)).toBe('B')
         expect(signerOverrides?.get(1)).toBe('B')
     })

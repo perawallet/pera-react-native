@@ -83,7 +83,11 @@ import {
     groupTransactions,
     rawTransactionsMatch,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraTransaction,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { algorandRequestDataOf } from '@perawallet/wallet-core-chain-algorand/signing'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
@@ -102,7 +106,6 @@ import {
 import {
     useSigningRequest,
     type TransactionSignRequest,
-    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
@@ -134,10 +137,10 @@ import { addressOf } from './__fixtures__/accounts'
 // The Algorand group facts a chain-neutral request carries, and the group
 // itself as its payloads hold it.
 const algorandOf = (request: TransactionSignRequest) =>
-    (request as UnsignedTransactionSignRequest).chainData?.algorand ?? {}
+    algorandRequestDataOf(request) ?? {}
 const groupOf = (request: TransactionSignRequest): PeraTransaction[] =>
     (algorandOf(request).groupContext ?? []).map(
-        unsigned =>
+        (unsigned: UnsignedTransaction) =>
             (unsigned.payload as { transaction: PeraTransaction }).transaction,
     )
 

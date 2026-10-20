@@ -29,7 +29,9 @@ import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wa
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
     FeeAdjustment,
+    ReviewGroup,
     SignRequest,
+    SignRequestGroupFacts,
     TransactionSignRequest,
     UnsignedTransactionSignRequest,
     TransactionWarning,
@@ -804,6 +806,27 @@ export interface PlannerChainAdapter {
     signedForAddresses(
         request: UnsignedTransactionSignRequest,
     ): string[] | undefined
+    /**
+     * The chain data of a group {@link signedForAddresses} keys by account:
+     * `indices` are the group's slots in `request.txs`.
+     */
+    signableGroupChainData(
+        request: UnsignedTransactionSignRequest,
+        indices: number[],
+    ): object
+    /** The facts the request's source sent beside `txs`, read from its `chainData`. */
+    reviewGroupOf(request: UnsignedTransactionSignRequest): ReviewGroup
+    /** `facts` as this chain keeps them in a request's `chainData`. */
+    signRequestChainData(facts: SignRequestGroupFacts): unknown
+    /**
+     * What a request handed off to a multisig sign request needs to answer its
+     * dApp after an app kill. Undefined when no dApp waits on the answer.
+     */
+    handoffDeliveryOf(
+        request: UnsignedTransactionSignRequest,
+    ): Optional<
+        Omit<NonNullable<SourceMetadata['handoffDelivery']>, 'clientId'>
+    >
     mergeSigningResults(results: SigningResult[]): SigningResult
     /**
      * A transaction result as the chain's wire-encoded signed transactions,

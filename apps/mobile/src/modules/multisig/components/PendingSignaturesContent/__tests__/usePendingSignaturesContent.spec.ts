@@ -69,6 +69,14 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    // Stands in for the chain's planner, which reads the cosigner from `chainData`.
+    reviewGroupOf: (request: {
+        txs?: unknown[]
+        chainData?: { signerOverrides?: Map<number, string> }
+    }) => ({
+        transactions: request.txs ?? [],
+        signerOverrides: request.chainData?.signerOverrides,
+    }),
     useSigningRequest: () => ({
         addSignRequest: addSignRequestMock,
         pendingSignRequests: pendingSignRequestsMock(),
@@ -578,9 +586,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'A']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'A']]) },
                 },
             ])
 
@@ -611,9 +617,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'A']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'A']]) },
                 },
             ])
 
@@ -762,9 +766,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'L']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'L']]) },
                 },
             ])
 
@@ -860,9 +862,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'C']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'C']]) },
                 },
             ])
 
@@ -884,9 +884,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-OTHER',
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'C']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'C']]) },
                 },
             ])
 
@@ -1029,9 +1027,7 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: DRAFT_ID,
-                    chainData: {
-                        algorand: { signerOverrides: new Map([[0, 'L1']]) },
-                    },
+                    chainData: { signerOverrides: new Map([[0, 'L1']]) },
                 },
             ])
 
@@ -1057,9 +1053,7 @@ describe('usePendingSignaturesContent', () => {
                         type: 'transactions',
                         sourceType: 'multisig-cosign',
                         signRequestId: DRAFT_ID,
-                        chainData: {
-                            algorand: { signerOverrides: new Map([[0, 'L1']]) },
-                        },
+                        chainData: { signerOverrides: new Map([[0, 'L1']]) },
                     },
                 ])
 
@@ -1100,9 +1094,7 @@ describe('usePendingSignaturesContent', () => {
                         type: 'transactions',
                         sourceType: 'multisig-cosign',
                         signRequestId: 'sr-1',
-                        chainData: {
-                            algorand: { signerOverrides: new Map([[0, 'C']]) },
-                        },
+                        chainData: { signerOverrides: new Map([[0, 'C']]) },
                     },
                 ])
 

@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { ChainActionDeeplink } from '@perawallet/wallet-core-deeplinks'
 import {
+    plannerChainAdapters,
     useMinimumFeeCalculatorFor,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -248,8 +249,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     transport: 'algod',
                     sourceType: 'deeplink',
                     txs: transactions,
-                    chainData: {
-                        algorand: {
+                    chainData: plannerChainAdapters
+                        .get(scope.chainId)
+                        .signRequestChainData({
                             // An explicit dApp fee we raised is surfaced as an
                             // adjustment (original → new, matching the WC
                             // path); a fee we filled in ourselves when the
@@ -259,8 +261,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                                 dAppFee !== undefined && adjustments.length > 0
                                     ? adjustments
                                     : undefined,
-                        },
-                    },
+                        }),
                 })
             } catch (error) {
                 logger.error('[deeplink/keyreg] failed', { error })

@@ -14,9 +14,16 @@
 
 // @vitest-environment node
 
-import { describe, it, expect } from 'vitest'
+import { beforeAll, describe, it, expect } from 'vitest'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
+import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { getInFlightCosignAddresses } from '../getInFlightCosignAddresses'
+
+// The planner reads the signer from `chainData`; the payload is never decoded.
+const COSIGN_TX = {
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    payload: {},
+}
 
 const buildCosignRequest = (
     signRequestId: string,
@@ -28,11 +35,13 @@ const buildCosignRequest = (
         transport: 'callback',
         sourceType: 'multisig-cosign',
         signRequestId,
-        txs: [],
+        txs: [COSIGN_TX],
         chainData: { algorand: { signerOverrides: new Map([[0, signer]]) } },
     }) as unknown as SignRequest
 
 describe('getInFlightCosignAddresses', () => {
+    beforeAll(registerAlgorandPlannerAdapter)
+
     it('returns an empty set when signRequestId is null', () => {
         expect(getInFlightCosignAddresses([], null)).toEqual(new Set())
     })
@@ -73,7 +82,7 @@ describe('getInFlightCosignAddresses', () => {
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            txs: [],
+            txs: [COSIGN_TX],
             chainData: { algorand: { signerOverrides: new Map([[0, 'A']]) } },
         } as unknown as SignRequest
 
@@ -103,7 +112,7 @@ describe('getInFlightCosignAddresses', () => {
             transport: 'callback',
             sourceType: 'multisig-cosign',
             signRequestId: 'sr-1',
-            txs: [],
+            txs: [COSIGN_TX],
         } as unknown as SignRequest
 
         const result = getInFlightCosignAddresses([naked], 'sr-1')

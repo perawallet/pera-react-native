@@ -66,6 +66,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    // The chain's planner keeps the facts its own way; this one keeps them as given.
+    plannerChainAdapters: {
+        get: () => ({ signRequestChainData: (facts: unknown) => facts }),
+    },
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     useMinimumFeeCalculatorFor: () => () => mockAssignFeeToGroup,
 }))
@@ -481,7 +485,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [adjustedTx],
-                    chainData: { algorand: { feeAdjustments: adjustments } },
+                    chainData: { feeAdjustments: adjustments },
                 }),
             )
         })
@@ -511,7 +515,7 @@ describe('useKeyregDeeplink', () => {
                 expect.objectContaining({
                     txs: [adjustedTx],
                     // …but no original → adjusted delta is shown.
-                    chainData: { algorand: { feeAdjustments: undefined } },
+                    chainData: { feeAdjustments: undefined },
                 }),
             )
         })
@@ -533,7 +537,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [{ kind: 'offline-tx' }],
-                    chainData: { algorand: { feeAdjustments: undefined } },
+                    chainData: { feeAdjustments: undefined },
                 }),
             )
         })

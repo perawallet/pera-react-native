@@ -1093,7 +1093,6 @@ describe('signingMachine', () => {
                     data: {
                         type: 'transactions',
                         transactions: [transaction],
-                        chainData: {},
                     },
                     signerAddress: MOCK_ADDRESS,
                 }),
