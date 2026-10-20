@@ -43,7 +43,7 @@ export const ChainIcon = ({ chainId, size = DEFAULT_SIZE }: ChainIconProps) => {
             testID={`chain_icon_${chainId}`}
         >
             <PWText
-                variant='caption'
+                variant='captionSmall'
                 style={styles.initials}
             >
                 {initials}

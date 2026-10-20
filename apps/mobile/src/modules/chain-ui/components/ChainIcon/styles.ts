@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const INITIALS_FONT_RATIO = 0.35
-
 export const useStyles = makeStyles((theme, size: number) => ({
     placeholder: {
         alignItems: 'center',
@@ -25,6 +23,5 @@ export const useStyles = makeStyles((theme, size: number) => ({
     },
     initials: {
         color: theme.colors.textGray,
-        fontSize: size * INITIALS_FONT_RATIO,
     },
 }))

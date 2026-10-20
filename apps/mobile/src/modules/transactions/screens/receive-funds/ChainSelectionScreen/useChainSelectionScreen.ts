@@ -62,10 +62,14 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
                 : [],
         [selectedAccount, optionsOf],
     )
+    const rowByChain = useMemo(
+        () => new Map(rows.map(row => [row.chainId, row])),
+        [rows],
+    )
 
     const handleSelectChain = useCallback(
         (chainId: ChainId) => {
-            const row = rows.find(option => option.chainId === chainId)
+            const row = rowByChain.get(chainId)
             if (!selectedAccount || !row || isEnablingRef.current) return
             if (row.isEnabled) {
                 setSelectedChainId(chainId)
@@ -95,7 +99,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
             })()
         },
         [
-            rows,
+            rowByChain,
             selectedAccount,
             setSelectedAccount,
             setSelectedChainId,
