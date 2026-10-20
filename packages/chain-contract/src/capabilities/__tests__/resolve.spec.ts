@@ -16,7 +16,7 @@ import {
     type ChainCapabilities,
     type ChainCapability,
 } from '../../models/capabilities'
-import type { ChainId, ChainMode } from '../../models/identity'
+import { CHAIN_IDS, type ChainId, type ChainMode } from '../../models/identity'
 import {
     isRestrictedIn,
     resolveCapability,
@@ -33,8 +33,10 @@ const allCapabilities = (value: boolean): ChainCapabilities =>
     ) as ChainCapabilities
 
 const build = (swap: boolean): CapabilityLayers['build'] => ({
+    ...(Object.fromEntries(
+        CHAIN_IDS.map(id => [id, allCapabilities(false)]),
+    ) as CapabilityLayers['build']),
     algorand: { ...allCapabilities(false), swap },
-    ethereum: allCapabilities(false),
 })
 
 type Row = {
