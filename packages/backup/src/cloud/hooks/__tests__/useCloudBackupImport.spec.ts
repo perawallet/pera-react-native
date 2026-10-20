@@ -655,7 +655,7 @@ describe('useCloudBackupImport', () => {
         expect(markBackedUpMock).toHaveBeenCalledTimes(1)
         expect(markBackedUpMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                chains: { algorand: { address: 'NEW_ADDR' } },
+                chains: { algorand: { address: 'NEW_ADDR', ...CREATED } },
             }),
         )
     })
