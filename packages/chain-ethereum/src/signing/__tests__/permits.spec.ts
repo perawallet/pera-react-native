@@ -15,7 +15,7 @@ import { Decimal } from 'decimal.js'
 import { getAddress, maxUint160, maxUint256, maxUint48 } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    ethereumMessageSignerAdapter,
+    createEvmMessageSignerAdapter,
     typedDataMessageRequest,
 } from '../messages'
 import {
@@ -34,6 +34,7 @@ import {
     PERMIT_WETH,
     SENDER,
 } from './fixtures'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -41,7 +42,7 @@ const USDC = getAddress(PERMIT_USDC)
 const WETH = getAddress(PERMIT_WETH)
 
 const describeTyped = (typedData: unknown) =>
-    ethereumMessageSignerAdapter.describe(
+    createEvmMessageSignerAdapter(ETHEREUM).describe(
         typedDataMessageRequest(MAINNET, SENDER, typedData),
     )
 

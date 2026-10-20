@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
     accountsChainAdapters,
@@ -29,6 +31,7 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
+import { nodeEndpointAdapters } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
@@ -36,107 +39,144 @@ import {
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { ethereumAddressCodec } from '../accounts/address-codec'
-import { ethereumDeeplinkAdapter } from '../deeplinks/adapter'
-import { ethereumKeyDerivation } from '../accounts/key-derivation'
-import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
-import { ethereumHistoryAdapter } from '../history'
-import { ethereumLedgerAppDriver } from '../ledger/driver'
-import { registerChain } from '../register'
-import { ethereumPlannerAdapter } from '../signing/adapter'
-import { ethereumLocalKeySignerAdapter } from '../signing/localKeySigner'
-import { ethereumMessageSignerAdapter } from '../signing/messages'
-import { ethereumReviewerAdapter } from '../signing/review'
-import { ethereumSigningReviewerAdapter } from '../signing/signingReviewer'
+import { createEvmChainRegistration } from '../register'
+import { BASE, ETHEREUM, EVM_TEST_CHAINS, POLYGON } from './evm-chains'
 
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
 const context = {} as ChainContext
+const SRC = join(__dirname, '..')
 
-describe('registerChain', () => {
-    beforeEach(() => {
-        addressCodecs.reset()
-        keyDerivations.reset()
-        transactionPlanners.reset()
-        transactionReviewers.reset()
-        messageSignerChainAdapters.reset()
-        reviewerChainAdapters.reset()
-        localKeySignerChainAdapters.reset()
-        accountsChainAdapters.reset()
-        assetsChainAdapters.reset()
-        transferChainAdapters.reset()
-        historyChainAdapters.reset()
-        broadcasterChainAdapters.reset()
-        dappRequestChainAdapters.reset()
-        deeplinkAdapters.reset()
-        ledgerAppDriverRegistry.reset()
+const resetRegistries = () => {
+    addressCodecs.reset()
+    keyDerivations.reset()
+    transactionPlanners.reset()
+    transactionReviewers.reset()
+    messageSignerChainAdapters.reset()
+    reviewerChainAdapters.reset()
+    localKeySignerChainAdapters.reset()
+    accountsChainAdapters.reset()
+    assetsChainAdapters.reset()
+    transferChainAdapters.reset()
+    historyChainAdapters.reset()
+    broadcasterChainAdapters.reset()
+    dappRequestChainAdapters.reset()
+    nodeEndpointAdapters.reset()
+    deeplinkAdapters.reset()
+    ledgerAppDriverRegistry.reset()
+}
+
+const sourceFiles = (dir: string): string[] =>
+    readdirSync(dir).flatMap(name => {
+        const path = join(dir, name)
+        if (statSync(path).isDirectory()) {
+            return name === '__tests__' ? [] : sourceFiles(path)
+        }
+        return /\.tsx?$/.test(name) && name !== 'test-handlers.ts' ? [path] : []
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, signing reviewer, local-key signer, message signer, Ledger app driver, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
-        registerChain(context)
+describe('createEvmChainRegistration', () => {
+    beforeEach(resetRegistries)
 
-        expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
-        expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
-        expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
-        expect(transactionReviewers.get('ethereum')).toBe(
-            ethereumReviewerAdapter,
-        )
-        expect(messageSignerChainAdapters.get('ethereum')).toBe(
-            ethereumMessageSignerAdapter,
-        )
-        expect(reviewerChainAdapters.get('ethereum')).toBe(
-            ethereumSigningReviewerAdapter,
-        )
-        expect(localKeySignerChainAdapters.get('ethereum')).toBe(
-            ethereumLocalKeySignerAdapter,
-        )
-        expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
-        expect(assetsChainAdapters.get('ethereum').getNativeAsset()).toBe(
-            ETHEREUM_NATIVE_ASSET,
-        )
-        expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
-        expect(broadcasterChainAdapters.get('ethereum').chainId).toBe(
-            'ethereum',
-        )
-        expect(historyChainAdapters.get('ethereum')).toBe(
-            ethereumHistoryAdapter,
-        )
-        expect(dappRequestChainAdapters.get('ethereum').chainId).toBe(
-            'ethereum',
-        )
-        expect(deeplinkAdapters.get('ethereum')).toBe(ethereumDeeplinkAdapter)
-        expect(ledgerAppDriverRegistry.resolve('ethereum')).toBe(
-            ethereumLedgerAppDriver,
-        )
-    })
+    describe.each(EVM_TEST_CHAINS)('$row.id', chain => {
+        const id = chain.row.id
 
-    it('can run more than once, so a repeated bootstrap is harmless', () => {
-        registerChain(context)
+        it('registers every adapter under its own chain id', () => {
+            createEvmChainRegistration(chain)(context)
 
-        expect(() => registerChain({ ...context })).not.toThrow()
-    })
-
-    it.each([
-        [
-            'an HD entry',
-            {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 1, keyIndex: 2 },
-            } as const,
-            'seed-1-eth-acc1-idx2',
-        ],
-        ['a private-key account', { kind: 'local', seed: null } as const, 'k'],
-        ['a watch account', { kind: 'watch' } as const, undefined],
-    ])('lets buildAccount build %s on Ethereum', (_, custody, keyPairId) => {
-        registerChain(context)
-
-        const account = buildAccount({
-            custody,
-            chainId: 'ethereum',
-            chains: { ethereum: { address: ADDRESS, keyPairId } },
+            expect(addressCodecs.get(id).chainId).toBe(id)
+            expect(keyDerivations.get(id).chainId).toBe(id)
+            expect(transactionPlanners.get(id).chainId).toBe(id)
+            expect(transactionReviewers.get(id).chainId).toBe(id)
+            expect(messageSignerChainAdapters.get(id).chainId).toBe(id)
+            expect(reviewerChainAdapters.get(id).chainId).toBe(id)
+            expect(localKeySignerChainAdapters.get(id).chainId).toBe(id)
+            expect(accountsChainAdapters.get(id).chainId).toBe(id)
+            expect(assetsChainAdapters.get(id).getNativeAsset()).toBe(
+                chain.nativeAsset,
+            )
+            expect(transferChainAdapters.get(id).chainId).toBe(id)
+            expect(broadcasterChainAdapters.get(id).chainId).toBe(id)
+            expect(historyChainAdapters.get(id).chainId).toBe(id)
+            expect(dappRequestChainAdapters.get(id).chainId).toBe(id)
+            expect(nodeEndpointAdapters.get(id).chainId).toBe(id)
+            expect(ledgerAppDriverRegistry.resolve(id).chainId).toBe(id)
         })
 
-        expect(account.chains.ethereum?.address).toBe(ADDRESS)
-        expect(account.custody).toEqual(custody)
+        it('can run more than once, so a repeated bootstrap is harmless', () => {
+            const register = createEvmChainRegistration(chain)
+            register(context)
+
+            expect(() => register({ ...context })).not.toThrow()
+        })
+
+        it.each([
+            [
+                'an HD entry',
+                {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 1, keyIndex: 2 },
+                } as const,
+                'seed-1-eth-acc1-idx2',
+            ],
+            [
+                'a private-key account',
+                { kind: 'local', seed: null } as const,
+                'k',
+            ],
+            ['a watch account', { kind: 'watch' } as const, undefined],
+        ])('lets buildAccount build %s', (_, custody, keyPairId) => {
+            createEvmChainRegistration(chain)(context)
+
+            const account = buildAccount({
+                custody,
+                chainId: id,
+                chains: { [id]: { address: ADDRESS, keyPairId } },
+            })
+
+            expect(account.chains[id]?.address).toBe(ADDRESS)
+            expect(account.custody).toEqual(custody)
+        })
+    })
+
+    it('registers one deeplink adapter for every EVM chain, owned by the first one registered', () => {
+        for (const chain of [ETHEREUM, BASE, POLYGON]) {
+            createEvmChainRegistration(chain)(context)
+        }
+
+        const owners = deeplinkAdapters
+            .list()
+            .filter(adapter => adapter.schemes.includes('ethereum'))
+            .map(adapter => adapter.chainId)
+        expect(owners).toEqual(['ethereum'])
+    })
+
+    it('lets a build without Ethereum serve ethereum: links from another EVM chain', () => {
+        createEvmChainRegistration(BASE)(context)
+        createEvmChainRegistration(POLYGON)(context)
+
+        expect(deeplinkAdapters.list().map(adapter => adapter.chainId)).toEqual(
+            ['base'],
+        )
+    })
+})
+
+describe('chain-ethereum sources', () => {
+    it('keep no module-level mutable state in register.ts', () => {
+        const source = readFileSync(join(SRC, 'register.ts'), 'utf8')
+
+        expect(source).not.toMatch(/^(let|var) /m)
+    })
+
+    it('name the Ethereum chain only in the chain table', () => {
+        const pinned = sourceFiles(SRC)
+            .filter(path =>
+                /ETHEREUM_CHAIN_ID|ethereumDescriptor/.test(
+                    readFileSync(path, 'utf8'),
+                ),
+            )
+            .map(path => relative(SRC, path))
+
+        expect(pinned.sort()).toEqual(['chains/table.ts', 'index.ts'])
     })
 })

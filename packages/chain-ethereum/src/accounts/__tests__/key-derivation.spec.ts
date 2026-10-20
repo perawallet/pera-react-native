@@ -22,8 +22,11 @@ import {
     createFakeChainKeyStore,
     keyDerivationContractTests,
 } from '@perawallet/wallet-core-chain-contract/testing'
-import { ethereumAddressCodec } from '../address-codec'
-import { ethereumKeyDerivation } from '../key-derivation'
+import { createEvmAddressCodec } from '../address-codec'
+import { createEvmKeyDerivation } from '../key-derivation'
+import { ETHEREUM, EVM_TEST_CHAINS } from '../../__tests__/evm-chains'
+
+const ethereumKeyDerivation = createEvmKeyDerivation(ETHEREUM)
 
 const MAINNET: DeriveOpts = { scheme: 'secp256k1', networkId: 'mainnet' }
 const SEPOLIA: DeriveOpts = { scheme: 'secp256k1', networkId: 'sepolia' }
@@ -34,13 +37,15 @@ const ED25519: DeriveOpts = { scheme: 'ed25519', networkId: 'mainnet' }
 const toUncompressedKey = (bytes: Uint8Array) =>
     Uint8Array.of(0x04, ...bytes, ...bytes)
 
-keyDerivationContractTests(() => ethereumKeyDerivation, {
-    codec: ethereumAddressCodec,
-    deriveOpts: MAINNET,
-    unsupportedOpts: ED25519,
-    rawKey: new Uint8Array(32).fill(3),
-    shapePublicKey: toUncompressedKey,
-})
+for (const chain of EVM_TEST_CHAINS) {
+    keyDerivationContractTests(() => createEvmKeyDerivation(chain), {
+        codec: createEvmAddressCodec(chain),
+        deriveOpts: MAINNET,
+        unsupportedOpts: ED25519,
+        rawKey: new Uint8Array(32).fill(3),
+        shapePublicKey: toUncompressedKey,
+    })
+}
 
 // Public keys and addresses MetaMask lists first and second for
 // `test test test test test test test test test test test junk`.
@@ -285,5 +290,24 @@ describe('ethereumKeyDerivation', () => {
             expect(derivations).toEqual([])
             expect(probe).not.toHaveBeenCalled()
         })
+    })
+})
+
+describe.each(EVM_TEST_CHAINS)('$row.id key derivation', chain => {
+    // Persisted key ids keep the eth format, so every EVM chain finds the same key.
+    it("derives Ethereum's key, id and address at the same coordinates", async () => {
+        const { keyStore, derivations } = createVectorKeyStore()
+
+        const derived = await createEvmKeyDerivation(chain).deriveAccount(
+            keyStore,
+            'seed-1',
+            0,
+            0,
+            MAINNET,
+        )
+
+        expect(derived.keyPairId).toBe('seed-1-eth-acc0-idx0')
+        expect(derived.address).toBe(FIRST_ADDRESS)
+        expect(derivations[0]?.request.path).toBe(FIRST_PATH)
     })
 })

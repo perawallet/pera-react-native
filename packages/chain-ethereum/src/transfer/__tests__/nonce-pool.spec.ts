@@ -38,6 +38,7 @@ import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import { allocateEthereumNonce } from '../nonce-pool'
 import { submitAndRecordEthereumTransactions } from '../submission'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const OTHER_SENDER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
@@ -47,7 +48,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const client = createEvmClient(SCOPE, testChainContext())
+const client = createEvmClient(SCOPE, testChainContext(), ETHEREUM)
 
 const nodeReportsPending = (count: number) =>
     server.use(
@@ -93,6 +94,7 @@ describe('allocateEthereumNonce', () => {
         nodeReportsPending(0)
         await submitAndRecordEthereumTransactions({
             client,
+            chain: ETHEREUM,
             scope: SCOPE,
             signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
             flow: 'pipeline',

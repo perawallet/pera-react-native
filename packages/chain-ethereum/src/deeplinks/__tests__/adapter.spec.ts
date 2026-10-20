@@ -10,10 +10,26 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { maxUint256 } from 'viem'
-import { ethereumDeeplinkAdapter as adapter } from '../adapter'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { createEvmAddressCodec } from '../../accounts/address-codec'
+import { createEvmDeeplinkAdapter } from '../adapter'
+import { BASE, ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
+
+const adapter = createEvmDeeplinkAdapter(ETHEREUM)
+
+const registerCodecs = (...chains: EvmChain[]) => {
+    addressCodecs.reset()
+    for (const chain of chains) {
+        addressCodecs.register(createEvmAddressCodec(chain))
+    }
+}
+
+beforeAll(() => registerCodecs(ETHEREUM))
+afterAll(() => addressCodecs.reset())
 
 const NATIVE_LOWER = '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359'
 const NATIVE = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
@@ -283,5 +299,72 @@ describe('toAssetRef', () => {
 
     it.each([BAD_CHECKSUM, 'native', ''])('gives nothing for %j', raw => {
         expect(adapter.toAssetRef(raw)).toBeUndefined()
+    })
+})
+
+describe('links for other EVM chains', () => {
+    beforeEach(() => registerCodecs(ETHEREUM, BASE, POLYGON))
+    afterAll(() => registerCodecs(ETHEREUM))
+
+    const paymentOf = (parse: typeof adapter.parse, input: string) => {
+        const result = parse(input)
+        return result.ok && result.intent.kind === 'payment'
+            ? result.intent
+            : undefined
+    }
+    const targetOf = (input: string) => paymentOf(adapter.parse, input)?.target
+
+    it.each([
+        ['8453', { chainId: 'base', networkId: 'mainnet' }],
+        ['84532', { chainId: 'base', networkId: 'sepolia' }],
+        ['137', { chainId: 'polygon', networkId: 'mainnet' }],
+        ['1', { chainId: 'ethereum', networkId: 'mainnet' }],
+    ])('reads @%s as %o', (eip155ChainId, target) => {
+        expect(targetOf(`ethereum:${NATIVE}@${eip155ChainId}`)).toEqual(target)
+    })
+
+    it("pays in the resolved chain's native coin and tokens", () => {
+        const token = paymentOf(
+            adapter.parse,
+            `ethereum:${TOKEN_LOWER}@137/transfer?address=${TO_LOWER}&uint256=1`,
+        )
+        const native = paymentOf(
+            adapter.parse,
+            `ethereum:${NATIVE}@8453?value=1`,
+        )
+
+        expect(token?.assetRef).toEqual({
+            chainId: 'polygon',
+            assetId: TOKEN,
+        })
+        expect(native?.assetRef).toEqual({
+            chainId: 'base',
+            assetId: 'native',
+        })
+    })
+
+    it('rejects an EIP-155 id no chain owns', () => {
+        expect(failure(`ethereum:${NATIVE}@999999`)).toBe('unsupported-network')
+    })
+
+    it('rejects a chain this build does not register', () => {
+        expect(failure(`ethereum:${NATIVE}@43114`)).toBe('unsupported-network')
+    })
+
+    it('reads a link without a chain id as Ethereum', () => {
+        expect(targetOf(`ethereum:${NATIVE}`)).toEqual({ chainId: 'ethereum' })
+    })
+
+    it('reads a link without a chain id as the owner when Ethereum is not registered', () => {
+        registerCodecs(BASE)
+        const owned = createEvmDeeplinkAdapter(BASE)
+
+        expect(paymentOf(owned.parse, `ethereum:${NATIVE}`)?.target).toEqual({
+            chainId: 'base',
+        })
+        expect(owned.parse(`ethereum:${NATIVE}@1`)).toEqual({
+            ok: false,
+            reason: 'unsupported-network',
+        })
     })
 })

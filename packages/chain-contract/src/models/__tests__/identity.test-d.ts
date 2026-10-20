@@ -11,12 +11,34 @@
  */
 
 import { assertType, describe, expectTypeOf, it } from 'vitest'
-import type { ChainFamily, ChainId, ChainScopeKey } from '../identity'
+import type {
+    ChainFamily,
+    ChainId,
+    ChainScopeKey,
+    EVM_CHAIN_NETWORKS,
+    EvmChainId,
+} from '../identity'
 
 describe('ChainId', () => {
     it('is exactly the shipped chains', () => {
-        expectTypeOf<ChainId>().toEqualTypeOf<'algorand' | 'ethereum'>()
+        expectTypeOf<ChainId>().toEqualTypeOf<
+            | 'algorand'
+            | 'ethereum'
+            | 'base'
+            | 'bsc'
+            | 'arbitrum'
+            | 'avalanche'
+            | 'polygon'
+        >()
         expectTypeOf<ChainFamily>().toEqualTypeOf<'algorand' | 'evm'>()
+    })
+})
+
+describe('EvmChainId', () => {
+    it('keys the EVM network table', () => {
+        expectTypeOf<
+            keyof typeof EVM_CHAIN_NETWORKS
+        >().toEqualTypeOf<EvmChainId>()
     })
 })
 

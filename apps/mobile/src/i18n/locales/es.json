@@ -1105,8 +1105,8 @@
                 "body": "Una transacción pendiente de esta cuenta solo puede reemplazarse con una comisión de red más alta. Espera a que se complete o vuelve a intentarlo con una comisión más alta."
             },
             "insufficient_funds": {
-                "title": "ETH insuficiente",
-                "body": "Esta cuenta no tiene suficiente ETH para cubrir el importe y la comisión de red. Añade más ETH y vuelve a intentarlo."
+                "title": "{{symbol}} insuficiente",
+                "body": "Esta cuenta no tiene suficiente {{symbol}} para cubrir el importe y la comisión de red. Añade más {{symbol}} y vuelve a intentarlo."
             },
             "rate_limited": {
                 "title": "Red saturada",

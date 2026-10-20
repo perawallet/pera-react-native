@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { partition, queryClient } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import type { EvmChain } from '../chains/types'
 
 export const BLOCK_FOLLOWING_SERVICE = 'blockFollowing'
 
@@ -36,6 +37,7 @@ export type ShouldRefreshResponse = z.infer<typeof shouldRefreshResponseSchema>
 
 const requestShouldRefresh = async (
     scope: ChainScope,
+    chain: EvmChain,
     addresses: string[],
     lastBlock: number | null,
 ): Promise<ShouldRefreshResponse> => {
@@ -47,7 +49,7 @@ const requestShouldRefresh = async (
         url: SHOULD_REFRESH_PATH,
         headers: buildIntegrityHeaders(),
         data: {
-            chain: `eip155:${eip155ChainIdOf(scope)}`,
+            chain: `eip155:${eip155ChainIdOf(scope, chain)}`,
             account_addresses: addresses,
             last_refreshed_round: lastBlock,
         },
@@ -63,12 +65,13 @@ const requestShouldRefresh = async (
  */
 export const fetchShouldRefresh = async (
     scope: ChainScope,
+    chain: EvmChain,
     addresses: string[],
     lastBlock: number | null,
 ): Promise<ShouldRefreshResponse> => {
     const answers = await Promise.all(
         partition(addresses, SHOULD_REFRESH_MAX_ADDRESSES).map(part =>
-            requestShouldRefresh(scope, part, lastBlock),
+            requestShouldRefresh(scope, chain, part, lastBlock),
         ),
     )
     if (!answers.some(answer => answer.refresh)) return { refresh: false }

@@ -25,13 +25,13 @@ import type {
     TransactionPlanner,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { transactionDigest } from './digests'
 import { toViemSignature } from './sign'
 
-/** The `UnsignedTransaction.payload` for scope chain `'ethereum'`. */
+/** The `UnsignedTransaction.payload` on any EVM chain's scope. */
 export type EthereumTransactionPayload = {
     /** The sender, which an EIP-1559 transaction does not carry. */
     from: Address
@@ -44,13 +44,14 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 // `payload` is `unknown` and may come from a dApp, so this is the trust boundary
 // for both `plan` and `assemble`.
-export const readEthereumTransaction = (
+export const readEvmTransaction = (
     unsigned: UnsignedTransaction,
+    chain: EvmChain,
 ): EthereumTransactionPayload => {
     const { scope, chainData, payload } = unsigned
-    if (scope.chainId !== ETHEREUM_CHAIN_ID || chainData.family !== 'evm') {
+    if (scope.chainId !== chain.row.id || chainData.family !== 'evm') {
         throw new Error(
-            `Not an Ethereum transaction: ${scope.chainId}/${chainData.family}`,
+            `Not a transaction for ${chain.row.displayName}: ${scope.chainId}/${chainData.family}`,
         )
     }
     if (
@@ -61,11 +62,11 @@ export const readEthereumTransaction = (
         (payload.transaction.type !== undefined &&
             payload.transaction.type !== 'eip1559')
     ) {
-        throw new Error('The Ethereum transaction payload is malformed')
+        throw new Error('The EVM transaction payload is malformed')
     }
     const transaction = payload.transaction as TransactionSerializableEIP1559
     // A transaction for another EIP-155 chain would be replayable there.
-    if (transaction.chainId !== eip155ChainIdOf(scope)) {
+    if (transaction.chainId !== eip155ChainIdOf(scope, chain)) {
         throw new Error(
             `The transaction is for EIP-155 chain ${transaction.chainId}, not ${scope.networkId}`,
         )
@@ -73,11 +74,13 @@ export const readEthereumTransaction = (
     return { from: getAddress(payload.from), transaction }
 }
 
-export const ethereumPlannerAdapter: TransactionPlanner = {
-    chainId: ETHEREUM_CHAIN_ID,
+export const createEvmPlannerAdapter = (
+    chain: EvmChain,
+): TransactionPlanner => ({
+    chainId: chain.row.id,
 
     plan: (unsigned: UnsignedTransaction): SigningRequest[] => {
-        const { from, transaction } = readEthereumTransaction(unsigned)
+        const { from, transaction } = readEvmTransaction(unsigned, chain)
         return [
             {
                 requestIndex: 0,
@@ -92,16 +95,16 @@ export const ethereumPlannerAdapter: TransactionPlanner = {
         unsigned: UnsignedTransaction,
         signatures: Signature[],
     ): SignedTransaction => {
-        const { from, transaction } = readEthereumTransaction(unsigned)
+        const { from, transaction } = readEvmTransaction(unsigned, chain)
         const [signature] = signatures
         if (
             signatures.length !== 1 ||
             signature.requestIndex !== 0 ||
             signature.scheme !== 'secp256k1' ||
-            !ethereumAddressCodec.areEqual(signature.signer, from)
+            !areEvmAddressesEqual(signature.signer, from)
         ) {
             throw new Error(
-                'An Ethereum transaction takes exactly one secp256k1 signature, from its sender',
+                'An EVM transaction takes exactly one secp256k1 signature, from its sender',
             )
         }
         const serialized = serializeTransaction(
@@ -114,4 +117,4 @@ export const ethereumPlannerAdapter: TransactionPlanner = {
             bytes: hexToBytes(serialized),
         }
     },
-}
+})

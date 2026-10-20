@@ -11,7 +11,10 @@
  */
 
 import { bytesToHex, hexToBytes, isHex } from 'viem'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    TransactionNative,
+    TransactionReviewer,
+} from '@perawallet/wallet-core-chain-contract'
 import { decodePrintableUtf8 } from '@perawallet/wallet-core-shared'
 import {
     bridgeTransactionReviewer,
@@ -21,9 +24,9 @@ import {
     type ReviewerChainAdapter,
     type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { readEthereumTransaction } from './adapter'
-import { ethereumReviewerAdapter, ethereumViewOf } from './review'
+import type { EvmChain } from '../chains/types'
+import { readEvmTransaction } from './adapter'
+import { createEthereumReviewer, ethereumViewOf } from './review'
 import { toEthereumNative } from './transaction-view'
 
 // Ethereum has no atomic groups, so every transaction is its own item.
@@ -51,9 +54,12 @@ const decodeArbitraryDataForDisplay = (data: string): ArbitraryDataDisplay => {
 }
 
 /** Decoder, warnings and policy are the chain-contract reviewer's, so review behaves the same whichever registry serves it. */
-export const ethereumSigningReviewerAdapter: ReviewerChainAdapter = {
-    ...bridgeTransactionReviewer(ethereumReviewerAdapter),
-    chainId: ETHEREUM_CHAIN_ID,
+export const createEvmSigningReviewerAdapter = (
+    chain: EvmChain,
+    reviewer: TransactionReviewer = createEthereumReviewer({ chain }),
+): ReviewerChainAdapter => ({
+    ...bridgeTransactionReviewer(reviewer),
+    chainId: chain.row.id,
     createTransactionListItems: toItems,
     classifyRequestStructure: items => (items.length > 1 ? 'list' : 'single'),
     // The reviewer's warnings already cover every transaction.
@@ -63,7 +69,7 @@ export const ethereumSigningReviewerAdapter: ReviewerChainAdapter = {
         if (!isUnsignedTransactionRequest(request)) return []
         return request.txs.flatMap(unsigned => {
             try {
-                return [readEthereumTransaction(unsigned).from]
+                return [readEvmTransaction(unsigned, chain).from]
             } catch {
                 return []
             }
@@ -74,7 +80,7 @@ export const ethereumSigningReviewerAdapter: ReviewerChainAdapter = {
     decodeArbitraryDataForDisplay,
     toTransactionNative: transaction => {
         if (!('payload' in transaction)) return null
-        const view = ethereumViewOf(transaction)
+        const view = ethereumViewOf(transaction, chain)
         return view && toEthereumNative(view)
     },
-}
+})

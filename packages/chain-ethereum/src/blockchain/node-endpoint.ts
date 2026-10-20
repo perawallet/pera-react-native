@@ -12,16 +12,17 @@
 
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { NodeEndpointAdapter } from '@perawallet/wallet-core-chain-shared'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { checkEvmRpcChainId } from './utils/checkEvmRpcChainId'
 
 // Reads through ctx.getEndpoints(), which already carries a developer's
 // override, so the URL shown is the one requests use.
-export const createEthereumNodeEndpointAdapter = (
+export const createEvmNodeEndpointAdapter = (
     ctx: ChainContext,
+    chain: EvmChain,
 ): NodeEndpointAdapter => ({
-    chainId: ETHEREUM_CHAIN_ID,
+    chainId: chain.row.id,
     endpointUrl: networkId => ctx.getEndpoints()[networkId] || undefined,
     checkOverride: (networkId, url) =>
-        checkEvmRpcChainId(url, networkId, ctx.timeouts),
+        checkEvmRpcChainId(url, networkId, ctx.timeouts, chain),
 })

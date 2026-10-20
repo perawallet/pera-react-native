@@ -16,6 +16,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
 import { readErc20 } from '../erc20'
 import { erc20CallResponder, evmRpcHandlers } from '../../msw-handlers'
+import { ETHEREUM } from '../../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -43,6 +44,7 @@ describe('readErc20', () => {
     it("reads the token's metadata as an unverified PeraAsset with a checksummed id", async () => {
         const asset = await readErc20(
             testChainContext(),
+            ETHEREUM,
             USDC.toLowerCase(),
             SCOPE,
         )
@@ -64,6 +66,7 @@ describe('readErc20', () => {
         await expect(
             readErc20(
                 testChainContext(),
+                ETHEREUM,
                 '0x00000000000000000000000000000000000000cc',
                 SCOPE,
             ),

@@ -25,12 +25,15 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from '@packages/chain-algorand/src/capability-defaults'
-import { ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
-import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
-import { ethereumAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
+import { evmCapabilityDefaults as ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
+import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
+
+const ethereumDescriptor = evmChainOf('ethereum').descriptor
+const ethereumAddressCodec = createEvmAddressCodec(evmChainOf('ethereum'))
 
 export const allCapabilities = (isEnabled: boolean): ChainCapabilities =>
     Object.fromEntries(

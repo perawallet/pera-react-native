@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
     transferChainAdapters,
@@ -25,12 +26,8 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumModule } from '..'
-import { ethereumAddressCodec } from '../accounts/address-codec'
-import { ethereumKeyDerivation } from '../accounts/key-derivation'
-import { ethereumHistoryAdapter } from '../history'
-import { ethereumPlannerAdapter } from '../signing/adapter'
-import { ethereumReviewerAdapter } from '../signing/review'
+import { ethereumModule, evmChainModules } from '..'
+import { eip155IdOf, EVM_TEST_CHAINS } from './evm-chains'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -51,50 +48,82 @@ const ENABLED = [
 ]
 
 describe('ethereumModule', () => {
+    it('is the Ethereum row of the EVM modules', () => {
+        expect(ethereumModule).toBe(evmChainModules.ethereum)
+        expect(ethereumModule.descriptor.id).toBe('ethereum')
+    })
+})
+
+describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
+    const id = chain.row.id
+    const module = evmChainModules[id]
+
+    beforeEach(() => {
+        addressCodecs.reset()
+        keyDerivations.reset()
+        transactionPlanners.reset()
+        transactionReviewers.reset()
+        accountsChainAdapters.reset()
+        transferChainAdapters.reset()
+        historyChainAdapters.reset()
+        deeplinkAdapters.reset()
+    })
+
     it('switches on exactly the launch capabilities', () => {
-        const enabled = Object.entries(ethereumModule.capabilityDefaults)
+        const enabled = Object.entries(module.capabilityDefaults)
             .filter(([, isOn]) => isOn)
             .map(([capability]) => capability)
 
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec, key derivation, accounts adapter, planner, reviewer and defaults through the setup', () => {
+    it('registers its descriptor, adapters and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
-            [
-                {
-                    chainId: 'ethereum',
-                    enabled: true,
-                    module: ethereumModule,
-                    endpoints: {},
-                },
-            ],
+            [{ chainId: id, enabled: true, module, endpoints: {} }],
             chains,
             () => context,
         )
 
-        expect(chains.get('ethereum').descriptor).toBe(
-            ethereumModule.descriptor,
+        expect(chains.get(id).descriptor).toBe(chain.descriptor)
+        expect(chains.capabilities(id)).toEqual(module.capabilityDefaults)
+        expect(addressCodecs.get(id).chainId).toBe(id)
+        expect(keyDerivations.get(id).chainId).toBe(id)
+        expect(accountsChainAdapters.get(id).chainId).toBe(id)
+        expect(transactionPlanners.get(id).chainId).toBe(id)
+        expect(transactionReviewers.get(id).chainId).toBe(id)
+        expect(transferChainAdapters.get(id).chainId).toBe(id)
+        expect(historyChainAdapters.get(id).chainId).toBe(id)
+        expect(
+            chains.byCaip2(`eip155:${eip155IdOf(chain, 'testnet')}`),
+        ).toMatchObject({ chainId: id, network: { tier: 'testnet' } })
+    })
+})
+
+describe('every EVM module together', () => {
+    it('registers side by side with one ethereum: deeplink adapter', () => {
+        deeplinkAdapters.reset()
+        addressCodecs.reset()
+        const chains = createChainRegistry()
+
+        expect(() =>
+            registerChainSetup(
+                EVM_TEST_CHAINS.map(chain => ({
+                    chainId: chain.row.id,
+                    enabled: true,
+                    module: evmChainModules[chain.row.id],
+                    endpoints: {},
+                })),
+                chains,
+                () => context,
+            ),
+        ).not.toThrow()
+        expect(addressCodecs.list().map(codec => codec.chainId)).toEqual(
+            EVM_TEST_CHAINS.map(chain => chain.row.id),
         )
-        expect(chains.capabilities('ethereum')).toEqual(
-            ethereumModule.capabilityDefaults,
+        expect(deeplinkAdapters.list().map(adapter => adapter.chainId)).toEqual(
+            ['ethereum'],
         )
-        expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
-        expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
-        expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
-        expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
-        expect(transactionReviewers.get('ethereum')).toBe(
-            ethereumReviewerAdapter,
-        )
-        expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
-        expect(historyChainAdapters.get('ethereum')).toBe(
-            ethereumHistoryAdapter,
-        )
-        expect(chains.byCaip2('eip155:11155111')).toMatchObject({
-            chainId: 'ethereum',
-            network: { id: 'sepolia' },
-        })
     })
 })

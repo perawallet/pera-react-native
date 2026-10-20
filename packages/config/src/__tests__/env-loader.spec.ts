@@ -12,7 +12,25 @@
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { loadEnvOverrides, getConfigWithEnvOverrides } from '../env-loader'
-import { type Config, overrideEnvironmentMap } from '../main'
+import {
+    EVM_CHAIN_NETWORKS,
+    type EvmChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { type Config, evmConfigKeys, overrideEnvironmentMap } from '../main'
+
+const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
+
+const unconfiguredEvmScopes = Object.fromEntries(
+    EVM_CHAIN_IDS.flatMap(chainId =>
+        EVM_CHAIN_NETWORKS[chainId].networks.flatMap(network => {
+            const keys = evmConfigKeys(chainId, network.id)
+            return [
+                [keys.rpcUrl, ''],
+                [keys.peraServices, []],
+            ]
+        }),
+    ),
+)
 
 describe('env-loader', () => {
     let originalEnv: NodeJS.ProcessEnv
@@ -276,10 +294,7 @@ describe('env-loader', () => {
             firebaseMeasurementId: 'G-BASE',
             firebaseVapidKey: 'base-vapid-key',
             reownProjectId: 'test-project-id',
-            ethereumMainnetRpcUrl: '',
-            ethereumSepoliaRpcUrl: '',
-            ethereumMainnetPeraServices: [],
-            ethereumSepoliaPeraServices: [],
+            ...unconfiguredEvmScopes,
             gaMeasurementApiSecret: 'base-ga-secret',
             sentryDsn: 'https://base@o0.ingest.sentry.io/0',
             mainnetExplorerUrl: 'https://explorer.example.com',
@@ -293,7 +308,12 @@ describe('env-loader', () => {
             remoteConfigRefreshTime: 3600000,
             chainRequestTimeouts: {
                 algorand: { readMs: 10000, submitMs: 30000 },
-                ethereum: { readMs: 15000, submitMs: 30000 },
+                ...(Object.fromEntries(
+                    EVM_CHAIN_IDS.map(chainId => [
+                        chainId,
+                        { readMs: 15000, submitMs: 30000 },
+                    ]),
+                ) as Record<EvmChainId, { readMs: number; submitMs: number }>),
             },
             signingTransportTimeout: 60000,
             reactQueryDefaultGCTime: 3600000,

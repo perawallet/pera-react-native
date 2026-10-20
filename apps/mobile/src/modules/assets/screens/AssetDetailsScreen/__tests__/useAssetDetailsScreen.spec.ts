@@ -17,14 +17,17 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
-import { ethereumAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
+import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { accountForType } from '@test-utils/accountCustody'
 import { useAssetDetailsScreen } from '../useAssetDetailsScreen'
 import { neutralAssetDetailsDisplay } from '../neutralAssetDetailsDisplay'
+
+const ethereumDescriptor = evmChainOf('ethereum').descriptor
+const ethereumAddressCodec = createEvmAddressCodec(evmChainOf('ethereum'))
 
 const mocks = vi.hoisted(() => ({
     account: null as WalletAccount | null,

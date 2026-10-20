@@ -28,7 +28,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...mocks,
 }))
 
-import { readEthereumSpendableBalance } from '../spendable-balance'
+import { createEvmSpendableBalance } from '../spendable-balance'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+
+const readEthereumSpendableBalance = createEvmSpendableBalance(ETHEREUM)
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SENDER = '0x00000000000000000000000000000000000000aa'

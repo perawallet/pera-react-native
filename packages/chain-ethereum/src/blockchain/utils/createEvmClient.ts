@@ -21,8 +21,7 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { ETHEREUM_CHAIN_ID } from '../../chain-id'
-import { ethereumDescriptor } from '../../descriptor'
+import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport } from './evmHttpTransport'
 
@@ -70,22 +69,25 @@ const timeoutBoundedTransport = (
     }
 }
 
-const viemChainFor = (scope: ChainScope, rpcUrl: string): Chain => {
-    const network = ethereumDescriptor.networks.find(
-        n => n.id === scope.networkId,
-    )
-    const eip155ChainId = eip155ChainIdOfNetwork(scope.networkId)
+const viemChainFor = (
+    scope: ChainScope,
+    rpcUrl: string,
+    chain: EvmChain,
+): Chain => {
+    const { descriptor } = chain
+    const network = descriptor.networks.find(n => n.id === scope.networkId)
+    const eip155ChainId = eip155ChainIdOfNetwork(chain, scope.networkId)
     if (
-        scope.chainId !== ETHEREUM_CHAIN_ID ||
+        scope.chainId !== descriptor.id ||
         !network ||
         eip155ChainId === undefined
     ) {
         throw new UnconfiguredEvmRpcError(scope)
     }
-    const { symbol, name, decimals } = ethereumDescriptor.nativeAsset
+    const { symbol, name, decimals } = descriptor.nativeAsset
     return defineChain({
         id: eip155ChainId,
-        name: `${ethereumDescriptor.displayName} ${network.displayName}`,
+        name: `${descriptor.displayName} ${network.displayName}`,
         nativeCurrency: { symbol, name, decimals },
         rpcUrls: { default: { http: [rpcUrl] } },
     })
@@ -98,13 +100,14 @@ const viemChainFor = (scope: ChainScope, rpcUrl: string): Chain => {
 export const createEvmClient = (
     scope: ChainScope,
     ctx: ChainContext,
+    chain: EvmChain,
 ): PublicClient => {
     const rpcUrl = ctx.getEndpoints()[scope.networkId]
     if (!rpcUrl) {
         throw new UnconfiguredEvmRpcError(scope)
     }
     return createPublicClient({
-        chain: viemChainFor(scope, rpcUrl),
+        chain: viemChainFor(scope, rpcUrl, chain),
         transport: timeoutBoundedTransport(rpcUrl, ctx.timeouts),
     })
 }

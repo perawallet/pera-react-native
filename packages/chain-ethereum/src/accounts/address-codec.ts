@@ -16,54 +16,63 @@ import {
     type AddressCodec,
     type ParsedPaymentUri,
 } from '@perawallet/wallet-core-chain-contract'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDeeplinkAdapter, toEip681Uri } from '../deeplinks/adapter'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChain } from '../chains/types'
+import { parseEvmPaymentUri, toEip681Uri } from '../deeplinks/adapter'
 
 const UNCOMPRESSED_KEY_LENGTH = 65
 const UNCOMPRESSED_KEY_PREFIX = 0x04
 
-const normalize = (address: string): string => getAddress(address)
+export const normalizeEvmAddress = (address: string): string =>
+    getAddress(address)
 
 // `0x` plus four hex digits, then the last four: the form wallets show.
 const TRUNCATED_HEAD = 6
 const TRUNCATED_TAIL = 4
 
-export const ethereumAddressCodec: AddressCodec = {
-    chainId: ETHEREUM_CHAIN_ID,
-    fromPublicKey: (publicKey, opts) => {
-        if (
-            opts.scheme !== 'secp256k1' ||
-            publicKey.length !== UNCOMPRESSED_KEY_LENGTH ||
-            publicKey[0] !== UNCOMPRESSED_KEY_PREFIX
-        ) {
-            throw new Error(
-                'Ethereum addresses derive from a 65-byte uncompressed secp256k1 public key',
-            )
-        }
-        return checksumAddress(
-            `0x${keccak256(publicKey.subarray(1)).slice(-40)}`,
+// The same derivation on every EVM chain: an address is the key's, not the chain's.
+export const evmAddressFromPublicKey: AddressCodec['fromPublicKey'] = (
+    publicKey,
+    opts,
+) => {
+    if (
+        opts.scheme !== 'secp256k1' ||
+        publicKey.length !== UNCOMPRESSED_KEY_LENGTH ||
+        publicKey[0] !== UNCOMPRESSED_KEY_PREFIX
+    ) {
+        throw new Error(
+            'Ethereum addresses derive from a 65-byte uncompressed secp256k1 public key',
         )
-    },
+    }
+    return checksumAddress(`0x${keccak256(publicKey.subarray(1)).slice(-40)}`)
+}
+
+export const areEvmAddressesEqual = (a: string, b: string): boolean =>
+    a.toLowerCase() === b.toLowerCase()
+
+export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
+    chainId: chain.row.id,
+    fromPublicKey: evmAddressFromPublicKey,
     isValid: address => isAddress(address),
-    normalize,
-    areEqual: (a, b) => a.toLowerCase() === b.toLowerCase(),
+    normalize: normalizeEvmAddress,
+    areEqual: areEvmAddressesEqual,
     truncate: address =>
         address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
             ? address
             : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`,
-    toPaymentUri: toEip681Uri,
+    toPaymentUri: (address, opts) => toEip681Uri(chain, address, opts),
+    // A link for another EVM chain is that chain's codec's to read.
     parsePaymentUri: uri => {
-        const result = ethereumDeeplinkAdapter.parse(uri)
+        const result = parseEvmPaymentUri(chain, uri)
         if (!result.ok || result.intent.kind !== 'payment') return undefined
         const { target, recipient, assetRef, amount } = result.intent
+        if (target.chainId !== chain.row.id) return undefined
 
         const parsed: ParsedPaymentUri = { address: recipient }
         if (target.networkId) parsed.networkId = target.networkId
-        if (assetRef && !isNativeAsset(assetRef, ethereumDescriptor)) {
+        if (assetRef && !isNativeAsset(assetRef, chain.descriptor)) {
             parsed.assetRef = assetRef
         }
         if (amount) parsed.amount = amount
         return parsed
     },
-}
+})

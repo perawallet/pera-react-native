@@ -120,13 +120,21 @@ const classify = (
     return { code: EvmErrorCode.UNKNOWN }
 }
 
-/** Classifies any thrown value from a viem client or JSON-RPC node. */
-export const toEvmError = (error: unknown): EvmError => {
+/** The code alone, for a caller that branches on it and shows no copy. */
+export const evmErrorCodeOf = (error: unknown): EvmErrorCode =>
+    error instanceof EvmError ? error.code : classify(error).code
+
+/**
+ * Classifies any thrown value from a viem client or JSON-RPC node.
+ * `nativeSymbol` names the coin that pays gas, which the insufficient-funds
+ * copy shows.
+ */
+export const toEvmError = (error: unknown, nativeSymbol: string): EvmError => {
     if (error instanceof EvmError) return error
     const { code, params } = classify(error)
     return new EvmError(
         code,
-        params,
+        { ...params, symbol: nativeSymbol },
         error instanceof Error ? error : new Error(String(error)),
     )
 }

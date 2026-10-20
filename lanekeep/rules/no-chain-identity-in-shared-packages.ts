@@ -10,7 +10,15 @@ import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
  * Mirrors `CHAIN_IDS` in packages/chain-contract/src/models/identity.ts, which
  * lanekeep's rule loader can't import. The spec fails until the two match.
  */
-export const CHAIN_IDS = ['algorand', 'ethereum'] as const
+export const CHAIN_IDS = [
+    'algorand',
+    'ethereum',
+    'base',
+    'bsc',
+    'arbitrum',
+    'avalanche',
+    'polygon',
+] as const
 
 // An app pins the legacy chain at its own call sites, so a chain id literal
 // there is fine; branching on one is not.
@@ -110,11 +118,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
     },
     {
-        file: 'packages/config/src/network-config.ts',
-        text: "'ethereum'",
-        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
-    },
-    {
         file: 'packages/config/src/main.ts',
         text: "'algorand'",
         reason: 'The chains a build enables when its environment names none.',
@@ -133,6 +136,16 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/deeplinks/src/pera-link-chain.ts',
         text: "'algorand'",
         reason: "A Pera link without chain= is Algorand's, as every link issued before the param was; this file is their one legacy default.",
+    },
+    {
+        file: 'apps/mobile/src/components/AccountIcon/useAccountIcon.ts',
+        text: "'base'",
+        reason: 'An account presentation kind, not a ChainId.',
+    },
+    {
+        file: 'packages/search/src/hooks/useGlobalSearch.ts',
+        text: "'base'",
+        reason: "Intl.Collator's sensitivity option, not a ChainId.",
     },
     {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',

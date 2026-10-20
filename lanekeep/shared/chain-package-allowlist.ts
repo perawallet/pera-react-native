@@ -24,8 +24,8 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
         reason: 'mobile composition root: registers each chain and its per-package adapters',
     },
     {
-        glob: '**/apps/mobile/src/bootstrap/ethereum-chain-module.ts',
-        reason: 'build-gated Ethereum module for the mobile composition root; metro.config.js stubs it out of builds whose CHAINS omits ethereum',
+        glob: '**/apps/mobile/src/bootstrap/evm-chain-modules.ts',
+        reason: 'build-gated EVM chain modules for the mobile composition root; metro.config.js stubs them out of builds whose CHAINS lists no EVM chain',
     },
     {
         glob: '**/apps/mobile/src/bootstrap/keystore-maintenance.ts',

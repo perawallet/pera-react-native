@@ -78,25 +78,31 @@ if [ "${APP_ENV:-}" == "production" ]; then
   fi
 fi
 
-# Ethereum's RPC endpoints have no committed default, so in any channel a build
-# that ships the chain without them would only fail once the app reads chain state.
-# An allowlist that bakes the chain list but drops a URL ships the same way.
+# Every EVM chain and network, from the same table the app registers; see
+# tools/dev/evm-config-keys.cjs for the line format.
+EVM_CONFIG="$(node "$SCRIPT_DIR/evm-config-keys.cjs")"
+
+# An EVM chain's RPC endpoints have no committed default, so in any channel a
+# build that ships the chain without them would only fail once the app reads
+# chain state. An allowlist that bakes the chain list but drops a URL ships the
+# same way.
 is_allowlisted() {
   [ -z "${CONFIG_ALLOWLIST:-}" ] || [[ " $CONFIG_ALLOWLIST " == *" $1 "* ]]
 }
-if [[ ",${CHAINS//[[:space:]]/}," == *",ethereum,"* ]] && is_allowlisted chainIds; then
-  for pair in ETHEREUM_MAINNET_RPC_URL:ethereumMainnetRpcUrl ETHEREUM_SEPOLIA_RPC_URL:ethereumSepoliaRpcUrl; do
-    var="${pair%%:*}"
-    key="${pair#*:}"
-    if [ -z "${!var:-}" ]; then
-      echo "ERROR: $var is unset but CHAINS ships ethereum." >&2
+if is_allowlisted chainIds; then
+  listed_chains=",${CHAINS//[[:space:]]/},"
+  while read -r kind chain_id rpc_env rpc_key _; do
+    [ "$kind" = "scope" ] || continue
+    [[ "$listed_chains" == *",$chain_id,"* ]] || continue
+    if [ -z "${!rpc_env:-}" ]; then
+      echo "ERROR: $rpc_env is unset but CHAINS ships $chain_id." >&2
       exit 1
     fi
-    if ! is_allowlisted "$key"; then
-      echo "ERROR: CONFIG_ALLOWLIST drops $key but CHAINS ships ethereum." >&2
+    if ! is_allowlisted "$rpc_key"; then
+      echo "ERROR: CONFIG_ALLOWLIST drops $rpc_key but CHAINS ships $chain_id." >&2
       exit 1
     fi
-  done
+  done <<< "$EVM_CONFIG"
 fi
 
 echo "Generating configuration from environment variables..."
@@ -280,18 +286,24 @@ append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
 append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 
 # Chains this build ships (comma list of chain ids), and per chain the exact
-# capability set to enable (comma list). Unset means the module's defaults. The
-# shell can't enumerate chain ids, so each chain gets its own line.
+# capability set to enable (comma list). Unset means the module's defaults.
 append_config "CHAINS" "chainIds" "string"
 append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
-append_config "CHAIN_ETHEREUM_CAPABILITIES" "chainEthereumCapabilities" "string"
 
-# Ethereum: public JSON-RPC endpoints per network, and per network the comma
-# list of Pera services the backend serves for it (empty means none).
-append_config "ETHEREUM_MAINNET_RPC_URL" "ethereumMainnetRpcUrl" "string"
-append_config "ETHEREUM_SEPOLIA_RPC_URL" "ethereumSepoliaRpcUrl" "string"
-append_config "ETHEREUM_MAINNET_PERA_SERVICES" "ethereumMainnetPeraServices" "string"
-append_config "ETHEREUM_SEPOLIA_PERA_SERVICES" "ethereumSepoliaPeraServices" "string"
+# Per EVM chain its capabilities; per EVM network its public JSON-RPC endpoint
+# and the comma list of Pera services the backend serves for it (empty means
+# none).
+while read -r kind _ env_a key_a env_b key_b; do
+  case "$kind" in
+    chain)
+      append_config "$env_a" "$key_a" "string"
+      ;;
+    scope)
+      append_config "$env_a" "$key_a" "string"
+      append_config "$env_b" "$key_b" "string"
+      ;;
+  esac
+done <<< "$EVM_CONFIG"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

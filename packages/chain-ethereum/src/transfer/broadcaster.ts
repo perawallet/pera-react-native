@@ -25,10 +25,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import {
     reconcileEthereumSubmissions,
-    setEthereumSubmissionSettledHandler,
+    type SubmissionSettledHandlers,
 } from './reconcile'
 import {
     submitAndRecordEthereumTransactions,
@@ -41,18 +41,25 @@ export type EthereumBroadcasterOptions = {
     confirmationTimeoutMs?: number
 }
 
-export const createEthereumBroadcasterAdapter = (
+export const createEvmBroadcasterAdapter = (
     ctx: ChainContext,
+    chain: EvmChain,
     options: EthereumBroadcasterOptions = {},
 ): BroadcasterChainAdapter => {
     const timeout =
         options.confirmationTimeoutMs ?? ETHEREUM_CONFIRMATION_TIMEOUT_MS
-    const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx)
+    const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx, chain)
+    const settleHandlers: SubmissionSettledHandlers = new Map()
+    const nativeSymbol = chain.row.nativeAsset.symbol
 
     return {
-        chainId: ETHEREUM_CHAIN_ID,
+        chainId: chain.row.id,
         submit: (scope, signedTransactions) =>
-            submitEthereumTransactions(clientFor(scope), signedTransactions),
+            submitEthereumTransactions(
+                clientFor(scope),
+                signedTransactions,
+                chain,
+            ),
         waitForConfirmation: async (scope, txIds) => {
             const client = clientFor(scope)
             await Promise.all(
@@ -81,6 +88,7 @@ export const createEthereumBroadcasterAdapter = (
                 try {
                     txIds = await submitAndRecordEthereumTransactions({
                         client: clientFor(capturedScope),
+                        chain,
                         scope: capturedScope,
                         signedTransactions: signedData.signed.map(
                             signed => signed.bytes,
@@ -119,13 +127,23 @@ export const createEthereumBroadcasterAdapter = (
         isRequestGroupAlreadySubmitted: async () => false,
         findStaleGroupReason: async () => null,
         reconcileOpenSubmissions: () =>
-            reconcileEthereumSubmissions({ getClient: clientFor }),
+            reconcileEthereumSubmissions({
+                chain,
+                settleHandlers,
+                getClient: clientFor,
+            }),
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
         }),
         // Ethereum confirms through the reconciler, not a completion handler.
         setOnConfirmedHandler: () => undefined,
-        setSubmissionSettledHandler: setEthereumSubmissionSettledHandler,
+        setSubmissionSettledHandler: (flow, handler) => {
+            if (handler === null) {
+                settleHandlers.delete(flow)
+            } else {
+                settleHandlers.set(flow, handler)
+            }
+        },
         submitTimeoutError: timeoutMs =>
             new SubmissionError(
                 [],
@@ -134,6 +152,7 @@ export const createEthereumBroadcasterAdapter = (
                     new Error(
                         `Transaction submit timed out after ${timeoutMs}ms`,
                     ),
+                    nativeSymbol,
                 ),
             ),
     }
