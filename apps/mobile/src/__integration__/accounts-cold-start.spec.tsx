@@ -81,12 +81,19 @@ const persistedState = {
     launchAccountAddress: ADDRESS('C'),
 }
 
+// Every entry persisted before chain enablement was recorded reads as created.
+const PRE_RECORD = { enabledAt: 0, enabledBy: 'created' } as const
+
 const expectedAccounts = [
     {
         id: 'algo25',
         custody: { kind: 'local', seed: null },
         chains: {
-            algorand: { address: ADDRESS('A'), keyPairId: 'algo25-key' },
+            algorand: {
+                address: ADDRESS('A'),
+                keyPairId: 'algo25-key',
+                ...PRE_RECORD,
+            },
         },
     },
     {
@@ -96,7 +103,13 @@ const expectedAccounts = [
             seed: 'bip39',
             hd: { account: 1, keyIndex: 2 },
         },
-        chains: { algorand: { address: ADDRESS('B'), keyPairId: 'hd-key' } },
+        chains: {
+            algorand: {
+                address: ADDRESS('B'),
+                keyPairId: 'hd-key',
+                ...PRE_RECORD,
+            },
+        },
     },
     {
         id: 'ledger',
@@ -110,7 +123,7 @@ const expectedAccounts = [
             },
             accountIndex: 3,
         },
-        chains: { algorand: { address: ADDRESS('C') } },
+        chains: { algorand: { address: ADDRESS('C'), ...PRE_RECORD } },
     },
     {
         id: 'multisig',
@@ -126,6 +139,7 @@ const expectedAccounts = [
                         addresses: [ADDRESS('A'), ADDRESS('B')],
                     },
                 },
+                ...PRE_RECORD,
             },
         },
     },
@@ -133,13 +147,17 @@ const expectedAccounts = [
         id: 'watch',
         name: 'Watched',
         custody: { kind: 'watch' },
-        chains: { algorand: { address: ADDRESS('E') } },
+        chains: { algorand: { address: ADDRESS('E'), ...PRE_RECORD } },
     },
     {
         id: 'quantum',
         custody: { kind: 'local', seed: 'quantum' },
         chains: {
-            algorand: { address: ADDRESS('F'), keyPairId: 'quantum-key' },
+            algorand: {
+                address: ADDRESS('F'),
+                keyPairId: 'quantum-key',
+                ...PRE_RECORD,
+            },
         },
     },
 ]
