@@ -280,6 +280,8 @@ export type CollectibleSqlSortMode =
     | 'oldestFirst'
 
 export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
+    /** The scope the holding was read from. */
+    scope: ChainScope
     /** Amount held, in base units. Zero means a holding row with none held. */
     amount: Decimal
     /** Pera collectible title; null when metadata hasn't synced. */
@@ -289,8 +291,7 @@ export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
 
 export type GetAccountCollectiblesLiteParams = {
     db?: Database
-    accountAddress: string
-    scope: ChainScope
+    sources: readonly AccountHoldingSource[]
     /** Omit to order by asset id descending, for callers that re-sort. */
     sortMode?: CollectibleSqlSortMode
     /** Case-insensitive substring match against title / name / collection / asset id. */
@@ -300,8 +301,8 @@ export type GetAccountCollectiblesLiteParams = {
 }
 
 /**
- * An account's collectibles, filtered/searched/sorted **in SQL**, returned as
- * lite rows that defer `PeraAsset` materialization to the visible ones.
+ * An account's collectibles over one or more sources, filtered/searched/sorted
+ * **in SQL** in one statement, returned as lite rows that defer `PeraAsset` materialization to the visible ones.
  *
  * Replaces the gallery's old path of reading every holding, shipping all their
  * ids back as a 15k-parameter `IN (…)` list, and parsing every metadata blob
@@ -309,13 +310,12 @@ export type GetAccountCollectiblesLiteParams = {
  */
 export async function getAccountCollectiblesLite({
     db = getDatabase(),
-    accountAddress,
-    scope,
+    sources,
     sortMode,
     search,
     includeZeroBalance = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
-    const scopeKey = toScopeKey(scope)
+    if (sources.length === 0) return []
     // Built here, not at module scope: a top-level `sql` template dereferences
     // the imported schema at import time, which breaks every consumer that
     // mocks the assets package.
@@ -341,8 +341,14 @@ export async function getAccountCollectiblesLite({
     ]
 
     const conditions = [
-        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.scope, scopeKey),
+        or(
+            ...sources.map(({ address, scope }) =>
+                and(
+                    eq(AccountAssetHoldingsSchema.accountAddress, address),
+                    eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
+                ),
+            ),
+        )!,
         eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
     ]
 
@@ -391,6 +397,7 @@ export async function getAccountCollectiblesLite({
     const rows = await db
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
+            scope: AccountAssetHoldingsSchema.scope,
             amount: AccountAssetHoldingsSchema.amount,
             ...peraAssetJoinColumns(),
             title: collectibleTitleExpr,
@@ -425,5 +432,8 @@ export async function getAccountCollectiblesLite({
         .orderBy(...orderBy)
         .all()
 
-    return rows
+    return rows.map(({ scope, ...row }) => ({
+        ...row,
+        scope: parseScopeKey(scope),
+    }))
 }

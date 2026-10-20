@@ -65,15 +65,21 @@ export const getAccountHoldingsPageQueryKey = (
     { ...params },
 ]
 
+// One `{ address, scope }` element per source keeps the key inside the sync
+// tick's address-scoped invalidation, as for the holdings page.
 export const getAccountCollectiblesQueryKey = (
-    address: string,
-    scope: ChainScope,
+    sources: readonly AccountHoldingSource[],
     params?: {
         sortMode?: string
         search?: string
         includeZeroBalance?: boolean
     },
-) => [MODULE_PREFIX, 'collectibles', { address, scope, ...params }]
+): unknown[] => [
+    MODULE_PREFIX,
+    'collectibles',
+    ...sources.map(({ address, scope }) => ({ address, scope })),
+    { ...params },
+]
 
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],

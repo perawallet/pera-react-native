@@ -19,6 +19,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountCollectiblesQuery } from '../useAccountCollectiblesQuery'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const sourcesOf = (address: string) => [{ address, scope: SCOPE }]
 
 const mockGetAccountCollectiblesLite = vi.fn()
 vi.mock('../../db', () => ({
@@ -62,7 +63,7 @@ describe('useAccountCollectiblesQuery', () => {
 
         const { result } = renderHook(
             () =>
-                useAccountCollectiblesQuery('ADDR1', SCOPE, {
+                useAccountCollectiblesQuery(sourcesOf('ADDR1'), {
                     sortMode: 'titleAsc',
                 }),
             { wrapper: wrapper() },
@@ -73,8 +74,12 @@ describe('useAccountCollectiblesQuery', () => {
         expect(result.current.collectibles).toEqual(rows)
         expect(mockGetAccountCollectiblesLite).toHaveBeenCalledWith(
             expect.objectContaining({
-                accountAddress: 'ADDR1',
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                sources: [
+                    {
+                        address: 'ADDR1',
+                        scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    },
+                ],
                 sortMode: 'titleAsc',
             }),
         )
@@ -90,7 +95,9 @@ describe('useAccountCollectiblesQuery', () => {
 
             const { result, rerender } = renderHook(
                 ({ sortMode }: { sortMode: 'titleAsc' | 'titleDesc' }) =>
-                    useAccountCollectiblesQuery('ADDR1', SCOPE, { sortMode }),
+                    useAccountCollectiblesQuery(sourcesOf('ADDR1'), {
+                        sortMode,
+                    }),
                 { wrapper: wrapper(), initialProps: { sortMode: 'titleAsc' } },
             )
 
@@ -125,7 +132,7 @@ describe('useAccountCollectiblesQuery', () => {
 
             const { result, rerender } = renderHook(
                 ({ address }: { address: string }) =>
-                    useAccountCollectiblesQuery(address, SCOPE),
+                    useAccountCollectiblesQuery(sourcesOf(address)),
                 { wrapper: wrapper(), initialProps: { address: 'ADDR1' } },
             )
 
@@ -140,5 +147,14 @@ describe('useAccountCollectiblesQuery', () => {
             expect(result.current.isPlaceholderData).toBe(false)
             expect(result.current.isPending).toBe(true)
         })
+    })
+
+    it('reads nothing while the account has no source', () => {
+        const { result } = renderHook(() => useAccountCollectiblesQuery([]), {
+            wrapper: wrapper(),
+        })
+
+        expect(result.current.collectibles).toEqual([])
+        expect(mockGetAccountCollectiblesLite).not.toHaveBeenCalled()
     })
 })

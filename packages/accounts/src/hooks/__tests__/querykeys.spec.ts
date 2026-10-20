@@ -50,7 +50,12 @@ describe('query keys', () => {
                 { address: 'ADDR1', scope: MAINNET },
             ]),
         ],
-        ['collectibles', getAccountCollectiblesQueryKey('ADDR1', MAINNET)],
+        [
+            'collectibles',
+            getAccountCollectiblesQueryKey([
+                { address: 'ADDR1', scope: MAINNET },
+            ]),
+        ],
         [
             'balance-history',
             getAccountBalancesHistoryQueryKey(['ADDR1'], 'one-day', MAINNET),
@@ -103,28 +108,41 @@ describe('query keys', () => {
 })
 
 describe('invalidateAccountQueriesForAddresses', () => {
-    test('reaches a holdings-page key spanning two sources through either address', () => {
-        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
-        const key = getAccountHoldingsPageQueryKey(
-            [
-                { address: 'ADDR1', scope: MAINNET },
-                { address: '0xADDR', scope: ETHEREUM },
-            ],
-            { sortMode: 'balanceDesc' },
-        )
+    const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    const TWO_SOURCES = [
+        { address: 'ADDR1', scope: MAINNET },
+        { address: '0xADDR', scope: ETHEREUM },
+    ]
 
-        for (const address of ['ADDR1', '0xADDR']) {
-            const queryClient = new QueryClient()
-            queryClient.setQueryData(key, [])
+    test.each([
+        [
+            'holdings-page',
+            getAccountHoldingsPageQueryKey(TWO_SOURCES, {
+                sortMode: 'balanceDesc',
+            }),
+        ],
+        [
+            'collectibles',
+            getAccountCollectiblesQueryKey(TWO_SOURCES, {
+                sortMode: 'titleAsc',
+            }),
+        ],
+    ])(
+        'reaches a %s key spanning two sources through either address',
+        (_, key) => {
+            for (const address of ['ADDR1', '0xADDR']) {
+                const queryClient = new QueryClient()
+                queryClient.setQueryData(key, [])
 
-            invalidateAccountQueriesForAddresses(queryClient, [address])
+                invalidateAccountQueriesForAddresses(queryClient, [address])
 
-            expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true)
-        }
-        expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
-        expect(queryKeyReferencesScope(key, ETHEREUM)).toBe(true)
-        expect(queryKeyReferencesScope(key, TESTNET)).toBe(false)
-    })
+                expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true)
+            }
+            expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
+            expect(queryKeyReferencesScope(key, ETHEREUM)).toBe(true)
+            expect(queryKeyReferencesScope(key, TESTNET)).toBe(false)
+        },
+    )
 
     test('leaves multi-account balance-history aggregates alone by default', () => {
         const queryClient = new QueryClient()

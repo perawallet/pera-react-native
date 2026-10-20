@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheet } from '@modules/bottom-sheet'
@@ -21,10 +22,12 @@ export type AddAssetContentVariant = 'asset' | 'collectible'
 
 export type AddAssetContentProps = {
     variant?: AddAssetContentVariant
+    chainId: ChainId
 }
 
 export const AddAssetContent = ({
     variant = 'asset',
+    chainId,
 }: AddAssetContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -62,7 +65,10 @@ export const AddAssetContent = ({
                     </PWTouchableOpacity>
                 }
             />
-            <AddAssetView variant={variant} />
+            <AddAssetView
+                variant={variant}
+                chainId={chainId}
+            />
         </>
     )
 }

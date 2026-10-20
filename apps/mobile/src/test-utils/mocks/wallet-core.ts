@@ -403,8 +403,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         }
         return scopes.get(chainId)!
     }
+    // One array per source set, so memoised consumers keep its identity.
+    const sourceSets = new Map<string, { address: string; scope: any }[]>()
+    const holdingSourcesOf = (account: any) => {
+        const sources = REGISTRY_ORDER.flatMap(chainId => {
+            const address = chainAccountOf(account, chainId)?.address
+            return address ? [{ address, scope: scopeOf(chainId) }] : []
+        })
+        const key = sources
+            .map(({ address, scope }) => `${scope.chainId}:${address}`)
+            .join('|')
+        if (!sourceSets.has(key)) sourceSets.set(key, sources)
+        return sourceSets.get(key)!
+    }
     return {
         accountChainIdOf: vi.fn(accountChainIdOf),
+        useAccountHoldingSources: vi.fn(holdingSourcesOf),
         useRegisteredChainIds: vi.fn(() => ['algorand']),
         useAccountChainId: vi.fn((account: any) =>
             account ? accountChainIdOf(account) : 'algorand',
