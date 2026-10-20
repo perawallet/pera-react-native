@@ -205,6 +205,8 @@ describe('useCreateAccount', () => {
             [FAKE_CHAIN_ID]: {
                 address: addressOn(created, MAINNET_SCOPE),
                 keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9',
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
             },
         })
     })

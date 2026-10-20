@@ -140,6 +140,26 @@ describe('useHDImportSession', () => {
         expect(useHDImportSessionStore.getState().pending).toBeNull()
     })
 
+    test("commitImport looks for activity on each committed account's other chains", async () => {
+        const discoverChains = vi
+            .spyOn(useAccountsStore.getState(), 'discoverChains')
+            .mockResolvedValue([])
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const selected = [discovered()]
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: selected,
+            })
+        })
+
+        expect(discoverChains).toHaveBeenCalledExactlyOnceWith(selected[0].id)
+    })
+
     test('commitImport removes the persisted seed and keeps the session when a child derive rejects', async () => {
         vi.mocked(
             fakeAccountsChain().derivation.deriveAccount,

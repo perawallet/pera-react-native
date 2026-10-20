@@ -25,6 +25,17 @@ import {
 } from '../../errors'
 import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
 import { testAccount } from '../../__tests__/accountFactory'
+import {
+    ALGORAND,
+    BASE,
+    ETHEREUM,
+    EVM_KEY_ADDRESS,
+    EVM_KEY_ID,
+    EVM_KEY_PUBLIC,
+    POLYGON,
+    registerChainFamilies,
+    type ChainFamilies,
+} from '../../__tests__/chainFamilies'
 import { useAccountsStore } from '../store'
 
 const HARDHAT_0_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
@@ -33,6 +44,7 @@ const KEY_ID = 'raw-hardhat-0'
 const fakeKms = vi.hoisted(() => ({
     entries: new Map<string, Uint8Array>(),
     importRawKey: vi.fn(),
+    getKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -118,7 +130,12 @@ describe('importAccountFromPrivateKey', () => {
         expect(account.custody).toEqual({ kind: 'local', seed: null })
         expect(account.name).toBe('Hardhat')
         expect(account.chains).toEqual({
-            [FAKE_CHAIN_ID]: { address: HARDHAT_0_ADDRESS, keyPairId: KEY_ID },
+            [FAKE_CHAIN_ID]: {
+                address: HARDHAT_0_ADDRESS,
+                keyPairId: KEY_ID,
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
+            },
         })
         expect(useAccountsStore.getState().accounts).toEqual([account])
     })
@@ -225,5 +242,115 @@ describe('importAccountFromPrivateKey', () => {
         ).rejects.toThrow('kms down')
 
         expect(isZero(key)).toBe(true)
+    })
+})
+
+describe('importAccountFromPrivateKey across the chains of a family', () => {
+    let families: ChainFamilies
+    const state = () => useAccountsStore.getState()
+    const importOn = (
+        chainId: typeof ETHEREUM,
+        options?: Parameters<
+            ReturnType<typeof state>['importAccountFromPrivateKey']
+        >[4],
+    ) =>
+        state().importAccountFromPrivateKey(
+            chainId,
+            privateKey(),
+            undefined,
+            undefined,
+            options,
+        )
+    const probed = () =>
+        [...families.checkActivity].filter(
+            ([, probe]) => probe.mock.calls.length > 0,
+        )
+
+    beforeEach(() => {
+        families = registerChainFamilies()
+        fakeKms.getKey.mockReset()
+        fakeKms.getKey.mockImplementation((id: string) =>
+            id === EVM_KEY_ID ? { id, publicKey: EVM_KEY_PUBLIC } : null,
+        )
+        state().resetState()
+    })
+
+    test('yields one account with exactly the chains that have activity, as discovered', async () => {
+        families.active.add(ETHEREUM).add(POLYGON)
+
+        const account = await importOn(ETHEREUM)
+
+        expect(state().accounts).toEqual([account])
+        expect(Object.keys(account.chains).sort()).toEqual(
+            [ETHEREUM, POLYGON].sort(),
+        )
+        for (const chainId of [ETHEREUM, POLYGON]) {
+            expect(account.chains[chainId]).toEqual({
+                address: EVM_KEY_ADDRESS,
+                keyPairId: EVM_KEY_ID,
+                enabledAt: expect.any(Number),
+                enabledBy: 'discovery',
+            })
+        }
+        expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
+    })
+
+    test('keeps only the chain it was imported on, as created, when nothing has activity', async () => {
+        const account = await importOn(ETHEREUM)
+
+        expect(Object.keys(account.chains)).toEqual([ETHEREUM])
+        expect(account.chains[ETHEREUM]?.enabledBy).toBe('created')
+    })
+
+    test('probes nothing when the import chain is the only eligible one', async () => {
+        families = registerChainFamilies([ALGORAND, ETHEREUM])
+
+        await importOn(ETHEREUM)
+
+        expect(probed()).toEqual([])
+    })
+
+    test('enables a new chain on the account already holding the key, instead of adding another', async () => {
+        const first = await importOn(ETHEREUM, { shouldDiscover: false })
+
+        const second = await importOn(BASE)
+
+        expect(second.id).toBe(first.id)
+        expect(state().accounts).toHaveLength(1)
+        expect(second.chains[BASE]).toMatchObject({
+            address: EVM_KEY_ADDRESS,
+            keyPairId: EVM_KEY_ID,
+            enabledBy: 'user',
+        })
+    })
+
+    test('enables nothing new and adds no account when the key is imported again', async () => {
+        families.active.add(ETHEREUM).add(POLYGON)
+        const first = await importOn(ETHEREUM)
+
+        await expect(importOn(ETHEREUM)).rejects.toBeInstanceOf(
+            DuplicateAccountError,
+        )
+
+        expect(state().accounts).toEqual([first])
+    })
+
+    test('records the given enabler and probes nothing when discovery is off', async () => {
+        families.active.add(POLYGON)
+
+        const account = await importOn(ETHEREUM, {
+            shouldDiscover: false,
+            enabledBy: 'restore',
+        })
+
+        expect(account.chains).toEqual({
+            [ETHEREUM]: {
+                address: EVM_KEY_ADDRESS,
+                keyPairId: EVM_KEY_ID,
+                enabledAt: expect.any(Number),
+                enabledBy: 'restore',
+            },
+        })
+        expect(probed()).toEqual([])
     })
 })

@@ -294,6 +294,11 @@ describe('accounts-store migration conformance', () => {
         // Selection and order move from addresses to the same accounts' ids.
         expect(selectedAccountId).toBe(fixtureAccounts.algo25.id)
         expect(manualAccountOrder).toEqual(accounts.map(account => account.id))
+        for (const account of accounts) {
+            for (const entry of Object.values(account.chains)) {
+                expect(entry?.enabledBy).toBe('created')
+            }
+        }
         expect(isWatchAccount(heldAccount(fixtureAccounts.watch.address))).toBe(
             true,
         )

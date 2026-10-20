@@ -17,6 +17,8 @@ import type {
     AccountChains,
     AccountCustody,
     AccountWithCustody,
+    ChainAccount,
+    ChainEnabledBy,
 } from '../models'
 
 export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
@@ -27,13 +29,37 @@ export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
     /** The chain the account is created on: it must have an entry there, with a key when the custody is local. */
     chainId: ChainId
     chains: AccountChains
+    /** Stamped on every entry that carries no enablement yet; defaults to `'created'`. */
+    enabledBy?: ChainEnabledBy
+}
+
+/** The entry with its enablement recorded; an entry that already has one keeps it. */
+export const withEnablement = (
+    entry: ChainAccount,
+    enabledBy: ChainEnabledBy,
+    enabledAt: number = Date.now(),
+): ChainAccount =>
+    entry.enabledBy === undefined ? { ...entry, enabledAt, enabledBy } : entry
+
+const stampChains = (
+    chains: AccountChains,
+    enabledBy: ChainEnabledBy,
+): AccountChains => {
+    const enabledAt = Date.now()
+    return Object.fromEntries(
+        Object.entries(chains).map(([id, entry]) => [
+            id,
+            entry ? withEnablement(entry, enabledBy, enabledAt) : entry,
+        ]),
+    )
 }
 
 /** Builds a `WalletAccount` from its custody and per-chain entries. */
 export const buildAccount = <C extends AccountCustody>(
     input: BuildAccountInput<C>,
 ): AccountWithCustody<C['kind']> => {
-    const { id, name, custody, chainId, chains } = input
+    const { id, name, custody, chainId, enabledBy = 'created' } = input
+    const chains = stampChains(input.chains, enabledBy)
     const entry = chains[chainId]
     if (!entry) {
         throw new AccountError(`The account has no entry on ${chainId}`)

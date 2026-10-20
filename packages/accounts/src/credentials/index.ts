@@ -25,7 +25,11 @@ export {
     signingKeyOn,
     standaloneSecretOf,
 } from './accessors'
-export { buildAccount, type BuildAccountInput } from './buildAccount'
+export {
+    buildAccount,
+    withEnablement,
+    type BuildAccountInput,
+} from './buildAccount'
 export {
     credentialScheme,
     usesNonPrimaryScheme,
@@ -34,6 +38,7 @@ export {
 export {
     canDerive,
     canImportRawKey,
+    eligibleChains,
     findAddressHolder,
     findPathHolder,
     nextChainPosition,

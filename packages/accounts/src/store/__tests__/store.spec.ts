@@ -372,7 +372,13 @@ describe('services/accounts/store', () => {
             expect(added).toBe(1)
             const [r1] = useAccountsStore.getState().accounts
             expect(r1.custody).toEqual({ kind: 'watch' })
-            expect(r1.chains).toEqual({ algorand: { address: 'R1' } })
+            expect(r1.chains).toEqual({
+                algorand: {
+                    address: 'R1',
+                    enabledAt: expect.any(Number),
+                    enabledBy: 'created',
+                },
+            })
             // Imported after resetModules, so it reads this graph's slice.
             const { authorityOf } = await import('../../credentials/accessors')
             expect(authorityOf(r1, TESTNET_SCOPE)).toBe('SRC')
@@ -423,7 +429,13 @@ describe('services/accounts/store', () => {
                     device: TEST_CUSTODY.hardware.device,
                     accountIndex: 3,
                 },
-                chains: { algorand: { address: 'WATCHED' } },
+                chains: {
+                    algorand: {
+                        address: 'WATCHED',
+                        enabledAt: 0,
+                        enabledBy: 'created',
+                    },
+                },
             })
         })
 
@@ -473,7 +485,9 @@ describe('services/accounts/store', () => {
                 accountIndex: 0,
             })
             expect(stored.name).toBe('Ledger 1')
-            expect(stored.chains).toEqual({ algorand: { address: 'HW' } })
+            expect(stored.chains).toEqual({
+                algorand: { address: 'HW', enabledAt: 0, enabledBy: 'created' },
+            })
         })
 
         test('is a no-op when the details are unchanged', () => {
@@ -640,22 +654,29 @@ describe('services/accounts/store', () => {
             launchAccountMode: 'specific',
             launchAccountAddress: 'A-ADDR',
         })
+        const PRE_RECORD = { enabledAt: 0, enabledBy: 'created' } as const
         const migratedAccounts: WalletAccount[] = [
             {
                 id: 'a',
                 name: 'Alpha',
                 custody: { kind: 'local', seed: TEST_CUSTODY.local.seed },
-                chains: { algorand: { address: 'A-ADDR', keyPairId: 'k-a' } },
+                chains: {
+                    algorand: {
+                        address: 'A-ADDR',
+                        keyPairId: 'k-a',
+                        ...PRE_RECORD,
+                    },
+                },
             },
             {
                 id: 'h',
                 custody: TEST_CUSTODY.hardware,
-                chains: { algorand: { address: 'H-ADDR' } },
+                chains: { algorand: { address: 'H-ADDR', ...PRE_RECORD } },
             },
             {
                 id: 'w',
                 custody: { kind: 'watch' },
-                chains: { algorand: { address: 'W-ADDR' } },
+                chains: { algorand: { address: 'W-ADDR', ...PRE_RECORD } },
             },
         ]
         const migratedState = {
@@ -761,7 +782,18 @@ describe('services/accounts/store', () => {
                 4,
             )
 
-            expect(accounts).toStrictEqual([current])
+            expect(accounts).toStrictEqual([
+                {
+                    ...current,
+                    chains: {
+                        ethereum: {
+                            address: '0xabc',
+                            keyPairId: 'raw',
+                            ...PRE_RECORD,
+                        },
+                    },
+                },
+            ])
         })
 
         test('leaves no legacy key on the migrated accounts or state', async () => {
@@ -812,7 +844,7 @@ describe('services/accounts/store', () => {
                     'watch',
                 ])
                 expect(accounts[1].chains).toEqual({
-                    algorand: { address: 'H-ADDR' },
+                    algorand: { address: 'H-ADDR', ...PRE_RECORD },
                 })
             }
         })
@@ -924,10 +956,10 @@ describe('services/accounts/store', () => {
             expect(migrated.launchAccountId).toBeNull()
         })
 
-        test('persisted v5 state is not migrated again', async () => {
+        test('persisted v6 state is not migrated again', async () => {
             const { migrateAccountsState } = await import('../store')
 
-            expect(migrateAccountsState(migratedState, 5)).toBe(migratedState)
+            expect(migrateAccountsState(migratedState, 6)).toBe(migratedState)
         })
 
         test('stays at its defaults, and writes nothing back, until rehydrateAccountsStore runs', async () => {
@@ -974,7 +1006,7 @@ describe('services/accounts/store', () => {
             const written = JSON.parse(
                 getProvider().keyValueStorage.getItem(STORE_KEY) as string,
             )
-            expect(written).toMatchObject({ version: 5, state: migratedState })
+            expect(written).toMatchObject({ version: 6, state: migratedState })
 
             const added = account('watch', 'NEW-ADDR')
             module.useAccountsStore
@@ -1037,6 +1069,109 @@ describe('services/accounts/store', () => {
             expect(second.useAccountsStore.getState().selectedAccountId).toBe(
                 firstState.selectedAccountId,
             )
+        })
+    })
+
+    describe('v6 migration', () => {
+        const v5State = () => ({
+            accounts: [
+                {
+                    id: 'hd',
+                    custody: TEST_CUSTODY.hd,
+                    chains: {
+                        algorand: { address: 'HD-ALGO', keyPairId: 'k-hd' },
+                        ethereum: { address: '0xhd', keyPairId: 'k-hd-eth' },
+                    },
+                },
+                {
+                    id: 'w',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'W-ADDR' } },
+                },
+            ],
+            selectedAccountId: 'hd',
+            sortMode: 'manual',
+            manualAccountOrder: ['hd', 'w'],
+            launchAccountMode: 'lastUsed',
+            launchAccountId: null,
+            authorities: {},
+            unscopedAuthorities: {},
+        })
+        const stampedAccounts = [
+            {
+                id: 'hd',
+                custody: TEST_CUSTODY.hd,
+                chains: {
+                    algorand: {
+                        address: 'HD-ALGO',
+                        keyPairId: 'k-hd',
+                        enabledAt: 0,
+                        enabledBy: 'created',
+                    },
+                    ethereum: {
+                        address: '0xhd',
+                        keyPairId: 'k-hd-eth',
+                        enabledAt: 0,
+                        enabledBy: 'created',
+                    },
+                },
+            },
+            {
+                id: 'w',
+                custody: { kind: 'watch' },
+                chains: {
+                    algorand: {
+                        address: 'W-ADDR',
+                        enabledAt: 0,
+                        enabledBy: 'created',
+                    },
+                },
+            },
+        ]
+
+        test('records every entry persisted at v5 as enabled at creation, keeping the rest of the state', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            expect(migrateAccountsState(v5State(), 5)).toStrictEqual({
+                ...v5State(),
+                accounts: stampedAccounts,
+            })
+        })
+
+        test('writes the same record on every run', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            expect(migrateAccountsState(v5State(), 5)).toStrictEqual(
+                migrateAccountsState(v5State(), 5),
+            )
+        })
+
+        test('keeps every entry enabled across two cold starts with no sync in between', async () => {
+            getProvider().keyValueStorage.setItem(
+                STORE_KEY,
+                JSON.stringify({ state: v5State(), version: 5 }),
+            )
+
+            const first = await loadStore()
+            await first.rehydrateAccountsStore()
+            expect(first.useAccountsStore.getState().accounts).toStrictEqual(
+                stampedAccounts,
+            )
+
+            const second = await loadStore()
+            await second.rehydrateAccountsStore()
+
+            expect(second.useAccountsStore.getState().accounts).toStrictEqual(
+                stampedAccounts,
+            )
+            expect(
+                JSON.parse(
+                    getProvider().keyValueStorage.getItem(STORE_KEY) as string,
+                ),
+            ).toMatchObject({
+                version: 6,
+                state: { accounts: stampedAccounts },
+            })
         })
     })
 })

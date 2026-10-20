@@ -183,6 +183,8 @@ describe('discoverAccounts', () => {
             algorand: {
                 address: 'ADDRESS_0_0',
                 keyPairId: 'test-wallet-acc0-idx0-dt9',
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
             },
         })
         expect(signingKeyOn(account, 'algorand')).toBe(
@@ -239,7 +241,11 @@ describe('discoverDelegatedAccounts', () => {
         expect(authorityOf(accounts[0], TESTNET_SCOPE)).toBe('EXPLICIT_ADDRESS')
         expect(accounts[0].custody).toEqual({ kind: 'watch' })
         expect(accounts[0].chains).toEqual({
-            algorand: { address: 'REKEYED_FROM_EXPLICIT' },
+            algorand: {
+                address: 'REKEYED_FROM_EXPLICIT',
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
+            },
         })
         expect(fetchDelegatedAddresses.mock.calls).toEqual([
             ['EXPLICIT_ADDRESS', TESTNET_SCOPE],

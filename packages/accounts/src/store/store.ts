@@ -17,6 +17,8 @@ import {
     type AccountCustody,
     type AccountsState,
     type AccountSortMode,
+    type ChainAccount,
+    type EnableChainOptions,
     type HardwareWalletDetails,
     type LaunchAccountMode,
     type RecordedAuthorities,
@@ -31,9 +33,12 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
+    addressCodecs,
     CHAIN_IDS,
     keyDerivations,
     toScopeKey,
+    type ChainDescriptor,
+    type ChainFamily,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -54,13 +59,22 @@ import {
     canDerive,
     canImportRawKey,
     chainAccountOf,
+    eligibleChains,
     findAddressHolder,
     findPathHolder,
     isKeyReferenced,
     seedMintableScheme,
+    seedOf,
+    signingKeyOn,
+    withEnablement,
 } from '../credentials'
+import { standaloneKeySchemes } from '../credentials/eligibility'
 import {
+    AccountError,
+    AccountNotFoundError,
     AddressMismatchError,
+    ChainNotEligibleError,
+    DeviceAddressRequiredError,
     DuplicateAccountError,
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
@@ -75,7 +89,7 @@ import {
 const STORE_NAME = 'accounts-store'
 // Bumping this, or changing `migrateAccountsState`, adds the payload the
 // outgoing version wrote to conformance/src/suites/store-migration/fixtures.ts.
-const STORE_VERSION = 5
+const STORE_VERSION = 6
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -270,20 +284,12 @@ const withoutAddress = <V>(
     return rest
 }
 
-/**
- * Every record decodes through the registered chain adapters, so this runs
- * only after they register (`rehydrateAccountsStore`). Each record keeps only
- * its custody and chain entries, the authority it carried before v4 moving
- * into the authority maps, and a record no chain decodes is dropped.
- * Selection moves from addresses to account ids.
- */
-export const migrateAccountsState = (
+// Before v5 every record decodes through the registered chain adapters, so
+// this runs only after they register (`rehydrateAccountsStore`).
+const migrateToV5 = (
     persistedState: unknown,
     version: number,
 ): PersistedAccountsState => {
-    if (version >= STORE_VERSION) {
-        return persistedState as PersistedAccountsState
-    }
     const state = (persistedState ?? {}) as LegacyPersistedState
     const lifted: LiftedAuthorities = {
         authorities: {},
@@ -315,6 +321,41 @@ export const migrateAccountsState = (
             ...lifted.unscopedAuthorities,
             ...state.unscopedAuthorities,
         },
+    }
+}
+
+// A fixed 0 rather than the current time: the extension's popup and offscreen
+// document each migrate the same payload and must write the same record.
+const stampPreRecordEntries = (account: WalletAccount): WalletAccount => ({
+    ...account,
+    chains: Object.fromEntries(
+        Object.entries(account.chains).map(([id, entry]) => [
+            id,
+            entry ? withEnablement(entry, 'created', 0) : entry,
+        ]),
+    ),
+})
+
+/**
+ * Each record keeps only its custody and chain entries, the authority it
+ * carried before v4 moving into the authority maps, and a record no chain
+ * decodes is dropped. Selection moves from addresses to account ids. Every
+ * entry persisted before v6 is recorded as enabled at creation.
+ */
+export const migrateAccountsState = (
+    persistedState: unknown,
+    version: number,
+): PersistedAccountsState => {
+    if (version >= STORE_VERSION) {
+        return persistedState as PersistedAccountsState
+    }
+    const state =
+        version >= 5
+            ? (persistedState as PersistedAccountsState)
+            : migrateToV5(persistedState, version)
+    return {
+        ...state,
+        accounts: (state.accounts ?? []).map(stampPreRecordEntries),
     }
 }
 
@@ -395,6 +436,15 @@ const resolveDuplicateAccounts = (
     return resolved
 }
 
+const withoutLocalKey = ({
+    address,
+    enabledAt,
+    enabledBy,
+}: ChainAccount): ChainAccount => ({
+    address,
+    ...(enabledBy !== undefined ? { enabledAt, enabledBy } : {}),
+})
+
 /** The account rebound to the hardware wallet, keeping its id, name and chain entries. */
 const rebindToHardware = (
     current: WalletAccount,
@@ -411,7 +461,7 @@ const rebindToHardware = (
         chains: Object.fromEntries(
             Object.entries(current.chains).map(([id, entry]) => [
                 id,
-                entry ? { address: entry.address } : entry,
+                entry ? withoutLocalKey(entry) : entry,
             ]),
         ),
     })
@@ -461,6 +511,204 @@ const holdsAddressOn = (
         const held = chainAccountOf(account, chainId)?.address
         return held !== undefined && isSameAddress(chainId, held, address)
     })
+
+const scopeOn = (chainId: ChainId): ChainScope => ({
+    chainId,
+    networkId: selectChainNetworkId(useNetworkStore.getState(), chainId),
+})
+
+const enabledDescriptors = (account: WalletAccount): ChainDescriptor[] =>
+    getProvider()
+        .chains.list()
+        .filter(({ id }) => chainAccountOf(account, id) !== undefined)
+
+/** The key a standalone account signs with in each family it is enabled in. */
+const standaloneKeysByFamily = (
+    account: WalletAccount,
+    enabled: readonly ChainDescriptor[],
+): Map<ChainFamily, string> => {
+    const keys = new Map<ChainFamily, string>()
+    for (const { id, family } of enabled) {
+        const keyPairId = signingKeyOn(account, id)
+        if (keyPairId !== undefined && !keys.has(family)) {
+            keys.set(family, keyPairId)
+        }
+    }
+    return keys
+}
+
+const firstHeldAddress = (account: WalletAccount): string | undefined =>
+    CHAIN_IDS.map(id => chainAccountOf(account, id)?.address).find(
+        address => address !== undefined,
+    )
+
+/** The entry the account's custody gives it on `chainId`, without writing it. */
+const resolveChainEntry = async (
+    account: WalletAccount,
+    chainId: ChainId,
+    { deviceAddress }: EnableChainOptions = {},
+): Promise<ChainAccount> => {
+    const { networkId } = scopeOn(chainId)
+    const { custody } = account
+    if (custody.kind === 'local' && custody.seed === 'bip39') {
+        const scheme = seedMintableScheme(chainId)
+        const walletId = seedOf(account)
+        if (scheme === undefined || walletId === undefined) {
+            throw new WalletCannotDeriveError(walletId ?? account.id, chainId)
+        }
+        const { address, keyPairId } = await keyDerivations
+            .get(chainId)
+            .deriveAccount(
+                kmsCore,
+                walletId,
+                custody.hd.account,
+                custody.hd.keyIndex,
+                { scheme, networkId },
+            )
+        return { address, keyPairId }
+    }
+    if (custody.kind === 'local' && custody.seed === null) {
+        const enabled = enabledDescriptors(account)
+        const { family } = getChainDescriptor(chainId)
+        const scheme = standaloneKeySchemes(enabled).get(family)
+        const keyPairId = standaloneKeysByFamily(account, enabled).get(family)
+        const publicKey =
+            keyPairId === undefined
+                ? undefined
+                : kmsCore.getKey(keyPairId)?.publicKey
+        if (scheme === undefined || keyPairId === undefined || !publicKey) {
+            throw new ChainNotEligibleError(account.id, chainId)
+        }
+        return {
+            address: addressCodecs
+                .get(chainId)
+                .fromPublicKey(publicKey, { scheme, networkId }),
+            keyPairId,
+        }
+    }
+    if (custody.kind === 'hardware' && deviceAddress === undefined) {
+        throw new DeviceAddressRequiredError(chainId)
+    }
+    const held =
+        custody.kind === 'hardware'
+            ? deviceAddress
+            : custody.kind === 'watch'
+              ? firstHeldAddress(account)
+              : undefined
+    const codec = addressCodecs.get(chainId)
+    if (held === undefined || !codec.isValid(held, networkId)) {
+        throw new ChainNotEligibleError(account.id, chainId)
+    }
+    return { address: codec.normalize(held) }
+}
+
+type ProbedChains = {
+    active: Map<ChainId, ChainAccount>
+    /** Keys derived for chains that turned out inactive; removed once nothing references them. */
+    unusedKeys: string[]
+}
+
+/**
+ * Resolves the account's entry on each chain and asks that chain whether the
+ * address has any activity. A chain with no accounts adapter, or whose entry
+ * can't be resolved, reads as inactive; the adapter probe never rejects.
+ */
+const probeChainEntries = async (
+    account: WalletAccount,
+    chainIds: readonly ChainId[],
+): Promise<ProbedChains> => {
+    const probed = await Promise.all(
+        chainIds.map(async chainId => {
+            if (!accountsChainAdapters.has(chainId)) return undefined
+            let entry: ChainAccount
+            try {
+                entry = await resolveChainEntry(account, chainId)
+            } catch (error) {
+                logger.warn(
+                    `Could not resolve an address on ${chainId} to probe: ${error instanceof Error ? error.message : 'unknown error'}`,
+                )
+                return undefined
+            }
+            // The contract says the probe never rejects; one that does still
+            // reads as inactive rather than losing every other chain's answer.
+            const activity = await accountsChainAdapters
+                .get(chainId)
+                .checkActivity([entry.address], scopeOn(chainId))
+                .catch(() => new Map<string, boolean>())
+            return {
+                chainId,
+                entry,
+                isActive: activity.get(entry.address) === true,
+            }
+        }),
+    )
+    const active = new Map<ChainId, ChainAccount>()
+    const unusedKeys: string[] = []
+    for (const result of probed) {
+        if (!result) continue
+        if (result.isActive) {
+            active.set(result.chainId, result.entry)
+        } else if (result.entry.keyPairId !== undefined) {
+            unusedKeys.push(result.entry.keyPairId)
+        }
+    }
+    return { active, unusedKeys }
+}
+
+/**
+ * `draft` with every active eligible chain enabled as `'discovery'`, the
+ * chain it was imported on included. Skipped when that chain is the only
+ * eligible one, so a single-chain build makes no extra network call. A chain
+ * whose address another account already holds is left off.
+ */
+const withDiscoveredChains = async (
+    draft: WalletAccount,
+    accounts: readonly WalletAccount[],
+): Promise<{ account: WalletAccount; unusedKeys: string[] }> => {
+    const eligible = eligibleChains(draft)
+    if (eligible.length < 2) return { account: draft, unusedKeys: [] }
+    const { active, unusedKeys } = await probeChainEntries(draft, eligible)
+    const enabledAt = Date.now()
+    const chains: AccountChains = { ...draft.chains }
+    for (const [chainId, entry] of active) {
+        const own = chainAccountOf(draft, chainId)
+        if (own) {
+            chains[chainId] = { ...own, enabledAt, enabledBy: 'discovery' }
+        } else if (!holdsAddressOn(accounts, entry.address, chainId)) {
+            chains[chainId] = withEnablement(entry, 'discovery', enabledAt)
+        }
+    }
+    return { account: { ...draft, chains }, unusedKeys }
+}
+
+const removeUnreferencedKeys = async (
+    accounts: readonly WalletAccount[],
+    keyPairIds: readonly string[],
+): Promise<void> => {
+    for (const keyPairId of new Set(keyPairIds)) {
+        await removeUnreferencedKey(accounts, keyPairId)
+    }
+}
+
+const findAccountById = (
+    accounts: readonly WalletAccount[],
+    accountId: string,
+): WalletAccount => {
+    const account = accounts.find(a => a.id === accountId)
+    if (!account) throw new AccountNotFoundError(accountId)
+    return account
+}
+
+const withChainEntry = (
+    accounts: readonly WalletAccount[],
+    accountId: string,
+    additions: AccountChains,
+): WalletAccount[] =>
+    accounts.map(account =>
+        account.id === accountId
+            ? { ...account, chains: { ...account.chains, ...additions } }
+            : account,
+    )
 
 const initialState = {
     accounts: [] as WalletAccount[],
@@ -552,7 +800,9 @@ export const useAccountsStore: UseBoundStore<
                 privateKey: Uint8Array,
                 name?: string,
                 expectedAddress?: string,
+                options = {},
             ) => {
+                const { enabledBy, shouldDiscover = true } = options
                 try {
                     const scheme = canImportRawKey(chainId)
                         ? getChainDescriptor(chainId).signing.rawKeySchemes[0]
@@ -570,20 +820,39 @@ export const useAccountsStore: UseBoundStore<
                         })
                     try {
                         assertExpectedAddress(chainId, address, expectedAddress)
+                        const { accounts } = get()
                         const holder = findAddressHolder(
-                            get().accounts,
+                            accounts,
                             { chainId, networkId },
                             address,
                         )
                         if (holder)
                             throw new DuplicateAccountError(address, holder)
-                        const account = buildAccount({
+                        const keyHolder = accounts.find(
+                            account =>
+                                account.custody.kind === 'local' &&
+                                account.custody.seed === null &&
+                                isKeyReferenced([account], keyPairId),
+                        )
+                        if (keyHolder) {
+                            return await get().enableChain(
+                                keyHolder.id,
+                                chainId,
+                                enabledBy ?? 'user',
+                            )
+                        }
+                        const draft = buildAccount({
                             name,
                             custody: { kind: 'local', seed: null },
                             chainId,
                             chains: { [chainId]: { address, keyPairId } },
+                            enabledBy: enabledBy ?? 'created',
                         })
+                        const { account, unusedKeys } = shouldDiscover
+                            ? await withDiscoveredChains(draft, accounts)
+                            : { account: draft, unusedKeys: [] }
                         get().addAccount(account)
+                        await removeUnreferencedKeys(get().accounts, unusedKeys)
                         return account
                     } catch (error) {
                         await removeUnreferencedKey(get().accounts, keyPairId)
@@ -593,12 +862,128 @@ export const useAccountsStore: UseBoundStore<
                     zeroBytes(privateKey)
                 }
             },
+            importWatchAccount: async (
+                chainId: ChainId,
+                address: string,
+                name?: string,
+            ) => {
+                const scope = scopeOn(chainId)
+                const codec = addressCodecs.get(chainId)
+                if (!codec.isValid(address, scope.networkId)) {
+                    throw new AccountError(`Not an address on ${chainId}`)
+                }
+                const normalized = codec.normalize(address)
+                const { accounts } = get()
+                const holder = findAddressHolder(accounts, scope, normalized)
+                if (holder) throw new DuplicateAccountError(normalized, holder)
+                const watcher = accounts.find(account => {
+                    if (account.custody.kind !== 'watch') return false
+                    const held = firstHeldAddress(account)
+                    return (
+                        held !== undefined &&
+                        eligibleChains(account).includes(chainId) &&
+                        isSameAddress(chainId, held, normalized)
+                    )
+                })
+                if (watcher) {
+                    return get().enableChain(watcher.id, chainId, 'user')
+                }
+                const draft = buildAccount({
+                    name,
+                    custody: { kind: 'watch' },
+                    chainId,
+                    chains: { [chainId]: { address: normalized } },
+                })
+                const { account } = await withDiscoveredChains(draft, accounts)
+                get().addAccount(account)
+                return account
+            },
+            enableChain: async (accountId, chainId, enabledBy, options) => {
+                const account = findAccountById(get().accounts, accountId)
+                if (chainAccountOf(account, chainId)) return account
+                if (!eligibleChains(account).includes(chainId)) {
+                    throw new ChainNotEligibleError(accountId, chainId)
+                }
+                const entry = await resolveChainEntry(account, chainId, options)
+                try {
+                    // Read after the derivation: the store can change across the await.
+                    const { accounts } = get()
+                    const current = findAccountById(accounts, accountId)
+                    if (chainAccountOf(current, chainId)) return current
+                    const holder = findAddressHolder(
+                        accounts,
+                        scopeOn(chainId),
+                        entry.address,
+                    )
+                    if (holder) {
+                        throw new DuplicateAccountError(entry.address, holder)
+                    }
+                    const next = withChainEntry(accounts, accountId, {
+                        [chainId]: withEnablement(entry, enabledBy),
+                    })
+                    get().setAccounts(next)
+                    return findAccountById(next, accountId)
+                } catch (error) {
+                    if (entry.keyPairId !== undefined) {
+                        await removeUnreferencedKey(
+                            get().accounts,
+                            entry.keyPairId,
+                        )
+                    }
+                    throw error
+                }
+            },
+            discoverChains: async (accountId: string) => {
+                try {
+                    const account = findAccountById(get().accounts, accountId)
+                    if (account.custody.kind === 'hardware') return []
+                    const candidates = eligibleChains(account).filter(
+                        chainId => !chainAccountOf(account, chainId),
+                    )
+                    if (candidates.length === 0) return []
+                    const { active, unusedKeys } = await probeChainEntries(
+                        account,
+                        candidates,
+                    )
+                    const { accounts } = get()
+                    const current = accounts.find(a => a.id === accountId)
+                    const enabledAt = Date.now()
+                    const additions: AccountChains = {}
+                    for (const [chainId, entry] of active) {
+                        if (
+                            current &&
+                            !chainAccountOf(current, chainId) &&
+                            !holdsAddressOn(accounts, entry.address, chainId)
+                        ) {
+                            additions[chainId] = withEnablement(
+                                entry,
+                                'discovery',
+                                enabledAt,
+                            )
+                        }
+                    }
+                    const enabled = Object.keys(additions) as ChainId[]
+                    if (enabled.length > 0) {
+                        get().setAccounts(
+                            withChainEntry(accounts, accountId, additions),
+                        )
+                    }
+                    await removeUnreferencedKeys(get().accounts, unusedKeys)
+                    return enabled
+                } catch (error) {
+                    logger.warn(
+                        `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
+                    )
+                    return []
+                }
+            },
             addChainAccount: async (
                 walletId,
                 chainId,
                 index,
                 name,
                 expectedAddress,
+                enabledBy = 'created',
             ) => {
                 const scheme = seedMintableScheme(chainId)
                 if (
@@ -634,7 +1019,7 @@ export const useAccountsStore: UseBoundStore<
                     throw new DuplicateAccountError(address, addressHolder)
                 }
 
-                const entry = { address, keyPairId }
+                const entry = withEnablement({ address, keyPairId }, enabledBy)
                 const holder = findPathHolder(accounts, walletId, index)
                 if (!holder) {
                     const account = buildAccount({

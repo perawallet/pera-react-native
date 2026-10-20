@@ -133,6 +133,11 @@ export const useHDImportSession = (
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...selectedAccounts]
             setAccounts(next)
+            // Not awaited: the other chains' probes shouldn't hold the import.
+            const { discoverChains } = useAccountsStore.getState()
+            for (const account of selectedAccounts) {
+                void discoverChains(account.id)
+            }
 
             useHDImportSessionStore.getState().resetState()
 

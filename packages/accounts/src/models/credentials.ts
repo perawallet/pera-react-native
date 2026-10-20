@@ -60,6 +60,16 @@ export type AccountCustody =
     | MultisigCustody
     | WatchCustody
 
+/** What turned a chain on for an account. */
+export const CHAIN_ENABLED_BY = [
+    'created',
+    'user',
+    'discovery',
+    'restore',
+] as const
+
+export type ChainEnabledBy = (typeof CHAIN_ENABLED_BY)[number]
+
 export type ChainAccount = {
     /** The account's primary address on this chain. */
     address: string
@@ -67,7 +77,11 @@ export type ChainAccount = {
     keyPairId?: string
     /** Data only this chain reads. */
     native?: ChainAccountNative
+    /** Epoch ms the chain was enabled; `0` for an entry that predates the record. */
+    enabledAt?: number
+    /** Absent reads as `'created'`. */
+    enabledBy?: ChainEnabledBy
 }
 
-/** An entry means the account exists on that chain. */
+/** An entry means the chain is enabled on the account; key presence never does. */
 export type AccountChains = Partial<Record<ChainId, ChainAccount>>

@@ -72,6 +72,45 @@ export class WalletCannotDeriveError extends AccountError {
     }
 }
 
+export class AccountNotFoundError extends AccountError {
+    constructor(accountId: string) {
+        super(`No account ${accountId} in the wallet`, undefined, {
+            params: { accountId },
+        })
+    }
+}
+
+/**
+ * The account's custody can't produce an address on the chain, so the chain
+ * can't be enabled on it.
+ */
+export class ChainNotEligibleError extends AccountError {
+    readonly accountId: string
+    readonly chainId: ChainId
+
+    constructor(accountId: string, chainId: ChainId) {
+        super(
+            `Account ${accountId} is not eligible for ${chainId}`,
+            undefined,
+            { params: { accountId, chainId } },
+        )
+        this.accountId = accountId
+        this.chainId = chainId
+    }
+}
+
+/**
+ * A hardware account's address on a new chain comes from its device; the
+ * caller has to read it there first.
+ */
+export class DeviceAddressRequiredError extends AccountError {
+    constructor(chainId: ChainId) {
+        super(`Enabling ${chainId} needs the device's address`, undefined, {
+            params: { chainId },
+        })
+    }
+}
+
 /**
  * Delegation target account not found in local accounts
  */

@@ -41,6 +41,8 @@ describe('multisig parameters on the account', () => {
         expect(stored.chains[FAKE_CHAIN_ID]).toEqual({
             address: 'MSIG',
             native: storedNative(),
+            enabledAt: 0,
+            enabledBy: 'created',
         })
         expect(multisigParametersOf(stored, FAKE_CHAIN_ID)).toEqual(PARAMETERS)
         expect(account.chains[FAKE_CHAIN_ID]?.native).toBeUndefined()
