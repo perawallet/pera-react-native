@@ -146,6 +146,10 @@ describe('Flow: Cloud backup → Settings sync', () => {
                 value: { mode: 'lastUsed', address: null },
                 updatedAt: 0,
             },
+            accountOrder: {
+                value: { mode: 'manual', addresses: [] },
+                updatedAt: 0,
+            },
         })
     })
 
