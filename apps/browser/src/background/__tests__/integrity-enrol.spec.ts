@@ -100,6 +100,7 @@ vi.mock('../integrity', () => ({
 const ATTEMPT_KEY = 'integrity:enrol-attempt'
 const BACKOFF_KEY = 'integrity:enrol-backoff'
 const NEEDED_KEY = 'integrity:enrol-needed'
+const LAST_FAILURE_KEY = 'integrity:last-failure'
 
 describe('integrity enrolment', () => {
     let fake: LocalChromeFake
@@ -246,6 +247,59 @@ describe('integrity enrolment', () => {
             vi.setSystemTime(NOW + ENROL_DEADLINE_MS + 1)
 
             expect((await requestEnrolment('page-open')).action).toBe('host')
+        })
+
+        describe('a user retry', () => {
+            const blocked = () =>
+                fake.session.set(BACKOFF_KEY, {
+                    failures: 3,
+                    nextAttemptAt: NOW + 60 * 60_000,
+                })
+            const endAttempt = (ENROL_DEADLINE_MS: number) => {
+                vi.setSystemTime(Date.now() + ENROL_DEADLINE_MS + 1)
+            }
+
+            it('clears the backoff and hosts at once', async () => {
+                blocked()
+                const { requestEnrolment } = await load()
+
+                expect((await requestEnrolment('user-retry')).action).toBe(
+                    'host',
+                )
+            })
+
+            it('opens the check in a tab itself from the second retry on', async () => {
+                const { requestEnrolment, ENROL_DEADLINE_MS } = await load()
+                await requestEnrolment('user-retry')
+                endAttempt(ENROL_DEADLINE_MS)
+
+                const decision = await requestEnrolment('user-retry')
+
+                expect(decision).toEqual({ action: 'none' })
+                const [tab] = [...fake.tabs.values()]
+                expect(tab?.url).toContain(`${CHECK_ORIGIN}/check`)
+                expect(
+                    (fake.session.get(ATTEMPT_KEY) as { surface: string })
+                        .surface,
+                ).toBe('tab')
+            })
+
+            it('stops clearing the backoff after five in a session', async () => {
+                const { requestEnrolment, ENROL_DEADLINE_MS } = await load()
+                for (let retry = 0; retry < 5; retry += 1) {
+                    blocked()
+                    // oxlint-disable-next-line no-await-in-loop -- each retry must see the last one's count.
+                    await requestEnrolment('user-retry')
+                    endAttempt(ENROL_DEADLINE_MS)
+                }
+                blocked()
+                const tabsBefore = fake.tabs.size
+
+                expect(await requestEnrolment('user-retry')).toEqual({
+                    action: 'none',
+                })
+                expect(fake.tabs.size).toBe(tabsBefore)
+            })
         })
 
         it('waits out the backoff', async () => {
@@ -406,6 +460,12 @@ describe('integrity enrolment', () => {
         it('enrols with the solve, stores the marker and resumes minting', async () => {
             mockEnrolDevice.mockResolvedValue({ enrolled: true, kid: KID })
             fake.session.set(NEEDED_KEY, 1)
+            fake.session.set(LAST_FAILURE_KEY, {
+                phase: 'enrol',
+                code: 'TURNSTILE_EXPIRED',
+                at: NOW - 1000,
+                isTransport: false,
+            })
             const { module, token } = await start()
 
             connect(token).deliver(solved)
@@ -424,6 +484,7 @@ describe('integrity enrolment', () => {
                 false,
             )
             expect(mockResumeIntegrityMint).toHaveBeenCalledTimes(1)
+            expect(fake.session.has(LAST_FAILURE_KEY)).toBe(false)
         })
 
         it('enrols once when a reconnecting page resends the solve', async () => {
@@ -529,6 +590,12 @@ describe('integrity enrolment', () => {
 
             await vi.waitFor(() => expect(attempt().phase).toBe('done'))
             expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+            expect(fake.session.get(LAST_FAILURE_KEY)).toMatchObject({
+                phase: 'enrol',
+                code: 'TURNSTILE_ERROR',
+                detail: '600010',
+                isTransport: false,
+            })
         })
 
         it('accepts INVALID_KID with its empty kid and ends the attempt', async () => {
@@ -782,6 +849,10 @@ describe('integrity enrolment', () => {
 
                 expect(attempt().phase).toBe('done')
                 expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+                expect(fake.session.get(LAST_FAILURE_KEY)).toMatchObject({
+                    phase: 'enrol',
+                    detail: 'timeout',
+                })
             })
 
             it('leaves a finished attempt alone', async () => {

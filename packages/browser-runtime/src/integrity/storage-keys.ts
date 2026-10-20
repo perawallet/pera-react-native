@@ -20,3 +20,9 @@ export const INTEGRITY_ENROL_ATTEMPT_SESSION_KEY = 'integrity:enrol-attempt'
 export const INTEGRITY_ENROL_BACKOFF_SESSION_KEY = 'integrity:enrol-backoff'
 /** chrome.storage.session: set when attest asked for enrolment; open extension pages watch it. */
 export const INTEGRITY_ENROL_NEEDED_SESSION_KEY = 'integrity:enrol-needed'
+/** chrome.storage.session: the last mint or enrol failure, removed on that phase's next success. */
+export const INTEGRITY_LAST_FAILURE_SESSION_KEY = 'integrity:last-failure'
+/** chrome.storage.session: how many times attest answered APP_INTEGRITY_REVOKED this session. */
+export const INTEGRITY_REVOCATIONS_SESSION_KEY = 'integrity:revocations'
+/** chrome.storage.session: user-initiated enrolment retries this session. */
+export const INTEGRITY_USER_RETRIES_SESSION_KEY = 'integrity:user-retries'

@@ -38,6 +38,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         isLoading,
         isError,
         isOffline,
+        isIntegrityBlocked,
         isUnavailable,
         isFetchingNextPage,
         hasNextPage,
@@ -108,6 +109,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                     // keystroke, and reconnecting refetches on its own.
                     <OfflineTolerantView
                         isOffline={isOffline}
+                        isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         isUnavailable={isUnavailable}
                     >

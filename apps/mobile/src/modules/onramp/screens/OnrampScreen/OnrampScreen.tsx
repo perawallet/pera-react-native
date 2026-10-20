@@ -43,6 +43,7 @@ export const OnrampScreen = () => {
     const {
         isReady,
         pairsState,
+        isPairsIntegrityBlocked,
         sourceToken,
         destinationToken,
         selectedPair,
@@ -134,6 +135,7 @@ export const OnrampScreen = () => {
                         ) : (
                             <OfflineTolerantView
                                 isOffline={pairsState === 'offline'}
+                                isIntegrityBlocked={isPairsIntegrityBlocked}
                                 isError={pairsState === 'error'}
                                 onRetry={handleRetryPairs}
                             >

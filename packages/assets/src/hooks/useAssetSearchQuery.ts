@@ -28,6 +28,8 @@ type UseAssetSearchQueryResult = {
     results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
+    /** The failure behind `isError`, for callers that branch on its kind; null otherwise. */
+    error: unknown
     /** True when the query is paused because the device is offline
      *  (`fetchStatus === 'paused'`), instead of actively pending. */
     isPaused: boolean
@@ -72,6 +74,7 @@ export const useAssetSearchQuery = (
         results,
         isLoading: infiniteQuery.isLoading,
         isError: infiniteQuery.isError,
+        error: infiniteQuery.error ?? null,
         isPaused: infiniteQuery.fetchStatus === 'paused',
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,

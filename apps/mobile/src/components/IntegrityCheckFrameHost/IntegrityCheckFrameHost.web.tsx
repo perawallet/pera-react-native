@@ -13,7 +13,7 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIntegrityCheckFrameHost } from './useIntegrityCheckFrameHost.web'
 import { useStyles } from './styles.web'
@@ -34,7 +34,7 @@ const CHECK_FRAME_SANDBOX =
     'allow-same-origin allow-scripts allow-forms allow-popups'
 
 const IntegrityCheckFrame = (): React.JSX.Element | null => {
-    const { url, isExpanded, iframeRef } = useIntegrityCheckFrameHost()
+    const { url, isExpanded, iframeRef, dismiss } = useIntegrityCheckFrameHost()
     const styles = useStyles()
     const { t } = useLanguage()
     const title = t('integrityCheck.frame_title')
@@ -51,6 +51,20 @@ const IntegrityCheckFrame = (): React.JSX.Element | null => {
             aria-label={isExpanded ? title : undefined}
         >
             <PWView style={isExpanded ? styles.modal : styles.hiddenFrame}>
+                {/* Outside the iframe and before it: a false slot keeps the
+                    frame's position, so expanding never remounts a live solve. */}
+                {isExpanded && (
+                    <PWView style={styles.header}>
+                        <PWText style={styles.heading}>
+                            {t('integrityCheck.frame_heading')}
+                        </PWText>
+                        <PWButton
+                            variant='link'
+                            title={t('integrityCheck.frame_dismiss')}
+                            onPress={dismiss}
+                        />
+                    </PWView>
+                )}
                 <IFrame
                     ref={iframeRef}
                     src={url}
@@ -59,8 +73,9 @@ const IntegrityCheckFrame = (): React.JSX.Element | null => {
                     // Out of the tab order and the accessibility tree while
                     // hidden; unlike display: none, scripts keep running.
                     inert={!isExpanded}
+                    // Fills what the heading leaves; both wrappers are flex columns.
                     // oxlint-disable-next-line react-native/no-inline-styles -- makeStyles ids cannot style a raw element
-                    style={{ border: 0, width: '100%', height: '100%' }}
+                    style={{ border: 0, width: '100%', flex: 1, minHeight: 0 }}
                 />
             </PWView>
         </PWView>,

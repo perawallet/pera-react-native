@@ -16,6 +16,7 @@ import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
 } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
@@ -24,6 +25,7 @@ type UseAssetTransferRequestsScreenResult = {
     assetRequests: Arc59AssetRequest[]
     isPending: boolean
     isUnavailableOnNetwork: boolean
+    isIntegrityBlocked: boolean
     handleItemPress: (index: number) => void
 }
 
@@ -43,8 +45,11 @@ export const useAssetTransferRequestsScreen =
         const {
             data: assetRequests,
             isPending,
+            isError,
+            error,
             isUnavailableOnNetwork,
         } = useArc59AssetRequestsQuery(accountAddress)
+        const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
         const handleItemPress = useCallback(
             (index: number) => {
@@ -64,6 +69,7 @@ export const useAssetTransferRequestsScreen =
             assetRequests: assetRequests ?? [],
             isPending,
             isUnavailableOnNetwork,
+            isIntegrityBlocked,
             handleItemPress,
         }
     }

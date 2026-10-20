@@ -31,6 +31,7 @@ export const ARC59SendSummaryScreen = () => {
         summary,
         isLoading,
         isUnavailableOnNetwork,
+        isIntegrityBlocked,
         amount,
         assetId,
         recipientAddress,
@@ -43,15 +44,18 @@ export const ARC59SendSummaryScreen = () => {
         isProcessing,
     } = useARC59SendSummaryScreen()
 
-    // Defence-in-depth: useSendDestinationRouter already blocks routing here on
-    // a non-Pera-backed network; this only guards a direct/stale
-    // navigation where the disabled query resolves with no data to show.
-    if (isUnavailableOnNetwork) {
+    // Unavailable is defence-in-depth: useSendDestinationRouter already blocks
+    // routing here on a non-Pera-backed network; this only guards a
+    // direct/stale navigation where the disabled query resolves with no data.
+    // A summary already in hand still wins over a failed refetch.
+    const isBlockedWithoutSummary = isIntegrityBlocked && !summary
+    if (isUnavailableOnNetwork || isBlockedWithoutSummary) {
         return (
             <PWScreen>
                 <OfflineTolerantView
                     isOffline={false}
-                    isUnavailable
+                    isUnavailable={isUnavailableOnNetwork}
+                    isIntegrityBlocked={isBlockedWithoutSummary}
                 >
                     <></>
                 </OfflineTolerantView>

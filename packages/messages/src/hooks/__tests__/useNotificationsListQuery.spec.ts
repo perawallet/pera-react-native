@@ -334,9 +334,8 @@ describe('useNotificationsListQuery', () => {
         })
 
         it('reports isError when the fetch fails', async () => {
-            vi.mocked(fetchNotificationList).mockRejectedValueOnce(
-                new Error('boom'),
-            )
+            const failure = new Error('boom')
+            vi.mocked(fetchNotificationList).mockRejectedValueOnce(failure)
 
             const { result } = renderHook(
                 () => useNotificationsListQuery(scopeState.current),
@@ -346,6 +345,7 @@ describe('useNotificationsListQuery', () => {
             )
 
             await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.error).toBe(failure)
             expect(result.current.isPending).toBe(false)
             expect(result.current.isPaused).toBe(false)
         })

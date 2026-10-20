@@ -19,6 +19,7 @@ import {
     type ErrorMessageKeys,
 } from './base'
 import { isRawPlatformNetworkError } from './expected'
+import { isIntegrityRequiredError } from './integrity'
 
 /**
  * Thrown by `assertOnline` before a mutation reaches the transport, so offline
@@ -214,6 +215,9 @@ export const getNetworkErrorMessageKeys = (
 ): NetworkErrorMessageKeys => {
     if (error instanceof NoConnectionError) {
         return keysFor('errors.network.no_connection')
+    }
+    if (isIntegrityRequiredError(error)) {
+        return keysFor('errors.integrity.unavailable')
     }
 
     if (!isPeraNetworkError(error)) return keysFor('errors.general')

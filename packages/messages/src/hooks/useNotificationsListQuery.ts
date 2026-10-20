@@ -62,6 +62,8 @@ export type UseNotificationsListQueryResult = {
     isPaused: boolean
     /** The fetch failed while the query was allowed to run — pair with a retry affordance. */
     isError: boolean
+    /** The failure behind `isError`, for callers that branch on its kind (an integrity refusal); null otherwise. */
+    error: unknown
     isFetchingNextPage: boolean
     isRefetching: boolean
     fetchNextPage: () => void
@@ -138,6 +140,7 @@ export const useNotificationsListQuery = (
         isPending: isEnabled && !isPaused ? query.isPending : false,
         isPaused,
         isError,
+        error: query.error ?? null,
         isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
         isFetchingNextPage: isUnavailableOnNetwork
             ? false

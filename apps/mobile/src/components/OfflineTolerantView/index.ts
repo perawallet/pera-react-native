@@ -12,3 +12,4 @@
 
 export { OfflineTolerantView } from './OfflineTolerantView'
 export type { OfflineTolerantViewProps } from './OfflineTolerantView'
+export { IntegrityBlockedView } from './IntegrityBlockedView'

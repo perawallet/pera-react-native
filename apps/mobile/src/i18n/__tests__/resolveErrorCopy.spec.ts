@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     AppError,
     ErrorCategory,
+    IntegrityRequiredError,
     NoConnectionError,
     PeraNetworkError,
     logger,
@@ -98,6 +99,24 @@ describe('resolveErrorCopy', () => {
         )
 
         expect(result.title).toBe('caller title')
+    })
+
+    it('maps an integrity refusal to its own copy, whatever the caller title', () => {
+        const result = resolveErrorCopy(
+            new IntegrityRequiredError({
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                status: 403,
+                hadToken: false,
+            }),
+            t,
+            'Could not save',
+            getAlgodMessage,
+        )
+
+        expect(result).toEqual({
+            title: 'errors.integrity.unavailable.title',
+            body: 'errors.integrity.unavailable.body',
+        })
     })
 
     it('maps NoConnectionError to the no-connection copy', () => {

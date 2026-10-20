@@ -145,6 +145,16 @@ describe('BalanceLineChart', () => {
         expect(screen.getByText(EMPTY_BODY)).toBeTruthy()
     })
 
+    it('renders the integrity arm, with the caller retry once a token lands, for a refused query', () => {
+        const onRetry = vi.fn()
+
+        renderChart({ isError: true, isIntegrityBlocked: true, onRetry })
+        fireEvent.click(screen.getByText('Retry'))
+
+        expect(screen.getByText('Pera services unavailable')).toBeTruthy()
+        expect(onRetry).toHaveBeenCalledTimes(1)
+    })
+
     it('renders a distinct error state instead of the empty body when isError', () => {
         // The error state must not reuse the "no history" empty copy, and it
         // surfaces the provided errorBody rather than treating it as "no data".

@@ -16,4 +16,24 @@ export const useStyles = makeStyles(theme => ({
     errorView: {
         paddingHorizontal: theme.spacing.xl,
     },
+    review: {
+        flex: 1,
+    },
+    notice: {
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.md,
+    },
+    noticeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        backgroundColor: theme.colors.warningSurface,
+        borderRadius: theme.borderRadius.sm,
+    },
+    noticeTitle: {
+        flex: 1,
+        color: theme.colors.warningText,
+    },
 }))

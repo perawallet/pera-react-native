@@ -1120,6 +1120,12 @@
         "pera_service": {
             "unavailable": "Los servicios de Pera no están disponibles en esta red. Cambia a MainNet para usar esta función."
         },
+        "integrity": {
+            "unavailable": {
+                "title": "Servicios de Pera no disponibles",
+                "body": "Pera no pudo verificar esta extensión en este momento. Vuelve a intentarlo en unos minutos."
+            }
+        },
         "api": {
             "generic": {
                 "title": "Solicitud fallida",
@@ -2899,6 +2905,11 @@
             "app_integrity_none": "ninguno",
             "app_integrity_verify_ok": "ok",
             "app_integrity_verify_failed": "fallida",
+            "app_integrity_access_state": "Estado de acceso: {{value}}",
+            "app_integrity_cause": "Causa: {{value}}",
+            "app_integrity_next_attempt": "Próximo intento: {{value}}",
+            "app_integrity_force_enrol": "Forzar registro",
+            "app_integrity_clear_backoff": "Borrar backoffs",
             "refresh_cache": "Actualizar toda la caché",
             "refresh_cache_success_title": "Caché actualizada",
             "refresh_cache_success_body": "Todas las cuentas se han vuelto a cargar y las consultas se han invalidado.",
@@ -4214,7 +4225,29 @@
         }
     },
     "integrityCheck": {
-        "frame_title": "Verificación de Pera Wallet"
+        "frame_title": "Verificación de Pera Wallet",
+        "frame_heading": "Verificación rápida antes de usar los servicios de Pera",
+        "frame_dismiss": "Ahora no",
+        "banner": {
+            "checking_label": "Verificando esta extensión",
+            "service_label": "Servicios de Pera no disponibles",
+            "service_body": "Pera no puede acceder a sus servicios en este momento. Tus cuentas y la firma de transacciones siguen funcionando. Es posible que los precios y algunas funciones no estén actualizados.",
+            "verify_label": "Verificación necesaria",
+            "verify_body": "Verifica esta extensión para usar los servicios de Pera, como precios, swaps y notificaciones. Tus cuentas y la firma de transacciones siguen funcionando.",
+            "blocked_body": "No se pudo verificar esta instalación. Contacta con el soporte de Pera para obtener ayuda.",
+            "restored_label": "Servicios de Pera restablecidos",
+            "retry": "Reintentar",
+            "verify": "Verificar"
+        },
+        "surface": {
+            "service_title": "Servicios de Pera no disponibles",
+            "service_body": "Esto requiere los servicios de Pera, a los que no se puede acceder en este momento. Se cargará cuando vuelvan a estar disponibles.",
+            "verify_title": "Verificación necesaria",
+            "verify_body": "Verifica esta extensión para cargar este contenido. Tus cuentas y la firma de transacciones no se ven afectadas.",
+            "blocked_body": "No se pudo verificar esta instalación, por lo que este contenido no se puede cargar. Contacta con el soporte de Pera para obtener ayuda."
+        },
+        "approval_notice": "Los servicios de Pera no están disponibles, por lo que podrían faltar las comisiones patrocinadas y los detalles de los activos. Aun así, puedes firmar.",
+        "approval_open": "Abrir Pera"
     },
     "analytics_consent": {
         "prompt": {

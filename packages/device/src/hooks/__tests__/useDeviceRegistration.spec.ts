@@ -254,6 +254,38 @@ describe('useDeviceRegistration', () => {
         })
     })
 
+    test('retries a failed registration on an edge the caller supplies', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(
+            new Error('no integrity token'),
+        )
+        let fireEdge: () => void = () => undefined
+        const subscribeToRetryEdge = (onEdge: () => void) => {
+            fireEdge = onEdge
+            return () => {
+                fireEdge = () => undefined
+            }
+        }
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+        const accounts = [registration('acct-1')]
+        renderHook(() =>
+            useDeviceRegistration(accounts, { subscribeToRetryEdge }),
+        )
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        act(() => fireEdge())
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
     test('retries a failed registration when the app is foregrounded', async () => {
         mockRegisterDevice.mockRejectedValueOnce(new Error('degraded link'))
 

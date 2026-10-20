@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 const mockAccount = {
     id: 'test-account',
@@ -94,6 +95,7 @@ const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
         },
         isLoading: false,
         isRemoteError: false,
+        remoteError: null as unknown,
         isRemotePaused: false,
         isRemoteUnavailableOnNetwork: false,
         hasNextRemotePage: false,
@@ -206,6 +208,27 @@ describe('useAddAssetView', () => {
         const { result } = renderHook(() => useAddAssetView())
 
         expect(result.current.isError).toBe(true)
+    })
+
+    it.each([
+        ['an integrity refusal', true],
+        ['any other failure', false],
+    ])('flags the integrity arm for %s', (_case, isRefusal) => {
+        mockGlobalSearch({
+            isRemoteError: true,
+            isRemotePaused: false,
+            remoteError: isRefusal
+                ? new IntegrityRequiredError({
+                      code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                      status: 403,
+                      hadToken: false,
+                  })
+                : new Error('boom'),
+        })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isIntegrityBlocked).toBe(isRefusal)
     })
 
     it('is offline when the search query is paused (true-offline regime)', () => {
