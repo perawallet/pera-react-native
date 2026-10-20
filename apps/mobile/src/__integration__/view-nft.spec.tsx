@@ -221,7 +221,10 @@ describe('Flow: View NFT collectible detail', () => {
 
     it('Given the holder owns an NFT, when CollectibleDetailScreen mounts, then the title and quantity render and the Send action is available', async () => {
         renderWithNavigation(CollectibleDetailScreen, 'CollectibleDetails', {
-            initialParams: { assetId: NFT_TEST_ASSET_ID },
+            initialParams: {
+                assetId: NFT_TEST_ASSET_ID,
+                chainId: LEGACY_CHAIN_ID,
+            },
         })
 
         // The screen renders a skeleton while the asset query is in

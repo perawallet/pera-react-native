@@ -273,6 +273,8 @@
             "properties": "Properties",
             "creator": "Creator account",
             "asset_id": "Asset ID",
+            "token_id": "Token ID",
+            "contract": "Contract",
             "total_supply": "Total Supply",
             "show_on": "Show on",
             "explorer": "Pera Explorer",

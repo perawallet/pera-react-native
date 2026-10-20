@@ -13,21 +13,64 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
-import { formatWithUnits } from '@perawallet/wallet-core-shared'
+import {
+    addressCodecs,
+    type ChainScope,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    formatWithUnits,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useClipboard } from '@hooks/useClipboard'
+import { chainUiFor } from '@modules/chain-ui'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
+import { extractDomain } from '../../utils/extractDomain'
+import { neutralCollectibleDetailsDisplay } from './neutralCollectibleDetailsDisplay'
 
-export const useCollectibleInfo = (asset: PeraAsset) => {
+export type UseCollectibleInfoResult = {
+    identityLabelKey: I18nKey
+    creatorLabelKey: I18nKey
+    creatorDisplayAddress: string
+    onCreatorPressed?: () => void
+    onCreatorLongPressed: () => void
+    onAssetIdPressed: () => void
+    onAssetIdLongPressed: () => void
+    onOpenExplorer?: () => void
+    /** Null shows `explorerDomain` instead. */
+    explorerLabelKey: Nullable<I18nKey>
+    explorerDomain: Optional<string>
+    hasTotalSupply: boolean
+    totalSupplyAmount: ReturnType<typeof formatWithUnits>['amount']
+    totalSupplyUnit: ReturnType<typeof formatWithUnits>['unit']
+}
+
+export const useCollectibleInfo = (
+    asset: PeraAsset,
+    scope: ChainScope,
+): UseCollectibleInfoResult => {
     const { pushWebView } = useWebView()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const config = getAlgorandChainConfig(scope)
     const { navigate } = useAppNavigation()
     const { copyToClipboard } = useClipboard()
+    const descriptor = getChainDescriptor(scope.chainId)
+    const display =
+        chainUiFor(descriptor.family).collectibleDetails ??
+        neutralCollectibleDetailsDisplay
+    const creatorAddress = asset.creator.address
+
+    // Both undefined on a network with no explorer (a custom one), so the rows
+    // stop being CTAs rather than opening a link that goes nowhere.
+    const creatorUrl = creatorAddress
+        ? descriptor.explorer.accountUrl(scope.networkId, creatorAddress)
+        : undefined
+    const explorerUrl = descriptor.explorer.collectibleUrl(
+        scope.networkId,
+        asset.assetId,
+    )
 
     // Same gate every other external link in the app uses (e.g.
     // useSettingsScreen's help-center links): the in-app webview bottom
@@ -39,7 +82,7 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const openExternalLink = useCallback(
         (url: string) => {
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on config.explorerUrl
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on the chain descriptor's explorer
                 void Linking.openURL(url)
                 return
             }
@@ -49,29 +92,25 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     )
 
     const creatorPressed = useCallback(() => {
-        if (!config.explorerUrl) return
-        openExternalLink(
-            `${config.explorerUrl}/address/${asset.creator.address}`,
-        )
-    }, [asset.creator.address, openExternalLink, config.explorerUrl])
+        if (creatorUrl) openExternalLink(creatorUrl)
+    }, [creatorUrl, openExternalLink])
 
     const onAssetIdPressed = useCallback(() => {
         navigate('AssetDetails', {
             assetId: asset.assetId,
-            chainId: LEGACY_CHAIN_ID,
+            chainId: scope.chainId,
             isCollectible: true,
-        }) // Navigate to the Asset Details screen
-    }, [asset.assetId, navigate])
+        })
+    }, [asset.assetId, navigate, scope.chainId])
 
     const openExplorer = useCallback(() => {
-        if (!config.explorerUrl) return
-        openExternalLink(`${config.explorerUrl}/asset/${asset.assetId}`)
-    }, [asset.assetId, openExternalLink, config.explorerUrl])
+        if (explorerUrl) openExternalLink(explorerUrl)
+    }, [explorerUrl, openExternalLink])
 
     // Copies the full address — the row shows it truncated.
     const onCreatorLongPressed = useCallback(
-        () => void copyToClipboard(asset.creator.address),
-        [copyToClipboard, asset.creator.address],
+        () => void copyToClipboard(creatorAddress),
+        [copyToClipboard, creatorAddress],
     )
 
     const onAssetIdLongPressed = useCallback(
@@ -83,15 +122,19 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         formatWithUnits(toWholeUnits(asset.totalSupply, asset))
 
     return {
-        // Both undefined on a network with no explorer (`custom`'s
-        // `explorerUrl` is `''` by design), so the rows stop being CTAs rather
-        // than opening the schemeless relative paths the interpolations would
-        // otherwise produce.
-        onCreatorPressed: config.explorerUrl ? creatorPressed : undefined,
+        identityLabelKey: display.identityLabelKey,
+        creatorLabelKey: display.creatorLabelKey,
+        creatorDisplayAddress: creatorAddress
+            ? addressCodecs.get(scope.chainId).truncate(creatorAddress)
+            : '',
+        onCreatorPressed: creatorUrl ? creatorPressed : undefined,
         onCreatorLongPressed,
         onAssetIdPressed,
         onAssetIdLongPressed,
-        onOpenExplorer: config.explorerUrl ? openExplorer : undefined,
+        onOpenExplorer: explorerUrl ? openExplorer : undefined,
+        explorerLabelKey: display.explorerLabelKey,
+        explorerDomain: explorerUrl ? extractDomain(explorerUrl) : undefined,
+        hasTotalSupply: display.hasTotalSupply,
         totalSupplyAmount,
         totalSupplyUnit,
     }
