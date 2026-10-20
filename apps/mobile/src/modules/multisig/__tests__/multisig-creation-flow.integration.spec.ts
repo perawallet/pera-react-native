@@ -250,6 +250,8 @@ describe('multisig creation flow', () => {
                                 version: 1,
                             },
                         },
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'created',
                     },
                 },
                 name: 'Shared Account #1',

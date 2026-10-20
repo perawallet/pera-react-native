@@ -434,7 +434,8 @@
         "rekey_signer_shared": "una cuenta compartida",
         "rekey_signer_quantum": "una cuenta cuántica",
         "type_no_auth": "Sin autorización",
-        "type_unknown": "Cuenta desconocida"
+        "type_unknown": "Cuenta desconocida",
+        "networks": "Redes"
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
@@ -2603,6 +2604,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Seleccionar cuenta"
+        },
+        "chain_selection": {
+            "title": "Seleccionar red",
+            "eligible_subtitle": "Aún no añadida"
         },
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",

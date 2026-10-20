@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type { ComponentType } from 'react'
+import type { SvgProps } from 'react-native-svg'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import type {
+    ChainFamily,
+    ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetDetailsDisplay } from '@modules/assets'
 import type { TransactionDisplay } from '@modules/signing'
 import type { SendConfirmationDisplay } from '@modules/transactions'
@@ -20,6 +26,8 @@ export type ChainUi = {
     transactionDetails?: TransactionDisplay
     assetDetails?: AssetDetailsDisplay
     sendConfirmation?: SendConfirmationDisplay
+    /** The chain's logo; a chain without one shows initials of its name. */
+    icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

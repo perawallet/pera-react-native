@@ -11,6 +11,7 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
@@ -56,4 +57,5 @@ export const algorandChainUi: ChainUi = {
     sendConfirmation: {
         TrailingSection: AlgorandSendNoteSection,
     },
+    icon: () => AlgoAssetIcon,
 }

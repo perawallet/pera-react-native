@@ -10,11 +10,19 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    ChainScope,
-    SigningScheme,
+import {
+    addressCodecs,
+    type ChainDescriptor,
+    type ChainFamily,
+    type ChainId,
+    type ChainScope,
+    type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { hasLedgerAppDriver } from '@perawallet/wallet-core-hardware-wallet'
 import { SeedScheme, seedSchemeOf } from '@perawallet/wallet-core-kms'
 import {
     getKeystoreStore,
@@ -65,6 +73,99 @@ export const canDerive = (
             hasCustody(account, 'local') &&
             account.custody.seed === 'bip39' &&
             seedOf(account, held) === walletId,
+    )
+}
+
+/**
+ * The raw-key scheme a standalone key signs with, by the family of each chain
+ * it is enabled on. A key moves only within its family, and only to a chain
+ * that imports the same scheme.
+ */
+export const standaloneKeySchemes = (
+    enabled: readonly ChainDescriptor[],
+): Map<ChainFamily, SigningScheme> => {
+    const schemes = new Map<ChainFamily, SigningScheme>()
+    for (const { family, signing } of enabled) {
+        const scheme = signing.rawKeySchemes[0]
+        if (scheme !== undefined && !schemes.has(family)) {
+            schemes.set(family, scheme)
+        }
+    }
+    return schemes
+}
+
+const reachesChain = (
+    account: WalletAccount,
+    enabled: readonly ChainDescriptor[],
+): ((descriptor: ChainDescriptor) => boolean) => {
+    const { custody } = account
+    switch (custody.kind) {
+        case 'local': {
+            if (custody.seed === 'bip39') {
+                return ({ id }) => seedMintableScheme(id) !== undefined
+            }
+            if (custody.seed !== null) return () => false
+            const schemes = standaloneKeySchemes(enabled)
+            return ({ family, signing }) => {
+                const scheme = schemes.get(family)
+                return (
+                    scheme !== undefined &&
+                    signing.rawKeySchemes.includes(scheme)
+                )
+            }
+        }
+        case 'watch': {
+            const held = enabled[0]
+            const address = held && chainAccountOf(account, held.id)?.address
+            if (address === undefined) return () => false
+            return ({ id }) =>
+                addressCodecs.has(id) &&
+                addressCodecs
+                    .get(id)
+                    .isValid(
+                        address,
+                        selectChainNetworkId(useNetworkStore.getState(), id),
+                    )
+        }
+        case 'hardware': {
+            return ({ id }) => hasLedgerAppDriver(id)
+        }
+        default: {
+            return () => false
+        }
+    }
+}
+
+/**
+ * Every registered chain the account's custody can produce its address on,
+ * in registry order; the chains it is already enabled on always count.
+ */
+export const eligibleChains = (account: WalletAccount): ChainId[] => {
+    const registered = getProvider().chains.list()
+    const isEnabled = ({ id }: ChainDescriptor) =>
+        chainAccountOf(account, id) !== undefined
+    const reaches = reachesChain(account, registered.filter(isEnabled))
+    return registered
+        .filter(descriptor => isEnabled(descriptor) || reaches(descriptor))
+        .map(({ id }) => id)
+}
+
+/**
+ * The eligible chains in a family the account is already enabled in: what a
+ * first use or a discovery probe may add without crossing chain families. A
+ * new family stays an explicit step, so an existing single-family account
+ * behaves as it did before more chains were registered.
+ */
+export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
+    const { chains } = getProvider()
+    const families = new Set(
+        chains
+            .list()
+            .filter(({ id }) => chainAccountOf(account, id) !== undefined)
+            .map(({ family }) => family),
+    )
+    return eligibleChains(account).filter(id =>
+        families.has(chains.get(id).descriptor.family),
     )
 }
 

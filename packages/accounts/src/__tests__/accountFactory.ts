@@ -10,7 +10,7 @@
  limitations under the License
  */
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { buildAccount } from '../credentials'
+import { buildAccount, withEnablement } from '../credentials'
 import type { AccountChains, AccountCustody, WalletAccount } from '../models'
 import {
     FAKE_CHAIN_ID,
@@ -19,6 +19,15 @@ import {
     FAKE_SINGLE_SEED,
 } from './fakeAccountsChain'
 
+// A fixed time, so two builds of the same fixture compare equal.
+const createdEntries = (chains: AccountChains): AccountChains =>
+    Object.fromEntries(
+        Object.entries(chains).map(([id, entry]) => [
+            id,
+            entry ? withEnablement(entry, 'created', 0) : entry,
+        ]),
+    )
+
 /** A valid account, built the same way production code builds one, on the first chain of `chains`. */
 export const buildTestAccount = (
     custody: AccountCustody,
@@ -26,7 +35,10 @@ export const buildTestAccount = (
     overrides: Partial<WalletAccount> = {},
 ): WalletAccount => {
     const chainId = Object.keys(chains)[0] as ChainId
-    return { ...buildAccount({ custody, chainId, chains }), ...overrides }
+    return {
+        ...buildAccount({ custody, chainId, chains: createdEntries(chains) }),
+        ...overrides,
+    }
 }
 
 export const TEST_CUSTODY = {

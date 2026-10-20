@@ -190,5 +190,29 @@ describe('assertWebConfigAllowlisted', () => {
                 'baseMainnetRpcUrl: "https://base.rpc.example"',
             )
         })
+
+        it('bakes a build that ships Base alone with its RPC URLs', () => {
+            const out = join(dir, 'generated-env.ts')
+            writeFileSync(join(dir, '.env'), '')
+
+            execFileSync('bash', [SCRIPT], {
+                env: {
+                    PATH: process.env.PATH,
+                    ENV_FILE: join(dir, '.env'),
+                    OUTPUT_FILE: out,
+                    CONFIG_ALLOWLIST: WEB_CONFIG_ALLOWLIST.join(' '),
+                    CHAINS: 'algorand,base',
+                    BASE_MAINNET_RPC_URL: 'https://base.rpc.example',
+                    BASE_SEPOLIA_RPC_URL: 'https://base-sepolia.rpc.example',
+                },
+                stdio: 'ignore',
+            })
+            const generated = readFileSync(out, 'utf8')
+
+            expect(() => assertWebConfigAllowlisted(generated)).not.toThrow()
+            expect(generated).toContain(
+                'baseMainnetRpcUrl: "https://base.rpc.example"',
+            )
+        })
     })
 })

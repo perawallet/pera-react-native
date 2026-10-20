@@ -434,7 +434,8 @@
         "rekey_signer_shared": "a shared account",
         "rekey_signer_quantum": "a Quantum account",
         "type_no_auth": "No Auth",
-        "type_unknown": "Unknown Account"
+        "type_unknown": "Unknown Account",
+        "networks": "Networks"
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
@@ -2603,6 +2604,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
+        },
+        "chain_selection": {
+            "title": "Select Network",
+            "eligible_subtitle": "Not added yet"
         },
         "qrview": {
             "error_title": "No Account Selected",

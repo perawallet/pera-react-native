@@ -128,7 +128,13 @@ const entryFor = (
         updatedAt: _updatedAt,
         ...rest
     } = payload as Record<string, unknown> & { type: string; address: string }
-    return { chain, ...rest }
+    return {
+        chain,
+        ...rest,
+        ...(entry.enabledBy !== undefined
+            ? { enabledAt: entry.enabledAt ?? 0, enabledBy: entry.enabledBy }
+            : {}),
+    }
 }
 
 /**

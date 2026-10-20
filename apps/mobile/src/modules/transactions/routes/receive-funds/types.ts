@@ -14,6 +14,7 @@ import type { StackScreenProps } from '@react-navigation/stack'
 
 export type ReceiveFundsStackParamList = {
     AccountSelection: undefined
+    ChainSelection: undefined
     QRView: undefined
 }
 

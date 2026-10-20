@@ -147,6 +147,21 @@ describe('addChainAccount', () => {
         vi.restoreAllMocks()
     })
 
+    test('records the given enabler on the entry it adds', async () => {
+        await state().addChainAccount(
+            'hd-seed',
+            FIXTURE_CHAIN_ID,
+            ORIGIN,
+            undefined,
+            undefined,
+            'restore',
+        )
+
+        expect(state().accounts[0].chains[FIXTURE_CHAIN_ID]?.enabledBy).toBe(
+            'restore',
+        )
+    })
+
     test('adds the chain entry to the account holding the position', async () => {
         const result = await add(ORIGIN, 'Ignored')
 
@@ -161,6 +176,8 @@ describe('addChainAccount', () => {
         expect(stored.chains[FIXTURE_CHAIN_ID]).toEqual({
             address: await fixtureAddressAt(ORIGIN),
             keyPairId: 'hd-seed-fx-0-0',
+            enabledAt: expect.any(Number),
+            enabledBy: 'created',
         })
         expect(kms.derivations).toEqual([
             {

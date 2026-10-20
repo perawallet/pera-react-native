@@ -434,7 +434,8 @@
         "rekey_signer_shared": "un compte partagé",
         "rekey_signer_quantum": "un compte quantique",
         "type_no_auth": "Sans auth",
-        "type_unknown": "Compte inconnu"
+        "type_unknown": "Compte inconnu",
+        "networks": "Réseaux"
     },
     "account_type_info": {
         "standard_title": "Compte Algo25",
@@ -2603,6 +2604,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Sélectionner un compte"
+        },
+        "chain_selection": {
+            "title": "Sélectionner un réseau",
+            "eligible_subtitle": "Pas encore ajouté"
         },
         "qrview": {
             "error_title": "Aucun compte sélectionné",

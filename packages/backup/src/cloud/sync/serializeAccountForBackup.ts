@@ -27,10 +27,12 @@ import {
     secretsItemKey,
     BackupAccountType,
     BackupItemType,
+    orderAccountRecordChains,
     type AccountRecordPayload,
     type SecretsBackupPayload,
 } from '../models'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
+import { isBackupChain } from './backupChains'
 import { buildAccountRecord, hasBackupChains } from './serializeAccountItems'
 import type {
     SerializedAccount,
@@ -149,16 +151,25 @@ export const serializeAccountForBackup = async (
 }
 
 /** The key is hex-encoded the moment it is read and the bytes are zeroed
- *  whatever happens next. A private-key account holds its key on one chain. */
+ *  whatever happens next. A private-key account holds one key whichever chains
+ *  it is on, so it is backed up once, under the first chain in record order:
+ *  the entry the record's identity names. */
 const privateKeySecrets = async (
     account: WalletAccount,
     resolvePrivateKey?: SerializePrivateKeyResolver,
 ): Promise<SecretsBackupPayload | null> => {
-    const held = (
-        Object.entries(account.chains) as [ChainId, ChainAccount | undefined][]
-    ).find(([, entry]) => entry?.keyPairId)
+    const [held] = orderAccountRecordChains(
+        (
+            Object.entries(account.chains) as [
+                ChainId,
+                ChainAccount | undefined,
+            ][]
+        ).flatMap(([chain, entry]) =>
+            entry?.keyPairId && isBackupChain(chain) ? [{ chain, entry }] : [],
+        ),
+    )
     if (!held || !resolvePrivateKey) return null
-    const [chain, entry] = held as [ChainId, ChainAccount]
+    const { chain, entry } = held
     const keyBytes = await resolvePrivateKey(chain, entry.keyPairId as string)
     if (!keyBytes) return null
     try {

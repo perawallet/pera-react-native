@@ -29,4 +29,5 @@ export {
 } from '@perawallet/wallet-extension-hardware-wallet'
 export * from './constants'
 export { discoverAccounts, type DiscoverAccountsOptions } from './discovery'
+export { hasLedgerAppDriver } from './drivers'
 export { verifyAddress } from './verify'

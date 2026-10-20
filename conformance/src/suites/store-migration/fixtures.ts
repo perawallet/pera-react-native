@@ -348,6 +348,18 @@ const v4Records = (a: FixtureAccounts) => [
     },
 ]
 
+/**
+ * v5 holds each record as its id, custody and chain entries alone, and names
+ * the selection, order and launch pin by account id.
+ */
+const v5Records = (a: FixtureAccounts) =>
+    v4Records(a).map(({ id, name, custody, chains }) => ({
+        id,
+        ...(name !== undefined ? { name } : {}),
+        custody,
+        chains,
+    }))
+
 export const STORE_FIXTURES: StoreFixture[] = [
     {
         name: 'v0',
@@ -452,6 +464,33 @@ export const STORE_FIXTURES: StoreFixture[] = [
                 unscopedAuthorities: {},
             },
             version: 4,
+        }),
+    },
+    {
+        // The last shape before chain entries recorded their enablement.
+        name: 'v5',
+        payload: a => ({
+            state: {
+                accounts: v5Records(a),
+                selectedAccountId: a.algo25.id,
+                sortMode: 'manual',
+                manualAccountOrder: [
+                    a.algo25.id,
+                    a.hd.id,
+                    a.quantum.id,
+                    a.rekeyed.id,
+                    a.watch.id,
+                ],
+                launchAccountMode: 'lastUsed',
+                launchAccountId: null,
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 5,
         }),
     },
 ]

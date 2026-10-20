@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, test, expect } from 'vitest'
+import { beforeEach, describe, test, expect, vi } from 'vitest'
 import {
     addressCodecs,
     CHAIN_CAPABILITIES,
@@ -25,15 +25,39 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../../models'
-import { testAccount } from '../../__tests__/accountFactory'
+import {
+    buildTestAccount,
+    TEST_CUSTODY,
+    testAccount,
+} from '../../__tests__/accountFactory'
+import {
+    ALGORAND_ADDRESS,
+    BASE,
+    ETHEREUM,
+    EVM_CHAINS,
+    EVM_KEY_ADDRESS,
+    POLYGON,
+    registerChainFamilies,
+} from '../../__tests__/chainFamilies'
 import {
     canDerive,
+    eligibleChains,
+    eligibleChainsInFamily,
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
     nextChainPosition,
     seedMintableScheme,
 } from '../eligibility'
+
+const ledgerApps = vi.hoisted(() => new Set<string>())
+
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    hasLedgerAppDriver: (chainId: string) => ledgerApps.has(chainId),
+}))
 
 describe('wallet eligibility and holder lookups', () => {
     type Keys = NonNullable<Parameters<typeof canDerive>[3]>
@@ -363,5 +387,111 @@ describe('wallet eligibility and holder lookups', () => {
                 findAddressHolder([hd, watch], algorandScope, 'WATCH-ADDR'),
             ).toBe(watch)
         })
+    })
+})
+
+describe('eligibleChains', () => {
+    const ALGORAND = 'algorand' as ChainId
+    const ALL = [ALGORAND, ...EVM_CHAINS]
+
+    beforeEach(() => {
+        ledgerApps.clear()
+        registerChainFamilies()
+    })
+
+    test('an HD account reaches every chain a seed can mint on', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(eligibleChains(hd)).toEqual(ALL)
+    })
+
+    test('a standalone key reaches every chain of its family that imports its scheme, and no other family', () => {
+        const key = buildTestAccount(TEST_CUSTODY.local, {
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(eligibleChains(key)).toEqual(EVM_CHAINS)
+    })
+
+    test('an Algorand-only key type reaches Algorand alone', () => {
+        const algo25 = buildTestAccount(TEST_CUSTODY.local, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS, keyPairId: 'k' },
+        })
+        const quantum = buildTestAccount(TEST_CUSTODY.explicit, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS, keyPairId: 'q' },
+        })
+
+        expect(eligibleChains(algo25)).toEqual([ALGORAND])
+        expect(eligibleChains(quantum)).toEqual([ALGORAND])
+    })
+
+    test('a watched 0x address reaches every EVM chain and never Algorand', () => {
+        const watched = buildTestAccount(TEST_CUSTODY.watch, {
+            [BASE]: { address: EVM_KEY_ADDRESS },
+        })
+
+        expect(eligibleChains(watched)).toEqual(EVM_CHAINS)
+    })
+
+    test('a watched Algorand address reaches Algorand alone', () => {
+        const watched = buildTestAccount(TEST_CUSTODY.watch, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS },
+        })
+
+        expect(eligibleChains(watched)).toEqual([ALGORAND])
+    })
+
+    test('a hardware account reaches the chains with a device app', () => {
+        ledgerApps.add(ETHEREUM).add(POLYGON)
+        const ledger = buildTestAccount(TEST_CUSTODY.hardware, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS },
+        })
+
+        expect(eligibleChains(ledger)).toEqual([ALGORAND, ETHEREUM, POLYGON])
+    })
+
+    test('a multisig account stays on its own chain', () => {
+        const multisig = buildTestAccount(TEST_CUSTODY.multisig, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS },
+        })
+
+        expect(eligibleChains(multisig)).toEqual([ALGORAND])
+    })
+
+    test('leaves out an entry on a chain this build does not register', () => {
+        registerChainFamilies([ALGORAND, ETHEREUM])
+        const key = buildTestAccount(TEST_CUSTODY.local, {
+            [POLYGON]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(eligibleChains(key)).toEqual([ETHEREUM])
+    })
+})
+
+describe('eligibleChainsInFamily', () => {
+    beforeEach(() => {
+        registerChainFamilies()
+    })
+
+    test('keeps the eligible chains in the families the account is on', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(eligibleChainsInFamily(hd)).toEqual(EVM_CHAINS)
+    })
+
+    test('offers an Algorand-only HD account nothing new', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            ['algorand' as ChainId]: {
+                address: ALGORAND_ADDRESS,
+                keyPairId: 'k',
+            },
+        })
+
+        expect(eligibleChainsInFamily(hd)).toEqual(['algorand'])
     })
 })

@@ -23,6 +23,8 @@ const {
     storeState,
     addChainAccountMock,
     importAccountFromPrivateKeyMock,
+    discoverChainsMock,
+    enableChainMock,
     findPathHolderMock,
     setAccountsMock,
     importAccountMock,
@@ -50,6 +52,8 @@ const {
         storeState: { accounts: [] as WalletAccount[] },
         addChainAccountMock: vi.fn(),
         importAccountFromPrivateKeyMock: vi.fn(),
+        discoverChainsMock: vi.fn(async () => []),
+        enableChainMock: vi.fn(),
         findPathHolderMock: vi.fn(),
         setAccountsMock: vi.fn(),
         importAccountMock: vi.fn(),
@@ -78,8 +82,11 @@ const {
 })
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const { buildAccount } = await vi.importActual<
-        Pick<typeof import('@perawallet/wallet-core-accounts'), 'buildAccount'>
+    const { buildAccount, withEnablement } = await vi.importActual<
+        Pick<
+            typeof import('@perawallet/wallet-core-accounts'),
+            'buildAccount' | 'withEnablement'
+        >
     >('@perawallet/wallet-core-accounts/build-account')
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {
@@ -92,10 +99,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         accounts: storeState.accounts,
         addChainAccount: addChainAccountMock,
         importAccountFromPrivateKey: importAccountFromPrivateKeyMock,
+        discoverChains: discoverChainsMock,
+        enableChain: enableChainMock,
     })
 
     return {
         buildAccount,
+        withEnablement,
         chainAccountOf: (account: WalletAccount, chainId: string) =>
             account.chains[chainId as 'algorand'],
         hasCustody: (account: WalletAccount, kind: string) =>
@@ -103,6 +113,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         findPathHolder: findPathHolderMock,
         isSameAddress: (_chainId: string, a: string, b: string) => a === b,
         DuplicateAccountError,
+        AddressMismatchError: class AddressMismatchError extends Error {},
         // Stands in for the chain's record encoding of the parameters.
         withMultisigParameters: (
             account: WalletAccount,
@@ -216,6 +227,9 @@ const appendedKeyPairIds = (): (string | undefined)[] =>
     )
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+/** What every builder records on an entry from a record written before enablement was. */
+const CREATED = { enabledAt: expect.any(Number), enabledBy: 'created' }
 
 const renderImport = () => renderHook(() => useCloudBackupImport(SCOPE)).result
 
@@ -457,7 +471,9 @@ describe('useCloudBackupImport', () => {
         expect(appended).toContainEqual(
             expect.objectContaining({
                 custody: { kind: 'watch' },
-                chains: { algorand: { address: 'WATCH_ADDR' } },
+                chains: {
+                    algorand: { address: 'WATCH_ADDR', ...CREATED },
+                },
             }),
         )
         expect(summary.imported).toBe(1)
@@ -498,7 +514,7 @@ describe('useCloudBackupImport', () => {
                     },
                     accountIndex: 3,
                 },
-                chains: { algorand: { address: 'LEDGER_ADDR' } },
+                chains: { algorand: { address: 'LEDGER_ADDR', ...CREATED } },
             }),
         )
         expect(summary.imported).toBe(1)
@@ -539,6 +555,7 @@ describe('useCloudBackupImport', () => {
                                 addresses: ['A', 'B'],
                             },
                         },
+                        ...CREATED,
                     },
                 },
             }),
@@ -638,7 +655,7 @@ describe('useCloudBackupImport', () => {
         expect(markBackedUpMock).toHaveBeenCalledTimes(1)
         expect(markBackedUpMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                chains: { algorand: { address: 'NEW_ADDR' } },
+                chains: { algorand: { address: 'NEW_ADDR', ...CREATED } },
             }),
         )
     })
@@ -867,6 +884,7 @@ describe('useCloudBackupImport', () => {
                     algorand: {
                         address: 'HD_KEY_ADDR',
                         keyPairId: expect.any(String),
+                        ...CREATED,
                     },
                 },
             }),
@@ -1204,6 +1222,7 @@ describe('useCloudBackupImport on another chain', () => {
                 { account: 0, keyIndex: 1 },
                 'Eth One',
                 '0xeth',
+                'created',
             )
             expect(summary).toMatchObject({ imported: 1, failed: [] })
         })
@@ -1239,6 +1258,7 @@ describe('useCloudBackupImport on another chain', () => {
                 { account: 0, keyIndex: 1 },
                 'Eth One',
                 '0xeth',
+                'created',
             )
             expect(summary).toMatchObject({ imported: 1, failed: [] })
         })
@@ -1279,6 +1299,7 @@ describe('useCloudBackupImport on another chain', () => {
                 expect.anything(),
                 expect.anything(),
                 expect.anything(),
+                'created',
             )
         })
 
@@ -1433,6 +1454,7 @@ describe('useCloudBackupImport on another chain', () => {
                 async (_chain: string, bytes: Uint8Array) => {
                     handedOver = bytes
                     atCall = Array.from(bytes)
+                    storeState.accounts = [importedKey() as never]
                     return importedKey()
                 },
             )
@@ -1445,6 +1467,7 @@ describe('useCloudBackupImport on another chain', () => {
                 expect.any(Uint8Array),
                 'Imported',
                 '0xkey',
+                { enabledBy: 'created', shouldDiscover: false },
             )
             expect(atCall).toEqual(
                 Array.from({ length: 32 }, (_, index) => index + 1),
@@ -1471,23 +1494,87 @@ describe('useCloudBackupImport on another chain', () => {
             ])
         })
 
-        test.each([
-            ['has no secret', null],
-            ['has a secret on another chain', { chain: 'algorand' }],
-        ])(
-            'fails an account that %s without calling the store',
-            async (_label, secret) => {
-                const { current } = renderImport()
+        test("restores every chain of a key from the account's one secret, as one account", async () => {
+            const keyAccount = {
+                ...importedKey(),
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xkey', keyPairId: 'raw' } },
+            }
+            importAccountFromPrivateKeyMock.mockImplementation(async () => {
+                storeState.accounts = [keyAccount as never]
+                return keyAccount
+            })
+            enableChainMock.mockImplementation(
+                async (_id: string, chain: string) => {
+                    const joined = {
+                        ...keyAccount,
+                        chains: {
+                            ...keyAccount.chains,
+                            [chain]: { address: '0xkey', keyPairId: 'raw' },
+                        },
+                    }
+                    storeState.accounts = [joined as never]
+                    return joined
+                },
+            )
+            const { current } = renderImport()
 
-                const summary = await current.importAccounts([
-                    standaloneKeyEntry(secret),
-                ])
+            const summary = await current.importAccounts([
+                standaloneKeyEntry(),
+                { ...standaloneKeyEntry(), chain: 'base' } as PulledAccount,
+            ])
 
-                expect(importAccountFromPrivateKeyMock).not.toHaveBeenCalled()
-                expect(summary.failed).toHaveLength(1)
-                expect(summary.imported).toBe(0)
-            },
-        )
+            expect(importAccountFromPrivateKeyMock).toHaveBeenCalledOnce()
+            expect(enableChainMock).toHaveBeenCalledExactlyOnceWith(
+                'imp',
+                'base',
+                'created',
+                { expectedAddress: '0xkey' },
+            )
+            expect(storeState.accounts).toHaveLength(1)
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+        })
+
+        test("fails a later chain the store refuses for an address that isn't the key's", async () => {
+            const keyAccount = {
+                ...importedKey(),
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xkey', keyPairId: 'raw' } },
+            }
+            importAccountFromPrivateKeyMock.mockImplementation(async () => {
+                storeState.accounts = [keyAccount as never]
+                return keyAccount
+            })
+            enableChainMock.mockRejectedValue(new Error('address mismatch'))
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                standaloneKeyEntry(),
+                { ...standaloneKeyEntry(), chain: 'base' } as PulledAccount,
+            ])
+
+            expect(enableChainMock).toHaveBeenCalledWith(
+                'imp',
+                'base',
+                'created',
+                { expectedAddress: '0xkey' },
+            )
+            expect(summary.failed).toEqual([
+                { address: '0xkey', reason: 'address mismatch' },
+            ])
+        })
+
+        test('fails an account that has no secret without calling the store', async () => {
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts([
+                standaloneKeyEntry(null),
+            ])
+
+            expect(importAccountFromPrivateKeyMock).not.toHaveBeenCalled()
+            expect(summary.failed).toHaveLength(1)
+            expect(summary.imported).toBe(0)
+        })
 
         test('fails an account the store refuses for deriving another address', async () => {
             importAccountFromPrivateKeyMock.mockRejectedValue(
@@ -1535,8 +1622,8 @@ describe('useCloudBackupImport on another chain', () => {
             expect(storeState.accounts).toEqual([
                 expect.objectContaining({
                     chains: {
-                        algorand: { address: 'WALGO' },
-                        ethereum: { address: '0xwatch' },
+                        algorand: { address: 'WALGO', ...CREATED },
+                        ethereum: { address: '0xwatch', ...CREATED },
                     },
                 }),
             ])
@@ -1564,7 +1651,7 @@ describe('useCloudBackupImport on another chain', () => {
             expect(storeState.accounts).toEqual([
                 held,
                 expect.objectContaining({
-                    chains: { ethereum: { address: '0xwatch' } },
+                    chains: { ethereum: { address: '0xwatch', ...CREATED } },
                 }),
             ])
         })
@@ -1580,7 +1667,7 @@ describe('useCloudBackupImport on another chain', () => {
                 expect.objectContaining({
                     name: 'Eth watch',
                     custody: { kind: 'watch' },
-                    chains: { ethereum: { address: '0xwatch' } },
+                    chains: { ethereum: { address: '0xwatch', ...CREATED } },
                 }),
             ])
             expect(summary).toMatchObject({ imported: 1, failed: [] })
@@ -1639,3 +1726,91 @@ function watchChainEntry(address: string): PulledAccount {
         secretsPayload: null,
     }
 }
+
+describe('useCloudBackupImport restoring enablement', () => {
+    const recordedWatch = (
+        address: string,
+        chain: string,
+        enabledBy?: string,
+    ): PulledAccount =>
+        ({
+            address,
+            group: 'WALGO',
+            chain,
+            addressPayload: {
+                type: 'watch',
+                address,
+                customName: null,
+                ...(enabledBy ? { enabledAt: 1, enabledBy } : {}),
+            },
+            secretsPayload: null,
+        }) as PulledAccount
+
+    test('re-enables the chains a record carries as restored', async () => {
+        const { current } = renderImport()
+
+        await current.importAccounts([
+            recordedWatch('WALGO', 'algorand', 'created'),
+            recordedWatch('0xwatch', 'ethereum', 'user'),
+        ])
+
+        expect(storeState.accounts).toEqual([
+            expect.objectContaining({
+                chains: {
+                    algorand: {
+                        address: 'WALGO',
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'restore',
+                    },
+                    ethereum: {
+                        address: '0xwatch',
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'restore',
+                    },
+                },
+            }),
+        ])
+    })
+
+    test('restores the entries of a record written before enablement as created', async () => {
+        const { current } = renderImport()
+
+        await current.importAccounts([recordedWatch('WALGO', 'algorand')])
+
+        expect(storeState.accounts[0]?.chains.algorand?.enabledBy).toBe(
+            'created',
+        )
+    })
+
+    test('leaves an account already on the device out of the probe', async () => {
+        storeState.accounts = [
+            {
+                id: 'held',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'WALGO' } },
+            } as never,
+        ]
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            recordedWatch('WALGO', 'algorand', 'created'),
+        ])
+
+        expect(summary.skippedDuplicate).toBe(1)
+        expect(discoverChainsMock).not.toHaveBeenCalled()
+    })
+
+    test('looks for activity once per restored account, after the batch', async () => {
+        const { current } = renderImport()
+
+        await current.importAccounts([
+            recordedWatch('WALGO', 'algorand', 'created'),
+            recordedWatch('0xwatch', 'ethereum', 'created'),
+            watchAccount('OTHER'),
+        ])
+
+        expect(
+            discoverChainsMock.mock.calls.map(([accountId]) => accountId),
+        ).toEqual(storeState.accounts.map(account => account.id))
+    })
+})
