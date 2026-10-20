@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { encodeAddress } from 'algosdk'
+import { decodeAddress, encodeAddress } from 'algosdk'
 
 export { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 
