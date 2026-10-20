@@ -16,7 +16,11 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     type AccountAssetBalanceHistoryItem,
     useAccountsAssetsBalanceHistoryQuery,
@@ -53,6 +57,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         data,
         isPending,
         isError,
+        error,
         isPaused,
         refetch,
         isUnavailableOnNetwork,
@@ -77,6 +82,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
             onRetry={() => void refetch()}

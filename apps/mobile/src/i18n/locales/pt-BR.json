@@ -1143,6 +1143,12 @@
         "pera_service": {
             "unavailable": "Os serviços da Pera não estão disponíveis nesta rede. Mude para a MainNet para usar este recurso."
         },
+        "integrity": {
+            "unavailable": {
+                "title": "Serviços da Pera indisponíveis",
+                "body": "A Pera não conseguiu verificar esta extensão no momento. Tente novamente em alguns minutos."
+            }
+        },
         "api": {
             "generic": {
                 "title": "A solicitação falhou",
@@ -2941,7 +2947,16 @@
                 "genesis_id_required": "Busque ou digite o ID do genesis",
                 "save": "Salvar e trocar",
                 "cancel": "Cancelar",
-                "reset": "Restaurar padrões"
+                "reset": "Restaurar padrões",
+                "override_endpoint": "Substituir RPC",
+                "endpoint_overridden": "{{host}} (substituído)",
+                "endpoint_sheet_title": "RPC de {{network}}",
+                "endpoint_current": "Atual: {{host}}",
+                "endpoint_url_label": "URL do RPC",
+                "endpoint_wrong_network": "Este RPC pertence a outra rede. Digite um para {{network}}.",
+                "endpoint_unreachable": "Não foi possível acessar esse RPC.",
+                "endpoint_save": "Salvar",
+                "endpoint_reset": "Restaurar o RPC configurado"
             },
             "debug_dapp": "Dapp de teste",
             "manage_cache": "Gerenciar cache",
@@ -2962,6 +2977,11 @@
             "app_integrity_none": "nenhum",
             "app_integrity_verify_ok": "ok",
             "app_integrity_verify_failed": "falhou",
+            "app_integrity_access_state": "Estado de acesso: {{value}}",
+            "app_integrity_cause": "Causa: {{value}}",
+            "app_integrity_next_attempt": "Próxima tentativa: {{value}}",
+            "app_integrity_force_enrol": "Forçar registro",
+            "app_integrity_clear_backoff": "Limpar backoffs",
             "refresh_cache": "Atualizar todo o cache",
             "refresh_cache_success_title": "Cache atualizado",
             "refresh_cache_success_body": "Todas as contas foram recarregadas e as consultas invalidadas.",
@@ -4320,7 +4340,29 @@
         }
     },
     "integrityCheck": {
-        "frame_title": "Verificação da Pera Wallet"
+        "frame_title": "Verificação da Pera Wallet",
+        "frame_heading": "Verificação rápida antes de usar os serviços da Pera",
+        "frame_dismiss": "Agora não",
+        "banner": {
+            "checking_label": "Verificando esta extensão",
+            "service_label": "Serviços da Pera indisponíveis",
+            "service_body": "Não foi possível acessar os serviços da Pera no momento. Suas contas e a assinatura de transações continuam funcionando. Os preços e alguns recursos podem estar desatualizados.",
+            "verify_label": "Verificação necessária",
+            "verify_body": "Verifique esta extensão para usar os serviços da Pera, como preços, conversões e notificações. Suas contas e a assinatura de transações continuam funcionando.",
+            "blocked_body": "Não foi possível verificar esta instalação. Entre em contato com o suporte da Pera para obter ajuda.",
+            "restored_label": "Serviços da Pera restabelecidos",
+            "retry": "Tentar novamente",
+            "verify": "Verificar"
+        },
+        "surface": {
+            "service_title": "Serviços da Pera indisponíveis",
+            "service_body": "Isto depende dos serviços da Pera, que estão inacessíveis no momento. O conteúdo será carregado assim que eles voltarem.",
+            "verify_title": "Verificação necessária",
+            "verify_body": "Verifique esta extensão para carregar este conteúdo. Suas contas e a assinatura de transações não são afetadas.",
+            "blocked_body": "Não foi possível verificar esta instalação, então este conteúdo não pode ser carregado. Entre em contato com o suporte da Pera para obter ajuda."
+        },
+        "approval_notice": "Os serviços da Pera estão indisponíveis, então as taxas patrocinadas e os detalhes dos ativos podem não aparecer. Você ainda pode assinar.",
+        "approval_open": "Abrir a Pera"
     },
     "analytics_consent": {
         "prompt": {

@@ -22,6 +22,7 @@ import {
     isNotFoundError,
     isPeraNetworkError,
 } from '../network'
+import { IntegrityRequiredError } from '../integrity'
 
 // Minimal ky HTTPError builder — ky's isHTTPError checks `instanceof HTTPError`.
 const makeHttpError = (status: number): HTTPError => {
@@ -170,6 +171,18 @@ describe('getNetworkErrorMessageKeys', () => {
     const keysFor = (base: string) => ({
         titleKey: `${base}.title`,
         bodyKey: `${base}.body`,
+    })
+
+    it('maps an integrity refusal → errors.integrity.unavailable, ahead of the 403 branch', () => {
+        expect(
+            getNetworkErrorMessageKeys(
+                new IntegrityRequiredError({
+                    code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    status: 403,
+                    hadToken: false,
+                }),
+            ),
+        ).toEqual(keysFor('errors.integrity.unavailable'))
     })
 
     it('maps offline → errors.network.no_connection', () => {

@@ -212,17 +212,24 @@ answer is `{ action: 'host', url, deadlineAt }` or `{ action: 'none' }`. Only a 
 `isTrustedExtensionPageSender` can get `host`: content scripts share the listener. The offscreen
 document cannot participate (its `chrome.storage.session` is poison-pilled).
 
-The popup and the expanded tab ask once wallet onboarding is finished, so the key bound is that of
-an install in use. The `reason` names the moment:
+The popup and the expanded tab ask once the user commits to onboarding (accepts the terms to create
+or import), so the key bound is that of an install in use and the invisible solve lands while they
+type; a drive-by open of the welcome screen binds nothing. Neither asks while offline: the check page
+cannot load. The `reason` names the moment:
 
-1. **`onboarding-complete`**: onboarding finishes in this page. Enrolment runs here, not lazily: fee
-   delegation is the zero-balance onboarding path and often the user's first action, so a lazy check
-   would land mid-transaction.
-2. **`page-open`**: the page opens. This also reaches installs that onboarded before the extension
+1. **`onboarding-started`**: the user committed to onboarding in this page. A Cloud Backup restore
+   and device registration during onboarding need the token this earns.
+2. **`onboarding-complete`**: onboarding finishes in this page, the fallback for a start that did not
+   enrol. Enrolment runs here, not lazily: fee delegation is the zero-balance onboarding path and
+   often the user's first action, so a lazy check would land mid-transaction.
+3. **`page-open`**: the page opens. This also reaches installs that onboarded before the extension
    could enrol.
-3. **`enrolment-needed`**: the worker raised `integrity:enrol-needed` in `chrome.storage.session`,
+4. **`enrolment-needed`**: the worker raised `integrity:enrol-needed` in `chrome.storage.session`,
    which open pages watch. An attest 403 only raises this flag (section 5.6), because the worker
    cannot address a page; an open page asks, and section 5.3 covers there being none.
+5. **`user-retry`**: the user pressed Verify. It clears the enrol backoff, at most five times a
+   session so a user cannot drive a solve loop; from the second, the worker opens the check in a
+   focused tab itself, where the page's own retry works and no popup can close under the solve.
 
 The worker answers `none` when this network's marker matches the current key (section 5.5), while
 an attempt is live, while backoff holds, and whenever either build flag is off (section 8). With
@@ -401,7 +408,13 @@ The mint loop never enrols; it distinguishes attest 403s by `code` and raises
 - Any other 403 clears the key and the token and lets the next mint start clean.
 
 Every 403 also records a mint failure, and every re-enrolment goes through section 5.3's backoff,
-so a revoked install cannot spin.
+so a revoked install cannot spin. A second `APP_INTEGRITY_REVOKED` in one session sets the enrol
+backoff to its cap: the contract lets a revoked device re-enrol with a fresh key, so a backend that
+revoked by device would otherwise meet a fresh solve on every page open.
+
+A mint that got no answer at all (offline, timeout) records `integrity:last-failure` without
+advancing the backoff, and while the current token still lives the backoff floor is a minute, so the
+next renewal alarm is never held back by the failure before it.
 
 ## 6. Backend contract
 
@@ -469,6 +482,10 @@ The flag flips only after the check page and the extension enrolment flow have s
 counts on staging look right; flipping earlier breaks every extension mint. iOS and Android paths are
 untouched throughout.
 
+An enrolled web token (`enr: true`) is also the extension's client credential: both backends accept
+it wherever they accept `X-API-Key`, behind their `WEB_BEARER_AUTH_ENABLED` switch, so the extension
+sends no key at all.
+
 ### 6.5 Rate limiting
 
 At the edge, consistent with keeping request rate limiting out of the Bun service. `enrol` needs a
@@ -497,7 +514,7 @@ keep theirs.
    `chrome.runtime` directly and would require the page to know the extension id. The relay reuses
    the origin-checked bridge pattern Discover and Bidali already use.
 5. **Enrol lives under `/api/v3/public`.** Trust cannot bootstrap from nothing: a fresh install has
-   no token, and after the scope split it may have no API key either.
+   no token, and the extension sends no API key.
 6. **Error codes are UPPER_SNAKE.** Matches the existing `APP_INTEGRITY_TOKEN_REQUIRED` /
    `APP_INTEGRITY_TOKEN_INVALID` / `APP_INTEGRITY_PLATFORM_NOT_ALLOWED` family so clients switch on
    one style.
@@ -520,3 +537,5 @@ The pieces have to land in this order, because each is tested against the one be
 4. Staging soak with both flags on and enforcement off, watching enrolment counts, error codes,
    and how often `interactive-required` fires from the framed page.
 5. `APP_INTEGRITY_WEB_REQUIRE_ENROLMENT` on staging, then production.
+6. Backend: both services accept an enrolled token in place of the API key (`WEB_BEARER_AUTH_ENABLED`
+   on), staging then production; then the keyless extension ships.

@@ -59,6 +59,12 @@ import {
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
 import {
+    algorandHandoffDeliveryOf,
+    algorandRequestChainData,
+    algorandReviewGroupOf,
+    algorandSignableGroupChainData,
+} from './requestChainData'
+import {
     algorandSignedTransactionsOf,
     assembleSignedAlgorandTransaction,
     signUnsignedTransactionsWithLocalKey,
@@ -172,6 +178,10 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     },
     readTransactionsData: readAlgorandTransactionsData,
     signedForAddresses: algorandSignedForAddresses,
+    signableGroupChainData: algorandSignableGroupChainData,
+    reviewGroupOf: algorandReviewGroupOf,
+    signRequestChainData: algorandRequestChainData,
+    handoffDeliveryOf: algorandHandoffDeliveryOf,
     mergeSigningResults,
     signedTransactionsOf: algorandSignedTransactionsOf,
     assembleSignedTransaction: assembleSignedAlgorandTransaction,

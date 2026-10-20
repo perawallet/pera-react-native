@@ -15,6 +15,7 @@ import { LineChart } from 'react-native-gifted-charts'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { IntegrityBlockedView } from '@components/OfflineTolerantView'
 import { LoadingView } from '@components/LoadingView'
 import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,6 +45,8 @@ type BalanceLineChartProps<T> = {
     /** True when the active network has no Pera backend — renders the
      *  no-retry unavailable surface instead of spinning forever. */
     isUnavailableOnNetwork?: boolean
+    /** The failure behind `isError` is an integrity refusal: the web token, not the data, is missing. */
+    isIntegrityBlocked?: boolean
     /** Error-state body; falls back to a generic message when omitted. */
     errorBody?: string
     /** Triggers a refetch from the error state's retry button. */
@@ -60,6 +63,7 @@ export const BalanceLineChart = <T,>({
     isError = false,
     isPaused = false,
     isUnavailableOnNetwork = false,
+    isIntegrityBlocked = false,
     errorBody,
     onRetry,
     style,
@@ -160,6 +164,13 @@ export const BalanceLineChart = <T,>({
             // A failed request must not masquerade as "no history" — show a
             // distinct error state so the user can retry.
             case 'error': {
+                if (isIntegrityBlocked) {
+                    return (
+                        <IntegrityBlockedView
+                            onRetry={handleRetry ?? undefined}
+                        />
+                    )
+                }
                 return (
                     <EmptyView
                         title={t('common.error.title')}

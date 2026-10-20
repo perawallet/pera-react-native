@@ -11,7 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type ChainActionData,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { DEEPLINK_TIMEOUT_TAG } from './timeout'
@@ -21,9 +25,6 @@ type Variant =
     | 'walletconnect'
     | 'walletconnect_timeout'
     | 'walletconnect_unsupported'
-    | 'keyreg'
-    | 'keyreg-unknown-account'
-    | 'keyreg-cannot-sign'
     | 'network-mismatch'
     | 'no-account'
     | 'unsupported-on-chain'
@@ -31,17 +32,26 @@ type Variant =
     | 'recover_duplicate'
     | 'timeout'
 
+type ChainActionVariant =
+    | 'chain-action'
+    | 'chain-action-unknown-account'
+    | 'chain-action-cannot-sign'
+
 export type ShowDeeplinkErrorParams = {
-    variant: Variant
     parsedType?: string
     error?: unknown
     /** Display names the copy interpolates: `network` or `chain`. */
     values?: Record<string, string>
-}
+} & (
+    | { variant: Variant }
+    | { variant: ChainActionVariant; action: ChainActionData['action'] }
+)
+
+type MessageKeys = { title: I18nKey; body: I18nKey }
 
 export type ShowDeeplinkError = (params: ShowDeeplinkErrorParams) => void
 
-const MESSAGE_KEYS: Record<Variant, { title: I18nKey; body: I18nKey }> = {
+const MESSAGE_KEYS: Record<Variant, MessageKeys> = {
     generic: {
         title: i18nKey('deeplink.error.title_generic'),
         body: i18nKey('deeplink.error.body_generic'),
@@ -57,18 +67,6 @@ const MESSAGE_KEYS: Record<Variant, { title: I18nKey; body: I18nKey }> = {
     walletconnect_unsupported: {
         title: i18nKey('deeplink.error.title_wc_unsupported'),
         body: i18nKey('deeplink.error.body_wc_unsupported'),
-    },
-    keyreg: {
-        title: i18nKey('deeplink.error.title_keyreg'),
-        body: i18nKey('deeplink.error.body_keyreg'),
-    },
-    'keyreg-unknown-account': {
-        title: i18nKey('deeplink.error.title_keyreg'),
-        body: i18nKey('deeplink.error.body_keyreg_unknown_account'),
-    },
-    'keyreg-cannot-sign': {
-        title: i18nKey('deeplink.error.title_keyreg'),
-        body: i18nKey('deeplink.error.body_keyreg_cannot_sign'),
     },
     'network-mismatch': {
         title: i18nKey('deeplink.error.title_network_mismatch'),
@@ -96,6 +94,32 @@ const MESSAGE_KEYS: Record<Variant, { title: I18nKey; body: I18nKey }> = {
     },
 }
 
+// Keyed by action so a new chain action can't ship without its own copy.
+const CHAIN_ACTION_MESSAGE_KEYS: Record<
+    ChainActionData['action'],
+    Record<ChainActionVariant, MessageKeys>
+> = {
+    keyreg: {
+        'chain-action': {
+            title: i18nKey('deeplink.error.title_keyreg'),
+            body: i18nKey('deeplink.error.body_keyreg'),
+        },
+        'chain-action-unknown-account': {
+            title: i18nKey('deeplink.error.title_keyreg'),
+            body: i18nKey('deeplink.error.body_keyreg_unknown_account'),
+        },
+        'chain-action-cannot-sign': {
+            title: i18nKey('deeplink.error.title_keyreg'),
+            body: i18nKey('deeplink.error.body_keyreg_cannot_sign'),
+        },
+    },
+}
+
+const messageKeysFor = (params: ShowDeeplinkErrorParams): MessageKeys =>
+    'action' in params
+        ? CHAIN_ACTION_MESSAGE_KEYS[params.action][params.variant]
+        : MESSAGE_KEYS[params.variant]
+
 /**
  * react-native-notifier renders into a `NotifierRoot` in the React tree, so a
  * toast fired while the QR scanner's RN `Modal` is still open is hidden behind
@@ -108,13 +132,15 @@ export const useDeeplinkErrorHandler = (): ShowDeeplinkError => {
     const { errorToast } = useToast()
 
     return useCallback(
-        ({ variant, error, values }) => {
+        params => {
+            const { error, values } = params
             const isTimeout =
                 error instanceof Error &&
                 'tag' in error &&
                 (error as { tag?: string }).tag === DEEPLINK_TIMEOUT_TAG
-            const effectiveVariant: Variant = isTimeout ? 'timeout' : variant
-            const { title, body } = MESSAGE_KEYS[effectiveVariant]
+            const { title, body } = isTimeout
+                ? MESSAGE_KEYS.timeout
+                : messageKeysFor(params)
 
             setTimeout(() => {
                 errorToast(t(title, values), t(body, values))

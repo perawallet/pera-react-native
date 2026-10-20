@@ -16,15 +16,10 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mocks = vi.hoisted(() => ({
-    buildKeyRegistrationTx: vi.fn(),
     fetchTransactionHistory: vi.fn(),
     fetchMoreTransactions: vi.fn(),
 }))
 
-vi.mock('../builders', async importOriginal => ({
-    ...(await importOriginal<typeof import('../builders')>()),
-    buildKeyRegistrationTx: mocks.buildKeyRegistrationTx,
-}))
 vi.mock('../history', () => ({
     fetchTransactionHistory: mocks.fetchTransactionHistory,
     fetchMoreTransactions: mocks.fetchMoreTransactions,
@@ -33,15 +28,7 @@ vi.mock('../history/indexer/endpoints', () => ({
     fetchIndexerCloseAmount: vi.fn(),
 }))
 
-import { Transaction, TransactionType } from 'algosdk'
 import { algorandAssetInbox } from '../../asa-inbox/adapter'
-import { encodeTransactionRaw } from '../../blockchain/utils/transact'
-import {
-    MAINNET_GENESIS_HASH,
-    TEST_SUGGESTED_PARAMS,
-    makeTestAddress,
-    payloadTransactionOf,
-} from '../../signing/__tests__/transactions'
 import { algorandHistoryAdapter, algorandSendFlowAdapter } from '../adapter'
 import {
     EMPTY_ALGORAND_HISTORY_DATA,
@@ -58,41 +45,6 @@ describe('algorandSendFlowAdapter', () => {
         expect(algorandSendFlowAdapter.express).toBeDefined()
         expect(algorandSendFlowAdapter.assetHolding).toBeDefined()
         expect(algorandSendFlowAdapter.rekey).toBeDefined()
-        expect(algorandSendFlowAdapter.keyRegistration).toBeDefined()
-    })
-})
-
-describe('algorandSendFlowAdapter key registration', () => {
-    it('hands signing the decoded form of what AlgoKit built, byte for byte', async () => {
-        const built = new Transaction({
-            type: TransactionType.keyreg,
-            sender: makeTestAddress(1),
-            suggestedParams: {
-                ...TEST_SUGGESTED_PARAMS,
-                genesisHash: MAINNET_GENESIS_HASH,
-            },
-            keyregParams: {},
-        })
-        mocks.buildKeyRegistrationTx.mockResolvedValueOnce(built)
-        const scope = {
-            chainId: LEGACY_CHAIN_ID,
-            networkId: 'mainnet',
-        } as const
-
-        const unsigned = await algorandSendFlowAdapter.keyRegistration!.buildTx(
-            {
-                kind: 'offline',
-                scope,
-                sender: makeTestAddress(1).toString(),
-            },
-        )
-
-        const signed = payloadTransactionOf(unsigned)
-        expect(signed).not.toBe(built)
-        expect(encodeTransactionRaw(signed)).toEqual(
-            encodeTransactionRaw(built),
-        )
-        expect(unsigned.scope).toEqual(scope)
     })
 })
 

@@ -12,10 +12,6 @@
 
 import { Decimal } from 'decimal.js'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import {
-    decodeTransaction,
-    encodeTransaction,
-} from '../blockchain/utils/transact'
 import { readAlgorandTransaction } from '../signing/planner'
 import {
     toUnsignedAlgorandTransaction,
@@ -39,7 +35,6 @@ import { algorandGroupToOpen } from './history-data'
 import { mapHistoryItemToTransactionNative } from './history-transaction'
 import {
     buildExpressTransferTxs,
-    buildKeyRegistrationTx,
     buildOptInTxs,
     buildOptOutTxs,
     buildRekeyTx,
@@ -85,17 +80,6 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
         buildTx: async params =>
             toUnsignedAlgorandTransaction(
                 await buildRekeyTx(params),
-                params.scope,
-            ),
-    },
-    keyRegistration: {
-        // AlgoKit hands back an `Address` sender; the signing pipeline reads
-        // the shape `decodeTransaction` produces, so round-trip it once here.
-        buildTx: async params =>
-            toUnsignedAlgorandTransaction(
-                decodeTransaction(
-                    encodeTransaction(await buildKeyRegistrationTx(params)),
-                ),
                 params.scope,
             ),
     },

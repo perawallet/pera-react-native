@@ -138,9 +138,13 @@ chain capability is off, whatever its source.
    and register it with `deeplinkAdapters`. Two chains claiming one scheme throws at bootstrap.
 2. Return `unsupported-action` for anything the wallet understands but refuses to do, so the user is
    told why rather than shown "not a link".
-3. `chain=` accepts each network's `caip2` from the chain descriptor, so Pera links reach the new
+3. A chain whose links carry a `chain-action` intent (Algorand's key registration) also implements
+   `buildChainAction`; the adapter contract suite fails without it. The app's
+   `useChainActionDeeplink` does the chain-neutral part: the sender must be in the wallet and
+   signable on the link's chain, the network must match, and the link is gated by `send`.
+4. `chain=` accepts each network's `caip2` from the chain descriptor, so Pera links reach the new
    chain with no parser change. Classify any new `DeeplinkType` in the notification, page and
    capability policy records; each is exhaustive, so an unclassified type fails to compile.
-4. To receive the scheme from other apps, add it to `scheme` and the Android intent filter in
+5. To receive the scheme from other apps, add it to `scheme` and the Android intent filter in
    `apps/mobile/app.config.builder.js`, and to the identity checks in
    `apps/mobile/scripts/verify-*-identity.mjs`.

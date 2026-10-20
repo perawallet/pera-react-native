@@ -65,6 +65,24 @@ describe('useAssetPriceHistoryQuery', () => {
     })
 
     describe('useAssetPriceHistoryQuery hook', () => {
+        it('hands the failure to the caller', async () => {
+            const failure = new Error('refused')
+            mocks.fetchAssetPriceHistory.mockRejectedValue(failure)
+
+            const { result } = renderHook(
+                () =>
+                    useAssetPriceHistoryQuery(
+                        ALGORAND_MAINNET,
+                        '123',
+                        'one-day',
+                    ),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.error).toBe(failure)
+        })
+
         it('fetches data successfully and stores raw USD prices', async () => {
             const assetID = '123'
             const period = 'one-day'

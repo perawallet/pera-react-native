@@ -26,7 +26,11 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import {
@@ -43,6 +47,7 @@ import { useOnrampIntroduction } from './useOnrampIntroduction'
 type UseOnrampScreenResult = {
     isReady: boolean
     pairsState: 'ready' | 'loading' | 'offline' | 'error'
+    isPairsIntegrityBlocked: boolean
     pairs: RampPair[]
     sourceToken: Nullable<RampToken>
     destinationToken: Nullable<RampToken>
@@ -254,6 +259,9 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     return {
         isReady,
         pairsState,
+        isPairsIntegrityBlocked:
+            pairsState === 'error' &&
+            isIntegrityRequiredError(pairsQuery.error),
         pairs,
         sourceToken,
         destinationToken,

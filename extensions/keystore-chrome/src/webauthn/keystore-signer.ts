@@ -266,6 +266,35 @@ export const createKeystoreSigner = (
         return keystore.sign(keyId, data)
     },
 
+    async recordP256Use(keyId) {
+        const key = store.state.keys.find(k => k.id === keyId)
+        const deriveDomainKey = keystore.deriveDomainKey
+        // Only a `pbkdf2-p256` child can be re-derived; the engine's parent
+        // guard rejects the `xhd-derived-p256` alias `isPasskeyKey` admits.
+        if (key?.type !== 'hd-derived-p256' || !deriveDomainKey) return
+
+        const parentKeyId = readMetadataString(key, 'parentKeyId')
+        const origin = readMetadataString(key, 'origin')
+        const userHandle = readMetadataString(key, 'userHandle')
+        if (!parentKeyId || !origin || !userHandle) return
+
+        const metadata = (key.metadata ?? {}) as Record<string, unknown>
+        const counter =
+            typeof metadata.counter === 'number' ? metadata.counter : 0
+        const count = typeof metadata.count === 'number' ? metadata.count : 0
+
+        // The engine has no metadata update; re-deriving with the stored
+        // inputs and the same `id` reproduces the keypair and upserts in place.
+        await deriveDomainKey.call(keystore, parentKeyId, {
+            algorithm: 'P256',
+            origin,
+            userHandle,
+            counter,
+            id: key.id,
+            metadata: { ...metadata, lastUsedAt: Date.now(), count: count + 1 },
+        })
+    },
+
     async listP256Credentials(rpId) {
         return store.state.keys
             .filter(isPasskeyKey)

@@ -12,6 +12,7 @@
 
 import {
     isTransactionRequest,
+    reviewGroupOf,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 
@@ -35,7 +36,7 @@ export const getInFlightCosignAddresses = (
         if (!isTransactionRequest(request)) continue
         if (request.sourceType !== 'multisig-cosign') continue
         if (request.signRequestId !== signRequestId) continue
-        const signer = request.chainData?.algorand?.signerOverrides?.get(0)
+        const signer = reviewGroupOf(request).signerOverrides?.get(0)
         if (signer) result.add(signer)
     }
     return result

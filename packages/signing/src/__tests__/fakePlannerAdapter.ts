@@ -25,7 +25,12 @@ import {
     type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
+import type {
+    SignRequestGroupFacts,
+    UnsignedTransactionSignRequest,
+} from '../models'
 import { InvalidSignableDataError } from '../pipeline/errors'
+import type { UnsignedTransactionsSignableData } from '../pipeline/types'
 
 const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
@@ -71,6 +76,32 @@ const payloadTransactions = (
             (transaction.payload as { transaction: Transaction }).transaction,
     )
 
+// Kept where Algorand keeps them, so a spec's request reads the same against
+// the fake and the real adapter.
+type FakeRequestFacts = SignRequestGroupFacts & {
+    payloadId?: number
+    totalLength?: number
+}
+
+const requestFactsOf = (
+    request: UnsignedTransactionSignRequest,
+): FakeRequestFacts | undefined =>
+    (request.chainData as { algorand?: FakeRequestFacts } | undefined)?.algorand
+
+const groupFactsOf = (
+    data: UnsignedTransactionsSignableData,
+): { indicesToSign?: number[]; rawTransactionsBase64?: string[] } | undefined =>
+    (
+        data.chainData as
+            | {
+                  algorand?: {
+                      indicesToSign?: number[]
+                      rawTransactionsBase64?: string[]
+                  }
+              }
+            | undefined
+    )?.algorand
+
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
@@ -114,23 +145,57 @@ export const fakePlannerAdapter = (
     signedForAddresses: vi.fn(request =>
         request.txs[0]?.chainData.family === 'algorand'
             ? request.txs.map(
-                  (unsigned, index) =>
-                      request.chainData?.algorand?.signerOverrides?.get(
-                          index,
-                      ) ?? payloadTransactions([unsigned])[0].sender.toString(),
+                  (unsigned: UnsignedTransaction, index: number) =>
+                      requestFactsOf(request)?.signerOverrides?.get(index) ??
+                      payloadTransactions([unsigned])[0].sender.toString(),
               )
             : undefined,
     ),
-    readTransactionsData: vi.fn(data => ({
-        transactions: data.transactions,
-        indicesToSign:
-            data.chainData.algorand?.indicesToSign ??
-            data.transactions.map((_, index) => index),
-        ...(data.chainData.algorand?.rawTransactionsBase64 && {
-            rawTransactionsBase64:
-                data.chainData.algorand.rawTransactionsBase64,
-        }),
-    })),
+    signableGroupChainData: vi.fn(
+        (request: UnsignedTransactionSignRequest, indices: number[]) => {
+            const raw = requestFactsOf(request)?.rawTransactionsBase64
+            return {
+                algorand: {
+                    indicesToSign: indices.map((_, i) => i),
+                    ...(raw && {
+                        rawTransactionsBase64: indices.map(i => raw[i]),
+                    }),
+                },
+            }
+        },
+    ),
+    reviewGroupOf: vi.fn(request => {
+        const facts = requestFactsOf(request)
+        return {
+            transactions: facts?.groupContext ?? request.txs,
+            groupContext: facts?.groupContext,
+            signableIndices: facts?.signableIndices,
+            signerOverrides: facts?.signerOverrides,
+            feeAdjustments: facts?.feeAdjustments,
+        }
+    }),
+    signRequestChainData: vi.fn(facts => ({ algorand: facts })),
+    handoffDeliveryOf: vi.fn(request => {
+        const facts = requestFactsOf(request)
+        if (facts?.payloadId === undefined) return undefined
+        return {
+            payloadId: facts.payloadId,
+            indicesToSign: facts.signableIndices ?? [],
+            totalLength: facts.totalLength ?? 0,
+        }
+    }),
+    readTransactionsData: vi.fn(data => {
+        const facts = groupFactsOf(data)
+        return {
+            transactions: data.transactions,
+            indicesToSign:
+                facts?.indicesToSign ??
+                data.transactions.map((_: unknown, index: number) => index),
+            ...(facts?.rawTransactionsBase64 && {
+                rawTransactionsBase64: facts.rawTransactionsBase64,
+            }),
+        }
+    }),
     mergeSigningResults: vi.fn(results => results[0]),
     signedTransactionsOf: vi.fn(({ signedData }) => {
         if (

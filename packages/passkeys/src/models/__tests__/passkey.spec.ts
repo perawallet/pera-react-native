@@ -156,6 +156,18 @@ describe('keyToPasskey', () => {
             source: 'keystore',
         })
     })
+
+    it('normalizes a lastUsedAt recorded in seconds to milliseconds', () => {
+        const passkey = keyToPasskey(
+            buildPasskeyKey({
+                origin: 'webauthn.io',
+                userHandle: 'alice',
+                lastUsedAt: 1727259000.5,
+            }),
+        )
+
+        expect(passkey?.lastUsedAt).toBe(1727259000500)
+    })
 })
 
 describe('credentialToPasskey', () => {
@@ -189,6 +201,21 @@ describe('credentialToPasskey', () => {
         )
 
         expect(passkey?.displayName).toBe('Alice Smith')
+    })
+
+    // The iOS provider stamps `lastUsedAt` as `timeIntervalSince1970`.
+    it('carries the provider-recorded lastUsedAt, in milliseconds', () => {
+        const passkey = credentialToPasskey(
+            buildNativeCredential({ lastUsedAt: 1727259000.25 }),
+        )
+
+        expect(passkey?.lastUsedAt).toBe(1727259000250)
+    })
+
+    it('leaves lastUsedAt unset for a credential never used', () => {
+        const passkey = credentialToPasskey(buildNativeCredential({}))
+
+        expect(passkey?.lastUsedAt).toBeUndefined()
     })
 })
 

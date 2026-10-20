@@ -65,9 +65,9 @@ import { capabilityRequirementForDeeplink } from '../capability-policy'
 import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
+    useChainActionDeeplink,
     useDiscoverPathDeeplink,
     useE2eFixtureDeeplink,
-    useKeyregDeeplink,
     useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
     useRecoverAddressDeeplink,
@@ -192,7 +192,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
-    const submitKeyreg = useKeyregDeeplink()
+    const submitChainAction = useChainActionDeeplink()
     const openBrowser = useBrowserDeeplink()
     const openDiscoverPath = useDiscoverPathDeeplink()
     const handlePeraWebImport = usePeraWebImportDeeplink()
@@ -486,7 +486,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CHAIN_ACTION: {
-                    await submitKeyreg(parsedData)
+                    await submitChainAction(parsedData)
                     break
                 }
 

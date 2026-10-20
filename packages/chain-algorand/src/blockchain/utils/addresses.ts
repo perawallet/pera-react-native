@@ -23,6 +23,9 @@ export const isValidAlgorandAddress = (address?: string): boolean => {
     }
 }
 
+export const algorandPublicKeyOf = (address: string): Uint8Array =>
+    decodeAddress(address).publicKey
+
 export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
     return encodeAddress(bytes)
 }

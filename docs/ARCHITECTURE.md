@@ -228,8 +228,10 @@ no fallback and should surface as unavailable.
 
 Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client
 of its own: the Pera client in `packages/shared/src/api/query-client.ts` is the one place that adds
-the API key and the device headers. It is built for every configured scope, on every chain. It adds
-the integrity token only as the web build's Bearer, so a call to an integrity-guarded route (the
+the credential and the device headers. It is built for every configured scope, on every chain. The
+credential is the API key on native and the integrity token as a Bearer on web, where the extension
+bakes no key; there a refused Pera call throws `IntegrityRequiredError` and a guarded call waits up
+to the realm's bound for a token still on its way. A call to an integrity-guarded route (the
 card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
 `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 
@@ -242,6 +244,8 @@ node applies. Algorand keeps the context in
 `packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
 and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
 Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
+The app lays a developer's per-network endpoint override from the network store over that record,
+and only over networks the chain's config already carries.
 
 ## Account types share one signing path
 
@@ -269,9 +273,11 @@ rather than waiting for a screen that never opens.
 A transaction request carries chain-neutral `UnsignedTransaction`s. It takes its chain from its
 transactions' scope and its signers from the chain planner's `plan`, because only the chain can read
 its payload. One built for a network other than its chain's selected one fails with
-`ScopeChangedError`. Algorand's group facts (the full group, signer overrides, request bytes, fee
-adjustments) ride in its `chainData.algorand`. A request persisted in an older shape can still
-rehydrate, so the machine refuses any whose transactions aren't chain-neutral.
+`ScopeChangedError`. What a source sends beside the transactions (the full group, signer overrides,
+request bytes, fee adjustments) is the request's `chainData`, opaque to the signing package: a source
+builds it with the planner adapter's `signRequestChainData`, and the pipeline reads it back through
+`reviewGroupOf` and `handoffDeliveryOf`, so only the chain knows its shape. A request persisted in an
+older shape can still rehydrate, so the machine refuses any whose transactions aren't chain-neutral.
 
 An Algorand request is checked and grouped by the Algorand transactions it carries: group integrity
 over the full group, and one group per account each transaction signs for, whose rekey is followed

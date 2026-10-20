@@ -769,7 +769,9 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
             expect(callbacks?.onProposed).toBe(onProposed)
         })
 
-        it('builds the multisig handoff from its Algorand group facts', () => {
+        it("builds the multisig handoff from its chain's group facts", () => {
+            registerFakePlannerAdapter({ chainId: SECOND_CHAIN_SCOPE.chainId })
+
             expect(sourceOf().handoffDelivery).toEqual({
                 clientId: 'peer-1',
                 payloadId: 77,
@@ -793,7 +795,6 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
                 data: {
                     type: 'transactions',
                     transactions: [txs[0], txs[2]],
-                    chainData: {},
                 },
                 signerAddress: OURS,
                 originalIndices: [0, 2],
@@ -802,7 +803,6 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
                 data: {
                     type: 'transactions',
                     transactions: [txs[1]],
-                    chainData: {},
                 },
                 signerAddress: ALSO_OURS,
                 originalIndices: [1],

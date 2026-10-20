@@ -19,11 +19,13 @@ import { useStyles } from './styles'
 export type NodeSettingsChainNetworksProps = {
     chainSections: NodeSettingsChainSection[]
     onSelect: (chainId: ChainId, networkId: NetworkId) => void
+    onOverrideEndpoint: (chainId: ChainId, networkId: NetworkId) => void
 }
 
 export const NodeSettingsChainNetworks = ({
     chainSections,
     onSelect,
+    onOverrideEndpoint,
 }: NodeSettingsChainNetworksProps) => {
     const styles = useStyles()
 
@@ -49,6 +51,12 @@ export const NodeSettingsChainNetworks = ({
                             row={row}
                             onSelect={() =>
                                 onSelect(section.chainId, row.networkId)
+                            }
+                            onOverrideEndpoint={() =>
+                                onOverrideEndpoint(
+                                    section.chainId,
+                                    row.networkId,
+                                )
                             }
                         />
                     ))}

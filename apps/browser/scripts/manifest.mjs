@@ -89,13 +89,19 @@ export const stampManifest = (
 
 /**
  * Throws when a production build would ship without what it needs. Runs
- * before the bundle so a misconfigured release fails in seconds.
+ * before the bundle so a misconfigured release fails in seconds. The
+ * extension bakes no API key (web-config.mjs), so the integrity token is its
+ * only credential and every flag of it must be on.
  */
-export const assertReleaseEnv = ({ appEnvironment, hasBackendApiKey }) => {
-    if (appEnvironment === 'production' && !hasBackendApiKey) {
+export const assertReleaseEnv = ({ appEnvironment, integrityFlags }) => {
+    if (appEnvironment !== 'production') return
+    const off = Object.entries(integrityFlags)
+        .filter(([, isOn]) => !isOn)
+        .map(([envVar]) => envVar)
+    if (off.length > 0) {
         throw new Error(
-            'BACKEND_API_KEY is empty in a production build; every Pera ' +
-                'backend call would fail',
+            `${off.join(', ')} off in a production build; without the ` +
+                'integrity token every guarded Pera backend call would fail',
         )
     }
 }

@@ -344,6 +344,7 @@ export default defineConfig({
                 test: {
                     name: 'integration',
                     setupFiles: [
+                        './vitest.realm-setup.ts',
                         './vitest.setup.ts',
                         './vitest.integration-setup.ts',
                     ],

@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import {
     chainModeFor,
     defaultNetworkForTier,
+    isChainId,
     isNetworkId,
     isWalletMode,
     LEGACY_CHAIN_ID,
@@ -24,7 +25,7 @@ import {
     type NetworkId,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import { config } from '@perawallet/wallet-core-config'
+import { chainEndpointsFor, config } from '@perawallet/wallet-core-config'
 import {
     guardedPersist,
     registerStore,
@@ -40,6 +41,7 @@ import {
     selectionForLegacyNetwork,
     withLegacyOverride,
 } from './legacy-network'
+import type { EndpointOverrides } from '../node-endpoint'
 
 const STORE_NAME = 'network-store'
 const STORE_VERSION = 3
@@ -54,6 +56,10 @@ export type CustomNetwork = { id: NetworkId } & Readonly<
 
 type CustomNetworksByChain = Partial<Record<ChainId, CustomNetwork[]>>
 
+export type EndpointOverridesByChain = Partial<
+    Record<ChainId, EndpointOverrides>
+>
+
 type NetworkSelection = {
     mode: WalletMode
     /** Developer-mode overrides; kept, unread, while the wallet is live. */
@@ -63,12 +69,20 @@ type NetworkSelection = {
 
 type NetworkState = BaseStoreState &
     NetworkSelection & {
+        /** Developer-chosen node URLs; each replaces one network's configured endpoint. */
+        endpointOverridesByChain: EndpointOverridesByChain
         setMode: (mode: WalletMode) => void
         /** Writes a developer-mode override; the chain's default test network clears it. */
         selectNetwork: (chainId: ChainId, networkId: NetworkId) => void
         /** Replaces the chain's network with the same id, never merging into it. */
         setCustomNetwork: (chainId: ChainId, network: CustomNetwork) => void
         clearCustomNetwork: (chainId: ChainId, networkId: NetworkId) => void
+        setEndpointOverride: (
+            chainId: ChainId,
+            networkId: NetworkId,
+            url: string,
+        ) => void
+        clearEndpointOverride: (chainId: ChainId, networkId: NetworkId) => void
     }
 
 // A registered chain's override must name one of its test networks or a saved
@@ -134,6 +148,12 @@ export const selectCustomNetwork = (
     networkId: NetworkId,
 ): CustomNetwork | undefined =>
     state.customNetworksByChain[chainId]?.find(entry => entry.id === networkId)
+
+export const selectEndpointOverride = (
+    state: { endpointOverridesByChain: EndpointOverridesByChain },
+    chainId: ChainId,
+    networkId: NetworkId,
+): string | undefined => state.endpointOverridesByChain[chainId]?.[networkId]
 
 // The store is created at module load, before every provider is wired, so the
 // selection is read straight off the default rather than resolved through the registry.
@@ -213,6 +233,42 @@ export const mergePersistedNetwork = (persisted: unknown): NetworkSelection => {
     }
 }
 
+/**
+ * Keeps only overrides for a network the chain's config still carries a URL
+ * for, so a network dropped from the build takes its override with it.
+ */
+export const mergePersistedEndpointOverrides = (
+    raw: unknown,
+): EndpointOverridesByChain => {
+    if (typeof raw !== 'object' || raw === null) return {}
+    return Object.fromEntries(
+        Object.entries(raw as Record<string, unknown>).flatMap(
+            ([chainId, entries]) => {
+                if (
+                    !isChainId(chainId) ||
+                    typeof entries !== 'object' ||
+                    entries === null
+                ) {
+                    return []
+                }
+                const configured = chainEndpointsFor(chainId)
+                const kept = Object.entries(
+                    entries as Record<string, unknown>,
+                ).filter(
+                    ([networkId, url]) =>
+                        typeof url === 'string' &&
+                        url !== '' &&
+                        typeof configured[networkId] === 'string' &&
+                        configured[networkId] !== '',
+                )
+                return kept.length === 0
+                    ? []
+                    : [[chainId, Object.fromEntries(kept)]]
+            },
+        ),
+    )
+}
+
 export const migrateNetworkState = (
     persisted: unknown,
     version: number,
@@ -227,6 +283,7 @@ export const useNetworkStore: UseBoundStore<
     guardedPersist(
         set => ({
             ...initialState(),
+            endpointOverridesByChain: {},
             setMode: mode => set({ mode }),
             selectNetwork: (chainId, networkId) =>
                 set(state => {
@@ -266,7 +323,29 @@ export const useNetworkStore: UseBoundStore<
                         ).filter(entry => entry.id !== networkId),
                     },
                 })),
-            resetState: () => set(initialState()),
+            setEndpointOverride: (chainId, networkId, url) =>
+                set(state => ({
+                    endpointOverridesByChain: {
+                        ...state.endpointOverridesByChain,
+                        [chainId]: {
+                            ...state.endpointOverridesByChain[chainId],
+                            [networkId]: url,
+                        },
+                    },
+                })),
+            clearEndpointOverride: (chainId, networkId) =>
+                set(state => {
+                    const { [networkId]: _removed, ...rest } =
+                        state.endpointOverridesByChain[chainId] ?? {}
+                    return {
+                        endpointOverridesByChain: {
+                            ...state.endpointOverridesByChain,
+                            [chainId]: rest,
+                        },
+                    }
+                }),
+            resetState: () =>
+                set({ ...initialState(), endpointOverridesByChain: {} }),
         }),
         {
             name: STORE_NAME,
@@ -276,6 +355,7 @@ export const useNetworkStore: UseBoundStore<
                 mode: state.mode,
                 selectedNetworkByChain: state.selectedNetworkByChain,
                 customNetworksByChain: state.customNetworksByChain,
+                endpointOverridesByChain: state.endpointOverridesByChain,
             }),
             migrate: migrateNetworkState,
             merge: (persisted, current) => {
@@ -301,7 +381,14 @@ export const useNetworkStore: UseBoundStore<
 
                 // Spread over `current`: the validator returns data only, and
                 // replace:true would otherwise drop the actions.
-                return { ...current, ...mergePersistedNetwork(persisted) }
+                return {
+                    ...current,
+                    ...mergePersistedNetwork(persisted),
+                    endpointOverridesByChain: mergePersistedEndpointOverrides(
+                        (persisted as { endpointOverridesByChain?: unknown })
+                            .endpointOverridesByChain,
+                    ),
+                }
             },
         },
     ),

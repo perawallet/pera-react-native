@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import { PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { IntegrityBlockedView } from './IntegrityBlockedView'
 
 export type OfflineTolerantViewProps = {
     /**
@@ -31,6 +32,14 @@ export type OfflineTolerantViewProps = {
      * succeed.
      */
     isUnavailable?: boolean
+    /**
+     * The Pera backend refused the request for lack of a valid web integrity
+     * token: `isError && isIntegrityRequiredError(error)` from the same query
+     * as `isError`, computed by the caller's hook. Outranks the error arm,
+     * whose generic copy would send the user chasing the wrong fault. Never
+     * true on native, whose requests carry the API key.
+     */
+    isIntegrityBlocked?: boolean
     /**
      * The request failed while the device is online. Leave unset on surfaces
      * that render their own error UI — they delegate the offline arm only.
@@ -58,13 +67,14 @@ export type OfflineTolerantViewProps = {
  * story instead of hand-rolling the fork.
  *
  * It covers the middle of the precedence
- * (`data → offline → error → loading → empty`): callers keep owning `data`,
- * `loading` and `empty`, which stay surface-specific, and pass whatever they
- * would have rendered as `children`.
+ * (`data → unavailable → offline → integrity → error → loading → empty`):
+ * callers keep owning `data`, `loading` and `empty`, which stay
+ * surface-specific, and pass whatever they would have rendered as `children`.
  */
 export const OfflineTolerantView = ({
     isOffline,
     isUnavailable = false,
+    isIntegrityBlocked = false,
     isError = false,
     onRetry,
     retryLabel,
@@ -75,7 +85,7 @@ export const OfflineTolerantView = ({
 }: OfflineTolerantViewProps) => {
     const { t } = useLanguage()
 
-    if (!isUnavailable && !isOffline && !isError) {
+    if (!isUnavailable && !isOffline && !isIntegrityBlocked && !isError) {
         return <>{children}</>
     }
 
@@ -112,6 +122,10 @@ export const OfflineTolerantView = ({
                 testID={offlineTestID}
             />
         )
+    }
+
+    if (isIntegrityBlocked) {
+        return <IntegrityBlockedView onRetry={onRetry} />
     }
 
     return (

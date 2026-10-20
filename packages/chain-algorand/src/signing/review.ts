@@ -31,6 +31,7 @@ import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../network-id'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { readAlgorandTransaction } from './planner'
+import { algorandGroupDataOf } from './requestChainData'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
@@ -97,7 +98,7 @@ const algorandTransactionsOf = (
     })
     return {
         transactions,
-        rawTransactionsBase64: data.chainData.algorand?.rawTransactionsBase64,
+        rawTransactionsBase64: algorandGroupDataOf(data)?.rawTransactionsBase64,
         heldSigners: [...heldSigners],
     }
 }

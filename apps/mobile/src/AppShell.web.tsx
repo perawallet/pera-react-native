@@ -61,11 +61,14 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { IntegrityBanner } from '@components/IntegrityBanner'
 import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { useNetworkStatusListener } from '@modules/network'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
+import { subscribeToIntegrityReady } from '@hooks/useIntegrityAccessStore.web'
+import { useIntegrityAccessSync } from '@hooks/useIntegrityAccessSync.web'
 import { useWebAppShell } from './useWebAppShell.web'
 import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 
@@ -138,7 +141,9 @@ const MainSurfaceLifecycle = (): null => {
 // Native registers from RootComponent before any account exists; a Cloud
 // Backup restore during onboarding needs that device id.
 const DeviceRegistrar = (): null => {
-    useDeviceRegistration(useDeviceAccountRegistrations())
+    useDeviceRegistration(useDeviceAccountRegistrations(), {
+        subscribeToRetryEdge: subscribeToIntegrityReady,
+    })
     return null
 }
 
@@ -330,6 +335,8 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                     {/* Same contract as RootComponent's: LAST node inside the
                         card so it paints above navigation and sheets. */}
                     <OfflineBanner />
+                    {/* Hides itself while offline, so the two pills never stack. */}
+                    <IntegrityBanner />
                 </PWView>
             </GestureHandlerRootView>
         </SafeAreaProvider>
@@ -339,6 +346,7 @@ const AppShellThemedRoot = (): React.JSX.Element => {
 const AppShellContent = (): React.JSX.Element => {
     const theme = useAppTheme()
     useIntegrityTokenSync()
+    useIntegrityAccessSync()
     useCrashReporterBinding()
 
     return (

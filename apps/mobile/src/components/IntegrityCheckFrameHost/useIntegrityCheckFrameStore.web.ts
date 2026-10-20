@@ -16,14 +16,22 @@ type IntegrityCheckFrameState = {
     url: string | null
     /** Epoch milliseconds. */
     deadlineAt: number | null
+    /** The check page asks to be shown: an interactive challenge waits for a click. */
     isExpanded: boolean
     // The frame is gone but the host port stays held until the worker ends
     // the attempt, so the solve cannot lose a race with the port closing.
     isFinished: boolean
+    /** The user chose Not now; the attempt and its host port stay alive behind the hidden frame. */
+    isDismissed: boolean
+    /** Bumped by Verify; the host re-shows a live frame or asks for a new attempt. */
+    verifyNonce: number
     show: (url: string, deadlineAt: number) => void
     setExpanded: (isExpanded: boolean) => void
     finish: () => void
     hide: () => void
+    dismiss: () => void
+    undismiss: () => void
+    requestVerify: () => void
 }
 
 export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
@@ -32,8 +40,16 @@ export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
         deadlineAt: null,
         isExpanded: false,
         isFinished: false,
+        isDismissed: false,
+        verifyNonce: 0,
         show: (url, deadlineAt) =>
-            set({ url, deadlineAt, isExpanded: false, isFinished: false }),
+            set({
+                url,
+                deadlineAt,
+                isExpanded: false,
+                isFinished: false,
+                isDismissed: false,
+            }),
         setExpanded: isExpanded => set({ isExpanded }),
         finish: () => set({ isExpanded: false, isFinished: true }),
         hide: () =>
@@ -42,6 +58,11 @@ export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
                 deadlineAt: null,
                 isExpanded: false,
                 isFinished: false,
+                isDismissed: false,
             }),
+        dismiss: () => set({ isDismissed: true }),
+        undismiss: () => set({ isDismissed: false }),
+        requestVerify: () =>
+            set(state => ({ verifyNonce: state.verifyNonce + 1 })),
     }),
 )

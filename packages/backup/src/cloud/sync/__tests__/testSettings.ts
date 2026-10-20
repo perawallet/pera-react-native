@@ -17,4 +17,5 @@ export const TEST_SETTINGS: BackupSettings = {
     language: 'system',
     confirmationMode: 'slide',
     launchAccount: { mode: 'lastUsed', address: null },
+    accountOrder: { mode: 'manual', addresses: [] },
 }

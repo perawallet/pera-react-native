@@ -44,7 +44,7 @@ export interface Passkey {
     algorithm: 'P256'
     /** ms since epoch */
     createdAt: number
-    /** ms since epoch; populated from native lastUsedAt when available */
+    /** ms since epoch; the iOS provider records seconds, normalized on projection */
     lastUsedAt?: number
     /**
      * `keystore` — passkey reconciled with a keystore key.
@@ -162,7 +162,7 @@ export const keyToPasskey = (key: Key): Passkey | null => {
         userName: readString(meta, 'userName'),
         algorithm: 'P256',
         createdAt: readNumber(meta, 'createdAt') ?? Date.now(),
-        lastUsedAt: readNumber(meta, 'lastUsedAt'),
+        lastUsedAt: normalizeTimestamp(readNumber(meta, 'lastUsedAt')),
         source: 'keystore',
         needsMigration: isMigrationFlagged(meta),
     }
@@ -213,6 +213,7 @@ export const credentialToPasskey = (
         userName: credential.userName,
         algorithm: 'P256',
         createdAt: createdAt ?? Date.now(),
+        lastUsedAt: normalizeTimestamp(credential.lastUsedAt),
         source: 'native',
         // `PasskeyAutofillCredentialIdentity` has no metadata bag, so the
         // marker cannot be read here; the flat-record source supplies it.

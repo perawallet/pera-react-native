@@ -32,6 +32,7 @@ export const InboxScreen = () => {
         isRefetching,
         isError,
         isOffline,
+        isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
         refetch,
@@ -63,6 +64,7 @@ export const InboxScreen = () => {
                     <OfflineTolerantView
                         isOffline={isOffline}
                         isUnavailable={isUnavailableOnNetwork}
+                        isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         onRetry={refetch}
                     >

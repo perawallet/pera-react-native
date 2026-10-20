@@ -14,7 +14,10 @@ type BackoffRecord = { failures: number; nextAttemptAt: number }
 
 export type SessionBackoff = {
     isBlocked: () => Promise<boolean>
-    recordFailure: () => Promise<void>
+    /** `floorMs` overrides the configured floor for this failure only. */
+    recordFailure: (options?: { floorMs?: number }) => Promise<void>
+    /** Blocks for the full cap at once, for a failure retrying cannot fix this session. */
+    exhaust: () => Promise<void>
     clear: () => Promise<void>
 }
 
@@ -43,12 +46,22 @@ export const createSessionBackoff = ({
 
     return {
         isBlocked: async () => (await read()).nextAttemptAt > Date.now(),
-        recordFailure: async () => {
+        recordFailure: async options => {
             const { failures } = await read()
             const next = failures + 1
-            const delay = Math.min(floorMs * 2 ** (next - 1), capMs)
+            const floor = options?.floorMs ?? floorMs
+            const delay = Math.min(floor * 2 ** (next - 1), capMs)
             await chrome.storage.session.set({
                 [key]: { failures: next, nextAttemptAt: Date.now() + delay },
+            })
+        },
+        exhaust: async () => {
+            const { failures } = await read()
+            await chrome.storage.session.set({
+                [key]: {
+                    failures: failures + 1,
+                    nextAttemptAt: Date.now() + capMs,
+                },
             })
         },
         clear: async () => {

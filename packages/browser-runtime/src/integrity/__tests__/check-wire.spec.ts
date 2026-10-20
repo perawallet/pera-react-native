@@ -18,8 +18,10 @@ import {
     buildCheckUrl,
     frameEventFor,
     isCheckToken,
+    INTEGRITY_CONTROL_SCOPE,
     isIntegrityEnrolRequest,
     isRetryableCheckError,
+    parseIntegrityControlMessage,
     parseCheckPageMessage,
     parseCheckPortMessage,
     parseIntegrityEnrolDecision,
@@ -208,5 +210,67 @@ describe('check wire', () => {
         expect(parseIntegrityEnrolDecision(undefined)).toEqual({
             action: 'none',
         })
+    })
+
+    it.each(['user-retry', 'onboarding-started'])(
+        'recognises the %s enrol reason',
+        reason => {
+            expect(
+                isIntegrityEnrolRequest({
+                    scope: INTEGRITY_ENROL_SCOPE,
+                    kind: 'request',
+                    reason,
+                }),
+            ).toBe(true)
+        },
+    )
+
+    it('parses the UI-to-worker control messages', () => {
+        expect(
+            parseIntegrityControlMessage({
+                scope: INTEGRITY_CONTROL_SCOPE,
+                kind: 'retry',
+                soft: true,
+            }),
+        ).toEqual({ scope: INTEGRITY_CONTROL_SCOPE, kind: 'retry', soft: true })
+        expect(
+            parseIntegrityControlMessage({
+                scope: INTEGRITY_CONTROL_SCOPE,
+                kind: 'retry',
+            }),
+        ).toEqual({
+            scope: INTEGRITY_CONTROL_SCOPE,
+            kind: 'retry',
+            soft: false,
+        })
+        expect(
+            parseIntegrityControlMessage({
+                scope: INTEGRITY_CONTROL_SCOPE,
+                kind: 'token-rejected',
+                tokenExpiresAt: 1_800_000_000_000,
+            }),
+        ).toEqual({
+            scope: INTEGRITY_CONTROL_SCOPE,
+            kind: 'token-rejected',
+            tokenExpiresAt: 1_800_000_000_000,
+        })
+        expect(
+            parseIntegrityControlMessage({
+                scope: INTEGRITY_CONTROL_SCOPE,
+                kind: 'token-rejected',
+            }),
+        ).toEqual({
+            scope: INTEGRITY_CONTROL_SCOPE,
+            kind: 'token-rejected',
+            tokenExpiresAt: null,
+        })
+    })
+
+    it.each([
+        undefined,
+        { scope: INTEGRITY_ENROL_SCOPE, kind: 'retry' },
+        { scope: INTEGRITY_CONTROL_SCOPE, kind: 'mint-now' },
+    ])('refuses %j as a control message', message => {
+        expect(parseIntegrityControlMessage(message)).toBeNull()
     })
 })
