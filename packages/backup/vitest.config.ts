@@ -31,10 +31,6 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/credentials/buildAccount.ts',
             ),
-            '@perawallet/wallet-core-accounts/credentials-model': path.resolve(
-                __dirname,
-                '../accounts/src/models/credentials.ts',
-            ),
             // Test-only: the round-trip spec builds a real KMS core over an
             // in-memory secp256k1 keystore.
             '@perawallet/wallet-core-kms/create-kms-core': path.resolve(

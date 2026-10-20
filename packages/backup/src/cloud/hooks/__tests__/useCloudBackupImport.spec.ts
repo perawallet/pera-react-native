@@ -86,12 +86,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             'buildAccount' | 'withEnablement'
         >
     >('@perawallet/wallet-core-accounts/build-account')
-    const { CHAIN_ENABLED_BY } = await vi.importActual<
-        Pick<
-            typeof import('@perawallet/wallet-core-accounts'),
-            'CHAIN_ENABLED_BY'
-        >
-    >('@perawallet/wallet-core-accounts/credentials-model')
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {
             accounts: storeState.accounts,
@@ -110,7 +104,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         buildAccount,
         withEnablement,
-        CHAIN_ENABLED_BY,
         chainAccountOf: (account: WalletAccount, chainId: string) =>
             account.chains[chainId as 'algorand'],
         hasCustody: (account: WalletAccount, kind: string) =>

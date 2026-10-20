@@ -11,7 +11,6 @@
  */
 
 import { z } from 'zod'
-import { CHAIN_ENABLED_BY } from '@perawallet/wallet-core-accounts'
 
 /**
  * The item kinds the backup format itself defines. Every other `type` an
@@ -78,11 +77,11 @@ const updatedAt = nonNegativeInt.optional()
  *  collide all such items onto a single entry. */
 const address = z.string().min(1)
 
-/** When and how the chain was enabled on the account. A record written before
- *  this was recorded has neither; an enabler this build doesn't know reads as
- *  absent rather than dropping the entry. */
+/** When and how the chain was enabled on the account; a record written before
+ *  this was recorded has neither. Restore reads only whether the entry carries
+ *  it, so an enabler a newer build adds still parses. */
 const enabledAt = nonNegativeInt.optional().catch(undefined)
-const enabledBy = z.enum(CHAIN_ENABLED_BY).optional().catch(undefined)
+const enabledBy = z.string().min(1).optional().catch(undefined)
 
 export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),

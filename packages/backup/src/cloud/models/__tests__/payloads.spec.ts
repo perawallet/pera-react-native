@@ -167,7 +167,7 @@ describe('account entry enablement', () => {
         expect(parsed).not.toHaveProperty('enabledBy', expect.anything())
     })
 
-    test('reads an enabler it does not know as absent, keeping the entry', () => {
+    test('keeps an enabler a newer build added', () => {
         expect(
             accountEntryPayloadSchema.parse({
                 type: 'watch',
@@ -175,6 +175,26 @@ describe('account entry enablement', () => {
                 enabledAt: 4,
                 enabledBy: 'teleported',
             }),
-        ).toMatchObject({ type: 'watch', address: 'W', enabledBy: undefined })
+        ).toMatchObject({
+            type: 'watch',
+            address: 'W',
+            enabledBy: 'teleported',
+        })
+    })
+
+    test('reads malformed enablement as absent, keeping the entry', () => {
+        expect(
+            accountEntryPayloadSchema.parse({
+                type: 'watch',
+                address: 'W',
+                enabledAt: -1,
+                enabledBy: 7,
+            }),
+        ).toMatchObject({
+            type: 'watch',
+            address: 'W',
+            enabledAt: undefined,
+            enabledBy: undefined,
+        })
     })
 })
