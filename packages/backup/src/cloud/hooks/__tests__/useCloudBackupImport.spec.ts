@@ -1465,12 +1465,13 @@ describe('useCloudBackupImport on another chain', () => {
                 'imp',
                 'base',
                 'created',
+                { expectedAddress: '0xkey' },
             )
             expect(storeState.accounts).toHaveLength(1)
             expect(summary).toMatchObject({ imported: 1, failed: [] })
         })
 
-        test("fails a later chain whose address isn't the key's", async () => {
+        test("fails a later chain the store refuses for an address that isn't the key's", async () => {
             const keyAccount = {
                 ...importedKey(),
                 custody: { kind: 'local', seed: null },
@@ -1480,13 +1481,7 @@ describe('useCloudBackupImport on another chain', () => {
                 storeState.accounts = [keyAccount as never]
                 return keyAccount
             })
-            enableChainMock.mockResolvedValue({
-                ...keyAccount,
-                chains: {
-                    ...keyAccount.chains,
-                    base: { address: '0xother', keyPairId: 'raw' },
-                },
-            })
+            enableChainMock.mockRejectedValue(new Error('address mismatch'))
             const { current } = renderImport()
 
             const summary = await current.importAccounts([
@@ -1494,8 +1489,14 @@ describe('useCloudBackupImport on another chain', () => {
                 { ...standaloneKeyEntry(), chain: 'base' } as PulledAccount,
             ])
 
+            expect(enableChainMock).toHaveBeenCalledWith(
+                'imp',
+                'base',
+                'created',
+                { expectedAddress: '0xkey' },
+            )
             expect(summary.failed).toEqual([
-                { address: '0xkey', reason: expect.any(String) },
+                { address: '0xkey', reason: 'address mismatch' },
             ])
         })
 
@@ -1715,6 +1716,24 @@ describe('useCloudBackupImport restoring enablement', () => {
         expect(storeState.accounts[0]?.chains.algorand?.enabledBy).toBe(
             'created',
         )
+    })
+
+    test('leaves an account already on the device out of the probe', async () => {
+        storeState.accounts = [
+            {
+                id: 'held',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'WALGO' } },
+            } as never,
+        ]
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            recordedWatch('WALGO', 'algorand', 'created'),
+        ])
+
+        expect(summary.skippedDuplicate).toBe(1)
+        expect(discoverChainsMock).not.toHaveBeenCalled()
     })
 
     test('looks for activity once per restored account, after the batch', async () => {

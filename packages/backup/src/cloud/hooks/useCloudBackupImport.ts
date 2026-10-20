@@ -12,7 +12,6 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    AddressMismatchError,
     buildAccount,
     chainAccountOf,
     DuplicateAccountError,
@@ -455,8 +454,8 @@ const importHdChainAccount = async (
 /** The key is hex only until it is decoded here, and the bytes are zeroed
  *  whether or not the import succeeds. The account's one secret serves every
  *  chain entry: the first imports the key and the rest join the account it
- *  created, the key's address on each chain checked against the entry.
- *  Returns 1 when the call created the account. */
+ *  created, the key's address on each chain checked against the entry before
+ *  anything is written. Returns 1 when the call created the account. */
 const importStandaloneKeyAccount = async (
     chainId: ChainId,
     payload: StandaloneKeyAddressPayload,
@@ -468,16 +467,11 @@ const importStandaloneKeyAccount = async (
         hasCustody(groupHolder, 'local') &&
         groupHolder.custody.seed === null
     ) {
-        const joined = await useAccountsStore
+        await useAccountsStore
             .getState()
-            .enableChain(groupHolder.id, chainId, restoreStampOf(payload))
-        const address = chainAccountOf(joined, chainId)?.address
-        if (
-            address === undefined ||
-            !isSameAddress(chainId, address, payload.address)
-        ) {
-            throw new AddressMismatchError(payload.address, address ?? '')
-        }
+            .enableChain(groupHolder.id, chainId, restoreStampOf(payload), {
+                expectedAddress: payload.address,
+            })
         return 0
     }
     if (!secretsPayload || !('privateKey' in secretsPayload)) {
@@ -777,6 +771,7 @@ const importBatch = async (
     for (const entries of groups) {
         let groupHolder: WalletAccount | undefined
         const restoredChains: ChainId[] = []
+        let hasRestoredEntry = false
         for (const account of entries) {
             try {
                 summary.imported += await importOneAccount(
@@ -785,6 +780,7 @@ const importBatch = async (
                     seedKeyIdByFirstDerivedAddress,
                     groupHolder,
                 )
+                hasRestoredEntry = true
                 if (restoreStampOf(account.addressPayload) === 'restore') {
                     restoredChains.push(chainOf(context, account))
                 }
@@ -802,7 +798,9 @@ const importBatch = async (
             }
             groupHolder ??= holderOf(context, account)
         }
-        if (groupHolder) {
+        // An account already on the device restored nothing, so it is left
+        // to the probes it had when it was added.
+        if (groupHolder && hasRestoredEntry) {
             restoredAccountIds.add(groupHolder.id)
             stampRestoredEntries(context, groupHolder.id, restoredChains)
         }
