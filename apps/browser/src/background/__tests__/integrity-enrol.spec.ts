@@ -31,7 +31,7 @@ const NOW = Date.parse('2026-09-23T12:00:00.000Z')
 const markers = new Map<string, { kid: string; enrolledAt: string }>()
 const mockGetInstallKeyId = vi.fn(async () => KID)
 const mockEnrolDevice = vi.fn()
-const mockResumeIntegrityMint = vi.fn(async () => {})
+const mockReplaceTokenAfterEnrolment = vi.fn(async () => {})
 const mockClearInstallKey = vi.fn(async () => {})
 const mockClearSessionIntegrityToken = vi.fn(async () => {})
 const flags = { mint: true, enrol: true }
@@ -94,7 +94,7 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 })
 
 vi.mock('../integrity', () => ({
-    resumeIntegrityMint: mockResumeIntegrityMint,
+    replaceTokenAfterEnrolment: mockReplaceTokenAfterEnrolment,
 }))
 
 const ATTEMPT_KEY = 'integrity:enrol-attempt'
@@ -457,7 +457,7 @@ describe('integrity enrolment', () => {
             await vi.waitFor(() => expect(stranger.isDisconnected()).toBe(true))
         })
 
-        it('enrols with the solve, stores the marker and resumes minting', async () => {
+        it('enrols with the solve, stores the marker and replaces the token it held', async () => {
             mockEnrolDevice.mockResolvedValue({ enrolled: true, kid: KID })
             fake.session.set(NEEDED_KEY, 1)
             fake.session.set(LAST_FAILURE_KEY, {
@@ -483,7 +483,7 @@ describe('integrity enrolment', () => {
             expect(fake.alarms.has(module.INTEGRITY_ENROL_DEADLINE_ALARM)).toBe(
                 false,
             )
-            expect(mockResumeIntegrityMint).toHaveBeenCalledTimes(1)
+            expect(mockReplaceTokenAfterEnrolment).toHaveBeenCalledTimes(1)
             expect(fake.session.has(LAST_FAILURE_KEY)).toBe(false)
         })
 
@@ -521,7 +521,7 @@ describe('integrity enrolment', () => {
                 await vi.waitFor(() => expect(attempt().phase).toBe('done'))
                 expect(markers.has('live')).toBe(false)
                 expect(fake.session.has(BACKOFF_KEY)).toBe(true)
-                expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
+                expect(mockReplaceTokenAfterEnrolment).not.toHaveBeenCalled()
             },
         )
 
@@ -537,7 +537,7 @@ describe('integrity enrolment', () => {
             expect(fake.session.has(BACKOFF_KEY)).toBe(false)
             expect(fake.session.has(NEEDED_KEY)).toBe(true)
             expect(markers.has('live')).toBe(false)
-            expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
+            expect(mockReplaceTokenAfterEnrolment).not.toHaveBeenCalled()
         })
 
         const rejectedWith = (code: string) =>

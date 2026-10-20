@@ -48,7 +48,7 @@ import {
     writeAttempt,
     type EnrolAttempt,
 } from './enrol-attempt'
-import { resumeIntegrityMint } from './integrity'
+import { replaceTokenAfterEnrolment } from './integrity'
 import { clearLastFailure, recordLastFailure } from './integrity-failure'
 import { withNamedLock } from './named-lock'
 import { readActiveDeployment } from './network'
@@ -478,7 +478,8 @@ const handleCheckPortMessage = async (
                         message.turnstileToken,
                     )
                     await finishAttempt(enrolling, outcome, failure)
-                    if (outcome === 'enrolled') void resumeIntegrityMint()
+                    if (outcome === 'enrolled')
+                        void replaceTokenAfterEnrolment()
                     return
                 }
             }
