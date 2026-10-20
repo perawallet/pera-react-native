@@ -126,6 +126,10 @@ const { mockAddSignRequest } = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    // The chain's planner keeps the facts its own way; this one keeps them as given.
+    plannerChainAdapters: {
+        get: () => ({ signRequestChainData: (facts: unknown) => facts }),
+    },
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum sender in every fixture here — the calculator's real fast

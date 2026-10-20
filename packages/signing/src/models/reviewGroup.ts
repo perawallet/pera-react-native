@@ -11,28 +11,44 @@
  */
 
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import { plannerChainAdapters } from '../chain-adapter'
+import { isUnsignedTransactionRequest } from './guards'
 import type { FeeAdjustment, TransactionSignRequest } from './index'
 
-/** What a transaction request puts in front of the user. */
-export type ReviewGroup = {
-    /** The full group when the source filtered `txs` down to a subset, else `txs`. */
-    transactions: UnsignedTransaction[]
+/** The facts a source sends beside the transactions it asks to sign; its chain keeps them in `chainData`. */
+export type SignRequestGroupFacts = {
+    /**
+     * The full group. A source that filters `txs` down to the subset the
+     * wallet signs **must** set it, so the pipeline can check the group's
+     * integrity; leave it unset when `txs` already is the full group.
+     */
     groupContext?: UnsignedTransaction[]
-    /** Which `transactions` slots `txs` maps to; unset means every one. */
+    /** Which `groupContext` slots `txs` maps to. */
     signableIndices?: number[]
-    /** Index in `txs` -> the account that signs for it. */
+    /** Index in `txs` -> the account that signs for it, as the source named it; overrides the sender. */
     signerOverrides?: Map<number, string>
+    /** Each of `txs` as the source sent it, base64, for the round-trip check. */
+    rawTransactionsBase64?: string[]
+    /** Fees the pipeline raised to a required minimum, indexed in `groupContext` space. */
     feeAdjustments?: FeeAdjustment[]
 }
 
+/** What a transaction request puts in front of the user. */
+export type ReviewGroup = Omit<
+    SignRequestGroupFacts,
+    'rawTransactionsBase64'
+> & {
+    /** The full group when the source filtered `txs` down to a subset, else `txs`. */
+    transactions: UnsignedTransaction[]
+}
+
+// A chain with no planner adapter sends no facts beside its transactions.
 export const reviewGroupOf = (request: TransactionSignRequest): ReviewGroup => {
-    const facts = request.chainData?.algorand
-    const groupContext = facts?.groupContext
-    return {
-        transactions: groupContext ?? request.txs,
-        groupContext,
-        signableIndices: facts?.signableIndices,
-        signerOverrides: facts?.signerOverrides,
-        feeAdjustments: facts?.feeAdjustments,
+    if (isUnsignedTransactionRequest(request)) {
+        const { chainId } = request.txs[0].scope
+        if (plannerChainAdapters.has(chainId)) {
+            return plannerChainAdapters.get(chainId).reviewGroupOf(request)
+        }
     }
+    return { transactions: request.txs }
 }

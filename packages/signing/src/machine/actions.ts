@@ -130,20 +130,22 @@ const transactionApproveOf = (
     )
 }
 
-// WalletConnect-only: a serializable delivery context so the multisig
-// sync-flow handoff can answer the dApp after an app kill. Gated on
-// `payloadId`, which only the WalletConnect handler sets.
+// A serializable delivery context so the multisig sync-flow handoff can
+// answer the dApp after an app kill.
 const handoffDeliveryOf = (
     request: TransactionSignRequest,
+    scope: ChainScope,
 ): SourceMetadata['handoffDelivery'] => {
-    const facts = request.chainData?.algorand
-    if (facts?.payloadId === undefined) return undefined
-    return {
-        clientId: request.transportId ?? '',
-        payloadId: facts.payloadId,
-        indicesToSign: facts.signableIndices ?? [],
-        totalLength: facts.totalLength ?? 0,
+    if (
+        !isUnsignedTransactionRequest(request) ||
+        !plannerChainAdapters.has(scope.chainId)
+    ) {
+        return undefined
     }
+    const delivery = plannerChainAdapters
+        .get(scope.chainId)
+        .handoffDeliveryOf(request)
+    return delivery && { clientId: request.transportId ?? '', ...delivery }
 }
 
 /**
@@ -245,7 +247,7 @@ const buildSourceMetadata = (
                 : undefined,
         },
         handoffDelivery: isTransactionRequest(request)
-            ? handoffDeliveryOf(request)
+            ? handoffDeliveryOf(request, scope)
             : undefined,
     }
 }
@@ -282,7 +284,6 @@ const buildUnsignedTransactionGroups = (
     })
 
     const signedForKeys = signedForAddresses(request, allAccounts, scope)
-    const rawBytes = request.chainData?.algorand?.rawTransactionsBase64
 
     const bySigner = new Map<
         string,
@@ -304,18 +305,12 @@ const buildUnsignedTransactionGroups = (
         data: {
             type: 'transactions',
             transactions: txs,
-            chainData: signedForKeys
-                ? {
-                      algorand: {
-                          indicesToSign: txs.map((_, i) => i),
-                          ...(rawBytes && {
-                              rawTransactionsBase64: indices.map(
-                                  i => rawBytes[i],
-                              ),
-                          }),
-                      },
-                  }
-                : {},
+            ...(signedForKeys && {
+                chainData: plannerAdapterForScope(scope).signableGroupChainData(
+                    request,
+                    indices,
+                ),
+            }),
         },
         source,
         signerAddress,
@@ -350,10 +345,9 @@ const signedForAddresses = (
     const adapter = plannerChainAdapters.get(scope.chainId)
     const addresses = adapter.signedForAddresses(request)
     if (!addresses) return undefined
-    adapter.validateGroup(
-        request.chainData?.algorand?.groupContext ?? request.txs,
-        { isCosigner: request.sourceType === 'multisig-cosign' },
-    )
+    adapter.validateGroup(adapter.reviewGroupOf(request).transactions, {
+        isCosigner: request.sourceType === 'multisig-cosign',
+    })
     const knownAddresses = new Set(
         allAccounts.flatMap(
             a => chainAccountOf(a, scope.chainId)?.address ?? [],

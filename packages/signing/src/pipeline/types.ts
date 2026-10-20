@@ -32,25 +32,24 @@ export interface ChainSignerTransactions {
     indicesToSign: number[]
 }
 
-/** An Algorand group's members the wallet signs, and its bytes as an external request sent them. */
-export interface AlgorandGroupData {
-    indicesToSign: number[]
-    rawTransactionsBase64?: string[]
-}
-
 /** Chain-neutral transactions: each names its scope, and only its chain reads the payload. */
 export interface UnsignedTransactionsSignableData {
     type: 'transactions'
     transactions: UnsignedTransaction[]
-    chainData: { algorand?: AlgorandGroupData }
+    /**
+     * Set only for a group keyed by the account it signs for, by its planner's
+     * `signableGroupChainData`; only that chain reads it.
+     */
+    chainData?: unknown
 }
 
 /**
- * Keyed by the signer its planner names, so a rekey isn't followed again. An
- * Algorand group is keyed by the account it signs for, whose rekey is followed once.
+ * Keyed by the signer its planner names, so a rekey isn't followed again. A
+ * group the chain keys by the account it signs for, whose rekey is followed
+ * once, carries that chain's data.
  */
 export const isKeyedByPlanner = (data: SignableData): boolean =>
-    data.type === 'transactions' && data.chainData.algorand === undefined
+    data.type === 'transactions' && data.chainData === undefined
 
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'

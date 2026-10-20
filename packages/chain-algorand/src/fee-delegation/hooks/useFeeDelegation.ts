@@ -38,6 +38,7 @@ import {
     algorandTransactionOf,
     toUnsignedAlgorandTransactions,
 } from '../../signing/unsignedTransaction'
+import { algorandRequestChainData } from '../../signing/requestChainData'
 import { requestFeeDelegation } from '../api'
 import {
     FeeDelegationAttestationRequiredError,
@@ -99,7 +100,10 @@ const requestSignatures = (
             transport: 'callback',
             sourceType: 'local',
             txs: unsignedTxs,
-            chainData: { algorand: { groupContext, signableIndices } },
+            chainData: algorandRequestChainData({
+                groupContext,
+                signableIndices,
+            }),
             sourceMetadata,
             approve: async signed => {
                 // Single full-group headless sign (no per-slot padding), so

@@ -84,8 +84,8 @@ export {
     isUnsignedTransactionRequest,
     reviewGroupOf,
     type ReviewGroup,
+    type SignRequestGroupFacts,
     type UnsignedTransactionSignRequest,
-    type AlgorandRequestData,
     type ArbitraryDataSignRequest,
     type AuthDataSignRequest,
     type FeeAdjustment,
@@ -200,7 +200,6 @@ export { bridgeTransactionReviewer } from './pipeline/transactionReviewerBridge'
 export {
     isExternalCallbackSource,
     isInteractiveSource,
-    type AlgorandGroupData,
     type AnalysisContext,
     type AnalysisWarning,
     type ArbitraryDataSignableData,

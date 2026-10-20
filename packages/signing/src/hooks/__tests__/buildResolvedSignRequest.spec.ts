@@ -10,9 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    SECOND_CHAIN_SCOPE,
+    makeUnsignedTransaction,
+} from '../../__tests__/transactions'
+import { plannerChainAdapters } from '../../chain-adapter'
 import type { SigningMachineContext } from '../../machine/context'
 import type {
     AuthDataSignRequest,
@@ -40,6 +46,8 @@ const makeAccount = (
 const deps = { scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' } }
 
 describe('buildResolvedSignRequest', () => {
+    afterEach(() => plannerChainAdapters.reset())
+
     it('returns null when context has no signerAddress (failed pre-resolution)', () => {
         const context = {
             signerAddress: null,
@@ -92,6 +100,7 @@ describe('buildResolvedSignRequest', () => {
     })
 
     it('identifies multisig-cosign with cosignSignerAddress from signerOverrides', () => {
+        registerFakePlannerAdapter({ chainId: SECOND_CHAIN_SCOPE.chainId })
         const account = makeAccount('A123', 'multisig')
         const context = {
             signerAddress: 'A123',
@@ -105,7 +114,10 @@ describe('buildResolvedSignRequest', () => {
                 sourceType: 'multisig-cosign',
                 transport: 'callback',
                 signRequestId: 'sr1',
-                txs: [{}, {}],
+                txs: [
+                    makeUnsignedTransaction('PARTICIPANT_ADDR'),
+                    makeUnsignedTransaction('PARTICIPANT_ADDR'),
+                ],
                 chainData: {
                     algorand: {
                         signerOverrides: new Map([[0, 'PARTICIPANT_ADDR']]),
