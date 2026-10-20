@@ -16,4 +16,11 @@ export const useStyles = makeStyles(theme => ({
     errorView: {
         paddingHorizontal: theme.spacing.xl,
     },
+    review: {
+        flex: 1,
+    },
+    notice: {
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.md,
+    },
 }))

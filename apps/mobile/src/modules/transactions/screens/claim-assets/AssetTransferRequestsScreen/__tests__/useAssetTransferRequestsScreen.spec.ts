@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 const mockPush = vi.fn()
 const mockSetAccountAddress = vi.fn()
@@ -44,7 +45,12 @@ vi.mock('@react-navigation/native', () => ({
 
 const mockAssetRequests = (
     data: unknown[] | undefined,
-    overrides: { isPending?: boolean; isUnavailableOnNetwork?: boolean } = {},
+    overrides: {
+        isPending?: boolean
+        isUnavailableOnNetwork?: boolean
+        isError?: boolean
+        error?: Error
+    } = {},
 ) =>
     vi.mocked(useAssetInboxRequestsQuery).mockReturnValue({
         data,
@@ -84,6 +90,32 @@ describe('useAssetTransferRequestsScreen', () => {
         const { result } = renderHook(() => useAssetTransferRequestsScreen())
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('flags a refusal for want of an integrity token', () => {
+        mockAssetRequests(undefined, {
+            isError: true,
+            error: new IntegrityRequiredError({
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                status: 403,
+                hadToken: false,
+            }),
+        })
+
+        const { result } = renderHook(() => useAssetTransferRequestsScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(true)
+    })
+
+    it('does not flag any other failure as an integrity refusal', () => {
+        mockAssetRequests(undefined, {
+            isError: true,
+            error: new Error('boom'),
+        })
+
+        const { result } = renderHook(() => useAssetTransferRequestsScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(false)
     })
 
     it('pushes to AssetClaimDetail with the pressed index on item press', () => {

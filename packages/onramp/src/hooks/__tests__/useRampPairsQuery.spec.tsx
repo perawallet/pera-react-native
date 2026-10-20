@@ -102,6 +102,18 @@ describe('onramp/useRampPairsQuery', () => {
         expect(result.current.data?.[0].id).toBe('pair-1')
         expect(result.current.data?.[0].sourceToken.symbol).toBe('USD')
     })
+    test('hands the failure to the caller', async () => {
+        server.use(mockRampPairs({ response: [], status: 503 }))
+
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(Error)
+    })
+
     test('returns one stable empty array while disabled', () => {
         const { result, rerender } = renderHook(
             () => useRampPairsQuery({ scope: SCOPE, enabled: false }),

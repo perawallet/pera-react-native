@@ -16,6 +16,7 @@ import { useNetworkStatusStore } from '@modules/network'
 import { useInboxScreen } from '../useInboxScreen'
 import { useInboxQuery, type InboxItem } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 const mockHandleInboxItemPress = vi.fn()
 
@@ -199,6 +200,40 @@ describe('useInboxScreen', () => {
         const { result } = renderHook(() => useInboxScreen())
 
         expect(result.current.isOffline).toBe(true)
+    })
+
+    it('flags a refusal for want of an integrity token', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isError: true,
+            error: new IntegrityRequiredError({
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                status: 403,
+                hadToken: false,
+            }),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(true)
+    })
+
+    it('does not flag any other failure as an integrity refusal', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isError: true,
+            error: new Error('boom'),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(false)
     })
 
     it('keeps an online error as an error, not offline', () => {

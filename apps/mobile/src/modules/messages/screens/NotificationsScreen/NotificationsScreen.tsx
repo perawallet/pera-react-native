@@ -33,6 +33,7 @@ export const NotificationsScreen = () => {
         isRefetching,
         isError,
         isOffline,
+        isIntegrityBlocked,
         refetch,
         loadMoreItems,
         isFetchingNextPage,
@@ -85,6 +86,7 @@ export const NotificationsScreen = () => {
                     <OfflineTolerantView
                         isOffline={isOffline}
                         isUnavailable={isUnavailableOnNetwork}
+                        isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         onRetry={refetch}
                     >

@@ -482,6 +482,364 @@ describe('ensureIntegrityToken', () => {
         }))
 })
 
+describe('integrity failures, recovery and control', () => {
+    let fake: LocalChromeFake
+
+    beforeAll(() => {
+        vi.useFakeTimers()
+    })
+
+    afterAll(() => {
+        vi.useRealTimers()
+    })
+
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        vi.resetModules()
+        vi.setSystemTime(NOW)
+        fake = createLocalChromeFake()
+        globalThis.chrome = fake.chrome
+        mockRequestChallenge.mockResolvedValue('challenge-value')
+        mockSignChallenge.mockResolvedValue('sig-base64')
+        mockExportPublicKey.mockResolvedValue('spki-base64')
+        mockAttestDevice.mockResolvedValue({
+            integrityToken: 'jwt-value',
+            expiresAt: new Date(NOW + 15 * 60 * 1000).toISOString(),
+        })
+    })
+
+    const keys = () => import('@perawallet/wallet-core-browser-runtime')
+    const networkError = async (
+        kind: 'offline' | 'server',
+        status?: number,
+    ) => {
+        const { PeraNetworkError } =
+            await import('@perawallet/wallet-core-shared')
+        return new PeraNetworkError(kind, { status })
+    }
+
+    it('records a failure that never got an answer without advancing the backoff', async () => {
+        mockAttestDevice.mockRejectedValue(await networkError('offline'))
+        const { ensureIntegrityToken } = await import('../integrity')
+        const {
+            INTEGRITY_BACKOFF_SESSION_KEY,
+            INTEGRITY_LAST_FAILURE_SESSION_KEY,
+        } = await keys()
+
+        await ensureIntegrityToken()
+
+        expect(fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toEqual({
+            phase: 'mint',
+            at: NOW,
+            isTransport: true,
+        })
+        expect(fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY)).toBeUndefined()
+    })
+
+    it('records a 5xx with its status and advances the backoff', async () => {
+        mockAttestDevice.mockRejectedValue(await networkError('server', 503))
+        const { ensureIntegrityToken } = await import('../integrity')
+        const {
+            INTEGRITY_BACKOFF_SESSION_KEY,
+            INTEGRITY_LAST_FAILURE_SESSION_KEY,
+        } = await keys()
+
+        await ensureIntegrityToken()
+
+        expect(fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toEqual({
+            phase: 'mint',
+            status: 503,
+            at: NOW,
+            isTransport: false,
+        })
+        expect(fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY)).toEqual({
+            failures: 1,
+            nextAttemptAt: NOW + 5 * 60 * 1000,
+        })
+    })
+
+    it('records the attest code of a refused mint', async () => {
+        mockAttestDevice.mockRejectedValue(
+            forbidden('APP_INTEGRITY_ENROLMENT_REQUIRED'),
+        )
+        const { ensureIntegrityToken } = await import('../integrity')
+        const { INTEGRITY_LAST_FAILURE_SESSION_KEY } = await keys()
+
+        await ensureIntegrityToken()
+
+        expect(
+            fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY),
+        ).toMatchObject({
+            phase: 'mint',
+            status: 403,
+            code: 'APP_INTEGRITY_ENROLMENT_REQUIRED',
+        })
+    })
+
+    it('clears the mint failure once a mint succeeds', async () => {
+        mockAttestDevice.mockRejectedValueOnce(await networkError('offline'))
+        const { ensureIntegrityToken } = await import('../integrity')
+        const { INTEGRITY_LAST_FAILURE_SESSION_KEY } = await keys()
+        await ensureIntegrityToken()
+
+        await ensureIntegrityToken()
+
+        expect(
+            fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY),
+        ).toBeUndefined()
+    })
+
+    it('backs off only a minute while the current token still lives', async () => {
+        const { INTEGRITY_TOKEN_SESSION_KEY, INTEGRITY_BACKOFF_SESSION_KEY } =
+            await keys()
+        fake.session.set(INTEGRITY_TOKEN_SESSION_KEY, {
+            integrityToken: 'old-jwt',
+            mintedAt: new Date(NOW - 10 * 60 * 1000).toISOString(),
+            expiresAt: new Date(NOW + 5 * 60 * 1000).toISOString(),
+            deviceInstallationId: 'install-1',
+        })
+        mockAttestDevice.mockRejectedValue(await networkError('server', 502))
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY)).toEqual({
+            failures: 1,
+            nextAttemptAt: NOW + 60 * 1000,
+        })
+    })
+
+    it('blocks enrolment for the session at the second revocation', async () => {
+        mockAttestDevice.mockRejectedValue(forbidden('APP_INTEGRITY_REVOKED'))
+        const { ensureIntegrityToken } = await import('../integrity')
+        const {
+            INTEGRITY_REVOCATIONS_SESSION_KEY,
+            INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
+        } = await keys()
+
+        await ensureIntegrityToken()
+        expect(fake.session.get(INTEGRITY_REVOCATIONS_SESSION_KEY)).toBe(1)
+        expect(
+            fake.session.get(INTEGRITY_ENROL_BACKOFF_SESSION_KEY),
+        ).toBeUndefined()
+
+        vi.setSystemTime(NOW + 6 * 60 * 1000)
+        await ensureIntegrityToken()
+
+        expect(fake.session.get(INTEGRITY_REVOCATIONS_SESSION_KEY)).toBe(2)
+        expect(
+            (
+                fake.session.get(INTEGRITY_ENROL_BACKOFF_SESSION_KEY) as {
+                    nextAttemptAt: number
+                }
+            ).nextAttemptAt,
+        ).toBe(NOW + 6 * 60 * 1000 + 24 * 60 * 60 * 1000)
+    })
+
+    describe('control from extension pages', () => {
+        const control = (message: Record<string, unknown>) => ({
+            scope: 'pera-integrity-control',
+            ...message,
+        })
+
+        it('clears the backoff and mints on a retry', async () => {
+            mockAttestDevice.mockRejectedValueOnce(
+                await networkError('server', 503),
+            )
+            const { ensureIntegrityToken, handleIntegrityControl } =
+                await import('../integrity')
+            await ensureIntegrityToken()
+            mockAttestDevice.mockClear()
+
+            await handleIntegrityControl(control({ kind: 'retry' }))
+
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+        })
+
+        it('ignores a second retry within thirty seconds', async () => {
+            mockAttestDevice.mockRejectedValue(
+                await networkError('server', 503),
+            )
+            const { handleIntegrityControl } = await import('../integrity')
+            await handleIntegrityControl(control({ kind: 'retry' }))
+            mockAttestDevice.mockClear()
+
+            vi.setSystemTime(NOW + 20 * 1000)
+            await handleIntegrityControl(control({ kind: 'retry' }))
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+        })
+
+        it("does not let an automatic soft retry hold back the user's Retry", async () => {
+            mockAttestDevice.mockRejectedValue(
+                await networkError('server', 503),
+            )
+            const { handleIntegrityControl } = await import('../integrity')
+            await handleIntegrityControl(control({ kind: 'retry', soft: true }))
+            mockAttestDevice.mockClear()
+
+            vi.setSystemTime(NOW + 5 * 1000)
+            await handleIntegrityControl(control({ kind: 'retry' }))
+
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+        })
+
+        it('answers an automatic retry at once after a failure that never got an answer', async () => {
+            mockAttestDevice.mockRejectedValueOnce(
+                await networkError('offline'),
+            )
+            const { ensureIntegrityToken, handleIntegrityControl } =
+                await import('../integrity')
+            await ensureIntegrityToken()
+            mockAttestDevice.mockClear()
+
+            vi.setSystemTime(NOW + 10 * 1000)
+            await handleIntegrityControl(control({ kind: 'retry', soft: true }))
+
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+        })
+
+        it('honours a soft retry only once the last failure is a minute old', async () => {
+            mockAttestDevice.mockRejectedValue(
+                await networkError('server', 503),
+            )
+            const { ensureIntegrityToken, handleIntegrityControl } =
+                await import('../integrity')
+            await ensureIntegrityToken()
+            mockAttestDevice.mockClear()
+
+            vi.setSystemTime(NOW + 40 * 1000)
+            await handleIntegrityControl(control({ kind: 'retry', soft: true }))
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+
+            vi.setSystemTime(NOW + 61 * 1000)
+            await handleIntegrityControl(control({ kind: 'retry', soft: true }))
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+        })
+
+        const storeToken = async (token: string, mintedAgoMs: number) => {
+            const { INTEGRITY_TOKEN_SESSION_KEY } = await keys()
+            const expiresAt = NOW + 14 * 60 * 1000
+            fake.session.set(INTEGRITY_TOKEN_SESSION_KEY, {
+                integrityToken: token,
+                mintedAt: new Date(NOW - mintedAgoMs).toISOString(),
+                expiresAt: new Date(expiresAt).toISOString(),
+                deviceInstallationId: 'install-1',
+            })
+            mockClearSessionIntegrityToken.mockImplementation(async () => {
+                fake.session.delete(INTEGRITY_TOKEN_SESSION_KEY)
+            })
+            return expiresAt
+        }
+
+        it('drops a rejected token and mints a new one, once per token', async () => {
+            const expiresAt = await storeToken('refused-jwt', 5 * 60 * 1000)
+            mockAttestDevice.mockRejectedValue(
+                await networkError('server', 503),
+            )
+            const { handleIntegrityControl } = await import('../integrity')
+            const rejected = control({
+                kind: 'token-rejected',
+                tokenExpiresAt: expiresAt,
+            })
+
+            await handleIntegrityControl(rejected)
+            expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+
+            await storeToken('refused-jwt', 5 * 60 * 1000)
+            await handleIntegrityControl(rejected)
+
+            expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
+        })
+
+        it("takes the refusal of a token it just minted as the backend's answer, not a reason to mint again", async () => {
+            const expiresAt = await storeToken('fresh-jwt', 10 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+            const {
+                INTEGRITY_LAST_FAILURE_SESSION_KEY,
+                INTEGRITY_BACKOFF_SESSION_KEY,
+                INTEGRITY_TOKEN_SESSION_KEY,
+            } = await keys()
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+            expect(fake.session.has(INTEGRITY_TOKEN_SESSION_KEY)).toBe(false)
+            expect(
+                fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY),
+            ).toMatchObject({
+                phase: 'mint',
+                status: 401,
+                isTransport: false,
+            })
+            expect(
+                fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY),
+            ).toMatchObject({
+                failures: 1,
+            })
+        })
+
+        it('ignores a rejection naming a token it has since replaced', async () => {
+            const expiresAt = await storeToken('newer-jwt', 5 * 60 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+
+            await handleIntegrityControl(
+                control({
+                    kind: 'token-rejected',
+                    tokenExpiresAt: expiresAt - 60 * 1000,
+                }),
+            )
+
+            expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+        })
+
+        it('takes control from an extension page', async () => {
+            mockAttestDevice.mockRejectedValueOnce(
+                await networkError('server', 503),
+            )
+            const { ensureIntegrityToken, installIntegrityControlRoute } =
+                await import('../integrity')
+            const { EXTENSION_PAGE_SENDER } = await import('./chrome-fake')
+            installIntegrityControlRoute()
+            await ensureIntegrityToken()
+            mockAttestDevice.mockClear()
+
+            await fake
+                .sendMessage(control({ kind: 'retry' }), EXTENSION_PAGE_SENDER)
+                .catch(() => undefined)
+            await vi.waitFor(() =>
+                expect(mockAttestDevice).toHaveBeenCalledTimes(1),
+            )
+        })
+
+        it('takes control only from extension pages', async () => {
+            mockAttestDevice.mockRejectedValueOnce(
+                await networkError('server', 503),
+            )
+            const { ensureIntegrityToken, installIntegrityControlRoute } =
+                await import('../integrity')
+            installIntegrityControlRoute()
+            await ensureIntegrityToken()
+            mockAttestDevice.mockClear()
+
+            // Nobody answers a refused sender, so the port closes, as in Chrome.
+            await fake
+                .sendMessage(control({ kind: 'retry' }), {
+                    id: 'ext-id',
+                    url: 'https://dapp.example/',
+                    tab: { id: 7 } as chrome.tabs.Tab,
+                })
+                .catch(() => undefined)
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+        })
+    })
+})
+
 describe('installIntegrityRenewal', () => {
     let fake: LocalChromeFake
 

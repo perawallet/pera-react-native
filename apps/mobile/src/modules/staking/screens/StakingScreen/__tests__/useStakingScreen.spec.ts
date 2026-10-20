@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStatusStore } from '@modules/network'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useStakingProjectsQuery } from '@perawallet/wallet-core-staking'
 import { useStakingScreen } from '../useStakingScreen'
 
@@ -118,6 +119,28 @@ describe('useStakingScreen', () => {
             const { result } = renderHook(() => useStakingScreen())
             expect(result.current.isOffline).toBe(false)
             expect(result.current.isError).toBe(true)
+        })
+
+        it('flags a refusal for want of an integrity token', () => {
+            mockStakingProjectsQuery({
+                isError: true,
+                error: new IntegrityRequiredError({
+                    code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    status: 403,
+                    hadToken: false,
+                }),
+            })
+            const { result } = renderHook(() => useStakingScreen())
+            expect(result.current.isIntegrityBlocked).toBe(true)
+        })
+
+        it('does not flag any other failure as an integrity refusal', () => {
+            mockStakingProjectsQuery({
+                isError: true,
+                error: new Error('boom'),
+            })
+            const { result } = renderHook(() => useStakingScreen())
+            expect(result.current.isIntegrityBlocked).toBe(false)
         })
 
         it('handleRetry refetches when online and short-circuits when offline', () => {

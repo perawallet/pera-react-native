@@ -18,7 +18,10 @@ import {
     useWalletDeployment,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    isIntegrityRequiredError,
+} from '@perawallet/wallet-core-shared'
 import {
     USD_CURRENCY_ID,
     currencyQueryKeys,
@@ -44,6 +47,7 @@ type UseSettingsCurrencyScreenResult = {
      */
     isRateUnavailableOffline: boolean
     isOffline: boolean
+    isIntegrityBlocked: boolean
     isError: boolean
     refetch: () => void
 }
@@ -57,7 +61,7 @@ export const useSettingsCurrencyScreen =
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data, isPaused, isError, refetch } = useCurrenciesQuery()
+        const { data, isPaused, isError, error, refetch } = useCurrenciesQuery()
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
@@ -65,6 +69,7 @@ export const useSettingsCurrencyScreen =
         // docs/OFFLINE_PAUSED_STATE.md: an error while offline is the offline
         // state, not a fault to retry.
         const isOffline = isPaused || (isError && !hasInternet)
+        const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
         const isRateUnavailableOffline = useMemo(() => {
             if (hasInternet) return false
@@ -115,6 +120,7 @@ export const useSettingsCurrencyScreen =
             fallbackCurrency,
             isRateUnavailableOffline,
             isOffline,
+            isIntegrityBlocked,
             isError,
             refetch: () => void refetch(),
         }

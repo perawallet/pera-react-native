@@ -20,6 +20,7 @@ import {
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-messages'
+import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import type { PWFlatListRef } from '@components/core'
 import { useNotificationPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
@@ -31,6 +32,7 @@ export type UseNotificationsScreenResult = {
     isRefetching: boolean
     isError: boolean
     isOffline: boolean
+    isIntegrityBlocked: boolean
     keyExtractor: (item: PeraNotification) => string
     loadMoreItems: () => Promise<void>
     refetch: () => void
@@ -48,6 +50,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isPending,
         isPaused,
         isError,
+        error,
         fetchNextPage,
         isFetchingNextPage,
         isRefetching,
@@ -110,6 +113,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isRefetching,
         isError,
         isOffline,
+        isIntegrityBlocked: isError && isIntegrityRequiredError(error),
         keyExtractor: (item: PeraNotification) => item.id,
         loadMoreItems,
         refetch: () => void refetch(),

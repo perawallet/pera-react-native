@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useARC59SendSummaryScreen } from '../useARC59SendSummaryScreen'
 import { Decimal } from 'decimal.js'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useSendFunds } from '@modules/transactions/hooks'
 
 const mockNavigate = vi.fn()
@@ -90,20 +91,34 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_NAME: 'ALGO',
-    formatCurrency: vi.fn(
-        (value: number, _precision: number, currency: string) =>
-            `${value.toFixed(6)} ${currency}`,
-    ),
-    generateOrderedUniqueId: vi.fn(() => 'webview-id'),
-    logger: {
-        debug: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-    },
-}))
+vi.mock('@perawallet/wallet-core-shared', () => {
+    class IntegrityRequiredError extends Error {
+        constructor(_details: {
+            code: string | null
+            status: number
+            hadToken: boolean
+        }) {
+            super('integrity token required')
+        }
+    }
+    return {
+        IntegrityRequiredError,
+        isIntegrityRequiredError: (error: unknown) =>
+            error instanceof IntegrityRequiredError,
+        ALGO_ASSET_NAME: 'ALGO',
+        formatCurrency: vi.fn(
+            (value: number, _precision: number, currency: string) =>
+                `${value.toFixed(6)} ${currency}`,
+        ),
+        generateOrderedUniqueId: vi.fn(() => 'webview-id'),
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -289,6 +304,40 @@ describe('useARC59SendSummaryScreen', () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('flags a refusal for want of an integrity token', async () => {
+        const { useAssetInboxSendSummaryQuery } =
+            await import('@perawallet/wallet-core-transactions')
+        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: false,
+            isError: true,
+            error: new IntegrityRequiredError({
+                code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                status: 403,
+                hadToken: false,
+            }),
+        })
+
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(true)
+    })
+
+    it('does not flag any other failure as an integrity refusal', async () => {
+        const { useAssetInboxSendSummaryQuery } =
+            await import('@perawallet/wallet-core-transactions')
+        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: false,
+            isError: true,
+            error: new Error('boom'),
+        })
+
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(false)
     })
 
     it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
