@@ -38,7 +38,12 @@
     "CARD_AUTODRAW_TEMPLATE_HASH",
     "CHAINS",
     "CHAIN_*",
-    "ETHEREUM_*"
+    "ETHEREUM_*",
+    "BASE_*",
+    "BSC_*",
+    "ARBITRUM_*",
+    "AVALANCHE_*",
+    "POLYGON_*"
   ],
   "globalPassThroughEnv": [
     "VITEST_MAX_WORKERS"

@@ -118,11 +118,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
     },
     {
-        file: 'packages/config/src/network-config.ts',
-        text: "'ethereum'",
-        reason: "The build's endpoint table types each chain's rows by its chain id; a new chain adds its own rows.",
-    },
-    {
         file: 'packages/config/src/main.ts',
         text: "'algorand'",
         reason: 'The chains a build enables when its environment names none.',

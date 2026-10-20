@@ -10,6 +10,20 @@
  limitations under the License
  */
 
+import { createRequire } from 'node:module'
+
+const evmTooling = createRequire(import.meta.url)(
+    '../../../tools/dev/evm-config-keys.cjs',
+)
+
+/** Every EVM config key generate-config.sh can bake, from the network table. */
+export const evmConfigKeys = () => [
+    ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesKey),
+    ...evmTooling
+        .evmScopeConfigKeys()
+        .flatMap(keys => [keys.rpcUrlKey, keys.peraServicesKey]),
+]
+
 /**
  * The generated-env keys the extension may bake. Everything in the zip is one
  * unzip away from any user, so this is fail-closed: a key added to
@@ -85,10 +99,12 @@ export const WEB_CONFIG_ALLOWLIST = [
     'testnetCardUsdcAssetId',
     'defaultNetwork',
     // Read by the Metro chain gate and by config.chains, so a build whose
-    // CHAINS lists ethereum ships it and every other build stays viem-free.
+    // CHAINS lists an EVM chain ships it and every other build stays viem-free.
     'chainIds',
     'chainAlgorandCapabilities',
-    'chainEthereumCapabilities',
+    // Every EVM chain's capabilities, and per network its public RPC URL and
+    // Pera service list; generate-config.sh refuses a listed chain without them.
+    ...evmConfigKeys(),
 ]
 
 const generatedKeys = generatedEnvSource =>
