@@ -17,7 +17,7 @@ const evmTooling = createRequire(import.meta.url)(
 )
 
 /** Every EVM config key generate-config.sh can bake, from the network table. */
-export const evmConfigKeys = () => [
+const evmConfigKeys = () => [
     ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesKey),
     ...evmTooling
         .evmScopeConfigKeys()
