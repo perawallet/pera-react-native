@@ -93,7 +93,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen/useCloudBackupRestoreEncryptionKeyScreen.ts',
     'apps/mobile/src/modules/cloud-backup/screens/CloudBackupRestoreScanScreen/useCloudBackupRestoreScanScreen.tsx',
     'apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts',
-    'apps/mobile/src/modules/connections/providers/useConnectionsProvider.web.ts',
     'apps/mobile/src/modules/contacts/screens/ViewContactScreen/useViewContactScreen.tsx',
     'apps/mobile/src/modules/dapp/screens/SignRequestApprovalScreen/useSignRequestApprovalScreen.web.ts',
     'apps/mobile/src/modules/dapp/screens/WcConnectScreen/WcConnectHeader.tsx',

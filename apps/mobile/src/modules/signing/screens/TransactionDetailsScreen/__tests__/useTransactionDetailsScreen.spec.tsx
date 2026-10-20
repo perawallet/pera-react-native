@@ -26,6 +26,7 @@ import {
     allCapabilities,
     ETHEREUM_CHAIN_ID,
     fixtureEthereumDescriptor,
+    restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
@@ -98,6 +99,7 @@ describe('useTransactionDetailsScreen', () => {
         useNetworkStatusStore.getState().setHasInternet(true)
         historyChainAdapters.reset()
         historyChainAdapters.register(algorandHistoryAdapter)
+        restoreAlgorandOnlyChains()
     })
 
     it('renders content from the threaded history row while the fetch is paused offline', () => {
@@ -347,8 +349,33 @@ describe('useTransactionDetailsScreen', () => {
         expect(mockUseTransactionDetailQuery).not.toHaveBeenCalled()
         expect(result.current.renderState).toEqual({
             kind: 'error',
-            titleKey: 'errors.general.title',
-            bodyKey: 'errors.general.body',
+            titleKey: 'transactions.unknown.title',
+            bodyKey: 'transactions.unknown.body',
+        })
+    })
+
+    it("renders a fetchless chain's detail from its history row", () => {
+        getProvider().chains.register(
+            { ...fixtureEthereumDescriptor, family: 'evm' },
+            allCapabilities(false),
+        )
+        const native = { family: 'evm', transaction: { hash: '0xabc' } }
+        historyChainAdapters.register({
+            ...algorandHistoryAdapter,
+            chainId: ETHEREUM_CHAIN_ID,
+            toTransactionNative: () => native,
+        } as unknown as typeof algorandHistoryAdapter)
+        routeParams.current = {
+            scope: ETHEREUM_SCOPE,
+            transactionId: '0xabc',
+            historyTransaction: { ...historyItem, id: '0xabc' },
+        }
+
+        const { result } = renderHook(() => useTransactionDetailsScreen())
+
+        expect(result.current.renderState).toEqual({
+            kind: 'content',
+            transaction: native,
         })
     })
 

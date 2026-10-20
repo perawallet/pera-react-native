@@ -1247,6 +1247,10 @@
             "title": "Selecionar conta",
             "subtitle": "Escolha uma conta para continuar"
         },
+        "unavailable": {
+            "title": "Cartões-presente indisponíveis",
+            "body": "Não é possível comprar cartões-presente com esta conta. Escolha uma conta em uma rede compatível."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Compra de cartão-presente via Bidali"

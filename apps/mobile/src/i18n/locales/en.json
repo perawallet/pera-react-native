@@ -1247,6 +1247,10 @@
             "title": "Select account",
             "subtitle": "Choose an account to proceed with"
         },
+        "unavailable": {
+            "title": "Gift cards unavailable",
+            "body": "Gift cards can't be bought with this account. Choose an account on a supported network."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Gift card purchase via Bidali"

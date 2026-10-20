@@ -79,12 +79,12 @@ vi.mock('@hooks/useToast', () => ({
 
 const buildRequest = (
     overrides: {
-        insufficientAlgoForClaiming?: boolean
+        insufficientNativeForClaiming?: boolean
         shouldUseFundsBeforeClaiming?: boolean
-        insufficientAlgoForRejecting?: boolean
+        insufficientNativeForRejecting?: boolean
         shouldUseFundsBeforeRejecting?: boolean
-        microAlgoGainOnClaim?: Decimal
-        microAlgoGainOnReject?: Decimal
+        nativeGainOnClaim?: Decimal
+        nativeGainOnReject?: Decimal
     } = {},
 ) => ({
     id: '123',
@@ -92,11 +92,11 @@ const buildRequest = (
     totalAmount: new Decimal(5),
     asset: { assetId: '123', decimals: 0, name: 'TEST' },
     usdValue: null,
-    microAlgoGainOnClaim: new Decimal(0),
-    microAlgoGainOnReject: new Decimal(0),
+    nativeGainOnClaim: new Decimal(0),
+    nativeGainOnReject: new Decimal(0),
     senders: { count: 0, results: [] },
-    insufficientAlgoForClaiming: false,
-    insufficientAlgoForRejecting: false,
+    insufficientNativeForClaiming: false,
+    insufficientNativeForRejecting: false,
     shouldUseFundsBeforeClaiming: false,
     shouldUseFundsBeforeRejecting: false,
     ...overrides,
@@ -118,7 +118,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('blocks the claim when the account cannot cover the opt-in', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -129,7 +129,7 @@ describe('useAssetClaimDetailScreen', () => {
     it('does not block when the inbox funds cover the opt-in', () => {
         mockAssetRequests = [
             buildRequest({
-                insufficientAlgoForClaiming: true,
+                insufficientNativeForClaiming: true,
                 shouldUseFundsBeforeClaiming: true,
             }),
         ]
@@ -155,7 +155,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('blocks the reject when the account cannot cover its fee', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForRejecting: true }),
+            buildRequest({ insufficientNativeForRejecting: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -167,7 +167,7 @@ describe('useAssetClaimDetailScreen', () => {
     it('does not block the reject when the inbox funds cover the fee', () => {
         mockAssetRequests = [
             buildRequest({
-                insufficientAlgoForRejecting: true,
+                insufficientNativeForRejecting: true,
                 shouldUseFundsBeforeRejecting: true,
             }),
         ]
@@ -179,7 +179,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('sends the user to the fund tab to cover the shortfall', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -206,7 +206,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('never navigates to processing while the claim is blocked', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -254,7 +254,7 @@ describe('useAssetClaimDetailScreen', () => {
 
             it('labels the claim gain in the native asset', () => {
                 mockAssetRequests = [
-                    buildRequest({ microAlgoGainOnClaim: gainBaseUnits }),
+                    buildRequest({ nativeGainOnClaim: gainBaseUnits }),
                 ]
 
                 const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -274,7 +274,7 @@ describe('useAssetClaimDetailScreen', () => {
             it('carries the scope into a confirmed reject', async () => {
                 mockRequestBottomSheet.mockResolvedValueOnce(true)
                 mockAssetRequests = [
-                    buildRequest({ microAlgoGainOnReject: gainBaseUnits }),
+                    buildRequest({ nativeGainOnReject: gainBaseUnits }),
                 ]
 
                 const { result } = renderHook(() => useAssetClaimDetailScreen())

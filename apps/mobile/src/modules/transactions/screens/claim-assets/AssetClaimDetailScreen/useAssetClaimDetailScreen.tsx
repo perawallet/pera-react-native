@@ -77,13 +77,13 @@ export const useAssetClaimDetailScreen =
         // so a claim the backend says is unaffordable can only be unblocked by
         // adding native funds — unless the inbox itself carries enough to cover it.
         const isClaimBlocked =
-            !!request?.insufficientAlgoForClaiming &&
+            !!request?.insufficientNativeForClaiming &&
             !request.shouldUseFundsBeforeClaiming
 
         // Rejecting only pays a fee, so it can be affordable when claiming is
         // not; the two are stated separately rather than as one "no funds".
         const isRejectBlocked =
-            !!request?.insufficientAlgoForRejecting &&
+            !!request?.insufficientNativeForRejecting &&
             !request.shouldUseFundsBeforeRejecting
 
         const handleAddFunds = useCallback(() => {
@@ -137,7 +137,7 @@ export const useAssetClaimDetailScreen =
             }
 
             const rejectGainLabel = formatAssetAmount(
-                request.microAlgoGainOnReject,
+                request.nativeGainOnReject,
                 nativeAsset,
             )
 
@@ -195,8 +195,8 @@ export const useAssetClaimDetailScreen =
         }, [request])
 
         const claimGainLabel = useMemo(() => {
-            if (!request || request.microAlgoGainOnClaim.isZero()) return null
-            return formatAssetAmount(request.microAlgoGainOnClaim, nativeAsset)
+            if (!request || request.nativeGainOnClaim.isZero()) return null
+            return formatAssetAmount(request.nativeGainOnClaim, nativeAsset)
         }, [request, nativeAsset])
 
         return {

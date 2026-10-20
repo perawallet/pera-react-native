@@ -33,7 +33,7 @@ import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTyp
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBidaliWebViewScreenResult = {
-    /** False when the paying account's chain has gift cards off; the screen then renders nothing. */
+    /** False when the paying account's chain has gift cards off; the screen then shows an unavailable notice. */
     isAvailable: boolean
     url: string
     bidaliProviderJS: string

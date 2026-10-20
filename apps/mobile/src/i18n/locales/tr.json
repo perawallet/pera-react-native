@@ -1247,6 +1247,10 @@
             "title": "Hesap seç",
             "subtitle": "Devam etmek için bir hesap seç"
         },
+        "unavailable": {
+            "title": "Hediye kartları kullanılamıyor",
+            "body": "Bu hesapla hediye kartı alınamaz. Desteklenen bir ağdaki bir hesap seç."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Bidali ile hediye kartı satın alma"

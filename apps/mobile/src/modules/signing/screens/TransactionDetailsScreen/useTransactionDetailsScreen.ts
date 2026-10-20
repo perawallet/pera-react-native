@@ -23,9 +23,10 @@ import {
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    TransactionNative,
-    I18nKey,
+import {
+    i18nKey,
+    type TransactionNative,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -80,10 +81,12 @@ export const useTransactionDetailsScreen =
         } = route.params
 
         // A route's scope never changes, so this resolves to the same hook on every render.
+        const chainUseTransactionDetail = chainUiFor(
+            getChainDescriptor(scope.chainId).family,
+        ).transactionDetails?.useTransactionDetail
         const useTransactionDetail =
-            chainUiFor(getChainDescriptor(scope.chainId).family)
-                .transactionDetails?.useTransactionDetail ??
-            useNoTransactionDetail
+            chainUseTransactionDetail ?? useNoTransactionDetail
+        const canFetchDetail = !!chainUseTransactionDetail
         const detail = useTransactionDetail({
             scope,
             transactionId: transactionId ?? '',
@@ -134,6 +137,13 @@ export const useTransactionDetailsScreen =
             if (detail.isLoading) {
                 return { kind: 'loading' }
             }
+            if (!canFetchDetail) {
+                return {
+                    kind: 'error',
+                    titleKey: i18nKey('transactions.unknown.title'),
+                    bodyKey: i18nKey('transactions.unknown.body'),
+                }
+            }
             const { titleKey, bodyKey } = getNetworkErrorMessageKeys(undefined)
             return { kind: 'error', titleKey, bodyKey }
         }, [
@@ -143,6 +153,7 @@ export const useTransactionDetailsScreen =
             detail.isPaused,
             detail.isLoading,
             hasInternet,
+            canFetchDetail,
         ])
 
         const handleRelatedTransactionPress = useCallback(

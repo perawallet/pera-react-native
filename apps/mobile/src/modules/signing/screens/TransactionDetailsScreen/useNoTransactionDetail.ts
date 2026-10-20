@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import type { UseTransactionDetailResult } from '@modules/signing/transactions/types'
+import { useMemo } from 'react'
+import { mapHistoryItemToTransactionNative } from '@perawallet/wallet-core-transactions'
+import type {
+    UseTransactionDetailParams,
+    UseTransactionDetailResult,
+} from '@modules/signing/transactions/types'
 
-const NO_TRANSACTION_DETAIL: UseTransactionDetailResult = {
-    transaction: null,
+const NO_FETCH: Omit<UseTransactionDetailResult, 'transaction'> = {
     isPaused: false,
     isError: false,
     isLoading: false,
@@ -21,6 +25,21 @@ const NO_TRANSACTION_DETAIL: UseTransactionDetailResult = {
     refetch: () => undefined,
 }
 
-// Stands in for a chain that registers no fetch, so the screen calls one hook either way.
-export const useNoTransactionDetail = (): UseTransactionDetailResult =>
-    NO_TRANSACTION_DETAIL
+// Stands in for a chain that registers no fetch, so the screen calls one hook
+// either way; the history row is then the only source of the detail.
+export const useNoTransactionDetail = ({
+    scope,
+    historyTransaction,
+}: UseTransactionDetailParams): UseTransactionDetailResult => {
+    const transaction = useMemo(
+        () =>
+            historyTransaction
+                ? mapHistoryItemToTransactionNative(
+                      historyTransaction,
+                      scope.chainId,
+                  )
+                : null,
+        [historyTransaction, scope.chainId],
+    )
+    return useMemo(() => ({ ...NO_FETCH, transaction }), [transaction])
+}

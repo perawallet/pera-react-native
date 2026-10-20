@@ -1239,6 +1239,10 @@
             "title": "Konto auswählen",
             "subtitle": "Wähle ein Konto, um fortzufahren"
         },
+        "unavailable": {
+            "title": "Geschenkkarten nicht verfügbar",
+            "body": "Mit diesem Konto können keine Geschenkkarten gekauft werden. Wähle ein Konto in einem unterstützten Netzwerk."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Geschenkkartenkauf über Bidali"

@@ -161,8 +161,8 @@ const buildAssetRequest = (
     totalAmount: new Decimal(250),
     asset: CLAIMED_ASSET,
     usdValue: new Decimal('1.5'),
-    microAlgoGainOnClaim: new Decimal(0),
-    microAlgoGainOnReject: new Decimal(100_000),
+    nativeGainOnClaim: new Decimal(0),
+    nativeGainOnReject: new Decimal(100_000),
     senders: {
         count: 1,
         results: [
@@ -172,8 +172,8 @@ const buildAssetRequest = (
             },
         ],
     },
-    insufficientAlgoForClaiming: false,
-    insufficientAlgoForRejecting: false,
+    insufficientNativeForClaiming: false,
+    insufficientNativeForRejecting: false,
     shouldUseFundsBeforeClaiming: false,
     shouldUseFundsBeforeRejecting: false,
     ...overrides,
@@ -563,15 +563,15 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         expect(within(preview).getByTestId('expo-image')).toBeTruthy()
     })
 
-    it('Given a request flagged insufficientAlgoForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod', async () => {
+    it('Given a request flagged insufficientNativeForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod', async () => {
         await seedClaimingAccount()
         useClaimAssetsStore.getState().setAccountAddress(ALGO25_TEST_ADDRESS)
-        // Blocked only when insufficientAlgoForClaiming AND NOT
+        // Blocked only when insufficientNativeForClaiming AND NOT
         // shouldUseFundsBeforeClaiming — the inbox's own funds would
         // otherwise cover the opt-in.
         useClaimAssetsStore.getState().setAssetRequests([
             buildAssetRequest({
-                insufficientAlgoForClaiming: true,
+                insufficientNativeForClaiming: true,
                 shouldUseFundsBeforeClaiming: false,
             }),
         ])

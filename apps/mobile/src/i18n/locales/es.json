@@ -1247,6 +1247,10 @@
             "title": "Seleccionar cuenta",
             "subtitle": "Elige una cuenta para continuar"
         },
+        "unavailable": {
+            "title": "Tarjetas regalo no disponibles",
+            "body": "No se pueden comprar tarjetas regalo con esta cuenta. Elige una cuenta de una red compatible."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Compra de tarjeta de regalo con Bidali"

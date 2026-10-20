@@ -66,11 +66,7 @@ export type InboxRejectTxsParams = InboxClaimTxsParams & {
     assetCreator: string
 }
 
-/**
- * An asset waiting for the receiver in the chain's inbox. The `microAlgo` and
- * `Algo` field names are the native asset's, kept so existing fixtures keep
- * compiling.
- */
+/** An asset waiting for the receiver in the chain's inbox. */
 export interface AssetInboxRequest {
     id?: string
     /** The receiver's inbox account address, or null if none exists yet. */
@@ -80,9 +76,9 @@ export interface AssetInboxRequest {
     asset: PeraAsset
     usdValue: Nullable<Decimal>
     /** Native asset gain on claim, in base units */
-    microAlgoGainOnClaim: Decimal
+    nativeGainOnClaim: Decimal
     /** Native asset gain on reject, in base units */
-    microAlgoGainOnReject: Decimal
+    nativeGainOnReject: Decimal
     senders: {
         count: number
         results: Array<{
@@ -91,8 +87,8 @@ export interface AssetInboxRequest {
             amount: Decimal
         }>
     }
-    insufficientAlgoForClaiming: boolean
-    insufficientAlgoForRejecting: boolean
+    insufficientNativeForClaiming: boolean
+    insufficientNativeForRejecting: boolean
     shouldUseFundsBeforeClaiming: boolean
     shouldUseFundsBeforeRejecting: boolean
 }

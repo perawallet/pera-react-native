@@ -1247,6 +1247,10 @@
             "title": "Sélectionner un compte",
             "subtitle": "Choisissez un compte pour continuer"
         },
+        "unavailable": {
+            "title": "Cartes cadeaux indisponibles",
+            "body": "Impossible d'acheter des cartes cadeaux avec ce compte. Choisissez un compte sur un réseau pris en charge."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Achat de carte cadeau via Bidali"

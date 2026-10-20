@@ -11,30 +11,19 @@
  */
 
 import { useEffect, useRef } from 'react'
-import {
-    customNodeAdapters,
-    getSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
     useConnectionsStore,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
-import {
-    createDappConnectionHandler,
-    createNoopDappTransport,
-} from '@perawallet/wallet-core-dapp'
-// lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the web composition root names the handler so the remote registry can answer URI claims locally
-import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connections'
 import { onLocalStorageKeyChanged } from '@perawallet/wallet-core-browser-runtime'
 import { createRemoteConnectionRegistry } from '@perawallet/wallet-core-browser-runtime/remote-registry'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { createAlgorandDescriptorHandlers } from '@modules/algorand/web'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import type { ProposalQueueHandle } from './useProposalQueue'
 
@@ -50,33 +39,13 @@ const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
-// The `window.pera` protocol carries no chain, so the dapp handler answers for one.
-const DAPP_CHAIN_ID: ChainId = LEGACY_CHAIN_ID
-
 // Handlers are never initialized here; they only answer descriptor queries
 // (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for dapp).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registryRef = useRef<ConnectionRegistryClient | null>(null)
     if (!registryRef.current) {
         registryRef.current = createRemoteConnectionRegistry({
-            handlers: [
-                createWalletConnectV1Handler({
-                    chainId: LEGACY_CHAIN_ID,
-                    getNetworkId,
-                }),
-                createDappConnectionHandler({
-                    transport: createNoopDappTransport(),
-                    chainId: DAPP_CHAIN_ID,
-                    getNetworkId,
-                    getCustomNetworkGenesisHash: () =>
-                        customNodeAdapters.has(DAPP_CHAIN_ID)
-                            ? customNodeAdapters.get(DAPP_CHAIN_ID).read()
-                                  ?.genesisHash
-                            : undefined,
-                    // Descriptor-only in UI realms; the offscreen host owns the live handler.
-                    getAccounts: () => [],
-                }),
-            ],
+            handlers: createAlgorandDescriptorHandlers({ getNetworkId }),
         })
     }
     const registry = registryRef.current
