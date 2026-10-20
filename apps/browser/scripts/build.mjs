@@ -25,7 +25,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import { assertNoViem } from './bundle-content.mjs'
+import { assertNoViem, listsEvmChain } from './bundle-content.mjs'
 import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
 import {
     findMissingAssetReferences,
@@ -506,7 +506,7 @@ const assertBakedConfig = (code, surface) => {
 }
 assertBakedConfig(workerCode, 'background.js')
 assertBakedConfig(uiCode, 'the exported UI bundle')
-if (!config.chains.enabled.includes('ethereum')) {
+if (!listsEvmChain(config.chains.enabled)) {
     assertNoViem(uiCode, 'the exported UI bundle')
     for (const name of readdirSync(dist).filter(file => file.endsWith('.js'))) {
         assertNoViem(readFileSync(path.join(dist, name), 'utf8'), name)
