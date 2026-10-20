@@ -20,6 +20,7 @@ import {
     useMarkNotificationsAsReadMutation,
     type PeraNotification,
 } from '@perawallet/wallet-core-messages'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 const mockMarkAsRead = vi.fn()
 
@@ -45,6 +46,7 @@ const mockList = (
         isDeviceUnregistered?: boolean
         isPaused?: boolean
         isError?: boolean
+        error?: unknown
     } = {},
 ) =>
     vi.mocked(useNotificationsListQuery).mockReturnValue({
@@ -178,5 +180,25 @@ describe('useNotificationsScreen', () => {
 
         expect(result.current.isOffline).toBe(false)
         expect(result.current.isError).toBe(true)
+    })
+
+    it.each([
+        ['an integrity refusal', true],
+        ['any other failure', false],
+    ])('flags the integrity arm for %s', (_case, isRefusal) => {
+        mockList([], {
+            isError: true,
+            error: isRefusal
+                ? new IntegrityRequiredError({
+                      code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                      status: 403,
+                      hadToken: false,
+                  })
+                : new Error('boom'),
+        })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isIntegrityBlocked).toBe(isRefusal)
     })
 })

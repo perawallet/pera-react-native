@@ -33,6 +33,8 @@ export type UseAssetPriceHistoryQueryResult = {
     data: Optional<AssetPriceHistory>
     isPending: boolean
     isError: boolean
+    /** The failure behind `isError`, for callers that branch on its kind (an integrity refusal); null otherwise. */
+    error: unknown
     isPaused: boolean
     isSuccess: boolean
     refetch: (options?: RefetchOptions) => unknown
@@ -70,6 +72,7 @@ export const useAssetPriceHistoryQuery = (
         data: query.data,
         isPending: isUnavailableOnNetwork ? false : query.isPending,
         isError: query.isError,
+        error: query.error ?? null,
         isPaused: query.isPaused,
         isSuccess: query.isSuccess,
         // The observer's refetch() ignores `enabled` and would still fire the

@@ -24,6 +24,7 @@ export const INTEGRITY_CHECK_TOKEN_PARAM = 'peraCheckToken'
 export const INTEGRITY_CHECK_PORT_PREFIX = 'pera-integrity-check:'
 export const INTEGRITY_HOST_PORT_PREFIX = 'pera-integrity-host:'
 export const INTEGRITY_ENROL_SCOPE = 'pera-integrity-enrol'
+export const INTEGRITY_CONTROL_SCOPE = 'pera-integrity-control'
 export const MAX_TURNSTILE_TOKEN_LENGTH = 2048
 
 const CHECK_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,64}$/
@@ -59,8 +60,11 @@ export type IntegrityFrameMessage = {
 
 export type IntegrityEnrolReason =
     | 'page-open'
+    | 'onboarding-started'
     | 'onboarding-complete'
     | 'enrolment-needed'
+    /** The user pressed Verify; clears the enrol backoff. */
+    | 'user-retry'
 
 export type IntegrityEnrolRequest = {
     scope: typeof INTEGRITY_ENROL_SCOPE
@@ -68,14 +72,32 @@ export type IntegrityEnrolRequest = {
     reason: IntegrityEnrolReason
 }
 
+/** UI realm to service worker; accepted only from trusted extension pages. */
+export type IntegrityControlMessage =
+    | {
+          scope: typeof INTEGRITY_CONTROL_SCOPE
+          kind: 'retry'
+          /** An automatic retry (page open, back online), honoured only after a quiet spell. */
+          soft: boolean
+      }
+    | {
+          scope: typeof INTEGRITY_CONTROL_SCOPE
+          /** A guarded request was refused while this realm held a token it believed valid. */
+          kind: 'token-rejected'
+          /** Epoch ms expiry of the refused token, naming it; null when the refusal could not say. */
+          tokenExpiresAt: number | null
+      }
+
 export type IntegrityEnrolDecision =
     | { action: 'none' }
     | { action: 'host'; url: string; deadlineAt: number }
 
 const ENROL_REASONS: readonly string[] = [
     'page-open',
+    'onboarding-started',
     'onboarding-complete',
     'enrolment-needed',
+    'user-retry',
 ]
 const FRAME_EVENTS: readonly string[] = ['expand', 'collapse', 'finished']
 
@@ -280,3 +302,29 @@ export const parseIntegrityEnrolDecision = (
     typeof value.deadlineAt === 'number'
         ? { action: 'host', url: value.url, deadlineAt: value.deadlineAt }
         : { action: 'none' }
+
+export const parseIntegrityControlMessage = (
+    message: unknown,
+): IntegrityControlMessage | null => {
+    if (!isRecord(message) || message.scope !== INTEGRITY_CONTROL_SCOPE) {
+        return null
+    }
+    if (message.kind === 'retry') {
+        return {
+            scope: INTEGRITY_CONTROL_SCOPE,
+            kind: 'retry',
+            soft: message.soft === true,
+        }
+    }
+    if (message.kind === 'token-rejected') {
+        return {
+            scope: INTEGRITY_CONTROL_SCOPE,
+            kind: 'token-rejected',
+            tokenExpiresAt:
+                typeof message.tokenExpiresAt === 'number'
+                    ? message.tokenExpiresAt
+                    : null,
+        }
+    }
+    return null
+}

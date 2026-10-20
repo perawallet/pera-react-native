@@ -85,6 +85,7 @@ vi.mock('../integrity', () => ({
     ensureIntegrityToken: vi.fn().mockResolvedValue(undefined),
     handleIntegrityAlarm: handleIntegrityAlarmMock,
     installIntegrityRenewal: vi.fn(),
+    installIntegrityControlRoute: vi.fn(),
 }))
 
 // Enrolment has its own suite; here its deadline alarm only has to be routable.

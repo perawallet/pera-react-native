@@ -72,6 +72,11 @@ export interface BackupChainAdapter {
      * The wire format fixes it, so it never changes.
      */
     seedReference(kms: ChainKeyStore, seedKeyId: string): Promise<string>
+    /**
+     * The public key an address encodes, as hex; absent on a chain whose
+     * address doesn't carry it, where the key has to be derived instead.
+     */
+    publicKeyHexOf?(address: string): string
     /** Derives, and commits, the HD child at the account's stored coordinates and derivation type. */
     deriveHdAccount(
         kms: ChainKeyStore,

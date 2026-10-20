@@ -39,6 +39,7 @@ import {
 } from './manifest.mjs'
 import {
     WEB_CONFIG_ALLOWLIST,
+    bakedIntegrityFlags,
     assertWebConfigAllowlisted,
 } from './web-config.mjs'
 
@@ -137,20 +138,18 @@ execSync('pnpm exec turbo run build --filter=...browser', {
     stdio: 'inherit',
 })
 const generatedEnv = readFileSync(generatedEnvPath, 'utf8')
-// generate-config.sh only emits a key's line when the source env var is
-// non-empty (see its append_config helper), so a missing/blank
-// BACKEND_API_KEY leaves this line out entirely rather than writing "".
+const integrityFlags = bakedIntegrityFlags(generatedEnv)
 // A missing appEnvironment line means config's own default, development.
-const hasBackendApiKey = /backendAPIKey:\s*"[^"]+"/.test(generatedEnv)
 assertReleaseEnv({
     appEnvironment:
         generatedEnv.match(/appEnvironment:\s*"([^"]+)"/)?.[1] ?? 'development',
-    hasBackendApiKey,
+    integrityFlags,
 })
-if (!hasBackendApiKey) {
+if (Object.values(integrityFlags).includes(false)) {
     console.warn(
-        '\n⚠ BACKEND_API_KEY is empty — Pera backend calls will 401. ' +
-            'Add it to the repo-root .env (see apps/browser/README.md).\n',
+        '\n⚠ WEB_INTEGRITY_MINT/BEARER/ENROL_ENABLED are not all on: the extension ' +
+            'has no API key, so guarded Pera backend calls will 401. ' +
+            'Set them in the repo-root .env (see apps/browser/README.md).\n',
     )
 }
 

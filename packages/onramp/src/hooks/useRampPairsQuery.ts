@@ -35,6 +35,8 @@ export type UseRampPairsQueryResult = {
     data: RampPair[]
     isLoading: boolean
     isError: boolean
+    /** The failure behind `isError`, for callers that branch on its kind (an integrity refusal); null otherwise. */
+    error: unknown
     fetchStatus: FetchStatus
     refetch: (options?: RefetchOptions) => unknown
 }
@@ -71,6 +73,7 @@ export const useRampPairsQuery = ({
         data,
         isLoading: query.isLoading,
         isError: query.isError,
+        error: query.error ?? null,
         fetchStatus: query.fetchStatus,
         // A skipToken query rejects a manual refetch.
         refetch: options =>

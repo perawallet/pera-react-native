@@ -10,7 +10,11 @@
  limitations under the License
  */
 
+import type { IntegrityRequiredError } from '../errors/integrity'
+
 type IntegrityTokenProvider = () => string | null
+type IntegrityTokenWaiter = () => Promise<void>
+type IntegrityRefusedHandler = (error: IntegrityRequiredError) => void
 
 let provider: IntegrityTokenProvider | null = null
 
@@ -31,5 +35,50 @@ export const readIntegrityToken = (): string | null => {
         return provider?.() ?? null
     } catch {
         return null
+    }
+}
+
+let waiter: IntegrityTokenWaiter | null = null
+
+/**
+ * Registers how this realm waits for a token before a guarded Pera request
+ * that would go out without one. The waiter owns the bound (a few seconds, and
+ * only while a token is on its way) and must resolve rather than reject.
+ */
+export const setIntegrityTokenWaiter = (
+    next: IntegrityTokenWaiter | null,
+): void => {
+    waiter = next
+}
+
+export const waitForIntegrityToken = async (): Promise<void> => {
+    try {
+        await waiter?.()
+    } catch {
+        // A failed wait only means the request goes out without a token.
+    }
+}
+
+let refusedHandler: IntegrityRefusedHandler | undefined
+
+/**
+ * Registers the single handler told whenever a Pera request is refused for its
+ * integrity token, from a query, a mutation or a direct call alike. Returns a
+ * cleanup that unregisters it.
+ */
+export const setOnIntegrityRefused = (
+    handler: IntegrityRefusedHandler,
+): (() => void) => {
+    refusedHandler = handler
+    return () => {
+        if (refusedHandler === handler) refusedHandler = undefined
+    }
+}
+
+export const notifyIntegrityRefused = (error: IntegrityRequiredError): void => {
+    try {
+        refusedHandler?.(error)
+    } catch {
+        // The request already failed; a broken handler must not mask why.
     }
 }

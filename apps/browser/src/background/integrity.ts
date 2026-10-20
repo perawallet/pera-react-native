@@ -19,12 +19,18 @@ import {
 } from '@perawallet/wallet-core-app-integrity/api'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    isConnectivityError,
+    isPeraNetworkError,
     logger,
     setIntegrityTokenProvider,
 } from '@perawallet/wallet-core-shared'
-import { ensureDeviceInstallationID } from '@perawallet/wallet-extension-platform-chrome'
+import {
+    ensureDeviceInstallationID,
+    isTrustedExtensionPageSender,
+} from '@perawallet/wallet-extension-platform-chrome'
 import {
     INTEGRITY_BACKOFF_SESSION_KEY,
+    INTEGRITY_REVOCATIONS_SESSION_KEY,
     clearEnrolmentMarker,
     clearInstallKey,
     clearSessionIntegrityToken,
@@ -33,10 +39,16 @@ import {
     getInstallKeyId,
     getSessionIntegrityToken,
     putSessionIntegrityToken,
+    parseIntegrityControlMessage,
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-core-browser-runtime'
 import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
+import {
+    clearLastFailure,
+    readLastAnsweredFailureAt,
+    recordLastFailure,
+} from './integrity-failure'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
 import { readActiveNetwork, type ActiveNetwork } from './network'
@@ -51,6 +63,12 @@ export const INTEGRITY_RENEW_PERIOD_MINUTES = 5
 const REFRESH_AT_FRACTION = 0.6
 const BACKOFF_FLOOR_MS = 5 * 60 * 1000
 const BACKOFF_CAP_MS = 60 * 60 * 1000
+// A renewal starts at 9 of 15 minutes; with the usual 5-minute floor one
+// failed renewal could outlive the token it was renewing.
+const BACKOFF_FLOOR_WHILE_TOKEN_LIVES_MS = 60 * 1000
+const REVOCATIONS_BEFORE_BLOCKED = 2
+const RETRY_COOLDOWN_MS = 30 * 1000
+const SOFT_RETRY_QUIET_MS = 60 * 1000
 
 const mintBackoff = createSessionBackoff({
     key: INTEGRITY_BACKOFF_SESSION_KEY,
@@ -113,6 +131,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
     })
     cachedToken = { integrityToken, expiresAt, mintedAt, deviceInstallationId }
     await mintBackoff.clear()
+    await clearLastFailure('mint')
 }
 
 const isMarkedEnrolled = async (network: ActiveNetwork): Promise<boolean> => {
@@ -125,6 +144,37 @@ const isMarkedEnrolled = async (network: ActiveNetwork): Promise<boolean> => {
 
 const isForbidden = (error: unknown): boolean =>
     (error as { status?: number } | null)?.status === 403
+
+// No answer at all: the network, not the backend. Retrying costs nothing, so
+// such a failure must not cost the user five minutes of backoff.
+const isTransportFailure = (error: unknown): boolean =>
+    isConnectivityError(error) ||
+    (isPeraNetworkError(error) && error.kind === 'timeout')
+
+const statusOf = (error: unknown): number | undefined => {
+    const status = (error as { status?: unknown } | null)?.status
+    return typeof status === 'number' ? status : undefined
+}
+
+const isTokenAlive = (token: SessionIntegrityToken | null): boolean => {
+    if (!token) return false
+    const expiresAt = Date.parse(token.expiresAt)
+    return Number.isFinite(expiresAt) && expiresAt > Date.now()
+}
+
+// The contract lets a revoked device re-enrol with a fresh key; a backend that
+// revokes by device would meet a fresh solve on every page open without this.
+const countRevocation = async (): Promise<void> => {
+    const stored = await chrome.storage.session.get(
+        INTEGRITY_REVOCATIONS_SESSION_KEY,
+    )
+    const previous = stored[INTEGRITY_REVOCATIONS_SESSION_KEY]
+    const count = (typeof previous === 'number' ? previous : 0) + 1
+    await chrome.storage.session.set({
+        [INTEGRITY_REVOCATIONS_SESSION_KEY]: count,
+    })
+    if (count >= REVOCATIONS_BEFORE_BLOCKED) await enrolBackoff.exhaust()
+}
 
 /**
  * Ensures a warm integrity token exists, minting or renewing if not. Safe to
@@ -155,8 +205,21 @@ export const ensureIntegrityToken = async (): Promise<void> => {
             try {
                 await mint(network)
             } catch (error) {
+                const code = readIntegrityErrorCode(error)
+                const isTransport = isTransportFailure(error)
+                await recordLastFailure({
+                    phase: 'mint',
+                    isTransport,
+                    ...(code ? { code } : {}),
+                    ...(statusOf(error) !== undefined
+                        ? { status: statusOf(error) }
+                        : {}),
+                })
+                if (isTransport) {
+                    logger.warn('Web integrity mint got no answer', { error })
+                    return
+                }
                 if (isForbidden(error)) {
-                    const code = readIntegrityErrorCode(error)
                     if (code === 'APP_INTEGRITY_ENROLMENT_REQUIRED') {
                         // The key is sound; this backend just has no enrolment for it. A marker
                         // for this key means the backend contradicts us (replica lag, a defect),
@@ -173,12 +236,22 @@ export const ensureIntegrityToken = async (): Promise<void> => {
                         cachedToken = null
                         // A new key has no enrolment anywhere, so the old marker is dead by
                         // its kid and needs no clearing.
-                        if (code === 'APP_INTEGRITY_REVOKED')
+                        if (code === 'APP_INTEGRITY_REVOKED') {
+                            await countRevocation()
                             await markEnrolmentNeeded()
+                        }
                     }
                 }
-                await mintBackoff.recordFailure()
-                logger.warn('Web integrity mint failed', { error })
+                await mintBackoff.recordFailure(
+                    isTokenAlive(fresh)
+                        ? { floorMs: BACKOFF_FLOOR_WHILE_TOKEN_LIVES_MS }
+                        : undefined,
+                )
+                logger.warn('Web integrity mint failed', {
+                    code,
+                    status: statusOf(error),
+                    error,
+                })
             }
         })
     } catch (error) {
@@ -226,4 +299,97 @@ export const installIntegrityRenewal = (): void => {
 export const resumeIntegrityMint = async (): Promise<void> => {
     await mintBackoff.clear()
     await ensureIntegrityToken()
+}
+
+let lastRetryAt = 0
+let lastRejectedToken: string | null = null
+
+// A token the backend refuses within this long of issuing it was not stale: it
+// is the backend's answer (bearer acceptance off, an un-enrolled key), and
+// minting again would only feed the refetch of everything that failed with it.
+const FRESH_TOKEN_MS = 60 * 1000
+
+const isNamedToken = (
+    token: SessionIntegrityToken,
+    tokenExpiresAt: number | null,
+): boolean =>
+    tokenExpiresAt === null ||
+    Math.floor(Date.parse(token.expiresAt) / 1000) ===
+        Math.floor(tokenExpiresAt / 1000)
+
+// The UI saw a guarded request refused while it held a token (clock skew, a
+// revocation the token predates). Once per token, and only the token it names:
+// refusals of one already replaced must not take its successor down.
+const replaceRejectedToken = async (
+    tokenExpiresAt: number | null,
+): Promise<void> => {
+    const current = await getSessionIntegrityToken()
+    if (!current) {
+        await ensureIntegrityToken()
+        return
+    }
+    if (!isNamedToken(current, tokenExpiresAt)) return
+    if (current.integrityToken === lastRejectedToken) return
+    lastRejectedToken = current.integrityToken
+    await clearSessionIntegrityToken()
+    cachedToken = null
+    if (Date.now() - Date.parse(current.mintedAt) < FRESH_TOKEN_MS) {
+        await recordLastFailure({
+            phase: 'mint',
+            status: 401,
+            isTransport: false,
+        })
+        await mintBackoff.recordFailure()
+        logger.warn('Web integrity token refused as soon as it was minted')
+        return
+    }
+    await ensureIntegrityToken()
+}
+
+/** Acts on a control message from the UI realm. Never throws. */
+export const handleIntegrityControl = async (
+    message: unknown,
+): Promise<void> => {
+    const control = parseIntegrityControlMessage(message)
+    if (!control || !config.webIntegrityMintEnabled) return
+    try {
+        if (control.kind === 'token-rejected') {
+            await replaceRejectedToken(control.tokenExpiresAt)
+            return
+        }
+        const now = Date.now()
+        // Automatic retries (page open, back online) answer only to the quiet
+        // rule, so one never spends the cooldown that guards the user's Retry.
+        if (control.soft) {
+            const lastFailureAt = await readLastAnsweredFailureAt()
+            if (
+                lastFailureAt !== null &&
+                now - lastFailureAt < SOFT_RETRY_QUIET_MS
+            ) {
+                return
+            }
+        } else {
+            if (now - lastRetryAt < RETRY_COOLDOWN_MS) return
+            lastRetryAt = now
+        }
+        await resumeIntegrityMint()
+    } catch (error) {
+        logger.warn('Web integrity control failed', {
+            error,
+            kind: control.kind,
+        })
+    }
+}
+
+// Top level in the worker entry, beside the enrolment route. Content scripts
+// share onMessage; only extension pages may steer the mint loop.
+export const installIntegrityControlRoute = ({
+    chromeLike = chrome,
+}: { chromeLike?: typeof chrome } = {}): void => {
+    chromeLike.runtime.onMessage.addListener((message, sender) => {
+        if (!parseIntegrityControlMessage(message)) return false
+        if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
+        void handleIntegrityControl(message)
+        return false
+    })
 }

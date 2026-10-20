@@ -15,7 +15,10 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    IntegrityRequiredError,
+} from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
 
@@ -181,5 +184,40 @@ describe('useSettingsCurrencyScreen', () => {
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
         expect(mockInvalidateAssetPrices).toHaveBeenCalledTimes(1)
+    })
+
+    describe('integrity refusal', () => {
+        it('marks the list blocked when the currencies read was refused for the token', () => {
+            const refetch = vi.fn()
+            mockUseCurrenciesQuery.mockReturnValue({
+                data: undefined,
+                isError: true,
+                error: new IntegrityRequiredError({
+                    code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    status: 403,
+                    hadToken: false,
+                }),
+                refetch,
+            })
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isIntegrityBlocked).toBe(true)
+            result.current.retryCurrencies()
+            expect(refetch).toHaveBeenCalledTimes(1)
+        })
+
+        it('leaves any other failure unmarked', () => {
+            mockUseCurrenciesQuery.mockReturnValue({
+                data: undefined,
+                isError: true,
+                error: new Error('boom'),
+                refetch: vi.fn(),
+            })
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isIntegrityBlocked).toBe(false)
+        })
     })
 })

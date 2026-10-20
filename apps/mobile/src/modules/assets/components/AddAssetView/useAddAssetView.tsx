@@ -28,7 +28,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
@@ -42,6 +45,7 @@ type UseAddAssetViewResult = {
     isLoading: boolean
     isError: boolean
     isOffline: boolean
+    isIntegrityBlocked: boolean
     isUnavailable: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
@@ -86,6 +90,7 @@ export const useAddAssetView = (
         results: searchResults,
         isLoading,
         isRemoteError,
+        remoteError,
         isRemotePaused,
         isRemoteUnavailableOnNetwork: isUnavailable,
         hasNextRemotePage: hasNextPage,
@@ -197,6 +202,8 @@ export const useAddAssetView = (
         isLoading,
         isError,
         isOffline,
+        isIntegrityBlocked:
+            isRemoteError && isIntegrityRequiredError(remoteError),
         isUnavailable,
         isFetchingNextPage,
         hasNextPage,

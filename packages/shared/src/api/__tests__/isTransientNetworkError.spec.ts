@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { HTTPError, TimeoutError } from 'ky'
 import { isTransientNetworkError } from '../query-client'
+import { IntegrityRequiredError } from '../../errors/integrity'
 import { NoConnectionError, PeraNetworkError } from '../../errors/network'
 
 const makeHttpError = (status: number): HTTPError => {
@@ -27,6 +28,18 @@ const makeTimeoutError = (): TimeoutError => {
 }
 
 describe('isTransientNetworkError', () => {
+    it('returns true for an integrity refusal: it clears once a token lands', () => {
+        expect(
+            isTransientNetworkError(
+                new IntegrityRequiredError({
+                    code: null,
+                    status: 401,
+                    hadToken: false,
+                }),
+            ),
+        ).toBe(true)
+    })
+
     it('returns true for ky TimeoutError', () => {
         expect(isTransientNetworkError(makeTimeoutError())).toBe(true)
     })

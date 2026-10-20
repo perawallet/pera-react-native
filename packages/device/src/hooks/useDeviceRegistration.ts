@@ -29,6 +29,12 @@ export type UseDeviceRegistrationOptions = {
      * recreate fallback), rather than a clean PUT against an existing one.
      */
     onDeviceCreated?: (network: Network) => void
+    /**
+     * One more edge a pending registration retries on, beside reconnect and
+     * foreground: the extension retries once its integrity token lands, the
+     * request's only credential there. Returns an unsubscribe.
+     */
+    subscribeToRetryEdge?: (onEdge: () => void) => () => void
 }
 
 /**
@@ -165,9 +171,12 @@ export const useDeviceRegistration = (
         const unsubscribeFocus = focusManager.subscribe(isFocused => {
             if (isFocused) retry()
         })
+        const unsubscribeEdge =
+            optionsRef.current?.subscribeToRetryEdge?.(retry)
         return () => {
             unsubscribeOnline()
             unsubscribeFocus()
+            unsubscribeEdge?.()
         }
     }, [isRegistrationPending, network, setRegistrationPending])
 }

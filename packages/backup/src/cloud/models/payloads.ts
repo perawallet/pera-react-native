@@ -384,6 +384,13 @@ export const settingsBackupPayloadSchema = z.object({
             address: z.string().nullable(),
         }),
     ),
+    /** Named by address: account ids are device-local. */
+    accountOrder: settingsField(
+        z.object({
+            mode: z.string().min(1),
+            addresses: z.array(z.string().min(1)),
+        }),
+    ),
 })
 
 export type SettingsBackupPayload = z.infer<typeof settingsBackupPayloadSchema>
@@ -401,4 +408,5 @@ export const BACKUP_SETTINGS_FIELDS: readonly BackupSettingsField[] = [
     'language',
     'confirmationMode',
     'launchAccount',
+    'accountOrder',
 ]

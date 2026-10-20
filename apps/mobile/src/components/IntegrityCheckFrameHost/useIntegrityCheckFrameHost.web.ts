@@ -24,7 +24,9 @@ import {
     requestIntegrityEnrolment,
     type IntegrityEnrolReason,
 } from '@perawallet/wallet-core-browser-runtime'
+import { useNetworkStatus } from '@hooks/useNetworkStatusStore'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
+import { useIsOnboarding } from '@modules/onboarding'
 import { useIntegrityCheckFrameStore } from './useIntegrityCheckFrameStore.web'
 
 // An approval window lives for one dApp request and closes itself.
@@ -44,28 +46,42 @@ export type UseIntegrityCheckFrameHostResult = {
     url: string | null
     isExpanded: boolean
     iframeRef: RefObject<HTMLIFrameElement | null>
+    /** Not now: hides the dialog, leaving the attempt and its host port alive for Verify. */
+    dismiss: () => void
 }
 
 export const useIntegrityCheckFrameHost =
     (): UseIntegrityCheckFrameHostResult => {
         const isOnboarding = useShowOnboarding()
+        const { isOnboarding: hasCommittedToOnboarding } = useIsOnboarding()
+        const { hasInternet } = useNetworkStatus()
         const {
             url,
             deadlineAt,
             isExpanded,
             isFinished,
+            isDismissed,
+            verifyNonce,
             show,
             setExpanded,
             finish,
             hide,
+            dismiss,
+            undismiss,
         } = useIntegrityCheckFrameStore()
         const iframeRef = useRef<HTMLIFrameElement | null>(null)
         const wasOnboarding = useRef(isOnboarding)
         const isOnboardingNow = useRef(isOnboarding)
+        const isOnlineNow = useRef(hasInternet)
+        const lastVerifyNonce = useRef(verifyNonce)
+        // Offline the check page cannot load, and its liveness rule would open
+        // a fallback tab that fails too; the request is made on reconnect.
         const canHost =
             config.webIntegrityMintEnabled &&
             config.webIntegrityEnrolEnabled &&
-            HOSTING_SURFACES.includes(getSurface())
+            HOSTING_SURFACES.includes(getSurface()) &&
+            hasInternet
+        isOnlineNow.current = hasInternet
 
         const request = useCallback(
             async (reason: IntegrityEnrolReason) => {
@@ -77,25 +93,40 @@ export const useIntegrityCheckFrameHost =
             [show],
         )
 
-        // Enrolment waits for a finished onboarding, so it binds an install in use.
+        // A drive-by open of the welcome screen binds nothing; an install whose
+        // user committed to onboarding (terms accepted) or finished it is in use.
         useEffect(() => {
-            isOnboardingNow.current = isOnboarding
-            if (!canHost || isOnboarding) {
-                wasOnboarding.current = wasOnboarding.current || isOnboarding
+            isOnboardingNow.current = isOnboarding && !hasCommittedToOnboarding
+            if (!canHost) return
+            if (isOnboarding) {
+                wasOnboarding.current = true
+                if (hasCommittedToOnboarding) void request('onboarding-started')
                 return
             }
             void request(
                 wasOnboarding.current ? 'onboarding-complete' : 'page-open',
             )
             wasOnboarding.current = false
-        }, [canHost, isOnboarding, request])
+        }, [canHost, isOnboarding, hasCommittedToOnboarding, request])
 
         useEffect(() => {
             if (!canHost) return
             return onIntegrityEnrolmentNeeded(() => {
-                if (!isOnboardingNow.current) void request('enrolment-needed')
+                if (!isOnboardingNow.current && isOnlineNow.current) {
+                    void request('enrolment-needed')
+                }
             })
         }, [canHost, request])
+
+        useEffect(() => {
+            if (verifyNonce === lastVerifyNonce.current) return
+            lastVerifyNonce.current = verifyNonce
+            if (url && !isFinished) {
+                undismiss()
+                return
+            }
+            if (canHost) void request('user-retry')
+        }, [verifyNonce, url, isFinished, canHost, undismiss, request])
 
         useEffect(() => {
             if (!url) return
@@ -128,5 +159,10 @@ export const useIntegrityCheckFrameHost =
             return () => clearTimeout(timer)
         }, [deadlineAt, hide])
 
-        return { url: isFinished ? null : url, isExpanded, iframeRef }
+        return {
+            url: isFinished ? null : url,
+            isExpanded: isExpanded && !isDismissed,
+            iframeRef,
+            dismiss,
+        }
     }

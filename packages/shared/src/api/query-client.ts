@@ -43,7 +43,15 @@ import {
     isPeraNetworkError,
 } from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
-import { readIntegrityToken } from './integrity-token-provider'
+import {
+    isIntegrityRequiredError,
+    toIntegrityRequiredError,
+} from '../errors/integrity'
+import {
+    notifyIntegrityRefused,
+    readIntegrityToken,
+    waitForIntegrityToken,
+} from './integrity-token-provider'
 import { nodeBackendAdapters, type NodeBackendName } from './node-backends'
 
 type BackendInstances = {
@@ -93,6 +101,7 @@ const logRequest = ({ request, options }: BeforeRequestState) => {
  */
 export const isTransientNetworkError = (error: unknown): boolean => {
     if (isPeraNetworkError(error)) return error.metadata.retryable
+    if (isIntegrityRequiredError(error)) return true
     // Fallback for any not-yet-normalized raw ky error.
     if (isTimeoutError(error) || isNetworkTransportError(error)) return true
     if (isHTTPError(error) && (error.response?.status ?? 0) >= 500) return true
@@ -191,6 +200,17 @@ const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
     })
 }
 
+const INTEGRITY_PUBLIC_PATH = /^\/?api\/v3\/public\//
+
+// The integrity endpoints are how a token is minted, so they never wait for one.
+const shouldWaitForIntegrityToken = (
+    requestConfig: RequestConfiguration<unknown>,
+): boolean =>
+    requestConfig.backend !== 'backup' &&
+    config.webIntegrityBearerEnabled &&
+    !INTEGRITY_PUBLIC_PATH.test(requestConfig.url ?? '') &&
+    readIntegrityToken() === null
+
 const createFetchClient = () => {
     return async <TData, TVariables = unknown>(
         requestConfig: RequestConfiguration<TVariables>,
@@ -218,6 +238,10 @@ const createFetchClient = () => {
         }
 
         const client = clientFor(scope, requestConfig.backend)
+
+        if (shouldWaitForIntegrityToken(requestConfig)) {
+            await waitForIntegrityToken()
+        }
 
         try {
             const path = requestConfig.url.startsWith('/')
@@ -294,6 +318,16 @@ const createFetchClient = () => {
             if (error instanceof Error && error.name === 'AbortError') {
                 throw error
             }
+            // Only the web build's token is a credential; native keeps its errors.
+            const integrityRefusal =
+                requestConfig.backend === 'backup' ||
+                !config.webIntegrityBearerEnabled
+                    ? null
+                    : toIntegrityRequiredError(error)
+            if (integrityRefusal) {
+                notifyIntegrityRefused(integrityRefusal)
+                throw integrityRefusal
+            }
             throw await PeraNetworkError.fromKyErrorWithBody(error)
         }
     }
@@ -309,9 +343,9 @@ const setStandardHeaders = ({ request }: BeforeRequestState) => {
         request.headers.set('X-API-Key', config.backendAPIKey)
     }
 
-    // Rides alongside X-API-Key, not instead of it: the capability scope split
-    // that would let us drop the key is a later backend step. Absent on the
-    // first mint, which is exactly how /integrity/* bootstraps without a token.
+    // On web this is the only credential: the extension bakes no X-API-Key
+    // (apps/browser/scripts/web-config.mjs). Absent on the first mint, which is
+    // exactly how /integrity/* bootstraps without a token.
     if (config.webIntegrityBearerEnabled) {
         const integrityToken = readIntegrityToken()
         if (integrityToken) {

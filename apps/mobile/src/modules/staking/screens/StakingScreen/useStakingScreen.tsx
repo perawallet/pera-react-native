@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect } from 'react'
+import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 import {
@@ -31,6 +32,7 @@ type UseStakingScreenResult = {
     isLoading: boolean
     isError: boolean
     isOffline: boolean
+    isIntegrityBlocked: boolean
     handleRetry: () => void
     handleProjectPress: (project: StakingProject) => Promise<void>
     handleHelpOpen: () => void
@@ -46,6 +48,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         data: projects,
         isLoading,
         isError,
+        error,
         isPaused,
         refetch,
     } = useStakingProjectsQuery(currentLanguage)
@@ -58,6 +61,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     // the same "nothing to show" situation — not a dead Retry. Mirrors the
     // charts / TransactionDetails contract.
     const isOffline = isPaused || (isError && !hasInternet)
+    const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
     useEffect(() => {
         trackEvent(StakingEvent.Open)
@@ -133,6 +137,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         isLoading,
         isError,
         isOffline,
+        isIntegrityBlocked,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,

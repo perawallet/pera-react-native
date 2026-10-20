@@ -18,6 +18,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,
+    isIntegrityRequiredError,
 } from '@perawallet/wallet-core-shared'
 import {
     USD_CURRENCY_ID,
@@ -43,6 +44,8 @@ type UseSettingsCurrencyScreenResult = {
      * preferred currency is a local persisted value.
      */
     isRateUnavailableOffline: boolean
+    isIntegrityBlocked: boolean
+    retryCurrencies: () => void
 }
 
 export const useSettingsCurrencyScreen =
@@ -56,7 +59,8 @@ export const useSettingsCurrencyScreen =
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data } = useCurrenciesQuery()
+        const { data, isError, error, refetch } = useCurrenciesQuery()
+        const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { hasInternet } = useNetworkStatus()
@@ -115,5 +119,9 @@ export const useSettingsCurrencyScreen =
             preferredCurrency,
             fallbackCurrency,
             isRateUnavailableOffline,
+            isIntegrityBlocked,
+            retryCurrencies: () => {
+                void refetch()
+            },
         }
     }

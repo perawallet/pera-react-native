@@ -18,6 +18,7 @@ import {
     type PWBadgeProps,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { IntegrityAccessDiagnostics } from './IntegrityAccessDiagnostics'
 import { useSettingsDeveloperAppIntegrity } from './useSettingsDeveloperAppIntegrity'
 import { useStyles } from './styles'
 
@@ -156,6 +157,7 @@ export const SettingsDeveloperAppIntegrityScreen = () => {
                     testID='app_integrity_clear_button'
                 />
             </PWView>
+            <IntegrityAccessDiagnostics />
         </PWView>
     )
 }

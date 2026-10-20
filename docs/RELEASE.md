@@ -38,6 +38,8 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 
 - Builds a zip of `apps/browser/dist`, `pera-extension-web-<environment>-<tag>-<sha7>.zip`, with a `.sha256` beside it. Neither CI uploads to the Chrome Web Store: the production zip is uploaded by hand in the Chrome Web Store Developer Dashboard, after checking it against its `.sha256`. Review and publishing happen there too.
 - Upload only a `production` zip. A staging zip talks to the staging backend and carries "(staging build)" in its description.
+- A production zip carries no API key and needs `WEB_INTEGRITY_MINT_ENABLED`, `WEB_INTEGRITY_BEARER_ENABLED` and `WEB_INTEGRITY_ENROL_ENABLED` all on (`apps/browser/scripts/manifest.mjs` fails the build otherwise), so the production backend must accept enrolled web tokens before such a zip is uploaded.
+- Shipping the extension alone: tag on the `support/vX.Y.Z` branch, then start Bitrise `web-production` by hand on that tag rather than the whole `release-builds` pipeline, so no mobile artifact is built for it. The same CI change also lands on `main`, because pera-ci reads `ci/pipelines.yml` only from there.
 - The manifest `version` is the tag's `X.Y.Z` with the build number as a fourth part, and `version_name` is `X.Y.Z`. The store rejects a package whose `version` is not higher than the last one it accepted; the build number is what keeps two rcs of one version in order.
 
 ### Required Bitrise secrets

@@ -102,12 +102,11 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         platformInitStarted.current = true
         // Counterpart to the same line in the service worker entry point —
         // Metro resolves packages/*/src while esbuild resolves packages/*/dist,
-        // so compare the two before blaming the backend. Host and channel
-        // only; never the API key.
+        // so compare the two before blaming the backend.
         logger.info('Web shell config', {
             appEnvironment: config.appEnvironment,
             build: config.appBuildNumber || '(local)',
-            hasApiKey: config.backendAPIKey.length > 0,
+            integrityBearer: config.webIntegrityBearerEnabled,
         })
         // Chrome's initialize() already Promise.allSettled's the three
         // services, so a single failing one cannot take the others down. Push

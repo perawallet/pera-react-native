@@ -15,7 +15,11 @@ import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     type AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,
@@ -64,6 +68,7 @@ export const WealthChart = memo(function WealthChart({
         data,
         isPending,
         isError,
+        error,
         isPaused,
         refetch,
         isUnavailableOnNetwork,
@@ -84,6 +89,7 @@ export const WealthChart = memo(function WealthChart({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
             onRetry={() => void refetch()}
