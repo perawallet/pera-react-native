@@ -13,21 +13,24 @@
 import { PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
-import { FeeDisplay } from '@modules/algorand'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { useStyles } from './styles'
+import { useTransactionListFooter } from './useTransactionListFooter'
 
 export const TransactionListFooter = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { TotalFee } = useTransactionListFooter()
 
     return (
         <PWView>
             <SigningWarnings isGroup />
 
-            <PWView style={styles.feeContainer}>
-                <FeeDisplay label={t('transactions.common.total_fee')} />
-            </PWView>
+            {TotalFee && (
+                <PWView style={styles.feeContainer}>
+                    <TotalFee label={t('transactions.common.total_fee')} />
+                </PWView>
+            )}
 
             <SigningActionButtons />
         </PWView>

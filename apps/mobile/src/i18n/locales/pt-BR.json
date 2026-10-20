@@ -202,7 +202,7 @@
         "nfd_resolving": "Resolvendo NFD...",
         "nfd_resolved": "Resolvido de {{name}}"
     },
-    "arc59": {
+    "asset_inbox": {
         "requests": {
             "empty_title": "Nenhuma solicitação de transferência de ativos pendente",
             "empty_body": "Quando você tiver uma solicitação de transferência de ativos, ela aparecerá aqui. Toque para saber mais sobre este recurso.",
@@ -211,7 +211,7 @@
         },
         "claim": {
             "reject": "Recusar",
-            "algo_gain": "Você receberá {{amount}} ALGO para compensar os custos do opt-in."
+            "native_gain": "Você receberá {{amount}} para compensar os custos do opt-in."
         }
     },
     "asset": {
@@ -1845,17 +1845,17 @@
             "account": "Conta",
             "reject": "Recusar",
             "reject_title": "Recusar solicitações",
-            "reject_body": "Se você recusar esta solicitação, o ativo recebido será removido permanentemente de circulação. Ele não será devolvido ao remetente. Em vez disso, você receberá {{algoAmount}} ALGO ao concluir este processo irreversível. Observe que, uma vez recusado, o ativo não poderá ser recuperado.",
+            "reject_gain_body": "Se você recusar esta solicitação, o ativo recebido será removido permanentemente de circulação. Ele não será devolvido ao remetente. Em vez disso, você receberá {{amount}} ao concluir este processo irreversível. Observe que, uma vez recusado, o ativo não poderá ser recuperado.",
             "reject_cancel": "Cancelar",
             "processing_title": "Enviando a transação",
             "processing_subtitle": "Sua transação está sendo processada pela rede Algorand",
             "success_title": "Operação concluída",
             "success_subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
             "sender_count_more": "+{{count}} mais",
-            "insufficient_algo_title": "ALGO insuficiente",
-            "insufficient_algo_claim": "Você não tem ALGO suficiente para receber este ativo. Adicione fundos para cobrir o saldo mínimo exigido.",
-            "insufficient_algo_reject": "Você não tem ALGO suficiente para recusar este ativo. Adicione fundos para cobrir as taxas da transação.",
-            "insufficient_algo_cta": "Adicionar fundos"
+            "insufficient_native_title": "{{symbol}} insuficiente",
+            "insufficient_native_claim": "Você não tem {{symbol}} suficiente para receber este ativo. Adicione fundos para cobrir o saldo mínimo exigido.",
+            "insufficient_native_reject": "Você não tem {{symbol}} suficiente para recusar este ativo. Adicione fundos para cobrir as taxas da transação.",
+            "insufficient_native_cta": "Adicionar fundos"
         }
     },
     "multisig": {
@@ -2714,7 +2714,8 @@
             "done": "Concluir",
             "placeholder": "Digite sua nota",
             "button": "+ Adicionar nota",
-            "edit": "Editar nota"
+            "edit": "Editar nota",
+            "too_long": "As notas não podem exceder {{maxBytes}} bytes"
         },
         "asset_selection": {
             "title": "Selecionar ativo",
@@ -2823,7 +2824,7 @@
             "continue": "Continuar",
             "dont_show_again": "Não mostrar novamente"
         },
-        "arc59_summary": {
+        "asset_inbox_summary": {
             "title": "Enviar para a Asset Inbox",
             "description": "O destinatário não adicionou este ativo. Em vez disso, você pode enviá-lo para a Asset Inbox dele.",
             "read_more": "Saiba mais",
@@ -2831,7 +2832,7 @@
             "fees_label": "Taxas de protocolo e saldo mínimo",
             "disclaimer": "A taxa acima será usada para cobrir o saldo mínimo exigido do destinatário. Se o destinatário recusar o ativo, você não receberá nada de volta."
         },
-        "arc59_warning": {
+        "asset_inbox_warning": {
             "title": "Aviso",
             "message": "Antes de enviar estes fundos, confirme que o usuário consegue acessar a Asset Inbox dele:",
             "confirm": "Entendi",
@@ -2844,7 +2845,7 @@
         },
         "insufficient_balance": {
             "title": "Saldo mínimo",
-            "message": "Esta conta não tem o saldo mínimo exigido de {{amount}} ALGO para esta operação.",
+            "required_message": "Esta conta não tem o saldo mínimo exigido de {{amount}} para esta operação.",
             "done": "Concluir"
         },
         "select_sender": {

@@ -20,7 +20,6 @@ import {
     useSelectedAccountId,
     withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     multisigAdapterFor,
     useCreateMultisigAccountMutation,
@@ -46,10 +45,11 @@ type UseNameMultisigScreenResult = {
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
-    // When `params` is present the screen names an imported (QR-scanned)
+    // When `imported` is present the screen names an imported (QR-scanned)
     // shared account; otherwise it names one built via the creation flow.
-    const { params: importParams } =
-        useRoute<RouteProp<MultisigStackParamList, 'NameMultisig'>>()
+    const {
+        params: { chainId, imported: importParams },
+    } = useRoute<RouteProp<MultisigStackParamList, 'NameMultisig'>>()
 
     const storeParticipants = useMultisigCreationStore(
         state => state.participants,
@@ -75,7 +75,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId)
     const deviceId = useScopedDeviceID(scope)
     const createMultisigMutation = useCreateMultisigAccountMutation({
         scope,
@@ -85,7 +85,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         getNextSharedAccountName(
             accounts,
             t('multisig.name.default_name'),
-            LEGACY_CHAIN_ID,
+            chainId,
         ),
     )
     const [isCreating, setIsCreating] = useState(false)
@@ -136,7 +136,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             const alreadyExists = !!findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                chainId,
                 multisigAddress,
             )
             if (alreadyExists) {
@@ -182,6 +182,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     }, [
         isCreating,
         scope,
+        chainId,
         deviceId,
         importParams,
         addresses,

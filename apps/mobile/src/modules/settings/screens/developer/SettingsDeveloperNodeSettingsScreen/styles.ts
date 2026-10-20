@@ -29,14 +29,8 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.lg,
         },
-        fetchButton: {
-            alignSelf: 'flex-start',
-        },
         overrideButton: {
             alignSelf: 'flex-start',
-        },
-        errorText: {
-            color: theme.colors.error,
         },
         actionsRow: {
             flexDirection: 'row',

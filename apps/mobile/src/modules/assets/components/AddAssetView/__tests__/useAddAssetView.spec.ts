@@ -202,6 +202,26 @@ describe('useAddAssetView', () => {
         expect(mockOptIn).not.toHaveBeenCalled()
     })
 
+    it("confirms the opt-in on the selected account's own chain", async () => {
+        mockRequestByType.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        await act(async () => {
+            await result.current.handleRequestAdd('999')
+        })
+
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'asset-opt-in',
+            {
+                assetId: '999',
+                accountAddress: 'test-address',
+                scope: expect.objectContaining({ chainId: 'algorand' }),
+            },
+            expect.anything(),
+        )
+    })
+
     it('surfaces the remote search error instead of hardcoding isError false', () => {
         mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
 

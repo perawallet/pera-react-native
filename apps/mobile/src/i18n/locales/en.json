@@ -202,7 +202,7 @@
         "nfd_resolving": "Resolving NFD...",
         "nfd_resolved": "Resolved from {{name}}"
     },
-    "arc59": {
+    "asset_inbox": {
         "requests": {
             "empty_title": "No Pending Asset Transfer Requests",
             "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
@@ -211,7 +211,7 @@
         },
         "claim": {
             "reject": "Reject",
-            "algo_gain": "You will receive {{amount}} ALGO in order to compensate the opt-in expenses."
+            "native_gain": "You will receive {{amount}} in order to compensate the opt-in expenses."
         }
     },
     "asset": {
@@ -1842,17 +1842,17 @@
             "account": "Account",
             "reject": "Reject",
             "reject_title": "Rejecting Requests",
-            "reject_body": "If you reject this request, the incoming asset will be permanently removed from circulation. It will not be returned to the sender. Instead, you will receive {{algoAmount}} ALGOs upon completion of this irreversible process. Please note that once rejected, the asset cannot be recovered.",
+            "reject_gain_body": "If you reject this request, the incoming asset will be permanently removed from circulation. It will not be returned to the sender. Instead, you will receive {{amount}} upon completion of this irreversible process. Please note that once rejected, the asset cannot be recovered.",
             "reject_cancel": "Cancel",
             "processing_title": "Sending the transaction",
             "processing_subtitle": "Your transaction is being processed by the Algorand network",
             "success_title": "Operation completed",
             "success_subtitle": "Your transaction was successfully received by the Algorand network",
             "sender_count_more": "+{{count}} more",
-            "insufficient_algo_title": "Not enough ALGO",
-            "insufficient_algo_claim": "You don't have enough ALGO to claim this asset. Add funds to cover the minimum balance requirement.",
-            "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees.",
-            "insufficient_algo_cta": "Add funds"
+            "insufficient_native_title": "Not enough {{symbol}}",
+            "insufficient_native_claim": "You don't have enough {{symbol}} to claim this asset. Add funds to cover the minimum balance requirement.",
+            "insufficient_native_reject": "You don't have enough {{symbol}} to reject this asset. Add funds to cover the transaction fees.",
+            "insufficient_native_cta": "Add funds"
         }
     },
     "multisig": {
@@ -2698,7 +2698,8 @@
             "done": "Done",
             "placeholder": "Enter your note",
             "button": "+ Add Note",
-            "edit": "Edit Note"
+            "edit": "Edit Note",
+            "too_long": "Notes may not exceed {{maxBytes}} bytes"
         },
         "asset_selection": {
             "title": "Select Asset",
@@ -2807,7 +2808,7 @@
             "continue": "Continue",
             "dont_show_again": "Don't show this again"
         },
-        "arc59_summary": {
+        "asset_inbox_summary": {
             "title": "Send to Asset Inbox",
             "description": "The receiver is not opted into this asset. You can send it to their asset inbox instead.",
             "read_more": "Read more",
@@ -2815,7 +2816,7 @@
             "fees_label": "Protocol & minimum balance fees",
             "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back."
         },
-        "arc59_warning": {
+        "asset_inbox_warning": {
             "title": "Warning",
             "message": "Before sending these funds, make sure the user can access their Asset Inbox:",
             "confirm": "I Understand",
@@ -2828,7 +2829,7 @@
         },
         "insufficient_balance": {
             "title": "Minimum Balance",
-            "message": "This account doesn't have the required minimum balance of {{amount}} ALGO for this operation.",
+            "required_message": "This account doesn't have the required minimum balance of {{amount}} for this operation.",
             "done": "Done"
         },
         "select_sender": {

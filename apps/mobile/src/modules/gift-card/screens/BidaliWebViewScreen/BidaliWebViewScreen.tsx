@@ -20,6 +20,7 @@ export const BidaliWebViewScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const {
+        isAvailable,
         url,
         bidaliProviderJS,
         onClose,
@@ -27,6 +28,8 @@ export const BidaliWebViewScreen = () => {
         onShouldStartLoadWithRequest,
         webviewRef,
     } = useBidaliWebViewScreen()
+
+    if (!isAvailable) return null
 
     return (
         <PWView style={styles.container}>

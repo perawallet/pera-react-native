@@ -2028,6 +2028,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ASSET_INBOX,
             address: 'addr1',
+            target: { chainId: 'algorand' },
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -2047,6 +2048,7 @@ describe('useDeepLink', () => {
                     inboxAddress: 'addr1',
                     requestCount: 1,
                 },
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             },
         })
     })
@@ -2447,7 +2449,7 @@ describe('useDeepLink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',
-                    transport: 'algod',
+                    transport: 'network',
                     txs: [builtTx],
                 }),
             )

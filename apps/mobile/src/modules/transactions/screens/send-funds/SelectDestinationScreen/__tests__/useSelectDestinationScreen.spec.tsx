@@ -241,7 +241,7 @@ describe('useSelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ExpressSend')
     })
 
-    it('navigates to ARC59SendSummary for internal watch account not opted in', () => {
+    it('navigates to AssetInboxSendSummary for internal watch account not opted in', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
@@ -256,8 +256,8 @@ describe('useSelectDestinationScreen', () => {
             result.current.handleSelected(INTERNAL_WATCH_ADDR)
         })
 
-        expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
-        expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+        expect(mockSetSendMode).toHaveBeenCalledWith('sendAssetInbox')
+        expect(mockNavigate).toHaveBeenCalledWith('AssetInboxSendSummary')
     })
 
     it('navigates to ConfirmTransaction for external account already opted in on-chain', async () => {
@@ -285,7 +285,7 @@ describe('useSelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('navigates to ARC59SendSummary for external account not opted in on-chain', async () => {
+    it('navigates to AssetInboxSendSummary for external account not opted in on-chain', async () => {
         ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: { holdings: [] },
             isFetching: false,
@@ -299,11 +299,11 @@ describe('useSelectDestinationScreen', () => {
             result.current.handleSelected(EXTERNAL_ADDR)
         })
 
-        expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
-        expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+        expect(mockSetSendMode).toHaveBeenCalledWith('sendAssetInbox')
+        expect(mockNavigate).toHaveBeenCalledWith('AssetInboxSendSummary')
     })
 
-    it('falls back to ARC59SendSummary when on-chain query fails for external account', async () => {
+    it('falls back to AssetInboxSendSummary when on-chain query fails for external account', async () => {
         ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
@@ -317,8 +317,8 @@ describe('useSelectDestinationScreen', () => {
             result.current.handleSelected(EXTERNAL_ADDR)
         })
 
-        expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
-        expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+        expect(mockSetSendMode).toHaveBeenCalledWith('sendAssetInbox')
+        expect(mockNavigate).toHaveBeenCalledWith('AssetInboxSendSummary')
     })
 
     // ARC-59 needs the router contract + Pera backend; on networks without
@@ -341,7 +341,7 @@ describe('useSelectDestinationScreen', () => {
                 result.current.handleSelected(INTERNAL_WATCH_ADDR)
             })
 
-            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendArc59')
+            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendAssetInbox')
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'error' }),
@@ -363,7 +363,7 @@ describe('useSelectDestinationScreen', () => {
                 result.current.handleSelected(EXTERNAL_ADDR)
             })
 
-            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendArc59')
+            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendAssetInbox')
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'error' }),
@@ -417,7 +417,7 @@ describe('useSelectDestinationScreen', () => {
             expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
         })
 
-        it('routes an unopted-in external prefilled receiver through ARC59', async () => {
+        it('routes an unopted-in external prefilled receiver through the asset inbox', async () => {
             ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
                 data: { holdings: [] },
                 isFetching: false,
@@ -435,8 +435,8 @@ describe('useSelectDestinationScreen', () => {
                 renderHook(() => useSelectDestinationScreen())
             })
 
-            expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
-            expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+            expect(mockSetSendMode).toHaveBeenCalledWith('sendAssetInbox')
+            expect(mockNavigate).toHaveBeenCalledWith('AssetInboxSendSummary')
         })
 
         it('shows the picker (no auto-advance) when no destination is prefilled', () => {

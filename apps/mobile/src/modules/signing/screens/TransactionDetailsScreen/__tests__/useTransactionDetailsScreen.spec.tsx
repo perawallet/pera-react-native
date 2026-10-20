@@ -21,8 +21,17 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    allCapabilities,
+    ETHEREUM_CHAIN_ID,
+    fixtureEthereumDescriptor,
+} from '@test-utils/chain-fixtures'
 import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
+
+const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'testnet' }
+const ETHEREUM_SCOPE = { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }
 
 const mockPush = vi.fn()
 const routeParams: { current: Record<string, unknown> } = { current: {} }
@@ -85,7 +94,7 @@ describe('useTransactionDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
-        routeParams.current = {}
+        routeParams.current = { scope: ALGORAND_SCOPE }
         useNetworkStatusStore.getState().setHasInternet(true)
         historyChainAdapters.reset()
         historyChainAdapters.register(algorandHistoryAdapter)
@@ -93,6 +102,7 @@ describe('useTransactionDetailsScreen', () => {
 
     it('renders content from the threaded history row while the fetch is paused offline', () => {
         routeParams.current = {
+            scope: ALGORAND_SCOPE,
             transactionId: 'TX123',
             historyTransaction: historyItem,
         }
@@ -114,7 +124,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('shows the offline state when paused with no local data', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({ isPaused: true }),
         )
@@ -125,7 +138,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('shows typed error copy when the fetch fails', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({
                 isError: true,
@@ -143,7 +159,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('prefers the offline state over a stale error when the device is offline', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         // The query carries a prior non-offline error (e.g. a timeout from
         // before connectivity dropped); offline must win so the Retry isn't dead.
         mockUseTransactionDetailQuery.mockReturnValue(
@@ -160,7 +179,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('falls back to generic error copy for untyped errors', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({ isError: true, error: new Error('boom') }),
         )
@@ -175,7 +197,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('shows loading while fetching without any local data', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({ isLoading: true }),
         )
@@ -192,6 +217,7 @@ describe('useTransactionDetailsScreen', () => {
             note: new Uint8Array([1]),
         } as unknown as PeraDisplayableTransaction
         routeParams.current = {
+            scope: ALGORAND_SCOPE,
             transactionId: 'TX123',
             historyTransaction: historyItem,
         }
@@ -216,6 +242,7 @@ describe('useTransactionDetailsScreen', () => {
             txType: 'pay',
         } as unknown as PeraDisplayableTransaction
         routeParams.current = {
+            scope: ALGORAND_SCOPE,
             transaction: { family: 'algorand', transaction: paramTransaction },
         }
 
@@ -234,7 +261,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('retries via the query refetch when online', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({ isError: true, error: new Error('boom') }),
         )
@@ -248,7 +278,10 @@ describe('useTransactionDetailsScreen', () => {
     })
 
     it('short-circuits retry while offline instead of firing a doomed refetch', () => {
-        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX_UNKNOWN',
+        }
         mockUseTransactionDetailQuery.mockReturnValue(
             queryResult({ isPaused: true }),
         )
@@ -264,6 +297,7 @@ describe('useTransactionDetailsScreen', () => {
 
     it('returns the route group id for the group panel to read', () => {
         routeParams.current = {
+            scope: ALGORAND_SCOPE,
             transactionId: 'TX123',
             historyTransaction: historyItem,
             groupId: 'GROUP1',
@@ -276,6 +310,7 @@ describe('useTransactionDetailsScreen', () => {
 
     it('pushes the related transaction as tagged', () => {
         routeParams.current = {
+            scope: ALGORAND_SCOPE,
             transactionId: 'TX123',
             historyTransaction: historyItem,
             groupId: 'GROUP1',
@@ -291,8 +326,29 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
+            scope: ALGORAND_SCOPE,
             transaction: { family: 'algorand', transaction: inner },
             groupId: 'GROUP1',
+        })
+    })
+
+    it('fetches nothing for a chain whose UI registers no detail fetch', () => {
+        getProvider().chains.register(
+            { ...fixtureEthereumDescriptor, family: 'evm' },
+            allCapabilities(false),
+        )
+        routeParams.current = {
+            scope: ETHEREUM_SCOPE,
+            transactionId: '0xabc',
+        }
+
+        const { result } = renderHook(() => useTransactionDetailsScreen())
+
+        expect(mockUseTransactionDetailQuery).not.toHaveBeenCalled()
+        expect(result.current.renderState).toEqual({
+            kind: 'error',
+            titleKey: 'errors.general.title',
+            bodyKey: 'errors.general.body',
         })
     })
 
@@ -303,6 +359,7 @@ describe('useTransactionDetailsScreen', () => {
             ['replaced', 'warning', 'transactions.notice.replaced'],
         ] as const)('flags a %s history row', (status, kind, titleKey) => {
             routeParams.current = {
+                scope: ALGORAND_SCOPE,
                 transactionId: 'TX123',
                 historyTransaction: { ...historyItem, status },
             }
@@ -317,6 +374,7 @@ describe('useTransactionDetailsScreen', () => {
 
         it('says since when a pending row has been waiting', () => {
             routeParams.current = {
+                scope: ALGORAND_SCOPE,
                 transactionId: 'TX123',
                 historyTransaction: { ...historyItem, status: 'pending' },
             }
@@ -328,6 +386,7 @@ describe('useTransactionDetailsScreen', () => {
 
         it('has none for a confirmed history row', () => {
             routeParams.current = {
+                scope: ALGORAND_SCOPE,
                 transactionId: 'TX123',
                 historyTransaction: historyItem,
             }
@@ -338,7 +397,10 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         it('has none for a transaction opened outside history', () => {
-            routeParams.current = { transactionId: 'TX123' }
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: 'TX123',
+            }
 
             const { result } = renderHook(() => useTransactionDetailsScreen())
 

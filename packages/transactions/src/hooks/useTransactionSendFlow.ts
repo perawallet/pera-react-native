@@ -44,12 +44,21 @@ import {
     type Nullable,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
-import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
+import {
+    sendFlowChainAdapters,
+    sendFlowFeatureFor,
+    type AssetInboxQuote,
+} from '../chain-adapter'
 import { holdingReserveOf, transferChainAdapters } from '../transfer-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
-    sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
+    sendMode:
+        | 'normal'
+        | 'express'
+        | 'sendAssetInbox'
+        | 'claimAssetInbox'
+        | 'rejectAssetInbox'
     sender?: WalletAccount
     receiver?: string
     asset?: PeraAsset
@@ -58,20 +67,20 @@ type BaseSendParams = {
 }
 
 type SendTransactionParams = BaseSendParams & {
-    sendMode: 'normal' | 'express' | 'sendArc59'
+    sendMode: 'normal' | 'express' | 'sendAssetInbox'
     note?: string
     isCloseAccount?: boolean
     /** The speed a gas-priced chain builds at; a flat-fee chain ignores it. */
     feePreset?: FeePreset
     /** The inbox quote the send was confirmed against; the chain adapter validates it. */
-    arc59Summary?: unknown
+    assetInboxQuote?: AssetInboxQuote
 }
 
 type SendClaimParams = BaseSendParams & {
-    sendMode: 'claimArc59' | 'rejectArc59'
+    sendMode: 'claimAssetInbox' | 'rejectAssetInbox'
     shouldClaimAlgo: boolean
     /**
-     * Base units. When set on a `claimArc59` send, the flow credits it locally
+     * Base units. When set on a `claimAssetInbox` send, the flow credits it locally
      * right after submission. Omit to rely on the post-confirmation refresh.
      */
     amount?: Decimal
@@ -300,8 +309,8 @@ export const useTransactionSendFlow = (
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
-                case 'sendArc59': {
-                    if (!params.arc59Summary) {
+                case 'sendAssetInbox': {
+                    if (!params.assetInboxQuote) {
                         throw new InvalidSendParamsError()
                     }
                     const assetInbox = sendFlowFeatureFor(scope, 'assetInbox')
@@ -322,7 +331,7 @@ export const useTransactionSendFlow = (
                             params.amount,
                             assetDecimals,
                         ),
-                        summary: params.arc59Summary,
+                        quote: params.assetInboxQuote,
                         senderMinFee,
                     })
                     const result = await submit({
@@ -359,7 +368,7 @@ export const useTransactionSendFlow = (
         ],
     )
 
-    const executeArc59 = useCallback(
+    const executeAssetInboxResolution = useCallback(
         async (params: SendClaimParams): Promise<string> => {
             if (!params.asset || !params.sender) {
                 throw new InvalidSendParamsError()
@@ -376,7 +385,7 @@ export const useTransactionSendFlow = (
                 pqMultiplier,
             })
 
-            if (params.sendMode === 'claimArc59') {
+            if (params.sendMode === 'claimAssetInbox') {
                 const unsignedTxs = await assetInbox.buildClaimTxs({
                     scope: scope,
                     sender: senderAddress,
@@ -452,14 +461,14 @@ export const useTransactionSendFlow = (
                 throw new InvalidSendParamsError()
             }
             if (
-                params.sendMode === 'claimArc59' ||
-                params.sendMode === 'rejectArc59'
+                params.sendMode === 'claimAssetInbox' ||
+                params.sendMode === 'rejectAssetInbox'
             ) {
-                return await executeArc59(params)
+                return await executeAssetInboxResolution(params)
             }
             return await executeSend(params as SendTransactionParams)
         },
-        [executeArc59, executeSend],
+        [executeAssetInboxResolution, executeSend],
     )
 
     return { execute }

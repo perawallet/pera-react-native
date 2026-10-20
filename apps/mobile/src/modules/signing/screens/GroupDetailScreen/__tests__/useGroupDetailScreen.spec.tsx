@@ -63,6 +63,10 @@ const mockItemExternal: SingleTransactionItem = {
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
+        currentRequest: {
+            type: 'transactions',
+            txs: [{ scope: { chainId: 'algorand', networkId: 'testnet' } }],
+        },
         listItems: [
             {
                 type: 'transaction',
@@ -119,6 +123,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItem1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             transaction: mockTx1,
             isExternal: false,
         })
@@ -130,6 +135,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItemExternal)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             transaction: mockTx1,
             isExternal: true,
         })

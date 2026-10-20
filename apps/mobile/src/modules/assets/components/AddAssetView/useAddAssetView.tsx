@@ -14,13 +14,14 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useAccountsStore,
+    useAccountScope,
+    useRegisteredChainIds,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -32,7 +33,6 @@ import {
     isIntegrityRequiredError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
@@ -59,7 +59,6 @@ type UseAddAssetViewResult = {
 export const useAddAssetView = (
     options?: UseAddAssetViewOptions,
 ): UseAddAssetViewResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
     const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
@@ -72,6 +71,7 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    const scope = useAccountScope(selectedAccount, useRegisteredChainIds()[0])
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
@@ -137,7 +137,7 @@ export const useAddAssetView = (
 
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: selectedAddress },
+                { assetId, accountAddress: selectedAddress, scope },
                 {
                     size: 'auto',
                     enablePanDownToClose: true,
@@ -185,6 +185,7 @@ export const useAddAssetView = (
         },
         [
             selectedAddress,
+            scope,
             optingInAssetIds,
             requestByType,
             results,

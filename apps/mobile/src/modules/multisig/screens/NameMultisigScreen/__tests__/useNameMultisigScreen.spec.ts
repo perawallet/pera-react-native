@@ -15,8 +15,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNameMultisigScreen } from '../useNameMultisigScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
-import type { NameMultisigImportParams } from '../../../routes/types'
+import type {
+    MultisigStackParamList,
+    NameMultisigImportParams,
+} from '../../../routes/types'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
@@ -41,8 +49,10 @@ const mockNavigation = {
     setOptions: mockSetOptions,
 }
 const mockUseRoute = vi.fn<
-    () => { params: NameMultisigImportParams | undefined }
->(() => ({ params: undefined }))
+    () => { params: MultisigStackParamList['NameMultisig'] }
+>(() => ({ params: { chainId: 'algorand' } }))
+const mockUseCreateMultisigAccountMutation = vi.fn<(params: unknown) => void>()
+const mockMultisigAdapterFor = vi.fn<(scope: unknown) => void>()
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -70,21 +80,25 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    useCreateMultisigAccountMutation: () => ({
-        mutateAsync: mockMutateAsync,
-    }),
-    multisigAdapterFor: () => ({
-        chainId: 'algorand',
-        deriveAddress: ({
-            version,
-            threshold,
-            addresses,
-        }: {
-            version: number
-            threshold: number
-            addresses: string[]
-        }) => mockDeriveMultisigAddress(version, threshold, addresses),
-    }),
+    useCreateMultisigAccountMutation: (params: unknown) => {
+        mockUseCreateMultisigAccountMutation(params)
+        return { mutateAsync: mockMutateAsync }
+    },
+    multisigAdapterFor: (scope: { chainId: string }) => {
+        mockMultisigAdapterFor(scope)
+        return {
+            chainId: scope.chainId,
+            deriveAddress: ({
+                version,
+                threshold,
+                addresses,
+            }: {
+                version: number
+                threshold: number
+                addresses: string[]
+            }) => mockDeriveMultisigAddress(version, threshold, addresses),
+        }
+    },
 }))
 
 vi.mock(
@@ -161,7 +175,8 @@ describe('useNameMultisigScreen', () => {
         mockMutateAsync.mockResolvedValue(undefined)
         mockDeriveMultisigAddress.mockReturnValue('MULTISIG_ADDR')
         mockAddListener.mockReturnValue(vi.fn())
-        mockUseRoute.mockReturnValue({ params: undefined })
+        mockUseRoute.mockReturnValue({ params: { chainId: 'algorand' } })
+        restoreAlgorandOnlyChains()
 
         const store = useMultisigCreationStore.getState()
         store.resetState()
@@ -355,6 +370,50 @@ describe('useNameMultisigScreen', () => {
         expect(result.current.isCreating).toBe(false)
     })
 
+    it('creates the account on the Algorand route chain', async () => {
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockUseCreateMultisigAccountMutation).toHaveBeenCalledWith({
+            scope: expect.objectContaining({ chainId: 'algorand' }),
+        })
+        expect(mockMultisigAdapterFor).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
+    })
+
+    it('creates and dedupes on an Ethereum route chain', async () => {
+        registerEthereumChain()
+        mockUseRoute.mockReturnValue({
+            params: { chainId: ETHEREUM_CHAIN_ID },
+        })
+        mockUseAllAccounts.mockReturnValue([
+            {
+                chains: { [ETHEREUM_CHAIN_ID]: { address: 'MULTISIG_ADDR' } },
+                name: 'Existing',
+                custody: { kind: 'local', seed: null },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockUseCreateMultisigAccountMutation).toHaveBeenCalledWith({
+            scope: expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+        })
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'multisig.name.duplicate_account_title',
+            'multisig.name.duplicate_account_body',
+        )
+        expect(mockMutateAsync).not.toHaveBeenCalled()
+    })
+
     it('handleFinish shows error toast and skips mutation when deviceId is missing', async () => {
         mockUseDeviceID.mockReturnValue('')
 
@@ -459,7 +518,9 @@ describe('useNameMultisigScreen', () => {
         }
 
         beforeEach(() => {
-            mockUseRoute.mockReturnValue({ params: importParams })
+            mockUseRoute.mockReturnValue({
+                params: { chainId: 'algorand', imported: importParams },
+            })
             // Import happy path: the address re-derived from the scanned
             // (version, threshold, participants) must equal the address the
             // QR payload carried, or handleFinish aborts on the mismatch

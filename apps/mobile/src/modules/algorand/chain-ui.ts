@@ -13,12 +13,16 @@
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
+import { AlgorandCustomNodeForm } from './components/AlgorandCustomNodeForm'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
 import { AlgorandTransactionPreviewRow } from './components/AlgorandTransactionPreviewRow'
 import { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
 import { AlgorandSendNoteSection } from './components/AlgorandSendNoteSection'
 import { AssetSecurityTags } from './components/AssetSecurityTags'
 import { AssetVerificationCard } from './components/AssetVerificationCard'
+import { FeeDisplay } from './components/FeeDisplay'
+import { GroupTransactionsPanel } from './components/transaction-details/GroupTransactionsPanel'
+import { useAlgorandTransactionDetail } from './hooks/useAlgorandTransactionDetail'
 
 // ALGO's backend link points at Algoscan, which the descriptor's explorer builders can't express.
 export const resolveAlgorandAssetAbout = ({
@@ -47,6 +51,9 @@ export const algorandChainUi: ChainUi = {
         ReviewBody: AlgorandTransactionReviewBody,
         DetailBody: AlgorandTransactionDetailBody,
         PreviewRow: AlgorandTransactionPreviewRow,
+        useTransactionDetail: useAlgorandTransactionDetail,
+        RelatedTransactions: GroupTransactionsPanel,
+        TotalFee: FeeDisplay,
     },
     assetDetails: {
         VerificationSection: AssetVerificationCard,
@@ -55,5 +62,8 @@ export const algorandChainUi: ChainUi = {
     },
     sendConfirmation: {
         TrailingSection: AlgorandSendNoteSection,
+    },
+    customNode: {
+        Form: AlgorandCustomNodeForm,
     },
 }

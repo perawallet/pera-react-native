@@ -59,6 +59,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedChainMode: () => mockChainMode,
 }))
 
+// The account's own chain, as useAccountScope resolves it.
+vi.mock('../useGiftCardScope', () => ({
+    useGiftCardScope: (account?: { chains: Record<string, unknown> }) => ({
+        chainId:
+            account && 'ethereum' in account.chains ? 'ethereum' : 'algorand',
+        networkId: mockNetwork,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     sendFlowChainAdapters: {
         get: () => ({ buildTransferTxs: mockBuildTransferTxs }),
@@ -434,12 +443,47 @@ describe('useBidaliTransport', () => {
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',
-                    transport: 'algod',
+                    transport: 'network',
                     txs: [{ fake: 'txn' }],
                     sourceMetadata: expect.objectContaining({
                         name: 'giftCard.signing.source_name',
                         description: 'giftCard.signing.source_description',
                     }),
+                }),
+            )
+        })
+
+        it("builds the payment on an Ethereum account's own chain", async () => {
+            addressCodecs.register({
+                ...fixtureCodec,
+                chainId: 'ethereum',
+                isValid: address => address.startsWith('0x'),
+            })
+            const ethereumAccount: WalletAccount = {
+                id: 'bidali-ethereum-account',
+                chains: { ethereum: { address: '0xSENDER', keyPairId: 'kp' } },
+                name: 'Eth',
+                custody: { kind: 'local', seed: null },
+            }
+            const { result } = renderHook(() =>
+                useBidaliTransport(ethereumAccount, emptyBalances),
+            )
+
+            await act(async () =>
+                result.current.handleMessage(
+                    bidaliRPC('bidaliPaymentRequest', {
+                        address: '0xRECEIVER',
+                        amount: '1.5',
+                        protocol: 'algorand',
+                    }),
+                ),
+            )
+
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    sender: '0xSENDER',
+                    receiver: '0xRECEIVER',
                 }),
             )
         })

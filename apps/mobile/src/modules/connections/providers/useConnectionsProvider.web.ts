@@ -50,6 +50,9 @@ const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
+// The `window.pera` protocol carries no chain, so the dapp handler answers for one.
+const DAPP_CHAIN_ID: ChainId = LEGACY_CHAIN_ID
+
 // Handlers are never initialized here; they only answer descriptor queries
 // (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for dapp).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
@@ -63,11 +66,11 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: DAPP_CHAIN_ID,
                     getNetworkId,
                     getCustomNetworkGenesisHash: () =>
-                        customNodeAdapters.has(LEGACY_CHAIN_ID)
-                            ? customNodeAdapters.get(LEGACY_CHAIN_ID).read()
+                        customNodeAdapters.has(DAPP_CHAIN_ID)
+                            ? customNodeAdapters.get(DAPP_CHAIN_ID).read()
                                   ?.genesisHash
                             : undefined,
                     // Descriptor-only in UI realms; the offscreen host owns the live handler.

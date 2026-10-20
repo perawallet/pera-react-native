@@ -21,16 +21,13 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
+    formatAssetAmount,
     useNativeAsset,
     type PeraAsset,
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    ALGO_ASSET_NAME,
-    formatCurrency,
     generateOrderedUniqueId,
     isIntegrityRequiredError,
     type Nullable,
@@ -38,15 +35,15 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
 import type { SvgProps } from 'react-native-svg'
 
-type UseARC59SendSummaryScreenResult = {
+type UseAssetInboxSendSummaryScreenResult = {
     summary?: AssetInboxSendSummary
     isLoading: boolean
     isUnavailableOnNetwork: boolean
@@ -54,7 +51,9 @@ type UseARC59SendSummaryScreenResult = {
     assetId: string
     recipientAddress: string
     amount: Nullable<Decimal>
+    /** Display units of the native asset. */
     fee: Nullable<Decimal>
+    nativeAsset: PeraAsset
     asset: Nullable<PeraAsset>
     HeaderImageComponent: FC<SvgProps>
     handleSend: () => void
@@ -63,13 +62,13 @@ type UseARC59SendSummaryScreenResult = {
     isProcessing: boolean
 }
 
-export const useARC59SendSummaryScreen =
-    (): UseARC59SendSummaryScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const useAssetInboxSendSummaryScreen =
+    (): UseAssetInboxSendSummaryScreenResult => {
+        const scope = useSendScope()
         const nativeAsset = useNativeAsset(scope)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { selectedAssetId, destination, amount, setArc59Summary } =
+        const { selectedAssetId, destination, amount, setAssetInboxQuote } =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
         const { request: requestBottomSheet } = useBottomSheet()
@@ -121,18 +120,13 @@ export const useARC59SendSummaryScreen =
 
             // Gate on the amount actually signed, not any other fee the
             // backend quotes.
-            const requiredMicroAlgo = summary.fundingAmount
+            const required = new Decimal(summary.fundingAmount.toString())
 
-            if (spendable.max.lt(requiredMicroAlgo.toString())) {
-                const requiredAlgo = toWholeUnits(
-                    requiredMicroAlgo,
-                    nativeAsset,
-                )
+            if (spendable.max.lt(required)) {
                 navigation.replace('InsufficientBalance', {
-                    requiredBalanceLabel: formatCurrency(
-                        requiredAlgo,
-                        nativeAsset.decimals,
-                        ALGO_ASSET_NAME,
+                    requiredBalanceLabel: formatAssetAmount(
+                        required,
+                        nativeAsset,
                     ),
                 })
             }
@@ -140,9 +134,9 @@ export const useARC59SendSummaryScreen =
 
         useEffect(() => {
             if (summary) {
-                setArc59Summary(summary.quote)
+                setAssetInboxQuote(summary.quote)
             }
-        }, [summary, setArc59Summary])
+        }, [summary, setAssetInboxQuote])
 
         const fee = summary
             ? toWholeUnits(summary.fundingAmount, nativeAsset)
@@ -164,7 +158,7 @@ export const useARC59SendSummaryScreen =
             // idle if the user backs out (dismisses the warning).
             setIsProcessing(true)
             const result = await requestBottomSheet<'confirm'>({
-                contents: <ARC59WarningContent />,
+                contents: <AssetInboxWarningContent />,
                 options: { size: 'auto', enablePanDownToClose: true },
             })
             if (result === 'confirm') {
@@ -197,6 +191,7 @@ export const useARC59SendSummaryScreen =
             assetId,
             recipientAddress: receiverAddress,
             fee,
+            nativeAsset,
             amount: amount ?? null,
             HeaderImageComponent: headerImage,
             asset: asset ?? null,

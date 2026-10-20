@@ -17,25 +17,19 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { INVALID_ENDPOINT_MESSAGE_KEY } from './isValidEndpoint'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
+import {
+    INVALID_ENDPOINT_MESSAGE_KEY,
+    type CustomNodeFormProps,
+} from '@modules/settings'
 import { useStyles } from './styles'
-import { useCustomNetworkSheet } from './useCustomNetworkSheet'
+import { useAlgorandCustomNodeForm } from './useAlgorandCustomNodeForm'
 
-/**
- * Pure presentation over `useCustomNetworkSheet` — every field is a
- * controlled draft value, and Save/Cancel/Reset just forward to the sheet's
- * handlers. Mounted by the app's bottom-sheet manager
- * (`@modules/bottom-sheet`) rather than a directly-rendered `PWBottomSheet`,
- * so the manager's host supplies the sheet chrome (backdrop, dismiss,
- * hardware back) and this component only renders the content and
- * resolves/dismisses itself via `useBottomSheetResult`.
- */
-export const CustomNetworkSheet = () => {
+export const AlgorandCustomNodeForm = ({ chainId }: CustomNodeFormProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const sheet = useCustomNetworkSheet()
+    const sheet = useAlgorandCustomNodeForm(chainId)
     const { resolve, dismiss } = useBottomSheetResult<void>()
 
     const handleSaveAndClose = async () => {

@@ -18,7 +18,6 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useClaimAssets } from '@modules/transactions/hooks'
@@ -29,20 +28,21 @@ import { useCanFundAccount } from '@modules/onramp'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import {
-    ALGO_ASSET_NAME,
-    DEFAULT_PRECISION,
-    formatCurrency,
-    type Nullable,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+    formatAssetAmount,
+    useNativeAsset,
+    toWholeUnits,
+} from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
     request: Nullable<AssetInboxRequest>
     receiverAccount: Nullable<WalletAccount>
     amount: Decimal
+    /** The native asset's ticker, for the insufficient-funds copy. */
+    nativeSymbol: string
+    /** Formatted native amount credited on claim, or null when there is none. */
+    claimGainLabel: Nullable<string>
     isClaimBlocked: boolean
     isRejectBlocked: boolean
     handleClaim: () => void
@@ -54,12 +54,12 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const nativeAsset = useNativeAsset(scope)
         const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
-        const { assetIndex } = route.params
+        const { assetIndex, scope } = route.params
+        const nativeAsset = useNativeAsset(scope)
+        const nativeSymbol = nativeAsset.unitName ?? ''
         const { assetRequests, accountAddress } = useClaimAssets()
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
@@ -69,19 +69,19 @@ export const useAssetClaimDetailScreen =
 
         const request = assetRequests[assetIndex] ?? null
         const account = accountAddress
-            ? findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, accountAddress)
+            ? findAccountByAddressOn(accounts, scope.chainId, accountAddress)
             : undefined
         const canBuy = useCanFundAccount(account)
 
         // The opt-in this claim performs raises the account's minimum balance,
         // so a claim the backend says is unaffordable can only be unblocked by
-        // adding ALGO — unless the inbox itself carries enough to cover it.
+        // adding native funds — unless the inbox itself carries enough to cover it.
         const isClaimBlocked =
             !!request?.insufficientAlgoForClaiming &&
             !request.shouldUseFundsBeforeClaiming
 
         // Rejecting only pays a fee, so it can be affordable when claiming is
-        // not; the two are stated separately rather than as one "no ALGO".
+        // not; the two are stated separately rather than as one "no funds".
         const isRejectBlocked =
             !!request?.insufficientAlgoForRejecting &&
             !request.shouldUseFundsBeforeRejecting
@@ -94,7 +94,9 @@ export const useAssetClaimDetailScreen =
             if (isClaimBlocked) {
                 showToast({
                     title: t('errors.transaction.title'),
-                    body: t('messages.claim.insufficient_algo_claim'),
+                    body: t('messages.claim.insufficient_native_claim', {
+                        symbol: nativeSymbol,
+                    }),
                     type: 'error',
                 })
                 return
@@ -103,13 +105,23 @@ export const useAssetClaimDetailScreen =
             push('Messages', {
                 screen: 'ClaimProcessing',
                 params: {
-                    mode: 'claimArc59',
+                    mode: 'claim',
                     assetIndex,
                     shouldClaimAlgo:
                         request?.shouldUseFundsBeforeClaiming ?? false,
+                    scope,
                 },
             })
-        }, [push, assetIndex, request, showToast, t, isClaimBlocked])
+        }, [
+            push,
+            assetIndex,
+            request,
+            showToast,
+            t,
+            isClaimBlocked,
+            nativeSymbol,
+            scope,
+        ])
 
         const handleRejectPress = useCallback(async () => {
             if (!request) return
@@ -117,22 +129,16 @@ export const useAssetClaimDetailScreen =
             if (isRejectBlocked) {
                 errorToast(
                     t('errors.transaction.title'),
-                    t('messages.claim.insufficient_algo_reject'),
+                    t('messages.claim.insufficient_native_reject', {
+                        symbol: nativeSymbol,
+                    }),
                 )
                 return
             }
 
-            const algoDisplayAmount = formatCurrency(
-                baseUnitsToDisplayUnits(
-                    request.microAlgoGainOnReject,
-                    nativeAsset.decimals,
-                ),
-                nativeAsset.decimals,
-                ALGO_ASSET_NAME,
-                undefined,
-                false,
-                false,
-                DEFAULT_PRECISION,
+            const rejectGainLabel = formatAssetAmount(
+                request.microAlgoGainOnReject,
+                nativeAsset,
             )
 
             const confirmed = await requestBottomSheet<boolean>({
@@ -141,8 +147,8 @@ export const useAssetClaimDetailScreen =
                         icon='warning'
                         iconVariant='error'
                         title={t('messages.claim.reject_title')}
-                        message={t('messages.claim.reject_body', {
-                            algoAmount: algoDisplayAmount,
+                        message={t('messages.claim.reject_gain_body', {
+                            amount: rejectGainLabel,
                         })}
                         confirmLabel={t('messages.claim.reject')}
                         cancelLabel={t('messages.claim.reject_cancel')}
@@ -157,10 +163,11 @@ export const useAssetClaimDetailScreen =
             push('Messages', {
                 screen: 'ClaimProcessing',
                 params: {
-                    mode: 'rejectArc59',
+                    mode: 'reject',
                     assetIndex,
                     shouldClaimAlgo:
                         request.shouldUseFundsBeforeRejecting ?? false,
+                    scope,
                 },
             })
         }, [
@@ -171,7 +178,9 @@ export const useAssetClaimDetailScreen =
             t,
             errorToast,
             isRejectBlocked,
-            nativeAsset.decimals,
+            nativeAsset,
+            nativeSymbol,
+            scope,
         ])
 
         const handleCopyAssetId = useCallback(() => {
@@ -185,9 +194,16 @@ export const useAssetClaimDetailScreen =
             return toWholeUnits(request.totalAmount, request.asset)
         }, [request])
 
+        const claimGainLabel = useMemo(() => {
+            if (!request || request.microAlgoGainOnClaim.isZero()) return null
+            return formatAssetAmount(request.microAlgoGainOnClaim, nativeAsset)
+        }, [request, nativeAsset])
+
         return {
             request,
             amount,
+            nativeSymbol,
+            claimGainLabel,
             receiverAccount: account ?? null,
             isClaimBlocked,
             isRejectBlocked,

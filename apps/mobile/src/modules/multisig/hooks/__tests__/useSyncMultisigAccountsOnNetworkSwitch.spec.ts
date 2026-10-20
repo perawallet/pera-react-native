@@ -18,7 +18,10 @@ import type {
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const {
@@ -27,7 +30,9 @@ const {
     accountsMock,
     createMultisigAccountMock,
     loggerMock,
+    chainIdsMock,
 } = vi.hoisted(() => ({
+    chainIdsMock: { current: ['algorand'] as string[] },
     networkMock: { current: 'testnet' as 'mainnet' | 'testnet' },
     deviceIdMock: { current: 'device-testnet' as Nullable<string> },
     accountsMock: { current: [] as WalletAccount[] },
@@ -44,10 +49,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async () => {
         networkMock.current === 'mainnet' ? 'live' : 'developer'
     return {
         useWalletDeployment: deploymentOf,
-        useSelectedScope: (chainId: string) => ({
-            chainId,
-            networkId: networkMock.current,
-        }),
+        useNetworkStore: <T>(selector: (state: object) => T): T => selector({}),
+        selectChainNetworkId: () => networkMock.current,
         useOnDeploymentSwitch: (
             handler: (from: WalletMode, to: WalletMode) => void,
         ) => {
@@ -66,15 +69,20 @@ vi.mock('@perawallet/wallet-core-chain-shared', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => deviceIdMock.current,
+    useDeviceStore: <T>(selector: (state: object) => T): T => selector({}),
+    deviceIdForScope: () => deviceIdMock.current,
+}))
+
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainIds: () => chainIdsMock.current,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     isMultisigAccount: (account: { custody?: { kind: string } }) =>
         account.custody?.kind === 'multisig',
-    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+    chainAccountOf: (account: WalletAccount, chainId: ChainId) =>
         account.chains[chainId],
-    multisigParametersOf: (account: WalletAccount, chainId: 'algorand') => {
+    multisigParametersOf: (account: WalletAccount, chainId: ChainId) => {
         const native = account.chains[chainId]?.native
         return native?.family === 'algorand' ? native.multisig : undefined
     },
@@ -91,6 +99,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { useSyncMultisigAccountsOnNetworkSwitch } from '../useSyncMultisigAccountsOnNetworkSwitch'
 
+// Inlined: the chain fixtures load packages this spec mocks out.
+const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
+
 const DETAILS: MultisigParameters = {
     threshold: 2,
     addresses: ['P1', 'P2'],
@@ -100,12 +111,13 @@ const DETAILS: MultisigParameters = {
 const multisigAccount = (
     address: string,
     multisig: MultisigParameters = DETAILS,
+    chainId: ChainId = 'algorand',
 ): MultiSigAccount => ({
     id: `multisig-${address}`,
     custody: { kind: 'multisig' },
     name: address,
     chains: {
-        algorand: { address, native: { family: 'algorand', multisig } },
+        [chainId]: { address, native: { family: 'algorand', multisig } },
     },
 })
 
@@ -121,6 +133,7 @@ const renderSync = () =>
 describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
     beforeEach(() => {
         networkMock.current = 'testnet'
+        chainIdsMock.current = ['algorand']
         deviceIdMock.current = 'device-testnet'
         accountsMock.current = []
         createMultisigAccountMock.mockReset()
@@ -178,6 +191,41 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
             { chainId: 'algorand', networkId: 'mainnet' },
             expect.objectContaining({ device_id: 'device-mainnet' }),
         )
+    })
+
+    it('registers each joint account on its own multisig chain, Ethereum included', () => {
+        chainIdsMock.current = ['algorand', ETHEREUM_CHAIN_ID]
+        accountsMock.current = [
+            multisigAccount('MSIG1'),
+            multisigAccount('MSIG2', DETAILS, ETHEREUM_CHAIN_ID),
+        ]
+        const { rerender } = renderSync()
+
+        networkMock.current = 'mainnet'
+        deviceIdMock.current = 'device-mainnet'
+        rerender()
+
+        expect(createMultisigAccountMock).toHaveBeenCalledTimes(2)
+        expect(createMultisigAccountMock).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            expect.objectContaining({ device_id: 'device-mainnet' }),
+        )
+        expect(createMultisigAccountMock).toHaveBeenCalledWith(
+            { chainId: ETHEREUM_CHAIN_ID, networkId: 'mainnet' },
+            expect.objectContaining({ device_id: 'device-mainnet' }),
+        )
+    })
+
+    it('skips joint accounts on a chain without multisig', () => {
+        chainIdsMock.current = [ETHEREUM_CHAIN_ID]
+        accountsMock.current = [multisigAccount('MSIG1')]
+        const { rerender } = renderSync()
+
+        networkMock.current = 'mainnet'
+        deviceIdMock.current = 'device-mainnet'
+        rerender()
+
+        expect(createMultisigAccountMock).not.toHaveBeenCalled()
     })
 
     it('does nothing when there are no multisig accounts', () => {

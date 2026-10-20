@@ -158,9 +158,10 @@ const buildSourceMetadata = (
     scope: ChainScope,
 ): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
-    const isLocalAlgod = sourceType === 'local' && request.transport === 'algod'
+    const isLocalNetwork =
+        sourceType === 'local' && request.transport === 'network'
 
-    if (isLocalAlgod) {
+    if (isLocalNetwork) {
         return { type: 'local' }
     }
 

@@ -202,7 +202,7 @@
         "nfd_resolving": "Résolution du NFD...",
         "nfd_resolved": "Résolu depuis {{name}}"
     },
-    "arc59": {
+    "asset_inbox": {
         "requests": {
             "empty_title": "Aucune demande de transfert d’actifs en attente",
             "empty_body": "Lorsque vous recevrez une demande de transfert d’actif, vous pourrez la consulter ici. Appuyez pour en savoir plus sur cette fonctionnalité.",
@@ -211,7 +211,7 @@
         },
         "claim": {
             "reject": "Refuser",
-            "algo_gain": "Vous recevrez {{amount}} ALGO afin de compenser les frais d’opt-in."
+            "native_gain": "Vous recevrez {{amount}} afin de compenser les frais d’opt-in."
         }
     },
     "asset": {
@@ -1842,17 +1842,17 @@
             "account": "Compte",
             "reject": "Refuser",
             "reject_title": "Refus des demandes",
-            "reject_body": "Si vous refusez cette demande, l’actif entrant sera définitivement retiré de la circulation. Il ne sera pas renvoyé à l’expéditeur. Vous recevrez à la place {{algoAmount}} ALGO à l’issue de ce processus irréversible. Notez qu’une fois refusé, l’actif ne peut plus être récupéré.",
+            "reject_gain_body": "Si vous refusez cette demande, l’actif entrant sera définitivement retiré de la circulation. Il ne sera pas renvoyé à l’expéditeur. Vous recevrez à la place {{amount}} à l’issue de ce processus irréversible. Notez qu’une fois refusé, l’actif ne peut plus être récupéré.",
             "reject_cancel": "Annuler",
             "processing_title": "Envoi de la transaction",
             "processing_subtitle": "Votre transaction est en cours de traitement par le réseau Algorand",
             "success_title": "Opération terminée",
             "success_subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
             "sender_count_more": "+{{count}} de plus",
-            "insufficient_algo_title": "ALGO insuffisant",
-            "insufficient_algo_claim": "Vous n’avez pas assez d’ALGO pour réclamer cet actif. Ajoutez des fonds pour couvrir le solde minimum requis.",
-            "insufficient_algo_reject": "Vous n’avez pas assez d’ALGO pour refuser cet actif. Ajoutez des fonds pour couvrir les frais de transaction.",
-            "insufficient_algo_cta": "Ajouter des fonds"
+            "insufficient_native_title": "{{symbol}} insuffisant",
+            "insufficient_native_claim": "Vous n’avez pas assez de {{symbol}} pour réclamer cet actif. Ajoutez des fonds pour couvrir le solde minimum requis.",
+            "insufficient_native_reject": "Vous n’avez pas assez de {{symbol}} pour refuser cet actif. Ajoutez des fonds pour couvrir les frais de transaction.",
+            "insufficient_native_cta": "Ajouter des fonds"
         }
     },
     "multisig": {
@@ -2698,7 +2698,8 @@
             "done": "Terminé",
             "placeholder": "Saisissez votre note",
             "button": "+ Ajouter une note",
-            "edit": "Modifier la note"
+            "edit": "Modifier la note",
+            "too_long": "Les notes ne peuvent pas dépasser {{maxBytes}} octets"
         },
         "asset_selection": {
             "title": "Sélectionner un actif",
@@ -2807,7 +2808,7 @@
             "continue": "Continuer",
             "dont_show_again": "Ne plus afficher"
         },
-        "arc59_summary": {
+        "asset_inbox_summary": {
             "title": "Envoyer vers la boîte de réception d’actifs",
             "description": "Le destinataire n’a pas ajouté cet actif. Vous pouvez l’envoyer vers sa boîte de réception d’actifs à la place.",
             "read_more": "En savoir plus",
@@ -2815,7 +2816,7 @@
             "fees_label": "Frais de protocole et de solde minimum",
             "disclaimer": "Les frais ci-dessus serviront à couvrir le solde minimum requis pour le destinataire. Si le destinataire refuse l’actif, vous ne serez pas remboursé."
         },
-        "arc59_warning": {
+        "asset_inbox_warning": {
             "title": "Avertissement",
             "message": "Avant d’envoyer ces fonds, assurez-vous que l’utilisateur peut accéder à sa boîte de réception d’actifs :",
             "confirm": "J’ai compris",
@@ -2828,7 +2829,7 @@
         },
         "insufficient_balance": {
             "title": "Solde minimum",
-            "message": "Ce compte ne dispose pas du solde minimum requis de {{amount}} ALGO pour cette opération.",
+            "required_message": "Ce compte ne dispose pas du solde minimum requis de {{amount}} pour cette opération.",
             "done": "Terminé"
         },
         "select_sender": {

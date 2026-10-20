@@ -16,11 +16,7 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,20 +28,19 @@ export type OptInConfirmationContentProps = {
     assetId: string
     accountAddress: string
     /**
-     * Fee shown to the user, in ALGO. Defaults to the minimum transaction
+     * Fee shown to the user, in the scope's native asset (whole units). Defaults to the minimum transaction
      * fee; pass 0 for sponsored (fee-delegated) opt-ins.
      */
     fee?: Decimal
-    chainId?: ChainId
+    scope: ChainScope
 }
 
 export const OptInConfirmationContent = ({
     assetId,
     accountAddress,
     fee,
-    chainId = LEGACY_CHAIN_ID,
+    scope,
 }: OptInConfirmationContentProps) => {
-    const scope = useSelectedScope(chainId)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
@@ -53,8 +48,8 @@ export const OptInConfirmationContent = ({
     const { resolve } = useBottomSheetResult<'confirm'>()
     const { resolvedFee } = useOptInConfirmationContent(
         accountAddress,
+        scope,
         fee,
-        chainId,
     )
 
     const { data: assets } = useAssetsQuery(scope, [assetId])

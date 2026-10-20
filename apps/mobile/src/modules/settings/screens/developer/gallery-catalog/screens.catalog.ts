@@ -20,13 +20,20 @@ import {
     MOCK_TX_ID,
     mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import type {
     GalleryEntry,
     GalleryNavigateTarget,
     GallerySection,
 } from './types'
+
+// The mock accounts and addresses are on the first registered chain.
+const firstChainId = (): ChainId => getProvider().chains.list()[0].id
 
 // Each step's params are checked by its own screen, not here: the stack and
 // screen names arrive as arguments, which the route types can't follow.
@@ -669,7 +676,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Multisig',
-                        params: { screen: 'CreateMultisig' },
+                        params: {
+                            screen: 'CreateMultisig',
+                            params: { chainId: firstChainId() },
+                        },
                     },
                 },
             },
@@ -680,7 +690,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Multisig',
-                        params: { screen: 'SetThreshold' },
+                        params: {
+                            screen: 'SetThreshold',
+                            params: { chainId: firstChainId() },
+                        },
                     },
                 },
             },
@@ -691,7 +704,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Multisig',
-                        params: { screen: 'NameMultisig' },
+                        params: {
+                            screen: 'NameMultisig',
+                            params: { chainId: firstChainId() },
+                        },
                     },
                 },
             },
@@ -704,7 +720,10 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'Multisig',
                         params: {
                             screen: 'ImportSharedAccount',
-                            params: { address: MOCK_ADDRESS },
+                            params: {
+                                address: MOCK_ADDRESS,
+                                chainId: firstChainId(),
+                            },
                         },
                     },
                 },
@@ -742,7 +761,13 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'Messages',
                         params: {
                             screen: 'AssetClaimDetail',
-                            params: { assetIndex: Number(MOCK_ASSET_ID) },
+                            params: {
+                                assetIndex: Number(MOCK_ASSET_ID),
+                                scope: {
+                                    chainId: LEGACY_CHAIN_ID,
+                                    networkId: 'testnet',
+                                },
+                            },
                         },
                     },
                 },
@@ -757,9 +782,13 @@ export const getScreenSections = (): GallerySection[] => [
                         params: {
                             screen: 'ClaimProcessing',
                             params: {
-                                mode: 'claimArc59',
+                                mode: 'claim',
                                 assetIndex: Number(MOCK_ASSET_ID),
                                 shouldClaimAlgo: false,
+                                scope: {
+                                    chainId: LEGACY_CHAIN_ID,
+                                    networkId: 'testnet',
+                                },
                             },
                         },
                     },
@@ -805,7 +834,13 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'Messages',
                         params: {
                             screen: 'AssetTransferRequests',
-                            params: { item: mockAsaInbox },
+                            params: {
+                                item: mockAsaInbox,
+                                scope: {
+                                    chainId: LEGACY_CHAIN_ID,
+                                    networkId: 'testnet',
+                                },
+                            },
                         },
                     },
                 },
@@ -919,7 +954,13 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'TransactionDetails',
-                        params: { transactionId: MOCK_TX_ID },
+                        params: {
+                            scope: {
+                                chainId: LEGACY_CHAIN_ID,
+                                networkId: 'testnet',
+                            },
+                            transactionId: MOCK_TX_ID,
+                        },
                     },
                 },
             },
@@ -965,8 +1006,8 @@ export const getScreenSections = (): GallerySection[] => [
                 launch: { kind: 'action', run: () => undefined },
             },
             {
-                id: 'scr-send-arc59-summary',
-                label: 'Send · ARC-59 send summary (needs live state)',
+                id: 'scr-send-asset-inbox-summary',
+                label: 'Send · Asset inbox send summary (needs live state)',
                 launch: { kind: 'action', run: () => undefined },
             },
             {

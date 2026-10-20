@@ -13,17 +13,15 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useSelectedChainMode,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
+import { useCapability } from '@hooks/useCapability'
 // Imported from the handlers file directly (not the module barrel) so this
 // hook doesn't drag the whole webview stack into its dependency graph.
 import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
+import { useGiftCardScope } from '../../hooks/useGiftCardScope'
 import {
     BIDALI_PAYMENT_CURRENCIES,
     useBidaliTransport,
@@ -35,6 +33,8 @@ import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTyp
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBidaliWebViewScreenResult = {
+    /** False when the paying account's chain has gift cards off; the screen then renders nothing. */
+    isAvailable: boolean
     url: string
     bidaliProviderJS: string
     onClose: () => void
@@ -44,15 +44,18 @@ type UseBidaliWebViewScreenResult = {
 }
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccount } = useBidali()
+    const scope = useGiftCardScope(selectedAccount)
+    const isAvailable = useCapability({
+        chain: { chainId: scope.chainId, capability: 'giftCards' },
+    })
     const onClose = useBidaliClose()
     const chainMode = useSelectedChainMode(scope.chainId)
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
         scope,
-        !!selectedAccount,
+        !!selectedAccount && isAvailable,
     )
 
     const { providerJS, handleMessage, webviewRef } = useBidaliTransport(
@@ -105,6 +108,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     )
 
     return {
+        isAvailable,
         url,
         bidaliProviderJS: providerJS,
         onClose,

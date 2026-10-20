@@ -108,6 +108,7 @@ const GalleryOptInHost = ({
                 <OptInConfirmationContent
                     assetId={assetId}
                     accountAddress={addressOf(sender)}
+                    scope={MAINNET_SCOPE}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },

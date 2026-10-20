@@ -202,7 +202,7 @@
         "nfd_resolving": "NFD wird aufgelöst...",
         "nfd_resolved": "Aufgelöst von {{name}}"
     },
-    "arc59": {
+    "asset_inbox": {
         "requests": {
             "empty_title": "Keine ausstehenden Asset-Übertragungsanfragen",
             "empty_body": "Sobald eine Asset-Übertragungsanfrage vorliegt, kannst du sie hier einsehen. Tippe hier, um mehr über diese Funktion zu erfahren.",
@@ -211,7 +211,7 @@
         },
         "claim": {
             "reject": "Ablehnen",
-            "algo_gain": "Du erhältst {{amount}} ALGO als Ausgleich für die Anmeldekosten."
+            "native_gain": "Du erhältst {{amount}} als Ausgleich für die Anmeldekosten."
         }
     },
     "asset": {
@@ -1834,17 +1834,17 @@
             "account": "Konto",
             "reject": "Ablehnen",
             "reject_title": "Anfragen ablehnen",
-            "reject_body": "Wenn du diese Anfrage ablehnst, wird das eingehende Asset dauerhaft aus dem Umlauf entfernt. Es wird nicht an den Absender zurückgegeben. Stattdessen erhältst du nach Abschluss dieses unwiderruflichen Vorgangs {{algoAmount}} ALGO. Bitte beachte, dass das Asset nach der Ablehnung nicht wiederhergestellt werden kann.",
+            "reject_gain_body": "Wenn du diese Anfrage ablehnst, wird das eingehende Asset dauerhaft aus dem Umlauf entfernt. Es wird nicht an den Absender zurückgegeben. Stattdessen erhältst du nach Abschluss dieses unwiderruflichen Vorgangs {{amount}}. Bitte beachte, dass das Asset nach der Ablehnung nicht wiederhergestellt werden kann.",
             "reject_cancel": "Abbrechen",
             "processing_title": "Transaktion wird gesendet",
             "processing_subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet",
             "success_title": "Vorgang abgeschlossen",
             "success_subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
             "sender_count_more": "+{{count}} weitere",
-            "insufficient_algo_title": "Nicht genügend ALGO",
-            "insufficient_algo_claim": "Du hast nicht genügend ALGO, um dieses Asset zu beanspruchen. Füge Guthaben hinzu, um das Mindestguthaben abzudecken.",
-            "insufficient_algo_reject": "Du hast nicht genügend ALGO, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken.",
-            "insufficient_algo_cta": "Guthaben hinzufügen"
+            "insufficient_native_title": "Nicht genügend {{symbol}}",
+            "insufficient_native_claim": "Du hast nicht genügend {{symbol}}, um dieses Asset zu beanspruchen. Füge Guthaben hinzu, um das Mindestguthaben abzudecken.",
+            "insufficient_native_reject": "Du hast nicht genügend {{symbol}}, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken.",
+            "insufficient_native_cta": "Guthaben hinzufügen"
         }
     },
     "multisig": {
@@ -2690,7 +2690,8 @@
             "done": "Fertig",
             "placeholder": "Gib deine Notiz ein",
             "button": "+ Notiz hinzufügen",
-            "edit": "Notiz bearbeiten"
+            "edit": "Notiz bearbeiten",
+            "too_long": "Notizen dürfen höchstens {{maxBytes}} Bytes lang sein"
         },
         "asset_selection": {
             "title": "Asset auswählen",
@@ -2799,7 +2800,7 @@
             "continue": "Weiter",
             "dont_show_again": "Nicht erneut anzeigen"
         },
-        "arc59_summary": {
+        "asset_inbox_summary": {
             "title": "An Asset-Posteingang senden",
             "description": "Der Empfänger ist nicht für dieses Asset angemeldet. Du kannst es stattdessen an seinen Asset-Posteingang senden.",
             "read_more": "Mehr lesen",
@@ -2807,7 +2808,7 @@
             "fees_label": "Protokoll- & Mindestguthabengebühren",
             "disclaimer": "Die obige Gebühr wird verwendet, um die Mindestguthabenanforderungen des Empfängers zu decken. Wenn der Empfänger das Asset ablehnt, erhältst du nichts zurück."
         },
-        "arc59_warning": {
+        "asset_inbox_warning": {
             "title": "Warnung",
             "message": "Stelle vor dem Senden dieser Gelder sicher, dass der Nutzer auf seinen Asset-Posteingang zugreifen kann:",
             "confirm": "Ich verstehe",
@@ -2820,7 +2821,7 @@
         },
         "insufficient_balance": {
             "title": "Mindestguthaben",
-            "message": "Dieses Konto verfügt nicht über das für diesen Vorgang erforderliche Mindestguthaben von {{amount}} ALGO.",
+            "required_message": "Dieses Konto verfügt nicht über das für diesen Vorgang erforderliche Mindestguthaben von {{amount}}.",
             "done": "Fertig"
         },
         "select_sender": {
