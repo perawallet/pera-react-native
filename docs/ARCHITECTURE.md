@@ -269,9 +269,11 @@ rather than waiting for a screen that never opens.
 A transaction request carries chain-neutral `UnsignedTransaction`s. It takes its chain from its
 transactions' scope and its signers from the chain planner's `plan`, because only the chain can read
 its payload. One built for a network other than its chain's selected one fails with
-`ScopeChangedError`. Algorand's group facts (the full group, signer overrides, request bytes, fee
-adjustments) ride in its `chainData.algorand`. A request persisted in an older shape can still
-rehydrate, so the machine refuses any whose transactions aren't chain-neutral.
+`ScopeChangedError`. What a source sends beside the transactions (the full group, signer overrides,
+request bytes, fee adjustments) is the request's `chainData`, opaque to the signing package: a source
+builds it with the planner adapter's `signRequestChainData`, and the pipeline reads it back through
+`reviewGroupOf` and `handoffDeliveryOf`, so only the chain knows its shape. A request persisted in an
+older shape can still rehydrate, so the machine refuses any whose transactions aren't chain-neutral.
 
 An Algorand request is checked and grouped by the Algorand transactions it carries: group integrity
 over the full group, and one group per account each transaction signs for, whose rekey is followed
