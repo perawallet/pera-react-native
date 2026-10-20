@@ -29,6 +29,7 @@ import {
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../../parser'
 import {
+    ChainActionBuildError,
     DeeplinkType,
     deeplinkAdapters,
     type DeeplinkChainAdapter,
@@ -43,7 +44,6 @@ import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
-import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
@@ -91,9 +91,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
 
-    // Real enum rather than a hand-copied literal — see the note in
-    // vitest.setup.ts. base.ts has no runtime imports.
-    const { ErrorCategory } = await vi.importActual<
+    // Real error classes and enums rather than hand-copied literals: the
+    // deeplinks package extends AppError at load. base.ts has no runtime
+    // imports.
+    const errors = await vi.importActual<
         typeof import('../../../../../../../packages/shared/src/errors/base')
     >('../../../../../../../packages/shared/src/errors/base')
 
@@ -107,7 +108,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         decodeFromBase64: vi.fn((b64: string) =>
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
-        ErrorCategory,
+        ...errors,
         toBigInt,
     }
 })
@@ -140,18 +141,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         }),
 }))
 
-const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
-    () => ({
-        mockOnlineKeyRegistration: vi.fn(async (_params?: unknown) => ({
-            type: 'keyreg',
-            mock: 'tx',
-        })),
-        mockOfflineKeyRegistration: vi.fn(async (_params?: unknown) => ({
-            type: 'keyreg-offline',
-            mock: 'tx',
-        })),
-    }),
-)
+const { mockBuildChainAction } = vi.hoisted(() => ({
+    mockBuildChainAction: vi.fn(),
+}))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
 // the real transactions package isn't loaded into this unit test's import
@@ -159,23 +151,6 @@ const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
 }))
-
-// The Algorand deeplink adapter's chain action runs for real; only the AlgoKit
-// build and the unsigned-transaction wrapping below it are stubbed.
-vi.mock('@packages/chain-algorand/src/transactions/builders', async () =>
-    (
-        await import('@test-utils/algorand-chain-action-mock')
-    ).algorandKeyregBuilderMock(
-        mockOfflineKeyRegistration,
-        mockOnlineKeyRegistration,
-    ),
-)
-
-vi.mock('@packages/chain-algorand/src/signing/unsignedTransaction', async () =>
-    (
-        await import('@test-utils/algorand-chain-action-mock')
-    ).algorandUnsignedTransactionMock(),
-)
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
@@ -2395,8 +2370,21 @@ describe('useDeepLink', () => {
     })
 
     describe('CHAIN_ACTION', () => {
+        const builtTx = { kind: 'built-tx' }
+
         beforeEach(() => {
-            registerDeeplinkAdapters()
+            mockBuildChainAction.mockReset()
+            mockBuildChainAction.mockResolvedValue(builtTx)
+            // Only the chain action leg is exercised; the dispatcher never
+            // parses here because `parseDeeplink` is mocked.
+            deeplinkAdapters.register({
+                chainId: 'algorand',
+                schemes: ['algorand'],
+                canParse: () => false,
+                parse: () => ({ kind: 'malformed' }) as never,
+                toAssetRef: () => undefined,
+                buildChainAction: mockBuildChainAction,
+            })
         })
 
         afterEach(() => {
@@ -2415,12 +2403,8 @@ describe('useDeepLink', () => {
             },
         })
 
-        it('should reject a CHAIN_ACTION keyreg with an invalid sender address', async () => {
-            ;(parseDeeplink as Mock).mockReturnValue(
-                keyregLink({ sender: 'not-an-algorand-address' }),
-            )
+        const dispatch = async () => {
             const { result } = renderHook(() => useDeepLink())
-
             await act(async () => {
                 await result.current.handleDeepLink(
                     'perawallet://app/keyreg',
@@ -2428,99 +2412,63 @@ describe('useDeepLink', () => {
                     'deeplink',
                 )
             })
+        }
+
+        it('should reject a CHAIN_ACTION with an invalid sender address', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(
+                keyregLink({ sender: 'not-an-algorand-address' }),
+            )
+
+            await dispatch()
 
             // Deeplink errors surface via the in-app toast notifier,
             // deferred by ~400ms to let the QR Modal close first.
             await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+            expect(mockBuildChainAction).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
-        it('should submit an offline CHAIN_ACTION keyreg to the signing pipeline', async () => {
-            ;(parseDeeplink as Mock).mockReturnValue(keyregLink({}))
-            const { result } = renderHook(() => useDeepLink())
+        it("should build a CHAIN_ACTION through the target chain's adapter and submit it to the signing pipeline", async () => {
+            const link = keyregLink({})
+            ;(parseDeeplink as Mock).mockReturnValue(link)
 
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    'perawallet://app/keyreg?type=offline',
-                    false,
-                    'deeplink',
-                )
-            })
+            await dispatch()
 
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledWith(
+            expect(mockBuildChainAction).toHaveBeenCalledWith(
+                link.chainData,
                 expect.objectContaining({
-                    sender: 'A'.repeat(58),
+                    scope: expect.objectContaining({ chainId: 'algorand' }),
                 }),
             )
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',
                     transport: 'algod',
+                    txs: [builtTx],
                 }),
             )
         })
 
-        it('should reject an online CHAIN_ACTION keyreg missing required fields', async () => {
+        it('should surface a CHAIN_ACTION the chain cannot build as an error toast', async () => {
             ;(parseDeeplink as Mock).mockReturnValue(
-                keyregLink({
-                    keyregType: 'online',
-                    voteKey: 'AAAA',
-                    // missing selectionKey, stateProofKey, voteFirst, voteLast, voteKeyDilution
-                }),
+                keyregLink({ keyregType: 'online' }),
             )
-            const { result } = renderHook(() => useDeepLink())
+            mockBuildChainAction.mockRejectedValueOnce(
+                new ChainActionBuildError(
+                    'missing-fields',
+                    'Missing required participation key fields',
+                ),
+            )
 
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    'perawallet://app/keyreg',
-                    false,
-                    'deeplink',
-                )
-            })
+            await dispatch()
 
-            await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
-            expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
+            await vi.waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_keyreg',
+                    'deeplink.error.body_keyreg',
+                ),
+            )
             expect(mockAddSignRequest).not.toHaveBeenCalled()
-        })
-
-        it('should submit an online CHAIN_ACTION keyreg to the signing pipeline', async () => {
-            ;(parseDeeplink as Mock).mockReturnValue(
-                keyregLink({
-                    keyregType: 'online',
-                    voteKey: 'AAAA',
-                    selectionKey: 'BBBB',
-                    stateProofKey: 'CCCC',
-                    voteFirst: '1',
-                    voteLast: '1000',
-                    voteKeyDilution: '10',
-                    fee: new Decimal(1000),
-                }),
-            )
-            const { result } = renderHook(() => useDeepLink())
-
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    'perawallet://app/keyreg',
-                    false,
-                    'deeplink',
-                )
-            })
-
-            expect(mockOnlineKeyRegistration).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    sender: 'A'.repeat(58),
-                    voteFirst: 1n,
-                    voteLast: 1000n,
-                    voteKeyDilution: 10n,
-                    fee: 1000n,
-                }),
-            )
-            expect(mockAddSignRequest).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'transactions',
-                    transport: 'algod',
-                }),
-            )
         })
     })
 

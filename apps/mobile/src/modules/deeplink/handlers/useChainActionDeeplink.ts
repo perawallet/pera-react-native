@@ -53,7 +53,7 @@ const PARSED_TYPE = DeeplinkType.CHAIN_ACTION
 const CHAIN_ACTION_BUILD_TIMEOUT_MS = 12_000
 
 type Ineligible = {
-    variant: 'keyreg-unknown-account' | 'keyreg-cannot-sign'
+    variant: 'chain-action-unknown-account' | 'chain-action-cannot-sign'
     reason: string
 }
 
@@ -79,7 +79,7 @@ const checkSigningEligibility = (
     const account = findAccountByAddressOn(accounts, chainId, senderAddress)
     if (!account) {
         return {
-            variant: 'keyreg-unknown-account',
+            variant: 'chain-action-unknown-account',
             reason: `Account ${senderAddress} is not in this wallet`,
         }
     }
@@ -92,12 +92,12 @@ const checkSigningEligibility = (
     }
     if (resolution.kind === 'authMissing') {
         return {
-            variant: 'keyreg-unknown-account',
+            variant: 'chain-action-unknown-account',
             reason: `Rekey target ${resolution.authorityAddress} is not in this wallet`,
         }
     }
     return {
-        variant: 'keyreg-cannot-sign',
+        variant: 'chain-action-cannot-sign',
         reason: `Account ${senderAddress} cannot sign (${resolution.kind})`,
     }
 }
@@ -127,7 +127,8 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
             const scope = getSelectedScope(target.chainId)
             if (!addressCodecs.get(target.chainId).isValid(chainData.sender)) {
                 showError({
-                    variant: 'keyreg',
+                    variant: 'chain-action',
+                    action: chainData.action,
                     parsedType: PARSED_TYPE,
                     error: 'Invalid sender address',
                 })
@@ -146,6 +147,7 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
             if (ineligible) {
                 showError({
                     variant: ineligible.variant,
+                    action: chainData.action,
                     parsedType: PARSED_TYPE,
                     error: ineligible.reason,
                 })
@@ -214,7 +216,8 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
             } catch (error) {
                 if (error instanceof ChainActionBuildError) {
                     showError({
-                        variant: 'keyreg',
+                        variant: 'chain-action',
+                        action: chainData.action,
                         parsedType: PARSED_TYPE,
                         error: error.message,
                     })
@@ -222,7 +225,8 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
                 }
                 logger.error('[deeplink/chain-action] failed', { error })
                 showError({
-                    variant: 'keyreg',
+                    variant: 'chain-action',
+                    action: chainData.action,
                     parsedType: PARSED_TYPE,
                     error,
                 })

@@ -17,38 +17,39 @@ import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
     type ChainActionData,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    ChainActionBuildError,
     deeplinkAdapters,
     DeeplinkType,
     type ChainActionDeeplink,
     type ChainLinkTarget,
+    type DeeplinkChainAdapter,
 } from '@perawallet/wallet-core-deeplinks'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
-import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
+import { DeeplinkTimeoutError } from '../timeout'
 
 const {
     mockAddSignRequest,
     mockShowError,
-    mockOnlineKeyRegistration,
-    mockOfflineKeyRegistration,
+    mockBuildChainAction,
+    mockLogError,
     mockAllAccounts,
-    mockResolveAuthAccount,
     mockResolveSignerForAccount,
     mockNetwork,
     mockAssignFeeToGroup,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
     mockShowError: vi.fn(),
-    mockOnlineKeyRegistration: vi.fn(),
-    mockOfflineKeyRegistration: vi.fn(),
+    mockBuildChainAction: vi.fn(),
+    mockLogError: vi.fn(),
     mockAllAccounts: {
         current: [] as {
             id: string
             chains: { algorand: { address: string } }
         }[],
     },
-    mockResolveAuthAccount: vi.fn((account: unknown) => account),
     mockResolveSignerForAccount: vi.fn(
         (_account?: unknown, _accounts?: unknown) =>
             ({ kind: 'ok' }) as { kind: string; authorityAddress?: string },
@@ -80,7 +81,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: 'algorand',
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
-    resolveAuthAccount: (account: unknown) => mockResolveAuthAccount(account),
     resolveSignerForAccount: (account: unknown, accounts: unknown) =>
         mockResolveSignerForAccount(account, accounts),
 }))
@@ -89,7 +89,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
     >()),
-    logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    logger: { debug: vi.fn(), warn: vi.fn(), error: mockLogError },
     generateOrderedUniqueId: () => 'test-sign-request-id',
 }))
 
@@ -97,29 +97,25 @@ vi.mock('../useDeeplinkErrorHandler', () => ({
     useDeeplinkErrorHandler: () => mockShowError,
 }))
 
-// The real Algorand chain action runs; only the AlgoKit build and the
-// unsigned-transaction wrapping below it are stubbed.
-vi.mock('@packages/chain-algorand/src/transactions/builders', async () =>
-    (
-        await import('@test-utils/algorand-chain-action-mock')
-    ).algorandKeyregBuilderMock(
-        mockOfflineKeyRegistration,
-        mockOnlineKeyRegistration,
-    ),
-)
-
-vi.mock('@packages/chain-algorand/src/signing/unsignedTransaction', async () =>
-    (
-        await import('@test-utils/algorand-chain-action-mock')
-    ).algorandUnsignedTransactionMock(),
-)
-
 import { useChainActionDeeplink } from '../useChainActionDeeplink'
 
 const VALID_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+const BUILT_TX = { kind: 'built-tx' }
 
-const baseOfflineDeeplink = (
+const fakeAdapter = (
+    chainId: ChainId,
+    buildChainAction?: DeeplinkChainAdapter['buildChainAction'],
+): DeeplinkChainAdapter => ({
+    chainId,
+    schemes: [chainId],
+    canParse: () => false,
+    parse: () => ({ kind: 'malformed' }) as never,
+    toAssetRef: () => undefined,
+    buildChainAction,
+})
+
+const chainActionLink = (
     chainData: Partial<ChainActionData> = {},
     target: ChainLinkTarget = { chainId: 'algorand' },
 ): ChainActionDeeplink => ({
@@ -135,23 +131,7 @@ const baseOfflineDeeplink = (
     },
 })
 
-const baseOnlineDeeplink = (
-    chainData: Partial<ChainActionData> = {},
-): ChainActionDeeplink =>
-    baseOfflineDeeplink({
-        keyregType: 'online',
-        voteKey: 'AAA',
-        selectionKey: 'AAA',
-        stateProofKey: 'AAA',
-        voteFirst: '100',
-        voteLast: '200',
-        voteKeyDilution: '10',
-        ...chainData,
-    })
-
 const seedSenderInWallet = () => {
-    mockResolveSignerForAccount.mockReturnValue({ kind: 'ok' })
-    mockNetwork.current = 'mainnet'
     mockAllAccounts.current = [
         {
             id: 'wallet-account-1',
@@ -160,26 +140,26 @@ const seedSenderInWallet = () => {
     ]
 }
 
+const submit = async (link: ChainActionDeeplink) => {
+    const { result } = renderHook(() => useChainActionDeeplink())
+    await act(async () => {
+        await result.current(link)
+    })
+}
+
 describe('useChainActionDeeplink', () => {
     beforeEach(() => {
         // Base32 shape only, enough to tell a valid sender from an invalid one.
         registerLegacyAddressCodec(address => /^[A-Z2-7]{58}$/.test(address))
-        registerDeeplinkAdapters()
-        mockAddSignRequest.mockReset()
-        mockShowError.mockReset()
-        mockOnlineKeyRegistration.mockReset()
-        mockOfflineKeyRegistration.mockReset()
-        mockResolveAuthAccount.mockReset()
-        mockResolveAuthAccount.mockImplementation(account => account)
+        deeplinkAdapters.register(fakeAdapter('algorand', mockBuildChainAction))
+        deeplinkAdapters.register(fakeAdapter('ethereum'))
+        vi.clearAllMocks()
+        mockResolveSignerForAccount.mockReturnValue({ kind: 'ok' })
+        mockNetwork.current = 'mainnet'
         mockAllAccounts.current = []
-
-        mockOnlineKeyRegistration.mockResolvedValue({ kind: 'online-tx' })
-        mockOfflineKeyRegistration.mockResolvedValue({ kind: 'offline-tx' })
-
-        // Default: non-quantum sender — the calculator is a passthrough
-        // no-op (same reference, no adjustments), matching its real fast
-        // path. Quantum tests override the implementation per case.
-        mockAssignFeeToGroup.mockReset()
+        mockBuildChainAction.mockResolvedValue(BUILT_TX)
+        // Non-quantum default: the calculator's real fast path is a
+        // passthrough with no adjustments.
         mockAssignFeeToGroup.mockImplementation(
             async ({ transactions }: { transactions: unknown[] }) => ({
                 transactions,
@@ -189,7 +169,7 @@ describe('useChainActionDeeplink', () => {
     })
 
     afterEach(() => {
-        mockAllAccounts.current = []
+        vi.useRealTimers()
         addressCodecs.reset()
         deeplinkAdapters.reset()
     })
@@ -197,13 +177,8 @@ describe('useChainActionDeeplink', () => {
     describe('preflight gating', () => {
         it("refuses a chain whose deeplink adapter builds no chain action, with the chain's name", async () => {
             seedSenderInWallet()
-            const { result } = renderHook(() => useChainActionDeeplink())
 
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({}, { chainId: 'ethereum' }),
-                )
-            })
+            await submit(chainActionLink({}, { chainId: 'ethereum' }))
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
@@ -214,59 +189,45 @@ describe('useChainActionDeeplink', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
-        it('rejects an invalid sender address with the "keyreg" error variant and does not queue a sign request', async () => {
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({ sender: 'NOT-AN-ADDRESS' }),
-                )
-            })
+        it('rejects an invalid sender address without building', async () => {
+            await submit(chainActionLink({ sender: 'NOT-AN-ADDRESS' }))
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    variant: 'keyreg',
+                    variant: 'chain-action',
+                    action: 'keyreg',
                     error: 'Invalid sender address',
                 }),
             )
+            expect(mockBuildChainAction).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
-            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
         })
 
-        it('rejects a sender we don\'t hold with the "keyreg-unknown-account" variant', async () => {
-            // mockAllAccounts left empty — wallet doesn't have the sender.
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
+        it("rejects a sender the wallet doesn't hold as an unknown account", async () => {
+            await submit(chainActionLink())
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    variant: 'keyreg-unknown-account',
+                    variant: 'chain-action-unknown-account',
+                    action: 'keyreg',
                     error: expect.stringContaining('is not in this wallet'),
                 }),
             )
-            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockBuildChainAction).not.toHaveBeenCalled()
         })
 
-        // ARC-90 `net:`/`gh:` names the chain. Dropping it built the keyreg
-        // against whatever network the wallet happened to be on, and the
-        // genesis-hash analyzer cannot catch that — the txn carries the ACTIVE
-        // chain's hash, so it always matches. Fail closed instead.
-        it('rejects a keyreg whose target network is not the active one', async () => {
+        // ARC-90 `net:`/`gh:` names the network. The txn is built on the
+        // ACTIVE network and carries its genesis hash, so no later check can
+        // tell a wrong-network action apart. Fail closed instead.
+        it('rejects a link whose target network is not the active one', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink(
-                        {},
-                        { chainId: 'algorand', networkId: 'testnet' },
-                    ),
-                )
-            })
+            await submit(
+                chainActionLink(
+                    {},
+                    { chainId: 'algorand', networkId: 'testnet' },
+                ),
+            )
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
@@ -274,71 +235,46 @@ describe('useChainActionDeeplink', () => {
                     values: { network: 'TestNet' },
                 }),
             )
-            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
-            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockBuildChainAction).not.toHaveBeenCalled()
         })
 
         it('accepts a target naming the active network', async () => {
             seedSenderInWallet()
 
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink(
-                        {},
-                        { chainId: 'algorand', networkId: 'mainnet' },
-                    ),
-                )
-            })
+            await submit(
+                chainActionLink(
+                    {},
+                    { chainId: 'algorand', networkId: 'mainnet' },
+                ),
+            )
 
             expect(mockShowError).not.toHaveBeenCalled()
-            expect(mockOfflineKeyRegistration).toHaveBeenCalled()
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         })
 
-        // A node runner who added their participation account as watch-only
-        // passes every existing check: it IS in the wallet and it has no
-        // broken rekey chain. It just cannot sign, which the pipeline only
-        // discovers at machine init — surfacing a bare "Signing failed" after
-        // the review sheet has already opened.
-        it('rejects a watch-only sender before opening the review sheet', async () => {
-            seedSenderInWallet()
-            mockResolveSignerForAccount.mockReturnValue({ kind: 'watch' })
+        // A watch-only sender is in the wallet with an intact rekey chain; only
+        // the pipeline's machine init would notice it can't sign, after the
+        // review sheet already opened.
+        it.each(['watch', 'authIsWatch'])(
+            'rejects a sender whose resolved signer is %s before opening the review sheet',
+            async kind => {
+                seedSenderInWallet()
+                mockResolveSignerForAccount.mockReturnValue({ kind })
 
-            const { result } = renderHook(() => useChainActionDeeplink())
+                await submit(chainActionLink())
 
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
+                expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                    expect.objectContaining({
+                        variant: 'chain-action-cannot-sign',
+                        action: 'keyreg',
+                    }),
+                )
+                expect(mockBuildChainAction).not.toHaveBeenCalled()
+            },
+        )
 
-            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ variant: 'keyreg-cannot-sign' }),
-            )
-            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
-            expect(mockAddSignRequest).not.toHaveBeenCalled()
-        })
-
-        // Signability is judged on the RESOLVED auth account: a signable
-        // account rekeyed to a watch-only one cannot sign either.
-        it('rejects a sender rekeyed to an account that cannot sign', async () => {
-            seedSenderInWallet()
-            mockResolveSignerForAccount.mockReturnValue({ kind: 'authIsWatch' })
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
-
-            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ variant: 'keyreg-cannot-sign' }),
-            )
-            expect(mockAddSignRequest).not.toHaveBeenCalled()
-        })
-
-        // A missing rekey target is a different failure from an unsignable
-        // one: the account genuinely isn't in the wallet, so the copy telling
-        // the user to add it is correct.
+        // Unlike an unsignable signer, a missing rekey target is fixable by
+        // adding it, so it gets the unknown-account copy.
         it('rejects a missing rekey target as an unknown account', async () => {
             seedSenderInWallet()
             mockResolveSignerForAccount.mockReturnValue({
@@ -346,268 +282,156 @@ describe('useChainActionDeeplink', () => {
                 authorityAddress: 'AUTH',
             })
 
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
-
-            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ variant: 'keyreg-unknown-account' }),
-            )
-            expect(mockAddSignRequest).not.toHaveBeenCalled()
-        })
-
-        it('rejects an online keyreg missing any of the participation key fields with the "keyreg" variant', async () => {
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            // sprfkey omitted → online keyreg requires every key field.
-            await act(async () => {
-                await result.current(
-                    baseOnlineDeeplink({ stateProofKey: undefined }),
-                )
-            })
+            await submit(chainActionLink())
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    variant: 'keyreg',
-                    error: 'Missing required participation key fields',
+                    variant: 'chain-action-unknown-account',
+                    error: expect.stringContaining('AUTH'),
                 }),
             )
-            expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
     })
 
-    describe('happy path', () => {
-        it('builds an offline keyreg and queues a deeplink-source sign request', async () => {
+    describe('building and enqueueing', () => {
+        it("hands the link's chain data and the active scope to the chain's builder, then queues a deeplink-source sign request", async () => {
             seedSenderInWallet()
+            const link = chainActionLink({ note: 'going offline' })
 
-            const { result } = renderHook(() => useChainActionDeeplink())
+            await submit(link)
 
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({
-                        note: 'going offline',
-                        fee: new Decimal(2000),
-                    }),
-                )
-            })
-
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({
-                    kind: 'offline',
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
-                    sender: VALID_ADDRESS,
-                    fee: 2000n,
-                }),
+            expect(mockBuildChainAction).toHaveBeenCalledExactlyOnceWith(
+                link.chainData,
+                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
             )
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     type: 'transactions',
                     transport: 'algod',
-                    // Crucial: 'deeplink' source so SigningOverlays surfaces
-                    // the review sheet. 'local' would silently auto-sign.
+                    // 'local' is headless and would silently auto-sign; only
+                    // 'deeplink' gets the review sheet.
                     sourceType: 'deeplink',
+                    txs: [BUILT_TX],
                 }),
             )
             expect(mockShowError).not.toHaveBeenCalled()
-        })
-
-        it('builds an online keyreg with every participation field forwarded to the chain adapter', async () => {
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOnlineDeeplink({
-                        voteFirst: '1300',
-                        voteLast: '11300',
-                        voteKeyDilution: '100',
-                    }),
-                )
-            })
-
-            expect(mockOnlineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({
-                    kind: 'online',
-                    sender: VALID_ADDRESS,
-                    voteFirst: 1300n,
-                    voteLast: 11_300n,
-                    voteKeyDilution: 100n,
-                }),
-            )
-            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
-            expect(mockShowError).not.toHaveBeenCalled()
-        })
-
-        it('falls back to xnote when no editable note is provided', async () => {
-            // Native parity: xnote is locked at the protocol layer and ends
-            // up in the same txn note field when the user-editable note is
-            // empty.
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({ note: undefined, xnote: 'locked' }),
-                )
-            })
-
-            const buildArgs = mockOfflineKeyRegistration.mock.calls[0][0] as {
-                note?: Uint8Array
-            }
-            // jsdom's TextEncoder returns a Uint8Array from a different
-            // realm than the test global, so `instanceof Uint8Array` is
-            // unreliable — assert on the decoded contents instead.
-            expect(buildArgs.note).toBeDefined()
-            expect(new TextDecoder().decode(buildArgs.note)).toBe('locked')
         })
     })
 
     describe('PQ fee floor', () => {
-        // assignFeeToGroup is mocked at the signing-package boundary (its
-        // own quantum/rekey/congestion logic is covered by
-        // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
-        // and .../sources/__tests__/assignMinimumFeesToGroup.spec.ts). These
-        // tests only verify this hook builds with the dApp fee verbatim,
-        // runs the built txn through the calculator, and surfaces the delta
-        // only for an explicit dApp fee.
-        const adjustedTx = { kind: 'offline-tx', fee: 3000n }
-        const quantumRaise = (adjustments: unknown[]) => {
+        // The calculator is mocked at the signing boundary; its quantum logic
+        // is covered in chain-algorand's useAssignFeeToGroup.spec.ts. These
+        // only check the built txn goes through it and the delta shows for an
+        // explicit link fee alone.
+        const raisedTx = { kind: 'built-tx', fee: 3000n }
+        const adjustments = [
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
+        ]
+
+        beforeEach(() => {
             mockAssignFeeToGroup.mockImplementation(async () => ({
-                transactions: [adjustedTx],
+                transactions: [raisedTx],
                 adjustments,
             }))
-        }
+        })
 
-        it("builds with the dApp fee verbatim, then enqueues the calculator's raised txn with the adjustment surfaced", async () => {
+        it("enqueues the calculator's raised txn with the adjustment surfaced for an explicit link fee", async () => {
             seedSenderInWallet()
-            const adjustments = [
-                {
-                    index: 0,
-                    originalFee: 1000n,
-                    adjustedFee: 3000n,
-                    reason: 'quantum-minimum',
-                },
-            ]
-            quantumRaise(adjustments)
 
-            const { result } = renderHook(() => useChainActionDeeplink())
+            await submit(chainActionLink({ fee: new Decimal(1000) }))
 
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({ fee: new Decimal(1000) }),
-                )
-            })
-
-            // The dApp fee reaches the builder untouched; the raise happens
-            // after build.
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ fee: 1000n }),
-            )
             expect(mockAssignFeeToGroup).toHaveBeenCalledExactlyOnceWith({
-                transactions: [{ kind: 'offline-tx' }],
+                transactions: [BUILT_TX],
             })
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    txs: [adjustedTx],
+                    txs: [raisedTx],
                     chainData: { algorand: { feeAdjustments: adjustments } },
                 }),
             )
         })
 
-        it('omits the adjustment delta when the deeplink set no explicit fee (Pera-set, not an override)', async () => {
+        it('omits the delta when the link set no fee (Pera-set, not an override)', async () => {
             seedSenderInWallet()
-            quantumRaise([
-                {
-                    index: 0,
-                    originalFee: 1000n,
-                    adjustedFee: 3000n,
-                    reason: 'quantum-minimum',
-                },
-            ])
 
-            const { result } = renderHook(() => useChainActionDeeplink())
+            await submit(chainActionLink())
 
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
-
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ fee: undefined }),
-            )
-            // The raised txn is still what gets signed…
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    txs: [adjustedTx],
-                    // …but no original → adjusted delta is shown.
+                    txs: [raisedTx],
                     chainData: { algorand: { feeAdjustments: undefined } },
                 }),
-            )
-        })
-
-        it("passes a non-quantum sender's dApp fee through with no adjustments", async () => {
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({ fee: new Decimal(1000) }),
-                )
-            })
-
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ fee: 1000n }),
-            )
-            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({
-                    txs: [{ kind: 'offline-tx' }],
-                    chainData: { algorand: { feeAdjustments: undefined } },
-                }),
-            )
-        })
-
-        it('leaves the fee undefined for a non-quantum sender with no dApp fee', async () => {
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useChainActionDeeplink())
-
-            await act(async () => {
-                await result.current(baseOfflineDeeplink())
-            })
-
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ fee: undefined }),
             )
         })
     })
 
     describe('build failures', () => {
-        it('surfaces a build error through the error sheet with the "keyreg" variant', async () => {
-            // Building can fail for many reasons (algod unreachable,
-            // suggestedParams 500, decoder threw, …). The hook is supposed to
-            // catch the whole pipeline and route to the error sheet rather
-            // than crashing the dispatcher.
+        it("shows a ChainActionBuildError's reason without logging it, since the link is at fault", async () => {
+            seedSenderInWallet()
+            mockBuildChainAction.mockRejectedValueOnce(
+                new ChainActionBuildError(
+                    'missing-fields',
+                    'Missing required participation key fields',
+                ),
+            )
+
+            await submit(chainActionLink())
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'chain-action',
+                    action: 'keyreg',
+                    error: 'Missing required participation key fields',
+                }),
+            )
+            expect(mockLogError).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('logs any other build failure and routes it to the error toast instead of throwing', async () => {
             seedSenderInWallet()
             const buildErr = new Error('algod refused to compute params')
-            mockOfflineKeyRegistration.mockRejectedValueOnce(buildErr)
+            mockBuildChainAction.mockRejectedValueOnce(buildErr)
 
+            await submit(chainActionLink())
+
+            expect(mockLogError).toHaveBeenCalledTimes(1)
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'chain-action',
+                    action: 'keyreg',
+                    error: buildErr,
+                }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        // An unreachable node never answers the fee-params fetch; without the
+        // timeout the dispatcher's await, and the QR scanner, hang forever.
+        it('gives up on a build that never settles and reports a timeout', async () => {
+            vi.useFakeTimers()
+            seedSenderInWallet()
+            mockBuildChainAction.mockReturnValueOnce(new Promise(() => {}))
             const { result } = renderHook(() => useChainActionDeeplink())
 
+            let pending!: Promise<void>
+            act(() => {
+                pending = result.current(chainActionLink())
+            })
             await act(async () => {
-                await result.current(baseOfflineDeeplink())
+                await vi.advanceTimersByTimeAsync(12_000)
+                await pending
             })
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    variant: 'keyreg',
-                    error: buildErr,
+                    error: expect.any(DeeplinkTimeoutError),
                 }),
             )
             expect(mockAddSignRequest).not.toHaveBeenCalled()

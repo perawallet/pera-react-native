@@ -19,6 +19,11 @@ import {
     type ChainScope,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 import type { DeeplinkParseResult } from './models'
 
 export interface DeeplinkChainAdapter {
@@ -45,12 +50,18 @@ export interface DeeplinkChainAdapter {
 export type ChainActionBuildFailure = 'missing-fields'
 
 /** The link, not the network, is at fault: retrying the same link fails the same way. */
-export class ChainActionBuildError extends Error {
+export class ChainActionBuildError extends AppError {
     readonly reason: ChainActionBuildFailure
 
     constructor(reason: ChainActionBuildFailure, message: string) {
-        super(message)
-        this.name = 'ChainActionBuildError'
+        super(message, {
+            severity: ErrorSeverity.MEDIUM,
+            category: ErrorCategory.VALIDATION,
+            recoverable: false,
+            // A malformed link from a third party, not a wallet fault.
+            expected: true,
+            params: { reason },
+        })
         this.reason = reason
     }
 }
