@@ -76,6 +76,7 @@ import type {
     ImportSummary,
     PasskeyImportSummary,
     SyncEngineDeps,
+    SeedSecretsCache,
     SerializeHdResolver,
     SerializeMnemonicResolver,
     SerializePrivateKeyResolver,
@@ -241,6 +242,7 @@ export class BackupSyncManager {
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
         const epoch = this.stopEpoch
+        const seedSecrets: SeedSecretsCache = new Map()
         // Nested, not sequenced: each scope zeroes its key material on exit,
         // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
@@ -263,6 +265,7 @@ export class BackupSyncManager {
                                 resolveMnemonic: this.deps.resolveMnemonic,
                                 resolveHd: this.deps.resolveHd,
                                 resolvePrivateKey: this.deps.resolvePrivateKey,
+                                seedSecrets,
                             }),
                         importAccounts: this.deps.importAccounts,
                         listContacts: () => this.deps.sources.listContacts(),

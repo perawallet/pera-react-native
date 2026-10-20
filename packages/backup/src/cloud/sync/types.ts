@@ -139,9 +139,19 @@ export type SerializeMnemonicResolver = (
     account: LocalAccount,
 ) => Promise<string | null>
 
+/** A seed's secrets, read once and shared by every account of the seed.
+ *  Scoped to one sync, so they are not held past it. */
+export type SeedSecretsCache = Map<
+    string,
+    Promise<{ seedHex: string; entropyHex: string } | null>
+>
+
 /** Resolves an HD account's derived/seed material for serialization. Hook-bound
  *  (needs KMS), injected from the app layer; null when the seed is unavailable. */
-export type SerializeHdResolver = (account: LocalAccount) => Promise<{
+export type SerializeHdResolver = (
+    account: LocalAccount,
+    seedSecrets?: SeedSecretsCache,
+) => Promise<{
     seedFirstDerivedAddress: string
     /** Null for an account with no key on the scope chain, which has no entry
      *  there to record it in. */
