@@ -50,6 +50,8 @@ import {
     MAINNET_GENESIS_HASH,
     makeTestAddress,
     makeTestPaymentTx,
+    signedAlgorandTransaction,
+    testSignature,
 } from '../../__tests__/transactions'
 
 beforeEach(() => {
@@ -153,7 +155,9 @@ const buildInput = (
     ],
     signTransactions: vi
         .fn()
-        .mockResolvedValue([{ txn: {}, sig: new Uint8Array([1, 2, 3]) }]),
+        .mockResolvedValue([
+            signedAlgorandTransaction(mockTxn, testSignature(1)),
+        ]),
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
     encodeTransaction: vi.fn(),
@@ -165,8 +169,12 @@ describe('signMultisigGroups', () => {
     it('signs in parallel with all local-key participants and returns one combined SigningResult per group', async () => {
         const signTransactions = vi
             .fn()
-            .mockResolvedValueOnce([{ txn: {}, sig: new Uint8Array([1]) }])
-            .mockResolvedValueOnce([{ txn: {}, sig: new Uint8Array([2]) }])
+            .mockResolvedValueOnce([
+                signedAlgorandTransaction(mockTxn, testSignature(1)),
+            ])
+            .mockResolvedValueOnce([
+                signedAlgorandTransaction(mockTxn, testSignature(2)),
+            ])
         const input = buildInput({ signTransactions })
 
         const results = await signMultisigGroups(input)
@@ -188,7 +196,9 @@ describe('signMultisigGroups', () => {
     it('signs successfully with a single local-key participant', async () => {
         const signTransactions = vi
             .fn()
-            .mockResolvedValue([{ txn: {}, sig: new Uint8Array([42]) }])
+            .mockResolvedValue([
+                signedAlgorandTransaction(mockTxn, testSignature(42)),
+            ])
         const input = buildInput({
             allAccounts: [
                 makeMultisigAccount(),
@@ -275,7 +285,9 @@ describe('signMultisigGroups', () => {
             allAccounts,
             signTransactions: vi
                 .fn()
-                .mockResolvedValue([{ txn: {}, sig: new Uint8Array([7]) }]),
+                .mockResolvedValue([
+                    signedAlgorandTransaction(mockTxn, testSignature(7)),
+                ]),
         })
 
         const results = await signMultisigGroups(input)
@@ -314,7 +326,9 @@ describe('signMultisigGroups', () => {
             .mockReturnValue(new Uint8Array([0x01]))
         const signTransactions = vi
             .fn()
-            .mockResolvedValue([{ txn: {}, sig: new Uint8Array([0x42]) }])
+            .mockResolvedValue([
+                signedAlgorandTransaction(mockTxn, testSignature(0x42)),
+            ])
 
         const hardwareReadyGroup = mockGroup()
 

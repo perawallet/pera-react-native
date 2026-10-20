@@ -23,6 +23,7 @@ import {
     resolveAllSignerAddresses,
 } from '../getRekeyedUnsignableReason'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { Address } from 'algosdk'
 import {
     asUnsignedAlgorandTransaction,
     MAINNET_GENESIS_HASH,
@@ -31,11 +32,12 @@ import {
     makeUnsignedAlgorandTransaction,
 } from './transactions'
 
-const OK_SENDER = 'OK_SENDER'
-const REKEYED_EXTERNAL = 'REKEYED_EXTERNAL'
-const REKEYED_TO_WATCH = 'REKEYED_TO_WATCH'
-const EXTERNAL_AUTH = 'EXTERNAL_AUTH'
-const WATCH_AUTH = 'WATCH_AUTH'
+const OK_SENDER = makeTestAddress(10).toString()
+const REKEYED_EXTERNAL = makeTestAddress(11).toString()
+const REKEYED_TO_WATCH = makeTestAddress(12).toString()
+const EXTERNAL_AUTH = makeTestAddress(13).toString()
+const WATCH_AUTH = makeTestAddress(14).toString()
+const UNKNOWN = makeTestAddress(15).toString()
 
 const accounts = [
     {
@@ -91,9 +93,17 @@ const txRequest = (senders: string[], overrides: object = {}): SignRequest =>
     ({
         id: 'r1',
         type: 'transactions',
-        txs: senders.map(sender => ({ sender })),
+        transport: 'algod',
+        txs: senders.map(sender =>
+            asUnsignedAlgorandTransaction(
+                makeTestPaymentTx(Address.fromString(sender), {
+                    receiver: makeTestAddress(7),
+                    genesisHash: MAINNET_GENESIS_HASH,
+                }),
+            ),
+        ),
         ...overrides,
-    }) as unknown as SignRequest
+    }) as SignRequest
 
 describe('getRekeyedUnsignableReason', () => {
     it('returns null for a signable sender', () => {
@@ -137,7 +147,9 @@ describe('getRekeyedUnsignableReason', () => {
 
     it('honors per-index signer overrides', () => {
         const request = txRequest([OK_SENDER], {
-            signerOverrides: new Map([[0, REKEYED_EXTERNAL]]),
+            chainData: {
+                algorand: { signerOverrides: new Map([[0, REKEYED_EXTERNAL]]) },
+            },
         })
         expect(getRekeyedUnsignableReason(request, accounts)).toEqual({
             kind: 'authMissing',
@@ -185,7 +197,7 @@ describe('getRekeyedUnsignableReason', () => {
 
     it('ignores senders that are not held accounts', () => {
         expect(
-            getRekeyedUnsignableReason(txRequest(['UNKNOWN']), accounts),
+            getRekeyedUnsignableReason(txRequest([UNKNOWN]), accounts),
         ).toBeNull()
     })
 })

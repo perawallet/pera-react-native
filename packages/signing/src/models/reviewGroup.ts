@@ -10,18 +10,14 @@
  limitations under the License
  */
 
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import { isUnsignedTransactionRequest } from './guards'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { FeeAdjustment, TransactionSignRequest } from './index'
 
-/** What a transaction request puts in front of the user, in whichever shape it arrived. */
+/** What a transaction request puts in front of the user. */
 export type ReviewGroup = {
     /** The full group when the source filtered `txs` down to a subset, else `txs`. */
-    transactions: PeraTransaction[] | UnsignedTransaction[]
-    groupContext?: PeraTransaction[] | UnsignedTransaction[]
+    transactions: UnsignedTransaction[]
+    groupContext?: UnsignedTransaction[]
     /** Which `transactions` slots `txs` maps to; unset means every one. */
     signableIndices?: number[]
     /** Index in `txs` -> the account that signs for it. */
@@ -30,9 +26,7 @@ export type ReviewGroup = {
 }
 
 export const reviewGroupOf = (request: TransactionSignRequest): ReviewGroup => {
-    const facts = isUnsignedTransactionRequest(request)
-        ? request.chainData?.algorand
-        : request
+    const facts = request.chainData?.algorand
     const groupContext = facts?.groupContext
     return {
         transactions: groupContext ?? request.txs,

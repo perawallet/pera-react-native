@@ -13,8 +13,6 @@
 import type {
     ChainId,
     MessageRequest,
-    PeraSignedTransaction,
-    PeraTransaction,
     SignedMessage,
     SignedTransaction,
     UnsignedTransaction,
@@ -88,30 +86,35 @@ type ChainStamp = {
     chainId: ChainId
 }
 
-/** Algorand group and delivery concepts; a chain-neutral request carries none. */
-type AlgorandRequestFields = {
+type TransactionRequestCallbacks = {
+    reject?: (reason?: RejectReason) => Promise<void>
+    error?: (error: Error) => Promise<void>
+} & BaseSignRequest
+
+/** The Algorand group facts an external request sends beside the transactions it asks to sign. */
+export type AlgorandRequestData = {
     /**
-     * The full atomic group, for ARC-0001 group-integrity validation. A source
-     * that filters `txs` down to the signable subset (e.g. WalletConnect)
-     * **must** set this to the pre-filter array so the pipeline can recompute
-     * the group hash. Leave unset when `txs` already is the full group.
+     * The full atomic group, for group-integrity validation. A source that
+     * filters `txs` down to the signable subset (e.g. WalletConnect) **must**
+     * set this to the pre-filter group so the pipeline can recompute the group
+     * hash. Leave unset when `txs` already is the full group.
      */
-    groupContext?: PeraTransaction[]
-    /**
-     * Index in `txs` -> address. Overrides `tx.sender` when deciding who
-     * signs. Populated from ARC-0001 `signers` on WalletConnect requests.
-     */
-    signerOverrides?: Map<number, string>
+    groupContext?: UnsignedTransaction[]
     /**
      * Which `groupContext` slots `txs` maps to, so the UI can render the full
      * atomic group while marking the ones the wallet will actually sign.
      */
     signableIndices?: number[]
+    /** Index in `txs` -> the account that signs for it, as the dApp named it; overrides the sender. */
+    signerOverrides?: Map<number, string>
+    /** Each of `txs` as the request sent it, for the round-trip check. */
     rawTransactionsBase64?: string[]
+    /** Fees the pipeline raised to a required minimum, indexed in `groupContext` space as {@link FeeAdjustment.index}. */
+    feeAdjustments?: FeeAdjustment[]
     /**
-     * WalletConnect JSON-RPC request id (`algo_signTxn` payload id). Set only
-     * for WalletConnect requests; threaded to the multisig sync-flow handoff so
-     * the dApp response can be reconstructed after an app kill.
+     * WalletConnect JSON-RPC request id. Set only for WalletConnect requests;
+     * threaded to the multisig sync-flow handoff so the dApp response can be
+     * reconstructed after an app kill.
      */
     payloadId?: number
     /**
@@ -119,91 +122,26 @@ type AlgorandRequestFields = {
      * to this; carried so the handoff can rebuild it without the enqueue closure.
      */
     totalLength?: number
+}
+
+/** Each transaction names its scope, so the request's chain comes from them, never a stamp. */
+export type UnsignedTransactionSignRequest = TransactionRequestCallbacks & {
+    chainId?: never
+    txs: UnsignedTransaction[]
+    chainData?: { algorand?: AlgorandRequestData }
     /**
-     * Fees the pipeline raised to a required minimum, indexed in groupContext
-     * space. Absent when nothing was modified.
-     */
-    feeAdjustments?: FeeAdjustment[]
-    /**
-     * Entries are `Nullable` because enqueue pads unsignable slots
-     * (contract-signed / unresolved signer) with `null`, preserving the
-     * original ARC-0001 slot order.
+     * Entries are `Nullable` because enqueue pads the slots the wallet doesn't
+     * sign with `null`, preserving the dApp's slot order.
      */
     approve?: (
-        signedTxs: Nullable<PeraSignedTransaction>[],
+        signed: Nullable<SignedTransaction>[],
         submission?: SubmissionReceipt,
     ) => Promise<void>
-    /** See {@link SourceCallbacks.approveSignedBytes}. */
-    approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
-    /** See {@link SourceCallbacks.onProposed}. */
-    onProposed?: (info: {
-        signRequestId: string
-        status: import('../pipeline/types').SignRequestStatus
-        rawTransactionsBase64: string[]
-    }) => Promise<void>
+    approveSignedBytes?: SourceCallbacks['approveSignedBytes']
+    onProposed?: SourceCallbacks['onProposed']
 }
 
-type TransactionRequestCallbacks = {
-    reject?: (reason?: RejectReason) => Promise<void>
-    error?: (error: Error) => Promise<void>
-} & BaseSignRequest
-
-export type PeraTransactionSignRequest = AlgorandRequestFields &
-    ChainStamp &
-    TransactionRequestCallbacks & {
-        txs: PeraTransaction[]
-    }
-
-/** The Algorand group facts an external request sends beside the transactions it asks to sign. */
-export type AlgorandRequestData = {
-    /** As {@link AlgorandRequestFields.groupContext}: the pre-filter group, when `txs` is a subset. */
-    groupContext?: UnsignedTransaction[]
-    /** Which `groupContext` slots `txs` maps to. */
-    signableIndices?: number[]
-    /** As {@link AlgorandRequestFields.signerOverrides}: index in `txs` -> the account that signs for it. */
-    signerOverrides?: Map<number, string>
-    /** Each of `txs` as the request sent it, for the round-trip check. */
-    rawTransactionsBase64?: string[]
-    /** Indexed in `groupContext` space, as {@link FeeAdjustment.index}. */
-    feeAdjustments?: FeeAdjustment[]
-    /** As {@link AlgorandRequestFields.payloadId}. */
-    payloadId?: number
-    /** As {@link AlgorandRequestFields.totalLength}. */
-    totalLength?: number
-}
-
-type DeliveryCallbacks = 'approve' | 'approveSignedBytes' | 'onProposed'
-
-/**
- * Each transaction names its scope, so the request's chain comes from them.
- * The Algorand fields and the chain stamp are typed out so a source can't set
- * one the pipeline would ignore; Algorand's group facts ride in `chainData`.
- */
-export type UnsignedTransactionSignRequest = {
-    [
-        Field in Exclude<
-            keyof (AlgorandRequestFields & ChainStamp),
-            DeliveryCallbacks
-        >
-    ]?: never
-} & TransactionRequestCallbacks & {
-        txs: UnsignedTransaction[]
-        chainData?: { algorand?: AlgorandRequestData }
-        /**
-         * Entries are `Nullable` for the same reason as
-         * {@link AlgorandRequestFields.approve}'s.
-         */
-        approve?: (
-            signed: Nullable<SignedTransaction>[],
-            submission?: SubmissionReceipt,
-        ) => Promise<void>
-        approveSignedBytes?: SourceCallbacks['approveSignedBytes']
-        onProposed?: SourceCallbacks['onProposed']
-    }
-
-export type TransactionSignRequest =
-    | PeraTransactionSignRequest
-    | UnsignedTransactionSignRequest
+export type TransactionSignRequest = UnsignedTransactionSignRequest
 
 export type PeraArbitraryDataMessage = {
     signer: string

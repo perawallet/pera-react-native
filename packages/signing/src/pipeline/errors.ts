@@ -273,8 +273,7 @@ export class TransactionRoundTripError extends PipelineError {
 export const FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER = 'fee-adjusted'
 
 /**
- * A fee-adjusted ARC-0001 response (`assignMinimumFeesToGroup`) failed to
- * deliver: "this dApp may not support the adjusted fees" rather than an ordinary
+ * A dApp response whose fees the wallet raised failed to deliver: "this dApp may not support the adjusted fees" rather than an ordinary
  * transport failure. Retryable only when the delivery failure is, or RETRY
  * would loop on a session that can never answer.
  */

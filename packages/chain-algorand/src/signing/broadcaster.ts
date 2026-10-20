@@ -12,7 +12,6 @@
 
 import {
     AlgodError,
-    encodeSignedTransactions,
     createWalletAlgorandClient,
     getAlgorandClient,
 } from '../blockchain'
@@ -54,7 +53,6 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     createSubmitTransport: scope =>
         createAlgodTransport(
             createWalletAlgorandClient(algorandNetworkOf(scope)),
-            encodeSignedTransactions,
             scope,
         ),
     submitAndAutoRefresh: (scope, signedTransactions, options) => {

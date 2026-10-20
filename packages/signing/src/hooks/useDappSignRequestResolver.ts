@@ -11,11 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type {
-    Arc0001ResolveResult,
-    Arc0001SignTxnsRequest,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     hasCustody,
@@ -23,17 +19,21 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { plannerAdapterForScope } from '../chain-adapter'
+import {
+    plannerAdapterForScope,
+    type DappResolveResult,
+    type DappSignRequest,
+} from '../chain-adapter'
 
-export type Arc0001ResolverOptions = {
+export type DappSignRequestResolverOptions = {
     authorizedAddresses?: Set<string>
     maxTransactions?: number
 }
 
-export type UseArc0001ResolverResult = (
-    request: Arc0001SignTxnsRequest,
-    options?: Arc0001ResolverOptions,
-) => Arc0001ResolveResult
+export type UseDappSignRequestResolverResult = (
+    request: DappSignRequest,
+    options?: DappSignRequestResolverOptions,
+) => DappResolveResult
 
 const addressesOn = (
     accounts: readonly WalletAccount[],
@@ -47,9 +47,9 @@ const addressesOn = (
     )
 
 // Binds `signableAddresses` from the wallet so transports can't forget it.
-export const useArc0001Resolver = (
+export const useDappSignRequestResolver = (
     scope: ChainScope,
-): UseArc0001ResolverResult => {
+): UseDappSignRequestResolverResult => {
     const signingAccounts = useSigningAccounts(scope.chainId)
     const allAccounts = useAllAccounts()
     const signableAddresses = useMemo(

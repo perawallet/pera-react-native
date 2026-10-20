@@ -11,9 +11,8 @@
  */
 
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { encodeTransactionRaw } from '../blockchain'
+import { encodeTransactionRaw, type Arc0001ResolveResult } from '../blockchain'
 import type {
-    Arc0001ResolveResult,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'

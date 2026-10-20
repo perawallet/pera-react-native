@@ -16,7 +16,7 @@ import { vi } from 'vitest'
 // store hooks), which has no loadable binding under vitest — the same wall
 // `packages/connections`' own vitest.setup.ts documents and routes around.
 // Only the auth-data wire pieces and the two size constants are needed here,
-// so they are re-exported for real; `useArc0001Resolver`/`useEnqueueArc0001SignRequest`
+// so they are re-exported for real; `useDappSignRequestResolver`/`useEnqueueDappSignRequest`
 // are stubbed because nothing in this package's specs calls the enqueue hook
 // this file registers — only its identity as a function reference matters.
 vi.mock('@perawallet/wallet-core-signing', async () => {
@@ -31,14 +31,14 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
         parseAuthDataWireRequest: (_chainId: string, ...args: [unknown]) =>
             wire.parseArc60WireRequest(...args),
         messageSignerChainAdapters: { has: () => false },
-        useArc0001Resolver: () => () => {
+        useDappSignRequestResolver: () => () => {
             throw new Error(
-                'useArc0001Resolver is stubbed in walletconnect specs; nothing here should call it',
+                'useDappSignRequestResolver is stubbed in walletconnect specs; nothing here should call it',
             )
         },
-        useEnqueueArc0001SignRequest: () => async () => {
+        useEnqueueDappSignRequest: () => async () => {
             throw new Error(
-                'useEnqueueArc0001SignRequest is stubbed in walletconnect specs; nothing here should call it',
+                'useEnqueueDappSignRequest is stubbed in walletconnect specs; nothing here should call it',
             )
         },
     }

@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import {
     type ChainScope,
-    type PeraSignedTransaction,
+    type SignedTransaction,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
@@ -39,19 +39,18 @@ const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
-// Fake signed-transaction node. The transport reads only `txn` (passed to the
-// mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
-// to algosdk's SignedTransaction class without needing a real instance.
-const fakeSigned = (tag: string, sig?: Uint8Array): PeraSignedTransaction =>
-    ({
-        txn: { tag },
-        ...(sig ? { sig } : {}),
-    }) as unknown as PeraSignedTransaction
+// The transport reads a signed transaction only through the planner's
+// `unsignedTransactionBytesOf`, which the mocked one keys on `id`.
+const fakeSigned = (tag: string, sig?: Uint8Array): SignedTransaction => ({
+    scope: SCOPE,
+    id: tag,
+    bytes: sig ?? new Uint8Array(),
+})
 
 const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
-    encodeUnsignedTransaction: vi.fn(),
+    unsignedTransactionBytesOf: vi.fn(),
     useAllAccounts: vi.fn(),
     deviceIdForScope: vi.fn(),
 }))
@@ -158,12 +157,12 @@ describe('useMultisigTransportAdapters', () => {
         ])
         mocks.deviceIdForScope.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
-        mocks.encodeUnsignedTransaction.mockImplementation(
-            (txn: { tag: string }) =>
-                new Uint8Array([txn.tag === 'TXN_1' ? 0xa1 : 0xa2]),
+        mocks.unsignedTransactionBytesOf.mockImplementation(
+            (signed: SignedTransaction) =>
+                new Uint8Array([signed.id === 'TXN_1' ? 0xa1 : 0xa2]),
         )
         registerFakePlannerAdapter({
-            encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            unsignedTransactionBytesOf: mocks.unsignedTransactionBytesOf,
         })
     })
 
@@ -211,7 +210,7 @@ describe('useMultisigTransportAdapters', () => {
         test("proposes through the scope's planner adapter and backend", async () => {
             registerFakePlannerAdapter({
                 chainId: ETHEREUM.chainId,
-                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+                unsignedTransactionBytesOf: mocks.unsignedTransactionBytesOf,
             })
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
             const { result } = renderTransportFns()
@@ -626,7 +625,7 @@ describe('useMultisigTransportAdapters', () => {
             })
             registerFakePlannerAdapter({
                 takeDraftProposeContext,
-                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+                unsignedTransactionBytesOf: mocks.unsignedTransactionBytesOf,
             })
         })
 

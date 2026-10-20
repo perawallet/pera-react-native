@@ -25,8 +25,7 @@ import {
     algorandMultisigOf,
     signableParticipantAt,
 } from '../../accounts/multisig-participants'
-import { readAlgorandTransactionsData } from '../algorandRequest'
-import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
+import { assembleSignedAlgorandTransaction } from '../signedTransactions'
 
 /**
  * Ordered by position in `participantAddresses`, NOT wallet order: `signers[0]`
@@ -97,9 +96,9 @@ export const shouldDeferPropose = (
 
 /**
  * Empty signers signal the propose transport to create a local draft instead
- * of calling the backend. Unsigned transactions ride along in
- * `signedData.signed[].txn` so the transport can encode the draft's raw bytes
- * without the original group being threaded through.
+ * of calling the backend. Unsigned envelopes ride along in `signedData.signed`
+ * so the transport can encode the draft's raw bytes without the original group
+ * being threaded through.
  */
 export const buildDeferredProposeSigningResult = (
     group: AnalyzedSignableGroup,
@@ -112,10 +111,10 @@ export const buildDeferredProposeSigningResult = (
     return {
         signedData: {
             type: 'transactions',
-            // The transport in deferred mode reads `stx.txn` only — no sig
-            // or msig is needed because nothing is actually signed yet.
-            signed: readAlgorandTransactionsData(group.data).transactions.map(
-                txn => assembleSignedTransaction(txn),
+            // The transport in deferred mode reads only the transaction each
+            // envelope carries; nothing is actually signed yet.
+            signed: group.data.transactions.map(transaction =>
+                assembleSignedAlgorandTransaction(transaction),
             ),
         },
         signers: [],

@@ -36,13 +36,19 @@ const ALGORAND_TESTNET: ChainScope = {
     networkId: 'testnet',
 }
 
-const transactionResult = {
-    signedData: {
-        type: 'transactions',
-        signed: [{ txn: {} as never, blob: new Uint8Array() } as never],
-    },
+const SIGNER = generateAccount()
+const SIGNED_BYTES = makeTestPaymentTx(SIGNER.addr, {
+    receiver: makeTestAddress(2),
+}).signTxn(SIGNER.sk)
+const SIGNED = signedAlgorandTransactionFromBytes(
+    SIGNED_BYTES,
+    ALGORAND_TESTNET,
+)
+
+const transactionResult: SigningResult = {
+    signedData: { type: 'transactions', signed: [SIGNED] },
     signers: [{ address: 'ADDR' }],
-} as SigningResult
+}
 
 const arbitraryResult = {
     signedData: {
@@ -67,17 +73,9 @@ describe('createAlgodTransport', () => {
             },
         },
     })
-    const encodeSignedTransactions = vi
-        .fn()
-        .mockReturnValue([new Uint8Array([1])])
-
     test('submits tx group and returns txIds from response string', async () => {
         const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         const result = await transport.send(transactionResult, {
             type: 'local',
@@ -87,44 +85,39 @@ describe('createAlgodTransport', () => {
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
     })
 
-    test('posts planner-signed bytes unchanged and reports their ids', async () => {
-        const account = generateAccount()
-        const bytes = makeTestPaymentTx(account.addr, {
-            receiver: makeTestAddress(2),
-        }).signTxn(account.sk)
-        const signed = signedAlgorandTransactionFromBytes(
-            bytes,
-            ALGORAND_TESTNET,
-        )
-        const algokit = makeAlgokit([])
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+    test.each([
+        ['strategy-signed', transactionResult.signedData.type],
+        ['planner-signed', 'signed-transactions'],
+    ] as const)(
+        'posts %s bytes unchanged and reports their ids',
+        async (_, type) => {
+            const algokit = makeAlgokit([])
+            const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
-        const result = await transport.send(
-            {
-                signedData: { type: 'signed-transactions', signed: [signed] },
-                signers: [{ address: 'ADDR' }],
-            },
-            { type: 'local' },
-        )
+            const result = await transport.send(
+                {
+                    signedData: {
+                        type,
+                        signed: [SIGNED],
+                        ...(type === 'signed-transactions' && {
+                            historyEntries: [],
+                        }),
+                    } as SigningResult['signedData'],
+                    signers: [{ address: 'ADDR' }],
+                },
+                { type: 'local' },
+            )
 
-        expect(result).toEqual({ type: 'submitted', txIds: [signed.id] })
-        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalledWith(
-            bytes,
-        )
-        expect(encodeSignedTransactions).not.toHaveBeenCalled()
-    })
+            expect(result).toEqual({ type: 'submitted', txIds: [SIGNED.id] })
+            expect(
+                algokit.client.algod.sendRawTransaction,
+            ).toHaveBeenCalledWith(SIGNED_BYTES)
+        },
+    )
 
     test('submits tx group and returns txIds from response array', async () => {
         const algokit = makeAlgokit(['TX1', 'TX2'])
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         const result = await transport.send(transactionResult, {
             type: 'local',
@@ -133,20 +126,7 @@ describe('createAlgodTransport', () => {
         expect(result).toEqual({ type: 'submitted', txIds: ['TX1', 'TX2'] })
     })
 
-    test('falls back to signedTxn.txn.txID() when response omits txid', async () => {
-        const txIdFn = vi.fn().mockReturnValue('COMPUTED_ID')
-        const signedWithId = {
-            signedData: {
-                type: 'transactions',
-                signed: [
-                    {
-                        txn: { txID: txIdFn },
-                        blob: new Uint8Array(),
-                    } as never,
-                ],
-            } as never,
-            signers: [{ address: 'ADDR' }],
-        }
+    test('falls back to the signed transaction id when response omits txid', async () => {
         const algokit = {
             client: {
                 algod: {
@@ -156,30 +136,21 @@ describe('createAlgodTransport', () => {
                 },
             },
         }
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
-        const result = await transport.send(signedWithId, {
+        const result = await transport.send(transactionResult, {
             type: 'local',
         })
 
-        expect(txIdFn).toHaveBeenCalled()
         expect(result).toEqual({
             type: 'submitted',
-            txIds: ['COMPUTED_ID'],
+            txIds: [SIGNED.id],
         })
     })
 
     test('rejects non-transaction data with TransportError', async () => {
         const algokit = makeAlgokit()
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         await expect(
             transport.send(arbitraryResult, { type: 'local' }),
@@ -196,11 +167,7 @@ describe('createAlgodTransport', () => {
                 },
             },
         }
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
@@ -217,11 +184,7 @@ describe('createAlgodTransport', () => {
                 },
             },
         }
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
@@ -230,11 +193,7 @@ describe('createAlgodTransport', () => {
 
     test("aborts with ScopeChangedError when Algorand's network switches", async () => {
         const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         useNetworkStore.getState().setMode('live')
 
@@ -246,11 +205,7 @@ describe('createAlgodTransport', () => {
 
     test('still submits when only another chain switches network', async () => {
         const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
         useNetworkStore.getState().selectNetwork('ethereum', 'sepolia')
 
@@ -263,11 +218,7 @@ describe('createAlgodTransport', () => {
 
     test('passes the submitted ids to source.callbacks.approve and reports the source answered', async () => {
         const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
         const approve = vi.fn().mockResolvedValue(undefined)
         const source: SourceMetadata = {
             type: 'gift-card',
@@ -287,11 +238,7 @@ describe('createAlgodTransport', () => {
 
     test('returns submitted even when the approve callback throws', async () => {
         const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
         const approve = vi.fn().mockRejectedValue(new Error('webview gone'))
         const source: SourceMetadata = {
             type: 'gift-card',
@@ -314,11 +261,7 @@ describe('createAlgodTransport', () => {
                 },
             },
         }
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            ALGORAND_TESTNET,
-        )
+        const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
         const approve = vi.fn()
         const source: SourceMetadata = {
             type: 'gift-card',

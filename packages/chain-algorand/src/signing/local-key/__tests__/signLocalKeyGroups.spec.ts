@@ -29,6 +29,8 @@ import {
     MAINNET_GENESIS_HASH,
     makeTestAddress,
     makeTestPaymentTx,
+    signedAlgorandTransaction,
+    testSignature,
 } from '../../__tests__/transactions'
 
 const MOCK_ADDRESS =
@@ -65,7 +67,10 @@ const mockGroup: AnalyzedSignableGroup = {
     },
 }
 
-const mockSignedTxn = { txn: {}, sig: new Uint8Array([1, 2, 3]) } as never
+const mockSignedTxn = signedAlgorandTransaction(
+    mockTransaction,
+    testSignature(1),
+)
 
 const buildInput = (
     overrides: Partial<LocalKeySignerInput> = {},
@@ -95,7 +100,7 @@ describe('signLocalKeyGroups', () => {
         expect(result.signers).toHaveLength(1)
         expect(result.signers[0].address).toBe(MOCK_ADDRESS)
         expect(signTransactions).toHaveBeenCalledWith(
-            [mockTransaction],
+            [asUnsignedAlgorandTransaction(mockTransaction)],
             [0],
             mockAlgo25Account,
             { chainId: 'algorand', networkId: 'mainnet' },

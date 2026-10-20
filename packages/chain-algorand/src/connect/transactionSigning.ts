@@ -11,12 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { EnqueueTransactionSigning } from '@perawallet/wallet-core-connections'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    useArc0001Resolver,
-    useEnqueueArc0001SignRequest,
+    useDappSignRequestResolver,
+    useEnqueueDappSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
@@ -31,13 +30,13 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
  */
 export const useAlgorandTransactionSigning = (): EnqueueTransactionSigning => {
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
-    const resolve = useArc0001Resolver(scope)
-    const enqueue = useEnqueueArc0001SignRequest(scope)
+    const resolve = useDappSignRequestResolver(scope)
+    const enqueue = useEnqueueDappSignRequest(scope)
 
     return useCallback(
         (request, transport) => {
             const resolved = resolve(
-                { transactions: request.group as Arc0001WalletTransaction[] },
+                { payload: { transactions: request.group } },
                 { authorizedAddresses: new Set(request.authorizedAccounts) },
             )
             return enqueue(resolved, transport)

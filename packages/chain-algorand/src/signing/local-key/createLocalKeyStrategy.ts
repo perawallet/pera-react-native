@@ -45,6 +45,7 @@ import {
     signArbitraryDataCase,
     signAuthDataCase,
 } from '../message/standardDataSigning'
+import { decodeSignedTransaction } from '../../blockchain/utils/transact'
 import { readAlgorandTransactionsData } from '../algorandRequest'
 
 /**
@@ -118,9 +119,10 @@ export const createLocalKeyStrategy = (
                         // case anyway.
                         const signerInfo: SignerInfo = {
                             address,
-                            signatures: signed.map(stx =>
-                                stx.sig ? encodeToBase64(stx.sig) : null,
-                            ),
+                            signatures: signed.map(({ bytes }) => {
+                                const { sig } = decodeSignedTransaction(bytes)
+                                return sig ? encodeToBase64(sig) : null
+                            }),
                         }
                         return {
                             signedData: { type: 'transactions', signed },

@@ -84,7 +84,6 @@ export {
     isUnsignedTransactionRequest,
     reviewGroupOf,
     type ReviewGroup,
-    type PeraTransactionSignRequest,
     type UnsignedTransactionSignRequest,
     type AlgorandRequestData,
     type ArbitraryDataSignRequest,
@@ -108,14 +107,15 @@ export type {
     HardwareSigningOperation,
 } from './hooks/types'
 export {
-    useArc0001Resolver,
-    type UseArc0001ResolverResult,
-} from './hooks/useArc0001Resolver'
+    useDappSignRequestResolver,
+    type DappSignRequestResolverOptions,
+    type UseDappSignRequestResolverResult,
+} from './hooks/useDappSignRequestResolver'
 export {
-    useEnqueueArc0001SignRequest,
-    type EnqueueArc0001SignRequest,
+    useEnqueueDappSignRequest,
+    type EnqueueDappSignRequest,
     type ExternalSignTxnTransport,
-} from './hooks/useEnqueueArc0001SignRequest'
+} from './hooks/useEnqueueDappSignRequest'
 export { useHandoffResolver } from './hooks/useHandoffResolver'
 export { useImpactTransactions } from './hooks/useImpactTransactions'
 export { useLastSigningEvent } from './hooks/useLastSigningEvent'

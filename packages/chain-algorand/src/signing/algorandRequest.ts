@@ -18,7 +18,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     GenesisHashMismatchError,
     InvalidSignableDataError,
-    isUnsignedTransaction,
     isUnsignedTransactionRequest,
     reviewGroupOf,
     type ChainSignerTransactions,
@@ -39,13 +38,14 @@ export type AlgorandRequestGroup = Omit<
 }
 
 /**
- * Null when a chain-neutral payload isn't a readable Algorand transaction for
- * its scope; the reviewer refuses such a request, so a guard has nothing to add.
+ * Null when a payload isn't a readable Algorand transaction for its scope, or
+ * a request rehydrated in an older shape isn't chain-neutral; the reviewer
+ * refuses such a request, so a guard has nothing to add.
  */
 export const algorandRequestOf = (
     request: TransactionSignRequest,
 ): Nullable<AlgorandRequestGroup> => {
-    if (!isUnsignedTransactionRequest(request)) return request
+    if (!isUnsignedTransactionRequest(request)) return null
     try {
         const {
             groupContext,
@@ -93,18 +93,16 @@ const readOrRefuse = (
 }
 
 export const algorandTransactionsOf = (
-    transactions: PeraTransaction[] | UnsignedTransaction[],
+    transactions: UnsignedTransaction[],
 ): PeraTransaction[] =>
-    transactions.map(transaction =>
-        isUnsignedTransaction(transaction)
-            ? readOrRefuse(transaction).transaction
-            : transaction,
-    )
+    transactions.map(transaction => readOrRefuse(transaction).transaction)
 
+// Read only to refuse a payload that isn't Algorand's; the signers decode it again.
 export const readAlgorandTransactionsData = (
     data: UnsignedTransactionsSignableData,
 ): ChainSignerTransactions => {
-    const transactions = algorandTransactionsOf(data.transactions)
+    const { transactions } = data
+    algorandTransactionsOf(transactions)
     const algorand = data.chainData.algorand
     return {
         transactions,

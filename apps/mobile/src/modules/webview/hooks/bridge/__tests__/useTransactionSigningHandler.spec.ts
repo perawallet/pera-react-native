@@ -36,8 +36,8 @@ vi.mock('@hooks/useErrorToast', () => ({
 const mockResolve = vi.fn()
 const mockEnqueue = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useArc0001Resolver: () => mockResolve,
-    useEnqueueArc0001SignRequest: () => mockEnqueue,
+    useDappSignRequestResolver: () => mockResolve,
+    useEnqueueDappSignRequest: () => mockEnqueue,
 }))
 
 const lastTransport = (): ExternalSignTxnTransport =>
@@ -75,8 +75,7 @@ describe('useTransactionSigningHandler', () => {
 
         // No authorizedAddresses: the webview's trust is per-origin.
         expect(mockResolve).toHaveBeenCalledWith({
-            transactions: txns,
-            opts: { message: 'hi' },
+            payload: { transactions: txns, opts: { message: 'hi' } },
         })
         expect(mockEnqueue).toHaveBeenCalledWith(
             { resolved: true },
