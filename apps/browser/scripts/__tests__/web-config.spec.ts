@@ -137,5 +137,33 @@ describe('assertWebConfigAllowlisted', () => {
             expect(generated).not.toContain('googleIosClientId')
             expect(generated).not.toContain('backendAPIKey')
         })
+
+        it('bakes the Ethereum endpoints when CHAINS ships ethereum under the web allowlist', () => {
+            const out = join(dir, 'generated-env.ts')
+
+            execFileSync('bash', [SCRIPT], {
+                env: {
+                    PATH: process.env.PATH,
+                    ENV_FILE: join(dir, 'missing.env'),
+                    OUTPUT_FILE: out,
+                    CONFIG_ALLOWLIST: WEB_CONFIG_ALLOWLIST.join(' '),
+                    CHAINS: 'algorand,ethereum',
+                    ETHEREUM_MAINNET_RPC_URL: 'https://mainnet.rpc.example',
+                    ETHEREUM_SEPOLIA_RPC_URL: 'https://sepolia.rpc.example',
+                    ETHEREUM_SEPOLIA_PERA_SERVICES: 'prices',
+                },
+                stdio: 'ignore',
+            })
+            const generated = readFileSync(out, 'utf8')
+
+            expect(generated).toContain('chainIds: "algorand,ethereum"')
+            expect(generated).toContain(
+                'ethereumMainnetRpcUrl: "https://mainnet.rpc.example"',
+            )
+            expect(generated).toContain(
+                'ethereumSepoliaRpcUrl: "https://sepolia.rpc.example"',
+            )
+            expect(generated).toContain('ethereumSepoliaPeraServices: "prices"')
+        })
     })
 })

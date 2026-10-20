@@ -17,6 +17,7 @@ check() { # $1 label  $2 expected  $3 actual
     fi
 }
 
+# The last entry wins: Bitrise applies a workflow's envs in order.
 workflow_env() { # $1 workflow  $2 KEY
     awk -v workflow="  $1:" -v key="$2" '
         $0 == workflow { inside = 1; next }
@@ -26,9 +27,9 @@ workflow_env() { # $1 workflow  $2 KEY
             if (value ~ /^".*"$/ || value ~ /^'\''.*'\''$/) {
                 value = substr(value, 2, length(value) - 2)
             }
-            print value
-            exit
+            found = 1
         }
+        END { if (found) print value }
     ' "$BITRISE_YML"
 }
 

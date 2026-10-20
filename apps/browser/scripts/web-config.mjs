@@ -88,6 +88,11 @@ export const WEB_CONFIG_ALLOWLIST = [
     'chainIds',
     'chainAlgorandCapabilities',
     'chainEthereumCapabilities',
+    // generate-config.sh refuses a CHAINS listing ethereum without both RPC URLs.
+    'ethereumMainnetRpcUrl',
+    'ethereumSepoliaRpcUrl',
+    'ethereumMainnetPeraServices',
+    'ethereumSepoliaPeraServices',
 ]
 
 const INTEGRITY_FLAGS = {
