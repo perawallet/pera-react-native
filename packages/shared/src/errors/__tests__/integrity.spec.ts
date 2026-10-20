@@ -126,11 +126,18 @@ describe('toIntegrityRequiredError', () => {
 
     it('names the refused token by the expiry in its payload', () => {
         const payload = Buffer.from(
-            JSON.stringify({ platform: 'web', enr: true, sub: 'd', exp: 1_800_000_000 }),
+            JSON.stringify({
+                platform: 'web',
+                enr: true,
+                sub: 'd',
+                exp: 1_800_000_000,
+            }),
         ).toString('base64url')
 
         const error = toIntegrityRequiredError(
-            refusal(401, { headers: { Authorization: `Bearer h.${payload}.s` } }),
+            refusal(401, {
+                headers: { Authorization: `Bearer h.${payload}.s` },
+            }),
         )
 
         expect(error?.tokenExpiresAt).toBe(1_800_000_000_000)

@@ -685,7 +685,9 @@ describe('integrity failures, recovery and control', () => {
         })
 
         it('answers an automatic retry at once after a failure that never got an answer', async () => {
-            mockAttestDevice.mockRejectedValueOnce(await networkError('offline'))
+            mockAttestDevice.mockRejectedValueOnce(
+                await networkError('offline'),
+            )
             const { ensureIntegrityToken, handleIntegrityControl } =
                 await import('../integrity')
             await ensureIntegrityToken()
@@ -766,12 +768,16 @@ describe('integrity failures, recovery and control', () => {
 
             expect(mockAttestDevice).not.toHaveBeenCalled()
             expect(fake.session.has(INTEGRITY_TOKEN_SESSION_KEY)).toBe(false)
-            expect(fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toMatchObject({
+            expect(
+                fake.session.get(INTEGRITY_LAST_FAILURE_SESSION_KEY),
+            ).toMatchObject({
                 phase: 'mint',
                 status: 401,
                 isTransport: false,
             })
-            expect(fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY)).toMatchObject({
+            expect(
+                fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY),
+            ).toMatchObject({
                 failures: 1,
             })
         })

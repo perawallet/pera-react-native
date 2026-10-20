@@ -139,9 +139,15 @@ describe('useIntegrityBanner', () => {
             },
         })
         // The page opened long before the check started.
-        act(() => useIntegrityAccessStore.getState().applySnapshot(EMPTY, NOW - 60_000))
         act(() =>
-            useIntegrityAccessStore.getState().applySnapshot(checking(NOW), NOW),
+            useIntegrityAccessStore
+                .getState()
+                .applySnapshot(EMPTY, NOW - 60_000),
+        )
+        act(() =>
+            useIntegrityAccessStore
+                .getState()
+                .applySnapshot(checking(NOW), NOW),
         )
         access.state = { status: 'checking', surface: 'frame' }
         const { result } = renderHook(() => useIntegrityBanner())

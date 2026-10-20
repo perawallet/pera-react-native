@@ -1139,8 +1139,12 @@ describe('queryClient', () => {
         })
 
         it('never classifies in a build that sends no bearer: native keeps its errors', async () => {
-            const { queryClient, isIntegrityRequiredError, isPeraNetworkError, scopedConfig } =
-                await load()
+            const {
+                queryClient,
+                isIntegrityRequiredError,
+                isPeraNetworkError,
+                scopedConfig,
+            } = await load()
             vi.mocked(scopedConfig).webIntegrityBearerEnabled = false
             mockKy.mockRejectedValueOnce(
                 refusal(403, { code: 'APP_INTEGRITY_TOKEN_REQUIRED' }),

@@ -129,7 +129,7 @@ describe('nextIntegrityDerivationAt', () => {
         ).toBe(NOW + 30_000)
     })
 
-    it("includes the moment a check outlasts its own grace, when the pill shows it", () => {
+    it('includes the moment a check outlasts its own grace, when the pill shows it', () => {
         expect(
             nextIntegrityDerivationAt(
                 {

@@ -151,7 +151,11 @@ describe('deriveIntegrityAccessState', () => {
     it('waits out the grace after a mint that never got an answer, then reads it as a timeout', () => {
         expect(
             derive({
-                lastFailure: { phase: 'mint', at: NOW - 1000, isTransport: true },
+                lastFailure: {
+                    phase: 'mint',
+                    at: NOW - 1000,
+                    isTransport: true,
+                },
             }),
         ).toEqual({ status: 'pending' })
         expect(
