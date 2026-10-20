@@ -14,8 +14,11 @@ import { z } from 'zod'
 import {
     CHAIN_CAPABILITIES,
     CHAIN_IDS,
+    EVM_CHAIN_NETWORKS,
     type ChainId,
     type ChainSetupConfig,
+    type EvmChainId,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     ONE_DAY,
@@ -35,8 +38,8 @@ const csv = (value: string): string[] =>
         .map(item => item.trim())
         .filter(Boolean)
 
-/** The Pera services an Ethereum scope can list; the rest are Algorand-only. */
-export const ETHEREUM_PERA_SERVICES = [
+/** The Pera services an EVM scope can list; the rest are Algorand-only. */
+export const EVM_PERA_SERVICES = [
     'prices',
     'assets',
     'history',
@@ -45,12 +48,66 @@ export const ETHEREUM_PERA_SERVICES = [
 
 // The build bakes the list as one flat string; a missing or empty list means
 // the backend serves nothing for that scope.
-const ethereumPeraServicesSchema = z.preprocess(
+const evmPeraServicesSchema = z.preprocess(
     value => (typeof value === 'string' ? csv(value) : value),
-    z.array(z.enum(ETHEREUM_PERA_SERVICES)),
+    z.array(z.enum(EVM_PERA_SERVICES)),
 )
 
 const optionalUrlSchema = z.url().or(z.literal(''))
+
+export type EvmRpcUrlConfigKey = `${EvmChainId}${string}RpcUrl`
+export type EvmPeraServicesConfigKey = `${EvmChainId}${string}PeraServices`
+
+export type EvmConfigKeys = {
+    rpcUrl: EvmRpcUrlConfigKey
+    peraServices: EvmPeraServicesConfigKey
+    rpcUrlEnv: string
+    peraServicesEnv: string
+}
+
+const pascalCase = (id: string): string =>
+    id
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('')
+
+/**
+ * Must name what tools/dev/evm-config-keys.cjs names, which the config
+ * generator and the browser allowlist read; generate-config.spec pins both.
+ */
+export const evmConfigKeys = (
+    chainId: EvmChainId,
+    networkId: NetworkId,
+): EvmConfigKeys => {
+    const key = `${chainId}${pascalCase(networkId)}`
+    const env = `${chainId}_${networkId}`.toUpperCase().replaceAll('-', '_')
+    return {
+        rpcUrl: `${key}RpcUrl` as EvmRpcUrlConfigKey,
+        peraServices: `${key}PeraServices` as EvmPeraServicesConfigKey,
+        rpcUrlEnv: `${env}_RPC_URL`,
+        peraServicesEnv: `${env}_PERA_SERVICES`,
+    }
+}
+
+const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
+
+const EVM_SCOPE_CONFIG_KEYS: readonly EvmConfigKeys[] = EVM_CHAIN_IDS.flatMap(
+    chainId =>
+        EVM_CHAIN_NETWORKS[chainId].networks.map(network =>
+            evmConfigKeys(chainId, network.id),
+        ),
+)
+
+// Public JSON-RPC endpoints, no third-party API key. Empty in builds that
+// don't ship the chain; generate-config.sh refuses a build whose CHAINS lists
+// a chain without every one of its networks' URLs.
+const evmConfigShape = Object.fromEntries(
+    EVM_SCOPE_CONFIG_KEYS.flatMap(keys => [
+        [keys.rpcUrl, optionalUrlSchema],
+        [keys.peraServices, evmPeraServicesSchema],
+    ]),
+) as Record<EvmRpcUrlConfigKey, typeof optionalUrlSchema> &
+    Record<EvmPeraServicesConfigKey, typeof evmPeraServicesSchema>
 
 const chainSetupSchema = z.object({
     enabled: z.array(z.enum(CHAIN_IDS)).min(1),
@@ -141,13 +198,7 @@ export const configSchema = z
         // a production build without one fails in tools/dev/generate-config.sh.
         reownProjectId: z.string(),
 
-        // Public JSON-RPC endpoints, no third-party API key. Empty in builds
-        // that don't ship Ethereum; generate-config.sh refuses a build whose
-        // CHAINS lists ethereum without both.
-        ethereumMainnetRpcUrl: optionalUrlSchema,
-        ethereumSepoliaRpcUrl: optionalUrlSchema,
-        ethereumMainnetPeraServices: ethereumPeraServicesSchema,
-        ethereumSepoliaPeraServices: ethereumPeraServicesSchema,
+        ...evmConfigShape,
 
         notificationRefreshTime: z.number().int(),
         remoteConfigRefreshTime: z.number().int(),
@@ -306,11 +357,17 @@ export const configSchema = z
         }
     })
 
-export type Config = z.infer<typeof configSchema>
+// zod drops the generated EVM fields from its inferred type: their keys are
+// template patterns, which only a mapped type keeps.
+type EvmScopeConfigFields = {
+    [Field in EvmRpcUrlConfigKey]: string
+} & {
+    [Field in EvmPeraServicesConfigKey]: (typeof EVM_PERA_SERVICES)[number][]
+}
 
-type PeraServicesListField =
-    | 'ethereumMainnetPeraServices'
-    | 'ethereumSepoliaPeraServices'
+export type Config = z.infer<typeof configSchema> & EvmScopeConfigFields
+
+type PeraServicesListField = EvmPeraServicesConfigKey
 
 // generate-config.sh bakes the list fields as flat strings the schema splits.
 type ConfigOverrides = Partial<
@@ -390,10 +447,13 @@ const productionConfig: Omit<
     firebaseVapidKey: '',
     sentryDsn: '',
     reownProjectId: '',
-    ethereumMainnetRpcUrl: '',
-    ethereumSepoliaRpcUrl: '',
-    ethereumMainnetPeraServices: [],
-    ethereumSepoliaPeraServices: [],
+    ...(Object.fromEntries(
+        EVM_SCOPE_CONFIG_KEYS.flatMap(keys => [
+            [keys.rpcUrl, ''],
+            [keys.peraServices, []],
+        ]),
+    ) as Record<EvmRpcUrlConfigKey, string> &
+        Record<EvmPeraServicesConfigKey, (typeof EVM_PERA_SERVICES)[number][]>),
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -446,7 +506,12 @@ const productionConfig: Omit<
         algorand: { readMs: TEN_SECONDS, submitMs: THIRTY_SECONDS },
         // One request carries a JSON-RPC batch of up to 100 calls, so reads get
         // more room than a single algod GET.
-        ethereum: { readMs: 15 * ONE_SECOND, submitMs: THIRTY_SECONDS },
+        ...(Object.fromEntries(
+            EVM_CHAIN_IDS.map(chainId => [
+                chainId,
+                { readMs: 15 * ONE_SECOND, submitMs: THIRTY_SECONDS },
+            ]),
+        ) as Record<EvmChainId, { readMs: number; submitMs: number }>),
     },
     // Must cover the largest chainRequestTimeouts submitMs PLUS the post-error landing verification
     // in submitAndAutoRefresh (2 short waitForConfirmation probes + retry
@@ -562,10 +627,12 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
     sentryDsn: 'SENTRY_DSN',
     reownProjectId: 'REOWN_PROJECT_ID',
-    ethereumMainnetRpcUrl: 'ETHEREUM_MAINNET_RPC_URL',
-    ethereumSepoliaRpcUrl: 'ETHEREUM_SEPOLIA_RPC_URL',
-    ethereumMainnetPeraServices: 'ETHEREUM_MAINNET_PERA_SERVICES',
-    ethereumSepoliaPeraServices: 'ETHEREUM_SEPOLIA_PERA_SERVICES',
+    ...Object.fromEntries(
+        EVM_SCOPE_CONFIG_KEYS.flatMap(keys => [
+            [keys.rpcUrl, keys.rpcUrlEnv],
+            [keys.peraServices, keys.peraServicesEnv],
+        ]),
+    ),
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',

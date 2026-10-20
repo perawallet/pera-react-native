@@ -27,7 +27,7 @@ export function loadEnvOverrides(): OverridesType {
     const overrides: OverridesType = {}
 
     Object.entries(overrideEnvironmentMap).forEach(([key, value]) => {
-        const envValue = process.env[value]
+        const envValue = value === undefined ? undefined : process.env[value]
         if (envValue && key) {
             if (
                 key === 'debugEnabled' ||

@@ -12,6 +12,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -24,18 +25,46 @@ import {
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 
+const evmTooling = createRequire(import.meta.url)(
+    '../../../../tools/dev/evm-config-keys.cjs',
+) as {
+    evmChainConfigKeys: () => {
+        capabilitiesEnv: string
+        capabilitiesKey: string
+    }[]
+    evmScopeConfigKeys: () => {
+        rpcUrlEnv: string
+        rpcUrlKey: string
+        peraServicesEnv: string
+        peraServicesKey: string
+    }[]
+}
+
+// The literal lines, plus the EVM lines the script generates from the table.
 const emittable = (): Map<string, string> => {
     const source = readFileSync(SCRIPT, 'utf8')
-    return new Map(
-        [
+    return new Map([
+        ...[
             ...source.matchAll(
                 /^append_config "([A-Z0-9_]+)" "([A-Za-z0-9]+)" "(\w+)"/gm,
             ),
-        ].map(([, envVar, key, type]) => [
+        ].map(([, envVar, key, type]): [string, string] => [
             key,
             `${envVar}=${type === 'boolean' ? 'true' : type === 'number' ? '1' : 'value'}`,
         ]),
-    )
+        ...evmTooling
+            .evmChainConfigKeys()
+            .map((keys): [string, string] => [
+                keys.capabilitiesKey,
+                `${keys.capabilitiesEnv}=value`,
+            ]),
+        ...evmTooling
+            .evmScopeConfigKeys()
+            .flatMap((keys): [string, string][] => [
+                [keys.rpcUrlKey, `${keys.rpcUrlEnv}=value`],
+                [keys.peraServicesKey, `${keys.peraServicesEnv}=value`],
+            ]),
+    ])
 }
 
 describe('WEB_CONFIG_ALLOWLIST', () => {
@@ -136,6 +165,30 @@ describe('assertWebConfigAllowlisted', () => {
             expect(generated).toContain('sentryDsn: "value"')
             expect(generated).not.toContain('googleIosClientId')
             expect(generated).not.toContain('backendAPIKey')
+        })
+
+        it('bakes a build that ships Base alone with its RPC URLs', () => {
+            const out = join(dir, 'generated-env.ts')
+            writeFileSync(join(dir, '.env'), '')
+
+            execFileSync('bash', [SCRIPT], {
+                env: {
+                    PATH: process.env.PATH,
+                    ENV_FILE: join(dir, '.env'),
+                    OUTPUT_FILE: out,
+                    CONFIG_ALLOWLIST: WEB_CONFIG_ALLOWLIST.join(' '),
+                    CHAINS: 'algorand,base',
+                    BASE_MAINNET_RPC_URL: 'https://base.rpc.example',
+                    BASE_SEPOLIA_RPC_URL: 'https://base-sepolia.rpc.example',
+                },
+                stdio: 'ignore',
+            })
+            const generated = readFileSync(out, 'utf8')
+
+            expect(() => assertWebConfigAllowlisted(generated)).not.toThrow()
+            expect(generated).toContain(
+                'baseMainnetRpcUrl: "https://base.rpc.example"',
+            )
         })
     })
 })

@@ -11,14 +11,17 @@
  */
 
 import {
+    EVM_CHAIN_NETWORKS,
     type ChainEndpoints,
     type ChainId,
     type ChainScope,
+    type EvmChainId,
     type NetworkId,
+    type NetworkTier,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
-import { config } from './main'
+import { config, evmConfigKeys } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
 export type AlgorandChainConfig = {
@@ -32,7 +35,7 @@ export type AlgorandChainConfig = {
     dispenserUrl: string
 }
 
-export type EthereumChainConfig = {
+export type EvmChainConfig = {
     /** Public JSON-RPC endpoint; reads go direct, with no API key. */
     rpcUrl: string
 }
@@ -41,8 +44,7 @@ export type EthereumChainConfig = {
 // getChainConfig compiling.
 type ChainConfigByChain = {
     algorand: AlgorandChainConfig
-    ethereum: EthereumChainConfig
-}
+} & Record<EvmChainId, EvmChainConfig>
 
 export type ChainConfig = ChainConfigByChain[ChainId]
 
@@ -218,7 +220,7 @@ type ScopeConfigOf<C extends ChainId> = {
     acceptsCustomNode: boolean
 }
 
-type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
+type ScopeConfig = ScopeConfigOf<'algorand'> | ScopeConfigOf<EvmChainId>
 
 // Betanet and custom pass no deployment: their chain data lives on neither
 // Pera deployment, so they carry no services.
@@ -245,13 +247,19 @@ const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] = [
     algorandScopeConfig('custom', ALGORAND_CUSTOM_CHAIN, undefined),
 ]
 
-const ethereumScopeConfig = (
+const DEPLOYMENT_OF_TIER: Record<NetworkTier, WalletMode> = {
+    mainnet: 'live',
+    testnet: 'developer',
+}
+
+const evmScopeConfig = (
+    chainId: EvmChainId,
     networkId: NetworkId,
     rpcUrl: string,
     deployment: WalletMode,
     services: readonly PeraService[],
-): ScopeConfigOf<'ethereum'> => ({
-    scope: { chainId: 'ethereum', networkId },
+): ScopeConfigOf<EvmChainId> => ({
+    scope: { chainId, networkId },
     // An empty list drops the deployment too: the query client refuses every
     // Pera request for such a scope, including requests that name no service.
     deployment: services.length > 0 ? deployment : undefined,
@@ -267,31 +275,38 @@ const ethereumScopeConfig = (
     acceptsCustomNode: false,
 })
 
-const ETHEREUM_SCOPE_CONFIGS: readonly ScopeConfigOf<'ethereum'>[] = [
-    ethereumScopeConfig(
-        'mainnet',
-        config.ethereumMainnetRpcUrl,
-        'live',
-        config.ethereumMainnetPeraServices,
-    ),
-    ethereumScopeConfig(
-        'sepolia',
-        config.ethereumSepoliaRpcUrl,
-        'developer',
-        config.ethereumSepoliaPeraServices,
-    ),
-]
+const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
+
+const EVM_SCOPE_CONFIGS: readonly ScopeConfigOf<EvmChainId>[] =
+    EVM_CHAIN_IDS.flatMap(chainId =>
+        EVM_CHAIN_NETWORKS[chainId].networks.map(network => {
+            const keys = evmConfigKeys(chainId, network.id)
+            return evmScopeConfig(
+                chainId,
+                network.id,
+                config[keys.rpcUrl],
+                DEPLOYMENT_OF_TIER[network.tier],
+                config[keys.peraServices],
+            )
+        }),
+    )
 
 // Algorand's node URLs come from getAlgorandChainConfig, which overlays a saved
-// custom node per request, so its record stays empty.
+// custom node per request, so its record stays empty. An EVM network without
+// an RPC URL is left out.
+const evmEndpoints = (): Record<EvmChainId, ChainEndpoints> => {
+    const endpoints = Object.fromEntries(
+        EVM_CHAIN_IDS.map(chainId => [chainId, {}]),
+    ) as Record<EvmChainId, Record<NetworkId, string>>
+    for (const { scope, chain } of EVM_SCOPE_CONFIGS) {
+        if (chain) endpoints[scope.chainId][scope.networkId] = chain.rpcUrl
+    }
+    return endpoints
+}
+
 const CHAIN_ENDPOINTS: Record<ChainId, ChainEndpoints> = {
     algorand: {},
-    // A network without an RPC URL is left out.
-    ethereum: Object.fromEntries(
-        ETHEREUM_SCOPE_CONFIGS.flatMap(({ scope, chain }) =>
-            chain ? [[scope.networkId, chain.rpcUrl]] : [],
-        ),
-    ),
+    ...evmEndpoints(),
 }
 
 export const chainEndpointsFor = (chainId: ChainId): ChainEndpoints =>
@@ -299,7 +314,7 @@ export const chainEndpointsFor = (chainId: ChainId): ChainEndpoints =>
 
 const SCOPE_CONFIGS: readonly ScopeConfig[] = [
     ...ALGORAND_SCOPE_CONFIGS,
-    ...ETHEREUM_SCOPE_CONFIGS,
+    ...EVM_SCOPE_CONFIGS,
 ]
 
 // Compared field by field, not through toScopeKey: that validates the chain id
