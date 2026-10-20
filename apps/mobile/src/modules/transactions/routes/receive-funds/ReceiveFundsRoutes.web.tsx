@@ -27,19 +27,22 @@ import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { AccountSelectionScreen } from '../../screens/receive-funds/AccountSelectionScreen'
+import { ChainSelectionScreen } from '../../screens/receive-funds/ChainSelectionScreen'
 import { QRViewScreen } from '../../screens/receive-funds/QRViewScreen'
 import { useStyles } from './styles'
 import type { ReceiveFundsStackParamList } from './types'
+import { useReceiveFundsRoutes } from './useReceiveFundsRoutes'
 
 const Stack = createNativeStackNavigator<ReceiveFundsStackParamList>()
 
 export const ReceiveFundsRoutes = () => {
     const { canSelectAccount, onFinished } = useReceiveFunds()
+    const { initialRouteName } = useReceiveFundsRoutes()
     const styles = useStyles()
 
     return (
         <Stack.Navigator
-            initialRouteName={canSelectAccount ? 'AccountSelection' : 'QRView'}
+            initialRouteName={initialRouteName}
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
@@ -62,6 +65,24 @@ export const ReceiveFundsRoutes = () => {
                             onPress={onFinished}
                         />
                     ),
+                }}
+            />
+
+            <Stack.Screen
+                name='ChainSelection'
+                component={ChainSelectionScreen}
+                options={{
+                    title: 'receive_funds.chain_selection.title',
+                    ...(canSelectAccount
+                        ? {}
+                        : {
+                              headerLeft: () => (
+                                  <PWIcon
+                                      name='cross'
+                                      onPress={onFinished}
+                                  />
+                              ),
+                          }),
                 }}
             />
 

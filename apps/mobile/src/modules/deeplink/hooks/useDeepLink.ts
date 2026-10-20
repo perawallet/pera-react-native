@@ -35,10 +35,12 @@ import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { isDevE2eFixtureDeeplink } from '../dev-e2e-fixture-parser'
 import type { AppDeeplink } from '../types'
 import {
+    chainAccountOf,
     findAccountByAddressOn,
     findAccountByAnyChainAddress,
     hdIndexOf,
     useAccountsStore,
+    useEnableChain,
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -157,6 +159,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const isAllowed = useCapabilityCheck()
     const { resolve: resolveSender, pick: pickSender } =
         useSendAccountResolver()
+    const enableChain = useEnableChain()
 
     // A capability that's off refuses the link before any screen opens.
     const refusalOf = (link: AppDeeplink): Maybe<LinkRefusal> => {
@@ -261,13 +264,30 @@ export const useDeepLink = (): UseDeepLinkResult => {
             onError?.()
         }
 
+        // A sender that could be on the link's chain but isn't yet is
+        // enabled there first: the link starts a flow on that chain.
         const openSendFrom = (
             sender: WalletAccount,
+            chainId: ChainId,
             prefill: SendFundsDeeplinkPrefill,
+            parsedType: string,
         ) => {
-            // The send flow runs on the selected account's chain.
-            setSelectedAccountId(sender.id)
-            openSendFunds(prefill)
+            const open = () => {
+                // The send flow runs on the selected account's chain.
+                setSelectedAccountId(sender.id)
+                openSendFunds(prefill)
+            }
+            if (chainAccountOf(sender, chainId)) {
+                open()
+                return
+            }
+            dispatchDetached(
+                enableChain(sender.id, chainId, 'user').then(open, error => {
+                    onError?.()
+                    throw error
+                }),
+                parsedType,
+            )
         }
 
         // False when the chain has no account that can send; the error is shown.
@@ -289,13 +309,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
             if (resolution.kind === 'picker') {
                 dispatchDetached(
                     pickSender(chainId, resolution.accounts).then(sender => {
-                        if (sender) openSendFrom(sender, prefill)
+                        if (sender) {
+                            openSendFrom(sender, chainId, prefill, parsedType)
+                        }
                     }),
                     parsedType,
                 )
                 return true
             }
-            openSendFrom(resolution.account, prefill)
+            openSendFrom(resolution.account, chainId, prefill, parsedType)
             return true
         }
 

@@ -18,7 +18,14 @@ import {
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -38,12 +45,8 @@ type UseQRViewScreenResult = {
     paymentUri: string
     /** False when there is no account, its chain has `receive` off, or no codec is registered for it. */
     canReceive: boolean
-    /**
-     * True when the user reached this screen via AccountSelection — the
-     * header back button navigates back to the picker. False when QRView is
-     * the initial route and back must dismiss the whole flow.
-     */
-    canSelectAccount: boolean
+    /** True when a picker (account or chain) led here, so back returns to it; false when back ends the flow. */
+    canGoBack: boolean
     handleBack: () => void
     handleCopyAddress: () => void
     handleShareAddress: () => Promise<void>
@@ -62,12 +65,27 @@ const NO_RECEIVE_TARGET: ReceiveTarget = {
 }
 
 export const useQRViewScreen = (): UseQRViewScreenResult => {
-    const { selectedAccount, canSelectAccount, onFinished } = useReceiveFunds()
+    const { selectedAccount, selectedChainId, onFinished } = useReceiveFunds()
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
-    const scope = useAccountCapabilityScope(selectedAccount ?? null, 'receive')
+    const receiveScope = useAccountCapabilityScope(
+        selectedAccount ?? null,
+        'receive',
+    )
+    const selectedNetworkId = useNetworkStore(state =>
+        selectedChainId === undefined
+            ? undefined
+            : selectChainNetworkId(state, selectedChainId),
+    )
+    const scope = useMemo(
+        (): ChainScope | null =>
+            selectedChainId !== undefined && selectedNetworkId !== undefined
+                ? { chainId: selectedChainId, networkId: selectedNetworkId }
+                : receiveScope,
+        [selectedChainId, selectedNetworkId, receiveScope],
+    )
 
     const { accountName, address, paymentUri } = useMemo((): ReceiveTarget => {
         if (!selectedAccount || !scope || !addressCodecs.has(scope.chainId)) {
@@ -110,13 +128,14 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         }
     }, [canReceive, accountName, address, showError, t])
 
+    // Back returns to whichever picker led here; with none, it ends the flow.
     const handleBack = useCallback(() => {
-        if (canSelectAccount) {
+        if (navigation.canGoBack()) {
             navigation.goBack()
         } else {
             onFinished?.()
         }
-    }, [canSelectAccount, navigation, onFinished])
+    }, [navigation, onFinished])
 
     return {
         account: selectedAccount,
@@ -124,7 +143,7 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         address,
         paymentUri,
         canReceive,
-        canSelectAccount,
+        canGoBack: navigation.canGoBack(),
         handleBack,
         handleCopyAddress,
         handleShareAddress,

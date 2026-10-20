@@ -14,7 +14,9 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useAccountsStore,
+    useEnableChain,
     chainAccountOf,
+    eligibleChains,
 } from '@perawallet/wallet-core-accounts'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
@@ -76,6 +78,7 @@ export const useAddAssetView = (
         scope,
     )
     const { optIn } = useAssetOptInMutation(scope)
+    const enableChain = useEnableChain()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const { requestByType } = useBottomSheet()
@@ -124,15 +127,36 @@ export const useAddAssetView = (
         [setSearchQuery],
     )
 
+    // Adding an asset on a chain the account could be on, but isn't yet,
+    // enables that chain first: the user has started using it there.
+    const resolveSender = useCallback(async (): Promise<string | undefined> => {
+        if (selectedAddress || !selectedAccount) return selectedAddress
+        if (!eligibleChains(selectedAccount).includes(scope.chainId)) {
+            return undefined
+        }
+        const account = await enableChain(
+            selectedAccount.id,
+            scope.chainId,
+            'user',
+        )
+        return chainAccountOf(account, scope.chainId)?.address
+    }, [selectedAddress, selectedAccount, scope.chainId, enableChain])
+
     const handleRequestAdd = useCallback(
         async (assetId: string) => {
-            if (!selectedAddress || optingInAssetIds.has(assetId)) {
+            if (optingInAssetIds.has(assetId)) return
+            let sender: string | undefined
+            try {
+                sender = await resolveSender()
+            } catch (err) {
+                showError(err, t('add_asset.opt_in.failed_title'))
                 return
             }
+            if (!sender) return
 
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: selectedAddress },
+                { assetId, accountAddress: sender },
                 {
                     size: 'auto',
                     enablePanDownToClose: true,
@@ -152,7 +176,7 @@ export const useAddAssetView = (
 
             try {
                 await optIn({
-                    sender: selectedAddress,
+                    sender,
                     assetId: BigInt(assetId),
                 })
                 setRecentlyOptedIn(prev => new Set([...prev, assetId]))
@@ -179,7 +203,7 @@ export const useAddAssetView = (
             }
         },
         [
-            selectedAddress,
+            resolveSender,
             optingInAssetIds,
             requestByType,
             results,

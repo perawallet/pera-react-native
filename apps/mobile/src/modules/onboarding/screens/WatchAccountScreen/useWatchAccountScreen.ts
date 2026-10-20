@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
-    buildAccount,
     useAccountsStore,
     useAllAccounts,
     findAccountByAddressOn,
@@ -27,6 +26,9 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { useCapabilityCheck } from '@hooks/useCapability'
+import { useErrorToast } from '@hooks/useErrorToast'
+import { useIsMounted } from '@hooks/useIsMounted'
+import { useLanguage } from '@hooks/useLanguage'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
@@ -49,7 +51,15 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const route =
         useRoute<RouteProp<AddAccountStackParamList, 'WatchAccount'>>()
     const accounts = useAllAccounts()
-    const setAccounts = useAccountsStore(state => state.setAccounts)
+    const importWatchAccount = useAccountsStore(
+        state => state.importWatchAccount,
+    )
+    const { showError } = useErrorToast()
+    const { t } = useLanguage()
+    const isMounted = useIsMounted()
+    // The import probes the address's other chains, so a second tap can land
+    // before it settles.
+    const isWatchingRef = useRef(false)
     const [address, setAddress] = useState(route.params?.prefillAddress ?? '')
 
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
@@ -82,35 +92,41 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (watchChainId === undefined || isDuplicateAddress) {
+        if (
+            watchChainId === undefined ||
+            isDuplicateAddress ||
+            isWatchingRef.current
+        ) {
             return
         }
-
-        const newAccount = buildAccount({
-            custody: { kind: 'watch' },
-            chainId: watchChainId,
-            chains: {
-                [watchChainId]: {
-                    address: addressCodecs
-                        .get(watchChainId)
-                        .normalize(resolvedAddress),
-                },
-            },
-        })
-
-        setAccounts([...accounts, newAccount])
-        trackEvent(OnboardingEvent.WatchAccountComplete)
-        navigation.push('NameAccount', {
-            account: newAccount,
-            chainId: watchChainId,
-        })
+        isWatchingRef.current = true
+        void (async () => {
+            try {
+                const account = await importWatchAccount(
+                    watchChainId,
+                    resolvedAddress,
+                )
+                trackEvent(OnboardingEvent.WatchAccountComplete)
+                if (!isMounted()) return
+                navigation.push('NameAccount', {
+                    account,
+                    chainId: watchChainId,
+                })
+            } catch (error) {
+                if (isMounted()) showError(error, t('errors.general.title'))
+            } finally {
+                isWatchingRef.current = false
+            }
+        })()
     }, [
         watchChainId,
         resolvedAddress,
         isDuplicateAddress,
-        accounts,
-        setAccounts,
+        importWatchAccount,
+        isMounted,
         navigation,
+        showError,
+        t,
     ])
 
     return {

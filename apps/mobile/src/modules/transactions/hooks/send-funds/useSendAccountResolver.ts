@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import {
     resolveSendAccount,
@@ -47,14 +46,7 @@ export const useSendAccountResolver = (): UseSendAccountResolverResult => {
 
     const resolve = useCallback((chainId: ChainId) => {
         const { accounts, selectedAccountId } = useAccountsStore.getState()
-        return resolveSendAccount({
-            accounts,
-            selectedAccountId,
-            chainId,
-            registeredChainIds: getProvider()
-                .chains.list()
-                .map(({ id }) => id),
-        })
+        return resolveSendAccount({ accounts, selectedAccountId, chainId })
     }, [])
 
     const pick = useCallback(

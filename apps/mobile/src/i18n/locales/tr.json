@@ -434,7 +434,8 @@
         "rekey_signer_shared": "Paylaşılan hesap",
         "rekey_signer_quantum": "Quantum hesabı",
         "type_no_auth": "Yetki yok",
-        "type_unknown": "Bilinmeyen hesap"
+        "type_unknown": "Bilinmeyen hesap",
+        "networks": "Ağlar"
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",
@@ -2597,6 +2598,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Hesap seç"
+        },
+        "chain_selection": {
+            "title": "Ağ seç",
+            "eligible_subtitle": "Henüz eklenmedi"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",

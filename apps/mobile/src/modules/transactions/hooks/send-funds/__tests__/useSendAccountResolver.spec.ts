@@ -19,8 +19,10 @@ import {
 import { resolveSendAccount } from '../resolveSendAccount'
 import { useSendAccountResolver } from '../useSendAccountResolver'
 
-const { unsignable, mockRequestByType } = vi.hoisted(() => ({
+const { unsignable, enableable, mockRequestByType } = vi.hoisted(() => ({
     unsignable: new Set<string>(),
+    /** Account id to the chains it could be enabled on beyond its own. */
+    enableable: new Map<string, string[]>(),
     mockRequestByType: vi.fn(),
 }))
 
@@ -29,6 +31,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     canSignWith: (account: WalletAccount) => !unsignable.has(account.id),
+    eligibleChains: (account: WalletAccount) => [
+        ...Object.keys(account.chains),
+        ...(enableable.get(account.id) ?? []),
+    ],
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -46,23 +52,49 @@ const accountOn = (id: string, chainId: string): WalletAccount =>
 const ALGO = accountOn('algo', 'algorand')
 const ETH_A = accountOn('eth-a', 'ethereum')
 const ETH_B = accountOn('eth-b', 'ethereum')
-const REGISTERED = ['algorand', 'ethereum'] as const
-
 const resolveOn = (
     chainId: 'algorand' | 'ethereum',
     accounts: WalletAccount[],
     selectedAccountId: string | null = null,
-) =>
-    resolveSendAccount({
-        accounts,
-        selectedAccountId,
-        chainId,
-        registeredChainIds: REGISTERED,
-    })
+) => resolveSendAccount({ accounts, selectedAccountId, chainId })
 
 describe('resolveSendAccount', () => {
     beforeEach(() => {
         unsignable.clear()
+        enableable.clear()
+    })
+
+    it('sends from an account enabled on the chain even when it is not the first chain it is on', () => {
+        const both = {
+            ...ALGO,
+            id: 'both',
+            chains: { ...ALGO.chains, ...ETH_A.chains },
+        } as WalletAccount
+
+        expect(resolveOn('ethereum', [both])).toEqual({
+            kind: 'single',
+            account: both,
+        })
+    })
+
+    it('offers a local key the chain can still be enabled on', () => {
+        enableable.set('algo', ['ethereum'])
+
+        expect(resolveOn('ethereum', [ALGO, ETH_A], 'algo')).toEqual({
+            kind: 'selected',
+            account: ALGO,
+        })
+    })
+
+    it('never offers a watch account', () => {
+        const watched = {
+            id: 'watched',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'W' } },
+        } as WalletAccount
+        enableable.set('watched', ['ethereum'])
+
+        expect(resolveOn('ethereum', [watched])).toEqual({ kind: 'none' })
     })
 
     it('sends from the selected account when it is on the chain and can sign', () => {
@@ -107,6 +139,7 @@ describe('resolveSendAccount', () => {
 describe('useSendAccountResolver', () => {
     beforeEach(() => {
         unsignable.clear()
+        enableable.clear()
         mockRequestByType.mockReset()
         useAccountsStore.setState({
             accounts: [ALGO, ETH_A, ETH_B],

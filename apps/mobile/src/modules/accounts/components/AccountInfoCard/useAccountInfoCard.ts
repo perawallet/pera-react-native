@@ -14,6 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
     addressOn,
+    chainAccountOf,
     hardwareDetailsOf,
     hdIndexOf,
     isLedgerAccount,
@@ -21,9 +22,16 @@ import {
     useCanSignWith,
     useHdSeedGroups,
     useLedgerDeviceGroups,
+    useRegisteredChainIds,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    chainDisplayNameOf,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
@@ -43,7 +51,11 @@ type UseAccountInfoCardParams = {
     onClose: () => void
 }
 
+export type EnabledChainRow = { chainId: ChainId; displayName: string }
+
 type UseAccountInfoCardResult = {
+    /** The chains the account is enabled on, in registry order. */
+    enabledChains: EnabledChainRow[]
     isExpanded: boolean
     handleToggleExpanded: () => void
     accountType: AccountTypeLabel
@@ -80,6 +92,17 @@ export const useAccountInfoCard = ({
     )
     const showMinBalance = useCanSignWith(account, scope.chainId)
     const accountType = useAccountTypeLabel(account)
+    const registeredChainIds = useRegisteredChainIds()
+    const enabledChains = useMemo(
+        (): EnabledChainRow[] =>
+            registeredChainIds
+                .filter(chainId => chainAccountOf(account, chainId))
+                .map(chainId => ({
+                    chainId,
+                    displayName: chainDisplayNameOf(chainId) ?? chainId,
+                })),
+        [registeredChainIds, account],
+    )
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -192,6 +215,7 @@ export const useAccountInfoCard = ({
     }, [account, isHDWallet, hardwareDetails, onClose])
 
     return {
+        enabledChains,
         isExpanded,
         handleToggleExpanded,
         accountType,

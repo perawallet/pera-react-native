@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    useAccountChainOptionsResolver,
     useAccountValueTotalsQuery,
     useAllAccounts,
     useSortedAccounts,
@@ -23,7 +24,10 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AccountPicker } from '@components/AccountPicker'
-import { useReceiveFunds } from '@modules/transactions/hooks'
+import {
+    needsReceiveChainSelection,
+    useReceiveFunds,
+} from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
@@ -42,15 +46,20 @@ export const AccountSelectionScreen = () => {
         scope.chainId,
     )
     const { setSelectedAccount } = useReceiveFunds()
+    const optionsOf = useAccountChainOptionsResolver('receive')
     const navigation =
         useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
 
     const handleSelected = useCallback(
         (account: WalletAccount) => {
             setSelectedAccount(account)
-            navigation.navigate('QRView')
+            navigation.navigate(
+                needsReceiveChainSelection(optionsOf(account))
+                    ? 'ChainSelection'
+                    : 'QRView',
+            )
         },
-        [navigation, setSelectedAccount],
+        [navigation, optionsOf, setSelectedAccount],
     )
 
     return (
