@@ -72,7 +72,9 @@ network needs no edit here. Its Pera traffic reuses the Pera backend URL of the 
 the same tier. An empty list leaves the scope with no Pera deployment, so every Pera request for it
 is refused. A build whose `CHAINS` lists an EVM chain fails in `tools/dev/generate-config.sh` unless
 every one of its networks' RPC URLs is set and baked, so a `CONFIG_ALLOWLIST` that keeps `chainIds`
-must keep them too.
+must keep them too. Each Bitrise channel workflow in `.bitrise/bitrise.yml` sets `CHAINS`
+itself: staging ships Algorand and Ethereum, production pins Algorand, and
+`tools/__tests__/bitrise-chains.test.sh` fails if either drifts.
 
 Betanet carries chain endpoints only. It has no Pera backend, so its Pera service traffic fails typed
 through `createPeraClient`; see [Architecture](../../docs/ARCHITECTURE.md).
