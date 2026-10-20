@@ -11,10 +11,7 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type {
-    PeraSignedTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
@@ -46,6 +43,7 @@ import {
     waitForAlgodConfirmation,
 } from './waitForAlgodConfirmation'
 import { algorandScope, type AlgorandNetworkId } from '../../network-id'
+import type { PeraSignedTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const VERIFY_ATTEMPTS = 2
 const VERIFY_RETRY_DELAY_MS = 2000

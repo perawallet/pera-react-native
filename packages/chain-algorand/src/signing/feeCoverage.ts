@@ -11,7 +11,6 @@
  */
 
 import { modelsv2, SignedTransaction } from 'algosdk'
-import { type PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     usesNonPrimaryScheme,
@@ -35,6 +34,7 @@ import {
     type EmptySignatureFields,
 } from '../connect/emptySignatures'
 import { type AlgorandNetworkId } from '../network-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 // Runs before the review sheet shows; past it the group is bumped as if
 // unchecked, which overpays rather than fails.

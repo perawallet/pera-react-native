@@ -29,11 +29,11 @@ import {
     assignGroupID,
     type TransactionSigner,
 } from 'algosdk'
+import { compactSignedResults } from '../models'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import { compactSignedResults } from '../models'
+} from '../models/algosdk-shapes'
 
 const TX_TAG = new Uint8Array([0x54, 0x58]) // "TX"
 

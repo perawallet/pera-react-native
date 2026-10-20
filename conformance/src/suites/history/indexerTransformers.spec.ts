@@ -34,7 +34,7 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { balanceOf, fetchIndexerTransactionsFor } from '../../harness/client'
+import { balanceOf, fetchAccountTransactionsFor } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
@@ -92,7 +92,7 @@ describe('indexer history transformer conformance', () => {
             await signWithKeystore(keyStore, sender, txn),
         )
 
-        const page = await fetchIndexerTransactionsFor(sender.address, txId)
+        const page = await fetchAccountTransactionsFor(sender.address, txId)
 
         // No asset facts needed for a payment; an empty lookup is what the
         // app itself passes when a page references no assets.
@@ -135,11 +135,11 @@ describe('indexer history transformer conformance', () => {
             (await balanceOf(receiver.address)) - receiverBefore
 
         const senderRow = rowFor(
-            await fetchIndexerTransactionsFor(sender.address, txId),
+            await fetchAccountTransactionsFor(sender.address, txId),
             txId,
         )
         const receiverRow = rowFor(
-            await fetchIndexerTransactionsFor(receiver.address, txId),
+            await fetchAccountTransactionsFor(receiver.address, txId),
             txId,
         )
 
@@ -187,7 +187,7 @@ describe('indexer history transformer conformance', () => {
         )
         const senderAlgoDelta = (await balanceOf(sender.address)) - senderBefore
 
-        const page = await fetchIndexerTransactionsFor(sender.address, txId)
+        const page = await fetchAccountTransactionsFor(sender.address, txId)
 
         expect(collectAssetIds(page)).toContain(assetId.toString())
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraTransaction } from '../models/algosdk-shapes'
 
 export const Arc0001ErrorCode = {
     UserRejected: 4001,

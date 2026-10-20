@@ -17,8 +17,10 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionPreview } from '../../components/transaction-details/TransactionPreview'
 import { GroupDetailHeader } from '@modules/signing'
-import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useGroupTransactionListScreen } from './useGroupTransactionListScreen'
+import {
+    useGroupTransactionListScreen,
+    type GroupTransactionListRow,
+} from './useGroupTransactionListScreen'
 import { useStyles } from './styles'
 
 export const GroupTransactionListScreen = () => {
@@ -33,10 +35,10 @@ export const GroupTransactionListScreen = () => {
     } = useGroupTransactionListScreen()
 
     const renderItem = useCallback(
-        ({ item, index }: { item: AlgorandTransactionView; index: number }) => (
+        ({ item, index }: { item: GroupTransactionListRow; index: number }) => (
             <TransactionPreview
                 testID={`transaction_row_${index}`}
-                transaction={item}
+                transaction={item.view}
                 onPress={() => handleTransactionPress(item)}
             />
         ),

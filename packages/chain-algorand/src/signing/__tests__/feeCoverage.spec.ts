@@ -25,10 +25,10 @@ import {
     standaloneAccount,
     quantumAccount,
 } from '../../__tests__/algorandAccounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { groupTransactions } from '../../blockchain'
 import { findFundedIndices, type SimulateSignedGroup } from '../feeCoverage'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const pq = vi.hoisted(() => ({
     resolve: (): unknown => null,

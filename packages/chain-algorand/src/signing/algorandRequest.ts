@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     GenesisHashMismatchError,
@@ -27,6 +24,7 @@ import {
     type UnsignedTransactionsSignableData,
 } from '@perawallet/wallet-core-signing'
 import { readAlgorandTransaction } from './planner'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 export type AlgorandRequestGroup = Omit<
     ReviewGroup,

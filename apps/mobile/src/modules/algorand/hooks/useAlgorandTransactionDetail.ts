@@ -11,17 +11,14 @@
  */
 
 import { useMemo } from 'react'
-import {
-    toAlgorandNative,
-    useTransactionDetailQuery,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useTransactionDetailQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
-    mapHistoryItemToDisplayableTransaction,
+    mapHistoryItemToTransactionNative,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 
@@ -55,18 +52,14 @@ export const useAlgorandTransactionDetail = ({
     const localTransaction = useMemo(
         () =>
             historyTransaction
-                ? mapHistoryItemToDisplayableTransaction(
+                ? mapHistoryItemToTransactionNative(
                       historyTransaction,
                       LEGACY_CHAIN_ID,
                   )
                 : null,
         [historyTransaction],
     )
-    const fetched = detailQuery.data ?? localTransaction
-    const transaction = useMemo(
-        () => (fetched ? toAlgorandNative(fetched) : null),
-        [fetched],
-    )
+    const transaction = detailQuery.data ?? localTransaction
 
     return {
         transaction,

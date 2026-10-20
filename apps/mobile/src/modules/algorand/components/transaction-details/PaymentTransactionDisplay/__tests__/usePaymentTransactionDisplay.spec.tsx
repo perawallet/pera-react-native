@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { usePaymentTransactionDisplay } from '../usePaymentTransactionDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 describe('usePaymentTransactionDisplay', () => {
     const baseTx = {

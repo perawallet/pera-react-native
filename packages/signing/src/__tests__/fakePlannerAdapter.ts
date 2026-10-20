@@ -14,7 +14,6 @@ import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
 import {
-    type PeraTransaction,
     type UnsignedTransaction,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
@@ -36,8 +35,8 @@ const notStubbed = (member: string) => () => {
 
 // Recomputes each group partition's id, which keeps a stale group refused in
 // the machine's own specs without the real Algorand validator.
-const recomputeGroupIds = (transactions: PeraTransaction[]): void => {
-    const partitions = new Map<string, PeraTransaction[]>()
+const recomputeGroupIds = (transactions: Transaction[]): void => {
+    const partitions = new Map<string, Transaction[]>()
     for (const tx of transactions) {
         if (!tx.group) continue
         const key = bytesToHex(tx.group)
@@ -66,11 +65,10 @@ const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
 
 const payloadTransactions = (
     transactions: UnsignedTransaction[],
-): PeraTransaction[] =>
+): Transaction[] =>
     transactions.map(
         transaction =>
-            (transaction.payload as { transaction: PeraTransaction })
-                .transaction,
+            (transaction.payload as { transaction: Transaction }).transaction,
     )
 
 export const fakePlannerAdapter = (

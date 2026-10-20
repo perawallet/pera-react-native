@@ -15,7 +15,6 @@ import type {
     ChainScope,
     ChainTransactionData,
     I18nKey,
-    PeraTransaction,
     TransactionSummary,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -38,6 +37,7 @@ import {
 } from '../transactions/summaryKeys'
 import { generateMultisigAddress } from '../multisig/address'
 import type { AlgorandTransactionPayload } from './planner'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 const chainSpecific = (
     titleKey: I18nKey,

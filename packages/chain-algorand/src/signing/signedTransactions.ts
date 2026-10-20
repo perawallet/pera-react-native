@@ -13,7 +13,6 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
-    PeraSignedTransaction,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -33,6 +32,7 @@ import {
     assembleSignedTransaction,
     signTransactionsWithLocalKey,
 } from './local-key/signTransactionsWithLocalKey'
+import type { PeraSignedTransaction } from '../blockchain/models/algosdk-shapes'
 
 export const toSignedAlgorandTransaction = (
     signed: PeraSignedTransaction,

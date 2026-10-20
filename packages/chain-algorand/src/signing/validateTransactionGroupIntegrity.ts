@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { Transaction, computeGroupID } from 'algosdk'
 import {
     bytesEqual,
@@ -19,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /**
  * Catches a dApp sending a stale group ID — e.g. a 5-tx group with one removed

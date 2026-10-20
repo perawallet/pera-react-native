@@ -10,11 +10,6 @@
  limitations under the License
  */
 
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-
 import {
     encodeTransaction,
     encodeTransactionRaw,
@@ -25,6 +20,10 @@ import {
     decodeSignedTransactions,
     decodeTransactions,
 } from '../utils/transact'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../models/algosdk-shapes'
 
 export const useTransactionEncoder = () => {
     return {

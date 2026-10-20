@@ -12,7 +12,6 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Address, assignGroupID, Transaction, TransactionType } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getExpectedGenesisHash } from '../../blockchain'
@@ -26,6 +25,7 @@ import {
     staleReasonFor,
     type SimulateOriginalGroup,
 } from '../staleRequestGuard'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const SENDER = new Address(new Uint8Array(32).fill(1))
 const RECEIVER = new Address(new Uint8Array(32).fill(2))

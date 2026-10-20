@@ -13,7 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupTransactionListScreen } from '../useGroupTransactionListScreen'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupId: 'GROUP_ABC' }
@@ -45,7 +45,10 @@ describe('useGroupTransactionListScreen', () => {
         vi.clearAllMocks()
         mockRouteParams.groupId = 'GROUP_ABC'
         mockUseGroupTransactionsQuery.mockReturnValue({
-            groupTransactions: [mockTx1, mockTx2],
+            groupTransactions: [mockTx1, mockTx2].map(transaction => ({
+                family: 'algorand',
+                transaction,
+            })),
             isLoading: false,
             isError: false,
             error: null,
@@ -56,8 +59,26 @@ describe('useGroupTransactionListScreen', () => {
         const { result } = renderHook(() => useGroupTransactionListScreen())
 
         expect(result.current.transactions).toHaveLength(2)
-        expect(result.current.transactions[0]?.id).toBe('tx-1')
-        expect(result.current.transactions[1]?.id).toBe('tx-2')
+        expect(result.current.transactions[0]?.view.id).toBe('tx-1')
+        expect(result.current.transactions[1]?.view.id).toBe('tx-2')
+    })
+
+    it('leaves out a member that is not an Algorand transaction', () => {
+        mockUseGroupTransactionsQuery.mockReturnValue({
+            groupTransactions: [
+                { family: 'algorand', transaction: mockTx1 },
+                { family: 'ethereum', transaction: { id: 'eth' } },
+            ],
+            isLoading: false,
+            isError: false,
+            error: null,
+        })
+
+        const { result } = renderHook(() => useGroupTransactionListScreen())
+
+        expect(result.current.transactions.map(({ view }) => view)).toEqual([
+            mockTx1,
+        ])
     })
 
     it('passes groupId from route params to useGroupTransactionsQuery', () => {
@@ -110,10 +131,11 @@ describe('useGroupTransactionListScreen', () => {
     it('navigates to TransactionDetails with transaction and groupId on press', () => {
         const { result } = renderHook(() => useGroupTransactionListScreen())
 
-        result.current.handleTransactionPress(mockTx1)
+        const row = result.current.transactions[0]!
+        result.current.handleTransactionPress(row)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: { family: 'algorand', transaction: mockTx1 },
+            transaction: row.native,
             groupId: 'GROUP_ABC',
         })
     })
@@ -122,7 +144,10 @@ describe('useGroupTransactionListScreen', () => {
         const { result } = renderHook(() => useGroupTransactionListScreen())
 
         const key = result.current.keyExtractor(
-            { id: 'tx-123' } as PeraDisplayableTransaction,
+            {
+                native: { family: 'algorand', transaction: {} },
+                view: { id: 'tx-123' } as PeraDisplayableTransaction,
+            },
             0,
         )
 
@@ -133,7 +158,10 @@ describe('useGroupTransactionListScreen', () => {
         const { result } = renderHook(() => useGroupTransactionListScreen())
 
         const key = result.current.keyExtractor(
-            {} as PeraDisplayableTransaction,
+            {
+                native: { family: 'algorand', transaction: {} },
+                view: {} as PeraDisplayableTransaction,
+            },
             5,
         )
 

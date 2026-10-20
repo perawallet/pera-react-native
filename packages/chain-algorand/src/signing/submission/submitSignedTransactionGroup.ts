@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import { classifySubmitFailure } from './classifySubmitFailure'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
 } from './types'
+import type { PeraSignedTransaction } from '../../blockchain/models/algosdk-shapes'
 
 /**
  * Encode, concatenate, and submit a single group of signed transactions to

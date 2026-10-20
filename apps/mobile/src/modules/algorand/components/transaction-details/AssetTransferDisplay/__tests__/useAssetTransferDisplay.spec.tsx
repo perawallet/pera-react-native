@@ -13,12 +13,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAssetTransferDisplay } from '../useAssetTransferDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { UseQueryResult } from '@tanstack/react-query'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 vi.mock(
     '@perawallet/wallet-core-chain-algorand/blockchain',

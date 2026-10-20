@@ -13,7 +13,6 @@
 import { useCallback, useMemo } from 'react'
 import {
     readAlgorandNative,
-    toAlgorandNative,
     useGroupTransactionsQuery,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
@@ -25,10 +24,15 @@ export type GroupTransactionsPanelProps = {
     onGroupTransactionPress: (transaction: TransactionNative) => void
 }
 
+export type GroupTransactionRow = {
+    native: TransactionNative
+    view: AlgorandTransactionView
+}
+
 type UseGroupTransactionsPanelResult = {
-    otherTransactions: AlgorandTransactionView[]
+    otherTransactions: GroupTransactionRow[]
     groupSize: number
-    handlePress: (tx: AlgorandTransactionView) => void
+    handlePress: (row: GroupTransactionRow) => void
 }
 
 export const useGroupTransactionsPanel = ({
@@ -40,13 +44,17 @@ export const useGroupTransactionsPanel = ({
     const currentId = readAlgorandNative(currentTransaction)?.id ?? ''
 
     const otherTransactions = useMemo(
-        () => groupTransactions.filter(tx => tx.id !== currentId),
+        () =>
+            groupTransactions.flatMap(native => {
+                const view = readAlgorandNative(native)
+                return view && view.id !== currentId ? [{ native, view }] : []
+            }),
         [groupTransactions, currentId],
     )
 
     const handlePress = useCallback(
-        (tx: AlgorandTransactionView) => {
-            onGroupTransactionPress(toAlgorandNative(tx))
+        (row: GroupTransactionRow) => {
+            onGroupTransactionPress(row.native)
         },
         [onGroupTransactionPress],
     )

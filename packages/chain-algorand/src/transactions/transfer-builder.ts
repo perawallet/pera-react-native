@@ -14,7 +14,6 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     type AssetOptInIntent,
     type BuildContext,
-    type PeraTransaction,
     type TransactionIntent,
     type TransactionSummary,
     type TransferIntent,
@@ -29,6 +28,7 @@ import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
 import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summaryKeys'
 import { assertBuildableIntent } from './transfer-validation'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 const transferSummary = (intent: TransferIntent): TransactionSummary => {
     const isSelf = intent.from === intent.to

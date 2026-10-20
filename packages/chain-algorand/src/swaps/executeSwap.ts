@@ -15,12 +15,7 @@ import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
 } from '../blockchain'
-import type {
-    PeraDisplayableTransaction,
-    PeraSignedTransaction,
-    PeraTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getHoldingRestriction,
     isMultisigAccount,
@@ -63,6 +58,11 @@ import {
     requestSwapSignatures,
 } from './swapExecutionHelpers'
 import { type AlgorandNetworkId } from '../network-id'
+import type {
+    PeraDisplayableTransaction,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../blockchain/models/algosdk-shapes'
 
 export type AlgorandSwapExecutionContext = SwapExecutionContext & {
     network: AlgorandNetworkId

@@ -19,10 +19,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     LocalKeySigningDeps,
     SigningResult,
@@ -54,6 +51,7 @@ import {
     toUnsignedAlgorandTransactions,
 } from '../unsignedTransaction'
 import { MAINNET_GENESIS_HASH, payloadTransactionOf } from './transactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // Every source now hands the pipeline its Algorand transactions wrapped in
 // `UnsignedTransaction`s. These pin that, for each source's kind of group,

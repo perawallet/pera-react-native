@@ -24,7 +24,7 @@ import {
     healCachedRows,
     historyChainAdapters,
     historyItemGroupToOpen,
-    mapHistoryItemToDisplayableTransaction,
+    mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
     TransactionHistoryRowsUnsupportedError,
     type HistoryChainAdapter,
@@ -41,7 +41,7 @@ const makeAdapter = (
     fetchMoreHistory: vi.fn().mockResolvedValue(RESULT),
     getTransactionHistory: vi.fn(),
     summarize: vi.fn(),
-    toDisplayable: vi.fn().mockReturnValue(null),
+    toTransactionNative: vi.fn().mockReturnValue(null),
     ...overrides,
 })
 
@@ -83,18 +83,16 @@ describe('history adapter wrappers', () => {
         })
     })
 
-    it('delegates the display mapping to the adapter', () => {
-        const displayable = { id: 'TX' }
+    it('delegates the native mapping to the adapter', () => {
+        const native = { family: 'algorand', transaction: { id: 'TX' } }
         const adapter = makeAdapter({
-            toDisplayable: vi.fn().mockReturnValue(displayable),
+            toTransactionNative: vi.fn().mockReturnValue(native),
         })
         historyChainAdapters.register(adapter)
         const item = { id: 'TX' } as TransactionHistoryItem
 
-        expect(mapHistoryItemToDisplayableTransaction(item, 'algorand')).toBe(
-            displayable,
-        )
-        expect(adapter.toDisplayable).toHaveBeenCalledWith(item)
+        expect(mapHistoryItemToTransactionNative(item, 'algorand')).toBe(native)
+        expect(adapter.toTransactionNative).toHaveBeenCalledWith(item)
     })
 
     it("summarises a stored row with the chain adapter, from the address's side", () => {
@@ -183,7 +181,7 @@ describe('history adapter wrappers', () => {
             }),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         expect(() =>
-            mapHistoryItemToDisplayableTransaction(
+            mapHistoryItemToTransactionNative(
                 { id: 'TX' } as TransactionHistoryItem,
                 'algorand',
             ),
@@ -232,7 +230,7 @@ describe('a chain whose history is not cached as rows', () => {
 
     it('has nothing to display for a stored row', () => {
         expect(
-            mapHistoryItemToDisplayableTransaction(
+            mapHistoryItemToTransactionNative(
                 { id: 'TX' } as TransactionHistoryItem,
                 'ethereum',
             ),

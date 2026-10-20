@@ -18,11 +18,7 @@ import { describe, expect, it } from 'vitest'
 import nacl from 'tweetnacl'
 import { Address } from 'algosdk'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type {
     AnalyzedSignableGroup,
@@ -50,6 +46,10 @@ import {
     MAINNET_GENESIS_HASH,
     makeTestPaymentTx,
 } from './transactions'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../../blockchain/models/algosdk-shapes'
 
 const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 

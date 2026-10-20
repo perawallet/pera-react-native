@@ -12,10 +12,6 @@
 
 import { TransactionType, type OnApplicationComplete } from 'algosdk'
 import type {
-    PeraDisplayableTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import type {
     AlgorandTransactionKind,
     AlgorandTransactionView,
     AssetConfigType,
@@ -24,6 +20,10 @@ import type {
 import { encodeAlgorandAddress } from './addresses'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '../models/algosdk-shapes'
 
 export const mapIndexerTxToDisplayableTransaction = (
     tx: PeraDisplayableTransaction,

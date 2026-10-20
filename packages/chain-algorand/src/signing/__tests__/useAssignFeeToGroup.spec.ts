@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { Transaction, generateAccount } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { assignFeeToGroup as assignFeeToGroupMock } from '../assignMinimumFeesToGroup'
 import { useAssignFeeToGroup } from '../useAssignFeeToGroup'
@@ -24,6 +23,7 @@ import {
     makeTestPaymentTx,
     payloadTransactionOf,
 } from './transactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 let liveStoreAccounts: WalletAccount[] = []
 const mockFetchSuggestedMinFee = vi.fn()

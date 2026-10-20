@@ -17,7 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
     ChainScope,
     TransactionNative,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
@@ -40,7 +40,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(QueryClientProvider, { client }, children)
 }
 
-const groupTxs = [{ id: 'top-1' }] as unknown as PeraTransaction[]
+const groupTxs = [{ id: 'top-1' }] as unknown as UnsignedTransaction[]
 const inner = [
     { id: 'inner-1' },
     { id: 'inner-2' },

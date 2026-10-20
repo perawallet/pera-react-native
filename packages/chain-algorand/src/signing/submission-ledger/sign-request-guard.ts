@@ -11,10 +11,7 @@
  */
 
 import { computeGroupID, Transaction } from 'algosdk'
-import {
-    type ChainScope,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
@@ -26,6 +23,7 @@ import {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { algorandRequestOf } from '../algorandRequest'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 /**
  * Reproduces the txids a persisted sign-request's group would have at submit

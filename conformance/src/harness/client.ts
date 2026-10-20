@@ -12,10 +12,12 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
-import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/createAlgorandClient'
 import { fetchOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/endpoints'
-import { mapOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/mappers'
+import {
+    mapOnChainAccountInformation,
+    type AccountInformation,
+} from '@perawallet/wallet-core-chain-algorand/accounts/mappers'
 
 import {
     LOCALNET_ALGOD_URL,
@@ -84,19 +86,21 @@ export const authAddrOf = async (
  * The indexer trails algod by a round or two, so this polls until `txId` is
  * present rather than assuming it already is.
  */
-export type IndexerTransactionsPage = { transactions: { id?: string }[] }
+export type AccountTransactionsPage = { transactions: { id?: string }[] }
 
-export const fetchIndexerTransactionsFor = async (
+export const fetchAccountTransactionsFor = async (
     address: string,
     txId: string,
     attempts = 60,
-): Promise<IndexerTransactionsPage> => {
+): Promise<AccountTransactionsPage> => {
     for (let attempt = 0; attempt < attempts; attempt++) {
         const response = await fetch(
-            `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(address)}/transactions?limit=50`,
+            `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(
+                address,
+            )}/transactions?limit=50`,
         )
         if (response.ok) {
-            const page = (await response.json()) as IndexerTransactionsPage
+            const page = (await response.json()) as AccountTransactionsPage
             if (page.transactions?.some(txn => txn.id === txId)) {
                 return page
             }

@@ -23,7 +23,6 @@ import {
     groupTransactions,
     rawTransactionsMatch,
 } from '../../blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -35,6 +34,7 @@ import {
     assignMinimumFeesToGroup,
     groupHasQuantumSigner,
 } from '../assignMinimumFeesToGroup'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const quantumAddress = makeTestAddress(1)
 const algoAddress = makeTestAddress(2)

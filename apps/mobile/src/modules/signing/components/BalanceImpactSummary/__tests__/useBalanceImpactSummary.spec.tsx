@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -22,6 +21,7 @@ import {
 import { useImpactTransactions } from '@perawallet/wallet-core-signing'
 import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 // Keep computeBalanceImpact real; only stub the data-source hook.
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({

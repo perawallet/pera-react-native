@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type {
     ChainId,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
@@ -27,7 +27,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     >()),
 }))
 
-const transactions = [{ fee: 1000n }] as unknown as PeraTransaction[]
+const transactions = [{ fee: 1000n }] as unknown as UnsignedTransaction[]
 const assigned = { transactions, adjustments: [] }
 
 describe('useMinimumFeeCalculator', () => {

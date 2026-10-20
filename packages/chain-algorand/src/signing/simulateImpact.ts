@@ -17,12 +17,12 @@ import {
     encodeTransactionRaw,
     mapToDisplayableTransaction,
 } from '../blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { algorandNetworkOf } from '../network-id'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { algorandNetworkOf } from '../network-id'
+} from '../blockchain/models/algosdk-shapes'
 
 // Minimal structural view of algosdk's SimulateResponse — only the inner-txn
 // path we walk. Structural typing keeps us decoupled from the SDK's model

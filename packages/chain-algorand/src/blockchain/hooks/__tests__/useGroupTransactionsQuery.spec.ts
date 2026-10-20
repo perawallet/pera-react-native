@@ -113,18 +113,20 @@ describe('useGroupTransactionsQuery', () => {
         )
 
         expect(mockSearchForTransactions).toHaveBeenCalledWith('GROUP123')
-        expect(result.current.groupTransactions[0]).toEqual(
-            expect.objectContaining({
+        expect(result.current.groupTransactions[0]).toEqual({
+            family: 'algorand',
+            transaction: expect.objectContaining({
                 id: 'TX1',
                 txType: 'pay',
             }),
-        )
-        expect(result.current.groupTransactions[1]).toEqual(
-            expect.objectContaining({
+        })
+        expect(result.current.groupTransactions[1]).toEqual({
+            family: 'algorand',
+            transaction: expect.objectContaining({
                 id: 'TX2',
                 txType: 'axfer',
             }),
-        )
+        })
     })
 
     test('provides loading state initially', () => {

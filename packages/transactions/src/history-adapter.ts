@@ -16,7 +16,7 @@ import {
     type ChainScope,
     type Page,
     type PageRef,
-    type PeraDisplayableTransaction,
+    type TransactionNative,
     type TransactionRecord,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
@@ -165,9 +165,9 @@ export interface HistoryChainAdapter {
      */
     groupToOpen?(item: TransactionHistoryItem): Nullable<string>
     /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
-    toDisplayable?(
+    toTransactionNative?(
         item: TransactionHistoryItem,
-    ): Nullable<PeraDisplayableTransaction>
+    ): Nullable<TransactionNative>
     /**
      * Replaces facts the chain's backend is known to get wrong, applied when a
      * cached row is read back: the syncer never refetches an old row.
@@ -267,12 +267,12 @@ export const summarizeHistoryItem = (
     return adapter.summarize(item, address)
 }
 
-/** Null when the chain has no `toDisplayable`. */
-export const mapHistoryItemToDisplayableTransaction = (
+/** Null when the chain has no `toTransactionNative`. */
+export const mapHistoryItemToTransactionNative = (
     item: TransactionHistoryItem,
     chainId: ChainId,
-): Nullable<PeraDisplayableTransaction> =>
-    historyChainAdapters.get(chainId).toDisplayable?.(item) ?? null
+): Nullable<TransactionNative> =>
+    historyChainAdapters.get(chainId).toTransactionNative?.(item) ?? null
 
 /** Null when the chain declares no `groupToOpen`, or the row opens its own detail. */
 export const historyItemGroupToOpen = (

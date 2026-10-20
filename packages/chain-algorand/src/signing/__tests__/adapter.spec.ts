@@ -27,7 +27,6 @@ import {
     type AlgorandTransactionView,
 } from '../../blockchain'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { decodeSignedTransaction } from '../../blockchain/utils/transact'
 import {
     InvalidSignableDataError,
@@ -59,6 +58,7 @@ import {
     makeTestPaymentTx,
     makeUnsignedAlgorandTransaction,
 } from './transactions'
+import type { PeraDisplayableTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)

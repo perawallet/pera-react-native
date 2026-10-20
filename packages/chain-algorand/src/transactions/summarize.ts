@@ -15,7 +15,6 @@ import {
     type AssetDisplayHint,
     type AssetRef,
     type LocalizedText,
-    type PeraDisplayableTransaction,
     type TransactionSummary,
     type I18nKey,
     i18nKey,
@@ -51,6 +50,7 @@ import {
     SEND_TITLE_KEY,
     assetRefOf,
 } from './summaryKeys'
+import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
 
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const SWAP = i18nKey('transactions.list_item.swap')

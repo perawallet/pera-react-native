@@ -20,9 +20,9 @@ import {
     historyChainAdapters,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 const mockPush = vi.fn()
 const routeParams: { current: Record<string, unknown> } = { current: {} }
@@ -196,7 +196,7 @@ describe('useTransactionDetailsScreen', () => {
             historyTransaction: historyItem,
         }
         mockUseTransactionDetailQuery.mockReturnValue(
-            queryResult({ data: fetched }),
+            queryResult({ data: { family: 'algorand', transaction: fetched } }),
         )
 
         const { result } = renderHook(() => useTransactionDetailsScreen())

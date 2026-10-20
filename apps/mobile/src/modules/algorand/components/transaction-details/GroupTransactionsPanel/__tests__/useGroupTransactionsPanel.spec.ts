@@ -12,11 +12,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import type {
-    PeraDisplayableTransaction,
-    TransactionNative,
-} from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { useGroupTransactionsPanel } from '../useGroupTransactionsPanel'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 const mockUseGroupTransactionsQuery = vi.fn()
 
@@ -41,7 +39,7 @@ describe('useGroupTransactionsPanel', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseGroupTransactionsQuery.mockReturnValue({
-            groupTransactions: [tx('A'), tx('B'), tx('C')],
+            groupTransactions: [native('A'), native('B'), native('C')],
         })
     })
 
@@ -57,14 +55,13 @@ describe('useGroupTransactionsPanel', () => {
         expect(mockUseGroupTransactionsQuery).toHaveBeenCalledWith({
             groupId: 'GROUP1',
         })
-        expect(result.current.otherTransactions.map(({ id }) => id)).toEqual([
-            'A',
-            'C',
-        ])
+        expect(
+            result.current.otherTransactions.map(({ view }) => view.id),
+        ).toEqual(['A', 'C'])
         expect(result.current.groupSize).toBe(3)
     })
 
-    it('hands a pressed group transaction on as a TransactionNative', () => {
+    it('hands a pressed group transaction on as the TransactionNative the query returned', () => {
         const onGroupTransactionPress = vi.fn()
         const { result } = renderHook(() =>
             useGroupTransactionsPanel({
@@ -74,9 +71,11 @@ describe('useGroupTransactionsPanel', () => {
             }),
         )
 
-        act(() => result.current.handlePress(tx('C')))
+        const row = result.current.otherTransactions[1]
+        act(() => result.current.handlePress(row))
 
-        expect(onGroupTransactionPress).toHaveBeenCalledWith(native('C'))
+        expect(onGroupTransactionPress).toHaveBeenCalledWith(row.native)
+        expect(row.native).toEqual(native('C'))
     })
 
     it('reports no group when the query holds nothing', () => {

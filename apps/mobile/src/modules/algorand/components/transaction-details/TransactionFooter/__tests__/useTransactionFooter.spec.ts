@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockPushWebView = vi.fn()
 
@@ -47,6 +46,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 import { useTransactionFooter } from '../useTransactionFooter'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 const makeTransaction = (): PeraDisplayableTransaction =>
     ({ id: 'TX_ID_123' }) as PeraDisplayableTransaction

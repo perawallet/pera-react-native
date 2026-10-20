@@ -12,12 +12,12 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import {
     validateSwapGroupAgainstQuote,
     SwapQuoteMismatchError,
 } from '../validateSwapGroupAgainstQuote'
+import type { PeraDisplayableTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const SWAPPER = 'SWAPPER_ADDRESS'
 const POOL = 'POOL_ADDRESS'

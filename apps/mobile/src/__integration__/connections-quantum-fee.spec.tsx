@@ -82,8 +82,8 @@ import {
     encodeTransactionRaw,
     groupTransactions,
     rawTransactionsMatch,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,

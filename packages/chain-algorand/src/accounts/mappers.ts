@@ -11,8 +11,22 @@
  */
 
 import { Address } from 'algosdk'
-import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import type { OnChainAccountInformationResponse } from './endpoints'
+
+export type AccountInformation = {
+    /** microAlgos. */
+    minBalance: bigint
+    /** microAlgos. */
+    amount: bigint
+    address: Address
+    status: string
+    /** microAlgos. */
+    rewards: bigint
+    /** `amount` in the asset's base units. */
+    assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
+    /** Set only when the account is rekeyed. */
+    authorityAddress?: string
+}
 
 export const mapOnChainAccountInformation = (
     response: OnChainAccountInformationResponse,

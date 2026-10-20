@@ -32,7 +32,6 @@ import {
 import {
     type AssetRef,
     type ChainId,
-    type PeraTransaction,
     type UnsignedTransaction,
     type TransactionIntent,
     LEGACY_CHAIN_ID,
@@ -61,6 +60,7 @@ import {
     quantumAccount,
     standaloneAccount,
 } from '../../__tests__/algorandAccounts'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // The msw node's genesis isn't testnet's, so the payload is read without
 // `readAlgorandTransaction`'s network check.
