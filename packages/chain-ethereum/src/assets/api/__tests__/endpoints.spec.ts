@@ -31,6 +31,7 @@ import {
     TEST_API_KEY,
     TEST_INTEGRITY_TOKEN,
 } from '../../../__tests__/pera-backend'
+import { ETHEREUM } from '../../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -74,7 +75,7 @@ describe('fetchAssetItems', () => {
             }),
         )
 
-        const items = await fetchAssetItems(SCOPE, [USDC])
+        const items = await fetchAssetItems(SCOPE, ETHEREUM, [USDC])
 
         expect(body).toEqual({ ids: [USDC_CAIP19] })
         expect(headers?.get('x-api-key')).toBe(TEST_API_KEY)
@@ -89,8 +90,10 @@ describe('fetchAssetItems', () => {
             ),
         )
 
-        await expect(fetchAssetItems(SCOPE, [DAI])).rejects.toThrow()
-        await expect(fetchAssetItems(SCOPE, [USDC, DAI])).rejects.toThrow()
+        await expect(fetchAssetItems(SCOPE, ETHEREUM, [DAI])).rejects.toThrow()
+        await expect(
+            fetchAssetItems(SCOPE, ETHEREUM, [USDC, DAI]),
+        ).rejects.toThrow()
     })
 
     it('accepts the lowercase ids the backend answers with', async () => {
@@ -102,7 +105,7 @@ describe('fetchAssetItems', () => {
             ),
         )
 
-        const items = await fetchAssetItems(SCOPE, [DAI, USDC])
+        const items = await fetchAssetItems(SCOPE, ETHEREUM, [DAI, USDC])
 
         expect(items.map(item => item.asset_id)).toEqual([
             DAI_CAIP19,
@@ -111,7 +114,7 @@ describe('fetchAssetItems', () => {
     })
 
     it('makes no request for an empty list', async () => {
-        await expect(fetchAssetItems(SCOPE, [])).resolves.toEqual([])
+        await expect(fetchAssetItems(SCOPE, ETHEREUM, [])).resolves.toEqual([])
     })
 
     it('rejects with a PeraNetworkError on a non-2xx answer', async () => {
@@ -121,9 +124,9 @@ describe('fetchAssetItems', () => {
             ),
         )
 
-        await expect(fetchAssetItems(SCOPE, [USDC])).rejects.toBeInstanceOf(
-            PeraNetworkError,
-        )
+        await expect(
+            fetchAssetItems(SCOPE, ETHEREUM, [USDC]),
+        ).rejects.toBeInstanceOf(PeraNetworkError)
     })
 
     it('rejects a usd_value that is not a 24-place decimal string', async () => {
@@ -133,7 +136,7 @@ describe('fetchAssetItems', () => {
             ),
         )
 
-        await expect(fetchAssetItems(SCOPE, [USDC])).rejects.toThrow()
+        await expect(fetchAssetItems(SCOPE, ETHEREUM, [USDC])).rejects.toThrow()
     })
 })
 
@@ -158,7 +161,7 @@ describe('fetchWhitelist', () => {
             ),
         )
 
-        const rows = await fetchWhitelist(SCOPE)
+        const rows = await fetchWhitelist(SCOPE, ETHEREUM)
 
         expect(chainIds).toEqual(['1'])
         expect(rows).toEqual([
@@ -190,7 +193,7 @@ describe('fetchWhitelist', () => {
             ),
         )
 
-        const rows = await fetchWhitelist(SCOPE)
+        const rows = await fetchWhitelist(SCOPE, ETHEREUM)
 
         expect(rows).toEqual([
             { assetId: 'native', type: 'native' },
@@ -205,7 +208,7 @@ describe('fetchWhitelist', () => {
             ),
         )
 
-        await expect(fetchWhitelist(SCOPE)).rejects.toThrow()
+        await expect(fetchWhitelist(SCOPE, ETHEREUM)).rejects.toThrow()
     })
 
     it('rejects with a PeraNetworkError on a non-2xx answer', async () => {
@@ -215,7 +218,7 @@ describe('fetchWhitelist', () => {
             ),
         )
 
-        await expect(fetchWhitelist(SCOPE)).rejects.toBeInstanceOf(
+        await expect(fetchWhitelist(SCOPE, ETHEREUM)).rejects.toBeInstanceOf(
             PeraNetworkError,
         )
     })

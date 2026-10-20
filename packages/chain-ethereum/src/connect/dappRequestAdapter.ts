@@ -14,15 +14,14 @@ import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumKindIdOf } from '../accounts/local-key-kinds'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChain } from '../chains/types'
 import { validateEthereumMessagePayload } from './messageParams'
 import {
     buildEthereumSendTransaction,
     validateEthereumSendTransaction,
     type EthereumSendTransactionRequest,
 } from './sendTransaction'
-import { ethereumWalletConnectSupport } from './walletConnect'
+import { createEvmWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
     'eip155 signs no transaction group; use eth_sendTransaction'
@@ -33,8 +32,9 @@ const refuseTransactionGroup = (): never => {
 
 export const createEthereumDappRequestAdapter = (
     ctx: ChainContext,
+    chain: EvmChain,
 ): DappRequestChainAdapter => ({
-    chainId: ETHEREUM_CHAIN_ID,
+    chainId: chain.row.id,
     relayableErrorNames: [],
     // The kind id, not a wire name: no Ethereum bridge vocabulary exists to map to.
     accountTypeOf: account => ethereumKindIdOf(account),
@@ -46,14 +46,14 @@ export const createEthereumDappRequestAdapter = (
     }),
 
     resolveReportedNetwork: scope =>
-        scope.chainId === ETHEREUM_CHAIN_ID &&
-        ethereumDescriptor.networks.some(({ id }) => id === scope.networkId)
+        scope.chainId === chain.row.id &&
+        chain.descriptor.networks.some(({ id }) => id === scope.networkId)
             ? scope.networkId
             : undefined,
 
     emptySignaturesFor: () => ({}),
 
-    walletConnect: ethereumWalletConnectSupport,
+    walletConnect: createEvmWalletConnectSupport(chain),
 
     validateTransactionPayload: () => ({
         ok: false,
@@ -70,12 +70,16 @@ export const createEthereumDappRequestAdapter = (
         validate: (params, authorizedAccounts) =>
             validateEthereumSendTransaction(params, {
                 authorizedAccounts,
-                eip155ChainId: eip155ChainIdOfNetwork(ctx.getScope().networkId),
+                eip155ChainId: eip155ChainIdOfNetwork(
+                    chain,
+                    ctx.getScope().networkId,
+                ),
             }),
         // `validate` is the only producer of the request.
         build: request =>
             buildEthereumSendTransaction(
                 ctx,
+                chain,
                 request as EthereumSendTransactionRequest,
             ),
     },

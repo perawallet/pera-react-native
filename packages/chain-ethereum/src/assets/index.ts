@@ -11,4 +11,3 @@
  */
 
 export { createEthereumAssetsAdapter } from './adapter'
-export { ETHEREUM_NATIVE_ASSET } from './native-asset'

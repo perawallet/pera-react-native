@@ -16,7 +16,7 @@ import {
     type ChainCapability,
 } from '@perawallet/wallet-core-chain-contract'
 
-// Each needs an Ethereum adapter in every registry CAPABILITY_ADAPTERS lists for it; the app's parity spec fails otherwise.
+// Each needs an adapter in every registry CAPABILITY_ADAPTERS lists for it; the app's parity spec fails otherwise.
 const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'send',
     'receive',
@@ -30,7 +30,8 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'cloudBackup',
 ])
 
-// Off unless listed, so a capability added later starts off for Ethereum.
-export const ethereumCapabilityDefaults = Object.fromEntries(
+// Off unless listed, so a capability added later starts off. Every EVM chain
+// shares this set: they register the same adapters.
+export const evmCapabilityDefaults = Object.fromEntries(
     CHAIN_CAPABILITIES.map(capability => [capability, ENABLED.has(capability)]),
 ) as ChainCapabilities

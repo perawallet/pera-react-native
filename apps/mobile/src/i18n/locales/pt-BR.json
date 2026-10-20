@@ -1105,8 +1105,8 @@
                 "body": "Uma transação pendente desta conta só pode ser substituída com uma taxa de rede mais alta. Aguarde a conclusão dela ou tente novamente com uma taxa mais alta."
             },
             "insufficient_funds": {
-                "title": "ETH insuficiente",
-                "body": "Esta conta não tem ETH suficiente para cobrir o valor e a taxa de rede. Adicione mais ETH e tente novamente."
+                "title": "{{symbol}} insuficiente",
+                "body": "Esta conta não tem {{symbol}} suficiente para cobrir o valor e a taxa de rede. Adicione mais {{symbol}} e tente novamente."
             },
             "rate_limited": {
                 "title": "Rede congestionada",

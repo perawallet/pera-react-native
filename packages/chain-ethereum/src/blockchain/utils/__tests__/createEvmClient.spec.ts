@@ -32,6 +32,7 @@ import {
     evmRpcHandlers,
     evmTransactionReceipt,
 } from '../../msw-handlers'
+import { ETHEREUM } from '../../../__tests__/evm-chains'
 
 const MAINNET_RPC = 'https://mainnet.rpc.test/'
 const SEPOLIA_RPC = 'https://sepolia.rpc.test/'
@@ -74,7 +75,7 @@ describe('createEvmClient', () => {
                     },
                 }),
             )
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(client.getChainId()).resolves.toBe(1)
             await expect(client.getBlockNumber()).resolves.toBe(16n)
@@ -88,7 +89,7 @@ describe('createEvmClient', () => {
 
         it('estimates gas and reads the fee history', async () => {
             server.use(...evmRpcHandlers({ rpcUrl: MAINNET_RPC }))
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(
                 client.estimateGas({ account: ADDRESS, to: ADDRESS }),
@@ -111,7 +112,7 @@ describe('createEvmClient', () => {
                     responses: { eth_call: '0x2a' },
                 }),
             )
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(
                 client.call({ to: ADDRESS, data: '0x70a08231' }),
@@ -133,7 +134,7 @@ describe('createEvmClient', () => {
                     },
                 }),
             )
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(
                 client.sendRawTransaction({ serializedTransaction: RAW_TX }),
@@ -158,7 +159,7 @@ describe('createEvmClient', () => {
                     },
                 }),
             )
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(
                 client.sendRawTransaction({ serializedTransaction: RAW_TX }),
@@ -174,7 +175,7 @@ describe('createEvmClient', () => {
                     responses: { eth_chainId: '0xaa36a7' },
                 }),
             )
-            const client = createEvmClient(SEPOLIA, contextWith())
+            const client = createEvmClient(SEPOLIA, contextWith(), ETHEREUM)
 
             expect(client.chain?.id).toBe(11_155_111)
             await expect(client.getChainId()).resolves.toBe(11_155_111)
@@ -185,6 +186,7 @@ describe('createEvmClient', () => {
                 createEvmClient(
                     SEPOLIA,
                     contextWith({ endpoints: { mainnet: MAINNET_RPC } }),
+                    ETHEREUM,
                 ),
             ).toThrow(UnconfiguredEvmRpcError)
         })
@@ -194,6 +196,7 @@ describe('createEvmClient', () => {
                 createEvmClient(
                     { chainId: 'algorand', networkId: 'mainnet' },
                     contextWith(),
+                    ETHEREUM,
                 ),
             ).toThrow(UnconfiguredEvmRpcError)
         })
@@ -210,6 +213,7 @@ describe('createEvmClient', () => {
             const client = createEvmClient(
                 MAINNET,
                 contextWith({ timeouts: { readMs: 50, submitMs: 2_000 } }),
+                ETHEREUM,
             )
 
             await expect(client.getBlockNumber()).rejects.toBeInstanceOf(
@@ -228,7 +232,7 @@ describe('createEvmClient', () => {
                     return new HttpResponse(null, { status: 503 })
                 }),
             )
-            const client = createEvmClient(MAINNET, contextWith())
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
 
             await expect(client.getBlockNumber()).rejects.toThrow()
             expect(attempts).toHaveBeenCalledTimes(1)

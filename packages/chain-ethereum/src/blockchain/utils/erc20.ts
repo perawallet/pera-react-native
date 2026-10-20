@@ -31,6 +31,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { partition } from '@perawallet/wallet-core-shared'
+import type { EvmChain } from '../../chains/types'
 import { createEvmClient } from './createEvmClient'
 
 /**
@@ -39,10 +40,11 @@ import { createEvmClient } from './createEvmClient'
  */
 export const readErc20 = async (
     ctx: ChainContext,
+    chain: EvmChain,
     assetId: string,
     scope: ChainScope,
 ): Promise<PeraAsset> => {
-    const client = createEvmClient(scope, ctx)
+    const client = createEvmClient(scope, ctx, chain)
     const address = getAddress(assetId)
     const [name, symbol, decimals, totalSupply] = await Promise.all([
         client.readContract({ address, abi: erc20Abi, functionName: 'name' }),

@@ -13,9 +13,12 @@
 import { Decimal } from 'decimal.js'
 import { getAddress, isAddress, maxUint256 } from 'viem'
 import {
+    addressCodecs,
+    isEvmChainId,
     isNativeAsset,
     type AssetRef,
-    type NetworkId,
+    type ChainId,
+    type ChainScope,
     type PaymentUriOpts,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -25,14 +28,13 @@ import {
     type DeeplinkParseFailure,
     type DeeplinkParseResult,
 } from '@perawallet/wallet-core-deeplinks'
-import {
-    eip155ChainIdOfNetwork,
-    networkIdOfEip155ChainId,
-} from '../blockchain/utils/caip19'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
+import { evmChainOf, evmChainOfEip155Id } from '../chains/table'
+import type { EvmChain } from '../chains/types'
 
 const SCHEME = 'ethereum:'
+// EIP-681 reads a link without `@<chain id>` as one for chain 1.
+const EIP681_DEFAULT_EIP155_CHAIN_ID = 1
 const PATH_PATTERN = /^(?:pay-)?([^@/]*)(?:@([^/]*))?(?:\/(.*))?$/
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/
 const ENS_NAME_PATTERN = /^[^.]+(?:\.[^.]+)+$/
@@ -85,11 +87,24 @@ const checkAddress = (raw: string): DeeplinkParseFailure | undefined => {
     return ENS_NAME_PATTERN.test(raw) ? 'unsupported-action' : 'malformed'
 }
 
-const canParse = (input: string): boolean =>
-    ethereumDescriptor.uriSchemes.includes(uriSchemeOf(input) ?? '')
+const canParseWith =
+    (chain: EvmChain) =>
+    (input: string): boolean =>
+        chain.descriptor.uriSchemes.includes(uriSchemeOf(input) ?? '')
 
-const parse = (input: string): DeeplinkParseResult => {
-    if (!canParse(input)) return fail('malformed')
+export type Eip681ParseOptions = {
+    /** The registered scope that owns an `@<eip155 id>`; undefined rejects the link. */
+    resolve: (eip155ChainId: number) => ChainScope | undefined
+    /** The chain a link without `@<eip155 id>` pays on. */
+    defaultChainId: ChainId
+    nativeAssetOf: (chainId: ChainId) => AssetRef
+}
+
+export const parseEip681Uri = (
+    input: string,
+    { resolve, defaultChainId, nativeAssetOf }: Eip681ParseOptions,
+): DeeplinkParseResult => {
+    if (uriSchemeOf(input) !== SCHEME.slice(0, -1)) return fail('malformed')
 
     const rest = input.slice(input.indexOf(':') + 1)
     const queryStart = rest.indexOf('?')
@@ -102,11 +117,11 @@ const parse = (input: string): DeeplinkParseResult => {
     const targetFailure = checkAddress(target)
     if (targetFailure) return fail(targetFailure)
 
-    let networkId: NetworkId | undefined
+    let scope: ChainScope | undefined
     if (rawChainId !== undefined) {
         if (!/^\d+$/.test(rawChainId)) return fail('malformed')
-        networkId = networkIdOfEip155ChainId(Number(rawChainId))
-        if (!networkId) return fail('unsupported-network')
+        scope = resolve(Number(rawChainId))
+        if (!scope) return fail('unsupported-network')
     }
 
     // A link-initiated approval is a drain vector and the wallet decodes no
@@ -119,10 +134,9 @@ const parse = (input: string): DeeplinkParseResult => {
     const params = readQuery(query)
     if (!params) return fail('malformed')
 
-    const linkTarget: ChainLinkTarget = {
-        chainId: ETHEREUM_CHAIN_ID,
-        ...(networkId && { networkId }),
-    }
+    const linkTarget: ChainLinkTarget = scope
+        ? { chainId: scope.chainId, networkId: scope.networkId }
+        : { chainId: defaultChainId }
     const value = params.get('value') ?? null
 
     if (functionName === undefined) {
@@ -134,7 +148,7 @@ const parse = (input: string): DeeplinkParseResult => {
                 kind: 'payment',
                 target: linkTarget,
                 recipient: getAddress(target),
-                assetRef: ethereumDescriptor.nativeAsset.ref,
+                assetRef: nativeAssetOf(linkTarget.chainId),
                 ...(amount && { amount }),
             },
         }
@@ -156,7 +170,7 @@ const parse = (input: string): DeeplinkParseResult => {
             target: linkTarget,
             recipient: getAddress(recipient),
             assetRef: {
-                chainId: ETHEREUM_CHAIN_ID,
+                chainId: linkTarget.chainId,
                 assetId: getAddress(target),
             },
             ...(amount && { amount }),
@@ -164,18 +178,68 @@ const parse = (input: string): DeeplinkParseResult => {
     }
 }
 
-export const ethereumDeeplinkAdapter: DeeplinkChainAdapter = {
-    chainId: ETHEREUM_CHAIN_ID,
-    schemes: ethereumDescriptor.uriSchemes,
-    canParse,
-    parse,
-    toAssetRef: (raw): AssetRef | undefined =>
-        isAddress(raw)
-            ? { chainId: ETHEREUM_CHAIN_ID, assetId: getAddress(raw) }
-            : undefined,
+const nativeAssetOfEvmChain = (chainId: ChainId): AssetRef => {
+    if (!isEvmChainId(chainId)) {
+        throw new Error(`${chainId} is not an EVM chain`)
+    }
+    return evmChainOf(chainId).descriptor.nativeAsset.ref
 }
 
-export const toEip681Uri = (address: string, opts?: PaymentUriOpts): string => {
+/** Resolves an `@<eip155 id>` against every chain in the EVM table. */
+export const resolveEvmScope = (
+    eip155ChainId: number,
+): ChainScope | undefined => {
+    const owner = evmChainOfEip155Id(eip155ChainId)
+    return owner && { chainId: owner.chain.row.id, networkId: owner.networkId }
+}
+
+/**
+ * Only one adapter may claim `ethereum:`, so the first EVM chain registered
+ * serves the links of every registered EVM chain.
+ */
+export const createEvmDeeplinkAdapter = (
+    owner: EvmChain,
+): DeeplinkChainAdapter => {
+    const isRegistered = (chainId: ChainId): boolean =>
+        addressCodecs.has(chainId)
+    const resolve = (eip155ChainId: number): ChainScope | undefined => {
+        const scope = resolveEvmScope(eip155ChainId)
+        return scope && isRegistered(scope.chainId) ? scope : undefined
+    }
+    return {
+        chainId: owner.row.id,
+        schemes: owner.descriptor.uriSchemes,
+        canParse: canParseWith(owner),
+        parse: input =>
+            parseEip681Uri(input, {
+                resolve,
+                defaultChainId:
+                    resolve(EIP681_DEFAULT_EIP155_CHAIN_ID)?.chainId ??
+                    owner.row.id,
+                nativeAssetOf: nativeAssetOfEvmChain,
+            }),
+        toAssetRef: (raw): AssetRef | undefined =>
+            isAddress(raw)
+                ? { chainId: owner.row.id, assetId: getAddress(raw) }
+                : undefined,
+    }
+}
+
+export const parseEvmPaymentUri = (
+    chain: EvmChain,
+    input: string,
+): DeeplinkParseResult =>
+    parseEip681Uri(input, {
+        resolve: resolveEvmScope,
+        defaultChainId: chain.row.id,
+        nativeAssetOf: nativeAssetOfEvmChain,
+    })
+
+export const toEip681Uri = (
+    chain: EvmChain,
+    address: string,
+    opts?: PaymentUriOpts,
+): string => {
     if (
         opts?.amount &&
         (opts.amount.isNegative() || !opts.amount.isInteger())
@@ -184,12 +248,12 @@ export const toEip681Uri = (address: string, opts?: PaymentUriOpts): string => {
     }
     // toFixed: Decimal#toString gives "1e+21", which EIP-681 cannot parse.
     const amount = opts?.amount?.toFixed()
-    const eip155ChainId = eip155ChainIdOfNetwork(opts?.networkId)
-    const chain = eip155ChainId === undefined ? '' : `@${eip155ChainId}`
+    const eip155ChainId = eip155ChainIdOfNetwork(chain, opts?.networkId)
+    const chainSuffix = eip155ChainId === undefined ? '' : `@${eip155ChainId}`
     const assetRef = opts?.assetRef
 
-    if (!assetRef || isNativeAsset(assetRef, ethereumDescriptor)) {
-        return `${SCHEME}${getAddress(address)}${chain}${amount ? `?value=${amount}` : ''}`
+    if (!assetRef || isNativeAsset(assetRef, chain.descriptor)) {
+        return `${SCHEME}${getAddress(address)}${chainSuffix}${amount ? `?value=${amount}` : ''}`
     }
-    return `${SCHEME}${getAddress(assetRef.assetId)}${chain}/transfer?address=${getAddress(address)}${amount ? `&uint256=${amount}` : ''}`
+    return `${SCHEME}${getAddress(assetRef.assetId)}${chainSuffix}/transfer?address=${getAddress(address)}${amount ? `&uint256=${amount}` : ''}`
 }

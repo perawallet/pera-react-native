@@ -12,8 +12,9 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
-import { createEthereumNodeEndpointAdapter } from '../node-endpoint'
+import { createEvmNodeEndpointAdapter } from '../node-endpoint'
 import { checkEvmRpcChainId } from '../utils/checkEvmRpcChainId'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 
 vi.mock('../utils/checkEvmRpcChainId', () => ({
     checkEvmRpcChainId: vi.fn(async () => 'matches'),
@@ -31,13 +32,14 @@ const contextWith = (
     kms: {} as ChainContext['kms'],
 })
 
-describe('createEthereumNodeEndpointAdapter', () => {
+describe('createEvmNodeEndpointAdapter', () => {
     it('reads the endpoint live, so a changed record shows on the next call', () => {
         let endpoints: Record<string, string> = {
             sepolia: 'https://sepolia.rpc.test/',
         }
-        const adapter = createEthereumNodeEndpointAdapter(
+        const adapter = createEvmNodeEndpointAdapter(
             contextWith(() => endpoints),
+            ETHEREUM,
         )
         expect(adapter.endpointUrl('sepolia')).toBe('https://sepolia.rpc.test/')
 
@@ -47,16 +49,18 @@ describe('createEthereumNodeEndpointAdapter', () => {
     })
 
     it('reports nothing for a network without an endpoint', () => {
-        const adapter = createEthereumNodeEndpointAdapter(
+        const adapter = createEvmNodeEndpointAdapter(
             contextWith(() => ({})),
+            ETHEREUM,
         )
 
         expect(adapter.endpointUrl('mainnet')).toBeUndefined()
     })
 
     it('checks an override against the network with the read ceiling', async () => {
-        const adapter = createEthereumNodeEndpointAdapter(
+        const adapter = createEvmNodeEndpointAdapter(
             contextWith(() => ({})),
+            ETHEREUM,
         )
 
         await expect(
@@ -66,6 +70,24 @@ describe('createEthereumNodeEndpointAdapter', () => {
             'https://my-node.rpc.test/',
             'sepolia',
             TIMEOUTS,
+            ETHEREUM,
+        )
+    })
+
+    it("serves its own chain and checks an override against that chain's ids", async () => {
+        const adapter = createEvmNodeEndpointAdapter(
+            contextWith(() => ({})),
+            BASE,
+        )
+
+        await adapter.checkOverride?.('sepolia', 'https://my-node.rpc.test/')
+
+        expect(adapter.chainId).toBe(BASE.row.id)
+        expect(checkEvmRpcChainId).toHaveBeenCalledWith(
+            'https://my-node.rpc.test/',
+            'sepolia',
+            TIMEOUTS,
+            BASE,
         )
     })
 })

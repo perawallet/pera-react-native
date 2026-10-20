@@ -51,8 +51,8 @@ import {
     LedgerSigningError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-shared'
-import { ETHEREUM_CHAIN_ID } from '../../chain-id'
-import { ethereumPlannerAdapter } from '../../signing/adapter'
+import { createEvmPlannerAdapter } from '../../signing/adapter'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 import {
     ERC20_TRANSFER,
     SENDER,
@@ -62,7 +62,9 @@ import {
     VIEM_TRANSFER_NONCE_2,
     vectorSignature,
 } from '../../signing/__tests__/fixtures'
-import { ethereumLedgerAppDriver } from '../driver'
+import { createEvmLedgerAppDriver } from '../driver'
+
+const ethereumLedgerAppDriver = createEvmLedgerAppDriver(ETHEREUM)
 
 // Hardhat #0's uncompressed public key, as the app returns it (no `0x`).
 const HARDHAT_PUBLIC_KEY =
@@ -70,7 +72,7 @@ const HARDHAT_PUBLIC_KEY =
 
 const RESOLUTION = { erc20Tokens: ['token'] }
 
-const { plan, assemble } = ethereumPlannerAdapter
+const { plan, assemble } = createEvmPlannerAdapter(ETHEREUM)
 
 const unsigned = (
     transaction: TransactionSerializableEIP1559,
@@ -121,7 +123,8 @@ describe('ethereumLedgerAppDriver', () => {
     it('is keyed by the Ethereum chain and opens the app over the given transport', () => {
         open()
 
-        expect(ethereumLedgerAppDriver.chainId).toBe(ETHEREUM_CHAIN_ID)
+        expect(ethereumLedgerAppDriver.chainId).toBe('ethereum')
+        expect(createEvmLedgerAppDriver(BASE).chainId).toBe('base')
         expect(mocks.constructed).toHaveBeenCalledWith(raw)
     })
 

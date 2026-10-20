@@ -13,19 +13,26 @@
 // The planner, the reviewer and the known-answer vectors, for suites outside
 // this package that run Ethereum signing end to end; aliased as
 // `@perawallet/wallet-core-chain-ethereum/testing` by consumers, never built.
-export { ethereumDescriptor } from '../descriptor'
+import { evmChainOf } from '../chains/table'
+import { createEvmPlannerAdapter } from '../signing/adapter'
+import { createEvmMessageSignerAdapter } from '../signing/messages'
+import { createEthereumReviewer } from '../signing/review'
+
+const ethereum = evmChainOf('ethereum')
+
+export const ethereumDescriptor = ethereum.descriptor
+export const ethereumPlannerAdapter = createEvmPlannerAdapter(ethereum)
+export const ethereumReviewerAdapter = createEthereumReviewer({
+    chain: ethereum,
+})
+export const ethereumMessageSignerAdapter =
+    createEvmMessageSignerAdapter(ethereum)
+
 export { ethereumLocalKeyKinds } from '../accounts/local-key-kinds'
-export {
-    ethereumPlannerAdapter,
-    type EthereumTransactionPayload,
-} from '../signing/adapter'
-export {
-    createEthereumReviewer,
-    ethereumReviewerAdapter,
-} from '../signing/review'
+export { type EthereumTransactionPayload } from '../signing/adapter'
+export { createEthereumReviewer } from '../signing/review'
 export { readEthereumNative } from '../signing/transaction-view'
 export {
-    ethereumMessageSignerAdapter,
     personalSignMessageRequest,
     typedDataMessageRequest,
 } from '../signing/messages'

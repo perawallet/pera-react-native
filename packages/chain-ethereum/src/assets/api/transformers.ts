@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fromCaip19, InvalidCaip19Error } from '../../blockchain/utils/caip19'
+import type { EvmChain } from '../../chains/types'
 import { whitelistItemSchema, type AssetItemSchemaOutput } from './schema'
 
 /**
@@ -87,13 +88,14 @@ export const toPriceRow = (
 export const toWhitelistRow = (
     row: unknown,
     scope: ChainScope,
+    chain: EvmChain,
 ): Nullable<WhitelistRow> => {
     const parsed = whitelistItemSchema.safeParse(row)
     if (!parsed.success) return null
     const { type, asset_id } = parsed.data
     if (type !== 'native' && type !== 'erc20') return null
     try {
-        return { assetId: fromCaip19(asset_id, scope), type }
+        return { assetId: fromCaip19(asset_id, scope, chain), type }
     } catch (error) {
         if (error instanceof InvalidCaip19Error) return null
         throw error

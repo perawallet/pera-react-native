@@ -14,8 +14,11 @@ import { describe, expect, it } from 'vitest'
 import {
     ETHEREUM_CAIP2_NAMESPACE,
     ETHEREUM_WC_V2_METHOD,
-    ethereumWalletConnectSupport as support,
+    createEvmWalletConnectSupport,
 } from '../walletConnect'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+
+const support = createEvmWalletConnectSupport(ETHEREUM)
 
 const v2 = support.v2
 if (!v2) throw new Error('Ethereum serves WalletConnect v2')

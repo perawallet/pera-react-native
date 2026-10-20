@@ -15,7 +15,10 @@ import { isRetryableError } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { CannotSignError, SigningError } from '@perawallet/wallet-core-signing'
-import { ethereumLocalKeySignerAdapter as adapter } from '../localKeySigner'
+import { createEvmLocalKeySignerAdapter } from '../localKeySigner'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+
+const adapter = createEvmLocalKeySignerAdapter(ETHEREUM)
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 

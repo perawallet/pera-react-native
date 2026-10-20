@@ -17,8 +17,9 @@ export const ethereumHdPath = (account: number, keyIndex: number): string =>
 
 /**
  * Stored accounts reference this id, so its format never changes, and the
- * accounts adapter's `hdKeyPairId` must return the same. It names the chain
- * because another secp256k1 chain at the same coordinates is a different key.
+ * accounts adapter's `hdKeyPairId` must return the same. Every EVM chain uses
+ * it: they share the key at these coordinates. It names the family because a
+ * non-EVM secp256k1 chain at the same coordinates is a different key.
  */
 export const ethereumHdKeyId = (
     seedRef: SeedRef,

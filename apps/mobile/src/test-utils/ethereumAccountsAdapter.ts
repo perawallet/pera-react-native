@@ -13,6 +13,7 @@
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { createEthereumAccountsAdapter } from '@packages/chain-ethereum/src/accounts/adapter'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 
 /**
  * Adds Ethereum signer resolution next to the Algorand adapter a spec
@@ -21,7 +22,10 @@ import { createEthereumAccountsAdapter } from '@packages/chain-ethereum/src/acco
 export const registerEthereumAccountsAdapter = (): void => {
     if (!accountsChainAdapters.has('ethereum')) {
         accountsChainAdapters.register(
-            createEthereumAccountsAdapter({} as ChainContext),
+            createEthereumAccountsAdapter(
+                {} as ChainContext,
+                evmChainOf('ethereum'),
+            ),
         )
     }
 }

@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { buildAccount } from '@perawallet/wallet-core-accounts'
 import { testChainContext } from '../../__tests__/context'
 import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
-import { ethereumWalletConnectSupport } from '../walletConnect'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const watch = buildAccount({
     custody: { kind: 'watch' },
@@ -24,12 +24,12 @@ const watch = buildAccount({
     },
 })
 
-const adapter = createEthereumDappRequestAdapter(testChainContext())
+const adapter = createEthereumDappRequestAdapter(testChainContext(), ETHEREUM)
 
 describe('ethereumDappRequestAdapter', () => {
     it('is keyed by the Ethereum chain id and serves eip155 over WalletConnect', () => {
         expect(adapter.chainId).toBe('ethereum')
-        expect(adapter.walletConnect).toBe(ethereumWalletConnectSupport)
+        expect(adapter.walletConnect.namespace).toBe('eip155')
     })
 
     it('reports its own networks and withholds any other', () => {

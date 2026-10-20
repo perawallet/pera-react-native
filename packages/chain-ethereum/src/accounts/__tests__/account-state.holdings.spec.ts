@@ -43,6 +43,7 @@ import {
     TEST_RPC_URL,
     testChainContext,
 } from '../../__tests__/context'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -134,6 +135,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -151,6 +153,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -172,6 +175,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -204,6 +208,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -220,6 +225,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -238,6 +244,7 @@ describe('fetchAccountState token holdings', () => {
         const calls = recordRpcCalls()
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -258,6 +265,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
@@ -275,7 +283,7 @@ describe('fetchAccountState token holdings', () => {
             }),
         )
         const ctx = testChainContext()
-        const ops = createEthereumAccountStateOps(ctx)
+        const ops = createEthereumAccountStateOps(ctx, ETHEREUM)
 
         const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
 
@@ -291,6 +299,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -308,6 +317,7 @@ describe('fetchAccountState token holdings', () => {
         )
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -341,6 +351,7 @@ describe('fetchAccountState whitelist reuse', () => {
         const requests = countedWhitelist()
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const states = await Promise.all([
@@ -357,6 +368,7 @@ describe('fetchAccountState whitelist reuse', () => {
         let now = 1_000_000
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
             { now: () => now },
         )
 
@@ -374,6 +386,7 @@ describe('fetchAccountState whitelist reuse', () => {
         const requests = countedWhitelist([422])
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(

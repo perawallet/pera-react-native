@@ -31,7 +31,8 @@ import {
     TEST_API_KEY,
     TEST_INTEGRITY_TOKEN,
 } from '../../__tests__/pera-backend'
-import { getEthereumTransactionHistory } from '../adapter'
+import { getEvmTransactionHistory } from '../adapter'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 import { evmHistoryItem } from '../api/msw-handlers'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
@@ -64,7 +65,7 @@ const serve = (rows: (typeof send)[][]) =>
         ...peraEvmHandlers({ baseUrl: PERA_URL, history: { [ME]: rows } }),
     )
 
-describe('getEthereumTransactionHistory', () => {
+describe('getEvmTransactionHistory', () => {
     it('asks for the lowercased address on the EIP-155 route with the API key and integrity token', async () => {
         let request: Request | undefined
         server.use(
@@ -81,7 +82,7 @@ describe('getEthereumTransactionHistory', () => {
             ),
         )
 
-        await getEthereumTransactionHistory(getAddress(ME), MAINNET)
+        await getEvmTransactionHistory(ETHEREUM, getAddress(ME), MAINNET)
 
         const url = new URL(request?.url ?? '')
         expect(url.pathname).toBe(`/api/v3/evm/1/accounts/${ME}/transactions/`)
@@ -108,7 +109,7 @@ describe('getEthereumTransactionHistory', () => {
             ),
         )
 
-        await getEthereumTransactionHistory(ME, MAINNET, {
+        await getEvmTransactionHistory(ETHEREUM, ME, MAINNET, {
             cursor: 'abc',
             limit: 80,
         })
@@ -133,7 +134,7 @@ describe('getEthereumTransactionHistory', () => {
             ),
         )
 
-        await getEthereumTransactionHistory(ME, SEPOLIA)
+        await getEvmTransactionHistory(ETHEREUM, ME, SEPOLIA)
 
         expect(pathname).toBe(
             `/api/v3/evm/11155111/accounts/${ME}/transactions/`,
@@ -153,7 +154,7 @@ describe('getEthereumTransactionHistory', () => {
             ],
         ])
 
-        const { items } = await getEthereumTransactionHistory(ME, MAINNET)
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
 
         expect(items[0]).toMatchObject({
             id: hash(1),
@@ -174,7 +175,7 @@ describe('getEthereumTransactionHistory', () => {
     it('lowercases the hash so it matches the id the submission ledger records', async () => {
         serve([[evmHistoryItem({ hash: `0x${'AB'.repeat(32)}` })]])
 
-        const { items } = await getEthereumTransactionHistory(ME, MAINNET)
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
 
         expect(items[0]?.id).toBe(`0x${'ab'.repeat(32)}`)
     })
@@ -182,8 +183,9 @@ describe('getEthereumTransactionHistory', () => {
     it('hands back the next cursor, and none on the last page', async () => {
         serve([[send], [evmHistoryItem({ hash: hash(2) })]])
 
-        const first = await getEthereumTransactionHistory(ME, MAINNET)
-        const second = await getEthereumTransactionHistory(
+        const first = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+        const second = await getEvmTransactionHistory(
+            ETHEREUM,
             ME,
             MAINNET,
             first.next,
@@ -207,7 +209,7 @@ describe('getEthereumTransactionHistory', () => {
             ),
         )
 
-        const { items } = await getEthereumTransactionHistory(ME, MAINNET)
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
 
         expect(items.map(item => item.id)).toEqual([hash(1)])
     })
@@ -229,7 +231,7 @@ describe('getEthereumTransactionHistory', () => {
             ],
         ])
 
-        const { items } = await getEthereumTransactionHistory(ME, MAINNET)
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
 
         expect(items.map(item => item.id)).toEqual(['withdrawal:42'])
         expect(items[0]?.summary.amount?.value).toEqual(new Decimal(9))
@@ -238,14 +240,14 @@ describe('getEthereumTransactionHistory', () => {
     it('keeps an empty page that still has a next cursor', async () => {
         serve([[], [send]])
 
-        const page = await getEthereumTransactionHistory(ME, MAINNET)
+        const page = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
 
         expect(page).toEqual({ items: [], next: { cursor: 'page:1' } })
     })
 
     it("refuses another chain's scope", async () => {
         await expect(
-            getEthereumTransactionHistory(ME, {
+            getEvmTransactionHistory(ETHEREUM, ME, {
                 chainId: 'algorand',
                 networkId: 'mainnet',
             }),

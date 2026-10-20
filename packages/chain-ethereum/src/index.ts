@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { ETHEREUM_CHAIN_ID, evmChainOf } from './chains/table'
+
 export {
     createEthereumAccountStateOps,
     InvalidPrivateKeyError,
@@ -17,7 +20,7 @@ export {
     revealEthereumPrivateKey,
     type EthereumAccountStateOps,
 } from './accounts'
-export { createEthereumAssetsAdapter, ETHEREUM_NATIVE_ASSET } from './assets'
+export { createEthereumAssetsAdapter } from './assets'
 export {
     createEvmClient,
     EvmError,
@@ -30,10 +33,15 @@ export {
     UnknownEvmNetworkError,
     type EvmErrorParams,
 } from './blockchain'
-export { ETHEREUM_CHAIN_ID } from './chain-id'
-export { ethereumModule } from './module'
+export { ETHEREUM_CHAIN_ID, EVM_CHAINS, evmChainOf } from './chains/table'
+export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
+export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
 export {
     readEthereumNative,
     toEthereumNative,
     type EthereumTransactionView,
 } from './signing/transaction-view'
+
+/** Ethereum's native coin, for the Ethereum UI module. */
+export const ETHEREUM_NATIVE_ASSET: PeraAsset =
+    evmChainOf(ETHEREUM_CHAIN_ID).nativeAsset
