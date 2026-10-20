@@ -374,7 +374,7 @@
         "copy_address": "Adresse kopieren",
         "shared_account_detail": "Gemeinschaftskonto-Details ({{count}})",
         "show_address": "Adresse anzeigen",
-        "view_passphrase_hd": "Wiederherstellungsphrase des Root-Wallets anzeigen",
+        "view_passphrase_hd": "Wiederherstellungsphrase anzeigen",
         "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
