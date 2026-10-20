@@ -13,8 +13,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
-import { useGroupTransactionsPanel } from '../useGroupTransactionsPanel'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useGroupTransactionsPanel } from '../useGroupTransactionsPanel'
 
 const mockUseGroupTransactionsQuery = vi.fn()
 
@@ -72,7 +72,7 @@ describe('useGroupTransactionsPanel', () => {
         )
 
         const row = result.current.otherTransactions[1]
-        act(() => result.current.handlePress(row))
+        act(() => result.current.handlePress(row.view))
 
         expect(onGroupTransactionPress).toHaveBeenCalledWith(row.native)
         expect(row.native).toEqual(native('C'))

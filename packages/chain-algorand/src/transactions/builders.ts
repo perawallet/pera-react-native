@@ -11,13 +11,13 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createWalletAlgorandClient,
     decodeTransaction,
     encodeTransaction,
 } from '../blockchain'
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     AssetOptInTxsParams,
     AssetOptOutTxsParams,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     asAlgosdkTransaction,
     createWalletAlgorandClient,
@@ -17,7 +18,6 @@ import {
     encodeTransactionRaw,
     mapToDisplayableTransaction,
 } from '../blockchain'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { algorandNetworkOf } from '../network-id'
 import type {
     PeraDisplayableTransaction,

@@ -12,8 +12,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useTransactionWarnings } from '../useTransactionWarnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useTransactionWarnings } from '../useTransactionWarnings'
 
 const SENDER = 'SENDER_ADDR'
 const TARGET = 'TARGET_ADDR'

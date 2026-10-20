@@ -21,7 +21,7 @@ import {
     EMPTY_ALGORAND_HISTORY_DATA,
     type AlgorandHistoryData,
 } from '../history-data'
-import { mapHistoryItemToDisplayableTransaction } from '../mapHistoryItemToDisplayableTransaction'
+import { mapHistoryItemToDisplayableTransaction } from '../history-transaction'
 
 const baseItem: TransactionHistoryItem = {
     id: 'TX123',

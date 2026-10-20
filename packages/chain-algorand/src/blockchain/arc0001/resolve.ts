@@ -77,9 +77,7 @@ export const resolveArc0001SignTxnRequest = (
         } catch (e) {
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,
-                `transaction at index ${index} is not valid base64: ${
-                    e instanceof Error ? e.message : String(e)
-                }`,
+                `transaction at index ${index} is not valid base64: ${e instanceof Error ? e.message : String(e)}`,
                 { index, field: 'txn' },
             )
         }
@@ -190,9 +188,7 @@ const schemaErrorToArc0001 = (error: ZodError): Arc0001Error => {
         const keys = (issue as { keys: string[] }).keys
         return new Arc0001Error(
             Arc0001ErrorCode.InvalidInput,
-            `invalid sign request — unknown field(s) at index ${
-                index ?? '(root)'
-            }: ${keys.join(', ')}`,
+            `invalid sign request — unknown field(s) at index ${index ?? '(root)'}: ${keys.join(', ')}`,
             { index, field: keys[0] },
         )
     }
@@ -200,9 +196,7 @@ const schemaErrorToArc0001 = (error: ZodError): Arc0001Error => {
     const fieldPath = fieldSegments.join('.') || undefined
     return new Arc0001Error(
         Arc0001ErrorCode.InvalidInput,
-        `invalid sign request — ${path.map(String).join('.') || '(root)'}: ${
-            issue.message
-        }`,
+        `invalid sign request — ${path.map(String).join('.') || '(root)'}: ${issue.message}`,
         { index, field: fieldPath },
     )
 }

@@ -11,11 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
 } from '../blockchain'
-import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getHoldingRestriction,
     isMultisigAccount,

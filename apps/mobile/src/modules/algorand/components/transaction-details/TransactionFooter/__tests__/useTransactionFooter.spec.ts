@@ -45,8 +45,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useSingleAssetDetailsQuery: () => ({ data: undefined }),
 }))
 
-import { useTransactionFooter } from '../useTransactionFooter'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useTransactionFooter } from '../useTransactionFooter'
 
 const makeTransaction = (): PeraDisplayableTransaction =>
     ({ id: 'TX_ID_123' }) as PeraDisplayableTransaction

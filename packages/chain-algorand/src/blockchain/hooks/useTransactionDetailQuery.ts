@@ -13,12 +13,12 @@
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import { toAlgorandNative } from '../models/transaction-view'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 
 type UseTransactionDetailQueryParams = {
     transactionId: string

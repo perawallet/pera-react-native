@@ -38,7 +38,7 @@ import {
     type AlgorandHistoryData,
     type AlgorandSwapGroupDetail,
 } from './history-data'
-import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+import { mapHistoryItemToDisplayableTransaction } from './history-transaction'
 import {
     APP_CALL_TITLE_KEY,
     ASSET_CONFIG_TITLE_KEY,

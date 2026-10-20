@@ -12,13 +12,13 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getGroupTransactionsQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import { toAlgorandNative } from '../models/transaction-view'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 
 type UseGroupTransactionsQueryParams = {
     groupId: Optional<string>

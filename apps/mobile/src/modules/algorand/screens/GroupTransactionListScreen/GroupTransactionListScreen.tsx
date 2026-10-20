@@ -17,10 +17,8 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionPreview } from '../../components/transaction-details/TransactionPreview'
 import { GroupDetailHeader } from '@modules/signing'
-import {
-    useGroupTransactionListScreen,
-    type GroupTransactionListRow,
-} from './useGroupTransactionListScreen'
+import { useGroupTransactionListScreen } from './useGroupTransactionListScreen'
+import type { GroupTransactionRow } from '../../utils/groupTransactionRows'
 import { useStyles } from './styles'
 
 export const GroupTransactionListScreen = () => {
@@ -35,7 +33,7 @@ export const GroupTransactionListScreen = () => {
     } = useGroupTransactionListScreen()
 
     const renderItem = useCallback(
-        ({ item, index }: { item: GroupTransactionListRow; index: number }) => (
+        ({ item, index }: { item: GroupTransactionRow; index: number }) => (
             <TransactionPreview
                 testID={`transaction_row_${index}`}
                 transaction={item.view}

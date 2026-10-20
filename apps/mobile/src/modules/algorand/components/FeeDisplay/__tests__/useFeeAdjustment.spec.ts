@@ -13,11 +13,11 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useFeeAdjustment } from '../useFeeAdjustment'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useFeeAdjustment } from '../useFeeAdjustment'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     ...(await importOriginal<object>()),

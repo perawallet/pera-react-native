@@ -18,8 +18,8 @@ import {
     historyChainAdapters,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { useAlgorandTransactionDetail } from '../useAlgorandTransactionDetail'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useAlgorandTransactionDetail } from '../useAlgorandTransactionDetail'
 
 const mockUseTransactionDetailQuery = vi.fn()
 

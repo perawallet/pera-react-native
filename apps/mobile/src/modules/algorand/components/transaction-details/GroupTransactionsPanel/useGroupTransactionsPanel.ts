@@ -17,6 +17,10 @@ import {
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import {
+    toGroupTransactionRows,
+    type GroupTransactionRow,
+} from '../../../utils/groupTransactionRows'
 
 export type GroupTransactionsPanelProps = {
     groupId?: string
@@ -24,15 +28,10 @@ export type GroupTransactionsPanelProps = {
     onGroupTransactionPress: (transaction: TransactionNative) => void
 }
 
-export type GroupTransactionRow = {
-    native: TransactionNative
-    view: AlgorandTransactionView
-}
-
 type UseGroupTransactionsPanelResult = {
     otherTransactions: GroupTransactionRow[]
     groupSize: number
-    handlePress: (row: GroupTransactionRow) => void
+    handlePress: (view: AlgorandTransactionView) => void
 }
 
 export const useGroupTransactionsPanel = ({
@@ -45,18 +44,20 @@ export const useGroupTransactionsPanel = ({
 
     const otherTransactions = useMemo(
         () =>
-            groupTransactions.flatMap(native => {
-                const view = readAlgorandNative(native)
-                return view && view.id !== currentId ? [{ native, view }] : []
-            }),
+            toGroupTransactionRows(groupTransactions).filter(
+                ({ view }) => view.id !== currentId,
+            ),
         [groupTransactions, currentId],
     )
 
     const handlePress = useCallback(
-        (row: GroupTransactionRow) => {
-            onGroupTransactionPress(row.native)
+        (view: AlgorandTransactionView) => {
+            const row = otherTransactions.find(other => other.view === view)
+            if (row) {
+                onGroupTransactionPress(row.native)
+            }
         },
-        [onGroupTransactionPress],
+        [otherTransactions, onGroupTransactionPress],
     )
 
     return {

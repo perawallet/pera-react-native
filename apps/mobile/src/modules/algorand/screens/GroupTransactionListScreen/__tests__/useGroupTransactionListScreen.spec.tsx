@@ -10,10 +10,10 @@
  limitations under the License
  */
 
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupTransactionListScreen } from '../useGroupTransactionListScreen'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupId: 'GROUP_ABC' }

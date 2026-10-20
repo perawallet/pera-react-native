@@ -36,7 +36,7 @@ import {
     healAlgorandCachedRows,
 } from './history-cache'
 import { algorandGroupToOpen } from './history-data'
-import { mapHistoryItemToTransactionNative } from './mapHistoryItemToDisplayableTransaction'
+import { mapHistoryItemToTransactionNative } from './history-transaction'
 import {
     buildExpressTransferTxs,
     buildKeyRegistrationTx,

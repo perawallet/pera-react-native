@@ -15,8 +15,8 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { formatParticipationKey, getKeyRegType } from '../utils'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { formatParticipationKey, getKeyRegType } from '../utils'
 
 const tx = (
     keyregTransaction?: PeraDisplayableTransaction['keyregTransaction'],

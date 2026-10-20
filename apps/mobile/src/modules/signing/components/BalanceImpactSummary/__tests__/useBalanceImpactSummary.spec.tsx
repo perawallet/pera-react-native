@@ -19,9 +19,9 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useImpactTransactions } from '@perawallet/wallet-core-signing'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 // Keep computeBalanceImpact real; only stub the data-source hook.
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({

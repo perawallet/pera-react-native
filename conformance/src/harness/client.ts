@@ -95,9 +95,7 @@ export const fetchAccountTransactionsFor = async (
 ): Promise<AccountTransactionsPage> => {
     for (let attempt = 0; attempt < attempts; attempt++) {
         const response = await fetch(
-            `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(
-                address,
-            )}/transactions?limit=50`,
+            `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(address)}/transactions?limit=50`,
         )
         if (response.ok) {
             const page = (await response.json()) as AccountTransactionsPage
