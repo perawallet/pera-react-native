@@ -2931,7 +2931,16 @@
                 "genesis_id_required": "Genesis ID’yi al veya gir",
                 "save": "Kaydet ve geç",
                 "cancel": "İptal",
-                "reset": "Varsayılanlara dön"
+                "reset": "Varsayılanlara dön",
+                "override_endpoint": "RPC’yi değiştir",
+                "endpoint_overridden": "{{host}} (değiştirildi)",
+                "endpoint_sheet_title": "{{network}} RPC",
+                "endpoint_current": "Şu an: {{host}}",
+                "endpoint_url_label": "RPC URL’si",
+                "endpoint_wrong_network": "Bu RPC farklı bir ağa ait. {{network}} ağı için bir RPC gir.",
+                "endpoint_unreachable": "Bu RPC’ye ulaşılamadı.",
+                "endpoint_save": "Kaydet",
+                "endpoint_reset": "Yapılandırılmış RPC’ye dön"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Önbelleği yönet",

@@ -19,7 +19,9 @@ import {
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    nodeEndpointAdapters,
     selectChainNetworkId,
+    selectEndpointOverride,
     useAnyEnabledChainHasCapability,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
@@ -27,6 +29,8 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CustomNetworkSheet } from './CustomNetworkSheet'
+import { EndpointOverrideSheet } from './EndpointOverrideSheet'
+import { endpointHostOf } from './endpointHostOf'
 import { isCustomNetworkOffered } from './isCustomNetworkOffered'
 
 export type NodeSettingsNetworkRow = {
@@ -34,6 +38,10 @@ export type NodeSettingsNetworkRow = {
     label: string
     isDefault: boolean
     isSelected: boolean
+    /** Host only, so a provider key in the URL's path never shows. */
+    endpointHost: string | undefined
+    isEndpointOverridden: boolean
+    canOverrideEndpoint: boolean
 }
 
 export type NodeSettingsChainSection = {
@@ -48,6 +56,10 @@ type UseSettingsDeveloperNodeSettingsScreenResult = {
     /** Empty in live mode, where every chain is on its main network. */
     chainSections: NodeSettingsChainSection[]
     selectNetwork: (chainId: ChainId, networkId: NetworkId) => Promise<void>
+    openEndpointOverride: (
+        chainId: ChainId,
+        networkId: NetworkId,
+    ) => Promise<void>
 }
 
 const restartSync = () => {
@@ -70,6 +82,9 @@ export const useSettingsDeveloperNodeSettingsScreen =
         )
         const customNetworksByChain = useNetworkStore(
             state => state.customNetworksByChain,
+        )
+        const endpointOverridesByChain = useNetworkStore(
+            state => state.endpointOverridesByChain,
         )
         const setMode = useNetworkStore(state => state.setMode)
         const selectNetworkInStore = useNetworkStore(
@@ -94,6 +109,24 @@ export const useSettingsDeveloperNodeSettingsScreen =
                     selection,
                     descriptor.id,
                 )
+                const endpoints = nodeEndpointAdapters.has(descriptor.id)
+                    ? nodeEndpointAdapters.get(descriptor.id)
+                    : undefined
+                const endpointFieldsOf = (networkId: NetworkId) => {
+                    const url = endpoints?.endpointUrl(networkId)
+                    return {
+                        endpointHost: endpointHostOf(url),
+                        isEndpointOverridden:
+                            selectEndpointOverride(
+                                { endpointOverridesByChain },
+                                descriptor.id,
+                                networkId,
+                            ) !== undefined,
+                        canOverrideEndpoint:
+                            endpoints?.checkOverride !== undefined &&
+                            url !== undefined,
+                    }
+                }
                 const networks = descriptor.networks
                     .filter(
                         network =>
@@ -110,6 +143,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
                             : network.displayName,
                         isDefault: network.isDefaultForTier,
                         isSelected: network.id === selectedId,
+                        ...endpointFieldsOf(network.id),
                     }))
                 // ponytail: the sheet configures the legacy chain's single custom slot; give it a chainId when a second chain adds custom networks.
                 if (
@@ -125,6 +159,8 @@ export const useSettingsDeveloperNodeSettingsScreen =
                         ),
                         isDefault: false,
                         isSelected: selectedId === CUSTOM_NETWORK_ID,
+                        ...endpointFieldsOf(CUSTOM_NETWORK_ID),
+                        canOverrideEndpoint: false,
                     })
                 }
                 return {
@@ -138,6 +174,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
             mode,
             selectedNetworkByChain,
             customNetworksByChain,
+            endpointOverridesByChain,
             hasCustomNetworks,
             t,
         ])
@@ -168,10 +205,26 @@ export const useSettingsDeveloperNodeSettingsScreen =
             [request, selectNetworkInStore],
         )
 
+        const openEndpointOverride = useCallback(
+            async (chainId: ChainId, networkId: NetworkId) => {
+                await request({
+                    contents: (
+                        <EndpointOverrideSheet
+                            chainId={chainId}
+                            networkId={networkId}
+                        />
+                    ),
+                    options: { size: 'modal', autoCreateContainer: false },
+                })
+            },
+            [request],
+        )
+
         return {
             isDeveloperMode,
             setDeveloperMode,
             chainSections,
             selectNetwork,
+            openEndpointOverride,
         }
     }

@@ -2947,7 +2947,16 @@
                 "genesis_id_required": "Busque ou digite o ID do genesis",
                 "save": "Salvar e trocar",
                 "cancel": "Cancelar",
-                "reset": "Restaurar padrões"
+                "reset": "Restaurar padrões",
+                "override_endpoint": "Substituir RPC",
+                "endpoint_overridden": "{{host}} (substituído)",
+                "endpoint_sheet_title": "RPC de {{network}}",
+                "endpoint_current": "Atual: {{host}}",
+                "endpoint_url_label": "URL do RPC",
+                "endpoint_wrong_network": "Este RPC pertence a outra rede. Digite um para {{network}}.",
+                "endpoint_unreachable": "Não foi possível acessar esse RPC.",
+                "endpoint_save": "Salvar",
+                "endpoint_reset": "Restaurar o RPC configurado"
             },
             "debug_dapp": "Dapp de teste",
             "manage_cache": "Gerenciar cache",

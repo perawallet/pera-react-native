@@ -17,6 +17,8 @@ import {
     algorandDescriptor,
 } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import {
+    nodeEndpointAdapters,
+    selectEndpointOverride,
     useNetworkStore,
     getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
@@ -62,6 +64,31 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+const ALGORAND_ENDPOINTS: Record<string, string> = {
+    testnet: 'https://testnet-api.algonode.example',
+    betanet: 'https://betanet-api.algonode.example/v2?token=secret',
+}
+const SEPOLIA_RPC = 'https://sepolia.rpc.example/v3/key'
+
+const registerAlgorandEndpoints = () =>
+    nodeEndpointAdapters.register({
+        chainId: LEGACY_CHAIN_ID,
+        endpointUrl: networkId => ALGORAND_ENDPOINTS[networkId],
+    })
+
+// Reads the store's override the way the real adapter reads it through the chain context.
+const registerEthereumEndpoints = (endpoints: Record<string, string>) =>
+    nodeEndpointAdapters.register({
+        chainId: ETHEREUM_CHAIN_ID,
+        endpointUrl: networkId =>
+            selectEndpointOverride(
+                useNetworkStore.getState(),
+                ETHEREUM_CHAIN_ID,
+                networkId,
+            ) ?? endpoints[networkId],
+        checkOverride: vi.fn(async () => 'matches' as const),
+    })
+
 const DEFAULT_LABEL = 'settings.developer.node_settings.default_network_label'
 const CUSTOM_LABEL = 'settings.developer.node_settings.custom_label'
 
@@ -90,6 +117,8 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             algorandCapabilityDefaults,
         )
         useNetworkStore.getState().resetState()
+        nodeEndpointAdapters.reset()
+        registerAlgorandEndpoints()
     })
 
     it('is in live mode with no chain sections by default', () => {
@@ -132,18 +161,27 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                     label: `${DEFAULT_LABEL}(TestNet)`,
                     isDefault: true,
                     isSelected: true,
+                    endpointHost: 'testnet-api.algonode.example',
+                    isEndpointOverridden: false,
+                    canOverrideEndpoint: false,
                 },
                 {
                     networkId: 'betanet',
                     label: 'BetaNet',
                     isDefault: false,
                     isSelected: false,
+                    endpointHost: 'betanet-api.algonode.example',
+                    isEndpointOverridden: false,
+                    canOverrideEndpoint: false,
                 },
                 {
                     networkId: 'custom',
                     label: CUSTOM_LABEL,
                     isDefault: false,
                     isSelected: false,
+                    endpointHost: undefined,
+                    isEndpointOverridden: false,
+                    canOverrideEndpoint: false,
                 },
             ])
         })
@@ -210,6 +248,97 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                 {},
             )
             expect(mocks.restart).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('endpoints', () => {
+        const ethereumRow = (
+            result: ReturnType<typeof renderScreenHook>['result'],
+        ) => sectionFor(result, ETHEREUM_CHAIN_ID)?.networks[0]
+
+        it('lets a chain that checks overrides repoint a network it configures', () => {
+            registerEthereum()
+            registerEthereumEndpoints({ sepolia: SEPOLIA_RPC })
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(ethereumRow(result)).toMatchObject({
+                endpointHost: 'sepolia.rpc.example',
+                isEndpointOverridden: false,
+                canOverrideEndpoint: true,
+            })
+        })
+
+        it('offers no override for a network the chain has no endpoint for', () => {
+            registerEthereum()
+            registerEthereumEndpoints({})
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(ethereumRow(result)).toMatchObject({
+                endpointHost: undefined,
+                canOverrideEndpoint: false,
+            })
+        })
+
+        it('shows a saved override on its row only', () => {
+            registerEthereum()
+            registerEthereumEndpoints({ sepolia: SEPOLIA_RPC })
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+
+            act(() =>
+                useNetworkStore
+                    .getState()
+                    .setEndpointOverride(
+                        ETHEREUM_CHAIN_ID,
+                        'sepolia',
+                        'http://localhost:8545',
+                    ),
+            )
+
+            expect(ethereumRow(result)).toMatchObject({
+                endpointHost: 'localhost:8545',
+                isEndpointOverridden: true,
+            })
+            expect(
+                sectionFor(result, 'algorand')?.networks.some(
+                    network => network.isEndpointOverridden,
+                ),
+            ).toBe(false)
+        })
+
+        it('shows no endpoint for a chain with no endpoint adapter', () => {
+            registerEthereum()
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(ethereumRow(result)?.endpointHost).toBeUndefined()
+        })
+
+        it('opens the override sheet for the network', async () => {
+            const { result } = renderScreenHook()
+
+            await act(async () => {
+                await result.current.openEndpointOverride(
+                    ETHEREUM_CHAIN_ID,
+                    'sepolia',
+                )
+            })
+
+            expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
+            const [request] = mocks.requestBottomSheet.mock.calls[0]
+            expect(request.contents.props).toEqual({
+                chainId: ETHEREUM_CHAIN_ID,
+                networkId: 'sepolia',
+            })
+            expect(request.options).toEqual({
+                size: 'modal',
+                autoCreateContainer: false,
+            })
         })
     })
 
