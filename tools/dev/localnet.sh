@@ -3,7 +3,6 @@
 # Manage a local Algorand LocalNet via the official AlgoKit CLI.
 # Purely container lifecycle — no app-config side effects. The app is pointed at
 # LocalNet at runtime via Settings > Developer > Node Settings > Custom network.
-# localnet.compose.yml is layered over AlgoKit's sandbox to pin algod.
 set -euo pipefail
 
 TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
