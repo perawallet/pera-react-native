@@ -47,6 +47,7 @@ import {
     mockShouldRefresh,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { createEthereumAccountsAdapter } from '@packages/chain-ethereum/src/accounts'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -176,7 +177,10 @@ describe('sync tick network calls', () => {
             timeouts: { readMs: 1000, submitMs: 1000 },
             kms: {} as ChainContext['kms'],
         }
-        const ethereum = createEthereumAccountsAdapter(ctx)
+        const ethereum = createEthereumAccountsAdapter(
+            ctx,
+            evmChainOf('ethereum'),
+        )
         let pendingReads = 0
         let hasReadStarted = false
         const counted: AccountsChainAdapter = {

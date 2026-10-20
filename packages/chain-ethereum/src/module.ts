@@ -10,13 +10,24 @@
  limitations under the License
  */
 
-import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
-import { ethereumCapabilityDefaults } from './capability-defaults'
-import { ethereumDescriptor } from './descriptor'
-import { registerChain } from './register'
+import type {
+    ChainModule,
+    EvmChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { evmCapabilityDefaults } from './capability-defaults'
+import { EVM_CHAINS } from './chains/table'
+import type { EvmChain } from './chains/types'
+import { createEvmChainRegistration } from './register'
 
-export const ethereumModule: ChainModule = {
-    descriptor: ethereumDescriptor,
-    capabilityDefaults: ethereumCapabilityDefaults,
-    register: registerChain,
-}
+export const createEvmChainModule = (chain: EvmChain): ChainModule => ({
+    descriptor: chain.descriptor,
+    capabilityDefaults: evmCapabilityDefaults,
+    register: createEvmChainRegistration(chain),
+})
+
+export const evmChainModules: Readonly<Record<EvmChainId, ChainModule>> =
+    Object.fromEntries(
+        EVM_CHAINS.map(chain => [chain.row.id, createEvmChainModule(chain)]),
+    ) as Record<EvmChainId, ChainModule>
+
+export const ethereumModule: ChainModule = evmChainModules.ethereum

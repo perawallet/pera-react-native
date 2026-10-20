@@ -12,7 +12,10 @@
 
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { algorandDeeplinkAdapter } from '@packages/chain-algorand/src/deeplinks/adapter'
-import { ethereumDeeplinkAdapter } from '@packages/chain-ethereum/src/deeplinks/adapter'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
+import { createEvmDeeplinkAdapter } from '@packages/chain-ethereum/src/deeplinks/adapter'
+
+const ethereumDeeplinkAdapter = createEvmDeeplinkAdapter(evmChainOf('ethereum'))
 
 /**
  * Registers the real chain adapters, from source, so a spec parses links the

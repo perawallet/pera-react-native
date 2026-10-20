@@ -15,14 +15,16 @@ import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import { createFakeChainKeyStore } from '@perawallet/wallet-core-chain-contract/testing'
 import { createEthereumAccountsAdapter } from '../adapter'
-import { ethereumKeyDerivation } from '../key-derivation'
+import { createEvmKeyDerivation } from '../key-derivation'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 import {
     formatEthereumPrivateKey,
     parseEthereumPrivateKey,
     revealEthereumPrivateKey,
 } from '../private-key'
 
-const adapter = createEthereumAccountsAdapter({} as ChainContext)
+const adapter = createEthereumAccountsAdapter({} as ChainContext, ETHEREUM)
+const ethereumKeyDerivation = createEvmKeyDerivation(ETHEREUM)
 
 // Any 64 bytes after the 0x04 prefix make a key the codec accepts.
 const toUncompressedKey = (bytes: Uint8Array) =>

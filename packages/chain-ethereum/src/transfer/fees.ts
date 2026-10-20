@@ -11,20 +11,27 @@
  */
 
 import type { FeeValuesEIP1559, PublicClient } from 'viem'
+import { estimateL1Fee, estimateOperatorFee } from 'viem/op-stack'
 import { Decimal } from 'decimal.js'
 import {
     FEE_PRESETS,
     type FeeEstimate,
     type FeePreset,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumDescriptor } from '../descriptor'
-import type { EthereumTransferCall } from './builder'
+import type { EvmChain } from '../chains/types'
+import type { EvmTransferCall } from './builder'
 
-/** Gas is in gas units; every fee is in wei per gas, and `baseFeePerGas` is the next block's. */
-export type EthereumTransferFees = {
+/**
+ * Gas is in gas units; every fee is in wei per gas, and `baseFeePerGas` is the
+ * next block's. `surcharge` is in wei: what the chain charges on top of gas,
+ * the same for every preset.
+ */
+export type EvmTransferFees = {
     gas: bigint
     baseFeePerGas: bigint
     presets: Record<FeePreset, FeeValuesEIP1559>
+    surcharge: bigint
 }
 
 const FEE_HISTORY_BLOCK_COUNT = 10
@@ -45,10 +52,21 @@ const upperMedian = (values: bigint[]): bigint =>
               Math.floor(values.length / 2)
           ]
 
-/** Reads EIP-1559 fees at each preset's fee-history percentile. */
-export const readEthereumFeePresets = async (
+const minPriorityFeeOf = (chain: EvmChain, networkId: NetworkId): bigint =>
+    chain.row.fee.kind === 'eip1559-min-tip'
+        ? (chain.row.fee.minPriorityFeePerGas[networkId] ?? 0n)
+        : 0n
+
+/**
+ * Reads EIP-1559 fees at each preset's fee-history percentile. A tip below the
+ * chain's minimum is raised to it: the node would drop the transaction.
+ */
+export const readEvmFeePresets = async (
     client: PublicClient,
-): Promise<Omit<EthereumTransferFees, 'gas'>> => {
+    chain: EvmChain,
+    networkId: NetworkId,
+): Promise<Omit<EvmTransferFees, 'gas' | 'surcharge'>> => {
+    const minPriorityFeePerGas = minPriorityFeeOf(chain, networkId)
     const history = await client.getFeeHistory({
         blockCount: FEE_HISTORY_BLOCK_COUNT,
         rewardPercentiles: FEE_PRESETS.map(
@@ -68,9 +86,11 @@ export const readEthereumFeePresets = async (
     )
     const presets = Object.fromEntries(
         FEE_PRESETS.map((preset, column) => {
-            const maxPriorityFeePerGas = upperMedian(
-                rewards.map(row => row[column]),
-            )
+            const percentileTip = upperMedian(rewards.map(row => row[column]))
+            const maxPriorityFeePerGas =
+                percentileTip < minPriorityFeePerGas
+                    ? minPriorityFeePerGas
+                    : percentileTip
             return [
                 preset,
                 {
@@ -85,27 +105,56 @@ export const readEthereumFeePresets = async (
     return { baseFeePerGas, presets }
 }
 
-/** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
+// estimateGas prices L2 execution only. The oracle address is passed because
+// our defineChain declares no contracts, so viem's own lookup would throw.
+const readOpStackSurcharge = async (
+    client: PublicClient,
+    call: EvmTransferCall,
+    gasPriceOracleAddress: `0x${string}`,
+): Promise<bigint> => {
+    const request = {
+        chain: client.chain,
+        account: call.from,
+        to: call.to,
+        value: call.value,
+        data: call.data,
+        gasPriceOracleAddress,
+    }
+    const [l1DataFee, operatorFee] = await Promise.all([
+        estimateL1Fee(client, request),
+        estimateOperatorFee(client, request),
+    ])
+    return l1DataFee + operatorFee
+}
+
+/** Estimates the call's gas and surcharge, and reads EIP-1559 fees at each preset's fee-history percentile. */
 export const readTransferFees = async (
     client: PublicClient,
-    call: EthereumTransferCall,
-): Promise<EthereumTransferFees> => {
-    const [gas, fees] = await Promise.all([
+    call: EvmTransferCall,
+    chain: EvmChain,
+    networkId: NetworkId,
+): Promise<EvmTransferFees> => {
+    const { fee } = chain.row
+    const [gas, fees, surcharge] = await Promise.all([
         client.estimateGas({
             account: call.from,
             to: call.to,
             value: call.value,
             data: call.data,
         }),
-        readEthereumFeePresets(client),
+        readEvmFeePresets(client, chain, networkId),
+        fee.kind === 'eip1559-op-stack'
+            ? readOpStackSurcharge(client, call, fee.gasPriceOracleAddress)
+            : 0n,
     ])
-    return { gas, ...fees }
+    return { gas, ...fees, surcharge }
 }
 
-/** Prices each preset at gas x (base fee + tip), capped at gas x maxFeePerGas, in wei. */
-export const toEthereumFeeEstimate = (
-    fees: EthereumTransferFees,
+/** Prices each preset at gas x (base fee + tip), capped at gas x maxFeePerGas, plus the surcharge, in wei. */
+export const toEvmFeeEstimate = (
+    fees: EvmTransferFees,
     preset: FeePreset,
+    chain: EvmChain,
 ): FeeEstimate => {
     const presets = Object.fromEntries(
         FEE_PRESETS.map(name => {
@@ -116,18 +165,19 @@ export const toEthereumFeeEstimate = (
                     amount: new Decimal(
                         (
                             fees.gas *
-                            (fees.baseFeePerGas + maxPriorityFeePerGas)
+                                (fees.baseFeePerGas + maxPriorityFeePerGas) +
+                            fees.surcharge
                         ).toString(),
                     ),
                     maxAmount: new Decimal(
-                        (fees.gas * maxFeePerGas).toString(),
+                        (fees.gas * maxFeePerGas + fees.surcharge).toString(),
                     ),
                 },
             ]
         }),
     ) as NonNullable<FeeEstimate['presets']>
     return {
-        assetRef: ethereumDescriptor.nativeAsset.ref,
+        assetRef: chain.descriptor.nativeAsset.ref,
         amount: presets[preset].amount,
         presets,
     }

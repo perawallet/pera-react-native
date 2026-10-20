@@ -33,7 +33,8 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { createEthereumAssetsAdapter } from '../adapter'
-import { ETHEREUM_NATIVE_ASSET } from '../native-asset'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+
 import { ASSETS_PATH } from '../api/endpoints'
 import type { AssetItemResponse } from '../api/schema'
 import { peraEvmAssetHandlers, unknownAssetItem } from '../api/msw-handlers'
@@ -47,6 +48,8 @@ import {
     TEST_RPC_URL,
     testChainContext,
 } from '../../__tests__/context'
+
+const ETHEREUM_NATIVE_ASSET = ETHEREUM.nativeAsset
 
 const repository = vi.hoisted(() => ({
     stale: (ids: string[]): string[] => ids,
@@ -165,6 +168,7 @@ describe('getAssetMetadata', () => {
         const { node } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const asset = await ops.getAssetMetadata(ref(USDC), SCOPE)
@@ -193,6 +197,7 @@ describe('getAssetMetadata', () => {
         const { persistence } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -211,6 +216,7 @@ describe('getAssetMetadata', () => {
         const { persistence } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(ops.getAssetMetadata(ref(USDC), SCOPE)).rejects.toThrow()
@@ -225,6 +231,7 @@ describe('getAssetMetadata', () => {
         const { persistence } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(ops.getAssetMetadata(ref(USDC), SCOPE)).rejects.toThrow()
@@ -242,6 +249,7 @@ describe('getAssetMetadata', () => {
         const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         const asset = await ops.getAssetMetadata(ref(DAI), SCOPE)
@@ -273,6 +281,7 @@ describe('getAssetMetadata', () => {
         const { persistence } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(ops.getAssetMetadata(ref(DAI), SCOPE)).rejects.toThrow()
@@ -284,6 +293,7 @@ describe('getAssetMetadata', () => {
         const requests = recordRequests()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(ops.getAssetMetadata(ref(ZERO), SCOPE)).rejects.toThrow()
@@ -294,6 +304,7 @@ describe('getAssetMetadata', () => {
         const requests = recordRequests()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -305,6 +316,7 @@ describe('getAssetMetadata', () => {
     it('returns the native asset without a request', async () => {
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(
@@ -327,6 +339,7 @@ describe('syncAssets', () => {
         )
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets(
@@ -345,6 +358,7 @@ describe('syncAssets', () => {
         const { persistence } = memoryPersistence(() => [])
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([USDC.toLowerCase()].map(ref), SCOPE)
@@ -358,6 +372,7 @@ describe('syncAssets', () => {
         const requests = recordRequests()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets(['not-an-address'].map(ref), SCOPE)
@@ -376,6 +391,7 @@ describe('syncAssets', () => {
         const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
@@ -398,6 +414,7 @@ describe('syncAssets', () => {
         const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
@@ -417,6 +434,7 @@ describe('syncAssets', () => {
         const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([DAI].map(ref), SCOPE)
@@ -441,6 +459,7 @@ describe('syncAssets', () => {
         const { persistence } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([DAI].map(ref), SCOPE)
@@ -453,6 +472,7 @@ describe('syncAssets', () => {
         const { persistence } = memoryPersistence(() => [])
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([ZERO, USDC].map(ref), SCOPE)
@@ -486,6 +506,7 @@ describe('syncAssets', () => {
         const { full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets(ids.map(ref), SCOPE)
@@ -498,6 +519,7 @@ describe('syncAssets', () => {
         const { persistence } = memoryPersistence(() => [])
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await ops.syncAssets([USDC].map(ref), SCOPE)
@@ -508,7 +530,7 @@ describe('syncAssets', () => {
     it('reads the chain without the assets service and leaves failed tokens out', async () => {
         server.use(...rpc({ [USDC]: usdcOnChain }))
         const { persistence, node } = memoryPersistence()
-        const ops = createEthereumAssetsAdapter(testChainContext())
+        const ops = createEthereumAssetsAdapter(testChainContext(), ETHEREUM)
 
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
@@ -522,6 +544,7 @@ describe('syncAssets', () => {
         )
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
 
         await expect(ops.syncAssets([USDC].map(ref), SCOPE)).rejects.toThrow()
@@ -550,6 +573,7 @@ describe('prices', () => {
         )
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
+            ETHEREUM,
         )
 
         const prices = await adapter.getPrices([ref(USDC), ref(DAI)], SCOPE)
@@ -568,6 +592,7 @@ describe('prices', () => {
         )
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
+            ETHEREUM,
         )
         const lower = ref(USDC.toLowerCase())
 
@@ -588,6 +613,7 @@ describe('prices', () => {
         )
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
+            ETHEREUM,
         )
 
         await adapter.getPrices(
@@ -607,6 +633,7 @@ describe('prices', () => {
             const requests = recordRequests()
             const adapter = createEthereumAssetsAdapter(
                 testChainContext({ services }),
+                ETHEREUM,
             )
 
             await expect(
@@ -630,6 +657,7 @@ describe('prices', () => {
         )
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
+            ETHEREUM,
         )
 
         const [price] = await adapter.getPrices([ETH], SCOPE)
@@ -642,6 +670,7 @@ describe('prices', () => {
         server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
         const adapter = createEthereumAssetsAdapter(
             testChainContext({ services: pricedServices }),
+            ETHEREUM,
         )
 
         await expect(adapter.getPrices([ETH], SCOPE)).resolves.toEqual([])
@@ -649,7 +678,7 @@ describe('prices', () => {
 
     it('takes at most one backend request worth of ids per price call', () => {
         expect(
-            createEthereumAssetsAdapter(testChainContext())
+            createEthereumAssetsAdapter(testChainContext(), ETHEREUM)
                 .maxPriceIdsPerRequest,
         ).toBe(500)
     })
@@ -657,7 +686,10 @@ describe('prices', () => {
 
 describe('optional members', () => {
     it('declares no authorities or search, since ERC-20 has no freeze or clawback and the backend has no EVM token search', () => {
-        const adapter = createEthereumAssetsAdapter(testChainContext())
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext(),
+            ETHEREUM,
+        )
 
         expect(adapter.fetchAssetAuthorities).toBeUndefined()
         expect(adapter.search).toBeUndefined()
@@ -674,6 +706,7 @@ describe('foreign scopes and refs', () => {
         const requests = recordRequests()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
         const native = ref(ETHEREUM_NATIVE_ASSET.assetId)
 
@@ -690,6 +723,7 @@ describe('foreign scopes and refs', () => {
         const requests = recordRequests()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
+            ETHEREUM,
         )
         const algorandRef: AssetRef = {
             chainId: 'algorand',
@@ -697,10 +731,10 @@ describe('foreign scopes and refs', () => {
         }
 
         await expect(ops.syncAssets([algorandRef], SCOPE)).rejects.toThrow(
-            'Not an Ethereum asset',
+            'Not an asset on Ethereum',
         )
         await expect(ops.getAssetMetadata(algorandRef, SCOPE)).rejects.toThrow(
-            'Not an Ethereum asset',
+            'Not an asset on Ethereum',
         )
         expect(requests).toEqual([])
         expect(getStaleOrMissingAssetIds).not.toHaveBeenCalled()

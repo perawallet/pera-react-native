@@ -16,7 +16,10 @@ import type {
     DappRequestChainAdapter,
     DappRequestValidation,
 } from '@perawallet/wallet-core-connections'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import {
+    areEvmAddressesEqual,
+    normalizeEvmAddress,
+} from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
 import type { EthereumPersonalSignPayload } from '../signing/messages'
 import { ETHEREUM_WC_V2_METHOD } from './walletConnect'
@@ -39,7 +42,7 @@ const invalid = (message: string): Refusal => ({
 // Non-strict: a lowercase address is common, and its missing checksum is not a refusal.
 const addressOf = (value: unknown): string | undefined =>
     typeof value === 'string' && isAddress(value, { strict: false })
-        ? ethereumAddressCodec.normalize(value)
+        ? normalizeEvmAddress(value)
         : undefined
 
 const signerOf = (
@@ -51,7 +54,7 @@ const signerOf = (
     if (signer === undefined) return invalid(usage)
     if (
         !authorizedAccounts.some(account =>
-            ethereumAddressCodec.areEqual(account, signer),
+            areEvmAddressesEqual(account, signer),
         )
     ) {
         return {

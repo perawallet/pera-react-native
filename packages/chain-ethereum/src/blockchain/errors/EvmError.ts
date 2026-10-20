@@ -13,7 +13,8 @@
 import { BlockchainError } from '@perawallet/wallet-core-shared'
 import { EvmErrorCode, TRAITS } from './evmErrorCodes'
 
-export type EvmErrorParams = { reason?: string }
+/** `symbol` is the chain's native coin, as the insufficient-funds copy names it. */
+export type EvmErrorParams = { reason?: string; symbol?: string }
 
 /**
  * A viem or JSON-RPC failure classified into a stable {@link EvmErrorCode}.

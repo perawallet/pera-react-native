@@ -19,7 +19,7 @@ import type {
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChain } from '../chains/types'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
 
@@ -49,13 +49,17 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
 /** EIP-3326's answer to a chain the wallet does not have; it has no `DappRequestFailure`. */
 const EIP3326_UNRECOGNIZED_CHAIN = 4902
 
-const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
-    ethereumDescriptor.networks.find(network => network.id === networkId)
-        ?.caip2 ?? null
+const caip2ChainIdFor =
+    (chain: EvmChain) =>
+    (networkId: NetworkId): Nullable<string> =>
+        chain.descriptor.networks.find(network => network.id === networkId)
+            ?.caip2 ?? null
 
-const networkForCaip2ChainId = (caip2: string): Nullable<NetworkId> =>
-    ethereumDescriptor.networks.find(network => network.caip2 === caip2)?.id ??
-    null
+const networkForCaip2ChainId =
+    (chain: EvmChain) =>
+    (caip2: string): Nullable<NetworkId> =>
+        chain.descriptor.networks.find(network => network.caip2 === caip2)
+            ?.id ?? null
 
 const firstPositional = (params: unknown): unknown => {
     if (!Array.isArray(params)) return params
@@ -73,7 +77,10 @@ const requestedChainId = (params: unknown): Nullable<bigint> => {
         : null
 }
 
-const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
+const routeSwitch = (
+    chain: EvmChain,
+    params: unknown,
+): WalletConnectRequestRoute => {
     const requested = requestedChainId(params)
     if (requested === null) {
         return {
@@ -84,7 +91,7 @@ const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
             },
         }
     }
-    const networkId = networkForCaip2ChainId(
+    const networkId = networkForCaip2ChainId(chain)(
         `${ETHEREUM_CAIP2_NAMESPACE}:${requested}`,
     )
     if (networkId === null) {
@@ -115,7 +122,9 @@ const METHODS = [
     ETHEREUM_WC_V2_METHOD.chainId,
 ] as const
 
-const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
+const createV2 = (
+    chain: EvmChain,
+): NonNullable<DappRequestChainAdapter['walletConnect']['v2']> => ({
     methods: METHODS,
     signingMethods: SIGNING_METHODS,
     handleRequest: (method, params) => {
@@ -134,7 +143,7 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
                 return { kind: 'operation', type: 'sign-typed-data', params }
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
-                return routeSwitch(params)
+                return routeSwitch(chain, params)
             }
             case ETHEREUM_WC_V2_METHOD.accounts:
             case ETHEREUM_WC_V2_METHOD.requestAccounts: {
@@ -147,7 +156,10 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
                 return {
                     kind: 'public-data',
                     answer: (_addresses, networkId) => {
-                        const eip155ChainId = eip155ChainIdOfNetwork(networkId)
+                        const eip155ChainId = eip155ChainIdOfNetwork(
+                            chain,
+                            networkId,
+                        )
                         return eip155ChainId === undefined
                             ? null
                             : numberToHex(eip155ChainId)
@@ -161,30 +173,31 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
     },
     sessionEvents: {
         chainChangedData: networkId => {
-            const eip155ChainId = eip155ChainIdOfNetwork(networkId)
+            const eip155ChainId = eip155ChainIdOfNetwork(chain, networkId)
             return eip155ChainId === undefined
                 ? null
                 : numberToHex(eip155ChainId)
         },
     },
-}
+})
 
-export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnect'] =
-    {
-        namespace: ETHEREUM_CAIP2_NAMESPACE,
-        caip2ChainIdFor,
-        networkForCaip2ChainId,
-        toWireResult: result => {
-            if (result.type === 'send-transaction') return result.txId
-            if (result.type === 'switch-network') return null
-            if (
-                result.type === 'sign-message' ||
-                result.type === 'sign-typed-data'
-            ) {
-                return bytesToHex(result.signature)
-            }
-            throw new Error(`Ethereum answers no ${result.type} result`)
-        },
-        toWireErrorCode: failure => EIP_1193_CODE[failure],
-        v2,
-    }
+export const createEvmWalletConnectSupport = (
+    chain: EvmChain,
+): DappRequestChainAdapter['walletConnect'] => ({
+    namespace: ETHEREUM_CAIP2_NAMESPACE,
+    caip2ChainIdFor: caip2ChainIdFor(chain),
+    networkForCaip2ChainId: networkForCaip2ChainId(chain),
+    toWireResult: result => {
+        if (result.type === 'send-transaction') return result.txId
+        if (result.type === 'switch-network') return null
+        if (
+            result.type === 'sign-message' ||
+            result.type === 'sign-typed-data'
+        ) {
+            return bytesToHex(result.signature)
+        }
+        throw new Error(`An EVM chain answers no ${result.type} result`)
+    },
+    toWireErrorCode: failure => EIP_1193_CODE[failure],
+    v2: createV2(chain),
+})

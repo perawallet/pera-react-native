@@ -15,14 +15,13 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { ETHEREUM_CHAIN_ID } from '../../chain-id'
-import { ethereumDescriptor } from '../../descriptor'
+import type { EvmChain } from '../../chains/types'
 
 export class UnknownEvmNetworkError extends Error {
     readonly scope: ChainScope
 
     constructor(scope: ChainScope) {
-        super(`${scope.chainId}/${scope.networkId} is not an Ethereum network`)
+        super(`${scope.chainId}/${scope.networkId} is not an EVM network`)
         this.name = 'UnknownEvmNetworkError'
         this.scope = scope
     }
@@ -40,52 +39,62 @@ export class InvalidCaip19Error extends Error {
     }
 }
 
-const NATIVE_ASSET_ID = ethereumDescriptor.nativeAsset.ref.assetId
-// SLIP-44 coin type of Ether.
-const ETHER_SLIP44 = '60'
 const CAIP19_PATTERN = /^eip155:(\d+)\/(erc20|slip44):([^/]+)$/
 
 export const eip155ChainIdOfNetwork = (
+    chain: EvmChain,
     networkId: NetworkId | undefined,
 ): number | undefined => {
-    const nativeRef = ethereumDescriptor.networks.find(
+    const nativeRef = chain.descriptor.networks.find(
         n => n.id === networkId,
     )?.nativeRef
     return nativeRef?.kind === 'evm' ? nativeRef.eip155ChainId : undefined
 }
 
-export const networkIdOfEip155ChainId = (
+export const networkIdOf = (
+    chain: EvmChain,
     eip155ChainId: number,
 ): NetworkId | undefined =>
-    ethereumDescriptor.networks.find(
+    chain.descriptor.networks.find(
         n =>
             n.nativeRef.kind === 'evm' &&
             n.nativeRef.eip155ChainId === eip155ChainId,
     )?.id
 
-export const eip155ChainIdOf = (scope: ChainScope): number => {
-    const eip155ChainId = eip155ChainIdOfNetwork(scope.networkId)
-    if (scope.chainId !== ETHEREUM_CHAIN_ID || eip155ChainId === undefined) {
+export const eip155ChainIdOf = (scope: ChainScope, chain: EvmChain): number => {
+    const eip155ChainId = eip155ChainIdOfNetwork(chain, scope.networkId)
+    if (scope.chainId !== chain.row.id || eip155ChainId === undefined) {
         throw new UnknownEvmNetworkError(scope)
     }
     return eip155ChainId
 }
 
 /** The backend's id for an app asset id; ERC-20 addresses go out lowercase. */
-export const toCaip19 = (assetId: string, scope: ChainScope): string => {
-    const chainId = eip155ChainIdOf(scope)
-    if (assetId === NATIVE_ASSET_ID)
-        return `eip155:${chainId}/slip44:${ETHER_SLIP44}`
+export const toCaip19 = (
+    assetId: string,
+    scope: ChainScope,
+    chain: EvmChain,
+): string => {
+    const chainId = eip155ChainIdOf(scope, chain)
+    if (assetId === chain.nativeAsset.assetId)
+        return `eip155:${chainId}/slip44:${chain.row.nativeAsset.slip44}`
     return `eip155:${chainId}/erc20:${getAddress(assetId).toLowerCase()}`
 }
 
 /** The app asset id (checksummed address, or the native id) for a backend id on the scope's chain. */
-export const fromCaip19 = (caip19: string, scope: ChainScope): string => {
-    const chainId = eip155ChainIdOf(scope)
+export const fromCaip19 = (
+    caip19: string,
+    scope: ChainScope,
+    chain: EvmChain,
+): string => {
+    const chainId = eip155ChainIdOf(scope, chain)
     const [, idChain, namespace, reference] = CAIP19_PATTERN.exec(caip19) ?? []
     if (idChain === String(chainId)) {
-        if (namespace === 'slip44' && reference === ETHER_SLIP44) {
-            return NATIVE_ASSET_ID
+        if (
+            namespace === 'slip44' &&
+            reference === chain.row.nativeAsset.slip44
+        ) {
+            return chain.nativeAsset.assetId
         }
         if (namespace === 'erc20' && reference && isAddress(reference)) {
             return getAddress(reference)

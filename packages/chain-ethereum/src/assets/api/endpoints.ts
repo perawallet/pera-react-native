@@ -14,6 +14,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
+import type { EvmChain } from '../../chains/types'
 import {
     assetsResponseSchema,
     whitelistResponseSchema,
@@ -37,10 +38,11 @@ export const whitelistPath = (eip155ChainId: number | string): string =>
  */
 export const fetchAssetItems = async (
     scope: ChainScope,
+    chain: EvmChain,
     assetIds: string[],
 ): Promise<AssetItemSchemaOutput[]> => {
     if (assetIds.length === 0) return []
-    const ids = assetIds.map(id => toCaip19(id, scope))
+    const ids = assetIds.map(id => toCaip19(id, scope, chain))
     const { data } = await queryClient<unknown>({
         backend: 'pera',
         service: ASSETS_SERVICE,
@@ -73,15 +75,16 @@ export const fetchAssetItems = async (
  */
 export const fetchWhitelist = async (
     scope: ChainScope,
+    chain: EvmChain,
 ): Promise<WhitelistRow[]> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
         service: ASSETS_SERVICE,
         scope,
         method: 'GET',
-        url: whitelistPath(eip155ChainIdOf(scope)),
+        url: whitelistPath(eip155ChainIdOf(scope, chain)),
         headers: buildIntegrityHeaders(),
     })
     const { results } = whitelistResponseSchema.parse(data)
-    return results.flatMap(row => toWhitelistRow(row, scope) ?? [])
+    return results.flatMap(row => toWhitelistRow(row, scope, chain) ?? [])
 }

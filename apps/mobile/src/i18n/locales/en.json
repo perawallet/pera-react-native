@@ -1105,8 +1105,8 @@
                 "body": "A pending transaction from this account can only be replaced with a higher network fee. Wait for it to complete, or try again with a higher fee."
             },
             "insufficient_funds": {
-                "title": "Insufficient ETH",
-                "body": "This account doesn't have enough ETH to cover the amount and the network fee. Add more ETH and try again."
+                "title": "Insufficient {{symbol}}",
+                "body": "This account doesn't have enough {{symbol}} to cover the amount and the network fee. Add more {{symbol}} and try again."
             },
             "rate_limited": {
                 "title": "Network busy",

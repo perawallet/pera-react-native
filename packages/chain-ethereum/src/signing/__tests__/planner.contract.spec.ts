@@ -16,11 +16,20 @@ import {
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
-import { ethereumPlannerAdapter } from '../adapter'
+import { createEvmPlannerAdapter } from '../adapter'
+import {
+    eip155IdOf,
+    EVM_TEST_CHAINS,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
 import { SENDER, TRANSFER, createVectorKeyStore } from './fixtures'
 
-const transferFrom = (payload: unknown): UnsignedTransaction => ({
-    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+const transferFrom = (
+    chain: EvmChain,
+    payload: unknown,
+): UnsignedTransaction => ({
+    scope: evmScopeOf(chain),
     payload,
     summary: {
         kind: 'transfer',
@@ -33,14 +42,20 @@ const transferFrom = (payload: unknown): UnsignedTransaction => ({
 
 const { kms } = createVectorKeyStore()
 
-transactionPlannerContractTests(() => ethereumPlannerAdapter, {
-    transaction: transferFrom({ from: SENDER, transaction: TRANSFER }),
-    otherTransaction: transferFrom({
-        from: SENDER,
-        transaction: { ...TRANSFER, nonce: 2 },
-    }),
-    malformedTransaction: transferFrom({ transaction: TRANSFER }),
-    sign: request =>
-        kms.sign('kms-entry-1', request.payload, SIGNING_ACCESS_DOMAIN),
-    stranger: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-})
+for (const chain of EVM_TEST_CHAINS) {
+    const transfer = { ...TRANSFER, chainId: eip155IdOf(chain) }
+    transactionPlannerContractTests(() => createEvmPlannerAdapter(chain), {
+        transaction: transferFrom(chain, {
+            from: SENDER,
+            transaction: transfer,
+        }),
+        otherTransaction: transferFrom(chain, {
+            from: SENDER,
+            transaction: { ...transfer, nonce: 2 },
+        }),
+        malformedTransaction: transferFrom(chain, { transaction: transfer }),
+        sign: request =>
+            kms.sign('kms-entry-1', request.payload, SIGNING_ACCESS_DOMAIN),
+        stranger: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    })
+}

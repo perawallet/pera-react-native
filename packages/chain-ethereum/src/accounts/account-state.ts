@@ -22,8 +22,8 @@ import type {
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { isPeraNetworkError } from '@perawallet/wallet-core-shared'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
+import type { EvmChain } from '../chains/types'
 import { ASSETS_SERVICE, fetchWhitelist } from '../assets/api/endpoints'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances, type HolderBalances } from '../blockchain/utils/erc20'
@@ -41,9 +41,7 @@ export type EthereumAccountStateOps = Required<
         | 'checkActivity'
         | 'fetchChangeSignal'
     >
-> & { readonly chainId: typeof ETHEREUM_CHAIN_ID }
-
-const NATIVE_ASSET_ID = ethereumDescriptor.nativeAsset.ref.assetId
+> & { readonly chainId: EvmChainId }
 
 // The backend caches the whitelist for the same window, so a fresher read
 // would see the same list.
@@ -55,10 +53,11 @@ type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
 
 const readFootprint = async (
     ctx: ChainContext,
+    chain: EvmChain,
     address: string,
     scope: ChainScope,
 ) => {
-    const client = createEvmClient(scope, ctx)
+    const client = createEvmClient(scope, ctx, chain)
     const [balance, nonce] = await Promise.all([
         client.getBalance({ address: address as Address }),
         client.getTransactionCount({ address: address as Address }),
@@ -66,14 +65,19 @@ const readFootprint = async (
     return balance > 0n || nonce > 0
 }
 
-const fetchListedTokenIds: ListedTokenIds = async scope => {
-    const rows = await fetchWhitelist(scope)
-    // The native row is skipped: eth_getBalance reads it.
-    return rows.filter(row => row.type === 'erc20').map(row => row.assetId)
-}
+const fetchListedTokenIds =
+    (chain: EvmChain): ListedTokenIds =>
+    async scope => {
+        const rows = await fetchWhitelist(scope, chain)
+        // The native row is skipped: eth_getBalance reads it.
+        return rows.filter(row => row.type === 'erc20').map(row => row.assetId)
+    }
 
 /** Concurrent reads of a scope share one request; a success is reused for the TTL, a failure is not kept. */
-const cachedListedTokenIds = (now: () => number): ListedTokenIds => {
+const cachedListedTokenIds = (
+    now: () => number,
+    chain: EvmChain,
+): ListedTokenIds => {
     const entries = new Map<string, WhitelistEntry>()
     return scope => {
         const key = `${scope.chainId}/${scope.networkId}`
@@ -86,7 +90,7 @@ const cachedListedTokenIds = (now: () => number): ListedTokenIds => {
             return cached.tokenIds
         }
         const entry: WhitelistEntry = {
-            tokenIds: fetchListedTokenIds(scope),
+            tokenIds: fetchListedTokenIds(chain)(scope),
         }
         entries.set(key, entry)
         entry.tokenIds.then(
@@ -113,6 +117,7 @@ type PendingRead = {
 }
 
 const toSnapshot = (
+    nativeAssetId: string,
     { wei, tokens }: HolderBalances,
     latest: number,
     pending: number,
@@ -129,7 +134,7 @@ const toSnapshot = (
         nativeBalanceBaseUnits: baseUnits,
         chainState: { family: 'evm', nonce: { latest, pending } },
         holdings: [
-            { assetId: NATIVE_ASSET_ID, amount: baseUnits },
+            { assetId: nativeAssetId, amount: baseUnits },
             ...tokenHoldings,
         ],
         observedRound: Number(blockNumber),
@@ -144,11 +149,12 @@ const toSnapshot = (
  */
 const readBatch = async (
     ctx: ChainContext,
+    chain: EvmChain,
     listedTokenIds: ListedTokenIds,
     scope: ChainScope,
     reads: PendingRead[],
 ): Promise<void> => {
-    const client = createEvmClient(scope, ctx)
+    const client = createEvmClient(scope, ctx, chain)
     const hasWhitelist = ctx.getPeraBackend(scope).services.has(ASSETS_SERVICE)
     const [blockNumber, tokenIds] = await Promise.all([
         client.getBlockNumber(),
@@ -188,6 +194,7 @@ const readBatch = async (
         const [latest, pending] = nonce.value
         read.resolve(
             toSnapshot(
+                chain.nativeAsset.assetId,
                 balances.get(getAddress(read.address))!,
                 latest,
                 pending,
@@ -199,6 +206,7 @@ const readBatch = async (
 
 const coalescedAccountReads = (
     ctx: ChainContext,
+    chain: EvmChain,
     listedTokenIds: ListedTokenIds,
     windowMs: number,
 ): EthereumAccountStateOps['fetchAccountState'] => {
@@ -210,7 +218,7 @@ const coalescedAccountReads = (
         const batch = batches.get(key)
         batches.delete(key)
         if (!batch) return
-        readBatch(ctx, listedTokenIds, batch.scope, batch.reads).catch(
+        readBatch(ctx, chain, listedTokenIds, batch.scope, batch.reads).catch(
             (error: unknown) => {
                 batch.reads.forEach(read => read.reject(error))
             },
@@ -240,10 +248,13 @@ const isRefusedCredential = (error: unknown): boolean =>
 
 const readHeadSignal = async (
     ctx: ChainContext,
+    chain: EvmChain,
     scope: ChainScope,
     cursor: number | null,
 ): Promise<AccountChangeSignal> => {
-    const head = Number(await createEvmClient(scope, ctx).getBlockNumber())
+    const head = Number(
+        await createEvmClient(scope, ctx, chain).getBlockNumber(),
+    )
     if (cursor === null) return { changed: true, cursor: head }
     // A lagging node can report a head behind the cursor; never move it back.
     return { changed: head > cursor, cursor: Math.max(head, cursor) }
@@ -251,6 +262,7 @@ const readHeadSignal = async (
 
 const fetchChangeSignal = (
     ctx: ChainContext,
+    chain: EvmChain,
 ): EthereumAccountStateOps['fetchChangeSignal'] => {
     // A refused key or integrity token won't fix itself before a restart, so
     // the scope stops asking and follows the RPC head instead.
@@ -263,15 +275,15 @@ const fetchChangeSignal = (
         ) {
             // Plain JSON-RPC can't say which addresses a block touched, so
             // any new block counts as a change.
-            return readHeadSignal(ctx, scope, cursor)
+            return readHeadSignal(ctx, chain, scope, cursor)
         }
         let answer: ShouldRefreshResponse
         try {
-            answer = await fetchShouldRefresh(scope, addresses, cursor)
+            answer = await fetchShouldRefresh(scope, chain, addresses, cursor)
         } catch (error) {
             if (!isRefusedCredential(error)) throw error
             refusedScopes.add(key)
-            return readHeadSignal(ctx, scope, cursor)
+            return readHeadSignal(ctx, chain, scope, cursor)
         }
         if (answer.refresh && answer.round !== undefined) {
             return {
@@ -288,7 +300,7 @@ const fetchChangeSignal = (
         // The backend omits round when it fails open, so the cursor stays
         // put, or seeds from the head on a never-synced scope.
         if (cursor !== null) return { changed: true, cursor }
-        return readHeadSignal(ctx, scope, null)
+        return readHeadSignal(ctx, chain, scope, null)
     }
 }
 
@@ -298,18 +310,21 @@ const fetchChangeSignal = (
  */
 export const createEthereumAccountStateOps = (
     ctx: ChainContext,
+    chain: EvmChain,
     {
         now = Date.now,
         readWindowMs = ACCOUNT_READ_WINDOW_MS,
     }: { now?: () => number; readWindowMs?: number } = {},
 ): EthereumAccountStateOps => ({
-    chainId: ETHEREUM_CHAIN_ID,
+    chainId: chain.row.id,
     fetchAccountState: coalescedAccountReads(
         ctx,
-        cachedListedTokenIds(now),
+        chain,
+        cachedListedTokenIds(now, chain),
         readWindowMs,
     ),
-    accountExists: (address, scope) => readFootprint(ctx, address, scope),
+    accountExists: (address, scope) =>
+        readFootprint(ctx, chain, address, scope),
     checkActivity: async (addresses, scope) =>
         new Map(
             await Promise.all(
@@ -317,12 +332,15 @@ export const createEthereumAccountStateOps = (
                     async address =>
                         [
                             address,
-                            await readFootprint(ctx, address, scope).catch(
-                                () => false,
-                            ),
+                            await readFootprint(
+                                ctx,
+                                chain,
+                                address,
+                                scope,
+                            ).catch(() => false),
                         ] as const,
                 ),
             ),
         ),
-    fetchChangeSignal: fetchChangeSignal(ctx),
+    fetchChangeSignal: fetchChangeSignal(ctx, chain),
 })

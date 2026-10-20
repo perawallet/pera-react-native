@@ -188,14 +188,18 @@ describe('toEvmError', () => {
             params: {},
         },
     ])('maps $name to $code', ({ error, code, params }) => {
-        const result = toEvmError(error)
+        const result = toEvmError(error, 'ETH')
 
         expect(result).toBeInstanceOf(EvmError)
         expect(result.code).toBe(code)
-        expect(result.params).toEqual(params)
+        expect(result.params).toEqual({ ...params, symbol: 'ETH' })
         expect(result.metadata.messageKey).toBe(`errors.evm.${code}.body`)
         expect(result.metadata.titleKey).toBe(`errors.evm.${code}.title`)
-        expect(result.metadata.params).toEqual({ code, ...params })
+        expect(result.metadata.params).toEqual({
+            code,
+            ...params,
+            symbol: 'ETH',
+        })
         expect(result.originalError).toBe(error)
     })
 
@@ -207,15 +211,22 @@ describe('toEvmError', () => {
         },
         { name: 'a non-Error value', error: 'kaboom' },
     ])('keeps the generic blockchain key for $name', ({ error }) => {
-        const result = toEvmError(error)
+        const result = toEvmError(error, 'ETH')
 
         expect(result.code).toBe('unknown')
         expect(result.metadata.messageKey).toBe('errors.blockchain.generic')
         expect(result.metadata.titleKey).toBeUndefined()
     })
 
+    it("names the chain's native coin in the insufficient-funds copy", () => {
+        const result = toEvmError(wrapped(new InsufficientFundsError()), 'BNB')
+
+        expect(result.code).toBe('insufficient_funds')
+        expect(result.metadata.params).toMatchObject({ symbol: 'BNB' })
+    })
+
     it('classifies as a blockchain error so crash reporting can group it', () => {
-        const result = toEvmError(wrapped(new InsufficientFundsError()))
+        const result = toEvmError(wrapped(new InsufficientFundsError()), 'ETH')
 
         expect(result).toBeInstanceOf(BlockchainError)
         expect(result.name).toBe('EvmError')
@@ -225,6 +236,7 @@ describe('toEvmError', () => {
     it('treats rate limiting as an expected, retryable, unreported failure', () => {
         const result = toEvmError(
             new HttpRequestError({ status: 429, url: URL }),
+            'ETH',
         )
 
         expect(result.metadata).toMatchObject({
@@ -245,6 +257,6 @@ describe('toEvmError', () => {
     it('returns an EvmError unchanged', () => {
         const error = new EvmError('nonce_too_low')
 
-        expect(toEvmError(error)).toBe(error)
+        expect(toEvmError(error, 'ETH')).toBe(error)
     })
 })

@@ -19,7 +19,13 @@ import {
     type UnsignedTransaction,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumReviewerAdapter } from '../review'
+import { createEthereumReviewer } from '../review'
+import {
+    eip155IdOf,
+    EVM_TEST_CHAINS,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
 import { SENDER, TRANSFER } from './fixtures'
 
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -42,36 +48,52 @@ const APPROVE: TransactionSerializableEIP1559 = {
     gas: 60_000n,
 }
 
-const unsigned = (
-    transaction: TransactionSerializableEIP1559,
-    from: string = SENDER,
-): UnsignedTransaction => ({
-    scope: { chainId: 'ethereum', networkId: 'mainnet' },
-    payload: { from, transaction },
-    summary: {
-        kind: 'contract-call',
-        title: { key: i18nKey('test') },
-        direction: 'none',
-        icon: 'contract-call',
-    },
-    chainData: { family: 'evm' },
-})
+const unsignedOn =
+    (chain: EvmChain) =>
+    (
+        transaction: TransactionSerializableEIP1559,
+        from: string = SENDER,
+    ): UnsignedTransaction => ({
+        scope: evmScopeOf(chain),
+        payload: {
+            from,
+            transaction: {
+                ...transaction,
+                chainId:
+                    transaction.chainId === TRANSFER.chainId
+                        ? eip155IdOf(chain)
+                        : transaction.chainId,
+            },
+        },
+        summary: {
+            kind: 'contract-call',
+            title: { key: i18nKey('test') },
+            direction: 'none',
+            icon: 'contract-call',
+        },
+        chainData: { family: 'evm' },
+    })
 
-transactionReviewerContractTests(() => ethereumReviewerAdapter, {
-    context: {
-        scope: { chainId: 'ethereum', networkId: 'mainnet' },
-        heldAddresses: [SENDER],
-        isWalletBuilt: false,
-        capabilities: NO_CAPABILITIES,
-    },
-    signer: SENDER,
-    plainGroup: [
-        unsigned(TRANSFER),
-        unsigned({ ...TRANSFER, nonce: 1, to: SECOND_RECIPIENT }),
-    ],
-    riskyGroup: [unsigned(APPROVE)],
-    foreignGroup: [unsigned(APPROVE, STRANGER)],
-    opaqueGroup: [unsigned(APPROVE)],
-    opaqueAutoApproves: false,
-    wrongNetworkGroup: [unsigned({ ...TRANSFER, chainId: 11_155_111 })],
-})
+for (const chain of EVM_TEST_CHAINS) {
+    const unsigned = unsignedOn(chain)
+    transactionReviewerContractTests(() => createEthereumReviewer({ chain }), {
+        context: {
+            scope: evmScopeOf(chain),
+            heldAddresses: [SENDER],
+            isWalletBuilt: false,
+            capabilities: NO_CAPABILITIES,
+        },
+        signer: SENDER,
+        plainGroup: [
+            unsigned(TRANSFER),
+            unsigned({ ...TRANSFER, nonce: 1, to: SECOND_RECIPIENT }),
+        ],
+        riskyGroup: [unsigned(APPROVE)],
+        foreignGroup: [unsigned(APPROVE, STRANGER)],
+        opaqueGroup: [unsigned(APPROVE)],
+        opaqueAutoApproves: false,
+        wrongNetworkGroup: [
+            unsigned({ ...TRANSFER, chainId: eip155IdOf(chain, 'testnet') }),
+        ],
+    })
+}

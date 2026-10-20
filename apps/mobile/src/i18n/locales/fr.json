@@ -1105,8 +1105,8 @@
                 "body": "Une transaction en attente de ce compte ne peut être remplacée qu’avec des frais de réseau plus élevés. Attendez qu’elle soit terminée, ou réessayez avec des frais plus élevés."
             },
             "insufficient_funds": {
-                "title": "ETH insuffisant",
-                "body": "Ce compte ne dispose pas d’assez d’ETH pour couvrir le montant et les frais de réseau. Ajoutez plus d’ETH, puis réessayez."
+                "title": "{{symbol}} insuffisant",
+                "body": "Ce compte ne dispose pas d’assez de {{symbol}} pour couvrir le montant et les frais de réseau. Ajoutez plus de {{symbol}}, puis réessayez."
             },
             "rate_limited": {
                 "title": "Réseau saturé",

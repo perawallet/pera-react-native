@@ -14,7 +14,7 @@ import {
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
 
 const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 
@@ -26,7 +26,7 @@ export const sendSummary = (
     to: string,
     amount: NonNullable<TransactionSummary['amount']>,
 ): TransactionSummary => {
-    const isSelf = ethereumAddressCodec.areEqual(from, to)
+    const isSelf = areEvmAddressesEqual(from, to)
     return {
         kind,
         title: { key: SEND_TITLE_KEY },

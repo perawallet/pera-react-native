@@ -21,7 +21,10 @@ import {
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
 import { transactionDigest } from '../digests'
-import { ethereumPlannerAdapter } from '../adapter'
+import { createEvmPlannerAdapter } from '../adapter'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
+
+const ethereumPlannerAdapter = createEvmPlannerAdapter(ETHEREUM)
 import {
     SENDER,
     TRANSFER,
@@ -142,12 +145,12 @@ describe('ethereumPlannerAdapter', () => {
         [
             'another chain',
             { scope: { chainId: 'algorand', networkId: 'mainnet' } },
-            'Not an Ethereum transaction: algorand/evm',
+            'Not a transaction for Ethereum: algorand/evm',
         ],
         [
             'another family',
             { chainData: { family: 'algorand' } },
-            'Not an Ethereum transaction: ethereum/algorand',
+            'Not a transaction for Ethereum: ethereum/algorand',
         ],
     ] as const)('refuses %s', (_label, overrides, message) => {
         const input = unsigned(TRANSFER, overrides as never)
@@ -166,7 +169,7 @@ describe('ethereumPlannerAdapter', () => {
         const input = unsigned(TRANSFER, { payload })
 
         expect(() => plan(input)).toThrow(
-            'The Ethereum transaction payload is malformed',
+            'The EVM transaction payload is malformed',
         )
     })
 
@@ -178,7 +181,7 @@ describe('ethereumPlannerAdapter', () => {
         ['another scheme', [signature({ scheme: 'ed25519' })]],
     ])('refuses %s', (_label, signatures) => {
         expect(() => assemble(unsigned(TRANSFER), signatures)).toThrow(
-            'An Ethereum transaction takes exactly one secp256k1 signature, from its sender',
+            'An EVM transaction takes exactly one secp256k1 signature, from its sender',
         )
     })
 
@@ -188,5 +191,30 @@ describe('ethereumPlannerAdapter', () => {
                 signature({ bytes: new Uint8Array(64) }),
             ]),
         ).toThrow('The key store returned a malformed secp256k1 signature')
+    })
+})
+
+describe('the Base planner', () => {
+    const base = createEvmPlannerAdapter(BASE)
+    const onBase = (chainId: number) =>
+        unsigned(
+            { ...TRANSFER, chainId },
+            { scope: { chainId: 'base', networkId: 'mainnet' } },
+        )
+
+    it('plans a transaction for its own EIP-155 id', () => {
+        expect(base.plan(onBase(8453))).toHaveLength(1)
+    })
+
+    it("refuses a payload whose chain id isn't its scope's", () => {
+        expect(() => base.plan(onBase(1))).toThrow(
+            'The transaction is for EIP-155 chain 1, not mainnet',
+        )
+    })
+
+    it("refuses another chain's scope", () => {
+        expect(() => base.plan(unsigned(TRANSFER))).toThrow(
+            'Not a transaction for Base: ethereum/evm',
+        )
     })
 })

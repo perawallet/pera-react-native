@@ -117,7 +117,7 @@ describe('useErrorToast with EVM errors', () => {
     })
 
     it('keeps the generic blockchain copy for an unknown error', () => {
-        showError(toEvmError(new Error('socket hang up')))
+        showError(toEvmError(new Error('socket hang up'), 'ETH'))
 
         expect(mockShowToast).toHaveBeenCalledWith(
             {

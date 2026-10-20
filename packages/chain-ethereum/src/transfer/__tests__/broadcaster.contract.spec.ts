@@ -23,7 +23,8 @@ import {
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
-import { createEthereumBroadcasterAdapter } from '../broadcaster'
+import { EVM_TEST_CHAINS, evmScopeOf } from '../../__tests__/evm-chains'
+import { createEvmBroadcasterAdapter } from '../broadcaster'
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -35,36 +36,43 @@ const HASH = keccak256(VIEM_TRANSFER_NONCE_0)
 const useRpc = (responses: EvmRpcFixtures['responses'] = {}) =>
     server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL, responses }))
 
-const adapter = createEthereumBroadcasterAdapter(testChainContext(), {
-    confirmationTimeoutMs: 200,
-})
+for (const chain of EVM_TEST_CHAINS) {
+    const adapter = createEvmBroadcasterAdapter(
+        testChainContext({ chain }),
+        chain,
+        {
+            confirmationTimeoutMs: 200,
+        },
+    )
 
-broadcasterContractTests(() => adapter, {
-    scope: { chainId: 'ethereum', networkId: 'mainnet' },
-    signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
-    txIds: [HASH],
-    arrangeAccepted: () => useRpc(),
-    arrangeAlreadyKnown: () =>
-        useRpc({
-            eth_sendRawTransaction: new EvmRpcErrorFixture(
-                -32000,
-                'already known',
-            ),
-        }),
-    arrangeRejected: () =>
-        useRpc({
-            eth_sendRawTransaction: new EvmRpcErrorFixture(
-                -32000,
-                'insufficient funds for gas * price + value',
-            ),
-        }),
-    arrangeUnreachable: () =>
-        server.use(http.post(TEST_RPC_URL, () => HttpResponse.error())),
-    arrangeConfirmed: () =>
-        useRpc({
-            eth_getTransactionReceipt: evmTransactionReceipt({
-                transactionHash: HASH,
+    broadcasterContractTests(() => adapter, {
+        scope: evmScopeOf(chain),
+        signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
+        txIds: [HASH],
+        arrangeAccepted: () => useRpc(),
+        arrangeAlreadyKnown: () =>
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'already known',
+                ),
             }),
-        }),
-    arrangeNeverConfirmed: () => useRpc({ eth_getTransactionReceipt: null }),
-})
+        arrangeRejected: () =>
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'insufficient funds for gas * price + value',
+                ),
+            }),
+        arrangeUnreachable: () =>
+            server.use(http.post(TEST_RPC_URL, () => HttpResponse.error())),
+        arrangeConfirmed: () =>
+            useRpc({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                }),
+            }),
+        arrangeNeverConfirmed: () =>
+            useRpc({ eth_getTransactionReceipt: null }),
+    })
+}

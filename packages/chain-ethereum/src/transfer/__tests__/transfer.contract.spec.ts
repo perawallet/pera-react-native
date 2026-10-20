@@ -15,9 +15,11 @@ import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { transferContractTests } from '@perawallet/wallet-core-transactions/testing'
+import { toHex } from 'viem'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { createEthereumTransferAdapter } from '../builder'
+import { EVM_TEST_CHAINS, evmScopeOf } from '../../__tests__/evm-chains'
+import { createEvmTransferAdapter } from '../builder'
 
 const mocks = vi.hoisted(() => ({ getAccountChainStateRow: vi.fn() }))
 
@@ -40,51 +42,59 @@ const SENDER = '0x00000000000000000000000000000000000000aa'
 const RECEIVER = '0x00000000000000000000000000000000000000bb'
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
-const SENDER_ACCOUNT: WalletAccount = {
-    id: 'sender',
-    custody: { kind: 'watch' },
-    chains: { ethereum: { address: SENDER } },
-}
-const NATIVE_BALANCE = new Decimal('2000000000000000000')
-
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const adapter = createEthereumTransferAdapter(testChainContext())
+for (const chain of EVM_TEST_CHAINS) {
+    const SENDER_ACCOUNT: WalletAccount = {
+        id: 'sender',
+        custody: { kind: 'watch' },
+        chains: { [chain.row.id]: { address: SENDER } },
+    }
+    const NATIVE_BALANCE = new Decimal('2000000000000000000')
 
-transferContractTests(() => adapter, {
-    context: { scope: { chainId: 'ethereum', networkId: 'mainnet' } },
-    nativeTransfer: {
-        kind: 'transfer',
-        from: SENDER,
-        to: RECEIVER,
-        assetRef: { chainId: 'ethereum', assetId: 'native' },
-        amount: new Decimal('1000000000000000000'),
-    },
-    tokenTransfer: {
-        kind: 'transfer',
-        from: SENDER,
-        to: RECEIVER,
-        assetRef: { chainId: 'ethereum', assetId: USDC },
-        amount: new Decimal(250),
-    },
-    spendable: {
-        account: SENDER_ACCOUNT,
-        nativeBalance: NATIVE_BALANCE,
-        fee: new Decimal('21000000000000'),
-        hasReserve: false,
-    },
-    arrange: () => {
-        server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL }))
-        mocks.getAccountChainStateRow.mockResolvedValue({
-            accountAddress: SENDER,
+    const adapter = createEvmTransferAdapter(testChainContext({ chain }), chain)
+
+    transferContractTests(() => adapter, {
+        context: { scope: evmScopeOf(chain) },
+        nativeTransfer: {
+            kind: 'transfer',
+            from: SENDER,
+            to: RECEIVER,
+            assetRef: { chainId: chain.row.id, assetId: 'native' },
+            amount: new Decimal('1000000000000000000'),
+        },
+        tokenTransfer: {
+            kind: 'transfer',
+            from: SENDER,
+            to: RECEIVER,
+            assetRef: { chainId: chain.row.id, assetId: USDC },
+            amount: new Decimal(250),
+        },
+        spendable: {
+            account: SENDER_ACCOUNT,
             nativeBalance: NATIVE_BALANCE,
-            chainData: {
-                family: 'evm',
-                nonce: { latest: 0, pending: 0 },
-            },
-        })
-    },
-})
+            fee: new Decimal('21000000000000'),
+            hasReserve: false,
+        },
+        arrange: () => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    // An OP-stack chain's gas price oracle reads go through eth_call.
+                    responses: { eth_call: toHex(1000n, { size: 32 }) },
+                }),
+            )
+            mocks.getAccountChainStateRow.mockResolvedValue({
+                accountAddress: SENDER,
+                nativeBalance: NATIVE_BALANCE,
+                chainData: {
+                    family: 'evm',
+                    nonce: { latest: 0, pending: 0 },
+                },
+            })
+        },
+    })
+}

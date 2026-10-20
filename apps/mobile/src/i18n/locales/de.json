@@ -1097,8 +1097,8 @@
                 "body": "Eine ausstehende Transaktion dieses Kontos kann nur mit einer höheren Netzwerkgebühr ersetzt werden. Warte, bis sie abgeschlossen ist, oder versuche es mit einer höheren Gebühr erneut."
             },
             "insufficient_funds": {
-                "title": "Unzureichendes ETH",
-                "body": "Dieses Konto verfügt nicht über genügend ETH, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr ETH hinzu und versuche es erneut."
+                "title": "Nicht genügend {{symbol}}",
+                "body": "Dieses Konto verfügt nicht über genügend {{symbol}}, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut."
             },
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",

@@ -34,11 +34,10 @@ import {
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
-import { ethereumAddressCodec } from '../accounts/address-codec'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
+import type { EvmChain } from '../chains/types'
 import { sendSummary } from '../transfer/summary'
-import { readEthereumTransaction } from './adapter'
+import { readEvmTransaction } from './adapter'
 import {
     toEthereumNative,
     type EthereumTransactionView,
@@ -93,9 +92,10 @@ const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 // fee shown is the most the signature authorises, so review needs both.
 const readCall = (
     unsigned: UnsignedTransaction,
+    chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction } = readEthereumTransaction(unsigned)
+    const { from, transaction } = readEvmTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -112,7 +112,7 @@ const readCall = (
     } = transaction
     if (typeof gas !== 'bigint' || typeof maxFeePerGas !== 'bigint') {
         throw new Error(
-            'The Ethereum transaction needs a gas limit and a max fee per gas to be reviewed',
+            'The EVM transaction needs a gas limit and a max fee per gas to be reviewed',
         )
     }
     if (
@@ -124,7 +124,7 @@ const readCall = (
         data.length % 2 !== 0 ||
         (to != null && !isAddress(to))
     ) {
-        throw new Error('The Ethereum transaction payload is malformed')
+        throw new Error('The EVM transaction payload is malformed')
     }
     return {
         from,
@@ -161,19 +161,22 @@ const viewOf = (
     ...(token && { token }),
 })
 
-const nativeAmount = (value: bigint) => ({
-    assetRef: ethereumDescriptor.nativeAsset.ref,
+const nativeAmount = (chain: EvmChain, value: bigint) => ({
+    assetRef: chain.descriptor.nativeAsset.ref,
     value: toDecimal(value),
 })
 
 type CallFacts = Pick<Call, 'from' | 'to' | 'value' | 'data'>
 
-const contractCallSummary = (call: CallFacts): TransactionSummary => ({
+const contractCallSummary = (
+    call: CallFacts,
+    chain: EvmChain,
+): TransactionSummary => ({
     kind: 'contract-call',
     title: { key: CONTRACT_CALL_TITLE_KEY },
     direction: call.value > 0n ? 'out' : 'none',
     ...(call.to && { counterparty: call.to }),
-    ...(call.value > 0n && { amount: nativeAmount(call.value) }),
+    ...(call.value > 0n && { amount: nativeAmount(chain, call.value) }),
     icon: 'contract-call',
 })
 
@@ -193,7 +196,7 @@ const verifiedTokenTransfer = (
         !amount ||
         typeof amount.assetRef?.assetId !== 'string' ||
         !isAddress(amount.assetRef.assetId) ||
-        !ethereumAddressCodec.areEqual(call.to, amount.assetRef.assetId) ||
+        !areEvmAddressesEqual(call.to, amount.assetRef.assetId) ||
         typeof counterparty !== 'string' ||
         !isAddress(counterparty) ||
         !Decimal.isDecimal(amount.value) ||
@@ -217,9 +220,10 @@ const verifiedTokenTransfer = (
 /** The view a review screen reads, or null for a payload review would refuse. Never a verified token transfer: that needs the request's summary. */
 export const ethereumViewOf = (
     unsigned: UnsignedTransaction,
+    chain: EvmChain,
 ): Nullable<EthereumTransactionView> => {
     try {
-        const call = readCall(unsigned)
+        const call = readCall(unsigned, chain)
         return viewOf(
             call,
             call.to && size(call.data) === 0 ? 'transfer' : 'contract-call',
@@ -230,12 +234,21 @@ export const ethereumViewOf = (
 }
 
 /** A native transfer when there is a `to` and no calldata, else a contract call. */
-export const ethereumCallSummary = (call: CallFacts): TransactionSummary =>
+export const ethereumCallSummary = (
+    call: CallFacts,
+    chain: EvmChain,
+): TransactionSummary =>
     call.to && size(call.data) === 0
-        ? sendSummary('transfer', call.from, call.to, nativeAmount(call.value))
-        : contractCallSummary(call)
+        ? sendSummary(
+              'transfer',
+              call.from,
+              call.to,
+              nativeAmount(chain, call.value),
+          )
+        : contractCallSummary(call, chain)
 
 const reviewCall = (
+    chain: EvmChain,
     call: Call,
     summary: TransactionSummary | undefined,
     context: ReviewContext,
@@ -243,7 +256,7 @@ const reviewCall = (
 ): ReviewedTransaction => {
     if (call.to && size(call.data) === 0) {
         return {
-            summary: ethereumCallSummary(call),
+            summary: ethereumCallSummary(call, chain),
             native: toEthereumNative(viewOf(call, 'transfer')),
         }
     }
@@ -254,7 +267,7 @@ const reviewCall = (
         return {
             summary: sendSummary('token-transfer', call.from, token.to, {
                 assetRef: {
-                    chainId: ETHEREUM_CHAIN_ID,
+                    chainId: chain.row.id,
                     assetId: token.contract,
                 },
                 value: token.amount,
@@ -266,7 +279,7 @@ const reviewCall = (
         ? recogniseCall({ to: call.to, data: call.data, value: call.value })
         : undefined
     return {
-        summary: recognised ?? ethereumCallSummary(call),
+        summary: recognised ?? ethereumCallSummary(call, chain),
         native: toEthereumNative(viewOf(call, 'contract-call')),
     }
 }
@@ -277,23 +290,28 @@ const reviewCall = (
  * asked only while `contractDecoding` is on.
  */
 export const createEthereumReviewer = ({
+    chain,
     recogniseCall = NO_RECOGNITION,
-}: { recogniseCall?: CallRecogniser } = {}): TransactionReviewer => ({
-    chainId: ETHEREUM_CHAIN_ID,
+}: {
+    chain: EvmChain
+    recogniseCall?: CallRecogniser
+}): TransactionReviewer => ({
+    chainId: chain.row.id,
     decoder: {
         decode: async (transactions, context): Promise<DecodedTransactions> => {
             const signable = new Set<string>()
             let totalFees = 0n
             const reviewed = transactions.map(unsigned => {
-                const call = readCall(unsigned, context)
+                const call = readCall(unsigned, chain, context)
                 const held = context.heldAddresses.find(address =>
-                    ethereumAddressCodec.areEqual(address, call.from),
+                    areEvmAddressesEqual(address, call.from),
                 )
                 if (held !== undefined) {
                     signable.add(held)
                     totalFees += call.gas * call.maxFeePerGas
                 }
                 return reviewCall(
+                    chain,
                     call,
                     unsigned.summary,
                     context,
@@ -319,5 +337,3 @@ export const createEthereumReviewer = ({
         autoApproveLocal: review => review.transactions.every(isAutoApproved),
     },
 })
-
-export const ethereumReviewerAdapter = createEthereumReviewer()

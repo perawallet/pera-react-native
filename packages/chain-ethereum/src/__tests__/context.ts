@@ -11,6 +11,7 @@
  */
 
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
+import type { EvmChain } from '../chains/types'
 import { PERA_URL } from './pera-backend'
 
 export const TEST_RPC_URL = 'https://mainnet.rpc.test/'
@@ -23,8 +24,13 @@ export const TEST_PERA_URL = PERA_URL
  */
 export const testChainContext = ({
     services = [],
-}: { services?: readonly string[] } = {}): ChainContext => ({
-    getScope: () => ({ chainId: 'ethereum', networkId: 'mainnet' }),
+    chain,
+}: { services?: readonly string[]; chain?: EvmChain } = {}): ChainContext => ({
+    // Every EVM chain names its mainnet `mainnet`.
+    getScope: () => ({
+        chainId: chain?.row.id ?? 'ethereum',
+        networkId: 'mainnet',
+    }),
     getEndpoints: () => ({ mainnet: TEST_RPC_URL }),
     getPeraBackend: () => ({
         baseUrl: services.length > 0 ? TEST_PERA_URL : '',

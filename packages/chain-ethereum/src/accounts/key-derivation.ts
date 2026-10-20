@@ -16,8 +16,8 @@ import type {
     KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
-import { ethereumAddressCodec } from './address-codec'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import { evmAddressFromPublicKey } from './address-codec'
+import type { EvmChain } from '../chains/types'
 import { ethereumHdKeyId, ethereumHdPath } from './hd-derivation'
 
 const SCHEME = 'secp256k1'
@@ -32,43 +32,53 @@ const assertSecp256k1 = (opts: DeriveOpts): void => {
 export const ethereumRawKeyId = (privateKey: Uint8Array): string =>
     `ethereum-raw-${keccak256(privateKey).slice(2, 34)}`
 
-export const ethereumKeyDerivation: KeyDerivation = {
-    chainId: ETHEREUM_CHAIN_ID,
-    deriveAccount: async (kms, seedRef, account, keyIndex, opts) => {
-        assertSecp256k1(opts)
-        const key = await kms.deriveFromSeed(
-            seedRef,
-            {
-                scheme: SCHEME,
-                path: ethereumHdPath(account, keyIndex),
-                id: ethereumHdKeyId(seedRef, account, keyIndex),
-            },
-            SIGNING_ACCESS_DOMAIN,
-        )
-        return {
-            ...key,
-            address: ethereumAddressCodec.fromPublicKey(key.publicKey, opts),
-        }
-    },
-    importRawKey: async (kms, bytes, opts) => {
-        assertSecp256k1(opts)
-        const key = await kms.importRawKey(
-            bytes,
-            { scheme: SCHEME, id: ethereumRawKeyId(bytes) },
-            SIGNING_ACCESS_DOMAIN,
-        )
-        return {
-            keyPairId: key.keyPairId,
-            address: ethereumAddressCodec.fromPublicKey(key.publicKey, opts),
-        }
-    },
-    // Only the first address: wallets that share this path hand out index 0
-    // first, so it is the one a restored seed has activity on.
-    discover: async (kms, seedRef, probe, opts) => {
-        const { address, keyPairId } =
-            await ethereumKeyDerivation.deriveAccount(kms, seedRef, 0, 0, opts)
-        return (await probe(address))
-            ? [{ account: 0, keyIndex: 0, address, keyPairId }]
-            : []
-    },
+// Every EVM chain derives the same key at the same coordinates under the same
+// id, so one seed's account is one key across them.
+export const createEvmKeyDerivation = (chain: EvmChain): KeyDerivation => {
+    const derivation: KeyDerivation = {
+        chainId: chain.row.id,
+        deriveAccount: async (kms, seedRef, account, keyIndex, opts) => {
+            assertSecp256k1(opts)
+            const key = await kms.deriveFromSeed(
+                seedRef,
+                {
+                    scheme: SCHEME,
+                    path: ethereumHdPath(account, keyIndex),
+                    id: ethereumHdKeyId(seedRef, account, keyIndex),
+                },
+                SIGNING_ACCESS_DOMAIN,
+            )
+            return {
+                ...key,
+                address: evmAddressFromPublicKey(key.publicKey, opts),
+            }
+        },
+        importRawKey: async (kms, bytes, opts) => {
+            assertSecp256k1(opts)
+            const key = await kms.importRawKey(
+                bytes,
+                { scheme: SCHEME, id: ethereumRawKeyId(bytes) },
+                SIGNING_ACCESS_DOMAIN,
+            )
+            return {
+                keyPairId: key.keyPairId,
+                address: evmAddressFromPublicKey(key.publicKey, opts),
+            }
+        },
+        // Only the first address: wallets that share this path hand out index 0
+        // first, so it is the one a restored seed has activity on.
+        discover: async (kms, seedRef, probe, opts) => {
+            const { address, keyPairId } = await derivation.deriveAccount(
+                kms,
+                seedRef,
+                0,
+                0,
+                opts,
+            )
+            return (await probe(address))
+                ? [{ account: 0, keyIndex: 0, address, keyPairId }]
+                : []
+        },
+    }
+    return derivation
 }

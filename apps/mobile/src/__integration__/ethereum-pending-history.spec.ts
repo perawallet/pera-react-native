@@ -62,8 +62,9 @@ const { getPendingTransactionRecords, getTransactionHistoryWithPending } =
     await import('@perawallet/wallet-core-transactions')
 const { evmHistoryItem, evmRpcHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
-const { createEthereumBroadcasterAdapter } =
+const { createEvmBroadcasterAdapter } =
     await import('@packages/chain-ethereum/src/transfer/broadcaster')
+const { evmChainOf } = await import('@packages/chain-ethereum/src/chains/table')
 const { historyPath } =
     await import('@packages/chain-ethereum/src/history/api/endpoints')
 const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
@@ -132,7 +133,10 @@ describe('Flow: an Ethereum send in history', () => {
 
     // The transaction's hash, as the broadcaster reports it.
     const broadcast = async (): Promise<string> => {
-        const result = await createEthereumBroadcasterAdapter(CONTEXT)
+        const result = await createEvmBroadcasterAdapter(
+            CONTEXT,
+            evmChainOf('ethereum'),
+        )
             .createSubmitTransport(SCOPE)
             .send(sendSigned(), { type: 'local' } as SourceMetadata)
         if (result.type !== 'submitted') throw new Error('not submitted')
