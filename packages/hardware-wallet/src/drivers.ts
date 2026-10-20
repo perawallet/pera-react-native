@@ -10,6 +10,8 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 
-export const ETHEREUM_CHAIN_ID = 'ethereum' satisfies ChainId
+/** Whether a Ledger device app is registered for the chain. */
+export const hasLedgerAppDriver = (chainId: string): boolean =>
+    ledgerAppDriverRegistry.has(chainId)

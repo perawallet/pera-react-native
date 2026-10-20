@@ -348,6 +348,8 @@ describe('useMultisigInvitationNameScreen', () => {
                                 version: 1,
                             },
                         },
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'created',
                     },
                 },
             }),

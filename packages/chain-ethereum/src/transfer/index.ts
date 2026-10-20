@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { createEthereumTransferAdapter } from './builder'
-export { createEthereumBroadcasterAdapter } from './broadcaster'
+export { createEvmTransferAdapter } from './builder'
+export { createEvmBroadcasterAdapter } from './broadcaster'

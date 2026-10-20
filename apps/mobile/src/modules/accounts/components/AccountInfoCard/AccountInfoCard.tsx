@@ -34,6 +34,7 @@ import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import { RekeyedToRow } from './RekeyedToRow'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
+import { ChainIcon } from '@modules/chain-ui'
 
 export type AccountInfoCardProps = {
     account: WalletAccount
@@ -62,6 +63,7 @@ export const AccountInfoCard = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        enabledChains,
         isExpanded,
         handleToggleExpanded,
         accountType,
@@ -171,6 +173,31 @@ export const AccountInfoCard = ({
                     </InfoButton>
                 </PWView>
             )}
+
+            <PWView style={styles.infoRow}>
+                <PWText
+                    variant='footnoteMedium'
+                    style={styles.labelText}
+                    truncate
+                >
+                    {t('account_info.networks')}
+                </PWText>
+                <PWView style={styles.networkList}>
+                    {enabledChains.map(({ chainId, displayName }) => (
+                        <PWView
+                            key={chainId}
+                            style={styles.networkItem}
+                            testID={`account_network_${chainId}`}
+                        >
+                            <ChainIcon
+                                chainId={chainId}
+                                size={20}
+                            />
+                            <PWText variant='body'>{displayName}</PWText>
+                        </PWView>
+                    ))}
+                </PWView>
+            </PWView>
 
             {rekeyedTo && (
                 <>

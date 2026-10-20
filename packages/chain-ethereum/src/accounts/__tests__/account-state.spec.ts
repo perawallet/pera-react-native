@@ -30,6 +30,7 @@ import { createEthereumAccountStateOps } from '../account-state'
 import { peraEvmHandlers, type ShouldRefreshRequest } from '../msw-handlers'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { PERA_URL } from '../../__tests__/pera-backend'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -78,6 +79,7 @@ describe('createEthereumAccountStateOps', () => {
 
             const state = await createEthereumAccountStateOps(
                 contextWith(),
+                ETHEREUM,
             ).fetchAccountState(ADDRESS, SCOPE, { priorChainState: undefined })
 
             expect(balanceTags).toEqual(['0x10'])
@@ -109,6 +111,7 @@ describe('createEthereumAccountStateOps', () => {
 
             const state = await createEthereumAccountStateOps(
                 contextWith(),
+                ETHEREUM,
             ).fetchAccountState(ADDRESS, SCOPE, { priorChainState: undefined })
 
             expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
@@ -130,10 +133,10 @@ describe('createEthereumAccountStateOps', () => {
             )
 
             await expect(
-                createEthereumAccountStateOps(contextWith()).accountExists(
-                    ADDRESS,
-                    SCOPE,
-                ),
+                createEthereumAccountStateOps(
+                    contextWith(),
+                    ETHEREUM,
+                ).accountExists(ADDRESS, SCOPE),
             ).resolves.toBe(true)
         })
     })
@@ -148,11 +151,10 @@ describe('createEthereumAccountStateOps', () => {
             )
 
             await expect(
-                createEthereumAccountStateOps(contextWith()).fetchChangeSignal(
-                    [ADDRESS],
-                    SCOPE,
-                    10,
-                ),
+                createEthereumAccountStateOps(
+                    contextWith(),
+                    ETHEREUM,
+                ).fetchChangeSignal([ADDRESS], SCOPE, 10),
             ).resolves.toEqual({ changed: false, cursor: 10 })
         })
     })
@@ -164,6 +166,7 @@ describe('createEthereumAccountStateOps', () => {
         ) =>
             createEthereumAccountStateOps(
                 contextWith(['blockFollowing']),
+                ETHEREUM,
             ).fetchChangeSignal(addresses, SCOPE, cursor)
 
         it('sends the CAIP-2 chain, the addresses and the cursor to the scope backend', async () => {
@@ -339,6 +342,7 @@ describe('createEthereumAccountStateOps', () => {
             await expect(
                 createEthereumAccountStateOps(
                     contextWith(['blockFollowing']),
+                    ETHEREUM,
                 ).fetchChangeSignal([ADDRESS], SCOPE, 40),
             ).rejects.toSatisfy(
                 error =>
@@ -365,6 +369,7 @@ describe('createEthereumAccountStateOps', () => {
                 )
                 const ops = createEthereumAccountStateOps(
                     contextWith(['blockFollowing']),
+                    ETHEREUM,
                 )
 
                 await expect(
@@ -389,6 +394,7 @@ describe('createEthereumAccountStateOps', () => {
             await expect(
                 createEthereumAccountStateOps(
                     contextWith(['blockFollowing']),
+                    ETHEREUM,
                 ).fetchChangeSignal([ADDRESS], SCOPE, 40),
             ).rejects.toThrow()
         })

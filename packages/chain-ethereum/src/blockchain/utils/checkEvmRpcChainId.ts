@@ -16,6 +16,7 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EndpointOverrideCheck } from '@perawallet/wallet-core-chain-shared'
+import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport } from './evmHttpTransport'
 
@@ -24,8 +25,9 @@ export const checkEvmRpcChainId = async (
     url: string,
     networkId: NetworkId,
     timeouts: ChainRequestTimeouts,
+    chain: EvmChain,
 ): Promise<EndpointOverrideCheck> => {
-    const expected = eip155ChainIdOfNetwork(networkId)
+    const expected = eip155ChainIdOfNetwork(chain, networkId)
     let served: number
     try {
         served = await createPublicClient({

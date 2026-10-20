@@ -37,18 +37,21 @@ import {
     evmRpcHandlers,
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
-import { ethereumCapabilityDefaults } from '../../capability-defaults'
+import { evmCapabilityDefaults as ethereumCapabilityDefaults } from '../../capability-defaults'
 import {
-    readEthereumTransaction,
+    readEvmTransaction,
     type EthereumTransactionPayload,
 } from '../../signing/adapter'
-import { ethereumReviewerAdapter } from '../../signing/review'
+import { createEthereumReviewer } from '../../signing/review'
+import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
     buildEthereumSendTransaction,
     validateEthereumSendTransaction,
     type EthereumSendTransactionRequest,
 } from '../sendTransaction'
+
+const ethereumReviewerAdapter = createEthereumReviewer({ chain: ETHEREUM })
 
 // The empty pool by default, so the node's pending count decides the nonce.
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
@@ -342,7 +345,11 @@ describe('buildEthereumSendTransaction', () => {
     it('builds an EIP-1559 transaction on the context network with the normal fee preset', async () => {
         useRpc()
 
-        const built = await buildEthereumSendTransaction(ctx, request())
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        )
 
         expect(built.scope).toEqual({
             chainId: 'ethereum',
@@ -372,7 +379,11 @@ describe('buildEthereumSendTransaction', () => {
             nonce: '0x99',
         } as EthereumSendTransactionRequest
 
-        const built = await buildEthereumSendTransaction(ctx, dappRequest)
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            dappRequest,
+        )
 
         expect(payloadOf(built).nonce).toBe(4)
     })
@@ -383,6 +394,7 @@ describe('buildEthereumSendTransaction', () => {
 
         const built = await buildEthereumSendTransaction(
             ctx,
+            ETHEREUM,
             request({ gas: 300_000n }),
         )
 
@@ -393,7 +405,11 @@ describe('buildEthereumSendTransaction', () => {
     it('estimates the gas when the dApp gave none', async () => {
         useRpc({ eth_estimateGas: '0xfde8' })
 
-        const built = await buildEthereumSendTransaction(ctx, request())
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        )
 
         expect(payloadOf(built).gas).toBe(65_000n)
     })
@@ -407,7 +423,11 @@ describe('buildEthereumSendTransaction', () => {
         })
         if (!params.ok) throw new Error('expected the request to validate')
 
-        const built = await buildEthereumSendTransaction(ctx, params.request)
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            params.request,
+        )
 
         expect(payloadOf(built)).toMatchObject({
             type: 'eip1559',
@@ -422,9 +442,10 @@ describe('buildEthereumSendTransaction', () => {
 
         const built = await buildEthereumSendTransaction(
             ctx,
+            ETHEREUM,
             request({ accessList }),
         )
-        const { from, transaction } = readEthereumTransaction(built)
+        const { from, transaction } = readEvmTransaction(built, ETHEREUM)
         const parsed = parseTransaction(serializeTransaction(transaction))
 
         expect(from).toBe(FROM)
@@ -438,7 +459,11 @@ describe('buildEthereumSendTransaction', () => {
     it('builds a transaction the reviewer decodes: empty data is a transfer', async () => {
         useRpc()
 
-        const built = await buildEthereumSendTransaction(ctx, request())
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        )
         const decoded = await ethereumReviewerAdapter.decoder.decode(
             [built],
             reviewContext,
@@ -454,6 +479,7 @@ describe('buildEthereumSendTransaction', () => {
 
         const built = await buildEthereumSendTransaction(
             ctx,
+            ETHEREUM,
             request({ value: 0n, data: '0xa9059cbb' }),
         )
         const decoded = await ethereumReviewerAdapter.decoder.decode(
@@ -480,6 +506,7 @@ describe('buildEthereumSendTransaction', () => {
 
         const error = await buildEthereumSendTransaction(
             ctx,
+            ETHEREUM,
             request({ data: '0xa9059cbb' }),
         ).catch((e: unknown) => e)
 
@@ -494,9 +521,11 @@ describe('buildEthereumSendTransaction', () => {
             ),
         })
 
-        const error = await buildEthereumSendTransaction(ctx, request()).catch(
-            (e: unknown) => e,
-        )
+        const error = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        ).catch((e: unknown) => e)
 
         expect(error).toMatchObject({ code: EvmErrorCode.INSUFFICIENT_FUNDS })
     })
@@ -508,3 +537,26 @@ const reviewContext: ReviewContext = {
     isWalletBuilt: false,
     capabilities: ethereumCapabilityDefaults,
 }
+
+describe('buildEthereumSendTransaction on Polygon', () => {
+    beforeEach(() => {
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([])
+    })
+
+    it("raises the dApp send's tip to the network minimum", async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            testChainContext({ chain: POLYGON }),
+            POLYGON,
+            request(),
+        )
+
+        expect(built.scope).toEqual({
+            chainId: 'polygon',
+            networkId: 'mainnet',
+        })
+        expect(payloadOf(built).chainId).toBe(137)
+        expect(payloadOf(built).maxPriorityFeePerGas).toBe(25_000_000_000n)
+    })
+})

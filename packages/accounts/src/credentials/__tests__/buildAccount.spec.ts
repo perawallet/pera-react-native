@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { afterEach, beforeEach, describe, test, expect, vi } from 'vitest'
 import type { AccountCustody } from '../../models'
 import { AccountError } from '../../errors'
-import { buildAccount, type BuildAccountInput } from '../buildAccount'
+import {
+    buildAccount,
+    withEnablement,
+    type BuildAccountInput,
+} from '../buildAccount'
 import { TEST_CUSTODY } from '../../__tests__/accountFactory'
 import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
 
@@ -52,17 +56,64 @@ const inputs: Record<keyof typeof TEST_CUSTODY, BuildAccountInput> = {
     },
 }
 
+const NOW = 1_700_000_000_000
+
+const createdAt = (chains: BuildAccountInput['chains']) =>
+    Object.fromEntries(
+        Object.entries(chains).map(([id, entry]) => [
+            id,
+            { ...entry, enabledAt: NOW, enabledBy: 'created' },
+        ]),
+    )
+
 describe('buildAccount', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(NOW)
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     test.each(Object.entries(inputs))(
         'a %s account holds only its id, custody and chains',
         (_kind, input) => {
             expect(buildAccount({ id: 'id', ...input })).toStrictEqual({
                 id: 'id',
                 custody: input.custody,
-                chains: input.chains,
+                chains: createdAt(input.chains),
             })
         },
     )
+
+    test('records the given enabler on every entry that has none', () => {
+        const account = buildAccount({
+            ...inputs.watch,
+            chains: {
+                [FAKE_CHAIN_ID]: { address: 'ADDR' },
+                ethereum: {
+                    address: '0xabc',
+                    enabledAt: 5,
+                    enabledBy: 'discovery',
+                },
+            },
+            enabledBy: 'restore',
+        })
+
+        expect(account.chains).toStrictEqual({
+            [FAKE_CHAIN_ID]: {
+                address: 'ADDR',
+                enabledAt: NOW,
+                enabledBy: 'restore',
+            },
+            ethereum: {
+                address: '0xabc',
+                enabledAt: 5,
+                enabledBy: 'discovery',
+            },
+        })
+    })
 
     test('keeps every chain entry, not only the one it was built on', () => {
         const chains = {
@@ -76,7 +127,7 @@ describe('buildAccount', () => {
                 chainId: FAKE_CHAIN_ID,
                 chains,
             }).chains,
-        ).toStrictEqual(chains)
+        ).toStrictEqual(createdAt(chains))
     })
 
     test('refuses an account with no entry on the chain it is built on', () => {
@@ -111,5 +162,25 @@ describe('buildAccount', () => {
 
         expect(first.id).toEqual(expect.any(String))
         expect(first.id).not.toBe(second.id)
+    })
+})
+
+describe('withEnablement', () => {
+    test('stamps an entry that carries no enablement', () => {
+        expect(withEnablement({ address: 'A' }, 'user', 7)).toStrictEqual({
+            address: 'A',
+            enabledAt: 7,
+            enabledBy: 'user',
+        })
+    })
+
+    test('keeps the enablement an entry already has', () => {
+        const entry = {
+            address: 'A',
+            enabledAt: 0,
+            enabledBy: 'created',
+        } as const
+
+        expect(withEnablement(entry, 'restore', 9)).toBe(entry)
     })
 })

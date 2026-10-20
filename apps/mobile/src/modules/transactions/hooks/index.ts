@@ -25,3 +25,4 @@ export {
     useReceiveFundsStore,
     useReceiveFunds,
 } from './receive-funds/useReceiveFunds'
+export { needsReceiveChainSelection } from './receive-funds/receiveChainSelection'

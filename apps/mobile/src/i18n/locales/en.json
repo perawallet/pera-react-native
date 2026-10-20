@@ -434,7 +434,8 @@
         "rekey_signer_shared": "a shared account",
         "rekey_signer_quantum": "a Quantum account",
         "type_no_auth": "No Auth",
-        "type_unknown": "Unknown Account"
+        "type_unknown": "Unknown Account",
+        "networks": "Networks"
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
@@ -1105,8 +1106,8 @@
                 "body": "A pending transaction from this account can only be replaced with a higher network fee. Wait for it to complete, or try again with a higher fee."
             },
             "insufficient_funds": {
-                "title": "Insufficient ETH",
-                "body": "This account doesn't have enough ETH to cover the amount and the network fee. Add more ETH and try again."
+                "title": "Insufficient {{symbol}}",
+                "body": "This account doesn't have enough {{symbol}} to cover the amount and the network fee. Add more {{symbol}} and try again."
             },
             "rate_limited": {
                 "title": "Network busy",
@@ -2607,6 +2608,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
+        },
+        "chain_selection": {
+            "title": "Select Network",
+            "eligible_subtitle": "Not added yet"
         },
         "qrview": {
             "error_title": "No Account Selected",

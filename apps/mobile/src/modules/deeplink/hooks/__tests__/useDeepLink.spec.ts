@@ -192,8 +192,25 @@ const accountsState = vi.hoisted(() => ({
     setSelectedAccountId: vi.fn(),
 }))
 
+const { mockEnableChain } = vi.hoisted(() => ({ mockEnableChain: vi.fn() }))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     accountsChainAdapters: { has: () => true },
+    // A fixture without chain entries stands for an account already on the
+    // link's chain, so send opens without enabling one.
+    chainAccountOf: (
+        account: { chains?: Record<string, unknown> },
+        chainId: string,
+    ) => (account.chains === undefined ? {} : account.chains[chainId]),
+    useEnableChain: () => mockEnableChain,
+    // Such a fixture's first chain is the first registered one.
+    accountChainIdOf: (
+        account: { chains?: Record<string, unknown> },
+        registered: readonly string[],
+    ) =>
+        account.chains === undefined
+            ? registered[0]
+            : registered.find(id => account.chains?.[id] !== undefined),
     useSelectedAccount: () => ({
         id: 'selected',
         custody: { kind: 'watch' },
@@ -2297,6 +2314,39 @@ describe('useDeepLink', () => {
         )
     })
 
+    it("names the link chain's native asset when the sender's first chain is another one, so send opens on the link's chain", async () => {
+        sendAccount.resolution = {
+            kind: 'single',
+            account: {
+                id: 'both-chains',
+                chains: {
+                    algorand: { address: 'A'.repeat(58) },
+                    ethereum: { address: '0xabc' },
+                },
+            },
+        }
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            target: { chainId: 'ethereum' },
+            address: '0xreceiver',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/receiver-selection',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { asset: { chainId: 'ethereum', assetId: 'native' } },
+            expect.anything(),
+        )
+    })
+
     it('should open account-actions bottom sheet for ADDRESS_ACTIONS deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ADDRESS_ACTIONS,
@@ -2738,6 +2788,52 @@ describe('useDeepLink', () => {
                 expect.anything(),
             )
             expect(onSuccess).toHaveBeenCalledTimes(1)
+        })
+
+        it("enables the link's chain on a sender that isn't on it yet, then opens the send", async () => {
+            const algorandOnly = {
+                id: 'hd-account',
+                chains: { algorand: { address: 'A'.repeat(58) } },
+            }
+            mockEnableChain.mockResolvedValue(algorandOnly)
+            sendAccount.resolution = { kind: 'single', account: algorandOnly }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(mockEnableChain).toHaveBeenCalledWith(
+                'hd-account',
+                'ethereum',
+                'user',
+            )
+            await vi.waitFor(() =>
+                expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+                    'hd-account',
+                ),
+            )
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'send-funds',
+                expect.anything(),
+                expect.anything(),
+            )
+        })
+
+        it('opens no send and reports the link when the chain cannot be enabled', async () => {
+            mockEnableChain.mockRejectedValue(new Error('derivation failed'))
+            sendAccount.resolution = {
+                kind: 'single',
+                account: { id: 'hd-account', chains: {} },
+            }
+            ;(parseDeeplink as Mock).mockReturnValue(ethereumTransfer)
+
+            const { onError } = await dispatch(ethereumTransfer.sourceUrl)
+
+            await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+            expect(mockRequestByType).not.toHaveBeenCalledWith(
+                'send-funds',
+                expect.anything(),
+                expect.anything(),
+            )
         })
 
         it('shows the no-account error and opens nothing when the chain has no account that can send', async () => {

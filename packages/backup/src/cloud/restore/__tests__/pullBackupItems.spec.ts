@@ -156,6 +156,62 @@ describe('pullBackupItems on an account record', () => {
         })
     })
 
+    it("joins a key's one secret to its record even when the chain it was filed under isn't one this client reads", async () => {
+        registerEthereumBackupChain()
+        const keyRecord = {
+            formatVersion: 2,
+            customName: 'Imported',
+            updatedAt: 3,
+            chains: [
+                {
+                    chain: 'base',
+                    type: 'standaloneKey',
+                    address: '0xkey',
+                    enabledAt: 4,
+                    enabledBy: 'user',
+                },
+                {
+                    chain: 'ethereum',
+                    type: 'standaloneKey',
+                    address: '0xkey',
+                    enabledAt: 2,
+                    enabledBy: 'created',
+                },
+            ],
+        }
+        const secret = {
+            type: 'standaloneKey',
+            chain: 'base',
+            address: '0xkey',
+            privateKey: 'ab'.repeat(32),
+        }
+        serving([
+            [recordKey('0xkey'), keyRecord],
+            [secretsKey('0xkey'), secret],
+        ])
+
+        const result = await pull()
+
+        expect(result.skipped).toEqual([])
+        expect(
+            result.accounts.map(({ chain, addressPayload, secretsPayload }) => [
+                chain,
+                addressPayload,
+                secretsPayload,
+            ]),
+        ).toEqual([
+            [
+                'ethereum',
+                expect.objectContaining({
+                    type: 'standaloneKey',
+                    enabledAt: 2,
+                    enabledBy: 'created',
+                }),
+                secret,
+            ],
+        ])
+    })
+
     it('restores only the chains this client reads, and still tracks every address', async () => {
         serving([[recordKey(HD_IDENTITY), hdRecord]])
 

@@ -10,8 +10,21 @@
  limitations under the License
  */
 
-/** A chain package adds its own id here in the change that creates it. */
-export const CHAIN_IDS = ['algorand', 'ethereum'] as const
+import evmNetworks from './evm-networks.json'
+
+/**
+ * A chain package adds its own id here in the change that creates it; an EVM
+ * chain also adds its networks to evm-networks.json.
+ */
+export const CHAIN_IDS = [
+    'algorand',
+    'ethereum',
+    'base',
+    'bsc',
+    'arbitrum',
+    'avalanche',
+    'polygon',
+] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]
 
@@ -26,6 +39,27 @@ export type ChainFamily = (typeof CHAIN_FAMILIES)[number]
 export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
 export type NetworkTier = (typeof NETWORK_TIERS)[number]
+
+/** The chains chain-ethereum serves, one per EIP-155 chain. */
+export type EvmChainId = Exclude<ChainId, 'algorand'>
+
+export type EvmNetworkIdentity = {
+    readonly id: string
+    readonly tier: NetworkTier
+    readonly displayName: string
+    readonly eip155ChainId: number
+}
+
+/**
+ * Plain JSON so the config generator, Metro and the browser build read the same
+ * networks the app registers, without importing a chain package.
+ */
+export const EVM_CHAIN_NETWORKS: Readonly<
+    Record<EvmChainId, { readonly networks: readonly EvmNetworkIdentity[] }>
+> = evmNetworks as Record<
+    EvmChainId,
+    { readonly networks: readonly EvmNetworkIdentity[] }
+>
 
 /**
  * Chain-local: lowercase letters, digits and `-` (see `isNetworkId`), so it
@@ -107,6 +141,9 @@ const NETWORK_ID_PATTERN = /^[a-z0-9-]+$/
 export const isChainId = (value: unknown): value is ChainId =>
     typeof value === 'string' &&
     (CHAIN_IDS as readonly string[]).includes(value)
+
+export const isEvmChainId = (value: unknown): value is EvmChainId =>
+    isChainId(value) && Object.keys(EVM_CHAIN_NETWORKS).includes(value)
 
 export const isChainFamily = (value: unknown): value is ChainFamily =>
     typeof value === 'string' &&

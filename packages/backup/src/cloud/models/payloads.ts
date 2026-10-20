@@ -77,6 +77,12 @@ const updatedAt = nonNegativeInt.optional()
  *  collide all such items onto a single entry. */
 const address = z.string().min(1)
 
+/** When and how the chain was enabled on the account; a record written before
+ *  this was recorded has neither. Restore reads only whether the entry carries
+ *  it, so an enabler a newer build adds still parses. */
+const enabledAt = nonNegativeInt.optional().catch(undefined)
+const enabledBy = z.string().min(1).optional().catch(undefined)
+
 export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
     address,
@@ -91,12 +97,16 @@ export const hardwareAddressPayloadSchema = z.object({
     transportType: backupHardwareTransportTypeSchema,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 export const watchAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.watch),
     address,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 export const multisigAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.multisig),
@@ -106,6 +116,8 @@ export const multisigAddressPayloadSchema = z.object({
     version: nonNegativeInt,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 /** A chain account holding its own key; its recovery phrase is its `secrets/` item. */
 export const chainKeyAddressPayloadSchema = z.object({
@@ -113,6 +125,8 @@ export const chainKeyAddressPayloadSchema = z.object({
     address,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
     // An item naming a parent seed is an HD item; one missing the rest of the
     // HD fields must fail to parse rather than restore as a single key.
     seedFirstDerivedAddress: z.never().optional(),
@@ -129,6 +143,8 @@ export const chainHdAddressPayloadSchema = z.object({
     derivationType: nonNegativeInt,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 
 /** Never an item of its own: only an entry of an account record. */
@@ -140,6 +156,8 @@ export const hdChainAddressPayloadSchema = z.object({
     keyIndex: nonNegativeInt,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 /** Never an item of its own: only an entry of an account record. */
 export const standaloneKeyAddressPayloadSchema = z.object({
@@ -147,6 +165,8 @@ export const standaloneKeyAddressPayloadSchema = z.object({
     address,
     customName,
     updatedAt,
+    enabledAt,
+    enabledBy,
 })
 
 export const addressBackupPayloadSchema = z.union([

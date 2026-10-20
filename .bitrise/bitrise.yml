@@ -243,6 +243,9 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
+    - CHAINS: algorand,ethereum
+    - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
     - USE_CACHE: 'true'
@@ -262,6 +265,8 @@ workflows:
     envs:
     - ENVIRONMENT: production
     - APP_ENV: production
+    # Pinned so an app-level CHAINS in the Bitrise UI can't ship another chain to production.
+    - CHAINS: algorand
     - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
     - USE_CACHE: 'false'
     - VALIDATE_PROFILE: ios
@@ -536,6 +541,9 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
+    - CHAINS: algorand,ethereum
+    - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - ANDROID_FLAVOR: staging
     - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -556,6 +564,8 @@ workflows:
     envs:
     - ENVIRONMENT: production
     - APP_ENV: production
+    # Pinned so an app-level CHAINS in the Bitrise UI can't ship another chain to production.
+    - CHAINS: algorand
     - ANDROID_FLAVOR: production
     - ANDROID_PACKAGE_NAME: com.algorand.android
     - USE_CACHE: 'false'
@@ -967,6 +977,9 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
+    - CHAINS: algorand,ethereum
+    - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - WEB_INTEGRITY_MINT_ENABLED: 'true'
     - WEB_INTEGRITY_ENROL_ENABLED: 'true'
@@ -984,6 +997,8 @@ workflows:
     envs:
     - ENVIRONMENT: production
     - APP_ENV: production
+    # Pinned so an app-level CHAINS in the Bitrise UI can't ship another chain to production.
+    - CHAINS: algorand
     - WEB_INTEGRITY_MINT_ENABLED: 'true'
     - WEB_INTEGRITY_ENROL_ENABLED: 'true'
     - WEB_INTEGRITY_BEARER_ENABLED: 'true'

@@ -23,15 +23,13 @@ import {
     type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumCapabilityDefaults } from '../../capability-defaults'
-import { ethereumDescriptor } from '../../descriptor'
-import {
-    createEthereumReviewer,
-    ethereumReviewerAdapter,
-    type CallRecogniser,
-} from '../review'
+import { evmCapabilityDefaults } from '../../capability-defaults'
+import { ETHEREUM } from '../../__tests__/evm-chains'
+import { createEthereumReviewer, type CallRecogniser } from '../review'
 import { readEthereumNative } from '../transaction-view'
 import { SENDER, TRANSFER } from './fixtures'
+
+const ethereumReviewerAdapter = createEthereumReviewer({ chain: ETHEREUM })
 
 const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SEPOLIA: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
@@ -45,7 +43,7 @@ const CONTEXT: ReviewContext = {
     scope: MAINNET,
     heldAddresses: [SENDER],
     isWalletBuilt: false,
-    capabilities: ethereumCapabilityDefaults,
+    capabilities: evmCapabilityDefaults,
 }
 const WALLET_BUILT: ReviewContext = { ...CONTEXT, isWalletBuilt: true }
 
@@ -151,7 +149,7 @@ describe('ethereumReviewerAdapter', () => {
                 direction: 'out',
                 counterparty: RECIPIENT,
                 amount: {
-                    assetRef: ethereumDescriptor.nativeAsset.ref,
+                    assetRef: ETHEREUM.descriptor.nativeAsset.ref,
                     value: new Decimal((10n ** 18n).toString()),
                 },
                 icon: 'send',
@@ -373,7 +371,7 @@ describe('ethereumReviewerAdapter', () => {
                 kind: 'contract-call',
                 direction: 'out',
                 amount: {
-                    assetRef: ethereumDescriptor.nativeAsset.ref,
+                    assetRef: ETHEREUM.descriptor.nativeAsset.ref,
                     value: new Decimal(5),
                 },
             })
@@ -467,23 +465,29 @@ describe('ethereumReviewerAdapter', () => {
 
         it('never consults it while contractDecoding is off', async () => {
             const recogniseCall = vi.fn<CallRecogniser>(() => undefined)
-            const reviewer = createEthereumReviewer({ recogniseCall })
+            const reviewer = createEthereumReviewer({
+                chain: ETHEREUM,
+                recogniseCall,
+            })
 
             for (const [transaction, context] of VECTORS) {
                 await reviewer.decoder.decode([transaction], context)
             }
 
-            expect(ethereumCapabilityDefaults.contractDecoding).toBe(false)
+            expect(evmCapabilityDefaults.contractDecoding).toBe(false)
             expect(recogniseCall).not.toHaveBeenCalled()
         })
 
         it('asks it about an unrecognised call once contractDecoding is on, and keeps the call unrecognised when it has no answer', async () => {
             const recogniseCall = vi.fn<CallRecogniser>(() => undefined)
-            const reviewer = createEthereumReviewer({ recogniseCall })
+            const reviewer = createEthereumReviewer({
+                chain: ETHEREUM,
+                recogniseCall,
+            })
             const context: ReviewContext = {
                 ...CONTEXT,
                 capabilities: {
-                    ...ethereumCapabilityDefaults,
+                    ...evmCapabilityDefaults,
                     contractDecoding: true,
                 },
             }
@@ -511,11 +515,14 @@ describe('ethereumReviewerAdapter', () => {
                 counterparty: SPENDER,
                 icon: 'approval',
             }))
-            const reviewer = createEthereumReviewer({ recogniseCall })
+            const reviewer = createEthereumReviewer({
+                chain: ETHEREUM,
+                recogniseCall,
+            })
             const context: ReviewContext = {
                 ...WALLET_BUILT,
                 capabilities: {
-                    ...ethereumCapabilityDefaults,
+                    ...evmCapabilityDefaults,
                     contractDecoding: true,
                 },
             }

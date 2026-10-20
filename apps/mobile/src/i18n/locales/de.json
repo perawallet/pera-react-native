@@ -434,7 +434,8 @@
         "rekey_signer_shared": "einem Gemeinschaftskonto",
         "rekey_signer_quantum": "einem Quantum-Konto",
         "type_no_auth": "Keine Auth",
-        "type_unknown": "Unbekanntes Konto"
+        "type_unknown": "Unbekanntes Konto",
+        "networks": "Netzwerke"
     },
     "account_type_info": {
         "standard_title": "Algo25-Konto",
@@ -1097,8 +1098,8 @@
                 "body": "Eine ausstehende Transaktion dieses Kontos kann nur mit einer höheren Netzwerkgebühr ersetzt werden. Warte, bis sie abgeschlossen ist, oder versuche es mit einer höheren Gebühr erneut."
             },
             "insufficient_funds": {
-                "title": "Unzureichendes ETH",
-                "body": "Dieses Konto verfügt nicht über genügend ETH, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr ETH hinzu und versuche es erneut."
+                "title": "Nicht genügend {{symbol}}",
+                "body": "Dieses Konto verfügt nicht über genügend {{symbol}}, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut."
             },
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
@@ -2599,6 +2600,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Konto auswählen"
+        },
+        "chain_selection": {
+            "title": "Netzwerk auswählen",
+            "eligible_subtitle": "Noch nicht hinzugefügt"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",

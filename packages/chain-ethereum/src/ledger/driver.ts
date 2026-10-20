@@ -12,13 +12,15 @@
 
 import Eth from '@ledgerhq/hw-app-eth'
 import type { LedgerAppDriver } from '@perawallet/wallet-extension-hardware-wallet'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import type { EvmChain } from '../chains/types'
 import { createEthereumLedgerTransport } from './transport'
 
 type EthAppTransport = ConstructorParameters<typeof Eth>[0]
 
-export const ethereumLedgerAppDriver: LedgerAppDriver = {
-    chainId: ETHEREUM_CHAIN_ID,
+// The Ledger Ethereum app signs for every EIP-155 chain; each chain registers
+// its own driver because the registry is keyed by chain.
+export const createEvmLedgerAppDriver = (chain: EvmChain): LedgerAppDriver => ({
+    chainId: chain.row.id,
     open: (transport, classifyError) =>
         createEthereumLedgerTransport(
             transport,
@@ -27,4 +29,4 @@ export const ethereumLedgerAppDriver: LedgerAppDriver = {
             new Eth(transport as EthAppTransport),
             classifyError,
         ),
-}
+})

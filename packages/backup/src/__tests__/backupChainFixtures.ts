@@ -23,11 +23,11 @@ export const HARDHAT_0_KEY_HEX =
     'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 export const HARDHAT_0_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
-/** Registers Ethereum as a chain this build backs up: descriptor with a private-key secret, cloud backup on. */
-export const registerEthereumBackupChain = (): void => {
+const registerKeyChain = (id: string): void => {
     getProvider().chains.register(
         {
-            id: 'ethereum',
+            id,
+            family: 'evm',
             signing: {
                 schemes: ['secp256k1'],
                 derivationPaths: {},
@@ -37,6 +37,21 @@ export const registerEthereumBackupChain = (): void => {
         } as unknown as ChainDescriptor,
         CLOUD_BACKUP_ONLY,
     )
+}
+
+/** Registers Ethereum as a chain this build backs up: descriptor with a private-key secret, cloud backup on. */
+export const registerEthereumBackupChain = (): void => {
+    registerKeyChain('ethereum')
+}
+
+/** A second chain of Ethereum's family, backed up the same way, with its accounts adapter. */
+export const registerBaseBackupChain = (): void => {
+    registerKeyChain('base')
+    if (!accountsChainAdapters.has('base')) {
+        accountsChainAdapters.register({
+            chainId: 'base',
+        } as unknown as AccountsChainAdapter)
+    }
 }
 
 /** Registered so the chain counts as backed up; specs that reveal a key spread

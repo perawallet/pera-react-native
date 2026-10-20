@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@test-utils/render'
+import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -60,8 +60,20 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockSetAccounts = vi.fn()
+const watched = (chainId: string, address: string) => ({
+    id: 'watched',
+    custody: { kind: 'watch' },
+    chains: { [chainId]: { address } },
+})
+const mockImportWatchAccount = vi.fn(async (chainId: string, address: string) =>
+    watched(chainId, address),
+)
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
+const mockShowError = vi.fn()
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -72,7 +84,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAllAccounts: () => mockUseAllAccounts(),
         useAccountsStore: (selector: (state: unknown) => unknown) => {
             const state = {
-                setAccounts: mockSetAccounts,
+                importWatchAccount: mockImportWatchAccount,
             }
             return selector(state)
         },
@@ -205,7 +217,7 @@ describe('useWatchAccountScreen', () => {
             result.current.handleWatchAccount()
         })
 
-        expect(mockSetAccounts).not.toHaveBeenCalled()
+        expect(mockImportWatchAccount).not.toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
     })
 
@@ -228,11 +240,11 @@ describe('useWatchAccountScreen', () => {
             result.current.handleWatchAccount()
         })
 
-        expect(mockSetAccounts).not.toHaveBeenCalled()
+        expect(mockImportWatchAccount).not.toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
     })
 
-    it('handleWatchAccount creates watch account and navigates to NameAccount', () => {
+    it('handleWatchAccount adds the watch account through the store and names the one it returns', async () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
@@ -243,46 +255,44 @@ describe('useWatchAccountScreen', () => {
             result.current.handleWatchAccount()
         })
 
-        const expectedAccount = {
-            id: 'mock-uuid',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
-        }
-
-        expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: expectedAccount,
-            chainId: 'algorand',
-        })
+        expect(mockImportWatchAccount).toHaveBeenCalledWith(
+            'algorand',
+            VALID_ALGORAND_ADDRESS,
+        )
+        await waitFor(() =>
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: watched('algorand', VALID_ALGORAND_ADDRESS),
+                chainId: 'algorand',
+            }),
+        )
     })
 
-    it('handleWatchAccount appends to existing accounts', () => {
-        const existingAccount = {
-            id: 'existing',
-            chains: { algorand: { address: OTHER_ALGORAND_ADDRESS } },
-            custody: { kind: 'watch' },
-        } as WalletAccount
-
-        mockUseAllAccounts.mockReturnValue([existingAccount])
-
+    it('shows why, and stays, when the store refuses the address', async () => {
+        const failure = new Error('already watched')
+        mockImportWatchAccount.mockRejectedValueOnce(failure)
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing',
+                chains: { algorand: { address: OTHER_ALGORAND_ADDRESS } },
+                custody: { kind: 'watch' },
+            } as WalletAccount,
+        ])
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
             result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
-
         act(() => {
             result.current.handleWatchAccount()
         })
 
-        expect(mockSetAccounts).toHaveBeenCalledWith([
-            existingAccount,
-            {
-                id: 'mock-uuid',
-                custody: { kind: 'watch' },
-                chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
-            },
-        ])
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                failure,
+                'errors.general.title',
+            ),
+        )
+        expect(mockPush).not.toHaveBeenCalled()
     })
 
     it('resolves NFD name to address when input contains a dot', () => {
@@ -320,7 +330,7 @@ describe('useWatchAccountScreen', () => {
         expect(result.current.nfdName).toBeUndefined()
     })
 
-    it('accepts a quantum-derived address and creates a plain watch account (FR-6)', () => {
+    it('accepts a quantum-derived address and creates a plain watch account (FR-6)', async () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
@@ -333,17 +343,16 @@ describe('useWatchAccountScreen', () => {
             result.current.handleWatchAccount()
         })
 
-        const expectedAccount = {
-            id: 'mock-uuid',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: QUANTUM_TEST_ADDRESS } },
-        }
-
-        expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: expectedAccount,
-            chainId: 'algorand',
-        })
+        expect(mockImportWatchAccount).toHaveBeenCalledWith(
+            'algorand',
+            QUANTUM_TEST_ADDRESS,
+        )
+        await waitFor(() =>
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: watched('algorand', QUANTUM_TEST_ADDRESS),
+                chainId: 'algorand',
+            }),
+        )
     })
 
     it('shows resolving state during NFD lookup', () => {
@@ -362,7 +371,7 @@ describe('useWatchAccountScreen', () => {
     })
 
     describe('on a second registered chain', () => {
-        it("accepts an address that chain's codec validates and watches it there", () => {
+        it("accepts an address that chain's codec validates and watches it there", async () => {
             const { result } = renderHook(() => useWatchAccountScreen())
 
             act(() => {
@@ -377,16 +386,19 @@ describe('useWatchAccountScreen', () => {
                 result.current.handleWatchAccount()
             })
 
-            const expectedAccount = {
-                id: 'mock-uuid',
-                custody: { kind: 'watch' },
-                chains: { [FIXTURE_CHAIN_ID]: { address: FIXTURE_ADDRESS } },
-            }
-            expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
-            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-                account: expectedAccount,
-                chainId: FIXTURE_CHAIN_ID,
-            })
+            expect(mockImportWatchAccount).toHaveBeenCalledWith(
+                FIXTURE_CHAIN_ID,
+                FIXTURE_ADDRESS.toUpperCase(),
+            )
+            await waitFor(() =>
+                expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                    account: watched(
+                        FIXTURE_CHAIN_ID,
+                        FIXTURE_ADDRESS.toUpperCase(),
+                    ),
+                    chainId: FIXTURE_CHAIN_ID,
+                }),
+            )
         })
 
         it('rejects an address no registered codec validates', () => {
@@ -400,7 +412,7 @@ describe('useWatchAccountScreen', () => {
             })
 
             expect(result.current.isValidAddress).toBe(false)
-            expect(mockSetAccounts).not.toHaveBeenCalled()
+            expect(mockImportWatchAccount).not.toHaveBeenCalled()
         })
 
         it('rejects its addresses while that chain cannot watch accounts', () => {
@@ -415,7 +427,7 @@ describe('useWatchAccountScreen', () => {
             })
 
             expect(result.current.isValidAddress).toBe(false)
-            expect(mockSetAccounts).not.toHaveBeenCalled()
+            expect(mockImportWatchAccount).not.toHaveBeenCalled()
         })
 
         it('offers every registered chain that can watch accounts to the scanner', () => {

@@ -36,7 +36,7 @@ export const QRViewScreen = () => {
         address,
         paymentUri,
         canReceive,
-        canSelectAccount,
+        canGoBack,
         handleBack,
         handleCopyAddress,
         handleShareAddress,
@@ -45,7 +45,7 @@ export const QRViewScreen = () => {
     useNavigationHeader({
         left: (
             <PWIcon
-                name={canSelectAccount ? 'chevron-left' : 'cross'}
+                name={canGoBack ? 'chevron-left' : 'cross'}
                 onPress={handleBack}
             />
         ),

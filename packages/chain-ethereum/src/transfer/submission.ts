@@ -34,7 +34,8 @@ import {
     type SubmissionFlow,
     type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
-import { EvmErrorCode, toEvmError } from '../blockchain/errors'
+import { EvmErrorCode, evmErrorCodeOf, toEvmError } from '../blockchain/errors'
+import type { EvmChain } from '../chains/types'
 
 // Nodes word a resend of a pooled transaction differently.
 const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
@@ -67,7 +68,7 @@ const isAccepted = async (
 ): Promise<boolean> => {
     if (ALREADY_KNOWN.test(messageOf(error))) return true
     return (
-        toEvmError(error).code === EvmErrorCode.NONCE_TOO_LOW &&
+        evmErrorCodeOf(error) === EvmErrorCode.NONCE_TOO_LOW &&
         (await isTransactionKnownToNode(client, hash))
     )
 }
@@ -77,7 +78,7 @@ const isAccepted = async (
 const hasNodeVerdict = (error: unknown): boolean =>
     error instanceof BaseError &&
     error.walk(link => link instanceof RpcRequestError) !== null &&
-    toEvmError(error).code !== EvmErrorCode.RATE_LIMITED
+    evmErrorCodeOf(error) !== EvmErrorCode.RATE_LIMITED
 
 /**
  * The only path to `eth_sendRawTransaction`. Sends in order and resolves with
@@ -86,6 +87,7 @@ const hasNodeVerdict = (error: unknown): boolean =>
 export const submitEthereumTransactions = async (
     client: PublicClient,
     signedTransactions: readonly Uint8Array[],
+    chain: EvmChain,
 ): Promise<string[]> => {
     const hashes: string[] = []
     for (const bytes of signedTransactions) {
@@ -106,7 +108,7 @@ export const submitEthereumTransactions = async (
                 throw new SubmissionError(
                     [hash],
                     classification,
-                    toEvmError(error),
+                    toEvmError(error, chain.row.nativeAsset.symbol),
                 )
             }
         }
@@ -117,6 +119,7 @@ export const submitEthereumTransactions = async (
 
 export type SubmitAndRecordEthereumTransactionsParams = {
     client: PublicClient
+    chain: EvmChain
     scope: ChainScope
     signedTransactions: readonly Uint8Array[]
     flow: SubmissionFlow
@@ -150,6 +153,7 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
+    chain,
     scope,
     signedTransactions,
     flow,
@@ -180,7 +184,9 @@ export const submitAndRecordEthereumTransactions = async ({
             })
         })
         try {
-            txIds.push(...(await submitEthereumTransactions(client, [bytes])))
+            txIds.push(
+                ...(await submitEthereumTransactions(client, [bytes], chain)),
+            )
         } catch (error) {
             const id = attemptId
             if (id !== undefined) {

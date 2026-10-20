@@ -159,6 +159,8 @@ describe('algorandSingleKeyAccounts', () => {
                     algorand: {
                         address,
                         keyPairId: algo25SignKeyId('SEED1'),
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'created',
                     },
                 },
             })
@@ -209,6 +211,8 @@ describe('algorandSingleKeyAccounts', () => {
                         address: CANONICAL_ADDRESS,
                         keyPairId: 'QSEED1-quantum-pqk1',
                         native: QUANTUM_NATIVE,
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'created',
                     },
                 },
             })
@@ -282,6 +286,8 @@ describe('algorandSingleKeyAccounts', () => {
                     address: CANONICAL_ADDRESS,
                     keyPairId: 'QSEED1-quantum-pqk1',
                     native: QUANTUM_NATIVE,
+                    enabledAt: expect.any(Number),
+                    enabledBy: 'created',
                 },
             })
             expect(keystore.createQuantumKey).toHaveBeenCalledWith({
@@ -316,6 +322,8 @@ describe('algorandSingleKeyAccounts', () => {
                 address: LEGACY_ADDRESS,
                 keyPairId: 'QSEED1-quantum',
                 native: QUANTUM_NATIVE,
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
             })
         })
 

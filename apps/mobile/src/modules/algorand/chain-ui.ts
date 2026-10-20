@@ -11,6 +11,7 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandCustomNodeForm } from './components/AlgorandCustomNodeForm'
@@ -66,4 +67,5 @@ export const algorandChainUi: ChainUi = {
     customNode: {
         Form: AlgorandCustomNodeForm,
     },
+    icon: () => AlgoAssetIcon,
 }

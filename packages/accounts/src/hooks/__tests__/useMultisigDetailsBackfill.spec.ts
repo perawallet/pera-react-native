@@ -170,6 +170,8 @@ describe('useMultisigDetailsBackfill', () => {
                         undefined,
                         PARAMETERS,
                     ),
+                    enabledAt: 0,
+                    enabledBy: 'created',
                 },
             },
         })

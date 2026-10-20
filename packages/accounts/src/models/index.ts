@@ -20,7 +20,7 @@ import type {
     HardwareWalletDetails,
     LaunchAccountMode,
 } from './accounts'
-import type { HdIndex } from './credentials'
+import type { ChainEnabledBy, HdIndex } from './credentials'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
@@ -34,6 +34,20 @@ export * from './ledger-selectable-account'
 export type RecordedAuthorities = Partial<
     Record<ChainScopeKey, Record<string, string>>
 >
+
+export type EnableChainOptions = {
+    /** A hardware account's address on the chain, read from its device; required for hardware custody. */
+    deviceAddress?: string
+    /** The address the caller holds for the account there; a different derived address throws before anything is written. */
+    expectedAddress?: string
+}
+
+export type PrivateKeyImportOptions = {
+    /** Defaults to `'created'` for a new account and `'user'` when the key joins its holder on another chain. */
+    enabledBy?: ChainEnabledBy
+    /** Probe every eligible chain for activity and enable the active ones; defaults to `true`. */
+    shouldDiscover?: boolean
+}
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
@@ -82,13 +96,57 @@ export type AccountsState = BaseStoreState & {
      * held, and `AddressMismatchError` when the key's address isn't
      * `expectedAddress`; either way a key no account references is removed again.
      * `privateKey` is zeroed before this settles, on success and on every throw.
+     *
+     * When a standalone account already signs with the same key on another
+     * chain, `chainId` is enabled on that account and it is returned instead
+     * of a second account. Otherwise, with more than one eligible chain and
+     * `shouldDiscover` on, every eligible chain is probed once: the import
+     * chain is always enabled, and each active chain is enabled as
+     * `'discovery'`.
      */
     importAccountFromPrivateKey: (
         chainId: ChainId,
         privateKey: Uint8Array,
         name?: string,
         expectedAddress?: string,
+        options?: PrivateKeyImportOptions,
     ) => Promise<WalletAccount>
+    /**
+     * Adds a watch account for `address` on `chainId`, probing its other
+     * eligible chains as `importAccountFromPrivateKey` does. A watch account
+     * already holding the address on another chain gets `chainId` enabled
+     * instead. Throws `DuplicateAccountError` when the address is already held
+     * on `chainId`.
+     */
+    importWatchAccount: (
+        chainId: ChainId,
+        address: string,
+        name?: string,
+    ) => Promise<WalletAccount>
+    /**
+     * Gives the account an entry on `chainId`, derived from its custody, and
+     * records how it was enabled. Returns the account untouched when it is
+     * already enabled there. Throws `AccountNotFoundError`,
+     * `ChainNotEligibleError` when the custody can't reach the chain,
+     * `DeviceAddressRequiredError` for a hardware account without
+     * `options.deviceAddress`, `AddressMismatchError` when the address isn't
+     * `options.expectedAddress`, and `DuplicateAccountError` when another
+     * account holds the address there. Chain changes on one account run one
+     * at a time.
+     */
+    enableChain: (
+        accountId: string,
+        chainId: ChainId,
+        enabledBy: ChainEnabledBy,
+        options?: EnableChainOptions,
+    ) => Promise<WalletAccount>
+    /**
+     * Probes each eligible chain in a family the account is already on, and
+     * not enabled on yet, once for activity and enables the active ones as
+     * `'discovery'`. Never rejects; a chain whose probe fails reads as
+     * inactive. Resolves to the chains it enabled.
+     */
+    discoverChains: (accountId: string) => Promise<ChainId[]>
     /**
      * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
      * (the seed's KMS id, as `seedOf` returns), or creates an account there.
@@ -96,7 +154,7 @@ export type AccountsState = BaseStoreState & {
      * and `DuplicateAccountError` naming the holder when the address or the
      * chain entry is already held, and `AddressMismatchError` before any write
      * when the derived address isn't `expectedAddress`. `name` applies only to
-     * a new account.
+     * a new account. The new entry is stamped `enabledBy` (default `'created'`).
      */
     addChainAccount: (
         walletId: string,
@@ -104,6 +162,7 @@ export type AccountsState = BaseStoreState & {
         index: HdIndex,
         name?: string,
         expectedAddress?: string,
+        enabledBy?: ChainEnabledBy,
     ) => Promise<WalletAccount>
     setSelectedAccountId: (id: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void

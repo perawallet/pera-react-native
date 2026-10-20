@@ -10,6 +10,4 @@
  limitations under the License
  */
 
-import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
-
-export const ethereumChainModule: ChainModule | undefined = undefined
+export { ChainIcon, type ChainIconProps } from './ChainIcon'

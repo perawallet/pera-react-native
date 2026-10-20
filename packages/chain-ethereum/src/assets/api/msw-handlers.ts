@@ -13,6 +13,7 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import { ASSETS_PATH, whitelistPath } from './endpoints'
 import type { AssetItemResponse, WhitelistItemResponse } from './schema'
+import { evmChainOfEip155Id } from '../../chains/table'
 
 export type PeraEvmAssetFixtures = {
     /** Defaults to every host. */
@@ -47,8 +48,10 @@ export const unknownAssetItem = (caip19: string): AssetItemResponse => ({
 /** The whitelist's leading native row for an EIP-155 chain. */
 export const nativeWhitelistItem = (
     eip155ChainId: number,
+    slip44 = evmChainOfEip155Id(eip155ChainId)?.chain.row.nativeAsset.slip44 ??
+        '60',
 ): WhitelistItemResponse => ({
-    asset_id: `eip155:${eip155ChainId}/slip44:60`,
+    asset_id: `eip155:${eip155ChainId}/slip44:${slip44}`,
     type: 'native',
     name: 'Ether',
     unit_name: 'ETH',

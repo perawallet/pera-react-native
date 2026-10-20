@@ -39,18 +39,17 @@ import {
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
-import { readTransferFees, toEthereumFeeEstimate } from './fees'
+import { readTransferFees, toEvmFeeEstimate } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
-import { readEthereumSpendableBalance } from './spendable-balance'
+import { createEvmSpendableBalance } from './spendable-balance'
 import { sendSummary } from './summary'
 
 const MAX_UINT256 = new Decimal(maxUint256.toString())
 
 /** The EVM call a transfer intent becomes. `value` is in wei; for an ERC-20 transfer `to` is the token contract. */
-export type EthereumTransferCall = {
+export type EvmTransferCall = {
     chainId: number
     from: Address
     to: Address
@@ -60,20 +59,18 @@ export type EthereumTransferCall = {
 
 // An intent's note is dropped: EVM has no memo, and calldata on a token
 // transfer would change the call.
-const toEthereumTransferCall = (
+const toEvmTransferCall = (
+    chain: EvmChain,
     intent: TransactionIntent,
     context: BuildContext,
-): EthereumTransferCall => {
-    const chainId = eip155ChainIdOf(context.scope)
+): EvmTransferCall => {
+    const chainId = eip155ChainIdOf(context.scope, chain)
     if (intent.kind !== 'transfer') {
-        throw new UnsupportedTransactionIntentError(
-            intent.kind,
-            ETHEREUM_CHAIN_ID,
-        )
+        throw new UnsupportedTransactionIntentError(intent.kind, chain.row.id)
     }
-    const isNative = isNativeAsset(intent.assetRef, ethereumDescriptor)
+    const isNative = isNativeAsset(intent.assetRef, chain.descriptor)
     if (
-        intent.assetRef.chainId !== ETHEREUM_CHAIN_ID ||
+        intent.assetRef.chainId !== chain.row.id ||
         (!isNative && !isAddress(intent.assetRef.assetId)) ||
         !isAddress(intent.from) ||
         !isAddress(intent.to) ||
@@ -114,13 +111,14 @@ const transferSummary = (
         },
     )
 
-const buildEthereumTransfer = async (
+const buildEvmTransfer = async (
     ctx: ChainContext,
+    chain: EvmChain,
     intent: TransactionIntent,
     context: BuildContext,
 ): Promise<UnsignedTransaction[]> => {
-    const call = toEthereumTransferCall(intent, context)
-    const client = createEvmClient(context.scope, ctx)
+    const call = toEvmTransferCall(chain, intent, context)
+    const client = createEvmClient(context.scope, ctx, chain)
     // The node's pending count and the ledger's open sends, not
     // context.chainState: a synced snapshot can lag the mempool.
     const [nonce, fees] = await Promise.all([
@@ -129,9 +127,9 @@ const buildEthereumTransfer = async (
             scope: context.scope,
             sender: call.from,
         }),
-        readTransferFees(client, call),
+        readTransferFees(client, call, chain, context.scope.networkId),
     ]).catch((error: unknown) => {
-        throw toEvmError(error)
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
     })
     const prices = fees.presets[context.feePreset ?? 'normal']
     const payload: EthereumTransactionPayload = {
@@ -152,7 +150,7 @@ const buildEthereumTransfer = async (
         {
             scope: context.scope,
             payload,
-            // toEthereumTransferCall only returns for a transfer intent.
+            // toEvmTransferCall only returns for a transfer intent.
             summary: transferSummary(
                 intent as TransferIntent,
                 call.data === undefined,
@@ -162,27 +160,32 @@ const buildEthereumTransfer = async (
     ]
 }
 
-const estimateEthereumTransferFee = async (
+const estimateEvmTransferFee = async (
     ctx: ChainContext,
+    chain: EvmChain,
     intent: TransactionIntent,
     context: BuildContext,
 ): Promise<FeeEstimate> => {
-    const call = toEthereumTransferCall(intent, context)
-    const client = createEvmClient(context.scope, ctx)
-    const fees = await readTransferFees(client, call).catch(
-        (error: unknown) => {
-            throw toEvmError(error)
-        },
-    )
-    return toEthereumFeeEstimate(fees, context.feePreset ?? 'normal')
+    const call = toEvmTransferCall(chain, intent, context)
+    const client = createEvmClient(context.scope, ctx, chain)
+    const fees = await readTransferFees(
+        client,
+        call,
+        chain,
+        context.scope.networkId,
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return toEvmFeeEstimate(fees, context.feePreset ?? 'normal', chain)
 }
 
-export const createEthereumTransferAdapter = (
+export const createEvmTransferAdapter = (
     ctx: ChainContext,
+    chain: EvmChain,
 ): TransferChainAdapter => ({
-    chainId: ETHEREUM_CHAIN_ID,
-    build: (intent, context) => buildEthereumTransfer(ctx, intent, context),
+    chainId: chain.row.id,
+    build: (intent, context) => buildEvmTransfer(ctx, chain, intent, context),
     getFeeEstimate: (intent, context) =>
-        estimateEthereumTransferFee(ctx, intent, context),
-    spendableBalance: readEthereumSpendableBalance,
+        estimateEvmTransferFee(ctx, chain, intent, context),
+    spendableBalance: createEvmSpendableBalance(chain),
 })

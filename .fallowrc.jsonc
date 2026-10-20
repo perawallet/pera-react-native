@@ -11,7 +11,10 @@
     // Web-only native-module stubs resolved by metro.config.js via
     // `path.resolve(webShimsRoot, ...)` string lookups (webStubs/polyfillMap),
     // not a static import fallow's graph can follow.
-    "apps/browser/web-shims/**"
+    "apps/browser/web-shims/**",
+    // EVM config key naming: generate-config.sh runs it with node, and the
+    // browser build loads it through createRequire.
+    "tools/dev/evm-config-keys.cjs"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.

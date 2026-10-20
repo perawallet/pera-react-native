@@ -58,6 +58,15 @@ vi.mock('@hooks/useClipboard', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const navigation = vi.hoisted(() => ({
+    canGoBack: vi.fn(() => false),
+    goBack: vi.fn(),
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => navigation,
+}))
+
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
 }))
@@ -98,12 +107,15 @@ describe('useQRViewScreen', () => {
     const mockShowError = vi.fn()
     const mockCopyToClipboard = vi.fn()
 
+    const mockOnFinished = vi.fn()
+
     const givenAccount = (
         account: WalletAccount | undefined,
         scope: ChainScope | null,
     ) => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             selectedAccount: account,
+            onFinished: mockOnFinished,
         })
         vi.mocked(useAccountCapabilityScope).mockReturnValue(scope)
     }
@@ -125,13 +137,53 @@ describe('useQRViewScreen', () => {
         addressCodecs.reset()
     })
 
+    it('goes back to the picker that led here', () => {
+        navigation.canGoBack.mockReturnValue(true)
+
+        const { result } = renderHook(() => useQRViewScreen())
+        act(() => result.current.handleBack())
+
+        expect(result.current.canGoBack).toBe(true)
+        expect(navigation.goBack).toHaveBeenCalledOnce()
+        expect(mockOnFinished).not.toHaveBeenCalled()
+    })
+
+    it('ends the flow on back when it opened on the QR', () => {
+        navigation.canGoBack.mockReturnValue(false)
+
+        const { result } = renderHook(() => useQRViewScreen())
+        act(() => result.current.handleBack())
+
+        expect(result.current.canGoBack).toBe(false)
+        expect(navigation.goBack).not.toHaveBeenCalled()
+        expect(mockOnFinished).toHaveBeenCalledOnce()
+    })
+
     it('resolves the account chain for receiving', () => {
         renderHook(() => useQRViewScreen())
 
         expect(useAccountCapabilityScope).toHaveBeenCalledWith(
             algorandAccount,
             'receive',
+            undefined,
         )
+    })
+
+    it('resolves the pinned chain when the flow was opened for one', () => {
+        ;(useReceiveFunds as Mock).mockReturnValue({
+            selectedAccount: ethereumAccount,
+            chainId: 'ethereum',
+        })
+        vi.mocked(useAccountCapabilityScope).mockReturnValue(ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(useAccountCapabilityScope).toHaveBeenCalledWith(
+            ethereumAccount,
+            'receive',
+            'ethereum',
+        )
+        expect(result.current.paymentUri).toBe('stub:0XABC@sepolia')
     })
 
     it('encodes an Algorand account through its chain codec', () => {

@@ -10,13 +10,36 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { setupServer } from 'msw/node'
 import { parseGwei, toHex, type RpcFeeHistory } from 'viem'
+import { estimateL1Fee, estimateOperatorFee } from 'viem/op-stack'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { readTransferFees, toEthereumFeeEstimate } from '../fees'
+import {
+    BASE,
+    ETHEREUM,
+    EVM_TEST_CHAINS,
+    POLYGON,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
+import type { EvmChain } from '../../chains/types'
+import { readTransferFees, toEvmFeeEstimate } from '../fees'
+
+vi.mock('viem/op-stack', () => ({
+    estimateL1Fee: vi.fn(),
+    estimateOperatorFee: vi.fn(),
+}))
 
 const call = {
     chainId: 1,
@@ -50,8 +73,11 @@ const readWith = (history: Partial<RpcFeeHistory>) => {
         createEvmClient(
             { chainId: 'ethereum', networkId: 'mainnet' },
             testChainContext(),
+            ETHEREUM,
         ),
         call,
+        ETHEREUM,
+        'mainnet',
     )
 }
 
@@ -83,8 +109,11 @@ describe('readTransferFees', () => {
             createEvmClient(
                 { chainId: 'ethereum', networkId: 'mainnet' },
                 testChainContext(),
+                ETHEREUM,
             ),
             call,
+            ETHEREUM,
+            'mainnet',
         )
 
         expect(params).toEqual(['0xa', 'latest', [10, 50, 90]])
@@ -136,7 +165,7 @@ describe('readTransferFees', () => {
     })
 })
 
-describe('toEthereumFeeEstimate', () => {
+describe('toEvmFeeEstimate', () => {
     const fees = {
         gas: 21_000n,
         baseFeePerGas: parseGwei('10'),
@@ -154,10 +183,11 @@ describe('toEthereumFeeEstimate', () => {
                 maxFeePerGas: parseGwei('28'),
             },
         },
+        surcharge: 0n,
     }
 
     it('prices each preset as gas x (base fee + tip), capped at gas x maxFeePerGas, in wei', () => {
-        const estimate = toEthereumFeeEstimate(fees, 'normal')
+        const estimate = toEvmFeeEstimate(fees, 'normal', ETHEREUM)
 
         expect(estimate.assetRef).toEqual({
             chainId: 'ethereum',
@@ -174,9 +204,133 @@ describe('toEthereumFeeEstimate', () => {
     it.each(['slow', 'normal', 'fast'] as const)(
         'reports the %s preset as the headline amount',
         preset => {
-            const estimate = toEthereumFeeEstimate(fees, preset)
+            const estimate = toEvmFeeEstimate(fees, preset, ETHEREUM)
 
             expect(estimate.amount).toBe(estimate.presets?.[preset].amount)
+        },
+    )
+})
+
+describe('per-chain fee strategies', () => {
+    const L1_DATA_FEE = 1_234_567_890n
+    const OPERATOR_FEE = 9_876n
+
+    beforeEach(() => {
+        vi.mocked(estimateL1Fee).mockReset().mockResolvedValue(L1_DATA_FEE)
+        vi.mocked(estimateOperatorFee)
+            .mockReset()
+            .mockResolvedValue(OPERATOR_FEE)
+    })
+
+    const readOn = (
+        chain: EvmChain,
+        history: Pick<RpcFeeHistory, 'baseFeePerGas'> & Partial<RpcFeeHistory>,
+    ) => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: {
+                        oldestBlock: '0x1',
+                        gasUsedRatio: [0.5],
+                        ...history,
+                    },
+                },
+            }),
+        )
+        const scope = evmScopeOf(chain)
+        return readTransferFees(
+            createEvmClient(scope, testChainContext({ chain }), chain),
+            call,
+            chain,
+            scope.networkId,
+        )
+    }
+
+    const HISTORY = { baseFeePerGas: gwei(10), reward: [gwei(1, 30, 40)] }
+
+    it("adds Base's L1 data fee and operator fee to every preset", async () => {
+        const fees = await readOn(BASE, HISTORY)
+        const estimate = toEvmFeeEstimate(fees, 'normal', BASE)
+        const surcharge = L1_DATA_FEE + OPERATOR_FEE
+
+        expect(fees.surcharge).toBe(surcharge)
+        for (const [preset, values] of Object.entries(fees.presets)) {
+            const priced =
+                estimate.presets?.[preset as keyof typeof fees.presets]
+            expect(priced?.amount.toFixed()).toBe(
+                (
+                    fees.gas *
+                        (fees.baseFeePerGas + values.maxPriorityFeePerGas) +
+                    surcharge
+                ).toString(),
+            )
+            expect(priced?.maxAmount.toFixed()).toBe(
+                (fees.gas * values.maxFeePerGas + surcharge).toString(),
+            )
+        }
+    })
+
+    it('names the OP-stack gas price oracle, which our chain definition lacks', async () => {
+        await readOn(BASE, HISTORY)
+
+        const oracle =
+            BASE.row.fee.kind === 'eip1559-op-stack'
+                ? BASE.row.fee.gasPriceOracleAddress
+                : undefined
+        expect(oracle).toBe('0x420000000000000000000000000000000000000F')
+        expect(vi.mocked(estimateL1Fee).mock.calls[0]?.[1]).toMatchObject({
+            gasPriceOracleAddress: oracle,
+            to: call.to,
+            value: call.value,
+        })
+        expect(vi.mocked(estimateOperatorFee).mock.calls[0]?.[1]).toMatchObject(
+            { gasPriceOracleAddress: oracle },
+        )
+    })
+
+    it('rejects when the L1 data fee read fails, with no partial fee', async () => {
+        vi.mocked(estimateL1Fee).mockRejectedValue(new Error('oracle down'))
+
+        await expect(readOn(BASE, HISTORY)).rejects.toThrow('oracle down')
+    })
+
+    it("never prices Polygon's tip below the network minimum", async () => {
+        const fees = await readOn(POLYGON, HISTORY)
+
+        expect(fees.presets.slow).toEqual({
+            maxPriorityFeePerGas: parseGwei('25'),
+            maxFeePerGas: parseGwei('45'),
+        })
+        expect(fees.presets.normal.maxPriorityFeePerGas).toBe(parseGwei('30'))
+        expect(fees.presets.fast.maxPriorityFeePerGas).toBe(parseGwei('40'))
+    })
+
+    it("floors every Polygon preset on a quiet network's empty blocks", async () => {
+        const fees = await readOn(POLYGON, {
+            baseFeePerGas: gwei(10),
+            gasUsedRatio: [0],
+            reward: [gwei(0, 0, 0)],
+        })
+
+        for (const preset of Object.values(fees.presets)) {
+            expect(preset.maxPriorityFeePerGas).toBe(parseGwei('25'))
+        }
+    })
+
+    it.each(EVM_TEST_CHAINS.filter(chain => chain.row.fee.kind === 'eip1559'))(
+        "prices $row.id with Ethereum's math, in its own coin",
+        async chain => {
+            const [onChain, onEthereum] = [
+                await readOn(chain, HISTORY),
+                await readOn(ETHEREUM, HISTORY),
+            ]
+
+            expect(onChain).toEqual(onEthereum)
+            expect(estimateL1Fee).not.toHaveBeenCalled()
+            expect(toEvmFeeEstimate(onChain, 'slow', chain).assetRef).toEqual(
+                chain.descriptor.nativeAsset.ref,
+            )
         },
     )
 })

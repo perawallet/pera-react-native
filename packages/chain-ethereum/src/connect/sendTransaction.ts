@@ -17,13 +17,14 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { ethereumCallSummary } from '../signing/review'
 import type { EthereumTransactionPayload } from '../signing/adapter'
-import { readEthereumFeePresets } from '../transfer/fees'
+import { readEvmFeePresets } from '../transfer/fees'
 import { allocateEthereumNonce } from '../transfer/nonce-pool'
 
 /** What a dApp's `eth_sendTransaction` asks for once validated; the wallet picks the nonce and the fees. */
@@ -99,9 +100,7 @@ const isHeldBy = (
 ): boolean =>
     typeof from === 'string' &&
     isAddress(from) &&
-    authorizedAccounts.some(account =>
-        ethereumAddressCodec.areEqual(account, from),
-    )
+    authorizedAccounts.some(account => areEvmAddressesEqual(account, from))
 
 /**
  * Applies the field rules to a dApp's `eth_sendTransaction` object. Fee fields
@@ -205,10 +204,11 @@ export const validateEthereumSendTransaction = (
  */
 export const buildEthereumSendTransaction = async (
     ctx: ChainContext,
+    chain: EvmChain,
     request: EthereumSendTransactionRequest,
 ): Promise<UnsignedTransaction> => {
     const scope = ctx.getScope()
-    const client = createEvmClient(scope, ctx)
+    const client = createEvmClient(scope, ctx, chain)
     const { from, to, value, data, accessList } = request
     const [nonce, gas, fees] = await Promise.all([
         allocateEthereumNonce({ client, scope, sender: from }),
@@ -220,16 +220,16 @@ export const buildEthereumSendTransaction = async (
                 data,
                 ...(accessList && { accessList }),
             }),
-        readEthereumFeePresets(client),
+        readEvmFeePresets(client, chain, scope.networkId),
     ]).catch((error: unknown) => {
-        throw toEvmError(error)
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
     })
     const { maxFeePerGas, maxPriorityFeePerGas } = fees.presets.normal
     const payload: EthereumTransactionPayload = {
         from,
         transaction: {
             type: 'eip1559',
-            chainId: eip155ChainIdOf(scope),
+            chainId: eip155ChainIdOf(scope, chain),
             nonce,
             to,
             value,
@@ -243,7 +243,7 @@ export const buildEthereumSendTransaction = async (
     return {
         scope,
         payload,
-        summary: ethereumCallSummary({ from, to, value, data }),
+        summary: ethereumCallSummary({ from, to, value, data }, chain),
         chainData: { family: 'evm' },
     }
 }

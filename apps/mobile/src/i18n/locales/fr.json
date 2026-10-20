@@ -434,7 +434,8 @@
         "rekey_signer_shared": "un compte partagé",
         "rekey_signer_quantum": "un compte quantique",
         "type_no_auth": "Sans auth",
-        "type_unknown": "Compte inconnu"
+        "type_unknown": "Compte inconnu",
+        "networks": "Réseaux"
     },
     "account_type_info": {
         "standard_title": "Compte Algo25",
@@ -1105,8 +1106,8 @@
                 "body": "Une transaction en attente de ce compte ne peut être remplacée qu’avec des frais de réseau plus élevés. Attendez qu’elle soit terminée, ou réessayez avec des frais plus élevés."
             },
             "insufficient_funds": {
-                "title": "ETH insuffisant",
-                "body": "Ce compte ne dispose pas d’assez d’ETH pour couvrir le montant et les frais de réseau. Ajoutez plus d’ETH, puis réessayez."
+                "title": "{{symbol}} insuffisant",
+                "body": "Ce compte ne dispose pas d’assez de {{symbol}} pour couvrir le montant et les frais de réseau. Ajoutez plus de {{symbol}}, puis réessayez."
             },
             "rate_limited": {
                 "title": "Réseau saturé",
@@ -2607,6 +2608,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Sélectionner un compte"
+        },
+        "chain_selection": {
+            "title": "Sélectionner un réseau",
+            "eligible_subtitle": "Pas encore ajouté"
         },
         "qrview": {
             "error_title": "Aucun compte sélectionné",

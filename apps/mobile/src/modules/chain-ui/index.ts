@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export { ChainIcon, type ChainIconProps } from './components/ChainIcon'
 export { chainUiFor } from './registry'
 export type { ChainUi } from './types'

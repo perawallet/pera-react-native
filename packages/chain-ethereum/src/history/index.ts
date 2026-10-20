@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { ethereumHistoryAdapter } from './adapter'
+export { createEvmHistoryAdapter } from './adapter'

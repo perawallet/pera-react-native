@@ -58,13 +58,27 @@ describe('useAssetActionButtons', () => {
             canSwap: true,
             canBuy: true,
             canSend: true,
+            canReceive: true,
         })
     })
 
     it.each([
-        ['swap', { canSwap: false, canBuy: true, canSend: true }],
-        ['onramp', { canSwap: true, canBuy: false, canSend: true }],
-        ['send', { canSwap: true, canBuy: true, canSend: false }],
+        [
+            'swap',
+            { canSwap: false, canBuy: true, canSend: true, canReceive: true },
+        ],
+        [
+            'onramp',
+            { canSwap: true, canBuy: false, canSend: true, canReceive: true },
+        ],
+        [
+            'send',
+            { canSwap: true, canBuy: true, canSend: false, canReceive: true },
+        ],
+        [
+            'receive',
+            { canSwap: true, canBuy: true, canSend: true, canReceive: false },
+        ],
     ] as const)(
         'drops only the action whose %s capability is off',
         (capability, expected) => {
@@ -96,7 +110,18 @@ describe('useAssetActionButtons', () => {
             canSwap: false,
             canBuy: false,
             canSend: true,
+            canReceive: true,
         })
+    })
+
+    it('drops receive on an asset whose chain has receive off', () => {
+        setCapabilityOverrides({ receive: false }, 'ethereum')
+
+        const { result } = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly, 'ethereum'),
+        )
+
+        expect(result.current.canReceive).toBe(false)
     })
 
     it("offers send on an Ethereum asset from the account's own Ethereum chain", () => {
@@ -107,12 +132,13 @@ describe('useAssetActionButtons', () => {
         expect(result.current.canSend).toBe(true)
     })
 
-    it("drops send when the account has no address on the asset's chain", () => {
+    it("drops send and receive when the account has no address on the asset's chain", () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(onEthereumOnly, 'algorand'),
         )
 
         expect(result.current.canSend).toBe(false)
+        expect(result.current.canReceive).toBe(false)
     })
 
     it('drops swap for an account with no address on a swap chain', () => {

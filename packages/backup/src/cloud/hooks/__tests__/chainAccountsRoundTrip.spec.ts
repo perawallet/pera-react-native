@@ -36,7 +36,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { revealEthereumPrivateKey } from '@perawallet/wallet-core-chain-ethereum'
-import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
+import {
+    ethereumModule,
+    evmChainModules,
+} from '@perawallet/wallet-core-chain-ethereum'
 import {
     BACKUP_ACCESS_DOMAIN,
     SIGNING_ACCESS_DOMAIN,
@@ -234,6 +237,7 @@ describe('chain accounts through serialize and restore', () => {
             { account: 0, keyIndex: 1 },
             'Child',
             ETH_HD_ADDRESS,
+            'created',
         )
         const restored = store().accounts
         const restoredImported = restored.find(a => a.name === 'Imported')
@@ -241,7 +245,11 @@ describe('chain accounts through serialize and restore', () => {
             HARDHAT_0_ADDRESS.toLowerCase(),
         )
         expect(restored.find(a => a.name === 'Watched')?.chains).toEqual({
-            ethereum: { address: WATCH_ADDRESS },
+            ethereum: {
+                address: WATCH_ADDRESS,
+                enabledAt: expect.any(Number),
+                enabledBy: 'created',
+            },
         })
         const child = restored.filter(a => a.name === 'Child')
         expect(child).toHaveLength(1)
@@ -267,5 +275,133 @@ describe('chain accounts through serialize and restore', () => {
                 prehash: false,
             }),
         ).toBe(true)
+    })
+
+    test('an HD account and an imported key, each on Ethereum and Base, come back with the same chains enabled and one key each', async () => {
+        const base = evmChainModules.base
+        base.register({} as never)
+        getProvider().chains.register(base.descriptor, base.capabilityDefaults)
+
+        // Device A: the imported key joins Base through the real store and KMS.
+        const imported = await store().importAccountFromPrivateKey(
+            'ethereum',
+            hexToBytes(HARDHAT_0_KEY_HEX),
+            'Imported',
+            undefined,
+            { shouldDiscover: false },
+        )
+        const importedOnBoth = await store().enableChain(
+            imported.id,
+            'base',
+            'user',
+        )
+        const enabled = { enabledAt: 5, enabledBy: 'user' } as const
+        const hd = {
+            id: 'hd',
+            name: 'Child',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 1 },
+            },
+            chains: {
+                ethereum: {
+                    address: ETH_HD_ADDRESS,
+                    keyPairId: 'eth-hd',
+                    ...enabled,
+                },
+                base: {
+                    address: ETH_HD_ADDRESS,
+                    keyPairId: 'eth-hd',
+                    ...enabled,
+                },
+            },
+        } as unknown as WalletAccount
+        const pulled = await throughTheWire([hd, importedOnBoth], 'FIRST')
+
+        // Device B: nothing held, a fresh keystore.
+        store().resetState()
+        testKeystore.store = createSecp256k1TestKeyStore()
+        // What the store does for an HD position: create the account, or add
+        // the chain to the one already there. The real derivation needs the
+        // seed in the keystore.
+        const addChainAccount = vi.fn(
+            async (
+                _walletId: string,
+                chainId: string,
+                index: { account: number; keyIndex: number },
+                name?: string,
+                address?: string,
+                enabledBy?: string,
+            ) => {
+                const entry = {
+                    address: address!,
+                    keyPairId: 'eth-hd',
+                    enabledAt: 1,
+                    enabledBy,
+                }
+                const holder = store().accounts.find(a => a.name === 'Child')
+                const account = (
+                    holder
+                        ? {
+                              ...holder,
+                              chains: { ...holder.chains, [chainId]: entry },
+                          }
+                        : {
+                              id: 'restored-hd',
+                              name,
+                              custody: {
+                                  kind: 'local',
+                                  seed: 'bip39',
+                                  hd: index,
+                              },
+                              chains: { [chainId]: entry },
+                          }
+                ) as WalletAccount
+                useAccountsStore.setState({
+                    accounts: holder
+                        ? store().accounts.map(a =>
+                              a.id === holder.id ? account : a,
+                          )
+                        : [...store().accounts, account],
+                })
+                return account
+            },
+        )
+        useAccountsStore.setState({ addChainAccount })
+        const { result } = renderHook(() =>
+            useCloudBackupImport({ chainId: 'algorand', networkId: 'mainnet' }),
+        )
+
+        const summary = await result.current.importAccounts(pulled)
+
+        expect(summary).toEqual({
+            imported: 2,
+            skippedDuplicate: 0,
+            failed: [],
+        })
+        const restored = store().accounts
+        expect(restored).toHaveLength(2)
+        for (const name of ['Child', 'Imported']) {
+            const account = restored.find(a => a.name === name)
+            expect(Object.keys(account?.chains ?? {}).sort()).toEqual([
+                'base',
+                'ethereum',
+            ])
+            expect(account?.chains.base?.enabledBy).toBe('restore')
+            expect(account?.chains.ethereum?.enabledBy).toBe('restore')
+            expect(account?.chains.base?.keyPairId).toBe(
+                account?.chains.ethereum?.keyPairId,
+            )
+        }
+        const restoredImported = restored.find(a => a.name === 'Imported')!
+        expect(restoredImported.chains.base?.address.toLowerCase()).toBe(
+            HARDHAT_0_ADDRESS.toLowerCase(),
+        )
+        expect(
+            testKeystore.store!.state.keys.filter(
+                key => key.id === restoredImported.chains.ethereum?.keyPairId,
+            ),
+        ).toHaveLength(1)
     })
 })

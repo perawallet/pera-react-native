@@ -17,8 +17,8 @@ import type {
     SpendAllowance,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
-import { ethereumAddressCodec } from '../accounts/address-codec'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import { areEvmAddressesEqual } from '../accounts/address-codec'
+import type { EvmChain } from '../chains/types'
 import { isRecord } from './adapter'
 
 const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
@@ -125,22 +125,25 @@ const toAddress = (value: unknown): string | undefined =>
         ? getAddress(value)
         : undefined
 
+// The token's chain is the request's, so the asset ref is completed by the caller.
+type TokenAllowance = Omit<SpendAllowance, 'assetRef'> & { assetId: string }
+
 const toAllowance = (
     token: unknown,
     amount: unknown,
-): SpendAllowance | undefined => {
+): TokenAllowance | undefined => {
     const assetId = toAddress(token)
     const base = toUint(amount)
     if (assetId === undefined || base === undefined) return undefined
     return {
-        assetRef: { chainId: ETHEREUM_CHAIN_ID, assetId },
+        assetId,
         ...(base < maxUint160 && { amount: new Decimal(base.toString()) }),
     }
 }
 
 type Parsed = {
     spender: unknown
-    allowances: (SpendAllowance | undefined)[]
+    allowances: (TokenAllowance | undefined)[]
     /** Unix seconds; undefined when a deadline can't be read. */
     expiry: bigint | undefined
 }
@@ -211,7 +214,7 @@ const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
     if (
         !shape ||
         typeof verifyingContract !== 'string' ||
-        !ethereumAddressCodec.areEqual(verifyingContract, PERMIT2_ADDRESS)
+        !areEvmAddressesEqual(verifyingContract, PERMIT2_ADDRESS)
     ) {
         return undefined
     }
@@ -236,6 +239,7 @@ const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
 export const spendApprovalOf = (
     typedData: TypedDataDefinition,
     now: number,
+    chain: EvmChain,
 ): SpendApproval | undefined => {
     try {
         const parsed = parseTypedData(typedData)
@@ -253,7 +257,12 @@ export const spendApprovalOf = (
         const deadline = ms > MAX_DATE_MS ? undefined : Number(ms)
         return {
             spender,
-            allowances: parsed.allowances as SpendAllowance[],
+            allowances: (parsed.allowances as TokenAllowance[]).map(
+                ({ assetId, ...allowance }) => ({
+                    ...allowance,
+                    assetRef: { chainId: chain.row.id, assetId },
+                }),
+            ),
             ...(deadline !== undefined && { deadline }),
             isLongLived: deadline === undefined || deadline - now > YEAR_MS,
         }

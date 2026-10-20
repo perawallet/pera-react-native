@@ -434,7 +434,8 @@
         "rekey_signer_shared": "Paylaşılan hesap",
         "rekey_signer_quantum": "Quantum hesabı",
         "type_no_auth": "Yetki yok",
-        "type_unknown": "Bilinmeyen hesap"
+        "type_unknown": "Bilinmeyen hesap",
+        "networks": "Ağlar"
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",
@@ -1105,8 +1106,8 @@
                 "body": "Bu hesaptaki bekleyen bir işlem ancak daha yüksek bir ağ ücretiyle değiştirilebilir. Tamamlanmasını bekle veya daha yüksek bir ücretle tekrar dene."
             },
             "insufficient_funds": {
-                "title": "Yetersiz ETH",
-                "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli ETH yok. Daha fazla ETH ekle ve tekrar dene."
+                "title": "Yetersiz {{symbol}}",
+                "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli {{symbol}} yok. Daha fazla {{symbol}} ekle ve tekrar dene."
             },
             "rate_limited": {
                 "title": "Ağ yoğun",
@@ -2607,6 +2608,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Hesap seç"
+        },
+        "chain_selection": {
+            "title": "Ağ seç",
+            "eligible_subtitle": "Henüz eklenmedi"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",

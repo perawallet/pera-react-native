@@ -434,7 +434,8 @@
         "rekey_signer_shared": "una cuenta compartida",
         "rekey_signer_quantum": "una cuenta cuántica",
         "type_no_auth": "Sin autorización",
-        "type_unknown": "Cuenta desconocida"
+        "type_unknown": "Cuenta desconocida",
+        "networks": "Redes"
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
@@ -1105,8 +1106,8 @@
                 "body": "Una transacción pendiente de esta cuenta solo puede reemplazarse con una comisión de red más alta. Espera a que se complete o vuelve a intentarlo con una comisión más alta."
             },
             "insufficient_funds": {
-                "title": "ETH insuficiente",
-                "body": "Esta cuenta no tiene suficiente ETH para cubrir el importe y la comisión de red. Añade más ETH y vuelve a intentarlo."
+                "title": "{{symbol}} insuficiente",
+                "body": "Esta cuenta no tiene suficiente {{symbol}} para cubrir el importe y la comisión de red. Añade más {{symbol}} y vuelve a intentarlo."
             },
             "rate_limited": {
                 "title": "Red saturada",
@@ -2607,6 +2608,10 @@
     "receive_funds": {
         "account_selection": {
             "title": "Seleccionar cuenta"
+        },
+        "chain_selection": {
+            "title": "Seleccionar red",
+            "eligible_subtitle": "Aún no añadida"
         },
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",

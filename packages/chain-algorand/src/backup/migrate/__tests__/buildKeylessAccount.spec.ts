@@ -97,7 +97,13 @@ describe('buildWatchAccount', () => {
             id: 'mock-time-uuid',
             name: 'My Watcher',
             custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR_WATCH' } },
+            chains: {
+                algorand: {
+                    address: 'ADDR_WATCH',
+                    enabledAt: expect.any(Number),
+                    enabledBy: 'created',
+                },
+            },
         })
     })
 
@@ -159,7 +165,13 @@ describe('buildLedgerAccount', () => {
                 },
                 accountIndex: 3,
             },
-            chains: { algorand: { address: 'ADDR_LEDGER' } },
+            chains: {
+                algorand: {
+                    address: 'ADDR_LEDGER',
+                    enabledAt: expect.any(Number),
+                    enabledBy: 'created',
+                },
+            },
         })
     })
 
@@ -247,6 +259,8 @@ describe('buildMultiSigAccount', () => {
                             addresses: ['P1', 'P2', 'P3'],
                         },
                     },
+                    enabledAt: expect.any(Number),
+                    enabledBy: 'created',
                 },
             },
         })

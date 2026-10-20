@@ -46,8 +46,9 @@ import { allocateEthereumNonce } from '../nonce-pool'
 import {
     DROPPED_GRACE_MS,
     reconcileEthereumSubmissions,
-    setEthereumSubmissionSettledHandler,
+    type SubmissionSettledHandlers,
 } from '../reconcile'
+import { ETHEREUM } from '../../__tests__/evm-chains'
 import { submitAndRecordEthereumTransactions } from '../submission'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -61,7 +62,9 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 const getClient = (scope: ChainScope) =>
-    createEvmClient(scope, testChainContext())
+    createEvmClient(scope, testChainContext(), ETHEREUM)
+
+const settleHandlers: SubmissionSettledHandlers = new Map()
 
 // Keyed by block tag: `latest` is the mined count, `pending` the pool's.
 const node = (
@@ -94,7 +97,7 @@ describe('reconcileEthereumSubmissions', () => {
 
     afterEach(() => {
         vi.useRealTimers()
-        setEthereumSubmissionSettledHandler('pipeline', null)
+        settleHandlers.clear()
         teardown()
     })
 
@@ -111,7 +114,13 @@ describe('reconcileEthereumSubmissions', () => {
             ...overrides,
         })
 
-    const reconcile = () => reconcileEthereumSubmissions({ getClient, db })
+    const reconcile = () =>
+        reconcileEthereumSubmissions({
+            chain: ETHEREUM,
+            settleHandlers,
+            getClient,
+            db,
+        })
     const statuses = async () =>
         (await db.select().from(SubmissionAttemptsSchema).all()).map(
             row => row.status,
@@ -154,7 +163,7 @@ describe('reconcileEthereumSubmissions', () => {
 
     it('marks a row replaced when its nonce was mined under another hash, and tells the flow it failed', async () => {
         const handler = vi.fn()
-        setEthereumSubmissionSettledHandler('pipeline', handler)
+        settleHandlers.set('pipeline', handler)
         await record({ txIds: [HASH, `0x${'cd'.repeat(32)}`] })
         node({ latest: 1 })
 
@@ -235,7 +244,12 @@ describe('reconcileEthereumSubmissions', () => {
         const unused = vi.fn(getClient)
 
         await expect(
-            reconcileEthereumSubmissions({ getClient: unused, db }),
+            reconcileEthereumSubmissions({
+                chain: ETHEREUM,
+                settleHandlers,
+                getClient: unused,
+                db,
+            }),
         ).resolves.toEqual({ probed: 0, confirmed: 0, failed: 0 })
         expect(unused).not.toHaveBeenCalled()
     })
@@ -257,6 +271,7 @@ describe('reconcileEthereumSubmissions', () => {
 
         await submitAndRecordEthereumTransactions({
             client: getClient(SCOPE),
+            chain: ETHEREUM,
             scope: SCOPE,
             signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
             flow: 'pipeline',

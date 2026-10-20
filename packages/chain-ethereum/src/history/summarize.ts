@@ -18,29 +18,32 @@ import {
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
-import { ethereumAddressCodec } from '../accounts/address-codec'
+import {
+    areEvmAddressesEqual,
+    normalizeEvmAddress,
+} from '../accounts/address-codec'
 import { fromCaip19, InvalidCaip19Error } from '../blockchain/utils/caip19'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
-import { ethereumDescriptor } from '../descriptor'
+import type { EvmChain } from '../chains/types'
 import type { EvmHistoryItem } from './api/schema'
 
 const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const CONTRACT_CALL = i18nKey('transactions.list_item.contract_call')
 
-const { areEqual, normalize } = ethereumAddressCodec
-const NATIVE_REF = ethereumDescriptor.nativeAsset.ref
+const areEqual = areEvmAddressesEqual
+const normalize = normalizeEvmAddress
 
 const balanceChangesOf = (
     item: EvmHistoryItem,
     scope: ChainScope,
+    chain: EvmChain,
 ): BalanceChange[] =>
     item.balance_impacts.flatMap(({ asset_id, amount }) => {
         try {
             return {
                 assetRef: {
-                    chainId: ETHEREUM_CHAIN_ID,
-                    assetId: fromCaip19(asset_id, scope),
+                    chainId: chain.row.id,
+                    assetId: fromCaip19(asset_id, scope, chain),
                 },
                 value: new Decimal(amount),
             }
@@ -54,9 +57,11 @@ const balanceChangesOf = (
 const summarizeWithdrawal = (
     item: EvmHistoryItem,
     scope: ChainScope,
+    chain: EvmChain,
 ): TransactionSummary => {
-    const credit = balanceChangesOf(item, scope).find(
-        change => change.assetRef.assetId === NATIVE_REF.assetId,
+    const nativeRef = chain.descriptor.nativeAsset.ref
+    const credit = balanceChangesOf(item, scope, chain).find(
+        change => change.assetRef.assetId === nativeRef.assetId,
     )
     return {
         kind: 'transfer',
@@ -64,7 +69,7 @@ const summarizeWithdrawal = (
         icon: 'receive',
         direction: 'in',
         ...(credit && {
-            amount: { assetRef: NATIVE_REF, value: credit.value },
+            amount: { assetRef: nativeRef, value: credit.value },
         }),
     }
 }
@@ -72,6 +77,7 @@ const summarizeWithdrawal = (
 const summarizeNativeTransfer = (
     item: EvmHistoryItem,
     address: string,
+    chain: EvmChain,
 ): TransactionSummary | undefined => {
     const { from, to } = item
     if (
@@ -94,7 +100,7 @@ const summarizeNativeTransfer = (
         direction: isSelf ? 'self' : sent ? 'out' : 'in',
         counterparty: normalize(sent ? to : from),
         amount: {
-            assetRef: NATIVE_REF,
+            assetRef: chain.descriptor.nativeAsset.ref,
             value: new Decimal(item.value ?? '0'),
         },
     }
@@ -103,6 +109,7 @@ const summarizeNativeTransfer = (
 const summarizeTokenTransfer = (
     item: EvmHistoryItem,
     address: string,
+    chain: EvmChain,
 ): TransactionSummary | undefined => {
     const [leg, ...others] = item.token_transfers
     if (
@@ -132,7 +139,7 @@ const summarizeTokenTransfer = (
         counterparty: normalize(out ? leg.to : leg.from),
         amount: {
             assetRef: {
-                chainId: ETHEREUM_CHAIN_ID,
+                chainId: chain.row.id,
                 assetId: normalize(leg.contract),
             },
             value: new Decimal(leg.value),
@@ -144,6 +151,7 @@ const summarizeContractCall = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
+    chain: EvmChain,
 ): TransactionSummary => {
     const sent = item.from !== null && areEqual(item.from, address)
     const other = sent ? item.to : item.from
@@ -153,7 +161,7 @@ const summarizeContractCall = (
         icon: 'contract-call',
         direction: 'none',
         ...(other !== null && { counterparty: normalize(other) }),
-        balanceChanges: balanceChangesOf(item, scope),
+        balanceChanges: balanceChangesOf(item, scope, chain),
     }
 }
 
@@ -165,13 +173,14 @@ export const summarizeEthereumHistoryItem = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
+    chain: EvmChain,
 ): TransactionSummary => {
     const summary =
         item.kind === 'withdrawal'
-            ? summarizeWithdrawal(item, scope)
-            : (summarizeNativeTransfer(item, address) ??
-              summarizeTokenTransfer(item, address) ??
-              summarizeContractCall(item, address, scope))
+            ? summarizeWithdrawal(item, scope, chain)
+            : (summarizeNativeTransfer(item, address, chain) ??
+              summarizeTokenTransfer(item, address, chain) ??
+              summarizeContractCall(item, address, scope, chain))
     const notice = transactionStatusNotice(
         item.status === 'success' ? 'confirmed' : 'failed',
     )

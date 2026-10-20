@@ -11,8 +11,9 @@
  */
 
 import {
-    accountChainIdOf,
     canSignWith,
+    chainAccountOf,
+    eligibleChainsInFamily,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -27,24 +28,29 @@ type ResolveSendAccountParams = {
     accounts: WalletAccount[]
     selectedAccountId: Maybe<string>
     chainId: ChainId
-    registeredChainIds: readonly ChainId[]
 }
 
+/** A local key the chain can be enabled on, in a family it is already on, signs there once it is. */
+const canEnableToSend = (account: WalletAccount, chainId: ChainId): boolean =>
+    account.custody.kind === 'local' &&
+    !chainAccountOf(account, chainId) &&
+    eligibleChainsInFamily(account).includes(chainId)
+
 /**
- * Which account a send on `chainId` goes out from. The selected account wins
- * only when it lives on that chain, so a link for another chain never sends
- * from whatever happens to be selected.
+ * Which account a send on `chainId` goes out from: one enabled there that
+ * signs, or one holding a key that chain can be enabled on. The selected
+ * account wins only when it is one of those, so a link for another chain
+ * never sends from whatever happens to be selected.
  */
 export const resolveSendAccount = ({
     accounts,
     selectedAccountId,
     chainId,
-    registeredChainIds,
 }: ResolveSendAccountParams): SendAccountResolution => {
-    const senders = accounts.filter(
-        account =>
-            accountChainIdOf(account, registeredChainIds) === chainId &&
-            canSignWith(account, accounts, chainId),
+    const senders = accounts.filter(account =>
+        chainAccountOf(account, chainId)
+            ? canSignWith(account, accounts, chainId)
+            : canEnableToSend(account, chainId),
     )
     const selected = senders.find(account => account.id === selectedAccountId)
     if (selected) return { kind: 'selected', account: selected }
