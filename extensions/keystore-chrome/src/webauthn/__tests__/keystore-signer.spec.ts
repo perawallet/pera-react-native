@@ -14,7 +14,7 @@ import { Store } from '@tanstack/store'
 import type { Key, KeyStoreState } from '../../keystore'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // This suite's resolution of the '/webauthn' subpath depends on
 // packages/passkeys/dist existing (workspace subpath exports resolve against
 // the built dist, not src). In a clean worktree without a prior `pnpm build`,
@@ -543,6 +543,65 @@ describe('keystore-chrome webauthn signer', () => {
                     payload as BufferSource,
                 ),
             ).toBe(false)
+        })
+    })
+
+    describe('recordP256Use', () => {
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('stamps lastUsedAt and bumps count, keeping the derivation inputs and registration metadata', async () => {
+            const signer = createKeystoreSigner(engine, store)
+            const { keyId } =
+                await signer.createP256Credential(credentialParams())
+            const registered = store.state.keys.find(k => k.id === keyId)
+            const before = metadataOf(registered)
+            vi.useFakeTimers({ toFake: ['Date'] })
+            vi.setSystemTime(1_700_000_000_000)
+
+            await signer.recordP256Use(keyId)
+            await signer.recordP256Use(keyId)
+
+            const key = store.state.keys.find(k => k.id === keyId)
+            expect(metadataOf(key)).toEqual({
+                ...before,
+                lastUsedAt: 1_700_000_000_000,
+                count: 2,
+            })
+            // `counter` is the derivation index; the re-derived key must match.
+            expect(key?.publicKey).toEqual(registered?.publicKey)
+        })
+
+        it('re-derives with the stored derivation counter, so the keypair survives', async () => {
+            const signer = createKeystoreSigner(engine, store)
+            const { keyId: firstId } =
+                await signer.createP256Credential(credentialParams())
+            const mainKeyId = metadataOf(
+                store.state.keys.find(k => k.id === firstId),
+            ).parentKeyId as string
+            const keyId = await engine.deriveDomainKey!(mainKeyId, {
+                algorithm: 'P256',
+                origin: 'webauthn.io',
+                userHandle: 'carol',
+                counter: 3,
+            })
+            const registered = store.state.keys.find(k => k.id === keyId)
+
+            await signer.recordP256Use(keyId)
+
+            const key = store.state.keys.find(k => k.id === keyId)
+            expect(metadataOf(key).counter).toBe(3)
+            expect(key?.publicKey).toEqual(registered?.publicKey)
+        })
+
+        it('writes nothing for an unknown key id', async () => {
+            const signer = createKeystoreSigner(engine, store)
+            const keysBefore = store.state.keys
+
+            await signer.recordP256Use('missing')
+
+            expect(store.state.keys).toBe(keysBefore)
         })
     })
 
