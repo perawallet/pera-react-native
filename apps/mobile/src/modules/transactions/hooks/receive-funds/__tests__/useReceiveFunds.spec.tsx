@@ -92,6 +92,27 @@ describe('useReceiveFunds', () => {
         expect(result.current.onFinished).toBeUndefined()
     })
 
+    it('sets the chain to receive on, and forgets it when the account changes or the flow resets', () => {
+        const { result } = renderHook(() => useReceiveFunds())
+
+        act(() => {
+            result.current.setSelectedAccount(mockAccount)
+            result.current.setSelectedChainId('ethereum')
+        })
+        expect(result.current.selectedChainId).toBe('ethereum')
+
+        act(() => {
+            result.current.setSelectedAccount({ ...mockAccount, id: 'other' })
+        })
+        expect(result.current.selectedChainId).toBeUndefined()
+
+        act(() => {
+            result.current.setSelectedChainId('ethereum')
+            result.current.reset()
+        })
+        expect(result.current.selectedChainId).toBeUndefined()
+    })
+
     it('clears selected account', () => {
         const { result } = renderHook(() => useReceiveFunds())
 

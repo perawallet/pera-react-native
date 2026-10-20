@@ -23,9 +23,12 @@ const mockAccount = {
     chains: { algorand: { address: 'test-address' } },
 }
 
-const { mockGetSelectedAccount } = vi.hoisted(() => ({
-    mockGetSelectedAccount: vi.fn(() => mockAccount),
-}))
+const { mockGetSelectedAccount, mockEnableChain, mockEligibleChains } =
+    vi.hoisted(() => ({
+        mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
+        mockEnableChain: vi.fn(),
+        mockEligibleChains: vi.fn((): string[] => ['algorand']),
+    }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -37,6 +40,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountsStore: vi.fn((selector: (state: unknown) => unknown) =>
             selector({ getSelectedAccount: mockGetSelectedAccount }),
         ),
+        useEnableChain: () => mockEnableChain,
+        eligibleChains: mockEligibleChains,
         useAccountBalancesQuery: vi.fn(() => ({
             accountBalances: new Map([
                 [
@@ -186,6 +191,79 @@ describe('useAddAssetView', () => {
             optInError,
             'add_asset.opt_in.failed_title',
         )
+    })
+
+    describe('on an account not yet on the chain', () => {
+        const ethereumOnly = {
+            id: 'eth-account',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc', keyPairId: 'k' } },
+        }
+
+        beforeEach(() => {
+            mockGetSelectedAccount.mockReturnValue(ethereumOnly)
+        })
+
+        it('enables the chain, then opts in from the address it gets there', async () => {
+            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
+            mockEnableChain.mockResolvedValue({
+                ...ethereumOnly,
+                chains: {
+                    ...ethereumOnly.chains,
+                    algorand: { address: 'NEW-ADDR', keyPairId: 'k' },
+                },
+            })
+            mockRequestByType.mockResolvedValueOnce('confirm')
+            const { result } = renderHook(() => useAddAssetView())
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+
+            expect(mockEnableChain).toHaveBeenCalledWith(
+                'eth-account',
+                'algorand',
+                'user',
+            )
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'asset-opt-in',
+                { assetId: '999', accountAddress: 'NEW-ADDR' },
+                expect.anything(),
+            )
+            expect(mockOptIn).toHaveBeenCalledWith({
+                sender: 'NEW-ADDR',
+                assetId: 999n,
+            })
+        })
+
+        it('adds nothing when the account cannot be on the chain', async () => {
+            mockEligibleChains.mockReturnValue(['ethereum'])
+            const { result } = renderHook(() => useAddAssetView())
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+
+            expect(mockEnableChain).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+        })
+
+        it('shows why when the chain cannot be enabled', async () => {
+            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
+            const failure = new Error('derivation failed')
+            mockEnableChain.mockRejectedValue(failure)
+            const { result } = renderHook(() => useAddAssetView())
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                failure,
+                'add_asset.opt_in.failed_title',
+            )
+            expect(mockRequestByType).not.toHaveBeenCalled()
+        })
     })
 
     it('does not call optIn when user dismisses the confirmation sheet', async () => {

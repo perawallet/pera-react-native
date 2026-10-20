@@ -182,8 +182,17 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
+const { mockEnableChain } = vi.hoisted(() => ({ mockEnableChain: vi.fn() }))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     accountsChainAdapters: { has: () => true },
+    // A fixture without chain entries stands for an account already on the
+    // link's chain, so send opens without enabling one.
+    chainAccountOf: (
+        account: { chains?: Record<string, unknown> },
+        chainId: string,
+    ) => (account.chains === undefined ? {} : account.chains[chainId]),
+    useEnableChain: () => mockEnableChain,
     useSelectedAccount: () => mockWalletAccounts[0],
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,

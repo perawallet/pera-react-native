@@ -50,6 +50,7 @@ const mockUseHdSeedGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
+const mockRegisteredChainIds = vi.fn(() => ['algorand'])
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -64,6 +65,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
         useDelegatedTransition: () => mockUseDelegatedTransition(),
+        useRegisteredChainIds: () => mockRegisteredChainIds(),
     }
 })
 
@@ -131,6 +133,7 @@ const quantumAccount: WalletAccount = {
 
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
+        mockRegisteredChainIds.mockReturnValue(['algorand'])
         registerAlgorandAccountsAdapter()
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
@@ -383,5 +386,25 @@ describe('useAccountInfoCard', () => {
             result.current.handleToggleExpanded()
         })
         expect(result.current.isExpanded).toBe(true)
+    })
+
+    test('lists the chains the account is enabled on, in registry order, leaving out one this build lacks', () => {
+        mockRegisteredChainIds.mockReturnValue(['algorand', 'ethereum', 'base'])
+        const account: WalletAccount = {
+            ...hdAccount,
+            chains: {
+                base: { address: '0xabc', keyPairId: 'k' },
+                polygon: { address: '0xabc', keyPairId: 'k' },
+                algorand: { address: 'HD_ADDR', keyPairId: 'key-1' },
+            },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountInfoCard({ account, onClose: vi.fn() }),
+        )
+
+        expect(
+            result.current.enabledChains.map(({ chainId }) => chainId),
+        ).toEqual(['algorand', 'base'])
     })
 })
