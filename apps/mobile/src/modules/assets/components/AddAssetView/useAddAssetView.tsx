@@ -14,18 +14,18 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useAccountsStore,
-    useAccountScope,
     useEnableChain,
-    useRegisteredChainIds,
     chainAccountOf,
     eligibleChainsInFamily,
 } from '@perawallet/wallet-core-accounts'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -73,7 +73,8 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
-    const scope = useAccountScope(selectedAccount, useRegisteredChainIds()[0])
+    // The chain assets are added on, not the account's: an account not on it yet is enabled there on add.
+    const scope = useSelectedScope(useCapableChainId('manageAssets'))
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined

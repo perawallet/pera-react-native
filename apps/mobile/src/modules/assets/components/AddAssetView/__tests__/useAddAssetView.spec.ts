@@ -229,7 +229,11 @@ describe('useAddAssetView', () => {
             )
             expect(mockRequestByType).toHaveBeenCalledWith(
                 'asset-opt-in',
-                { assetId: '999', accountAddress: 'NEW-ADDR' },
+                {
+                    assetId: '999',
+                    accountAddress: 'NEW-ADDR',
+                    scope: expect.objectContaining({ chainId: 'algorand' }),
+                },
                 expect.anything(),
             )
             expect(mockOptIn).toHaveBeenCalledWith({
@@ -300,7 +304,7 @@ describe('useAddAssetView', () => {
         expect(mockOptIn).not.toHaveBeenCalled()
     })
 
-    it("confirms the opt-in on the selected account's own chain", async () => {
+    it('confirms the opt-in on the chain assets are managed on', async () => {
         mockRequestByType.mockResolvedValueOnce(undefined)
 
         const { result } = renderHook(() => useAddAssetView())
