@@ -115,4 +115,22 @@ describe('composition-root capability parity', () => {
             'chain "fixturehex" enables "send" but the "broadcaster" registry has no adapter for it',
         )
     })
+
+    it('fails when a chain enables nft without the registries the gallery reads', () => {
+        const fixture = createChainRegistry()
+        fixture.register(
+            {
+                id: FIXTURE_CHAIN_ID,
+                networks: [],
+            } as unknown as ChainDescriptor,
+            { ...allCapabilities(false), nft: true },
+        )
+
+        expect(
+            capabilityAdapterContractViolations(fixture, registries),
+        ).toEqual([
+            'chain "fixturehex" enables "nft" but the "accounts" registry has no adapter for it',
+            'chain "fixturehex" enables "nft" but the "assets" registry has no adapter for it',
+        ])
+    })
 })
