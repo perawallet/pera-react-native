@@ -11,11 +11,11 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
-import algosdk, { encodeMsgpack } from 'algosdk'
+import algosdk from 'algosdk'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createLocalKeyStrategy } from '@perawallet/wallet-core-chain-algorand/signing/local-key/createLocalKeyStrategy'
-import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
+import { signUnsignedTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/signedTransactions'
 import { toUnsignedAlgorandTransactions } from '@perawallet/wallet-core-chain-algorand/signing/unsignedTransaction'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing/pipeline/types'
 
@@ -119,7 +119,7 @@ describe('ed25519 signing conformance', () => {
         const scope = await localNetScope()
         const strategy = createLocalKeyStrategy({
             signTransactions: (txnGroup, indexesToSign, account) =>
-                signTransactionsWithLocalKey(
+                signUnsignedTransactionsWithLocalKey(
                     localKeySigningDeps(keyStore),
                     txnGroup,
                     indexesToSign,
@@ -159,12 +159,11 @@ describe('ed25519 signing conformance', () => {
 
         expect(onProgress).toHaveBeenLastCalledWith(1, 1)
 
-        const signedData = result.signedData as {
-            type: 'transactions'
-            signed: algosdk.SignedTransaction[]
+        if (result.signedData.type !== 'transactions') {
+            throw new Error('the strategy returned no signed transactions')
         }
-        const [signedTxn] = signedData.signed
-        const signedBytes = encodeMsgpack(signedTxn)
+        const signedBytes = result.signedData.signed[0].bytes
+        const signedTxn = algosdk.decodeSignedTransaction(signedBytes)
         if (!signedTxn.sig) {
             throw new Error('the strategy returned an unsigned transaction')
         }
