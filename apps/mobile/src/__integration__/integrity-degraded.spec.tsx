@@ -81,6 +81,8 @@ const { useIntegrityAccessStore } =
 const { RemoteConfigKeys, useRemoteConfigStore } =
     await import('@perawallet/wallet-core-remote-config')
 const { StakingScreen } = await import('@modules/staking')
+const { SettingsCurrencyScreen } =
+    await import('@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen')
 
 const EMPTY: IntegritySnapshot = {
     tokenExpiresAt: null,
@@ -217,6 +219,39 @@ describe('Flow: Pera services without a valid integrity token', () => {
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
         expect(sendIntegrityControl).not.toHaveBeenCalled()
+    })
+
+    it('Given the worker cannot mint, when the currency list is refused, then currency settings shows the integrity surface rather than a blank list', async () => {
+        applyWorkerFacts({
+            ...EMPTY,
+            lastFailure: {
+                phase: 'mint',
+                status: 503,
+                at: Date.now(),
+                isTransport: false,
+            },
+        })
+        server.use(
+            http.get('*/v1/currencies/', () =>
+                HttpResponse.json(
+                    {
+                        error: 'App integrity token required',
+                        code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    },
+                    { status: 403 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
+
+        await screen.findByText(
+            'integrityCheck.surface.service_title',
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        fireEvent.click(screen.getByText('integrityCheck.banner.retry'))
+        expect(sendIntegrityControl).toHaveBeenCalledWith({ kind: 'retry' })
     })
 
     it('Given a refusal without an integrity code, when the read fails, then it stays a plain error', async () => {

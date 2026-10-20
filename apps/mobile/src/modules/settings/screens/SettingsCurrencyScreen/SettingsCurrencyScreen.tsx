@@ -23,6 +23,7 @@ import {
 } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { InfoCallout } from '@components/InfoCallout'
+import { IntegrityBlockedView } from '@components/OfflineTolerantView'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
@@ -39,6 +40,8 @@ export const SettingsCurrencyScreen = () => {
         setSearch,
         filteredData,
         isRateUnavailableOffline,
+        isIntegrityBlocked,
+        retryCurrencies,
     } = useSettingsCurrencyScreen()
 
     const keyExtractor = (item: Currency) => item.id
@@ -117,6 +120,11 @@ export const SettingsCurrencyScreen = () => {
                     keyExtractor={keyExtractor}
                     extraData={preferredCurrency}
                     ItemSeparatorComponent={ListItemDivider}
+                    ListEmptyComponent={
+                        isIntegrityBlocked ? (
+                            <IntegrityBlockedView onRetry={retryCurrencies} />
+                        ) : null
+                    }
                     testID='settings_currency_list'
                 />
             </PWView>
