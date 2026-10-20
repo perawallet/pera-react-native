@@ -1,0 +1,12 @@
+# Layered over AlgoKit's generated LocalNet by tools/dev/localnet.sh.
+#
+# algod 5.0.4 ships consensus v43, which no published conduit-localnet (1.1.0)
+# or indexer (3.10.0) image can decode: conduit ingests nothing and the indexer
+# stays at round 0. Lift this pin once both publish a newer image. Check with
+#   PERA_LOCALNET_ALGOD_IMAGE=algorand/algod:latest pnpm localnet:reset
+#   pnpm test:conformance
+# and when that is green, delete this file and the COMPOSE_FILE export in
+# localnet.sh.
+services:
+    algod:
+        image: ${PERA_LOCALNET_ALGOD_IMAGE:-algorand/algod:5.0.3-stable}
