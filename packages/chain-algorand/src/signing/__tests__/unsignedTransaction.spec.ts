@@ -390,8 +390,11 @@ describe('signed transactions', () => {
         expect(algorandSignedTransactionsOf(result, SCOPE)).toEqual([planned])
     })
 
-    it('encodes a strategy-signed result, leaving an unsigned slot empty', () => {
-        const signed = decodeSignedTransaction(signedBytes)
+    it('keeps a strategy-signed result as signed, leaving an unsigned slot empty', () => {
+        const signed = toSignedAlgorandTransaction(
+            decodeSignedTransaction(signedBytes),
+            SCOPE,
+        )
         const result: SigningResult = {
             signedData: {
                 type: 'transactions',
@@ -402,7 +405,7 @@ describe('signed transactions', () => {
         }
 
         expect(algorandSignedTransactionsOf(result, SCOPE)).toEqual([
-            toSignedAlgorandTransaction(signed, SCOPE),
+            signed,
             null,
         ])
     })

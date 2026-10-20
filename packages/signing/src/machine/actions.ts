@@ -105,38 +105,27 @@ export const buildGroupSignerMap = (
     return map
 }
 
-// A chain-neutral request's `approve` gets its chain's wire-encoded signed
+// A transaction request's `approve` gets its chain's wire-encoded signed
 // transactions, whichever signer produced them.
 const transactionApproveOf = (
     request: TransactionSignRequest,
     scope: ChainScope,
 ): SourceCallbacks['approve'] => {
-    if (isUnsignedTransactionRequest(request)) {
-        const approve = request.approve
-        return (
-            approve &&
-            (async (result, submission) => {
-                // Already in the chain's wire form, and a chain with no
-                // planner adapter has no `signedTransactionsOf` to ask.
-                await approve(
-                    result.signedData.type === 'signed-transactions'
-                        ? result.signedData.signed
-                        : plannerAdapterForScope(scope).signedTransactionsOf(
-                              result,
-                              scope,
-                          ),
-                    submission,
-                )
-            })
-        )
-    }
     const approve = request.approve
     return (
         approve &&
         (async (result, submission) => {
-            if (result.signedData.type === 'transactions') {
-                await approve(result.signedData.signed, submission)
-            }
+            // Already in the chain's wire form, and a chain with no
+            // planner adapter has no `signedTransactionsOf` to ask.
+            await approve(
+                result.signedData.type === 'signed-transactions'
+                    ? result.signedData.signed
+                    : plannerAdapterForScope(scope).signedTransactionsOf(
+                          result,
+                          scope,
+                      ),
+                submission,
+            )
         })
     )
 }
@@ -147,9 +136,7 @@ const transactionApproveOf = (
 const handoffDeliveryOf = (
     request: TransactionSignRequest,
 ): SourceMetadata['handoffDelivery'] => {
-    const facts = isUnsignedTransactionRequest(request)
-        ? request.chainData?.algorand
-        : request
+    const facts = request.chainData?.algorand
     if (facts?.payloadId === undefined) return undefined
     return {
         clientId: request.transportId ?? '',
@@ -408,25 +395,22 @@ const buildSignableGroups = (
 ): SignableGroup[] => {
     const source = buildSourceMetadata(request, scope)
 
-    if (
-        isTransactionRequest(request) &&
-        isUnsignedTransactionRequest(request)
-    ) {
+    if (isTransactionRequest(request)) {
+        // A request persisted before every source built chain-neutral
+        // transactions can still rehydrate in the old shape.
+        const txs: readonly unknown[] = request.txs
+        if (!isUnsignedTransactionRequest(request)) {
+            // An empty request is left to the caller's "nothing to sign" refusal.
+            if (txs.length === 0) return []
+            throw new InvalidSignableDataError(
+                txs.some(isUnsignedTransaction) ? MIXED_SHAPES : ALGORAND_SHAPE,
+            )
+        }
         return buildUnsignedTransactionGroups(
             request,
             allAccounts,
             scope,
             source,
-        )
-    }
-
-    if (isTransactionRequest(request)) {
-        // An empty request is left to the caller's "nothing to sign" refusal.
-        if (request.txs.length === 0) return []
-        throw new InvalidSignableDataError(
-            request.txs.some(isUnsignedTransaction)
-                ? MIXED_SHAPES
-                : ALGORAND_SHAPE,
         )
     }
 

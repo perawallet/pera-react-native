@@ -22,6 +22,7 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedAlgorandTransaction,
+    signedAlgorandTransaction,
 } from '../../__tests__/transactions'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
@@ -47,7 +48,6 @@ import {
     getProposeParticipants,
 } from '../multisigParticipants'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
-import { assembleSignedTransaction } from '../../local-key/signTransactionsWithLocalKey'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     ({
@@ -282,7 +282,7 @@ describe('buildDeferredProposeSigningResult', () => {
             signedData: {
                 type: 'transactions',
                 signed: transactions.map(transaction =>
-                    assembleSignedTransaction(transaction),
+                    signedAlgorandTransaction(transaction),
                 ),
             },
             signers: [],

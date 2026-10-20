@@ -22,10 +22,8 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import {
-    submitAndAutoRefresh,
     submitSignedAndAutoRefresh,
     type AlgokitClientInterface,
-    type EncodeSignedTransactionsFn,
 } from '../submission'
 import { algorandNetworkOf } from '../../network-id'
 
@@ -33,13 +31,11 @@ import { algorandNetworkOf } from '../../network-id'
  * Creates a transport that submits transactions directly to algod.
  *
  * @param algokit - AlgorandClient instance for network access
- * @param encodeSignedTransactions - Function to encode signed transactions
  * @param capturedScope - Re-checked with `assertScopeUnchanged` before
  *   submitting.
  */
 export const createAlgodTransport = (
     algokit: AlgokitClientInterface,
-    encodeSignedTransactions: EncodeSignedTransactionsFn,
     capturedScope: ChainScope,
 ): DataTransport => {
     return {
@@ -63,21 +59,12 @@ export const createAlgodTransport = (
             const network = algorandNetworkOf(capturedScope)
             let txIds: string[]
             try {
-                txIds =
-                    signedData.type === 'transactions'
-                        ? await submitAndAutoRefresh(
-                              network,
-                              algokit,
-                              encodeSignedTransactions,
-                              signedData.signed,
-                              { flow: 'pipeline' },
-                          )
-                        : await submitSignedAndAutoRefresh(
-                              network,
-                              algokit,
-                              signedData.signed,
-                              { flow: 'pipeline' },
-                          )
+                txIds = await submitSignedAndAutoRefresh(
+                    network,
+                    algokit,
+                    signedData.signed,
+                    { flow: 'pipeline' },
+                )
             } catch (error) {
                 // A classified submit failure keeps its txIds, classification
                 // and retryability — wrapping it in TransportError would

@@ -45,7 +45,10 @@ import {
 } from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
 import { algorandTransactionPlanner } from '../planner'
-import { algorandSignedTransactionsOf } from '../signedTransactions'
+import {
+    algorandSignedTransactionsOf,
+    signUnsignedTransactionsWithLocalKey,
+} from '../signedTransactions'
 import {
     decodeUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
@@ -92,8 +95,13 @@ const deps: LocalKeySigningDeps = {
 }
 
 const strategy = createLocalKeyStrategy({
-    signTransactions: (txnGroup, indexesToSign, account) =>
-        signTransactionsWithLocalKey(deps, txnGroup, indexesToSign, account),
+    signTransactions: (transactions, indexesToSign, account) =>
+        signUnsignedTransactionsWithLocalKey(
+            deps,
+            transactions,
+            indexesToSign,
+            account,
+        ),
     signArbitraryData: async () => [],
     signAuthData: async () => new Uint8Array(),
     scope: SCOPE,
@@ -406,15 +414,9 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
                 entry => entry!.bytes,
             )
 
-        const expected = bytesOf({
-            signedData: {
-                type: 'transactions',
-                signed: transactions.map(transaction =>
-                    assembleSignedTransaction(transaction),
-                ),
-            },
-            signers: [],
-        })
+        const expected = transactions.map(transaction =>
+            encodeSignedTransaction(assembleSignedTransaction(transaction)),
+        )
 
         expect(
             bytesOf(

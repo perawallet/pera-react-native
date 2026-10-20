@@ -12,16 +12,12 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import {
-    type Arc0001SignTxnsOpts,
-    type Arc0001WalletTransaction,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     type SignRequestSource,
-    useArc0001Resolver,
-    useEnqueueArc0001SignRequest,
+    useDappSignRequestResolver,
+    useEnqueueDappSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -41,8 +37,8 @@ export const useTransactionSigningHandler = (
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const resolveArc0001 = useArc0001Resolver(scope)
-    const enqueueSignRequest = useEnqueueArc0001SignRequest(scope)
+    const resolveSignRequest = useDappSignRequestResolver(scope)
+    const enqueueSignRequest = useEnqueueDappSignRequest(scope)
     const hasRequiredParams = useRequiredParams(webview)
 
     return useCallback(
@@ -50,19 +46,20 @@ export const useTransactionSigningHandler = (
             if (!hasRequiredParams(['txns', 'metadata'], message)) {
                 return
             }
-            const txns = message.params!['txns'] as Arc0001WalletTransaction[]
-            const opts = message.params!['opts'] as
-                | Arc0001SignTxnsOpts
-                | undefined
             const metadata = message.params!['metadata'] as SignRequestSource
 
             try {
                 // No authorizedAddresses — the webview's trust model is
                 // per-origin (requireSecure), not per-account.
-                const resolved = resolveArc0001({ transactions: txns, opts })
+                const resolved = resolveSignRequest({
+                    payload: {
+                        transactions: message.params!['txns'],
+                        opts: message.params!['opts'],
+                    },
+                })
 
                 // Fire-and-forget despite `enqueueSignRequest` being async:
-                // the dispatcher wants a void handler, `resolveArc0001`'s throw
+                // the dispatcher wants a void handler, `resolveSignRequest`'s throw
                 // must reach the catch below synchronously, and the enqueue
                 // handles its own failures via respondWithError.
                 void enqueueSignRequest(resolved, {
@@ -117,7 +114,7 @@ export const useTransactionSigningHandler = (
         [
             webview,
             hasRequiredParams,
-            resolveArc0001,
+            resolveSignRequest,
             enqueueSignRequest,
             sourceUrl,
             showError,

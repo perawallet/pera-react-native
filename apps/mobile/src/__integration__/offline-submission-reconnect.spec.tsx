@@ -35,7 +35,7 @@ import {
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { toSignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
+import { toUnsignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -164,7 +164,11 @@ describe('Flow: offline submission reconnect', () => {
         // lookup makes the fire-and-forget confirmation wait fail and leave
         // the ledger row open.
         const account = await seedAlgo25Signer()
-        const unsignedTxn = buildPaymentTransaction()
+        const scope = { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const
+        const unsignedTxn = toUnsignedAlgorandTransaction(
+            buildPaymentTransaction(),
+            scope,
+        )
         const { result: signer } = renderHook(() =>
             useLocalKeyTransactionSigner(),
         )
@@ -172,19 +176,13 @@ describe('Flow: offline submission reconnect', () => {
             [unsignedTxn],
             [0],
             account,
-            { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
-        )
-        const scope = { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const
-        const txIds = await submitAndAutoRefresh(
             scope,
-            signedTxns.map(signed =>
-                toSignedAlgorandTransaction(signed, scope),
-            ),
         )
+        const txIds = await submitAndAutoRefresh(scope, signedTxns)
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's
         // mocked POST echoes its own fixed txId — assert against the former.
-        const txid = signedTxns[0]!.txn.txID()
+        const txid = signedTxns[0]!.id
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({

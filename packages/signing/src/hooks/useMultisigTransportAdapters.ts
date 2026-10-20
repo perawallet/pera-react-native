@@ -164,7 +164,7 @@ export const useMultisigTransportAdapters =
                         encodeToBase64(
                             plannerAdapterForScope(
                                 scope,
-                            ).encodeUnsignedTransaction(stx.txn),
+                            ).unsignedTransactionBytesOf(stx),
                         ),
                     )
 
@@ -388,7 +388,7 @@ export const useMultisigTransportAdapters =
                             encodeToBase64(
                                 plannerAdapterForScope(
                                     scope,
-                                ).encodeUnsignedTransaction(stx.txn),
+                                ).unsignedTransactionBytesOf(stx),
                             ),
                     )
                     return useDraftSignRequestStore.getState().createDraft({

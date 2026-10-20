@@ -13,17 +13,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
-import type {
-    Arc0001ResolveResult,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import type { DappResolveResult } from '../../chain-adapter'
 import type { TransactionSignRequest } from '../../models'
 import {
-    useEnqueueArc0001SignRequest,
+    useEnqueueDappSignRequest,
     type ExternalSignTxnTransport,
-} from '../useEnqueueArc0001SignRequest'
+} from '../useEnqueueDappSignRequest'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -42,23 +40,20 @@ vi.mock('../useMinimumFeeCalculator', () => ({
     useMinimumFeeCalculator: () => ({ assignFeeToGroup: mockAssignFeeToGroup }),
 }))
 
-describe('useEnqueueArc0001SignRequest', () => {
+describe('useEnqueueDappSignRequest', () => {
     const enqueued = { id: 'req-1' } as TransactionSignRequest
-    const enqueueArc0001SignRequest = vi.fn(async () => enqueued)
+    const enqueueDappRequest = vi.fn(async () => enqueued)
 
     beforeEach(() => {
         vi.clearAllMocks()
         registerFakePlannerAdapter({
-            enqueueDappRequest: enqueueArc0001SignRequest,
+            enqueueDappRequest,
         })
     })
 
     it('hands the planner the resolved group, the transport and the signing-request bindings', async () => {
-        const { result } = renderHook(() => useEnqueueArc0001SignRequest(SCOPE))
-        const resolved = {
-            allDecoded: [],
-            toSign: [],
-        } as unknown as Arc0001ResolveResult
+        const { result } = renderHook(() => useEnqueueDappSignRequest(SCOPE))
+        const resolved: DappResolveResult = { payload: { toSign: [] } }
         const transport = {
             transportId: 't',
         } as unknown as ExternalSignTxnTransport
@@ -66,14 +61,10 @@ describe('useEnqueueArc0001SignRequest', () => {
         const outcome = await result.current(resolved, transport)
 
         expect(outcome).toBe(enqueued)
-        expect(enqueueArc0001SignRequest).toHaveBeenCalledWith(
-            resolved,
-            transport,
-            {
-                assignFeeToGroup: mockAssignFeeToGroup,
-                addSignRequest: mockAddSignRequest,
-                removeSignRequest: mockRemoveSignRequest,
-            },
-        )
+        expect(enqueueDappRequest).toHaveBeenCalledWith(resolved, transport, {
+            assignFeeToGroup: mockAssignFeeToGroup,
+            addSignRequest: mockAddSignRequest,
+            removeSignRequest: mockRemoveSignRequest,
+        })
     })
 })

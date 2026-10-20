@@ -13,7 +13,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
     type ChainScope,
-    type PeraTransaction,
     type TransactionNative,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -24,7 +23,7 @@ type UseGroupSimulationQueryParams = {
     /** Identifies the request for caching; the query is disabled without it. */
     requestId?: string
     /** Raw group to simulate (full group context, falling back to `txs`). */
-    groupTxs?: PeraTransaction[] | UnsignedTransaction[]
+    groupTxs?: UnsignedTransaction[]
     /** Caller-side gate — typically "the group contains an app call". */
     enabled?: boolean
     scope: ChainScope

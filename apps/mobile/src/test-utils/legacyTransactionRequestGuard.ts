@@ -12,7 +12,7 @@
 
 import {
     isTransactionRequest,
-    isUnsignedTransactionRequest,
+    isUnsignedTransaction,
 } from '@perawallet/wallet-core-signing'
 import { useSigningStore } from '@packages/signing/src/store'
 
@@ -21,7 +21,7 @@ import { useSigningStore } from '@packages/signing/src/store'
  * Algorand-transaction shape rather than as chain-neutral transactions, so a
  * flow that still builds one fails its test.
  */
-export const watchPeraTransactionSignRequests = (): {
+export const watchLegacyTransactionRequests = (): {
     stop: () => string[]
 } => {
     const seen = new Set<string>()
@@ -34,11 +34,11 @@ export const watchPeraTransactionSignRequests = (): {
         for (const request of requests) {
             if (seen.has(request.id)) continue
             seen.add(request.id)
-            if (
-                isTransactionRequest(request) &&
-                request.txs.length > 0 &&
-                !isUnsignedTransactionRequest(request)
-            ) {
+            // Typed chain-neutral, so only the runtime value can show the old shape.
+            const txs: readonly unknown[] = isTransactionRequest(request)
+                ? request.txs
+                : []
+            if (txs.length > 0 && !isUnsignedTransaction(txs[0])) {
                 offenders.push(request.id)
             }
         }

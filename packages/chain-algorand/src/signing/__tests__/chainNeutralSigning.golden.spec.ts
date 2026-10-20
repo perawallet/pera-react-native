@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// jsdom's Uint8Array isn't the one algosdk's encoder checks for, so a quantum
+// envelope only encodes under node.
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import nacl from 'tweetnacl'
 import { Address } from 'algosdk'
@@ -17,6 +21,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
+    SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type {
@@ -39,6 +44,7 @@ import {
     signTransactionsWithLocalKey,
 } from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
+import { signUnsignedTransactionsWithLocalKey } from '../signedTransactions'
 import {
     asUnsignedAlgorandTransaction,
     MAINNET_GENESIS_HASH,
@@ -88,8 +94,13 @@ const deps: LocalKeySigningDeps = {
 }
 
 const strategy = createLocalKeyStrategy({
-    signTransactions: (txnGroup, indexesToSign, account) =>
-        signTransactionsWithLocalKey(deps, txnGroup, indexesToSign, account),
+    signTransactions: (transactions, indexesToSign, account) =>
+        signUnsignedTransactionsWithLocalKey(
+            deps,
+            transactions,
+            indexesToSign,
+            account,
+        ),
     signArbitraryData: async () => [],
     signAuthData: async () => new Uint8Array(),
     scope: SCOPE,
@@ -127,7 +138,7 @@ const neutralGroup = (
     },
 })
 
-const signedOf = (result: SigningResult): PeraSignedTransaction[] => {
+const signedOf = (result: SigningResult): SignedTransaction[] => {
     if (result.signedData.type !== 'transactions') {
         throw new Error(`unexpected ${result.signedData.type}`)
     }
@@ -135,7 +146,7 @@ const signedOf = (result: SigningResult): PeraSignedTransaction[] => {
 }
 
 const signedBytes = (result: SigningResult): Uint8Array[] =>
-    signedOf(result).map(encodeSignedTransaction)
+    signedOf(result).map(signed => signed.bytes)
 
 // The reference is the Algorand transactions signed directly by the local-key
 // signer, with no chain-neutral wrapping in between.
@@ -212,8 +223,6 @@ describe('a chain-neutral Algorand group signs to the same bytes as its Algorand
         )
     })
 
-    // The fixture's Falcon key isn't a real one the msgpack encoder accepts, so
-    // the envelopes are compared field by field, signature bytes included.
     it('for a quantum key', async () => {
         const { expected, result } = await signBoth(
             [payment(addressOf(QUANTUM), 1n)],
@@ -221,8 +230,10 @@ describe('a chain-neutral Algorand group signs to the same bytes as its Algorand
             quantum,
         )
 
-        expect(signedOf(result)).toEqual(expected)
-        expect(signedOf(result)[0].pqsig).toBeTruthy()
+        expect(signedBytes(result)).toEqual(
+            expected.map(encodeSignedTransaction),
+        )
+        expect(expected[0].pqsig).toBeTruthy()
     })
 
     it('for a multisig cosignature, signed by the participant itself', async () => {

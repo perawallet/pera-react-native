@@ -31,28 +31,6 @@ const feeAdjustments: FeeAdjustment[] = [
 ]
 
 describe('reviewGroupOf', () => {
-    it("reads an Algorand request's own group fields", () => {
-        const request = {
-            id: 'req',
-            type: 'transactions',
-            chainId: 'algorand',
-            transport: 'callback',
-            txs: [tx1],
-            groupContext: [tx0, tx1],
-            signableIndices: [1],
-            signerOverrides,
-            feeAdjustments,
-        } satisfies TransactionSignRequest
-
-        expect(reviewGroupOf(request)).toEqual({
-            transactions: [tx0, tx1],
-            groupContext: [tx0, tx1],
-            signableIndices: [1],
-            signerOverrides,
-            feeAdjustments,
-        })
-    })
-
     it("reads a chain-neutral request's Algorand group facts", () => {
         const [neutral0, neutral1] = [tx0, tx1].map(txn =>
             asUnsignedAlgorandTransaction(txn),

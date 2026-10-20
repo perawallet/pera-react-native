@@ -266,7 +266,6 @@ describe('SigningStore', () => {
 describe('SigningStore writes before hydration', () => {
     const request = (id: string): SignRequest => ({
         id,
-        chainId: 'algorand',
         txs: [],
         type: 'transactions',
         transport: 'algod',

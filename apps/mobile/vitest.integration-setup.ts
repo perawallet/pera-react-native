@@ -60,12 +60,12 @@ afterEach(() => {
 // Loading it pulls in the signing package, which a file that never signs
 // hasn't loaded yet, so it gets its own timeout rather than a test hook's.
 let watchSignRequests:
-    | (typeof import('./src/test-utils/peraTransactionSignRequestGuard'))['watchPeraTransactionSignRequests']
+    | (typeof import('./src/test-utils/legacyTransactionRequestGuard'))['watchLegacyTransactionRequests']
     | undefined
 let stopWatchingSignRequests: (() => string[]) | undefined
 beforeAll(async () => {
-    ;({ watchPeraTransactionSignRequests: watchSignRequests } =
-        await import('./src/test-utils/peraTransactionSignRequestGuard'))
+    ;({ watchLegacyTransactionRequests: watchSignRequests } =
+        await import('./src/test-utils/legacyTransactionRequestGuard'))
 }, 60_000)
 beforeEach(() => {
     stopWatchingSignRequests = watchSignRequests?.().stop

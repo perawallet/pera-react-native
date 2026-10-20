@@ -26,7 +26,6 @@ import {
     type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
-import { isUnsignedTransaction } from '../models'
 import { InvalidSignableDataError } from '../pipeline/errors'
 
 const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
@@ -66,13 +65,12 @@ const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
 })
 
 const payloadTransactions = (
-    transactions: PeraTransaction[] | UnsignedTransaction[],
+    transactions: UnsignedTransaction[],
 ): PeraTransaction[] =>
-    transactions.map(transaction =>
-        isUnsignedTransaction(transaction)
-            ? (transaction.payload as { transaction: PeraTransaction })
-                  .transaction
-            : transaction,
+    transactions.map(
+        transaction =>
+            (transaction.payload as { transaction: PeraTransaction })
+                .transaction,
     )
 
 export const fakePlannerAdapter = (
@@ -95,6 +93,7 @@ export const fakePlannerAdapter = (
     useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
     useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
     encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
+    unsignedTransactionBytesOf: vi.fn(() => new Uint8Array()),
     reviewGroupFees: vi.fn(() => ({
         totalFee: new Decimal(0),
         highFeeWarning: null,
@@ -125,7 +124,7 @@ export const fakePlannerAdapter = (
             : undefined,
     ),
     readTransactionsData: vi.fn(data => ({
-        transactions: payloadTransactions(data.transactions),
+        transactions: data.transactions,
         indicesToSign:
             data.chainData.algorand?.indicesToSign ??
             data.transactions.map((_, index) => index),
@@ -136,14 +135,19 @@ export const fakePlannerAdapter = (
     })),
     mergeSigningResults: vi.fn(results => results[0]),
     signedTransactionsOf: vi.fn(({ signedData }) => {
-        if (signedData.type !== 'signed-transactions') {
+        if (
+            signedData.type !== 'signed-transactions' &&
+            signedData.type !== 'transactions'
+        ) {
             throw new Error(`fake planner: ${signedData.type} is not stubbed`)
         }
         return signedData.signed
     }),
-    assembleSignedTransaction: vi.fn((txn, signature) => ({
-        txn,
-        sig: signature?.sig,
+    // The bytes are the signature, so a test can tell the slots apart.
+    assembleSignedTransaction: vi.fn((transaction, signature) => ({
+        scope: transaction.scope,
+        id: 'fake-signed-transaction',
+        bytes: signature?.sig ?? new Uint8Array(),
     })),
     createMultisigStrategy: vi.fn(notStubbed('createMultisigStrategy')),
     signMultisigGroups: vi.fn(notStubbed('signMultisigGroups')),

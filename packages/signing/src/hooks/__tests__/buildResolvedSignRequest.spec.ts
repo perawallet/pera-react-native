@@ -102,12 +102,15 @@ describe('buildResolvedSignRequest', () => {
             request: {
                 id: 'r1',
                 type: 'transactions',
-                chainId: 'algorand',
                 sourceType: 'multisig-cosign',
                 transport: 'callback',
                 signRequestId: 'sr1',
                 txs: [{}, {}],
-                signerOverrides: new Map([[0, 'PARTICIPANT_ADDR']]),
+                chainData: {
+                    algorand: {
+                        signerOverrides: new Map([[0, 'PARTICIPANT_ADDR']]),
+                    },
+                },
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
             deps,

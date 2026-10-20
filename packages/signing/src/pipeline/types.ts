@@ -15,8 +15,6 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
     MessageRequest,
-    PeraTransaction,
-    PeraSignedTransaction,
     ReviewedTransaction,
     SignedMessage,
     ReviewWarning,
@@ -28,7 +26,7 @@ import type { SubmissionHistoryEntry } from '../db/types'
 
 /** A chain-neutral group as the chain's own signers read it; never signable data itself. */
 export interface ChainSignerTransactions {
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /** Populated only when decoding external requests. */
     rawTransactionsBase64?: string[]
     indicesToSign: number[]
@@ -271,8 +269,8 @@ export interface SignableGroup {
     source: SourceMetadata
 
     /**
-     * The authorizer: an ARC-0001 `signers` / `authAddr` override when the
-     * request carries one, else the transaction sender or data signer field.
+     * The authorizer: the signer the dApp named when the request carries one,
+     * else the transaction sender or data signer field.
      */
     signerAddress: string
 
@@ -371,14 +369,13 @@ export interface SignerInfo {
 }
 
 /**
- * `signed` is uniformly `PeraSignedTransaction[]`: a quantum signature is that
- * same type with `pqsig` set instead of `sig`, produced by the very same
- * `createLocalKeyStrategy` as Algo25/HD accounts, so there is no carrier type
- * to distinguish at consumption sites.
+ * Signed by the chain's own strategies (local key, hardware, multisig), whose
+ * results carry no history entries. A quantum signature is the same type, so
+ * there is no carrier to tell apart at consumption sites.
  */
 export interface SignedTransactionData {
     type: 'transactions'
-    signed: PeraSignedTransaction[]
+    signed: SignedTransaction[]
 }
 
 /** Chain-neutral transactions as their chain's planner assembled them. */

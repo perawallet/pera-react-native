@@ -17,7 +17,7 @@ import {
     type FeeAdjustment,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { groupTransactions } from '../../blockchain'
+import { groupTransactions, readAlgorandNative } from '../../blockchain'
 import { algorandPlannerAdapter, algorandReviewerAdapter } from '../adapter'
 import {
     algorandRequestOf,
@@ -65,16 +65,16 @@ const neutralRequest = (overrides: object = {}): TransactionSignRequest =>
     }) as TransactionSignRequest
 
 describe('algorandRequestOf', () => {
-    it('returns an Algorand request as it is', () => {
+    it('is null for a request rehydrated with transactions that are not chain-neutral', () => {
         const request = {
             id: 'req',
             type: 'transactions',
             transport: 'algod',
             chainId: 'algorand',
             txs: GROUP,
-        } as TransactionSignRequest
+        } as unknown as TransactionSignRequest
 
-        expect(algorandRequestOf(request)).toBe(request)
+        expect(algorandRequestOf(request)).toBeNull()
     })
 
     it('reads a chain-neutral request into the Algorand group its payloads and facts describe', () => {
@@ -174,13 +174,12 @@ describe('algorandSignedForAddresses', () => {
 })
 
 describe('algorandTransactionsOf', () => {
-    it('reads either shape, element by element', () => {
+    it('reads the Algorand transaction each payload carries', () => {
         expect(
             algorandTransactionsOf(
                 GROUP.map(txn => asUnsignedAlgorandTransaction(txn)),
             ),
         ).toEqual(GROUP)
-        expect(algorandTransactionsOf(GROUP)).toEqual(GROUP)
     })
 })
 
@@ -200,7 +199,7 @@ describe('readAlgorandTransactionsData', () => {
                 },
             }),
         ).toEqual({
-            transactions: GROUP,
+            transactions: GROUP.map(txn => asUnsignedAlgorandTransaction(txn)),
             indicesToSign: [0, 2],
             rawTransactionsBase64: ['a', 'b', 'c'],
         })
@@ -216,7 +215,7 @@ describe('readAlgorandTransactionsData', () => {
                 chainData: {},
             }),
         ).toEqual({
-            transactions: GROUP,
+            transactions: GROUP.map(txn => asUnsignedAlgorandTransaction(txn)),
             indicesToSign: [0, 1, 2],
         })
     })
@@ -269,11 +268,14 @@ describe('the Algorand adapters on a chain-neutral group', () => {
     })
 
     it('reviews a chain-neutral transaction as the Algorand transaction it carries', () => {
+        const native = algorandReviewerAdapter.toTransactionNative(
+            asUnsignedAlgorandTransaction(GROUP[0]),
+        )
+
+        expect(native?.family).toBe('algorand')
         expect(
-            algorandReviewerAdapter.toTransactionNative(
-                asUnsignedAlgorandTransaction(GROUP[0]),
-            ),
-        ).toEqual(algorandReviewerAdapter.toTransactionNative(GROUP[0]))
+            native && readAlgorandNative(native)?.paymentTransaction?.amount,
+        ).toBe(1n)
     })
 
     it('reads chain-neutral group data the way its signers need it', () => {
@@ -284,7 +286,7 @@ describe('the Algorand adapters on a chain-neutral group', () => {
                 chainData: {},
             }),
         ).toEqual({
-            transactions: [GROUP[0]],
+            transactions: [asUnsignedAlgorandTransaction(GROUP[0])],
             indicesToSign: [0],
         })
     })
