@@ -84,10 +84,12 @@ const createAssetResponse = (
     ...overrides,
 })
 
+const PURE_SUPPLY = { totalSupply: new Decimal(1), decimals: 0 }
+
 describe('transformCollectibleResponse', () => {
     test('transforms all fields from snake_case to camelCase', () => {
         const input = createCollectibleResponse()
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.title).toBe('Cool NFT #42')
         expect(result.standard).toBe('arc3')
@@ -100,7 +102,10 @@ describe('transformCollectibleResponse', () => {
     })
 
     test('transforms collection', () => {
-        const result = transformCollectibleResponse(createCollectibleResponse())
+        const result = transformCollectibleResponse(
+            createCollectibleResponse(),
+            PURE_SUPPLY,
+        )
 
         expect(result.collection).toEqual({
             id: 1,
@@ -110,7 +115,10 @@ describe('transformCollectibleResponse', () => {
     })
 
     test('transforms traits', () => {
-        const result = transformCollectibleResponse(createCollectibleResponse())
+        const result = transformCollectibleResponse(
+            createCollectibleResponse(),
+            PURE_SUPPLY,
+        )
 
         expect(result.traits).toEqual([
             { displayName: 'Background', displayValue: 'Blue' },
@@ -119,7 +127,10 @@ describe('transformCollectibleResponse', () => {
     })
 
     test('transforms media items', () => {
-        const result = transformCollectibleResponse(createCollectibleResponse())
+        const result = transformCollectibleResponse(
+            createCollectibleResponse(),
+            PURE_SUPPLY,
+        )
 
         expect(result.media).toEqual([
             {
@@ -154,7 +165,7 @@ describe('transformCollectibleResponse', () => {
                 },
             ],
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.mediaType).toBe('mixed')
         expect(result.media).toHaveLength(3)
@@ -169,7 +180,7 @@ describe('transformCollectibleResponse', () => {
             traits: [],
             media: [],
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.traits).toEqual([])
         expect(result.media).toEqual([])
@@ -182,7 +193,7 @@ describe('transformCollectibleResponse', () => {
             primary_image: undefined,
             description: undefined,
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.title).toBeUndefined()
         expect(result.standard).toBeUndefined()
@@ -193,6 +204,7 @@ describe('transformCollectibleResponse', () => {
     test('handles arc69 standard', () => {
         const result = transformCollectibleResponse(
             createCollectibleResponse({ standard: 'arc69' }),
+            PURE_SUPPLY,
         )
 
         expect(result.standard).toBe('arc69')
@@ -201,6 +213,7 @@ describe('transformCollectibleResponse', () => {
     test('handles unknown media type', () => {
         const result = transformCollectibleResponse(
             createCollectibleResponse({ media_type: 'unknown' }),
+            PURE_SUPPLY,
         )
 
         expect(result.mediaType).toBe('unknown')
@@ -210,7 +223,7 @@ describe('transformCollectibleResponse', () => {
         const input = createCollectibleResponse({
             traits: [{ display_value: 'SomeValue' }],
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.traits).toEqual([
             { displayName: undefined, displayValue: 'SomeValue' },
@@ -221,7 +234,7 @@ describe('transformCollectibleResponse', () => {
         const input = createCollectibleResponse({
             collection: null as any,
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.collection).toBeUndefined()
     })
@@ -230,7 +243,7 @@ describe('transformCollectibleResponse', () => {
         const input = createCollectibleResponse({
             traits: undefined as any,
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.traits).toEqual([])
     })
@@ -239,7 +252,7 @@ describe('transformCollectibleResponse', () => {
         const input = createCollectibleResponse({
             media: undefined as any,
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.media).toEqual([])
     })
@@ -292,7 +305,7 @@ describe('transformCollectibleResponse — model media', () => {
                 },
             ],
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.media![0].type).toBe('model')
     })
@@ -312,7 +325,7 @@ describe('transformCollectibleResponse — model media', () => {
                 },
             ],
         })
-        const result = transformCollectibleResponse(input)
+        const result = transformCollectibleResponse(input, PURE_SUPPLY)
 
         expect(result.media![0].type).toBe('image')
         expect(result.media![1].type).toBe('model')
@@ -343,6 +356,26 @@ describe('transformAssetResponse', () => {
         expect(result.peraMetadata?.collectible?.traits).toHaveLength(2)
         expect(result.peraMetadata?.collectible?.media).toHaveLength(1)
     })
+
+    test.each([
+        ['pure (supply 1, no decimals)', '1', 0, true],
+        ['fractional (10^decimals units)', '100', 2, false],
+        ['multi-supply edition (indivisible, many copies)', '1000', 0, false],
+    ])(
+        'sets isUnique for a %s ASA',
+        (_label, total, fractionDecimals, isUnique) => {
+            const result = transformAssetResponse(
+                createAssetResponse({
+                    type: 'collectible',
+                    collectible: createCollectibleResponse(),
+                    total,
+                    fraction_decimals: fractionDecimals,
+                }),
+            )
+
+            expect(result.peraMetadata?.collectible?.isUnique).toBe(isUnique)
+        },
+    )
 
     test('leaves collectible undefined when API returns null', () => {
         const input = createAssetResponse({

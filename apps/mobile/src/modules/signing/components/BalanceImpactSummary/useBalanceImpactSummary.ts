@@ -19,7 +19,7 @@ import {
 import {
     useNativeAsset,
     PeraAssetType,
-    isPureNft,
+    isUniqueCollectible,
     useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
@@ -165,7 +165,8 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 assetId,
                 asset: displayAsset,
                 isCollectible,
-                isPureCollectible: isCollectible && !!asset && isPureNft(asset),
+                isPureCollectible:
+                    isCollectible && !!asset && isUniqueCollectible(asset),
                 direction: amount > 0n ? 'receive' : 'spend',
                 amount: displayAbs,
                 isFullBalance: closedAssetIds.has(assetId),

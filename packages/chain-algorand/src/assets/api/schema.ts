@@ -12,6 +12,7 @@
 
 import { z } from 'zod'
 import { uint64IdSchema } from '@perawallet/wallet-core-shared'
+import { AlgorandCollectibleStandard } from '../collectible'
 
 const collectibleTraitSchema = z.object({
     display_name: z.string().optional(),
@@ -34,7 +35,12 @@ const collectibleCollectionSchema = z.object({
 
 const collectibleResponseSchema = z.object({
     title: z.string().optional(),
-    standard: z.enum(['arc3', 'arc69']).optional(),
+    standard: z
+        .enum([
+            AlgorandCollectibleStandard.arc3,
+            AlgorandCollectibleStandard.arc69,
+        ])
+        .optional(),
     primary_image: z.string().nullable().optional(),
     media_type: z.enum([
         'image',

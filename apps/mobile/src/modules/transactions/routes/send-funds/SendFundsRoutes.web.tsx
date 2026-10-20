@@ -26,8 +26,7 @@ import {
 import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
 import {
-    isCollectible,
-    isPureNft,
+    isUniqueCollectible,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
@@ -58,7 +57,7 @@ export const SendFundsRoutes = () => {
         ? assets.get(selectedAssetId)
         : undefined
     const isPureCollectible = selectedAsset
-        ? isCollectible(selectedAsset) && isPureNft(selectedAsset)
+        ? isUniqueCollectible(selectedAsset)
         : false
 
     const initialRouteName = canSelectAsset

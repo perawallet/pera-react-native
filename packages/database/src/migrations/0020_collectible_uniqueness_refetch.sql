@@ -1,0 +1,1 @@
+UPDATE `assets_node` SET `updated_at` = 0 WHERE EXISTS (SELECT 1 FROM `assets_pera` p WHERE p.`asset_id` = `assets_node`.`asset_id` AND p.`scope` = `assets_node`.`scope` AND p.`asset_type` = 'collectible');

@@ -62,6 +62,7 @@ import {
     ASSET_RECLASSIFY_TTL_MS,
 } from '../../constants'
 import { algorandAssetsAdapter } from '../../adapter'
+import { hasAlgorandNftShape } from '../../collectible'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
 const MAINNET_SCOPE = {
@@ -166,6 +167,7 @@ describe('fetchAndPersistAssets', () => {
                 recheckUnclassified: {
                     ttlMs: ASSET_RECLASSIFY_TTL_MS,
                     windowMs: ASSET_NEWLY_SEEN_WINDOW_MS,
+                    hasCollectibleShape: hasAlgorandNftShape,
                 },
             }),
         )

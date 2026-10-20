@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { PeraAssetType, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useCollectibleItem } from '../useCollectibleItem'
 import type { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
@@ -22,16 +22,6 @@ const mockCopyToClipboard = vi.fn()
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
-
-vi.mock('@perawallet/wallet-core-assets', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-assets')
-    >('@perawallet/wallet-core-assets')
-    return {
-        ...actual,
-        isPureNft: (asset: PeraAsset) => asset.totalSupply.equals(1),
-    }
-})
 
 const buildAsset = (overrides: Partial<PeraAsset> = {}): PeraAsset =>
     ({
@@ -122,6 +112,29 @@ describe('useCollectibleItem', () => {
         expect(result.current.hasBalance).toBe(false)
         expect(result.current.showAmount).toBe(false)
     })
+
+    it.each([
+        [true, false],
+        [false, true],
+    ])(
+        'shows the amount only when the chain does not mark it unique (isUnique=%s)',
+        (isUnique, showAmount) => {
+            const asset = buildAsset({
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: PeraAssetType.collectible,
+                    collectible: { isUnique },
+                },
+            })
+
+            const { result } = renderHook(() =>
+                useCollectibleItem({ item: buildItem({ asset }) }),
+            )
+
+            expect(result.current.showAmount).toBe(showAmount)
+        },
+    )
 
     it('copies the asset id on long press', () => {
         mockCopyToClipboard.mockClear()

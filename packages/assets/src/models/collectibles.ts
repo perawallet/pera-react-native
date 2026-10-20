@@ -22,13 +22,8 @@ export const CollectibleMediaType = {
 export type CollectibleMediaType =
     (typeof CollectibleMediaType)[keyof typeof CollectibleMediaType]
 
-export const CollectibleStandard = {
-    arc3: 'arc3',
-    arc69: 'arc69',
-} as const
-
-export type CollectibleStandard =
-    (typeof CollectibleStandard)[keyof typeof CollectibleStandard]
+/** A token-standard id the chain owns; each chain package exports its own values. */
+export type CollectibleStandard = string
 
 export type CollectibleMedia = {
     type: CollectibleMediaType
@@ -52,6 +47,11 @@ export type CollectibleTrait = {
 export type PeraCollectible = {
     title?: string
     standard?: CollectibleStandard
+    /**
+     * Set by the chain: true when a holding can only ever be 1. Absent on a row
+     * cached before the chain set it, which reads as false.
+     */
+    isUnique?: boolean
     primaryImage?: string
     mediaType?: CollectibleMediaType
     explorerUrl?: string

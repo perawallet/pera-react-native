@@ -15,9 +15,8 @@ import { Decimal } from 'decimal.js'
 import {
     toWholeUnits,
     toDecimalUnits,
-    isPureNft,
-    hasNftShape,
     isCollectible,
+    isUniqueCollectible,
     formatCollectibleAmount,
     formatAssetAmount,
 } from '../utils'
@@ -182,49 +181,39 @@ describe('utils', () => {
         })
     })
 
-    describe('isPureNft', () => {
-        test('returns true for pure NFT (totalSupply=1, decimals=0)', () => {
-            const asset = createTestAsset(0, 'PureNFT')
-            asset.totalSupply = new Decimal(1)
-
-            expect(isPureNft(asset)).toBe(true)
+    describe('isUniqueCollectible', () => {
+        const collectibleWith = (isUnique?: boolean): PeraAsset => ({
+            ...createTestAsset(0, 'NFT'),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'unverified',
+                type: PeraAssetType.collectible,
+                collectible: { isUnique },
+            },
         })
 
-        test('returns false when totalSupply > 1', () => {
-            const asset = createTestAsset(0, 'FractionalNFT')
-            asset.totalSupply = new Decimal(100)
-
-            expect(isPureNft(asset)).toBe(false)
+        test('returns true for a collectible its chain marks unique', () => {
+            expect(isUniqueCollectible(collectibleWith(true))).toBe(true)
         })
 
-        test('returns false when decimals > 0', () => {
-            const asset = createTestAsset(6, 'Token')
-            asset.totalSupply = new Decimal(1)
-
-            expect(isPureNft(asset)).toBe(false)
+        test('returns false for a collectible its chain marks not unique', () => {
+            expect(isUniqueCollectible(collectibleWith(false))).toBe(false)
         })
 
-        test('returns false for standard fungible asset', () => {
-            const asset = createTestAsset(6, 'ALGO')
-
-            expect(isPureNft(asset)).toBe(false)
+        test('returns false when the chain has not set the flag', () => {
+            expect(isUniqueCollectible(collectibleWith(undefined))).toBe(false)
         })
-    })
 
-    describe('hasNftShape', () => {
-        test.each([
-            ['pure NFT', 0, '1', true],
-            ['editioned NFT (indivisible, many copies)', 0, '1000', true],
-            ['ARC-3 fractional NFT (10^decimals)', 2, '100', true],
-            ['fungible token', 6, '10000000000', false],
-            ['divisible supply below 10^decimals', 2, '50', false],
-        ])('%s', (_label, decimals, totalSupply, expected) => {
-            expect(
-                hasNftShape({
-                    decimals: decimals as number,
-                    totalSupply: new Decimal(totalSupply as string),
-                }),
-            ).toBe(expected)
+        test('returns false for a non-collectible, whatever the flag says', () => {
+            const asset: PeraAsset = {
+                ...collectibleWith(true),
+                peraMetadata: {
+                    ...collectibleWith(true).peraMetadata!,
+                    type: PeraAssetType.standard_asset,
+                },
+            }
+
+            expect(isUniqueCollectible(asset)).toBe(false)
         })
     })
 
@@ -289,9 +278,16 @@ describe('utils', () => {
     })
 
     describe('formatCollectibleAmount', () => {
-        test('returns empty string for pure NFT', () => {
-            const asset = createTestAsset(0, 'PureNFT')
-            asset.totalSupply = new Decimal(1)
+        test('returns empty string for a unique collectible', () => {
+            const asset: PeraAsset = {
+                ...createTestAsset(0, 'PureNFT'),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'unverified',
+                    type: PeraAssetType.collectible,
+                    collectible: { isUnique: true },
+                },
+            }
 
             expect(formatCollectibleAmount(new Decimal(1), asset)).toBe('')
         })
