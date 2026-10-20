@@ -18,9 +18,11 @@ export type {
     DeeplinkParseResult,
 } from './models'
 export {
+    ChainActionBuildError,
     deeplinkAdapters,
     DuplicateDeeplinkSchemeError,
     uriSchemeOf,
+    type ChainActionBuildFailure,
     type DeeplinkChainAdapter,
 } from './chain-adapter'
 export { resolveChainDeeplink } from './resolve'

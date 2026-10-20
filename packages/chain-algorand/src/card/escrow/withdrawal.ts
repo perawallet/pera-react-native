@@ -15,7 +15,6 @@ import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { PendingWithdrawal } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from '../client'
@@ -23,6 +22,7 @@ import { isAlgodNotFoundError } from './algod'
 import { resolveEscrowChainConfig } from './lsig'
 import mainArc56 from './main-arc56.json'
 import { type AlgorandNetworkId } from '../../network-id'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // AppliedBlockchain's W3Card (main) contract. Withdrawal is timelocked and
 // two-step: `withdrawalRequest` writes a box under the card address stamped

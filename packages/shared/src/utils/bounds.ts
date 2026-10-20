@@ -18,7 +18,7 @@ import { decodeFromBase64 } from './strings'
  * input is decoded, decrypted, text-decoded, or JSON-parsed. Defence-in-depth:
  * callers cap external/imported payloads so a malicious or corrupt blob can't
  * force an oversized allocation or parse. Each call site maps this to its own
- * typed/domain error (`Arc0001Error`, `SecureBackupImportError`, …).
+ * typed/domain error (a dApp protocol error, `SecureBackupImportError`, …).
  */
 export class InputTooLargeError extends AppError {
     /** Caller-supplied label identifying the bounded field, surfaced for logs. */

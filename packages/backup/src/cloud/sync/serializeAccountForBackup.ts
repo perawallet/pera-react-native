@@ -37,6 +37,7 @@ import { buildAccountRecord, hasBackupChains } from './serializeAccountItems'
 import type {
     SerializedAccount,
     SerializedItem,
+    SeedSecretsCache,
     SerializeHdResolver,
     SerializeMnemonicResolver,
     SerializePrivateKeyResolver,
@@ -52,6 +53,7 @@ type Deps = {
     resolveMnemonic?: SerializeMnemonicResolver
     /** Resolves HD seed/derived material; omitted/null => HD account skipped. */
     resolveHd?: SerializeHdResolver
+    seedSecrets?: SeedSecretsCache
     /** Reads a private-key account's key; omitted/null => the account is skipped. */
     resolvePrivateKey?: SerializePrivateKeyResolver
 }
@@ -86,6 +88,7 @@ export const serializeAccountForBackup = async (
         resolveMnemonic,
         resolveHd,
         resolvePrivateKey,
+        seedSecrets,
     }: Deps,
 ): Promise<SerializedAccount | null> => {
     // Checked first: reading a seed or key is KMS work and can prompt.
@@ -93,7 +96,7 @@ export const serializeAccountForBackup = async (
 
     if (hasCustody(account, 'local') && hdIndexOf(account)) {
         if (!resolveHd) return null
-        const resolved = await resolveHd(account)
+        const resolved = await resolveHd(account, seedSecrets)
         if (!resolved) return null
         const payload = buildAccountRecord(account, {
             updatedAt,

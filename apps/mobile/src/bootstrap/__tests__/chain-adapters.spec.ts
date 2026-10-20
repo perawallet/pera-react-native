@@ -204,6 +204,7 @@ describe('registerChainAdapters', () => {
             mode: 'live',
             selectedNetworkByChain: {},
             customNetworksByChain: { algorand: [] },
+            endpointOverridesByChain: {},
         })
     })
 
@@ -482,6 +483,32 @@ describe('registerChainAdapters', () => {
             expect(algorand).toEqual({})
             expect(ethereum).toEqual({ mainnet: 'https://mainnet.rpc.test' })
             expect(mocks.chainEndpointsFor).toHaveBeenCalledWith('ethereum')
+        })
+
+        it("lays a developer's endpoint override over its own chain only, and drops it once cleared", () => {
+            registerChainAdapters()
+            const algorand = contextGivenToModule()
+            const ethereum = contextGivenToEthereum()
+            const withOverrides = (endpointOverridesByChain: unknown) =>
+                mocks.networkGetState.mockReturnValue({
+                    mode: 'developer',
+                    selectedNetworkByChain: {},
+                    customNetworksByChain: { algorand: [] },
+                    endpointOverridesByChain,
+                })
+
+            withOverrides({ ethereum: { mainnet: 'https://my-node.test' } })
+
+            expect(ethereum.getEndpoints()).toEqual({
+                mainnet: 'https://my-node.test',
+            })
+            expect(algorand.getEndpoints()).toEqual({})
+
+            withOverrides({ ethereum: {} })
+
+            expect(ethereum.getEndpoints()).toEqual({
+                mainnet: 'https://mainnet.rpc.test',
+            })
         })
 
         it('hands each chain its own request timeouts', () => {

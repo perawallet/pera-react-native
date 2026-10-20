@@ -105,58 +105,47 @@ export const buildGroupSignerMap = (
     return map
 }
 
-// A chain-neutral request's `approve` gets its chain's wire-encoded signed
+// A transaction request's `approve` gets its chain's wire-encoded signed
 // transactions, whichever signer produced them.
 const transactionApproveOf = (
     request: TransactionSignRequest,
     scope: ChainScope,
 ): SourceCallbacks['approve'] => {
-    if (isUnsignedTransactionRequest(request)) {
-        const approve = request.approve
-        return (
-            approve &&
-            (async (result, submission) => {
-                // Already in the chain's wire form, and a chain with no
-                // planner adapter has no `signedTransactionsOf` to ask.
-                await approve(
-                    result.signedData.type === 'signed-transactions'
-                        ? result.signedData.signed
-                        : plannerAdapterForScope(scope).signedTransactionsOf(
-                              result,
-                              scope,
-                          ),
-                    submission,
-                )
-            })
-        )
-    }
     const approve = request.approve
     return (
         approve &&
         (async (result, submission) => {
-            if (result.signedData.type === 'transactions') {
-                await approve(result.signedData.signed, submission)
-            }
+            // Already in the chain's wire form, and a chain with no
+            // planner adapter has no `signedTransactionsOf` to ask.
+            await approve(
+                result.signedData.type === 'signed-transactions'
+                    ? result.signedData.signed
+                    : plannerAdapterForScope(scope).signedTransactionsOf(
+                          result,
+                          scope,
+                      ),
+                submission,
+            )
         })
     )
 }
 
-// WalletConnect-only: a serializable delivery context so the multisig
-// sync-flow handoff can answer the dApp after an app kill. Gated on
-// `payloadId`, which only the WalletConnect handler sets.
+// A serializable delivery context so the multisig sync-flow handoff can
+// answer the dApp after an app kill.
 const handoffDeliveryOf = (
     request: TransactionSignRequest,
+    scope: ChainScope,
 ): SourceMetadata['handoffDelivery'] => {
-    const facts = isUnsignedTransactionRequest(request)
-        ? request.chainData?.algorand
-        : request
-    if (facts?.payloadId === undefined) return undefined
-    return {
-        clientId: request.transportId ?? '',
-        payloadId: facts.payloadId,
-        indicesToSign: facts.signableIndices ?? [],
-        totalLength: facts.totalLength ?? 0,
+    if (
+        !isUnsignedTransactionRequest(request) ||
+        !plannerChainAdapters.has(scope.chainId)
+    ) {
+        return undefined
     }
+    const delivery = plannerChainAdapters
+        .get(scope.chainId)
+        .handoffDeliveryOf(request)
+    return delivery && { clientId: request.transportId ?? '', ...delivery }
 }
 
 /**
@@ -258,7 +247,7 @@ const buildSourceMetadata = (
                 : undefined,
         },
         handoffDelivery: isTransactionRequest(request)
-            ? handoffDeliveryOf(request)
+            ? handoffDeliveryOf(request, scope)
             : undefined,
     }
 }
@@ -295,7 +284,6 @@ const buildUnsignedTransactionGroups = (
     })
 
     const signedForKeys = signedForAddresses(request, allAccounts, scope)
-    const rawBytes = request.chainData?.algorand?.rawTransactionsBase64
 
     const bySigner = new Map<
         string,
@@ -317,18 +305,12 @@ const buildUnsignedTransactionGroups = (
         data: {
             type: 'transactions',
             transactions: txs,
-            chainData: signedForKeys
-                ? {
-                      algorand: {
-                          indicesToSign: txs.map((_, i) => i),
-                          ...(rawBytes && {
-                              rawTransactionsBase64: indices.map(
-                                  i => rawBytes[i],
-                              ),
-                          }),
-                      },
-                  }
-                : {},
+            ...(signedForKeys && {
+                chainData: plannerAdapterForScope(scope).signableGroupChainData(
+                    request,
+                    indices,
+                ),
+            }),
         },
         source,
         signerAddress,
@@ -363,10 +345,9 @@ const signedForAddresses = (
     const adapter = plannerChainAdapters.get(scope.chainId)
     const addresses = adapter.signedForAddresses(request)
     if (!addresses) return undefined
-    adapter.validateGroup(
-        request.chainData?.algorand?.groupContext ?? request.txs,
-        { isCosigner: request.sourceType === 'multisig-cosign' },
-    )
+    adapter.validateGroup(adapter.reviewGroupOf(request).transactions, {
+        isCosigner: request.sourceType === 'multisig-cosign',
+    })
     const knownAddresses = new Set(
         allAccounts.flatMap(
             a => chainAccountOf(a, scope.chainId)?.address ?? [],
@@ -408,25 +389,22 @@ const buildSignableGroups = (
 ): SignableGroup[] => {
     const source = buildSourceMetadata(request, scope)
 
-    if (
-        isTransactionRequest(request) &&
-        isUnsignedTransactionRequest(request)
-    ) {
+    if (isTransactionRequest(request)) {
+        // A request persisted before every source built chain-neutral
+        // transactions can still rehydrate in the old shape.
+        const txs: readonly unknown[] = request.txs
+        if (!isUnsignedTransactionRequest(request)) {
+            // An empty request is left to the caller's "nothing to sign" refusal.
+            if (txs.length === 0) return []
+            throw new InvalidSignableDataError(
+                txs.some(isUnsignedTransaction) ? MIXED_SHAPES : ALGORAND_SHAPE,
+            )
+        }
         return buildUnsignedTransactionGroups(
             request,
             allAccounts,
             scope,
             source,
-        )
-    }
-
-    if (isTransactionRequest(request)) {
-        // An empty request is left to the caller's "nothing to sign" refusal.
-        if (request.txs.length === 0) return []
-        throw new InvalidSignableDataError(
-            request.txs.some(isUnsignedTransaction)
-                ? MIXED_SHAPES
-                : ALGORAND_SHAPE,
         )
     }
 

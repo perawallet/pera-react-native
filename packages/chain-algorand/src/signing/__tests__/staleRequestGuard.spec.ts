@@ -12,7 +12,6 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Address, assignGroupID, Transaction, TransactionType } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getExpectedGenesisHash } from '../../blockchain'
@@ -26,6 +25,7 @@ import {
     staleReasonFor,
     type SimulateOriginalGroup,
 } from '../staleRequestGuard'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const SENDER = new Address(new Uint8Array(32).fill(1))
 const RECEIVER = new Address(new Uint8Array(32).fill(2))
@@ -59,8 +59,14 @@ const makeRequest = (groupContext: Transaction[]): SignRequest =>
         type: 'transactions',
         transport: 'callback',
         sourceType: 'walletconnect',
-        txs: asPera(groupContext.slice(0, 1)),
-        groupContext: asPera(groupContext),
+        txs: [asUnsignedAlgorandTransaction(asPera(groupContext)[0])],
+        chainData: {
+            algorand: {
+                groupContext: asPera(groupContext).map(txn =>
+                    asUnsignedAlgorandTransaction(txn),
+                ),
+            },
+        },
     }) as SignRequest
 
 const alreadyInLedger = (txn: Transaction) =>
@@ -127,34 +133,19 @@ describe('findStaleGroupReason', () => {
     const run = (request: SignRequest, simulate: SimulateOriginalGroup) =>
         findStaleGroupReason(request, { simulate, network: 'mainnet' })
 
-    it("simulates a chain-neutral request's full Algorand group, as the same request in either shape", async () => {
+    it("simulates each atomic group of a chain-neutral request's full Algorand group", async () => {
         const first = grouped(payment(1n), payment(2n))
         const second = grouped(payment(3n), payment(4n))
-        const group = [...first, ...second]
         const simulate = vi.fn<SimulateOriginalGroup>(async txns =>
             alreadyInLedger(txns[0] as unknown as Transaction),
         )
-        const neutral = {
-            id: 'req-neutral',
-            type: 'transactions',
-            transport: 'callback',
-            sourceType: 'walletconnect',
-            txs: [asUnsignedAlgorandTransaction(asPera(group)[0])],
-            chainData: {
-                algorand: {
-                    groupContext: asPera(group).map(txn =>
-                        asUnsignedAlgorandTransaction(txn),
-                    ),
-                },
-            },
-        } as SignRequest
 
-        const expected = await run(makeRequest(group), simulate)
-        const algorandCalls = [...simulate.mock.calls]
-        simulate.mockClear()
-
-        await expect(run(neutral, simulate)).resolves.toBe(expected)
-        expect(simulate.mock.calls).toEqual(algorandCalls)
+        await expect(
+            run(makeRequest([...first, ...second]), simulate),
+        ).resolves.toBe('already-on-chain')
+        expect(
+            simulate.mock.calls.map(([txns]) => txns.map(txn => txn.txID())),
+        ).toEqual([first, second].map(txns => txns.map(txn => txn.txID())))
     })
 
     it("never simulates a chain-neutral payload it can't read", async () => {

@@ -226,49 +226,6 @@ describe('useSigningPipeline', () => {
         })
     })
 
-    test('prefers groupContext over txs for display so partial atomic groups show fully', () => {
-        const wallet = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
-        const other = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
-        const request: TransactionSignRequest = {
-            id: 'req-2',
-            type: 'transactions',
-            chainId: 'algorand',
-            transport: 'algod',
-            // Wallet only signs slot 0; slot 1 is the other party's tx.
-            txs: [wallet as never],
-            groupContext: [wallet as never, other as never],
-            signableIndices: [0],
-        }
-        mockSigningRequest.currentRequest = request
-
-        const { result } = renderHook(() => useSigningPipeline())
-        expect(result.current.allTransactions).toHaveLength(2)
-        expect(result.current.signableIndices).toEqual(new Set([0]))
-    })
-
-    test('builds list items from the full group context and the signable subset', () => {
-        const adapter = registerFakeReviewerAdapter()
-        const tx0 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
-        const tx1 = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
-        const tx2 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
-        mockSigningRequest.currentRequest = {
-            id: 'req-external',
-            type: 'transactions',
-            chainId: 'algorand',
-            transport: 'algod',
-            txs: [tx0 as never, tx2 as never],
-            groupContext: [tx0 as never, tx1 as never, tx2 as never],
-            signableIndices: [0, 2],
-        } satisfies TransactionSignRequest
-
-        renderHook(() => useSigningPipeline())
-
-        expect(adapter.createTransactionListItems).toHaveBeenCalledWith(
-            [tx0, tx1, tx2],
-            new Set([0, 2]),
-        )
-    })
-
     test('shares the display transform across consumers — computes once per request', () => {
         const txs = [
             { sender: { toString: () => 'ADDR_A' }, fee: 1000n },
@@ -338,34 +295,6 @@ describe('useSigningPipeline', () => {
 
         const { result } = renderHook(() => useSigningPipeline())
         expect(result.current.signableIndices).toEqual(new Set([0, 1]))
-    })
-
-    // The override is keyed by position in `txs` (the signable subset), so the
-    // pipeline must translate it into the full-group display index space via
-    // `signableIndices` before handing it to the adapter.
-    test('passes signerOverrides to the warnings aggregator, translating subset index via signableIndices', () => {
-        const adapter = registerFakeReviewerAdapter()
-        const otherPartyTx = { sender: 'OTHER', fee: 1000n }
-        const foreignTx = { sender: 'FOREIGN_E', fee: 1000n }
-        mockSigningRequest.currentRequest = {
-            id: 'req-override',
-            type: 'transactions',
-            chainId: 'algorand',
-            transport: 'callback',
-            txs: [foreignTx as never],
-            groupContext: [otherPartyTx as never, foreignTx as never],
-            signableIndices: [1],
-            signerOverrides: new Map([[0, 'ADDR_O']]),
-        } satisfies TransactionSignRequest
-
-        renderHook(() => useSigningPipeline())
-
-        expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
-            [otherPartyTx, foreignTx],
-            expect.any(Set),
-            expect.any(Set),
-            new Map([[1, 'ADDR_O']]),
-        )
     })
 
     test('passes an empty authorizer map when there are no signerOverrides', () => {

@@ -18,14 +18,7 @@ import {
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    addressCodecs,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    selectChainNetworkId,
-    useNetworkStore,
-} from '@perawallet/wallet-core-chain-shared'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -65,26 +58,15 @@ const NO_RECEIVE_TARGET: ReceiveTarget = {
 }
 
 export const useQRViewScreen = (): UseQRViewScreenResult => {
-    const { selectedAccount, selectedChainId, onFinished } = useReceiveFunds()
+    const { selectedAccount, chainId, onFinished } = useReceiveFunds()
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
-    const receiveScope = useAccountCapabilityScope(
+    const scope = useAccountCapabilityScope(
         selectedAccount ?? null,
         'receive',
-    )
-    const selectedNetworkId = useNetworkStore(state =>
-        selectedChainId === undefined
-            ? undefined
-            : selectChainNetworkId(state, selectedChainId),
-    )
-    const scope = useMemo(
-        (): ChainScope | null =>
-            selectedChainId !== undefined && selectedNetworkId !== undefined
-                ? { chainId: selectedChainId, networkId: selectedNetworkId }
-                : receiveScope,
-        [selectedChainId, selectedNetworkId, receiveScope],
+        chainId,
     )
 
     const { accountName, address, paymentUri } = useMemo((): ReceiveTarget => {

@@ -11,7 +11,6 @@
  */
 
 import { SignedTransaction } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     bytesToHex,
     encodeToBase64,
@@ -36,6 +35,7 @@ import { algorandRequestOf } from './algorandRequest'
 import { simulateSignedGroup } from './feeCoverage'
 import { type AlgorandNetworkId, algorandNetworkOf } from '../network-id'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 // How long a WalletConnect request may wait on this check before its sheet
 // shows; past it the request is presented as if the check never ran.

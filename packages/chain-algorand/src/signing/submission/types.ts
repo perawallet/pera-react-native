@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraSignedTransaction } from '../../blockchain/models/algosdk-shapes'
 
 /**
  * Encoder function type for signed transactions (see

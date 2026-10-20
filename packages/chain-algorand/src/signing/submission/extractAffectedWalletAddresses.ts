@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 type Stringable = { toString(): string }
 

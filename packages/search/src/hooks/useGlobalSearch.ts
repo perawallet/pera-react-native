@@ -78,6 +78,8 @@ export type UseGlobalSearchResult = {
     fetchNextRemotePage: Nullable<() => void>
     /** Remote asset search failed (device believed online). */
     isRemoteError: boolean
+    /** The failure behind `isRemoteError`, for callers that branch on its kind; null otherwise. */
+    remoteError: unknown
     /** Remote asset search is paused because the device is offline. */
     isRemotePaused: boolean
     /** Remote asset search has no backend on this network, so retrying can
@@ -231,6 +233,7 @@ export const useGlobalSearch = (
             ? remoteAssetQuery.fetchNextPage
             : null,
         isRemoteError: remoteAssetQuery.isError,
+        remoteError: remoteAssetQuery.error ?? null,
         isRemotePaused: remoteAssetQuery.isPaused,
         // Deliberately not gated on `shouldRunRemoteAssets`: the backend is
         // absent whether or not a query is in flight, so the caller can say so

@@ -112,11 +112,9 @@ describe('useQRViewScreen', () => {
     const givenAccount = (
         account: WalletAccount | undefined,
         scope: ChainScope | null,
-        selectedChainId?: string,
     ) => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             selectedAccount: account,
-            selectedChainId,
             onFinished: mockOnFinished,
         })
         vi.mocked(useAccountCapabilityScope).mockReturnValue(scope)
@@ -137,22 +135,6 @@ describe('useQRViewScreen', () => {
 
     afterEach(() => {
         addressCodecs.reset()
-    })
-
-    it('encodes the address on the chain the user chose, not the default receive chain', () => {
-        const both: WalletAccount = {
-            ...ethereumAccount,
-            chains: {
-                ...ethereumAccount.chains,
-                algorand: { address: ALGORAND_ADDRESS },
-            },
-        }
-        givenAccount(both, ALGORAND_SCOPE, 'ethereum')
-
-        const { result } = renderHook(() => useQRViewScreen())
-
-        expect(result.current.address).toBe('0XABC')
-        expect(result.current.paymentUri).toMatch(/^stub:0XABC@/)
     })
 
     it('goes back to the picker that led here', () => {
@@ -183,7 +165,25 @@ describe('useQRViewScreen', () => {
         expect(useAccountCapabilityScope).toHaveBeenCalledWith(
             algorandAccount,
             'receive',
+            undefined,
         )
+    })
+
+    it('resolves the pinned chain when the flow was opened for one', () => {
+        ;(useReceiveFunds as Mock).mockReturnValue({
+            selectedAccount: ethereumAccount,
+            chainId: 'ethereum',
+        })
+        vi.mocked(useAccountCapabilityScope).mockReturnValue(ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(useAccountCapabilityScope).toHaveBeenCalledWith(
+            ethereumAccount,
+            'receive',
+            'ethereum',
+        )
+        expect(result.current.paymentUri).toBe('stub:0XABC@sepolia')
     })
 
     it('encodes an Algorand account through its chain codec', () => {

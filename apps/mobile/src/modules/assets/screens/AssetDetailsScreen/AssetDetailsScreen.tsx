@@ -62,6 +62,8 @@ const AssetDetailsContent = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
+        isNetworkLineVisible,
+        isMarketsTabVisible,
     } = useAssetDetailsScreen({
         assetId,
         chainId,
@@ -131,25 +133,29 @@ const AssetDetailsContent = ({
                             asset={asset}
                             scope={scope}
                             isCollectible={isCollectible}
+                            isNetworkLineVisible={isNetworkLineVisible}
                         />
                     )}
                 </Tab.Screen>
 
-                <Tab.Screen
-                    name='Markets'
-                    options={{
-                        title: t('asset_details.main_screen.markets_tab'),
-                    }}
-                >
-                    {() => (
-                        <AssetMarkets
-                            asset={asset}
-                            scope={scope}
-                            assetDetailsDisplay={assetDetailsDisplay}
-                            about={about}
-                        />
-                    )}
-                </Tab.Screen>
+                {isMarketsTabVisible && (
+                    <Tab.Screen
+                        name='Markets'
+                        options={{
+                            title: t('asset_details.main_screen.markets_tab'),
+                        }}
+                    >
+                        {() => (
+                            <AssetMarkets
+                                asset={asset}
+                                scope={scope}
+                                assetDetailsDisplay={assetDetailsDisplay}
+                                about={about}
+                                isNetworkLineVisible={isNetworkLineVisible}
+                            />
+                        )}
+                    </Tab.Screen>
+                )}
             </Tab.Navigator>
         </PWView>
     )

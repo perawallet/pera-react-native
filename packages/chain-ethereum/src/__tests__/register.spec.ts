@@ -31,6 +31,7 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
+import { nodeEndpointAdapters } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
@@ -59,6 +60,7 @@ const resetRegistries = () => {
     historyChainAdapters.reset()
     broadcasterChainAdapters.reset()
     dappRequestChainAdapters.reset()
+    nodeEndpointAdapters.reset()
     deeplinkAdapters.reset()
     ledgerAppDriverRegistry.reset()
 }
@@ -96,6 +98,7 @@ describe('createEvmChainRegistration', () => {
             expect(broadcasterChainAdapters.get(id).chainId).toBe(id)
             expect(historyChainAdapters.get(id).chainId).toBe(id)
             expect(dappRequestChainAdapters.get(id).chainId).toBe(id)
+            expect(nodeEndpointAdapters.get(id).chainId).toBe(id)
             expect(ledgerAppDriverRegistry.resolve(id).chainId).toBe(id)
         })
 

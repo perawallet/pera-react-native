@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { aggregateTransactionWarnings } from '../warnings'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraDisplayableTransaction } from '../../models/algosdk-shapes'
 
 vi.mock('../addresses', async importOriginal => {
     const original = await importOriginal<typeof import('../addresses')>()

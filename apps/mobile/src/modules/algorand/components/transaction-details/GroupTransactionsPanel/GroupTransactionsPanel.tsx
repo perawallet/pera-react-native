@@ -39,11 +39,11 @@ export const GroupTransactionsPanel = (props: GroupTransactionsPanelProps) => {
             })}
         >
             <PWView style={styles.container}>
-                {otherTransactions.map((tx, index) => (
+                {otherTransactions.map((row, index) => (
                     <TransactionPreview
                         onPress={handlePress}
-                        key={tx.id ?? index}
-                        transaction={tx}
+                        key={row.view.id ?? index}
+                        transaction={row.view}
                     />
                 ))}
             </PWView>

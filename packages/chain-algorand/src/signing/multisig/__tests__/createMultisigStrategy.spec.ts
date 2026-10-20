@@ -12,7 +12,9 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
+import { SignedTransaction as AlgosdkSignedTransaction } from 'algosdk'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     NoLocalParticipantsError,
     type SigningStrategy,
@@ -22,6 +24,19 @@ import {
 import { createMultisigStrategy } from '../createMultisigStrategy'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
+import { encodeSignedTransaction } from '../../../blockchain/utils/transact'
+import {
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    signedAlgorandTransaction,
+    testSignature,
+} from '../../__tests__/transactions'
+
+const TXN = makeTestPaymentTx(makeTestAddress(1), {
+    receiver: makeTestAddress(2),
+    genesisHash: MAINNET_GENESIS_HASH,
+})
 
 const makeMultisigAccount = (address: string): WalletAccount =>
     ({
@@ -66,7 +81,7 @@ const makeSigningResultWithSigs = (
 ): SigningResult => ({
     signedData: {
         type: 'transactions',
-        signed: sigs.map(sig => ({ sig }) as any),
+        signed: sigs.map(sig => signedAlgorandTransaction(TXN, sig)),
     },
     signers: [{ address }],
 })
@@ -175,8 +190,8 @@ describe('createMultisigStrategy', () => {
         })
 
         test('lifts each participant per-txn sig into SignerInfo.signatures (base64)', async () => {
-            const sigsA = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])]
-            const sigsB = [new Uint8Array([7, 8, 9]), new Uint8Array([10])]
+            const sigsA = [testSignature(1), testSignature(2)]
+            const sigsB = [testSignature(3), testSignature(4)]
 
             const mockParticipantStrategy: SigningStrategy = {
                 canSign: () => true,
@@ -208,11 +223,11 @@ describe('createMultisigStrategy', () => {
             expect(result.signers).toHaveLength(2)
             expect(result.signers[0]).toEqual({
                 address: 'PARTICIPANT_A',
-                signatures: ['AQID', 'BAUG'],
+                signatures: sigsA.map(encodeToBase64),
             })
             expect(result.signers[1]).toEqual({
                 address: 'PARTICIPANT_B',
-                signatures: ['BwgJ', 'Cg=='],
+                signatures: sigsB.map(encodeToBase64),
             })
         })
 
@@ -221,8 +236,8 @@ describe('createMultisigStrategy', () => {
                 signedData: {
                     type: 'transactions',
                     signed: [
-                        { sig: new Uint8Array([1]) } as any,
-                        {} as any, // no sig, no msig
+                        signedAlgorandTransaction(TXN, testSignature(1)),
+                        signedAlgorandTransaction(TXN), // no sig, no msig
                     ],
                 },
                 signers: [{ address: 'PARTICIPANT_A' }],
@@ -243,28 +258,37 @@ describe('createMultisigStrategy', () => {
                 makeMultisigAccount('MSIG'),
             )
 
-            expect(result.signers[0].signatures).toEqual(['AQ==', null])
+            expect(result.signers[0].signatures).toEqual([
+                encodeToBase64(testSignature(1)),
+                null,
+            ])
         })
 
         test('falls back to msig.subsig sig when sig is absent', async () => {
-            const subsigSig = new Uint8Array([42, 43, 44])
+            const subsigSig = testSignature(42)
+            const msigEnvelope = new AlgosdkSignedTransaction({
+                txn: TXN,
+                msig: {
+                    v: 1,
+                    thr: 2,
+                    subsig: [
+                        { pk: new Uint8Array(32).fill(0) },
+                        { pk: new Uint8Array(32).fill(1), s: subsigSig },
+                    ],
+                },
+            })
             const msigShaped: SigningResult = {
                 signedData: {
                     type: 'transactions',
                     signed: [
                         {
-                            msig: {
-                                v: 1,
-                                thr: 2,
-                                subsig: [
-                                    { pk: new Uint8Array([0]) },
-                                    {
-                                        pk: new Uint8Array([1]),
-                                        s: subsigSig,
-                                    },
-                                ],
+                            scope: {
+                                chainId: 'algorand',
+                                networkId: 'mainnet',
                             },
-                        } as any,
+                            id: TXN.txID(),
+                            bytes: encodeSignedTransaction(msigEnvelope),
+                        },
                     ],
                 },
                 signers: [{ address: 'PARTICIPANT_A' }],
@@ -285,7 +309,9 @@ describe('createMultisigStrategy', () => {
                 makeMultisigAccount('MSIG'),
             )
 
-            expect(result.signers[0].signatures).toEqual(['Kiss'])
+            expect(result.signers[0].signatures).toEqual([
+                encodeToBase64(subsigSig),
+            ])
         })
     })
 })

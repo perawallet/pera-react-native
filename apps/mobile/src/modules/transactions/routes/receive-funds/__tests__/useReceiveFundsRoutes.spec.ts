@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
     receive: { canSelectAccount: true, selectedAccount: undefined } as {
         canSelectAccount: boolean
         selectedAccount?: { id: string }
+        chainId?: string
     },
     options: [] as { chainId: string; isEnabled: boolean }[],
 }))
@@ -68,6 +69,22 @@ describe('useReceiveFundsRoutes', () => {
             canSelectAccount: false,
             selectedAccount: { id: 'a' },
         }
+
+        const { result } = renderHook(() => useReceiveFundsRoutes())
+
+        expect(result.current.initialRouteName).toBe('QRView')
+    })
+
+    it('opens the QR for a fixed account on the chain a caller pinned', () => {
+        state.receive = {
+            canSelectAccount: false,
+            selectedAccount: { id: 'a' },
+            chainId: 'ethereum',
+        }
+        state.options = [
+            { chainId: 'ethereum', isEnabled: true },
+            { chainId: 'base', isEnabled: false },
+        ]
 
         const { result } = renderHook(() => useReceiveFundsRoutes())
 

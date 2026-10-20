@@ -25,12 +25,12 @@ import {
     encodeSignedTransaction,
     groupTransactions,
 } from '..'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     assemblePQSignedTransaction,
     deriveQuantumAddress,
     pqSigningDigest,
 } from '../../pq/quantumAdapter'
+import type { PeraSignedTransaction } from '../../models/algosdk-shapes'
 
 describe('utils/transact — compactSignedResults', () => {
     it('drops null padding slots and preserves the order and identity of the rest', () => {

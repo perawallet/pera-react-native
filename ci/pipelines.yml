@@ -113,7 +113,6 @@ _web_secrets: &web_secrets
   - SLACK_WEBHOOK_URL
   - MAINNET_BACKEND_URL
   - TESTNET_BACKEND_URL
-  - BACKEND_API_KEY
   - BACKUP_BASE_URL
   - REOWN_PROJECT_ID
   - MAINNET_BIDALI_API_KEY
@@ -189,9 +188,11 @@ pipelines:
           ENVIRONMENT: production
           APP_ENV: production
           # Build-time: switching these off again takes a new store release.
-          # Enrolment stays off until integrity.perawallet.app serves the check
-          # page: each popup open would otherwise try a page that is not there.
+          # The extension bakes no API key, so its integrity token is its only
+          # credential and apps/browser/scripts/manifest.mjs fails a production
+          # build without all three.
           WEB_INTEGRITY_MINT_ENABLED: 'true'
+          WEB_INTEGRITY_ENROL_ENABLED: 'true'
           WEB_INTEGRITY_BEARER_ENABLED: 'true'
           # As android's: the same 1000, so the extension's build number stays
           # above Bitrise's and in step with the mobile builds of the tag.

@@ -25,6 +25,7 @@ import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampIntroduction } from '../useOnrampIntroduction'
 import { useOnrampScreen } from '../useOnrampScreen'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
     ...(await importOriginal()),
@@ -119,6 +120,7 @@ type MockRampPairsQueryOverrides = {
     fetchStatus?: 'fetching' | 'paused' | 'idle'
     status?: 'pending' | 'error' | 'success'
     refetch?: () => void
+    error?: unknown
 }
 
 const mockRampPairsQuery = ({
@@ -128,6 +130,7 @@ const mockRampPairsQuery = ({
     fetchStatus = 'idle',
     status = 'success',
     refetch = vi.fn(),
+    error = null,
 }: MockRampPairsQueryOverrides): void => {
     vi.mocked(useRampPairsQuery).mockReturnValue({
         data,
@@ -136,6 +139,7 @@ const mockRampPairsQuery = ({
         fetchStatus,
         status,
         refetch,
+        error,
     } as never)
 }
 
@@ -337,6 +341,22 @@ describe('useOnrampScreen', () => {
             })
             const { result } = renderHook(() => useOnrampScreen())
             expect(result.current.pairsState).toBe('error')
+            expect(result.current.isPairsIntegrityBlocked).toBe(false)
+        })
+
+        it('flags the integrity arm when the pairs were refused for the token', () => {
+            mockRampPairsQuery({
+                data: undefined,
+                isError: true,
+                status: 'error',
+                error: new IntegrityRequiredError({
+                    code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    status: 403,
+                    hadToken: false,
+                }),
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.isPairsIntegrityBlocked).toBe(true)
         })
 
         it('is loading while genuinely fetching', () => {

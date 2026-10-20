@@ -10,17 +10,12 @@
  limitations under the License
  */
 
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     GenesisHashMismatchError,
     InvalidSignableDataError,
-    isUnsignedTransaction,
     isUnsignedTransactionRequest,
-    reviewGroupOf,
     type ChainSignerTransactions,
     type ReviewGroup,
     type TransactionSignRequest,
@@ -28,6 +23,12 @@ import {
     type UnsignedTransactionsSignableData,
 } from '@perawallet/wallet-core-signing'
 import { readAlgorandTransaction } from './planner'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
+import {
+    algorandGroupDataOf,
+    algorandRequestDataOf,
+    algorandReviewGroupOf,
+} from './requestChainData'
 
 export type AlgorandRequestGroup = Omit<
     ReviewGroup,
@@ -39,27 +40,28 @@ export type AlgorandRequestGroup = Omit<
 }
 
 /**
- * Null when a chain-neutral payload isn't a readable Algorand transaction for
- * its scope; the reviewer refuses such a request, so a guard has nothing to add.
+ * Null when a payload isn't a readable Algorand transaction for its scope, or
+ * a request rehydrated in an older shape isn't chain-neutral; the reviewer
+ * refuses such a request, so a guard has nothing to add.
  */
 export const algorandRequestOf = (
     request: TransactionSignRequest,
 ): Nullable<AlgorandRequestGroup> => {
-    if (!isUnsignedTransactionRequest(request)) return request
+    if (!isUnsignedTransactionRequest(request)) return null
     try {
         const {
             groupContext,
             signerOverrides,
             signableIndices,
             feeAdjustments,
-        } = reviewGroupOf(request)
+        } = algorandReviewGroupOf(request)
         return {
             txs: algorandTransactionsOf(request.txs),
             groupContext: groupContext && algorandTransactionsOf(groupContext),
             signerOverrides,
             signableIndices,
             rawTransactionsBase64:
-                request.chainData?.algorand?.rawTransactionsBase64,
+                algorandRequestDataOf(request)?.rawTransactionsBase64,
             feeAdjustments,
         }
     } catch {
@@ -93,19 +95,17 @@ const readOrRefuse = (
 }
 
 export const algorandTransactionsOf = (
-    transactions: PeraTransaction[] | UnsignedTransaction[],
+    transactions: UnsignedTransaction[],
 ): PeraTransaction[] =>
-    transactions.map(transaction =>
-        isUnsignedTransaction(transaction)
-            ? readOrRefuse(transaction).transaction
-            : transaction,
-    )
+    transactions.map(transaction => readOrRefuse(transaction).transaction)
 
+// Read only to refuse a payload that isn't Algorand's; the signers decode it again.
 export const readAlgorandTransactionsData = (
     data: UnsignedTransactionsSignableData,
 ): ChainSignerTransactions => {
-    const transactions = algorandTransactionsOf(data.transactions)
-    const algorand = data.chainData.algorand
+    const { transactions } = data
+    algorandTransactionsOf(transactions)
+    const algorand = algorandGroupDataOf(data)
     return {
         transactions,
         indicesToSign:
@@ -120,7 +120,7 @@ export const readAlgorandTransactionsData = (
 export const algorandSignedForAddresses = (
     request: UnsignedTransactionSignRequest,
 ): string[] => {
-    const overrides = request.chainData?.algorand?.signerOverrides
+    const overrides = algorandRequestDataOf(request)?.signerOverrides
     return request.txs.map((unsigned, index) => {
         const { transaction, signer, multisig } = readOrRefuse(unsigned)
         const sender = transaction.sender.toString()

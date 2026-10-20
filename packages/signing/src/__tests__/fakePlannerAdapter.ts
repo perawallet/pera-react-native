@@ -14,7 +14,6 @@ import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
 import {
-    type PeraTransaction,
     type UnsignedTransaction,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
@@ -26,8 +25,12 @@ import {
     type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
-import { isUnsignedTransaction } from '../models'
+import type {
+    SignRequestGroupFacts,
+    UnsignedTransactionSignRequest,
+} from '../models'
 import { InvalidSignableDataError } from '../pipeline/errors'
+import type { UnsignedTransactionsSignableData } from '../pipeline/types'
 
 const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
@@ -37,8 +40,8 @@ const notStubbed = (member: string) => () => {
 
 // Recomputes each group partition's id, which keeps a stale group refused in
 // the machine's own specs without the real Algorand validator.
-const recomputeGroupIds = (transactions: PeraTransaction[]): void => {
-    const partitions = new Map<string, PeraTransaction[]>()
+const recomputeGroupIds = (transactions: Transaction[]): void => {
+    const partitions = new Map<string, Transaction[]>()
     for (const tx of transactions) {
         if (!tx.group) continue
         const key = bytesToHex(tx.group)
@@ -66,14 +69,38 @@ const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
 })
 
 const payloadTransactions = (
-    transactions: PeraTransaction[] | UnsignedTransaction[],
-): PeraTransaction[] =>
-    transactions.map(transaction =>
-        isUnsignedTransaction(transaction)
-            ? (transaction.payload as { transaction: PeraTransaction })
-                  .transaction
-            : transaction,
+    transactions: UnsignedTransaction[],
+): Transaction[] =>
+    transactions.map(
+        transaction =>
+            (transaction.payload as { transaction: Transaction }).transaction,
     )
+
+// Kept where Algorand keeps them, so a spec's request reads the same against
+// the fake and the real adapter.
+type FakeRequestFacts = SignRequestGroupFacts & {
+    payloadId?: number
+    totalLength?: number
+}
+
+const requestFactsOf = (
+    request: UnsignedTransactionSignRequest,
+): FakeRequestFacts | undefined =>
+    (request.chainData as { algorand?: FakeRequestFacts } | undefined)?.algorand
+
+const groupFactsOf = (
+    data: UnsignedTransactionsSignableData,
+): { indicesToSign?: number[]; rawTransactionsBase64?: string[] } | undefined =>
+    (
+        data.chainData as
+            | {
+                  algorand?: {
+                      indicesToSign?: number[]
+                      rawTransactionsBase64?: string[]
+                  }
+              }
+            | undefined
+    )?.algorand
 
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
@@ -95,6 +122,7 @@ export const fakePlannerAdapter = (
     useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
     useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
     encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
+    unsignedTransactionBytesOf: vi.fn(() => new Uint8Array()),
     reviewGroupFees: vi.fn(() => ({
         totalFee: new Decimal(0),
         highFeeWarning: null,
@@ -117,33 +145,72 @@ export const fakePlannerAdapter = (
     signedForAddresses: vi.fn(request =>
         request.txs[0]?.chainData.family === 'algorand'
             ? request.txs.map(
-                  (unsigned, index) =>
-                      request.chainData?.algorand?.signerOverrides?.get(
-                          index,
-                      ) ?? payloadTransactions([unsigned])[0].sender.toString(),
+                  (unsigned: UnsignedTransaction, index: number) =>
+                      requestFactsOf(request)?.signerOverrides?.get(index) ??
+                      payloadTransactions([unsigned])[0].sender.toString(),
               )
             : undefined,
     ),
-    readTransactionsData: vi.fn(data => ({
-        transactions: payloadTransactions(data.transactions),
-        indicesToSign:
-            data.chainData.algorand?.indicesToSign ??
-            data.transactions.map((_, index) => index),
-        ...(data.chainData.algorand?.rawTransactionsBase64 && {
-            rawTransactionsBase64:
-                data.chainData.algorand.rawTransactionsBase64,
-        }),
-    })),
+    signableGroupChainData: vi.fn(
+        (request: UnsignedTransactionSignRequest, indices: number[]) => {
+            const raw = requestFactsOf(request)?.rawTransactionsBase64
+            return {
+                algorand: {
+                    indicesToSign: indices.map((_, i) => i),
+                    ...(raw && {
+                        rawTransactionsBase64: indices.map(i => raw[i]),
+                    }),
+                },
+            }
+        },
+    ),
+    reviewGroupOf: vi.fn(request => {
+        const facts = requestFactsOf(request)
+        return {
+            transactions: facts?.groupContext ?? request.txs,
+            groupContext: facts?.groupContext,
+            signableIndices: facts?.signableIndices,
+            signerOverrides: facts?.signerOverrides,
+            feeAdjustments: facts?.feeAdjustments,
+        }
+    }),
+    signRequestChainData: vi.fn(facts => ({ algorand: facts })),
+    handoffDeliveryOf: vi.fn(request => {
+        const facts = requestFactsOf(request)
+        if (facts?.payloadId === undefined) return undefined
+        return {
+            payloadId: facts.payloadId,
+            indicesToSign: facts.signableIndices ?? [],
+            totalLength: facts.totalLength ?? 0,
+        }
+    }),
+    readTransactionsData: vi.fn(data => {
+        const facts = groupFactsOf(data)
+        return {
+            transactions: data.transactions,
+            indicesToSign:
+                facts?.indicesToSign ??
+                data.transactions.map((_: unknown, index: number) => index),
+            ...(facts?.rawTransactionsBase64 && {
+                rawTransactionsBase64: facts.rawTransactionsBase64,
+            }),
+        }
+    }),
     mergeSigningResults: vi.fn(results => results[0]),
     signedTransactionsOf: vi.fn(({ signedData }) => {
-        if (signedData.type !== 'signed-transactions') {
+        if (
+            signedData.type !== 'signed-transactions' &&
+            signedData.type !== 'transactions'
+        ) {
             throw new Error(`fake planner: ${signedData.type} is not stubbed`)
         }
         return signedData.signed
     }),
-    assembleSignedTransaction: vi.fn((txn, signature) => ({
-        txn,
-        sig: signature?.sig,
+    // The bytes are the signature, so a test can tell the slots apart.
+    assembleSignedTransaction: vi.fn((transaction, signature) => ({
+        scope: transaction.scope,
+        id: 'fake-signed-transaction',
+        bytes: signature?.sig ?? new Uint8Array(),
     })),
     createMultisigStrategy: vi.fn(notStubbed('createMultisigStrategy')),
     signMultisigGroups: vi.fn(notStubbed('signMultisigGroups')),

@@ -18,6 +18,7 @@ import {
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
@@ -26,6 +27,7 @@ type UseAssetTransferRequestsScreenResult = {
     assetRequests: AssetInboxRequest[]
     isPending: boolean
     isUnavailableOnNetwork: boolean
+    isIntegrityBlocked: boolean
     handleItemPress: (index: number) => void
 }
 
@@ -46,8 +48,11 @@ export const useAssetTransferRequestsScreen =
         const {
             data: assetRequests,
             isPending,
+            isError,
+            error,
             isUnavailableOnNetwork,
         } = useAssetInboxRequestsQuery(scope, accountAddress)
+        const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
         const handleItemPress = useCallback(
             (index: number) => {
@@ -67,6 +72,7 @@ export const useAssetTransferRequestsScreen =
             assetRequests: assetRequests ?? [],
             isPending,
             isUnavailableOnNetwork,
+            isIntegrityBlocked,
             handleItemPress,
         }
     }

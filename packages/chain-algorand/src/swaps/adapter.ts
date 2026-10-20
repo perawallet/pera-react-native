@@ -17,10 +17,6 @@ import {
     encodeSignedTransactions,
     getAlgorandClient,
 } from '../blockchain'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
 import { toBigInt } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
@@ -29,6 +25,10 @@ import { algorandNetworkOf } from '../network-id'
 import { algorandHoldingReserve } from '../transactions/spendable-balance'
 import { executeAlgorandSwap } from './executeSwap'
 import { isAlgorandQuantumSwapEnabled } from './quantumSwapGate'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../blockchain/models/algosdk-shapes'
 
 // Mainnet USDC on every network: the receive asset a fresh swap has always
 // defaulted to.

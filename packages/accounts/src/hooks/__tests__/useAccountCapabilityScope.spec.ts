@@ -147,6 +147,51 @@ describe('useAccountCapabilityScope', () => {
         })
     })
 
+    it('resolves a pinned chain instead of the first capable one', () => {
+        gate.swapOn = new Set(['algorand', 'ethereum'])
+
+        const { result } = renderHook(() =>
+            useAccountCapabilityScope(onBothChains, 'swap', 'ethereum'),
+        )
+
+        expect(result.current).toEqual({
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+    })
+
+    it('is null when the pinned chain has the capability off, never falling back', () => {
+        const { result } = renderHook(() =>
+            useAccountCapabilityScope(onBothChains, 'swap', 'ethereum'),
+        )
+
+        expect(result.current).toBeNull()
+    })
+
+    it('is null when the account is not on the pinned chain', () => {
+        gate.swapOn = new Set(['algorand', 'ethereum'])
+
+        const { result } = renderHook(() =>
+            useAccountCapabilityScope(testAccount('local'), 'swap', 'ethereum'),
+        )
+
+        expect(result.current).toBeNull()
+    })
+
+    it('is null when the pinned chain is not registered', () => {
+        gate.swapOn = new Set(['algorand', 'solana'])
+
+        const { result } = renderHook(() =>
+            useAccountCapabilityScope(
+                onBothChains,
+                'swap',
+                'solana' as ChainId,
+            ),
+        )
+
+        expect(result.current).toBeNull()
+    })
+
     it('skips account entries on chains that are not registered', () => {
         getProvider().chains.reset()
         getProvider().chains.register(descriptor('algorand'), ALL_ON)

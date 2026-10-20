@@ -39,9 +39,9 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import type { PeraSignedTransaction } from '../../../blockchain/models/algosdk-shapes'
 
 const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),
@@ -522,7 +522,9 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
 
     test('resolves the row to failed on a definitive node rejection', async () => {
         const rejection = new Error(
-            `overspend (account ${'B'.repeat(58)}, data {MicroAlgos:{Raw:100}}, tried to spend {5000})`,
+            `overspend (account ${'B'.repeat(
+                58,
+            )}, data {MicroAlgos:{Raw:100}}, tried to spend {5000})`,
         )
         const algokit = {
             client: {

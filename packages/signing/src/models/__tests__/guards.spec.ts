@@ -102,8 +102,13 @@ describe('isUnsignedTransactionRequest', () => {
         receiver: makeTestAddress(2),
     })
     const neutralTx = makeUnsignedTransaction('0xFROM')
-    const withTxs = (txs: TransactionSignRequest['txs']) =>
-        ({ ...base, type: 'transactions', txs }) as TransactionSignRequest
+    // Untyped on purpose: a rehydrated request may hold any transaction shape.
+    const withTxs = (txs: unknown[]) =>
+        ({
+            ...base,
+            type: 'transactions',
+            txs,
+        }) as unknown as TransactionSignRequest
 
     it('tells a chain-neutral transaction from an Algorand one', () => {
         expect(isUnsignedTransaction(neutralTx)).toBe(true)

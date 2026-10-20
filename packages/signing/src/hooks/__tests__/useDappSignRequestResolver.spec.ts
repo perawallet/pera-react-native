@@ -12,15 +12,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type {
-    Arc0001ResolveResult,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { algo25Account, multisigAccount } from '../../__tests__/accounts'
-import { useArc0001Resolver } from '../useArc0001Resolver'
+import type { DappResolveResult } from '../../chain-adapter'
+import { useDappSignRequestResolver } from '../useDappSignRequestResolver'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -34,12 +32,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAllAccounts: () => mockAccounts(),
 }))
 
-const resolved = {
-    toSign: [],
-    allDecoded: [],
-} as unknown as Arc0001ResolveResult
+const resolved: DappResolveResult = { payload: { toSign: [] } }
 
-describe('useArc0001Resolver', () => {
+describe('useDappSignRequestResolver', () => {
     const resolve = vi.fn(() => resolved)
 
     beforeEach(() => {
@@ -52,8 +47,8 @@ describe('useArc0001Resolver', () => {
     })
 
     it('binds the wallet signing and multisig addresses into the planner call', () => {
-        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
-        const request = { transactions: [{ txn: 'abc' }] }
+        const { result } = renderHook(() => useDappSignRequestResolver(SCOPE))
+        const request = { payload: { transactions: [{ txn: 'abc' }] } }
 
         const outcome = result.current(request)
 
@@ -67,16 +62,16 @@ describe('useArc0001Resolver', () => {
     })
 
     it('passes authorizedAddresses and maxTransactions through', () => {
-        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
+        const { result } = renderHook(() => useDappSignRequestResolver(SCOPE))
         const authorizedAddresses = new Set(['A'])
 
         result.current(
-            { transactions: [] },
+            { payload: { transactions: [] } },
             { authorizedAddresses, maxTransactions: 2 },
         )
 
         expect(resolve).toHaveBeenCalledWith(
-            { transactions: [] },
+            { payload: { transactions: [] } },
             expect.objectContaining({
                 authorizedAddresses,
                 maxTransactions: 2,

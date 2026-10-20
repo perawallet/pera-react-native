@@ -37,6 +37,7 @@ import {
     INTEGRITY_RENEW_ALARM,
     ensureIntegrityToken,
     handleIntegrityAlarm,
+    installIntegrityControlRoute,
     installIntegrityRenewal,
 } from './integrity'
 import {
@@ -62,6 +63,7 @@ installPushHandlers({ uriSchemes: algorandDescriptor.uriSchemes })
 // before the first outgoing request on this wake.
 installIntegrityRenewal()
 installIntegrityEnrolment()
+installIntegrityControlRoute()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
@@ -70,11 +72,10 @@ chrome.runtime.onInstalled.addListener(details => {
 
 // The SW (esbuild) and the popup (Metro) can bake *different* config from the
 // same zip; logging the resolved identity on both sides makes that comparable.
-// Never the API key.
 console.info('[pera] service worker config', {
     appEnvironment: config.appEnvironment,
     build: config.appBuildNumber || '(local)',
-    hasApiKey: config.backendAPIKey.length > 0,
+    integrityBearer: config.webIntegrityBearerEnabled,
 })
 
 // onInstalled fires only on install/update; onStartup is what brings the DB

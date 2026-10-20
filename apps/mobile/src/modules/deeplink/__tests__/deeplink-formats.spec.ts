@@ -26,7 +26,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import {
+    deeplinkAdapters,
+    type DeeplinkChainAdapter,
+} from '@perawallet/wallet-core-deeplinks'
 import {
     registerEthereumChain,
     registerLegacyAddressCodec,
@@ -57,8 +60,7 @@ const {
     mockSetPendingAmountBaseUnits,
     mockSendFundsReset,
     mockWalletAccounts,
-    mockOnlineKeyRegistration,
-    mockOfflineKeyRegistration,
+    mockBuildChainAction,
     mockErrorToast,
     mockInfoToast,
     mockPeraWebSetQr,
@@ -96,12 +98,9 @@ const {
             },
         },
     ],
-    mockOnlineKeyRegistration: vi.fn(async (_params: unknown) => ({
-        mock: 'online-keyreg',
-    })),
-    mockOfflineKeyRegistration: vi.fn(async (_params: unknown) => ({
-        mock: 'offline-keyreg',
-    })),
+    mockBuildChainAction: vi.fn<
+        NonNullable<DeeplinkChainAdapter['buildChainAction']>
+    >(async () => ({ mock: 'chain-action' }) as never),
     mockErrorToast: vi.fn(),
     mockInfoToast: vi.fn(),
     mockPeraWebSetQr: vi.fn(),
@@ -154,9 +153,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
 
-    // Real enum rather than a hand-copied literal — see the note in
-    // vitest.setup.ts. base.ts has no runtime imports.
-    const { ErrorCategory } = await vi.importActual<
+    // Real error classes and enums rather than hand-copied literals: the
+    // deeplinks package extends AppError at load. base.ts has no runtime
+    // imports.
+    const errors = await vi.importActual<
         typeof import('../../../../../../packages/shared/src/errors/base')
     >('../../../../../../packages/shared/src/errors/base')
 
@@ -166,7 +166,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         decodeFromBase64: vi.fn((b64: string) =>
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
-        ErrorCategory,
+        ...errors,
         toBigInt,
     }
 })
@@ -275,12 +275,16 @@ vi.mock('@modules/onboarding', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    // The chain's planner keeps the facts its own way; this one keeps them as given.
+    plannerChainAdapters: {
+        get: () => ({ signRequestChainData: (facts: unknown) => facts }),
+    },
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum in every fixture here — the calculator's real fast path
     // is a passthrough no-op. Real fee behavior is covered by
     // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
-    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
+    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useChainActionDeeplink.spec.ts.
     useMinimumFeeCalculatorFor:
         () =>
         () =>
@@ -291,15 +295,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
-// the real transactions package isn't loaded into this unit test's graph. The
-// keyreg handler builds through the chain adapter, so the mock routes each
-// keyreg kind to its builder spy.
+// the real transactions package isn't loaded into this unit test's import
+// graph.
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
-    buildKeyRegistrationTx: (params: { kind: string }) =>
-        params.kind === 'offline'
-            ? mockOfflineKeyRegistration(params)
-            : mockOnlineKeyRegistration(params),
 }))
 
 vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
@@ -596,13 +595,16 @@ const cases: Case[] = [
         `keyreg/?senderAddress=${ADDRESS}&type=keyreg&voteKey=UU8&selkey=lfw&sprfkey=3No&votefst=1300&votelst=11300&votekd=100&fee=2000000`,
         { kind: 'addSignRequest' },
         () => {
-            expect(mockOnlineKeyRegistration).toHaveBeenCalledWith(
+            expect(mockBuildChainAction).toHaveBeenCalledWith(
                 expect.objectContaining({
+                    action: 'keyreg',
+                    keyregType: 'online',
                     sender: ADDRESS,
-                    voteFirst: 1300n,
-                    voteLast: 11_300n,
-                    voteKeyDilution: 100n,
+                    voteFirst: '1300',
+                    voteLast: '11300',
+                    voteKeyDilution: '100',
                 }),
+                expect.anything(),
             )
         },
     ),
@@ -613,7 +615,13 @@ const cases: Case[] = [
         url: `algorand://${ADDRESS}?type=keyreg&selkey=-lfw-Y04lTnllJfncgMjXuAePe8i8YyVeoR9c1Xi78c&sprfkey=3NoXc2sEWlvQZ7XIrwVJjgjM30ndhvwGgcqwKugk1u5W_iy_JITXrykuy0hUvAxbVv0njOgBPtGFsFif3yLJpg&votefst=1300&votekd=100&votekey=UU8zLMrFVfZPnzbnL6ThAArXFsznV3TvFVAun2ONcEI&votelst=11300&fee=2000000&note=Consensus%2Bparticipation%2Bftw`,
         expect: { kind: 'addSignRequest' },
         extra: () => {
-            expect(mockOnlineKeyRegistration).toHaveBeenCalled()
+            expect(mockBuildChainAction).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    keyregType: 'online',
+                    voteKey: 'UU8zLMrFVfZPnzbnL6ThAArXFsznV3TvFVAun2ONcEI',
+                }),
+                expect.anything(),
+            )
             expect(mockErrorToast).not.toHaveBeenCalled()
         },
     },
@@ -627,10 +635,13 @@ const cases: Case[] = [
         url: `algorand://${ADDRESS}?type=keyreg`,
         expect: { kind: 'addSignRequest' },
         extra: () => {
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledWith(
-                expect.objectContaining({ sender: ADDRESS }),
+            expect(mockBuildChainAction).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    sender: ADDRESS,
+                    keyregType: 'offline',
+                }),
+                expect.anything(),
             )
-            expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
             expect(mockErrorToast).not.toHaveBeenCalled()
         },
     },
@@ -954,13 +965,16 @@ const cases: Case[] = [
         url: `algorand://${ADDRESS}?type=keyreg&selkey=KEY&sprfkey=KEY&votefst=1300&votekd=100&votekey=KEY&votelst=11300&fee=2000000&note=Consensus%20participation`,
         expect: { kind: 'addSignRequest' },
         extra: () => {
-            expect(mockOnlineKeyRegistration).toHaveBeenCalledWith(
+            expect(mockBuildChainAction).toHaveBeenCalledWith(
                 expect.objectContaining({
+                    action: 'keyreg',
+                    keyregType: 'online',
                     sender: ADDRESS,
-                    voteFirst: 1300n,
-                    voteLast: 11_300n,
-                    voteKeyDilution: 100n,
+                    voteFirst: '1300',
+                    voteLast: '11300',
+                    voteKeyDilution: '100',
                 }),
+                expect.anything(),
             )
         },
     },
@@ -1036,7 +1050,9 @@ const cases: Case[] = [
 
 beforeEach(() => {
     registerLegacyAddressCodec()
-    registerDeeplinkAdapters()
+    // Links parse through the real adapters; building the chain action is the
+    // chain package's job, covered by its own chain-action spec.
+    registerDeeplinkAdapters({ buildChainAction: mockBuildChainAction })
 })
 
 afterEach(() => {

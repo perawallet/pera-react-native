@@ -11,10 +11,10 @@
  */
 
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 import { type AlgorandNetworkId } from '../network-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /**
  * Asserts that every transaction's `genesisHash` matches the active network's

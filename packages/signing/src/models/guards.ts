@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     AuthDataSignRequest,
     ArbitraryDataSignRequest,
@@ -23,10 +20,10 @@ import type {
     UnsignedTransactionSignRequest,
 } from './index'
 
-// An Algorand transaction has neither field, so either shape is told apart by
-// its members alone. A request rehydrated from storage may hold anything.
+// A request rehydrated from storage may hold anything, including a transaction
+// persisted in a shape the pipeline no longer signs.
 export const isUnsignedTransaction = (
-    transaction: PeraTransaction | UnsignedTransaction,
+    transaction: unknown,
 ): transaction is UnsignedTransaction =>
     typeof transaction === 'object' &&
     transaction !== null &&

@@ -26,6 +26,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
+import { NetworkLabel } from '../../AssetGroupRow'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
@@ -47,6 +48,7 @@ export type AssetHoldingsProps = {
     asset: PeraAsset
     scope: ChainScope
     isCollectible?: boolean
+    isNetworkLineVisible?: boolean
 }
 
 export const AssetHoldings = ({
@@ -54,6 +56,7 @@ export const AssetHoldings = ({
     asset,
     scope,
     isCollectible,
+    isNetworkLineVisible = false,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(
@@ -115,6 +118,9 @@ export const AssetHoldings = ({
                             />
                         </PWView>
                     </PWView>
+                    {isNetworkLineVisible && (
+                        <NetworkLabel chainId={scope.chainId} />
+                    )}
 
                     <PWView style={styles.primaryValueContainer}>
                         <AssetAmount

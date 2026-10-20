@@ -12,8 +12,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useAssetConfigDisplay } from '../useAssetConfigDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 
 vi.mock(

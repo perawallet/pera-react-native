@@ -13,12 +13,12 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi } from 'vitest'
+import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
+import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
-import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'
+} from '../../blockchain/models/algosdk-shapes'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: (b64: string) => new TextEncoder().encode(b64),

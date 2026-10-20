@@ -55,7 +55,7 @@ const makeTestPaymentTx = (
             firstValid: 1000n,
             lastValid: 2000n,
             genesisID: 'mainnet-v1.0',
-            genesisHash: new Uint8Array(32).fill(0xab),
+            genesisHash: MAINNET_GENESIS_HASH,
         },
     })
 
@@ -93,7 +93,7 @@ const makeTransactionSignRequest = (
         type: 'transactions',
         transport: 'algod',
         sourceType: 'multisig-cosign',
-        txs,
+        txs: txs.map(txn => asUnsignedAlgorandTransaction(txn)),
         ...overrides,
     }) as SignRequest
 
@@ -136,6 +136,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
     afterEach(() => {
         teardown()
         vi.restoreAllMocks()
+        useNetworkStore.getState().resetState()
     })
 
     it('matches a chain-neutral request by the Algorand group its payloads carry', async () => {
@@ -276,9 +277,8 @@ describe('isRequestGroupAlreadySubmitted', () => {
     })
 
     it('looks the group up on the active network when no scope is given', async () => {
-        vi.spyOn(useNetworkStore, 'getState').mockReturnValue({
-            network: 'testnet',
-        } as ReturnType<typeof useNetworkStore.getState>)
+        useNetworkStore.getState().setMode('developer')
+        useNetworkStore.getState().selectNetwork(LEGACY_CHAIN_ID, 'testnet')
         const txs = makeGroup()
         await recordSubmissionAttempt({
             db,

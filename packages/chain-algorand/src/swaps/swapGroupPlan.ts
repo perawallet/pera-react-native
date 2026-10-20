@@ -11,15 +11,15 @@
  */
 
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     SerializedGroupPlan,
     TransactionGroup,
 } from '@perawallet/wallet-core-swaps'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../blockchain/models/algosdk-shapes'
 
 /**
  * A slot in a group's submission order. Either a backend pre-signed

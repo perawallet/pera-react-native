@@ -134,6 +134,14 @@ describe('serializeAccountForBackup', () => {
         ])
     })
 
+    it("hands the sync's seed cache to the resolver", async () => {
+        const seedSecrets = new Map()
+
+        await serializeAccountForBackup(hd, { ...deps, resolveHd, seedSecrets })
+
+        expect(resolveHd).toHaveBeenCalledWith(hd, seedSecrets)
+    })
+
     it('reads no seed for an account on no chain this build backs up', async () => {
         getProvider().chains.reset()
 

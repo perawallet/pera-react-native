@@ -24,6 +24,7 @@ import {
     INTEGRITY_CHECK_PATH,
     INTEGRITY_CHECK_PORT_PREFIX,
     INTEGRITY_HOST_PORT_PREFIX,
+    INTEGRITY_USER_RETRIES_SESSION_KEY,
     buildCheckUrl,
     clearInstallKey,
     clearSessionIntegrityToken,
@@ -48,6 +49,7 @@ import {
     type EnrolAttempt,
 } from './enrol-attempt'
 import { resumeIntegrityMint } from './integrity'
+import { clearLastFailure, recordLastFailure } from './integrity-failure'
 import { withNamedLock } from './named-lock'
 import { readActiveDeployment } from './network'
 
@@ -58,6 +60,26 @@ export const ENROL_DEADLINE_MS = 4 * 60 * 1000
 export const LIVENESS_TIMEOUT_MS = 5000
 
 const NO_ACTION: IntegrityEnrolDecision = { action: 'none' }
+
+// Verify bypasses the enrol backoff, so it is bounded: a user cannot drive a
+// solve loop. From the second retry the check opens in a focused tab, where the
+// page's own retry button works and no popup can close under the solve.
+const USER_RETRY_LIMIT = 5
+const USER_RETRY_TAB_FROM = 2
+
+type EnrolFailure = { code?: string; detail?: string }
+
+const countUserRetry = async (): Promise<number> => {
+    const stored = await chrome.storage.session.get(
+        INTEGRITY_USER_RETRIES_SESSION_KEY,
+    )
+    const previous = stored[INTEGRITY_USER_RETRIES_SESSION_KEY]
+    const count = (typeof previous === 'number' ? previous : 0) + 1
+    await chrome.storage.session.set({
+        [INTEGRITY_USER_RETRIES_SESSION_KEY]: count,
+    })
+    return count
+}
 
 const isEnrolmentEnabled = (): boolean =>
     config.webIntegrityMintEnabled && config.webIntegrityEnrolEnabled
@@ -173,6 +195,12 @@ export const requestEnrolment = async (
             const now = Date.now()
             const existing = await readAttempt()
             if (existing && isAttemptLive(existing, now)) return NO_ACTION
+
+            const userRetry =
+                reason === 'user-retry' ? await countUserRetry() : 0
+            if (userRetry > 0 && userRetry <= USER_RETRY_LIMIT) {
+                await enrolBackoff.clear()
+            }
             if (await enrolBackoff.isBlocked()) return NO_ACTION
 
             const attempt: EnrolAttempt = {
@@ -195,6 +223,20 @@ export const requestEnrolment = async (
             await chrome.alarms.create(INTEGRITY_ENROL_DEADLINE_ALARM, {
                 when: attempt.deadlineAt,
             })
+            if (userRetry >= USER_RETRY_TAB_FROM) {
+                const tab = await chrome.tabs.create({ url, active: true })
+                await writeAttempt({
+                    ...attempt,
+                    surface: 'tab',
+                    tabId: tab.id,
+                })
+                logger.info('Web integrity enrolment opened in a tab', {
+                    reason,
+                    userRetry,
+                    deployment,
+                })
+                return NO_ACTION
+            }
             await writeAttempt(attempt)
             scheduleLivenessCheck(attempt.token)
             logger.info('Web integrity enrolment started', {
@@ -267,14 +309,21 @@ type EnrolOutcome = 'enrolled' | 'failed' | 'abandoned'
 const finishAttempt = async (
     attempt: EnrolAttempt,
     outcome: EnrolOutcome,
+    failure: EnrolFailure = {},
 ): Promise<void> => {
     await writeAttempt({ ...attempt, phase: 'done' })
     await chrome.alarms.clear(INTEGRITY_ENROL_DEADLINE_ALARM)
     if (outcome === 'enrolled') {
         await enrolBackoff.clear()
         await clearEnrolmentNeeded()
+        await clearLastFailure('enrol')
     } else if (outcome === 'failed') {
         await enrolBackoff.recordFailure()
+        await recordLastFailure({
+            phase: 'enrol',
+            isTransport: false,
+            ...failure,
+        })
     }
     // Only while it still shows the check: the user may have taken the tab elsewhere.
     if (
@@ -300,7 +349,7 @@ const dropInstallKey = async (): Promise<void> => {
 const submitEnrolment = async (
     attempt: EnrolAttempt,
     turnstileToken: string,
-): Promise<EnrolOutcome> => {
+): Promise<{ outcome: EnrolOutcome; failure?: EnrolFailure }> => {
     try {
         // The mint loop may have dropped the key mid-check. Enrolling now would answer for
         // another kid and count as a failure; the new key enrols on the next trigger.
@@ -308,7 +357,7 @@ const submitEnrolment = async (
             logger.info('Web integrity install key changed during enrolment', {
                 deployment: attempt.deployment,
             })
-            return 'abandoned'
+            return { outcome: 'abandoned' }
         }
         const [deviceInstallationId, publicKey] = await Promise.all([
             ensureDeviceInstallationID(),
@@ -324,19 +373,19 @@ const submitEnrolment = async (
             logger.warn('Web integrity enrolment answered for another key', {
                 deployment: attempt.deployment,
             })
-            return 'failed'
+            return { outcome: 'failed', failure: { code: 'KID_MISMATCH' } }
         }
         await putEnrolmentMarker(attempt.deployment, {
             kid,
             enrolledAt: new Date().toISOString(),
         })
-        return 'enrolled'
+        return { outcome: 'enrolled' }
     } catch (error) {
         const code = readIntegrityErrorCode(error)
         logger.warn('Web integrity enrolment failed', { code, error })
         // The backend binds this key to another device_id, so only a new key can enrol.
         if (code === 'PUBLIC_KEY_IN_USE') await dropInstallKey()
-        return 'failed'
+        return { outcome: 'failed', failure: code ? { code } : {} }
     }
 }
 
@@ -400,11 +449,20 @@ const handleCheckPortMessage = async (
                     ) {
                         return
                     }
-                    logger.warn('Web integrity check failed', {
+                    // A non-retryable code is a build or check page regression, not the user's.
+                    const failureLog = {
                         code: message.code,
                         detail: message.detail,
+                    }
+                    if (isRetryableCheckError(message.code, message.detail)) {
+                        logger.warn('Web integrity check failed', failureLog)
+                    } else {
+                        logger.error('Web integrity check failed', failureLog)
+                    }
+                    await finishAttempt(attempt, 'failed', {
+                        code: message.code,
+                        ...(message.detail ? { detail: message.detail } : {}),
                     })
-                    await finishAttempt(attempt, 'failed')
                     return
                 }
                 case 'TURNSTILE_SOLVED': {
@@ -415,11 +473,11 @@ const handleCheckPortMessage = async (
                         phase: 'enrolling',
                     }
                     await writeAttempt(enrolling)
-                    const outcome = await submitEnrolment(
+                    const { outcome, failure } = await submitEnrolment(
                         enrolling,
                         message.turnstileToken,
                     )
-                    await finishAttempt(enrolling, outcome)
+                    await finishAttempt(enrolling, outcome, failure)
                     if (outcome === 'enrolled') void resumeIntegrityMint()
                     return
                 }
@@ -449,7 +507,9 @@ const handleCheckPortClosed = async (token: string): Promise<void> => {
             // A reload shows the check page again and reconnects with the same token.
             if (await isTabOnCheckPage(attempt.tabId)) return
             // Closed or navigated away: either way the tab is not ours to close.
-            await finishAttempt({ ...attempt, tabId: undefined }, 'failed')
+            await finishAttempt({ ...attempt, tabId: undefined }, 'failed', {
+                detail: 'tab-closed',
+            })
         })
     } catch (error) {
         logger.warn('Web integrity check tab close failed', { error })
@@ -487,7 +547,7 @@ export const handleEnrolDeadlineAlarm = async (
             logger.warn('Web integrity enrolment timed out', {
                 surface: attempt.surface,
             })
-            await finishAttempt(attempt, 'failed')
+            await finishAttempt(attempt, 'failed', { detail: 'timeout' })
         })
     } catch (error) {
         logger.warn('Web integrity enrolment deadline failed', { error })

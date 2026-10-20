@@ -11,8 +11,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { computeBalanceImpact } from '../balanceImpact'
+import type { PeraDisplayableTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const USER = 'USER_ADDRESS'
 const OTHER = 'OTHER_ADDRESS'

@@ -44,6 +44,7 @@ export const StakingScreen = () => {
         isLoading,
         isError,
         isOffline,
+        isIntegrityBlocked,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,
@@ -89,10 +90,11 @@ export const StakingScreen = () => {
                     {t('staking.subtitle')}
                 </PWText>
 
-                {/* Only the offline arm is delegated — staking keeps its own
-                    branded error container below. */}
+                {/* Only the offline and integrity arms are delegated; staking
+                    keeps its own branded error container below. */}
                 <OfflineTolerantView
                     isOffline={isOffline}
+                    isIntegrityBlocked={isIntegrityBlocked}
                     onRetry={handleRetry}
                     retryLabel={t('staking.retry')}
                     offlineTestID='staking-offline-view'

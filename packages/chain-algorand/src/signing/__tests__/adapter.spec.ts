@@ -11,9 +11,13 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { Address } from 'algosdk'
 import { Decimal } from 'decimal.js'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
+    Arc0001Error,
+    Arc0001ErrorCode,
     encodeAlgorandAddress,
     encodeTransactionRaw,
     groupTransactions,
@@ -23,10 +27,7 @@ import {
     type AlgorandTransactionView,
 } from '../../blockchain'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    PeraDisplayableTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { decodeSignedTransaction } from '../../blockchain/utils/transact'
 import {
     InvalidSignableDataError,
     type SigningResult,
@@ -37,10 +38,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetworkStore: {
-        getState: () => ({ network: 'testnet' }),
-        subscribe: () => () => {},
-    },
     assertScopeUnchanged: vi.fn(),
 }))
 
@@ -56,10 +53,12 @@ import {
 import { draftProposeContexts } from '../multisig/draftProposeContexts'
 import {
     MAINNET_GENESIS_HASH,
+    asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedAlgorandTransaction,
 } from './transactions'
+import type { PeraDisplayableTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)
@@ -91,10 +90,18 @@ describe('algorandPlannerAdapter', () => {
 
     test('validateGroup skips the group-hash recompute only for a cosigner', () => {
         const pair = groupTransactions([
-            makeTestPaymentTx(senderA, { receiver: senderB, amount: 1n }),
-            makeTestPaymentTx(senderA, { receiver: senderB, amount: 2n }),
+            makeTestPaymentTx(senderA, {
+                receiver: senderB,
+                amount: 1n,
+                genesisHash: MAINNET_GENESIS_HASH,
+            }),
+            makeTestPaymentTx(senderA, {
+                receiver: senderB,
+                amount: 2n,
+                genesisHash: MAINNET_GENESIS_HASH,
+            }),
         ])
-        const subset = [pair[0]]
+        const subset = [asUnsignedAlgorandTransaction(pair[0])]
 
         expect(() =>
             algorandPlannerAdapter.validateGroup(subset, { isCosigner: true }),
@@ -108,37 +115,119 @@ describe('algorandPlannerAdapter', () => {
 const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
 const AUTH = 'SMYOGL34R6IPDMI6TGHYDDWIGH6Z3EDGTNDKLWYVHPGDTW5D5XAYGKY25U'
 
-const txn = { sender: Address.fromString(SENDER) } as unknown as PeraTransaction
-const sig = new Uint8Array([1, 2, 3])
+const payment = makeTestPaymentTx(Address.fromString(SENDER), {
+    receiver: senderB,
+    genesisHash: MAINNET_GENESIS_HASH,
+})
+const unsigned = asUnsignedAlgorandTransaction(payment)
+const sig = new Uint8Array(64).fill(7)
 
 describe('algorandPlannerAdapter.assembleSignedTransaction', () => {
     test('returns an unsigned envelope when there is no signature', () => {
-        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn)
+        const signed =
+            algorandPlannerAdapter.assembleSignedTransaction(unsigned)
+        const envelope = decodeSignedTransaction(signed.bytes)
 
-        expect(signed.txn).toBe(txn)
-        expect(signed.sig).toBeUndefined()
-        expect(signed.sgnr).toBeUndefined()
+        expect(signed.scope).toEqual(unsigned.scope)
+        expect(signed.id).toBe(payment.txID())
+        expect(envelope.txn.txID()).toBe(payment.txID())
+        expect(envelope.sig).toBeUndefined()
+        expect(envelope.sgnr).toBeUndefined()
     })
 
     test('leaves sgnr unset when the signer is the sender', () => {
-        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn, {
-            sig,
-            signerAddress: SENDER,
-        })
+        const signed = algorandPlannerAdapter.assembleSignedTransaction(
+            unsigned,
+            {
+                sig,
+                signerAddress: SENDER,
+            },
+        )
+        const envelope = decodeSignedTransaction(signed.bytes)
 
-        expect(signed.sig).toEqual(sig)
-        expect(signed.sgnr).toBeUndefined()
+        expect(envelope.sig).toEqual(sig)
+        expect(envelope.sgnr).toBeUndefined()
     })
 
     test('names the signer in sgnr when it is not the sender (rekey)', () => {
-        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn, {
-            sig,
-            signerAddress: AUTH,
-        })
+        const signed = algorandPlannerAdapter.assembleSignedTransaction(
+            unsigned,
+            {
+                sig,
+                signerAddress: AUTH,
+            },
+        )
+        const envelope = decodeSignedTransaction(signed.bytes)
 
-        expect(signed.sig).toEqual(sig)
-        expect(signed.sgnr?.toString()).toBe(AUTH)
+        expect(envelope.sig).toEqual(sig)
+        expect(envelope.sgnr?.toString()).toBe(AUTH)
     })
+})
+
+describe('algorandPlannerAdapter.unsignedTransactionBytesOf', () => {
+    test('is the unsigned encoding of the transaction an envelope carries, signed or not', () => {
+        const expected =
+            algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
+
+        expect(
+            algorandPlannerAdapter.unsignedTransactionBytesOf(
+                algorandPlannerAdapter.assembleSignedTransaction(unsigned),
+            ),
+        ).toEqual(expected)
+        expect(
+            algorandPlannerAdapter.unsignedTransactionBytesOf(
+                algorandPlannerAdapter.assembleSignedTransaction(unsigned, {
+                    sig,
+                    signerAddress: AUTH,
+                }),
+            ),
+        ).toEqual(expected)
+    })
+})
+
+describe('algorandPlannerAdapter dApp sign requests', () => {
+    const context = { signableAddresses: new Set([SENDER]) }
+
+    test('resolves the ARC-0001 request a payload carries, and enqueues what it resolved', async () => {
+        const resolved = algorandPlannerAdapter.resolveDappRequest(
+            {
+                payload: {
+                    transactions: [
+                        { txn: encodeToBase64(encodeTransactionRaw(payment)) },
+                    ],
+                },
+            },
+            context,
+        )
+        const respondWithResult = vi.fn()
+
+        const request = await algorandPlannerAdapter.enqueueDappRequest(
+            { payload: { ...(resolved.payload as object), toSign: [] } },
+            { respondWithResult } as never,
+            {} as never,
+        )
+
+        expect(resolved.payload).toMatchObject({
+            toSign: [{ index: 0, sender: SENDER }],
+        })
+        expect(request).toBeNull()
+        expect(respondWithResult).toHaveBeenCalledWith([null])
+    })
+
+    test.each([null, 'txns', 1])(
+        'refuses a payload of %s as invalid input',
+        payload => {
+            const resolve = () =>
+                algorandPlannerAdapter.resolveDappRequest({ payload }, context)
+
+            expect(resolve).toThrow(Arc0001Error)
+            expect(resolve).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
+                }),
+            )
+        },
+    )
 })
 
 describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
@@ -164,7 +253,11 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
 
         expect(
             algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
-        ).toEqual({ source, msigMetadata: undefined, deviceId: undefined })
+        ).toEqual({
+            source,
+            msigMetadata: undefined,
+            deviceId: undefined,
+        })
         expect(
             algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
         ).toBeUndefined()
@@ -173,25 +266,26 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
 
 describe('algorandPlannerAdapter.encodeUnsignedTransaction', () => {
     test('is the wire encoding without the signing-domain prefix', () => {
-        const tx = makeTestPaymentTx(senderA, { receiver: senderB })
+        const bytes = algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
 
-        const bytes = algorandPlannerAdapter.encodeUnsignedTransaction(tx)
-
-        expect(bytes).toEqual(encodeTransactionRaw(tx))
+        expect(bytes).toEqual(encodeTransactionRaw(payment))
         expect(new TextDecoder().decode(bytes.slice(0, 2))).not.toBe('TX')
     })
 })
 
 describe('algorandReviewerAdapter.toTransactionNative', () => {
-    const payment = () =>
-        makeTestPaymentTx(senderA, {
-            receiver: senderB,
-            amount: 5n,
-            genesisHash: MAINNET_GENESIS_HASH,
-        })
+    const fivePayment = () =>
+        asUnsignedAlgorandTransaction(
+            makeTestPaymentTx(senderA, {
+                receiver: senderB,
+                amount: 5n,
+                genesisHash: MAINNET_GENESIS_HASH,
+            }),
+        )
 
     test('maps a payment to its review model', () => {
-        const native = algorandReviewerAdapter.toTransactionNative(payment())
+        const native =
+            algorandReviewerAdapter.toTransactionNative(fivePayment())
         const view = native && readAlgorandNative(native)
 
         expect(native?.family).toBe('algorand')

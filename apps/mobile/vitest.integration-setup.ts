@@ -60,12 +60,12 @@ afterEach(() => {
 // Loading it pulls in the signing package, which a file that never signs
 // hasn't loaded yet, so it gets its own timeout rather than a test hook's.
 let watchSignRequests:
-    | (typeof import('./src/test-utils/peraTransactionSignRequestGuard'))['watchPeraTransactionSignRequests']
+    | (typeof import('./src/test-utils/legacyTransactionRequestGuard'))['watchLegacyTransactionRequests']
     | undefined
 let stopWatchingSignRequests: (() => string[]) | undefined
 beforeAll(async () => {
-    ;({ watchPeraTransactionSignRequests: watchSignRequests } =
-        await import('./src/test-utils/peraTransactionSignRequestGuard'))
+    ;({ watchLegacyTransactionRequests: watchSignRequests } =
+        await import('./src/test-utils/legacyTransactionRequestGuard'))
 }, 60_000)
 beforeEach(() => {
     stopWatchingSignRequests = watchSignRequests?.().stop
@@ -79,14 +79,6 @@ afterEach(() => {
         )
     }
 })
-
-// jsdom installs its own `Uint8Array`, but node's `Buffer` extends node's — a
-// different constructor — so `buffer instanceof globalThis.Uint8Array` is false
-// and any `isBytes()` check (e.g. in xhd-wallet-api's derivation) throws.
-// Aliasing the global realigns them. Production never hits this: on
-// react-native the two already share a realm.
-;(globalThis as { Uint8Array: typeof Uint8Array }).Uint8Array =
-    Object.getPrototypeOf(Buffer.prototype).constructor as typeof Uint8Array
 
 // ...but opt OUT of the wallet-core-* mocks: integration tests run the real
 // domain code, and MSW is the only thing standing in.

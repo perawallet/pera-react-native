@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     useSingleAssetDetailsQuery,
@@ -22,6 +23,7 @@ import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/add
 import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { accountForType } from '@test-utils/accountCustody'
 import { useAssetDetailsScreen } from '../useAssetDetailsScreen'
 import { neutralAssetDetailsDisplay } from '../neutralAssetDetailsDisplay'
@@ -83,6 +85,7 @@ describe('useAssetDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerEthereumChain()
+        useRemoteConfigStore.getState().resetState()
         mocks.account = ethereumAccount()
         mocks.useResolvedAddress.mockReturnValue({
             displayName: TRUNCATED_ETH_ADDRESS,
@@ -105,6 +108,7 @@ describe('useAssetDetailsScreen', () => {
             result.current.scope.networkId,
             ERC20_ID,
         )
+        expect(url).toBe(`https://etherscan.io/token/${ERC20_ID}`)
         expect(result.current.scope.chainId).toBe('ethereum')
         expect(useSingleAssetDetailsQuery).toHaveBeenCalledWith(
             ERC20_ID,
@@ -259,5 +263,69 @@ describe('useAssetDetailsScreen', () => {
         })
         expect(result.current.isLoading).toBe(false)
         expect(result.current.headerPrimary).toBe('No Address Found')
+    })
+
+    describe('chain resolution', () => {
+        it('names the network and keeps Markets for an account on several chains', () => {
+            mockAsset({ data: assetFixture(ERC20_ID) })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ERC20_ID,
+                    chainId: 'ethereum',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.scope.chainId).toBe('ethereum')
+            expect(result.current.isNetworkLineVisible).toBe(true)
+            expect(result.current.isMarketsTabVisible).toBe(true)
+        })
+
+        it("names the network for an Algorand asset on an account that's on several chains", () => {
+            mockAsset({ data: assetFixture(ASA_ID) })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ASA_ID,
+                    chainId: 'algorand',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.scope.chainId).toBe('algorand')
+            expect(result.current.isNetworkLineVisible).toBe(true)
+        })
+
+        it('renders a single-chain account as before: no network line, Markets shown', () => {
+            mocks.account = accountForType('standalone')
+            mockAsset({ data: assetFixture(ASA_ID) })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ASA_ID,
+                    chainId: 'algorand',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.isNetworkLineVisible).toBe(false)
+            expect(result.current.isMarketsTabVisible).toBe(true)
+        })
+
+        it("hides Markets when the asset's chain has no pricing", () => {
+            setCapabilityOverrides({ pricing: false }, 'ethereum')
+            mockAsset({ data: assetFixture(ERC20_ID) })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ERC20_ID,
+                    chainId: 'ethereum',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.isMarketsTabVisible).toBe(false)
+        })
     })
 })

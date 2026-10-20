@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useTransactionWarnings } from '../useTransactionWarnings'
 
 const SENDER = 'SENDER_ADDR'

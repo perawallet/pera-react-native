@@ -128,7 +128,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     approve: async (signed: Nullable<SignedTransaction>[]) => {
                         try {
                             // This headless local-submit request never
-                            // filters slots (unlike the ARC-0001 enqueue
+                            // filters slots (unlike the dApp enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
                             const signedTxns = signed.filter(

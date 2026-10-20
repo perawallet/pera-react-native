@@ -119,8 +119,13 @@ caller's hook, not by the component.** The honest signal is per-query
 (`isPaused || (isError && !hasInternet)`), not per-device, because a screen with cached data is not
 "offline" just because the radio is off.
 
+On the web build a refused Pera read (`IntegrityRequiredError`: no valid integrity token) gets its
+own arm between offline and error, `isIntegrityBlocked`, computed by the caller's hook the same way
+(`isError && isIntegrityRequiredError(error)`). Its copy and action follow the extension's access
+state (`docs/BROWSER_ARCHITECTURE.md` 3.4); native never sets it.
+
 `BalanceLineChart` predates the component and keeps its own five-arm `renderState` switch, rendering
-identical copy and icons.
+identical copy and icons, and the same integrity arm inside its error arm.
 
 ## Offline writes: fail fast, roll back, say why
 

@@ -21,7 +21,11 @@ import type {
     HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
 
-import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    withTimeout,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -39,8 +43,8 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type {
     ChainId,
-    PeraTransaction,
-    PeraSignedTransaction,
+    SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     plannerChainAdapters,
@@ -59,7 +63,15 @@ import {
  * Function to encode a transaction to raw bytes for the Ledger to sign.
  * Injected from the hook layer (the planner's `encodeUnsignedTransaction`).
  */
-export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
+export type EncodeTransactionFunction = (
+    transaction: UnsignedTransaction,
+) => Uint8Array
+
+/** `signatures` is index-aligned with `signed`: what the device returned, or `null` for a slot it didn't sign. */
+type HardwareSignedTransactions = {
+    signed: SignedTransaction[]
+    signatures: Nullable<Uint8Array>[]
+}
 
 export type HardwareStrategyOptions = {
     hardwareWalletRegistry?: HardwareWalletRegistry
@@ -131,12 +143,13 @@ const signTransactions = async (
     planner: PlannerChainAdapter,
     guard: DisconnectGuard,
     callbacks?: SigningCallbacks,
-): Promise<PeraSignedTransaction[]> => {
+): Promise<HardwareSignedTransactions> => {
     const { transactions, indicesToSign } = data
     const { accountIndex } = signer.account.custody
 
     callbacks?.onSigningStart?.()
-    const signed: PeraSignedTransaction[] = []
+    const signed: SignedTransaction[] = []
+    const signatures: Nullable<Uint8Array>[] = []
 
     for (let index = 0; index < transactions.length; index++) {
         // No APDU leaves the app after an abort — without this check the
@@ -148,6 +161,7 @@ const signTransactions = async (
 
         if (!indicesToSign.includes(index)) {
             signed.push(planner.assembleSignedTransaction(txn))
+            signatures.push(null)
             continue
         }
 
@@ -178,10 +192,11 @@ const signTransactions = async (
                 signerAddress: signer.address,
             }),
         )
+        signatures.push(signature)
     }
 
     callbacks?.onSigningComplete?.()
-    return signed
+    return { signed, signatures }
 }
 
 type SignTransactionsOnHardwareWalletOptions = LedgerSessionOptions & {
@@ -196,14 +211,14 @@ type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
 
 /**
  * Signs sequentially, returning a parallel array where everything outside
- * `indicesToSign` is an unsigned `{ txn }` placeholder.
+ * `indicesToSign` is an unsigned envelope.
  */
 const signTransactionsOnHardwareWallet = (
     signer: HardwareSigner,
-    transactions: PeraTransaction[],
+    transactions: UnsignedTransaction[],
     indicesToSign: number[],
     options: SignTransactionsOnHardwareWalletOptions,
-): Promise<PeraSignedTransaction[]> => {
+): Promise<HardwareSignedTransactions> => {
     const { encodeTransaction, planner, callbacks } = options
 
     return withLedgerSession(
@@ -335,26 +350,27 @@ export const createHardwareStrategy = (
 
             const data = validateAndExtract(group, chainId)
 
-            const signed = await signTransactionsOnHardwareWallet(
-                signer,
-                data.transactions,
-                data.indicesToSign,
-                {
-                    registry: hardwareWalletRegistry,
-                    chainId,
-                    encodeTransaction,
-                    planner: plannerChainAdapters.get(chainId),
-                    callbacks,
-                },
-            )
+            const { signed, signatures } =
+                await signTransactionsOnHardwareWallet(
+                    signer,
+                    data.transactions,
+                    data.indicesToSign,
+                    {
+                        registry: hardwareWalletRegistry,
+                        chainId,
+                        encodeTransaction,
+                        planner: plannerChainAdapters.get(chainId),
+                        callbacks,
+                    },
+                )
 
             // The multisig cosign transport posts these as
             // `responses[].signatures`. Without them, Ledger cosigns send
             // `signatures: [[]]` and the backend rejects the length mismatch.
             const signerInfo: SignerInfo = {
                 address: signer.address,
-                signatures: signed.map(stx =>
-                    stx.sig ? encodeToBase64(stx.sig) : null,
+                signatures: signatures.map(sig =>
+                    sig ? encodeToBase64(sig) : null,
                 ),
             }
             return {

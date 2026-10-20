@@ -10,20 +10,29 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
-    PeraSignedTransaction,
     SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     TransportError,
+    type LocalKeySigningDeps,
     type SigningResult,
 } from '@perawallet/wallet-core-signing'
 import {
     decodeSignedTransaction,
     encodeSignedTransaction,
+    encodeTransactionRaw,
 } from '../blockchain/utils/transact'
+import { algorandTransactionsOf } from './algorandRequest'
+import {
+    assembleSignedTransaction,
+    signTransactionsWithLocalKey,
+} from './local-key/signTransactionsWithLocalKey'
+import type { PeraSignedTransaction } from '../blockchain/models/algosdk-shapes'
 
 export const toSignedAlgorandTransaction = (
     signed: PeraSignedTransaction,
@@ -45,18 +54,50 @@ export const signedAlgorandTransactionFromBytes = (
     bytes,
 })
 
+export const assembleSignedAlgorandTransaction = (
+    unsigned: UnsignedTransaction,
+    signature?: { sig: Uint8Array; signerAddress: string },
+): SignedTransaction =>
+    toSignedAlgorandTransaction(
+        assembleSignedTransaction(
+            algorandTransactionsOf([unsigned])[0],
+            signature,
+        ),
+        unsigned.scope,
+    )
+
+export const signUnsignedTransactionsWithLocalKey = async (
+    deps: LocalKeySigningDeps,
+    transactions: UnsignedTransaction[],
+    indexesToSign: number[],
+    account: WalletAccount,
+): Promise<SignedTransaction[]> => {
+    const signed = await signTransactionsWithLocalKey(
+        deps,
+        algorandTransactionsOf(transactions),
+        indexesToSign,
+        account,
+    )
+    return signed.map((transaction, index) =>
+        toSignedAlgorandTransaction(transaction, transactions[index].scope),
+    )
+}
+
+/** Without the signing-domain prefix: what a Ledger signs and the multisig backend stores. */
+export const unsignedAlgorandTransactionBytesOf = (
+    signed: SignedTransaction,
+): Uint8Array => encodeTransactionRaw(decodeSignedTransaction(signed.bytes).txn)
+
 export const algorandSignedTransactionsOf = (
     result: SigningResult,
-    scope: ChainScope,
+    _scope: ChainScope,
 ): Nullable<SignedTransaction>[] => {
     const { signedData } = result
-    if (signedData.type === 'signed-transactions') {
+    if (
+        signedData.type === 'signed-transactions' ||
+        signedData.type === 'transactions'
+    ) {
         return Array.from(signedData.signed, signed => signed ?? null)
-    }
-    if (signedData.type === 'transactions') {
-        return Array.from(signedData.signed, signed =>
-            signed ? toSignedAlgorandTransaction(signed, scope) : null,
-        )
     }
     throw new TransportError(
         `A ${signedData.type} result carries no signed transactions`,

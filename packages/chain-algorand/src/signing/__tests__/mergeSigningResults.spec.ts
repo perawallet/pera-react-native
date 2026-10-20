@@ -11,16 +11,14 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { mergeSigningResults } from '../mergeSigningResults'
 import {
     SigningError,
     type SigningResult,
     type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
-import type {
-    PeraSignedTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { PeraSignedTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const makeSigned = (id: string): PeraSignedTransaction =>
     ({ txID: id, blob: new Uint8Array() }) as unknown as PeraSignedTransaction

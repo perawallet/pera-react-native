@@ -22,9 +22,11 @@ export type UseReceiveFundsRoutesResult = {
 }
 
 export const useReceiveFundsRoutes = (): UseReceiveFundsRoutesResult => {
-    const { canSelectAccount, selectedAccount } = useReceiveFunds()
+    const { canSelectAccount, selectedAccount, chainId } = useReceiveFunds()
     const optionsOf = useAccountChainOptionsResolver('receive')
     if (canSelectAccount) return { initialRouteName: 'AccountSelection' }
+    // A caller that pinned the chain already chose it.
+    if (chainId !== undefined) return { initialRouteName: 'QRView' }
     const needsChain =
         selectedAccount !== undefined &&
         needsReceiveChainSelection(optionsOf(selectedAccount))

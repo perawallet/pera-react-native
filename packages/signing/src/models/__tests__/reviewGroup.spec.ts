@@ -10,87 +10,41 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { plannerChainAdapters } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
-    asUnsignedAlgorandTransaction,
-    makeTestAddress,
-    makeTestPaymentTx,
+    SECOND_CHAIN_SCOPE,
+    makeUnsignedTransaction,
 } from '../../__tests__/transactions'
-import type { FeeAdjustment, TransactionSignRequest } from '../index'
+import type { TransactionSignRequest } from '../index'
 import { reviewGroupOf } from '../reviewGroup'
 
-const [tx0, tx1] = [1n, 2n].map(amount =>
-    makeTestPaymentTx(makeTestAddress(1), {
-        receiver: makeTestAddress(2),
-        amount,
-    }),
-)
-const signerOverrides = new Map([[0, 'AUTH']])
-const feeAdjustments: FeeAdjustment[] = [
-    { index: 1, originalFee: 1n, adjustedFee: 2n, reason: 'quantum-minimum' },
-]
+const txs = [makeUnsignedTransaction('FROM')]
+const request: TransactionSignRequest = {
+    id: 'req',
+    type: 'transactions',
+    transport: 'callback',
+    txs,
+    chainData: { opaque: true },
+}
 
 describe('reviewGroupOf', () => {
-    it("reads an Algorand request's own group fields", () => {
-        const request = {
-            id: 'req',
-            type: 'transactions',
-            chainId: 'algorand',
-            transport: 'callback',
-            txs: [tx1],
-            groupContext: [tx0, tx1],
-            signableIndices: [1],
-            signerOverrides,
-            feeAdjustments,
-        } satisfies TransactionSignRequest
+    afterEach(() => plannerChainAdapters.reset())
 
-        expect(reviewGroupOf(request)).toEqual({
-            transactions: [tx0, tx1],
-            groupContext: [tx0, tx1],
-            signableIndices: [1],
-            signerOverrides,
-            feeAdjustments,
+    it("reads the group through the request chain's planner", () => {
+        const group = { transactions: txs, signableIndices: [0] }
+        const adapterReviewGroupOf = vi.fn(() => group)
+        registerFakePlannerAdapter({
+            chainId: SECOND_CHAIN_SCOPE.chainId,
+            reviewGroupOf: adapterReviewGroupOf,
         })
+
+        expect(reviewGroupOf(request)).toBe(group)
+        expect(adapterReviewGroupOf).toHaveBeenCalledWith(request)
     })
 
-    it("reads a chain-neutral request's Algorand group facts", () => {
-        const [neutral0, neutral1] = [tx0, tx1].map(txn =>
-            asUnsignedAlgorandTransaction(txn),
-        )
-        const request = {
-            id: 'req',
-            type: 'transactions',
-            transport: 'callback',
-            txs: [neutral1],
-            chainData: {
-                algorand: {
-                    groupContext: [neutral0, neutral1],
-                    signableIndices: [1],
-                    signerOverrides,
-                    feeAdjustments,
-                },
-            },
-        } satisfies TransactionSignRequest
-
-        expect(reviewGroupOf(request)).toEqual({
-            transactions: [neutral0, neutral1],
-            groupContext: [neutral0, neutral1],
-            signableIndices: [1],
-            signerOverrides,
-            feeAdjustments,
-        })
-    })
-
-    it('shows `txs` when a request carries no full group', () => {
-        const txs = [asUnsignedAlgorandTransaction(tx0)]
-
-        expect(
-            reviewGroupOf({
-                id: 'req',
-                type: 'transactions',
-                transport: 'algod',
-                txs,
-            }),
-        ).toEqual({ transactions: txs })
+    it('shows `txs` on a chain with no planner', () => {
+        expect(reviewGroupOf(request)).toEqual({ transactions: txs })
     })
 })

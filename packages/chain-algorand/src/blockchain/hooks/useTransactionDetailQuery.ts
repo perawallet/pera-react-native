@@ -12,11 +12,12 @@
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
+import { toAlgorandNative } from '../models/transaction-view'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 type UseTransactionDetailQueryParams = {
@@ -26,7 +27,7 @@ type UseTransactionDetailQueryParams = {
 
 export type UseTransactionDetailQueryResult = {
     /** `undefined` until loaded; callers fall back to other sources on it. */
-    data: Optional<PeraDisplayableTransaction>
+    data: Optional<TransactionNative>
     isPending: boolean
     isLoading: boolean
     isSuccess: boolean
@@ -49,7 +50,9 @@ export const useTransactionDetailQuery = ({
             const response = await algokit.client.indexer
                 .lookupTransactionByID(transactionId)
                 .do()
-            return mapIndexerTxToDisplayableTransaction(response.transaction)
+            return toAlgorandNative(
+                mapIndexerTxToDisplayableTransaction(response.transaction),
+            )
         },
         enabled: isEnabled && !!transactionId,
     })

@@ -228,8 +228,10 @@ no fallback and should surface as unavailable.
 
 Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client
 of its own: the Pera client in `packages/shared/src/api/query-client.ts` is the one place that adds
-the API key and the device headers. It is built for every configured scope, on every chain. It adds
-the integrity token only as the web build's Bearer, so a call to an integrity-guarded route (the
+the credential and the device headers. It is built for every configured scope, on every chain. The
+credential is the API key on native and the integrity token as a Bearer on web, where the extension
+bakes no key; there a refused Pera call throws `IntegrityRequiredError` and a guarded call waits up
+to the realm's bound for a token still on its way. A call to an integrity-guarded route (the
 card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
 `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 
@@ -242,6 +244,8 @@ node applies. Algorand keeps the context in
 `packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
 and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
 Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
+The app lays a developer's per-network endpoint override from the network store over that record,
+and only over networks the chain's config already carries.
 
 ## Account types share one signing path
 
@@ -266,19 +270,19 @@ signs unreviewed. A request the app built itself has no review screen, so the ch
 `policy.autoApproveLocal` decides it, and one the policy turns down fails with `ReviewRequiredError`
 rather than waiting for a screen that never opens.
 
-A transaction request carries either Algorand transactions or chain-neutral `UnsignedTransaction`s,
-told apart by `isUnsignedTransactionRequest`. A chain-neutral request takes its chain from its
+A transaction request carries chain-neutral `UnsignedTransaction`s. It takes its chain from its
 transactions' scope and its signers from the chain planner's `plan`, because only the chain can read
 its payload. One built for a network other than its chain's selected one fails with
-`ScopeChangedError`. The Algorand-only request fields are typed out of a chain-neutral request, so a
-source can't set one the pipeline would ignore; Algorand's group facts (the full group, signer
-overrides, request bytes, fee adjustments) ride in its `chainData.algorand` instead.
+`ScopeChangedError`. What a source sends beside the transactions (the full group, signer overrides,
+request bytes, fee adjustments) is the request's `chainData`, opaque to the signing package: a source
+builds it with the planner adapter's `signRequestChainData`, and the pipeline reads it back through
+`reviewGroupOf` and `handoffDeliveryOf`, so only the chain knows its shape. A request persisted in an
+older shape can still rehydrate, so the machine refuses any whose transactions aren't chain-neutral.
 
-An Algorand chain-neutral request is checked and grouped as its `PeraTransaction` form would be:
-group integrity over the full group, and one group per account each transaction signs for, whose
-rekey is followed once. That keeps either shape signing the same indices with the same custody. The
-planner adapter's `signedForAddresses` decides that key, and refuses a signer override that names
-neither the sender nor an account the payload signs with.
+An Algorand request is checked and grouped by the Algorand transactions it carries: group integrity
+over the full group, and one group per account each transaction signs for, whose rekey is followed
+once. The planner adapter's `signedForAddresses` decides that key, and refuses a signer override
+that names neither the sender nor an account the payload signs with.
 Every Algorand signer and guard reads the transaction from the payload through
 `readAlgorandTransaction`, the trust boundary for a payload a dApp may have built.
 
@@ -292,8 +296,9 @@ arbitrary bytes signed, which is what `eth_sign` would allow.
 The planner signs a local key only in the scheme it plans and assembles only a complete signature
 set. An Algorand quantum key, a Ledger, a multisig proposal and a multisig cosignature therefore sign
 through Algorand's own strategies, which sign the transaction they read from the payload, never its
-bytes. Their result is `PeraSignedTransaction`, the planner's is `SignedTransaction`, and one request
-can't be delivered as a mix of the two, so the machine refuses such a request before anything signs.
+bytes. Their result is the signed transactions alone, the planner's carries history entries beside
+them, and one request can't be delivered as a mix of the two, so the machine refuses such a request
+before anything signs.
 
 A chain whose review reads only chain-neutral transactions registers a `TransactionReviewer` in
 chain-contract's `transactionReviewers`, as with planners, and the signing pipeline bridges it into

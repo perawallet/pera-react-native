@@ -13,13 +13,13 @@
 import { describe, expect, test, vi } from 'vitest'
 import { Address } from 'algosdk'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
     SIGN_BATCH_SIZE,
     signTransactionsWithLocalKey,
 } from '../signTransactionsWithLocalKey'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
+import type { PeraTransaction } from '../../../blockchain/models/algosdk-shapes'
 
 const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
 const OTHER = 'SMYOGL34R6IPDMI6TGHYDDWIGH6Z3EDGTNDKLWYVHPGDTW5D5XAYGKY25U'

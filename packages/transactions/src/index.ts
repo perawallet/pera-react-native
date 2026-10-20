@@ -21,7 +21,6 @@ export * from './hooks'
 export {
     sendFlowChainAdapters,
     sendFlowFeatureFor,
-    buildKeyRegistrationTx,
     type SendFlowChainAdapter,
     type AssetInboxRequest,
     type AssetInboxSendFlow,
@@ -53,7 +52,7 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
-    mapHistoryItemToDisplayableTransaction,
+    mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
     historyItemGroupToOpen,
     assetFactsResolverFor,

@@ -19,8 +19,8 @@ const mockResolve = vi.fn()
 const mockEnqueue = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useArc0001Resolver: () => mockResolve,
-    useEnqueueArc0001SignRequest: () => mockEnqueue,
+    useDappSignRequestResolver: () => mockResolve,
+    useEnqueueDappSignRequest: () => mockEnqueue,
 }))
 
 // Only its identity matters to this file: `enqueue` must receive it untouched.
@@ -70,7 +70,7 @@ describe('useAlgorandTransactionSigning', () => {
         )
 
         expect(mockResolve).toHaveBeenCalledWith(
-            { transactions: group },
+            { payload: { transactions: group } },
             { authorizedAddresses: new Set(['AAAA', 'BBBB']) },
         )
     })

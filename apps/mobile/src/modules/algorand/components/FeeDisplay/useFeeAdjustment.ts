@@ -15,13 +15,11 @@ import { Decimal } from 'decimal.js'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import {
-    isUnsignedTransaction,
     reviewGroupOf,
     useSigningPipeline,
     type FeeAdjustment,
@@ -121,15 +119,13 @@ export const useFeeAdjustment = (
 }
 
 const matchesTransaction = (
-    slot: PeraTransaction | UnsignedTransaction | undefined,
+    slot: UnsignedTransaction | undefined,
     transaction: AlgorandTransactionView,
 ): boolean => {
     // The reviewer read the transaction out of this payload, so identity
     // still matches; nothing here signs or trusts it.
-    const raw =
-        slot && isUnsignedTransaction(slot)
-            ? (slot.payload as { transaction?: PeraTransaction }).transaction
-            : slot
+    const raw = (slot?.payload as { transaction?: { txID(): string } })
+        ?.transaction
     if (!raw) {
         return false
     }

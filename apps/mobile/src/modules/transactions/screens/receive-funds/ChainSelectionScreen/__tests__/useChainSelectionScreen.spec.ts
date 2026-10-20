@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     enableChain: vi.fn(),
     showError: vi.fn(),
     setSelectedAccount: vi.fn(),
-    setSelectedChainId: vi.fn(),
+    setChainId: vi.fn(),
     options: [] as { chainId: string; isEnabled: boolean }[],
 }))
 
@@ -48,7 +48,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: () => ({
         selectedAccount: account,
         setSelectedAccount: mocks.setSelectedAccount,
-        setSelectedChainId: mocks.setSelectedChainId,
+        setChainId: mocks.setChainId,
     }),
 }))
 
@@ -86,7 +86,7 @@ describe('useChainSelectionScreen', () => {
         act(() => result.current.handleSelectChain('ethereum' as ChainId))
 
         expect(mocks.enableChain).not.toHaveBeenCalled()
-        expect(mocks.setSelectedChainId).toHaveBeenCalledWith('ethereum')
+        expect(mocks.setChainId).toHaveBeenCalledWith('ethereum')
         expect(mocks.navigate).toHaveBeenCalledWith('QRView')
     })
 
@@ -110,7 +110,7 @@ describe('useChainSelectionScreen', () => {
             'user',
         )
         expect(mocks.setSelectedAccount).toHaveBeenCalledWith(enabled)
-        expect(mocks.setSelectedChainId).toHaveBeenCalledWith('base')
+        expect(mocks.setChainId).toHaveBeenCalledWith('base')
         expect(result.current.enablingChainId).toBeUndefined()
     })
 

@@ -34,6 +34,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
+import { algorandRequestChainData } from '../signing/requestChainData'
 import { SwapUserRejectedError } from './swapGroupPlan'
 
 /**
@@ -173,7 +174,7 @@ export const requestSwapSignatures = (
             // user-signable slots). The signing-machine analyzer recomputes
             // the group hash over this payload, not the wallet-signable
             // subset — see validateTransactionGroupIntegrity.
-            chainData: { algorand: { groupContext } },
+            chainData: algorandRequestChainData({ groupContext }),
             sourceMetadata: source,
             approve: async signed => {
                 // The null-filter is defensive narrowing back to the swap
@@ -236,7 +237,7 @@ export const requestSwapProposal = (
             // cosign resolver once threshold is met.
             transportOptions: { multisig: { proposeMode: 'sync' } },
             txs: unsignedTxs,
-            chainData: { algorand: { groupContext } },
+            chainData: algorandRequestChainData({ groupContext }),
             sourceMetadata: source,
             onProposed: async info => {
                 onProposed({

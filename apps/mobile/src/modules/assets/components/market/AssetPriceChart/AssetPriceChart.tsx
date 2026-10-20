@@ -14,7 +14,11 @@ import { memo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     type AssetPriceHistoryItem,
     type PeraAsset,
@@ -48,6 +52,7 @@ export const AssetPriceChart = memo(function AssetPriceChart({
         data,
         isPending,
         isError,
+        error,
         isPaused,
         refetch,
         isUnavailableOnNetwork,
@@ -60,6 +65,7 @@ export const AssetPriceChart = memo(function AssetPriceChart({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
             onRetry={() => void refetch()}

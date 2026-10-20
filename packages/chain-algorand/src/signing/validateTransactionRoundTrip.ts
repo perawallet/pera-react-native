@@ -11,10 +11,10 @@
  */
 
 import { encodeTransactionRaw, stripTxPrefix } from '../blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 import { TransactionRoundTripError } from '@perawallet/wallet-core-signing'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /**
  * Re-encodes each decoded transaction and compares the result to the

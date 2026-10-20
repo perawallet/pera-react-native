@@ -12,6 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { useIntegrityCheckFrameHost } from '../useIntegrityCheckFrameHost.web'
 import { useIntegrityCheckFrameStore } from '../useIntegrityCheckFrameStore.web'
 
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => {
         endedListener: null as (() => void) | null,
         surface: 'popup',
         isOnboarding: false,
+        hasCommittedToOnboarding: false,
         isMintEnabled: true,
         isEnrolEnabled: true,
     }
@@ -90,6 +92,13 @@ vi.mock('@hooks/useShowOnboarding', () => ({
     useShowOnboarding: () => mocks.isOnboarding,
 }))
 
+vi.mock('@modules/onboarding', () => ({
+    useIsOnboarding: () => ({
+        isOnboarding: mocks.hasCommittedToOnboarding,
+        setIsOnboarding: vi.fn(),
+    }),
+}))
+
 // Lets the request's decision settle, so a "never framed" assertion cannot
 // pass merely because it ran before the answer arrived.
 const flushMicrotasks = async (): Promise<void> => {
@@ -113,9 +122,11 @@ describe('useIntegrityCheckFrameHost', () => {
         mocks.endedListener = null
         mocks.surface = 'popup'
         mocks.isOnboarding = false
+        mocks.hasCommittedToOnboarding = false
         mocks.isMintEnabled = true
         mocks.isEnrolEnabled = true
         useIntegrityCheckFrameStore.getState().hide()
+        useNetworkStatusStore.getState().setHasInternet(true)
     })
 
     afterEach(() => {
@@ -315,5 +326,73 @@ describe('useIntegrityCheckFrameHost', () => {
         })
 
         expect(result.current.url).toBeNull()
+    })
+
+    it('asks for no check while offline, and asks once back online', async () => {
+        mocks.request.mockResolvedValue({ action: 'none' })
+        act(() => useNetworkStatusStore.getState().setHasInternet(false))
+        renderHook(() => useIntegrityCheckFrameHost())
+        await act(flushMicrotasks)
+        expect(mocks.request).not.toHaveBeenCalled()
+
+        act(() => useNetworkStatusStore.getState().setHasInternet(true))
+        await act(flushMicrotasks)
+
+        expect(mocks.request).toHaveBeenCalledWith('page-open')
+    })
+
+    it('asks for a check the moment the user commits to onboarding', async () => {
+        mocks.request.mockResolvedValue(host)
+        mocks.isOnboarding = true
+        mocks.hasCommittedToOnboarding = true
+
+        const { result } = renderHook(() => useIntegrityCheckFrameHost())
+        await act(flushMicrotasks)
+
+        expect(mocks.request).toHaveBeenCalledWith('onboarding-started')
+        expect(result.current.url).toBe(CHECK_URL)
+    })
+
+    it('hides a dismissed check but keeps holding its host port', async () => {
+        mocks.request.mockResolvedValue(host)
+        const { result } = renderHook(() => useIntegrityCheckFrameHost())
+        await act(flushMicrotasks)
+        act(() => useIntegrityCheckFrameStore.getState().setExpanded(true))
+        expect(result.current.isExpanded).toBe(true)
+
+        act(() => result.current.dismiss())
+
+        expect(result.current.isExpanded).toBe(false)
+        expect(result.current.url).toBe(CHECK_URL)
+        expect(mocks.release).not.toHaveBeenCalled()
+    })
+
+    it('re-shows a dismissed check on Verify while its attempt lives', async () => {
+        mocks.request.mockResolvedValue(host)
+        const { result } = renderHook(() => useIntegrityCheckFrameHost())
+        await act(flushMicrotasks)
+        act(() => {
+            useIntegrityCheckFrameStore.getState().setExpanded(true)
+            result.current.dismiss()
+        })
+        mocks.request.mockClear()
+
+        act(() => useIntegrityCheckFrameStore.getState().requestVerify())
+        await act(flushMicrotasks)
+
+        expect(result.current.isExpanded).toBe(true)
+        expect(mocks.request).not.toHaveBeenCalled()
+    })
+
+    it('asks for a new attempt on Verify when none is live', async () => {
+        mocks.request.mockResolvedValue({ action: 'none' })
+        renderHook(() => useIntegrityCheckFrameHost())
+        await act(flushMicrotasks)
+        mocks.request.mockClear()
+
+        act(() => useIntegrityCheckFrameStore.getState().requestVerify())
+        await act(flushMicrotasks)
+
+        expect(mocks.request).toHaveBeenCalledWith('user-retry')
     })
 })

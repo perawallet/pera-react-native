@@ -1144,6 +1144,12 @@
         "pera_service": {
             "unavailable": "Pera services aren't available on this network. Switch to MainNet to use this feature."
         },
+        "integrity": {
+            "unavailable": {
+                "title": "Pera services unavailable",
+                "body": "Pera couldn't verify this extension right now. Try again in a few minutes."
+            }
+        },
         "api": {
             "generic": {
                 "title": "Request failed",
@@ -2930,7 +2936,16 @@
                 "genesis_id_required": "Fetch or enter the genesis ID",
                 "save": "Save and switch",
                 "cancel": "Cancel",
-                "reset": "Reset to defaults"
+                "reset": "Reset to defaults",
+                "override_endpoint": "Override RPC",
+                "endpoint_overridden": "{{host}} (override)",
+                "endpoint_sheet_title": "{{network}} RPC",
+                "endpoint_current": "Currently {{host}}",
+                "endpoint_url_label": "RPC URL",
+                "endpoint_wrong_network": "This RPC serves a different network. Enter one for {{network}}.",
+                "endpoint_unreachable": "Could not reach that RPC.",
+                "endpoint_save": "Save",
+                "endpoint_reset": "Reset to configured RPC"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
@@ -2951,6 +2966,11 @@
             "app_integrity_none": "none",
             "app_integrity_verify_ok": "ok",
             "app_integrity_verify_failed": "failed",
+            "app_integrity_access_state": "Access state: {{value}}",
+            "app_integrity_cause": "Cause: {{value}}",
+            "app_integrity_next_attempt": "Next attempt: {{value}}",
+            "app_integrity_force_enrol": "Force enrolment",
+            "app_integrity_clear_backoff": "Clear backoffs",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
             "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
@@ -4296,7 +4316,29 @@
         }
     },
     "integrityCheck": {
-        "frame_title": "Pera Wallet check"
+        "frame_title": "Pera Wallet check",
+        "frame_heading": "Quick check before using Pera services",
+        "frame_dismiss": "Not now",
+        "banner": {
+            "checking_label": "Verifying this extension",
+            "service_label": "Pera services unavailable",
+            "service_body": "Pera can't reach its services right now. Your accounts and signing still work. Prices and some features may be out of date.",
+            "verify_label": "Verification needed",
+            "verify_body": "Verify this extension to use Pera services such as prices, swaps and notifications. Your accounts and signing still work.",
+            "blocked_body": "This installation couldn't be verified. Contact Pera support for help.",
+            "restored_label": "Pera services restored",
+            "retry": "Retry",
+            "verify": "Verify"
+        },
+        "surface": {
+            "service_title": "Pera services unavailable",
+            "service_body": "This needs Pera services, which can't be reached right now. It will load once they're back.",
+            "verify_title": "Verification needed",
+            "verify_body": "Verify this extension to load this. Your accounts and signing aren't affected.",
+            "blocked_body": "This installation couldn't be verified, so this can't load. Contact Pera support for help."
+        },
+        "approval_notice": "Pera services are unavailable, so sponsored fees and asset details may be missing. You can still sign.",
+        "approval_open": "Open Pera"
     },
     "analytics_consent": {
         "prompt": {

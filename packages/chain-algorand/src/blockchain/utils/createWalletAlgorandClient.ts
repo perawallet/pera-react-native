@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { type PeraTransactionGroup } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
@@ -21,6 +20,7 @@ import type {
 import { encodeSignedTransactions } from './transact'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 import { algorandScope, type AlgorandNetworkId } from '../../network-id'
+import type { PeraTransactionGroup } from '../models/algosdk-shapes'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
     throw new Error(

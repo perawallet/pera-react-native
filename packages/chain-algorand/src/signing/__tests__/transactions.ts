@@ -13,11 +13,14 @@
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     i18nKey,
-    type PeraTransaction,
+    type SignedTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 import type { AlgorandTransactionPayload } from '../planner'
+import { toSignedAlgorandTransaction } from '../signedTransactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
 // hand-built literals with SDK-shaped fields are exactly what let
@@ -109,3 +112,20 @@ export const payloadTransactionOf = (
     unsigned: UnsignedTransaction,
 ): PeraTransaction =>
     (unsigned.payload as AlgorandTransactionPayload).transaction
+
+/** A signature of the length an Ed25519 envelope encodes, filled with `byte` so slots tell apart. */
+export const testSignature = (byte: number): Uint8Array =>
+    new Uint8Array(64).fill(byte)
+
+/** `transaction` as a signer returns it: signed by its sender with `sig`, or unsigned without one. */
+export const signedAlgorandTransaction = (
+    transaction: PeraTransaction,
+    sig?: Uint8Array,
+): SignedTransaction =>
+    toSignedAlgorandTransaction(
+        assembleSignedTransaction(
+            transaction,
+            sig && { sig, signerAddress: transaction.sender.toString() },
+        ),
+        { chainId: 'algorand', networkId: 'mainnet' },
+    )

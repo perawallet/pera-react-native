@@ -40,7 +40,7 @@ export type UseChainSelectionScreenResult = {
 }
 
 export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
-    const { selectedAccount, setSelectedAccount, setSelectedChainId } =
+    const { selectedAccount, setSelectedAccount, setChainId } =
         useReceiveFunds()
     const navigation =
         useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
@@ -74,7 +74,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
             const row = rowByChain.get(chainId)
             if (!selectedAccount || !row || isEnablingRef.current) return
             if (row.isEnabled) {
-                setSelectedChainId(chainId)
+                setChainId(chainId)
                 navigation.navigate('QRView')
                 return
             }
@@ -89,7 +89,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
                     )
                     if (!isMounted()) return
                     setSelectedAccount(account)
-                    setSelectedChainId(chainId)
+                    setChainId(chainId)
                     navigation.navigate('QRView')
                 } catch (error) {
                     if (!isMounted()) return
@@ -106,7 +106,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
             rowByChain,
             selectedAccount,
             setSelectedAccount,
-            setSelectedChainId,
+            setChainId,
             navigation,
             enableChain,
             isMounted,

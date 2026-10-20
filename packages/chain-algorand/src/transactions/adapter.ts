@@ -12,10 +12,6 @@
 
 import { Decimal } from 'decimal.js'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import {
-    decodeTransaction,
-    encodeTransaction,
-} from '../blockchain/utils/transact'
 import { readAlgorandTransaction } from '../signing/planner'
 import {
     toUnsignedAlgorandTransaction,
@@ -36,10 +32,9 @@ import {
     healAlgorandCachedRows,
 } from './history-cache'
 import { algorandGroupToOpen } from './history-data'
-import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+import { mapHistoryItemToTransactionNative } from './history-transaction'
 import {
     buildExpressTransferTxs,
-    buildKeyRegistrationTx,
     buildOptInTxs,
     buildOptOutTxs,
     buildRekeyTx,
@@ -88,17 +83,6 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
                 params.scope,
             ),
     },
-    keyRegistration: {
-        // AlgoKit hands back an `Address` sender; the signing pipeline reads
-        // the shape `decodeTransaction` produces, so round-trip it once here.
-        buildTx: async params =>
-            toUnsignedAlgorandTransaction(
-                decodeTransaction(
-                    encodeTransaction(await buildKeyRegistrationTx(params)),
-                ),
-                params.scope,
-            ),
-    },
     transactionFee: transaction =>
         new Decimal(
             readAlgorandTransaction(transaction).transaction.fee.toString(),
@@ -126,7 +110,7 @@ export const algorandHistoryAdapter = {
     getTransactionHistory: getAlgorandTransactionHistory,
     summarize: summarizeAlgorandHistoryItem,
     groupToOpen: algorandGroupToOpen,
-    toDisplayable: mapHistoryItemToDisplayableTransaction,
+    toTransactionNative: mapHistoryItemToTransactionNative,
     resolveAssetFacts: resolveAlgorandAssetFacts,
     chainData: algorandHistoryChainData,
     healCachedRows: healAlgorandCachedRows,

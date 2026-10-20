@@ -29,6 +29,7 @@ export const AssetTransferRequestsScreen = () => {
         assetRequests,
         isPending,
         isUnavailableOnNetwork,
+        isIntegrityBlocked,
         handleItemPress,
     } = useAssetTransferRequestsScreen()
 
@@ -80,6 +81,7 @@ export const AssetTransferRequestsScreen = () => {
                     <OfflineTolerantView
                         isOffline={false}
                         isUnavailable={isUnavailableOnNetwork}
+                        isIntegrityBlocked={isIntegrityBlocked}
                     >
                         <EmptyView
                             isLoading={isPending}

@@ -11,11 +11,11 @@
  */
 
 import { addressFromPQKey, SignedTransaction } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES } from './schemes'
 import type { PQSignature } from '../models'
 import { asAlgosdkTransaction } from '../utils/transact'
+import type { PeraTransaction } from '../models/algosdk-shapes'
 
 /**
  * The exact bytes a post-quantum signer must sign for `txn`.

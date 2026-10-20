@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { type PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     usesNonPrimaryScheme,
@@ -28,6 +27,7 @@ import type { FeeAdjustment } from '@perawallet/wallet-core-signing'
 
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /** `AssignFeeToGroupParams` over the transactions Algorand's payloads carry. */
 export type AlgorandAssignFeeParams = {

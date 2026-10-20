@@ -14,8 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type {
     ChainScope,
-    PeraSignedTransaction,
-    PeraTransaction,
     SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -36,6 +34,10 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '../../blockchain/models/algosdk-shapes'
 import '../../__tests__/registerAlgorandAccounts'
 
 const mockAddSignRequest = vi.fn()

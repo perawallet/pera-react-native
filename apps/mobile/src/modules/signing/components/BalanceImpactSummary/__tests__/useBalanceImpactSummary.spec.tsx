@@ -13,13 +13,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useImpactTransactions } from '@perawallet/wallet-core-signing'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
 

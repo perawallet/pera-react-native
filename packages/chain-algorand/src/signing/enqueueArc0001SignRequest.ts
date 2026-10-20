@@ -11,9 +11,8 @@
  */
 
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { encodeTransactionRaw } from '../blockchain'
+import { encodeTransactionRaw, type Arc0001ResolveResult } from '../blockchain'
 import type {
-    Arc0001ResolveResult,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -35,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
+import { algorandRequestChainData } from './requestChainData'
 import {
     algorandTransactionOf,
     toUnsignedAlgorandTransactions,
@@ -129,23 +129,21 @@ export const enqueueArc0001SignRequest = async (
         sourceMetadata: transport.sourceMetadata,
         verifiedOrigin: transport.verifiedOrigin,
         txs,
-        chainData: {
-            algorand: {
-                // Full payload so the pipeline can recompute the group hash;
-                // `txs` is just the signable subset.
-                groupContext,
-                // Index map back into `groupContext` so the signing UI can
-                // render the full atomic group while marking which slots the
-                // wallet will sign.
-                signableIndices: indicesToSign,
-                rawTransactionsBase64,
-                payloadId: transport.payloadId,
-                totalLength,
-                signerOverrides:
-                    signerOverrides.size > 0 ? signerOverrides : undefined,
-                feeAdjustments,
-            },
-        },
+        chainData: algorandRequestChainData({
+            // Full payload so the pipeline can recompute the group hash;
+            // `txs` is just the signable subset.
+            groupContext,
+            // Index map back into `groupContext` so the signing UI can
+            // render the full atomic group while marking which slots the
+            // wallet will sign.
+            signableIndices: indicesToSign,
+            rawTransactionsBase64,
+            payloadId: transport.payloadId,
+            totalLength,
+            signerOverrides:
+                signerOverrides.size > 0 ? signerOverrides : undefined,
+            feeAdjustments,
+        }),
         approve: async (signed: Nullable<SignedTransaction>[]) => {
             const result: Nullable<string>[] = new Array(totalLength).fill(null)
             signed.forEach((tx, i) => {

@@ -95,12 +95,13 @@ describe('useTransactionDetailQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mockLookupTransactionById).toHaveBeenCalledWith('TX123')
-        expect(result.current.data).toEqual(
-            expect.objectContaining({
+        expect(result.current.data).toEqual({
+            family: 'algorand',
+            transaction: expect.objectContaining({
                 id: 'TX123',
                 txType: 'pay',
             }),
-        )
+        })
     })
 
     test('provides loading state initially', () => {

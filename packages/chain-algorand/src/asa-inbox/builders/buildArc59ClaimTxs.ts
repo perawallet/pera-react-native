@@ -12,7 +12,6 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { decodeAddress } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ARC59Client } from '../clients'
 import { requireArc59Config } from './requireArc59Config'
@@ -23,6 +22,7 @@ import {
     CLAIM_INNER_TX_COUNT,
     REJECT_INNER_TX_COUNT,
 } from '../constants'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 export type Arc59ClaimParams = {
     sender: string

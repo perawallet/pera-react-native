@@ -27,6 +27,7 @@ import {
     type SigningStrategy,
 } from '@perawallet/wallet-core-signing'
 import { algorandAddressOf } from '../../accounts/vocabulary'
+import { decodeSignedTransaction } from '../../blockchain/utils/transact'
 
 /**
  * Creates a signing strategy for multisig accounts.
@@ -138,7 +139,8 @@ const extractSignatures = (signedData: SignedData): Nullable<string>[] => {
     if (signedData.type !== 'transactions') {
         return []
     }
-    return signedData.signed.map(stx => {
+    return signedData.signed.map(signed => {
+        const stx = decodeSignedTransaction(signed.bytes)
         // Quantum accounts aren't multisig participants today, and a
         // PQ-signed transaction has no `sig` (its signature lives in
         // `pqsig` instead) — this falls through to `null` for those slots

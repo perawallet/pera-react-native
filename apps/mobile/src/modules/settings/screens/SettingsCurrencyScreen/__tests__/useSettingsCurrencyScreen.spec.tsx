@@ -14,7 +14,10 @@ import type { ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    IntegrityRequiredError,
+} from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
 
@@ -190,15 +193,39 @@ describe('useSettingsCurrencyScreen', () => {
     })
 
     describe('currency list failure', () => {
-        const mockFailedQuery = (refetch = vi.fn()) => {
+        const mockFailedQuery = (refetch = vi.fn(), error?: Error) => {
             mockUseCurrenciesQuery.mockReturnValue({
                 data: undefined,
                 isPaused: false,
                 isError: true,
+                error,
                 refetch,
             })
             return refetch
         }
+
+        it('flags a refusal for want of an integrity token', () => {
+            mockFailedQuery(
+                vi.fn(),
+                new IntegrityRequiredError({
+                    code: 'APP_INTEGRITY_TOKEN_REQUIRED',
+                    status: 403,
+                    hadToken: false,
+                }),
+            )
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isIntegrityBlocked).toBe(true)
+        })
+
+        it('does not flag any other failure as an integrity refusal', () => {
+            mockFailedQuery(vi.fn(), new Error('boom'))
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isIntegrityBlocked).toBe(false)
+        })
 
         it('reports an error while online and retries via refetch', () => {
             const refetch = mockFailedQuery()

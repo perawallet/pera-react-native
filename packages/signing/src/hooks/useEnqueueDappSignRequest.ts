@@ -11,13 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import type {
-    Arc0001ResolveResult,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { plannerAdapterForScope } from '../chain-adapter'
+import {
+    plannerAdapterForScope,
+    type DappResolveResult,
+} from '../chain-adapter'
 import type { SourceType } from '../pipeline/types'
 import type { SignRequestSource, TransactionSignRequest } from '../models'
 
@@ -28,19 +28,20 @@ export type ExternalSignTxnTransport = {
     sourceType: SourceType
     transportId: string
     /**
-     * WalletConnect JSON-RPC request id (`algo_signTxn` payload id). Set only
-     * by the WalletConnect handler; threaded to the multisig sync-flow handoff
-     * so the dApp response survives an app kill.
+     * WalletConnect JSON-RPC request id. Set only by the WalletConnect
+     * handler; threaded to the multisig sync-flow handoff so the dApp response
+     * survives an app kill.
      */
     payloadId?: number
     sourceMetadata?: SignRequestSource
     /** SW/platform-observed origin (trusted, not dApp-asserted) — used for
      *  trust display and sign-in domain binding. */
     verifiedOrigin?: string
-    // ARC-0001 response: an array of (SignedTxnStr | null), same length and
-    // order as the original request. Returning a Promise lets transports
-    // surface delivery failures through the signing pipeline (e.g. WC v1
-    // bridge socket revival via the connector registry's `ensureReady`).
+    // One entry per requested transaction, in request order: the encoded
+    // signed transaction, or null where the wallet signs nothing. Returning a
+    // Promise lets transports surface delivery failures through the signing
+    // pipeline (e.g. WC v1 bridge socket revival via the connector registry's
+    // `ensureReady`).
     respondWithResult: (result: Nullable<string>[]) => Promise<void> | void
     respondWithReject: () => void
     /**
@@ -64,17 +65,16 @@ export type ExternalSignTxnTransport = {
  * handle is what lets a transport withdraw the request if the peer stops
  * waiting for it.
  */
-export type EnqueueArc0001SignRequest = (
-    resolved: Arc0001ResolveResult,
+export type EnqueueDappSignRequest = (
+    resolved: DappResolveResult,
     transport: ExternalSignTxnTransport,
 ) => Promise<Nullable<TransactionSignRequest>>
 
-// Bridges an ARC-0001 resolver result to the signing pipeline. Transports
-// (WC, webview, future deeplinks) hand in the resolved subset plus a response
-// interface; the planner builds the TransactionSignRequest.
-export const useEnqueueArc0001SignRequest = (
+// Transports (WC, webview, future deeplinks) hand in the resolved request plus
+// a response interface; the planner builds the TransactionSignRequest.
+export const useEnqueueDappSignRequest = (
     scope: ChainScope,
-): EnqueueArc0001SignRequest => {
+): EnqueueDappSignRequest => {
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
 

@@ -12,7 +12,6 @@
 
 import { Transaction } from 'algosdk'
 import type {
-    PeraTransaction,
     Signature,
     SignedTransaction,
     SigningRequest,
@@ -34,6 +33,7 @@ import { generateMultisigAddress } from '../multisig/address'
 import { assembleSignedMultisigTransactions } from '../multisig/assemble'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 import { assembleSignedTransaction } from './local-key/signTransactionsWithLocalKey'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /**
  * The `UnsignedTransaction.payload` for scope chain `'algorand'`: the

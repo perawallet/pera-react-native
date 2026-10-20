@@ -17,6 +17,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
     concatBytes,
+    logger,
 } from '@perawallet/wallet-core-shared'
 import {
     authenticatorData,
@@ -69,6 +70,12 @@ export type KeystoreSigner = {
     }): Promise<{ keyId: string; publicKeyXY: Uint8Array }>
     /** Signs `data` with the P-256 key `keyId`; returns a RAW 64-byte (r‖s) signature — DER-encoding happens in this core. */
     signP256(keyId: string, data: Uint8Array): Promise<Uint8Array>
+    /**
+     * Stamps `metadata.lastUsedAt` (ms) and bumps `metadata.count` on the
+     * credential `keyId`. Must leave `metadata.counter` alone: that is the
+     * derivation index, and changing it changes the keypair.
+     */
+    recordP256Use(keyId: string): Promise<void>
     /**
      * `userHandle` here is the persisted `userHandleOriginalB64Url`, NOT the
      * derivation-input `userHandle` of {@link createP256Credential} — a
@@ -444,9 +451,19 @@ export const assertCredential = async (
         // `serializeCredential` re-encodes the RP's original `user.id`.
         userHandle: b64urlToBytes(resolved.userHandle),
     }
-    return serializeCredential({
+    const credential = serializeCredential({
         id: resolved.credentialId,
         type: 'public-key',
         response,
     })
+
+    // Awaited so the write lands before the caller closes the approval
+    // window; a failure here must not turn a signed assertion into a reject.
+    try {
+        await signer.recordP256Use(resolved.keyId)
+    } catch (err) {
+        logger.warn('Failed to record passkey use', { error: err })
+    }
+
+    return credential
 }

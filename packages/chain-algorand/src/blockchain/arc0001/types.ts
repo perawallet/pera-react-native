@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { PeraTransaction } from '../models/algosdk-shapes'
+
 export const Arc0001ErrorCode = {
     UserRejected: 4001,
     Unauthorized: 4100,
@@ -20,3 +22,50 @@ export const Arc0001ErrorCode = {
 } as const
 export type Arc0001ErrorCode =
     (typeof Arc0001ErrorCode)[keyof typeof Arc0001ErrorCode]
+
+export type Arc0001MultisigMetadata = {
+    version: number
+    threshold: number
+    addrs: string[]
+}
+
+// Wire shape per ARC-0001 § "Payload: WalletTransaction".
+export type Arc0001WalletTransaction = {
+    txn: string
+    signers?: string[]
+    authAddr?: string
+    msig?: Arc0001MultisigMetadata
+    stxn?: string
+    message?: string
+    groupMessage?: string
+}
+
+export type Arc0001SignTxnsOpts = {
+    message?: string
+}
+
+export type Arc0001SignTxnsRequest = {
+    transactions: Arc0001WalletTransaction[]
+    opts?: Arc0001SignTxnsOpts
+}
+
+// Multisig is intentionally not modeled — encountering it raises 4200.
+export type Arc0001SignerKind =
+    | { kind: 'do-not-sign' }
+    | { kind: 'single'; address: string }
+
+export type Arc0001ResolvedTransaction = {
+    index: number
+    walletTxn: Arc0001WalletTransaction
+    decoded: PeraTransaction
+    sender: string
+    signer: Arc0001SignerKind
+}
+
+export type Arc0001ResolveResult = {
+    // Full request decoded, in order — needed downstream to recompute the
+    // group hash, which can't be done over a filtered subset.
+    allDecoded: PeraTransaction[]
+    toSign: Arc0001ResolvedTransaction[]
+    signerOverrides: Map<number, string>
+}

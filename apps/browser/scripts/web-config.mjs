@@ -46,7 +46,6 @@ export const WEB_CONFIG_ALLOWLIST = [
     'mainnetDispenserUrl',
     'mainnetBackendUrl',
     'testnetBackendUrl',
-    'backendAPIKey',
     'algodApiKey',
     'indexerApiKey',
     'firebaseApiKey',
@@ -106,6 +105,24 @@ export const WEB_CONFIG_ALLOWLIST = [
     // Pera service list; generate-config.sh refuses a listed chain without them.
     ...evmConfigKeys(),
 ]
+
+const INTEGRITY_FLAGS = {
+    WEB_INTEGRITY_MINT_ENABLED: 'webIntegrityMintEnabled',
+    WEB_INTEGRITY_BEARER_ENABLED: 'webIntegrityBearerEnabled',
+    WEB_INTEGRITY_ENROL_ENABLED: 'webIntegrityEnrolEnabled',
+}
+
+/**
+ * The integrity flags a generated-env.ts bakes, by env var name. generate-config.sh
+ * leaves an unset flag out, which config reads as off.
+ */
+export const bakedIntegrityFlags = generatedEnvSource =>
+    Object.fromEntries(
+        Object.entries(INTEGRITY_FLAGS).map(([envVar, key]) => [
+            envVar,
+            new RegExp(`^\\s+${key}:\\s*true,`, 'm').test(generatedEnvSource),
+        ]),
+    )
 
 const generatedKeys = generatedEnvSource =>
     [...generatedEnvSource.matchAll(/^\s+([A-Za-z0-9_]+):/gm)].map(

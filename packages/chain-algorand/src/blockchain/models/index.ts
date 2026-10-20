@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import type {
     PeraSignedTransactionGroup,
     PeraTransactionGroup,
-} from '@perawallet/wallet-core-chain-contract'
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
-import type { PQSchemeId } from '@perawallet/wallet-core-kms'
+} from './algosdk-shapes'
 
 export type BlockchainStore = BaseStoreState
 
@@ -51,3 +51,4 @@ export type PeraEncodedTransactionSigner = (
     indexesToSign: number[],
 ) => Promise<Uint8Array[]>
 export * from './transaction-view'
+export * from './algosdk-shapes'

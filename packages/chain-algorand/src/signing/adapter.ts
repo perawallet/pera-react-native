@@ -20,7 +20,6 @@ import {
     useFetchSuggestedMinFee,
 } from '../blockchain'
 import {
-    isUnsignedTransaction,
     type LocalKeySignerChainAdapter,
     type MessageSignerChainAdapter,
     type PlannerChainAdapter,
@@ -42,6 +41,11 @@ import {
     classifyRequestStructure,
     createTransactionListItems,
 } from './classification'
+import {
+    arc0001ResolveResultOf,
+    arc0001SignTxnsRequestOf,
+    toDappResolveResult,
+} from './dappSignRequest'
 import { enqueueArc0001SignRequest } from './enqueueArc0001SignRequest'
 import {
     useAlgorandFeeConfig,
@@ -54,7 +58,18 @@ import {
 } from './getRekeyedUnsignableReason'
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
-import { algorandSignedTransactionsOf } from './signedTransactions'
+import {
+    algorandHandoffDeliveryOf,
+    algorandRequestChainData,
+    algorandReviewGroupOf,
+    algorandSignableGroupChainData,
+} from './requestChainData'
+import {
+    algorandSignedTransactionsOf,
+    assembleSignedAlgorandTransaction,
+    signUnsignedTransactionsWithLocalKey,
+    unsignedAlgorandTransactionBytesOf,
+} from './signedTransactions'
 import { validateArc60AuthRequest } from './message/arc60'
 import { isArc60WirePayload, parseArc60WireRequest } from './message/arc60-wire'
 import { parseArc60ForDisplay } from './message/parseArc60ForDisplay'
@@ -71,10 +86,6 @@ import { useAssignFeeToGroup } from './useAssignFeeToGroup'
 import { useMinFeeForSender } from './useMinFeeForSender'
 import { createLocalKeyStrategy } from './local-key/createLocalKeyStrategy'
 import { signLocalKeyGroups } from './local-key/signLocalKeyGroups'
-import {
-    assembleSignedTransaction,
-    signTransactionsWithLocalKey,
-} from './local-key/signTransactionsWithLocalKey'
 import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
@@ -109,9 +120,7 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     getDelegatedUnsignableReason: getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
     toTransactionNative: transaction => {
-        const algorand = isUnsignedTransaction(transaction)
-            ? readableAlgorandTransaction(transaction)
-            : transaction
+        const algorand = readableAlgorandTransaction(transaction)
         const view = algorand && mapToDisplayableTransaction(algorand)
         return view ? toAlgorandNative(view) : null
     },
@@ -119,15 +128,28 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
 
 export const algorandPlannerAdapter: PlannerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    resolveDappRequest: resolveArc0001SignTxnRequest,
-    enqueueDappRequest: enqueueArc0001SignRequest,
+    resolveDappRequest: (request, context) =>
+        toDappResolveResult(
+            resolveArc0001SignTxnRequest(
+                arc0001SignTxnsRequestOf(request),
+                context,
+            ),
+        ),
+    enqueueDappRequest: (resolved, transport, deps) =>
+        enqueueArc0001SignRequest(
+            arc0001ResolveResultOf(resolved),
+            transport,
+            deps,
+        ),
     minFeeForSender: resolveMinFeeForSender,
     useFeeConfig: useAlgorandFeeConfig,
     useSuggestedMinFeeQuery: useAlgorandSuggestedMinFeeQuery,
     useFetchSuggestedMinFee,
     useMinFeeForSender,
     useAssignFeeToGroup,
-    encodeUnsignedTransaction: encodeTransactionRaw,
+    encodeUnsignedTransaction: transaction =>
+        encodeTransactionRaw(algorandTransactionsOf([transaction])[0]),
+    unsignedTransactionBytesOf: unsignedAlgorandTransactionBytesOf,
     reviewGroupFees: (transactions, signableAddresses) => {
         const views = transactions.map(algorandViewOf)
         return {
@@ -156,9 +178,13 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     },
     readTransactionsData: readAlgorandTransactionsData,
     signedForAddresses: algorandSignedForAddresses,
+    signableGroupChainData: algorandSignableGroupChainData,
+    reviewGroupOf: algorandReviewGroupOf,
+    signRequestChainData: algorandRequestChainData,
+    handoffDeliveryOf: algorandHandoffDeliveryOf,
     mergeSigningResults,
     signedTransactionsOf: algorandSignedTransactionsOf,
-    assembleSignedTransaction,
+    assembleSignedTransaction: assembleSignedAlgorandTransaction,
     createMultisigStrategy,
     signMultisigGroups,
     createMultisigProposeTransport,
@@ -172,7 +198,7 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
 
 export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    signTransactions: signTransactionsWithLocalKey,
+    signTransactions: signUnsignedTransactionsWithLocalKey,
     createStrategy: createLocalKeyStrategy,
     signGroups: signLocalKeyGroups,
 }

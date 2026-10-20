@@ -11,10 +11,12 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { algorandHistoryDataOf } from './history-data'
+import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
+import { toAlgorandNative } from '../blockchain/models/transaction-view'
 
 const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
     toBigInt(amount ?? new Decimal(0))
@@ -94,4 +96,11 @@ export const mapHistoryItemToDisplayableTransaction = (
             return null
         }
     }
+}
+
+export const mapHistoryItemToTransactionNative = (
+    item: TransactionHistoryItem,
+): Nullable<TransactionNative> => {
+    const displayable = mapHistoryItemToDisplayableTransaction(item)
+    return displayable ? toAlgorandNative(displayable) : null
 }

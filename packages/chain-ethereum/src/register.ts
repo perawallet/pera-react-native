@@ -44,6 +44,10 @@ import {
     type ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import {
+    nodeEndpointAdapters,
+    type NodeEndpointAdapter,
+} from '@perawallet/wallet-core-chain-shared'
+import {
     deeplinkAdapters,
     type DeeplinkChainAdapter,
 } from '@perawallet/wallet-core-deeplinks'
@@ -63,6 +67,7 @@ import {
     createEvmKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
 import type { EvmChain } from './chains/types'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { createEvmDeeplinkAdapter } from './deeplinks/adapter'
@@ -92,6 +97,7 @@ type EvmChainAdapters = {
     broadcaster: BroadcasterChainAdapter
     history: HistoryChainAdapter
     dappRequest: DappRequestChainAdapter
+    nodeEndpoint: NodeEndpointAdapter
     deeplink: DeeplinkChainAdapter
     ledgerDriver: LedgerAppDriver
 }
@@ -115,6 +121,7 @@ const buildAdapters = (
         broadcaster: createEvmBroadcasterAdapter(ctx, chain),
         history: createEvmHistoryAdapter(chain),
         dappRequest: createEthereumDappRequestAdapter(ctx, chain),
+        nodeEndpoint: createEvmNodeEndpointAdapter(ctx, chain),
         deeplink: createEvmDeeplinkAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
     }
@@ -152,6 +159,7 @@ export const createEvmChainRegistration = (
         broadcasterChainAdapters.register(adapters.broadcaster)
         historyChainAdapters.register(adapters.history)
         dappRequestChainAdapters.register(adapters.dappRequest)
+        nodeEndpointAdapters.register(adapters.nodeEndpoint)
         ledgerAppDriverRegistry.register(adapters.ledgerDriver)
         // The first EVM chain registered serves every EVM chain's links.
         if (!isSchemeClaimed(chain)) {

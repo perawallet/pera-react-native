@@ -14,15 +14,7 @@ import { decodeTransactions } from '../utils/transact'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 
-import type {
-    PeraTransaction,
-    Arc0001ResolveContext,
-    Arc0001ResolveResult,
-    Arc0001ResolvedTransaction,
-    Arc0001SignTxnsRequest,
-    Arc0001SignerKind,
-    Arc0001WalletTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { DappResolveContext } from '@perawallet/wallet-core-signing'
 import {
     encodeAlgorandAddress,
     isValidAlgorandAddress,
@@ -30,7 +22,15 @@ import {
 
 import { Arc0001Error } from './errors'
 import { arc0001SignTxnRequestSchema } from './schema'
-import { Arc0001ErrorCode } from './types'
+import {
+    Arc0001ErrorCode,
+    type Arc0001ResolveResult,
+    type Arc0001ResolvedTransaction,
+    type Arc0001SignTxnsRequest,
+    type Arc0001SignerKind,
+    type Arc0001WalletTransaction,
+} from './types'
+import type { PeraTransaction } from '../models/algosdk-shapes'
 
 // Algorand's atomic-group max is 16; this cap allows many concatenated
 // groups in one request. Matches pera-android's MAX_TRANSACTION_COUNT.
@@ -44,7 +44,7 @@ const DEFAULT_MAX_TRANSACTIONS = 1000
  */
 export const resolveArc0001SignTxnRequest = (
     request: Arc0001SignTxnsRequest,
-    context: Arc0001ResolveContext,
+    context: DappResolveContext,
 ): Arc0001ResolveResult => {
     // Wire shape is untrusted (spec: "SHALL NOT rely on TypeScript typing").
     const parsed = arc0001SignTxnRequestSchema.safeParse(request.transactions)

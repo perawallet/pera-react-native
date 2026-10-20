@@ -19,10 +19,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     LocalKeySigningDeps,
     SigningResult,
@@ -45,12 +42,16 @@ import {
 } from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
 import { algorandTransactionPlanner } from '../planner'
-import { algorandSignedTransactionsOf } from '../signedTransactions'
+import {
+    algorandSignedTransactionsOf,
+    signUnsignedTransactionsWithLocalKey,
+} from '../signedTransactions'
 import {
     decodeUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
 } from '../unsignedTransaction'
 import { MAINNET_GENESIS_HASH, payloadTransactionOf } from './transactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // Every source now hands the pipeline its Algorand transactions wrapped in
 // `UnsignedTransaction`s. These pin that, for each source's kind of group,
@@ -92,8 +93,13 @@ const deps: LocalKeySigningDeps = {
 }
 
 const strategy = createLocalKeyStrategy({
-    signTransactions: (txnGroup, indexesToSign, account) =>
-        signTransactionsWithLocalKey(deps, txnGroup, indexesToSign, account),
+    signTransactions: (transactions, indexesToSign, account) =>
+        signUnsignedTransactionsWithLocalKey(
+            deps,
+            transactions,
+            indexesToSign,
+            account,
+        ),
     signArbitraryData: async () => [],
     signAuthData: async () => new Uint8Array(),
     scope: SCOPE,
@@ -406,15 +412,9 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
                 entry => entry!.bytes,
             )
 
-        const expected = bytesOf({
-            signedData: {
-                type: 'transactions',
-                signed: transactions.map(transaction =>
-                    assembleSignedTransaction(transaction),
-                ),
-            },
-            signers: [],
-        })
+        const expected = transactions.map(transaction =>
+            encodeSignedTransaction(assembleSignedTransaction(transaction)),
+        )
 
         expect(
             bytesOf(
