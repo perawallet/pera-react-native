@@ -11,16 +11,13 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createWalletAlgorandClient,
     decodeTransaction,
     encodeTransaction,
 } from '../blockchain'
 
-import type {
-    ChainScope,
-    PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
 import type {
     AssetOptInTxsParams,
     AssetOptOutTxsParams,
@@ -31,6 +28,7 @@ import type {
 } from '@perawallet/wallet-core-transactions'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { algorandNetworkOf } from '../network-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.

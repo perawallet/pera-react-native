@@ -33,6 +33,7 @@ import {
     clearCustomNetwork,
     getExpectedGenesisHash,
     setCustomNetwork,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { assertTransactionsMatchNetwork } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
@@ -41,7 +42,6 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     LEGACY_CHAIN_ID,
-    type PeraTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'

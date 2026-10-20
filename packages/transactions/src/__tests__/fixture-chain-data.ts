@@ -110,7 +110,7 @@ export const fixtureHistoryAdapter = (
     fetchMoreHistory: vi.fn(),
     getTransactionHistory: vi.fn(),
     summarize: vi.fn(),
-    toDisplayable: vi.fn(),
+    toTransactionNative: vi.fn(),
     chainData: fixtureChainData,
     ...overrides,
 })

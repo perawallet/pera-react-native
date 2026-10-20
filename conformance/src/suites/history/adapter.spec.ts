@@ -34,7 +34,7 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { balanceOf, fetchIndexerTransactionsFor } from '../../harness/client'
+import { balanceOf, fetchAccountTransactionsFor } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
@@ -76,7 +76,7 @@ describe('history adapter conformance', () => {
         const { txId } = await submitAndConfirm(
             await signWithKeystore(keyStore, from, txn),
         )
-        await fetchIndexerTransactionsFor(from.address, txId)
+        await fetchAccountTransactionsFor(from.address, txId)
         return { txId, fee: txn.fee }
     }
 

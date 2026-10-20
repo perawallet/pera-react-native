@@ -32,7 +32,7 @@ import {
     healAlgorandCachedRows,
 } from './history-cache'
 import { algorandGroupToOpen } from './history-data'
-import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+import { mapHistoryItemToTransactionNative } from './history-transaction'
 import {
     buildExpressTransferTxs,
     buildOptInTxs,
@@ -110,7 +110,7 @@ export const algorandHistoryAdapter = {
     getTransactionHistory: getAlgorandTransactionHistory,
     summarize: summarizeAlgorandHistoryItem,
     groupToOpen: algorandGroupToOpen,
-    toDisplayable: mapHistoryItemToDisplayableTransaction,
+    toTransactionNative: mapHistoryItemToTransactionNative,
     resolveAssetFacts: resolveAlgorandAssetFacts,
     chainData: algorandHistoryChainData,
     healCachedRows: healAlgorandCachedRows,

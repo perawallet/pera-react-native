@@ -15,7 +15,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { formatParticipationKey, getKeyRegType } from '../utils'
 
 const tx = (

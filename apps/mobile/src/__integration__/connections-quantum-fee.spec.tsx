@@ -82,11 +82,9 @@ import {
     encodeTransactionRaw,
     groupTransactions,
     rawTransactionsMatch,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { algorandRequestDataOf } from '@perawallet/wallet-core-chain-algorand/signing'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {

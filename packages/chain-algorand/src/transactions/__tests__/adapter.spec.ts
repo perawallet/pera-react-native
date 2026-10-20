@@ -140,7 +140,10 @@ describe('algorandHistoryAdapter', () => {
             await algorandHistoryAdapter.getTransactionHistory(
                 'ADDR',
                 testnet,
-                { cursor: 'NEXT', limit: 5 },
+                {
+                    cursor: 'NEXT',
+                    limit: 5,
+                },
             )
 
             expect(mocks.fetchMoreTransactions).toHaveBeenCalledWith({
@@ -214,7 +217,7 @@ describe('algorandHistoryAdapter', () => {
         })
     })
 
-    it('maps a payment row to its displayable form', () => {
+    it('maps a payment row to its Algorand native form', () => {
         const item = {
             id: 'TX',
             txType: 'pay',
@@ -227,9 +230,9 @@ describe('algorandHistoryAdapter', () => {
             chainData: null,
         } as unknown as TransactionHistoryItem
 
-        expect(algorandHistoryAdapter.toDisplayable(item)).toMatchObject({
-            id: 'TX',
-            paymentTransaction: { receiver: 'R' },
+        expect(algorandHistoryAdapter.toTransactionNative(item)).toMatchObject({
+            family: 'algorand',
+            transaction: { id: 'TX', paymentTransaction: { receiver: 'R' } },
         })
     })
 })

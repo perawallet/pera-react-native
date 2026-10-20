@@ -11,9 +11,9 @@
  */
 
 import type { CardManualDepositBuildParams } from '@perawallet/wallet-core-card'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { cardAlgorandClient } from './client'
 import { type AlgorandNetworkId } from '../network-id'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 /**
  * Manual funding on the escrow design is a plain transfer to the card's own

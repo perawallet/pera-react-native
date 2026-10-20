@@ -13,7 +13,7 @@
 import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 type TransactionComposer = ReturnType<AlgorandClient['newGroup']>
 

@@ -14,11 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     historyChainAdapters,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useAlgorandTransactionDetail } from '../useAlgorandTransactionDetail'
 
 const mockUseTransactionDetailQuery = vi.fn()
@@ -76,7 +76,7 @@ describe('useAlgorandTransactionDetail', () => {
             txType: 'pay',
         } as unknown as PeraDisplayableTransaction
         mockUseTransactionDetailQuery.mockReturnValue(
-            queryResult({ data: fetched }),
+            queryResult({ data: { family: 'algorand', transaction: fetched } }),
         )
 
         const { result } = renderHook(() =>

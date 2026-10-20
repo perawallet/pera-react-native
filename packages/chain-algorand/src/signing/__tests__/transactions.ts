@@ -13,7 +13,6 @@
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     i18nKey,
-    type PeraTransaction,
     type SignedTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -21,6 +20,7 @@ import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 import type { AlgorandTransactionPayload } from '../planner'
 import { toSignedAlgorandTransaction } from '../signedTransactions'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
 // hand-built literals with SDK-shaped fields are exactly what let

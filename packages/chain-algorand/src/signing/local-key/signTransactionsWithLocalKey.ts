@@ -19,11 +19,6 @@ import {
     encodeAlgorandAddress,
     pqSigningDigest,
 } from '../../blockchain'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-    PeraTransactionGroup,
-} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
@@ -35,6 +30,11 @@ import {
     isHDWalletAccount,
     isQuantumAccount,
 } from '../../accounts/vocabulary'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+    PeraTransactionGroup,
+} from '../../blockchain/models/algosdk-shapes'
 
 /**
  * How many transactions to encode + sign per chunk before yielding back to

@@ -11,9 +11,9 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
+import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
 
 // Absorbs the few µAlgo of network fees (and any small native-ALGO movement a
 // provider may route through a payment `amount` rather than the `fee` field) so

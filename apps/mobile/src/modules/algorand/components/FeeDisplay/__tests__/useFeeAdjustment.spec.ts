@@ -12,11 +12,11 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useFeeAdjustment } from '../useFeeAdjustment'
 
@@ -35,6 +35,13 @@ const buildDisplayable = (
     rawTransaction: PeraTransaction,
 ): PeraDisplayableTransaction =>
     ({ rawTransaction }) as unknown as PeraDisplayableTransaction
+
+const neutral = (transaction: PeraTransaction) => ({
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    payload: { transaction },
+    summary: {},
+    chainData: { family: 'algorand' },
+})
 
 const mockPipeline = (overrides: Record<string, unknown>): void => {
     ;(useSigningPipeline as Mock).mockReturnValue({
@@ -87,7 +94,7 @@ describe('useFeeAdjustment', () => {
     })
 
     it('matches only the adjusted transaction in per-transaction mode', () => {
-        const groupContext = [rawTx0, rawTx1]
+        const groupContext = [neutral(rawTx0), neutral(rawTx1)]
         mockPipeline({
             feeAdjustments: [
                 {
@@ -118,12 +125,6 @@ describe('useFeeAdjustment', () => {
     })
 
     it("matches a chain-neutral request's slot by the Algorand transaction its payload carries", () => {
-        const neutral = (transaction: PeraTransaction) => ({
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            payload: { transaction },
-            summary: {},
-            chainData: { family: 'algorand' },
-        })
         const groupContext = [neutral(rawTx0), neutral(rawTx1)]
         mockPipeline({
             feeAdjustments: [

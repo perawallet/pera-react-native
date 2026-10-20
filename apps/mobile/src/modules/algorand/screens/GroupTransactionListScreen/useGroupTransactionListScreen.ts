@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    toAlgorandNative,
-    useGroupTransactionsQuery,
-    type AlgorandTransactionView,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useGroupTransactionsQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { RootStackParamList } from '@routes/types'
+import {
+    toGroupTransactionRows,
+    type GroupTransactionRow,
+} from '../../utils/groupTransactionRows'
 
 type NavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -31,11 +31,11 @@ type NavigationProp = NativeStackNavigationProp<
 type ScreenRouteProp = RouteProp<RootStackParamList, 'GroupTransactionList'>
 
 type UseGroupTransactionListScreenResult = {
-    transactions: AlgorandTransactionView[]
+    transactions: GroupTransactionRow[]
     isLoading: boolean
     isError: boolean
-    handleTransactionPress: (tx: AlgorandTransactionView) => void
-    keyExtractor: (item: AlgorandTransactionView, index: number) => string
+    handleTransactionPress: (row: GroupTransactionRow) => void
+    keyExtractor: (item: GroupTransactionRow, index: number) => string
 }
 
 export const useGroupTransactionListScreen =
@@ -46,11 +46,15 @@ export const useGroupTransactionListScreen =
 
         const { groupTransactions, isLoading, isError } =
             useGroupTransactionsQuery({ groupId })
+        const transactions = useMemo(
+            () => toGroupTransactionRows(groupTransactions),
+            [groupTransactions],
+        )
 
         const handleTransactionPress = useCallback(
-            (tx: AlgorandTransactionView) => {
+            (row: GroupTransactionRow) => {
                 navigation.navigate('TransactionDetails', {
-                    transaction: toAlgorandNative(tx),
+                    transaction: row.native,
                     groupId,
                 })
             },
@@ -58,13 +62,13 @@ export const useGroupTransactionListScreen =
         )
 
         const keyExtractor = useCallback(
-            (item: AlgorandTransactionView, index: number) =>
-                item.id ?? `tx-${index}`,
+            (item: GroupTransactionRow, index: number) =>
+                item.view.id ?? `tx-${index}`,
             [],
         )
 
         return {
-            transactions: groupTransactions,
+            transactions,
             isLoading,
             isError,
             handleTransactionPress,

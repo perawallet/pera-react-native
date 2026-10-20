@@ -11,8 +11,8 @@
  */
 
 import { rawTransactionsMatch } from '../../blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 export type VerifyReturnedTransactionsParams = {
     /** The unsigned transactions the wallet sent to the backend. */

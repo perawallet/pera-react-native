@@ -11,9 +11,9 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { returnedTransactionsMatchSent } from '../verifyReturnedTransactions'
+import type { PeraTransaction } from '../../../blockchain/models/algosdk-shapes'
 
 const ACCOUNT = 'TESTACCOUNTADDRESS'
 const ATTACKER = 'ATTACKERADDRESS'

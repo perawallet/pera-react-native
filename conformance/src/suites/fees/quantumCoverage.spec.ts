@@ -27,10 +27,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
-import {
-    type PeraTransaction,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/models'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 
 import {

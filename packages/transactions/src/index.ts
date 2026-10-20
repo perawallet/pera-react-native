@@ -52,7 +52,7 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
-    mapHistoryItemToDisplayableTransaction,
+    mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
     historyItemGroupToOpen,
     assetFactsResolverFor,

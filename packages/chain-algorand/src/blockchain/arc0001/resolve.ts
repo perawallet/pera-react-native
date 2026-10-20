@@ -14,7 +14,6 @@ import { decodeTransactions } from '../utils/transact'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { DappResolveContext } from '@perawallet/wallet-core-signing'
 import {
     encodeAlgorandAddress,
@@ -31,6 +30,7 @@ import {
     type Arc0001SignerKind,
     type Arc0001WalletTransaction,
 } from './types'
+import type { PeraTransaction } from '../models/algosdk-shapes'
 
 // Algorand's atomic-group max is 16; this cap allows many concatenated
 // groups in one request. Matches pera-android's MAX_TRANSACTION_COUNT.

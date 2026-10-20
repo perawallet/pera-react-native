@@ -14,7 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
 const mockSignTransactionsWithKey = vi.fn()
@@ -35,7 +35,7 @@ import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
 import { algo25Account } from '../../__tests__/accounts'
 
 const account = algo25Account('ADDR', { keyPairId: 'key-1' })
-const group = [{ id: 'txn' }] as unknown as PeraTransaction[]
+const group = [{ id: 'txn' }] as unknown as UnsignedTransaction[]
 const ALGORAND_MAINNET: ChainScope = {
     chainId: 'algorand',
     networkId: 'mainnet',

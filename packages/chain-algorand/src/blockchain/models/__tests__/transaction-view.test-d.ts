@@ -11,12 +11,12 @@
  */
 
 import { describe, expectTypeOf, it } from 'vitest'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     readAlgorandNative,
     type AlgorandTransactionKind,
     type AlgorandTransactionView,
 } from '../transaction-view'
+import type { PeraDisplayableTransaction } from '../algosdk-shapes'
 
 describe('AlgorandTransactionView', () => {
     type WithKind<K extends keyof PeraDisplayableTransaction> =

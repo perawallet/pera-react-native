@@ -25,7 +25,6 @@ import {
     type UnsignedTransactionsSignableData,
     type WarningDetector,
 } from '@perawallet/wallet-core-signing'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { encodeAlgorandAddress, getExpectedGenesisHash } from '../blockchain'
 import { authorityOf } from '@perawallet/wallet-core-accounts'
 import { algorandAddressOf } from '../accounts/vocabulary'
@@ -34,6 +33,7 @@ import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork
 import { readAlgorandTransaction } from './planner'
 import { algorandGroupDataOf } from './requestChainData'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
+import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 // The round-trip and genesis errors are user-facing as they are; anything else
 // is an analysis fault.

@@ -12,7 +12,6 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { decodeAddress } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'
 import { requireArc59Config } from './requireArc59Config'
@@ -20,6 +19,7 @@ import { buildGroup } from '../utils'
 
 import type { Arc59SendSummaryResponse } from '../api'
 import { type AlgorandNetworkId } from '../../network-id'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 export type Arc59SendViaInboxParams = {
     sender: string

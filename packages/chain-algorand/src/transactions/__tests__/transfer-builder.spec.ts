@@ -33,7 +33,6 @@ import {
 import {
     type AssetRef,
     type ChainId,
-    type PeraTransaction,
     type UnsignedTransaction,
     type TransferIntent,
     LEGACY_CHAIN_ID,
@@ -63,6 +62,7 @@ vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
 
 import { buildAlgorandTransfer } from '../transfer-builder'
 import { quantumAccount } from '../../__tests__/algorandAccounts'
+import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const SENDER = generateAccount().addr
 const RECEIVER = generateAccount().addr.toString()
