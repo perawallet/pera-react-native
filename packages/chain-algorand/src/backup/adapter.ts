@@ -11,8 +11,9 @@
  */
 
 import type { BackupChainAdapter } from '@perawallet/wallet-core-backup'
-import { encodeAlgorandAddress } from '../blockchain'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { algorandPublicKeyOf, encodeAlgorandAddress } from '../blockchain'
 import { ALGORAND_HD_DERIVATION_TYPE } from '../accounts/constants'
 import { algorandHdDerivationRequest } from '../accounts/hd-derivation'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
@@ -70,6 +71,7 @@ export const algorandBackupAdapter: BackupChainAdapter = {
                 derivationType: ALGORAND_HD_DERIVATION_TYPE,
             })
         ).address,
+    publicKeyHexOf: address => bytesToHex(algorandPublicKeyOf(address)),
     deriveHdAccount,
     serializeAccount: serializeAlgorandAccount,
     localKindOf: algorandBackupLocalKindOf,

@@ -41,6 +41,7 @@ export const SettingsCurrencyScreen = () => {
         filteredData,
         isRateUnavailableOffline,
         isOffline,
+        isIntegrityBlocked,
         isError,
         refetch,
     } = useSettingsCurrencyScreen()
@@ -124,6 +125,7 @@ export const SettingsCurrencyScreen = () => {
                     ListEmptyComponent={
                         <OfflineTolerantView
                             isOffline={isOffline}
+                            isIntegrityBlocked={isIntegrityBlocked}
                             isError={isError}
                             onRetry={refetch}
                             offlineTestID='settings_currency_offline'

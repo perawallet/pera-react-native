@@ -12,7 +12,7 @@
 
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render } from '@test-utils/render'
+import { fireEvent, render, screen } from '@test-utils/render'
 import { IntegrityCheckFrameHost } from '../IntegrityCheckFrameHost.web'
 
 const CHECK_URL =
@@ -21,6 +21,7 @@ const CHECK_URL =
 const mockFrame = vi.hoisted(() => ({
     url: null as string | null,
     isExpanded: false,
+    dismiss: vi.fn(),
 }))
 const iframeRef = createRef<HTMLIFrameElement>()
 
@@ -86,6 +87,27 @@ describe('IntegrityCheckFrameHost', () => {
         )
         expect(document.querySelector('iframe')).toBe(hiddenFrame)
         expect(iframeRef.current).toBe(hiddenFrame)
+        unmount()
+    })
+
+    it('offers Not now beside a heading while the check waits for a click', () => {
+        mockFrame.url = CHECK_URL
+        mockFrame.isExpanded = true
+        const { unmount } = render(<IntegrityCheckFrameHost />)
+
+        fireEvent.click(screen.getByText('integrityCheck.frame_dismiss'))
+
+        expect(screen.getByText('integrityCheck.frame_heading')).toBeTruthy()
+        expect(mockFrame.dismiss).toHaveBeenCalledTimes(1)
+        unmount()
+    })
+
+    it('shows no heading while the check runs hidden', () => {
+        mockFrame.url = CHECK_URL
+        mockFrame.isExpanded = false
+        const { unmount } = render(<IntegrityCheckFrameHost />)
+
+        expect(screen.queryByText('integrityCheck.frame_heading')).toBeNull()
         unmount()
     })
 })

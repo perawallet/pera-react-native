@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
-    buildKeyRegistrationTx,
     sendFlowChainAdapters,
     sendFlowFeatureFor,
     type AssetInboxSendFlow,
@@ -59,44 +58,14 @@ describe('sendFlowFeatureFor', () => {
         )
     })
 
-    it.each([
-        'express',
-        'assetInbox',
-        'assetHolding',
-        'rekey',
-        'keyRegistration',
-    ] as const)('fails closed when the chain has no %s feature', feature => {
-        sendFlowChainAdapters.register(bareAdapter())
+    it.each(['express', 'assetInbox', 'assetHolding', 'rekey'] as const)(
+        'fails closed when the chain has no %s feature',
+        feature => {
+            sendFlowChainAdapters.register(bareAdapter())
 
-        expect(() => sendFlowFeatureFor(scope, feature)).toThrow(
-            PeraServiceUnavailableError,
-        )
-    })
-})
-
-describe('buildKeyRegistrationTx', () => {
-    beforeEach(() => {
-        sendFlowChainAdapters.reset()
-    })
-
-    it("delegates to the scope's chain adapter", async () => {
-        const tx = { id: 'keyreg' }
-        const buildTx = vi.fn().mockResolvedValue(tx)
-        sendFlowChainAdapters.register({
-            ...bareAdapter(),
-            keyRegistration: { buildTx },
-        })
-        const params = { kind: 'offline', scope, sender: 'SENDER' } as const
-
-        await expect(buildKeyRegistrationTx(params)).resolves.toBe(tx)
-        expect(buildTx).toHaveBeenCalledWith(params)
-    })
-
-    it('fails closed on a chain without key registration', async () => {
-        sendFlowChainAdapters.register(bareAdapter())
-
-        await expect(
-            buildKeyRegistrationTx({ kind: 'offline', scope, sender: 'S' }),
-        ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
-    })
+            expect(() => sendFlowFeatureFor(scope, feature)).toThrow(
+                PeraServiceUnavailableError,
+            )
+        },
+    )
 })

@@ -20,8 +20,13 @@ import { useStyles } from './styles'
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { isDeveloperMode, setDeveloperMode, chainSections, selectNetwork } =
-        useSettingsDeveloperNodeSettingsScreen()
+    const {
+        isDeveloperMode,
+        setDeveloperMode,
+        chainSections,
+        selectNetwork,
+        openEndpointOverride,
+    } = useSettingsDeveloperNodeSettingsScreen()
 
     return (
         <PWScreen>
@@ -58,6 +63,9 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                         chainSections={chainSections}
                         onSelect={(chainId, networkId) =>
                             void selectNetwork(chainId, networkId)
+                        }
+                        onOverrideEndpoint={(chainId, networkId) =>
+                            void openEndpointOverride(chainId, networkId)
                         }
                     />
                     <InfoCallout

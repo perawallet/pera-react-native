@@ -1135,6 +1135,12 @@
         "pera_service": {
             "unavailable": "Pera-Dienste sind in diesem Netzwerk nicht verfügbar. Wechsle zu MainNet, um diese Funktion zu nutzen."
         },
+        "integrity": {
+            "unavailable": {
+                "title": "Pera-Dienste nicht verfügbar",
+                "body": "Pera konnte diese Erweiterung gerade nicht verifizieren. Versuche es in ein paar Minuten erneut."
+            }
+        },
         "api": {
             "generic": {
                 "title": "Anfrage fehlgeschlagen",
@@ -2917,7 +2923,16 @@
                 "genesis_id_required": "Genesis-ID abrufen oder eingeben",
                 "save": "Speichern und wechseln",
                 "cancel": "Abbrechen",
-                "reset": "Auf Standard zurücksetzen"
+                "reset": "Auf Standard zurücksetzen",
+                "override_endpoint": "RPC überschreiben",
+                "endpoint_overridden": "{{host}} (überschrieben)",
+                "endpoint_sheet_title": "RPC für {{network}}",
+                "endpoint_current": "Aktuell: {{host}}",
+                "endpoint_url_label": "RPC-URL",
+                "endpoint_wrong_network": "Dieser RPC gehört zu einem anderen Netzwerk. Gib einen für {{network}} ein.",
+                "endpoint_unreachable": "Dieser RPC konnte nicht erreicht werden.",
+                "endpoint_save": "Speichern",
+                "endpoint_reset": "Auf konfigurierten RPC zurücksetzen"
             },
             "debug_dapp": "Test-Dapp",
             "manage_cache": "Cache verwalten",
@@ -2938,6 +2953,11 @@
             "app_integrity_none": "keine",
             "app_integrity_verify_ok": "ok",
             "app_integrity_verify_failed": "fehlgeschlagen",
+            "app_integrity_access_state": "Zugriffsstatus: {{value}}",
+            "app_integrity_cause": "Ursache: {{value}}",
+            "app_integrity_next_attempt": "Nächster Versuch: {{value}}",
+            "app_integrity_force_enrol": "Registrierung erzwingen",
+            "app_integrity_clear_backoff": "Backoffs löschen",
             "refresh_cache": "Vollständigen Cache aktualisieren",
             "refresh_cache_success_title": "Cache aktualisiert",
             "refresh_cache_success_body": "Alle Konten neu abgerufen und Abfragen invalidiert.",
@@ -4291,7 +4311,29 @@
         "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
     },
     "integrityCheck": {
-        "frame_title": "Pera Wallet-Prüfung"
+        "frame_title": "Pera Wallet-Prüfung",
+        "frame_heading": "Kurze Prüfung vor der Nutzung der Pera-Dienste",
+        "frame_dismiss": "Nicht jetzt",
+        "banner": {
+            "checking_label": "Diese Erweiterung wird verifiziert",
+            "service_label": "Pera-Dienste nicht verfügbar",
+            "service_body": "Pera-Dienste sind gerade nicht erreichbar. Deine Konten und das Signieren funktionieren weiterhin. Preise und einige Funktionen sind möglicherweise nicht aktuell.",
+            "verify_label": "Verifizierung erforderlich",
+            "verify_body": "Verifiziere diese Erweiterung, um Pera-Dienste wie Preise, Tauschen und Benachrichtigungen zu nutzen. Deine Konten und das Signieren funktionieren weiterhin.",
+            "blocked_body": "Diese Installation konnte nicht verifiziert werden. Wende dich für Hilfe an den Pera-Support.",
+            "restored_label": "Pera-Dienste wieder verfügbar",
+            "retry": "Erneut versuchen",
+            "verify": "Verifizieren"
+        },
+        "surface": {
+            "service_title": "Pera-Dienste nicht verfügbar",
+            "service_body": "Hierfür werden Pera-Dienste benötigt, die gerade nicht erreichbar sind. Der Inhalt wird geladen, sobald sie wieder verfügbar sind.",
+            "verify_title": "Verifizierung erforderlich",
+            "verify_body": "Verifiziere diese Erweiterung, um diesen Inhalt zu laden. Deine Konten und das Signieren sind nicht betroffen.",
+            "blocked_body": "Diese Installation konnte nicht verifiziert werden, daher kann dieser Inhalt nicht geladen werden. Wende dich für Hilfe an den Pera-Support."
+        },
+        "approval_notice": "Pera-Dienste sind nicht verfügbar, daher fehlen möglicherweise gesponserte Gebühren und Asset-Details. Du kannst trotzdem signieren.",
+        "approval_open": "Pera öffnen"
     },
     "analytics_consent": {
         "prompt": {

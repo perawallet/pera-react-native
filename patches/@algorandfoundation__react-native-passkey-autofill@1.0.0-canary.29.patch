@@ -839,7 +839,7 @@ index eff2a3e9241eca0e3f586cc30ac94c29bf1fcd33..7a383e0a6a205972adcf6be56d6a9116
    <dict>
      <key>ASCredentialProviderExtensionSupportedDomains</key>
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..8705f749d09f31920e0fd4aece960ca3c9758062 100644
+index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..860ead226f54ec647d2baa74576aed2a1f753217 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 @@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
@@ -851,7 +851,19 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..8705f749d09f31920e0fd4aece960ca3
          return
        }
  
-@@ -316,7 +316,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -251,8 +251,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+         credential: credential,
+         relyingPartyIdentifier: relyingPartyIdentifier
+       )
++      // PERA LOCAL PATCH: record before completing; the system can tear the
++      // extension down before the completion handler runs, losing the write.
++      store?.recordCredentialUsage(id: credential.credentialId)
+       extensionContext.completeAssertionRequest(using: assertionCredential) { [weak self] _ in
+-        self?.store?.recordCredentialUsage(id: credential.credentialId)
+         self?.authContext = nil
+         self?.isCompletingAssertion = false
+         self?.pendingAssertionCredential = nil
+@@ -316,7 +318,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -860,7 +872,7 @@ index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..8705f749d09f31920e0fd4aece960ca3
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -414,7 +414,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -414,7 +416,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")

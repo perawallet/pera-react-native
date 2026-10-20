@@ -32,6 +32,7 @@ import {
     ALGO_ASSET_NAME,
     formatCurrency,
     generateOrderedUniqueId,
+    isIntegrityRequiredError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
@@ -49,6 +50,7 @@ type UseARC59SendSummaryScreenResult = {
     summary?: AssetInboxSendSummary
     isLoading: boolean
     isUnavailableOnNetwork: boolean
+    isIntegrityBlocked: boolean
     assetId: string
     recipientAddress: string
     amount: Nullable<Decimal>
@@ -80,8 +82,12 @@ export const useARC59SendSummaryScreen =
         const {
             data: summaryData,
             isLoading: summaryLoading,
+            isError: isSummaryError,
+            error: summaryError,
             isUnavailableOnNetwork,
         } = useAssetInboxSendSummaryQuery(scope, receiverAddress, assetId)
+        const isIntegrityBlocked =
+            isSummaryError && isIntegrityRequiredError(summaryError)
         // Query data is Maybe<T> (null while unavailable); this screen only
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
@@ -187,6 +193,7 @@ export const useARC59SendSummaryScreen =
             summary,
             isLoading,
             isUnavailableOnNetwork,
+            isIntegrityBlocked,
             assetId,
             recipientAddress: receiverAddress,
             fee,

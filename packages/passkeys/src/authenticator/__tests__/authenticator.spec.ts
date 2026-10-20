@@ -54,12 +54,17 @@ type StoredCredential = {
 const makeFakeSigner = (
     seed: StoredCredential[] = [],
 ): KeystoreSigner & {
-    calls: { createP256Credential: unknown[]; signP256: unknown[] }
+    calls: {
+        createP256Credential: unknown[]
+        signP256: unknown[]
+        recordP256Use: string[]
+    }
 } => {
     const stored = [...seed]
     const calls = {
         createP256Credential: [] as unknown[],
         signP256: [] as unknown[],
+        recordP256Use: [] as string[],
     }
     return {
         calls,
@@ -81,6 +86,9 @@ const makeFakeSigner = (
         signP256: async (keyId, data) => {
             calls.signP256.push({ keyId, data })
             return FAKE_RAW_SIGNATURE
+        },
+        recordP256Use: async keyId => {
+            calls.recordP256Use.push(keyId)
         },
         listP256Credentials: async () => stored,
     }
@@ -458,6 +466,40 @@ describe('assertCredential', () => {
         await expect(
             assertCredential(options, signer, { origin: ORIGIN }),
         ).rejects.toThrow(NotAllowedError)
+        expect(signer.calls.recordP256Use).toEqual([])
+    })
+
+    it('records a use of the signing credential after a successful assertion', async () => {
+        const signer = makeFakeSigner([storedCredential()])
+
+        await assertCredential(baseOptions(), signer, { origin: ORIGIN })
+
+        expect(signer.calls.recordP256Use).toEqual(['fake-key-1'])
+    })
+
+    it('records no use when signing fails', async () => {
+        const signer = makeFakeSigner([storedCredential()])
+        signer.signP256 = async () => {
+            throw new Error('sign failed')
+        }
+
+        await expect(
+            assertCredential(baseOptions(), signer, { origin: ORIGIN }),
+        ).rejects.toThrow('sign failed')
+        expect(signer.calls.recordP256Use).toEqual([])
+    })
+
+    it('still returns the assertion when recording the use fails', async () => {
+        const signer = makeFakeSigner([storedCredential()])
+        signer.recordP256Use = async () => {
+            throw new Error('write failed')
+        }
+
+        const result = await assertCredential(baseOptions(), signer, {
+            origin: ORIGIN,
+        })
+
+        expect(result.type).toBe('public-key')
     })
 
     it('throws NotAllowedError for a discoverable request (no allowCredentials) when the origin has no credentials', async () => {
@@ -522,6 +564,7 @@ describe('assertCredential with several discoverable credentials', () => {
             publicKeyXY: FAKE_PUBLIC_KEY_XY,
         }),
         signP256: async () => FAKE_RAW_SIGNATURE,
+        recordP256Use: async () => {},
         listP256Credentials: async () => credentials,
     })
 
@@ -568,13 +611,18 @@ describe('assertCredential with several discoverable credentials', () => {
 
     // Dismissing the picker is a decline. Falling back to the first would be
     // the exact behaviour the picker exists to prevent.
-    it('declines when the choice is dismissed', async () => {
+    it('declines, recording no use, when the choice is dismissed', async () => {
+        const signer = signerWith(twoCredentials)
+        const recordP256Use = vi.fn(async () => {})
+        signer.recordP256Use = recordP256Use
+
         await expect(
-            assertCredential(getOptions, signerWith(twoCredentials), {
+            assertCredential(getOptions, signer, {
                 origin: 'https://webauthn.io',
                 selectCredential: async () => null,
             }),
         ).rejects.toBeInstanceOf(NotAllowedError)
+        expect(recordP256Use).not.toHaveBeenCalled()
     })
 
     it('does not ask when there is only one credential', async () => {

@@ -34,6 +34,13 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     return {
         ...actual,
         config: { ...actual.config, defaultNetwork: 'mainnet' as const },
+        chainEndpointsFor: (chainId: string) =>
+            chainId === 'ethereum'
+                ? {
+                      mainnet: 'https://mainnet.rpc.example',
+                      sepolia: 'https://sepolia.rpc.example',
+                  }
+                : {},
     }
 })
 
@@ -79,6 +86,7 @@ const algorandDescriptor = {
 
 const PERSISTED_KEYS = [
     'customNetworksByChain',
+    'endpointOverridesByChain',
     'mode',
     'selectedNetworkByChain',
 ]
@@ -631,6 +639,111 @@ describe('chain-shared network-store', () => {
             expect(registration.name).toBe('network-store')
             expect(storage().getItem('network-store')).toBeNull()
             expect(storage().getItem('custom-network-store')).toBeNull()
+        })
+    })
+
+    describe('endpoint overrides', () => {
+        const OVERRIDE = 'https://my-node.example'
+
+        test('an override touches only its own chain and network', async () => {
+            const { useNetworkStore, selectEndpointOverride } =
+                await loadStore()
+
+            useNetworkStore
+                .getState()
+                .setEndpointOverride(ETHEREUM, 'sepolia', OVERRIDE)
+
+            const state = useNetworkStore.getState()
+            expect(selectEndpointOverride(state, ETHEREUM, 'sepolia')).toBe(
+                OVERRIDE,
+            )
+            expect(
+                selectEndpointOverride(state, ETHEREUM, 'mainnet'),
+            ).toBeUndefined()
+            expect(state.endpointOverridesByChain.algorand).toBeUndefined()
+        })
+
+        test('clearing an override removes only that network', async () => {
+            const { useNetworkStore } = await loadStore()
+            const actions = useNetworkStore.getState()
+            actions.setEndpointOverride(ETHEREUM, 'sepolia', OVERRIDE)
+            actions.setEndpointOverride(ETHEREUM, 'mainnet', OVERRIDE)
+
+            useNetworkStore
+                .getState()
+                .clearEndpointOverride(ETHEREUM, 'sepolia')
+
+            expect(useNetworkStore.getState().endpointOverridesByChain).toEqual(
+                { ethereum: { mainnet: OVERRIDE } },
+            )
+        })
+
+        test('an override survives a restart', async () => {
+            const first = await loadStore()
+            first.useNetworkStore
+                .getState()
+                .setEndpointOverride(ETHEREUM, 'sepolia', OVERRIDE)
+
+            const { useNetworkStore, selectEndpointOverride } =
+                await loadStore()
+
+            expect(
+                selectEndpointOverride(
+                    useNetworkStore.getState(),
+                    ETHEREUM,
+                    'sepolia',
+                ),
+            ).toBe(OVERRIDE)
+        })
+
+        test('a stored blob without overrides hydrates to none', async () => {
+            storage().setItem(
+                'network-store',
+                JSON.stringify({
+                    state: {
+                        mode: 'developer',
+                        selectedNetworkByChain: {},
+                        customNetworksByChain: {},
+                    },
+                    version: 3,
+                }),
+            )
+
+            const { useNetworkStore } = await loadStore()
+
+            expect(useNetworkStore.getState().endpointOverridesByChain).toEqual(
+                {},
+            )
+        })
+
+        test('resetState drops every override', async () => {
+            const { useNetworkStore } = await loadStore()
+            useNetworkStore
+                .getState()
+                .setEndpointOverride(ETHEREUM, 'sepolia', OVERRIDE)
+
+            useNetworkStore.getState().resetState()
+
+            expect(useNetworkStore.getState().endpointOverridesByChain).toEqual(
+                {},
+            )
+        })
+
+        test('hydration drops overrides the chain config no longer carries', async () => {
+            const { mergePersistedEndpointOverrides } = await loadStore()
+
+            expect(
+                mergePersistedEndpointOverrides({
+                    ethereum: {
+                        sepolia: OVERRIDE,
+                        holesky: OVERRIDE,
+                        mainnet: 42,
+                    },
+                    algorand: { testnet: OVERRIDE },
+                    solana: { mainnet: OVERRIDE },
+                }),
+            ).toEqual({ ethereum: { sepolia: OVERRIDE } })
+            expect(mergePersistedEndpointOverrides('garbage')).toEqual({})
         })
     })
 

@@ -23,6 +23,7 @@ import {
     useNetworkStore,
     getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { config } from '@perawallet/wallet-core-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     ETHEREUM_CHAIN_ID,
@@ -90,6 +91,15 @@ describe('Flow: Settings → Developer Mode', () => {
         expect(isRadioSelected('node_settings_algorand_testnet_radio')).toBe(
             true,
         )
+        expect(
+            screen.getByTestId('node_settings_algorand_testnet_endpoint')
+                .textContent,
+        ).toBe(new URL(config.testnetAlgodUrl).host)
+        expect(
+            screen.queryByTestId(
+                'node_settings_algorand_testnet_override_button',
+            ),
+        ).toBeNull()
         expect(
             screen.getByTestId('node_settings_algorand_betanet_row'),
         ).toBeTruthy()

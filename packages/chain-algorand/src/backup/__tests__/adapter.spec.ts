@@ -116,6 +116,18 @@ describe('algorandBackupAdapter.seedReference', () => {
     })
 })
 
+describe('algorandBackupAdapter.publicKeyHexOf', () => {
+    it('is the public key the address encodes', () => {
+        const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i)
+
+        expect(
+            algorandBackupAdapter.publicKeyHexOf?.(
+                encodeAlgorandAddress(publicKey),
+            ),
+        ).toBe(Buffer.from(publicKey).toString('hex'))
+    })
+})
+
 describe('algorandBackupAdapter.kindIdOf', () => {
     // An address held only in a backup shows the glyph its kind has as a held account.
     it.each([

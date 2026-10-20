@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 import {
     INTEGRITY_CHECK_HIDDEN_SIZE,
     INTEGRITY_CHECK_MODAL_HEIGHT,
@@ -55,5 +56,18 @@ export const useStyles = makeStyles(theme => ({
         overflow: 'hidden',
         borderRadius: theme.borderRadius.lg,
         backgroundColor: theme.colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    heading: {
+        ...getTypography(theme, 'caption'),
+        color: theme.colors.textMain,
+        flexShrink: 1,
     },
 }))

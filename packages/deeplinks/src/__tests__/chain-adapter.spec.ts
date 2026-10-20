@@ -20,6 +20,12 @@ import {
     fixtureCodec,
 } from '@perawallet/wallet-core-chain-contract/testing'
 import {
+    AppError,
+    ErrorCategory,
+    isRetryableError,
+} from '@perawallet/wallet-core-shared'
+import {
+    ChainActionBuildError,
     deeplinkAdapters,
     DuplicateDeeplinkSchemeError,
     uriSchemeOf,
@@ -111,5 +117,24 @@ describe('uriSchemeOf', () => {
         [' fixturehex:x', undefined],
     ])('reads %j as %j', (input, expected) => {
         expect(uriSchemeOf(input)).toBe(expected)
+    })
+})
+
+describe('ChainActionBuildError', () => {
+    it('is a non-retryable, unreported validation AppError carrying its reason', () => {
+        const error = new ChainActionBuildError(
+            'missing-fields',
+            'Missing keys',
+        )
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.name).toBe('ChainActionBuildError')
+        expect(error.reason).toBe('missing-fields')
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.VALIDATION,
+            expected: true,
+            params: { reason: 'missing-fields' },
+        })
+        expect(isRetryableError(error)).toBe(false)
     })
 })

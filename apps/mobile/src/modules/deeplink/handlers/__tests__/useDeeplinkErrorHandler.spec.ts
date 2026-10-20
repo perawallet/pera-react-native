@@ -73,12 +73,6 @@ describe('useDeeplinkErrorHandler', () => {
             'deeplink.error.title_walletconnect',
             'deeplink.error.body_walletconnect_timeout',
         ],
-        ['keyreg', 'deeplink.error.title_keyreg', 'deeplink.error.body_keyreg'],
-        [
-            'keyreg-unknown-account',
-            'deeplink.error.title_keyreg',
-            'deeplink.error.body_keyreg_unknown_account',
-        ],
         [
             'recover',
             'deeplink.error.title_recover',
@@ -125,6 +119,30 @@ describe('useDeeplinkErrorHandler', () => {
         expect(mockErrorToast).toHaveBeenCalledExactlyOnceWith(title, body)
     })
 
+    it.each([
+        ['chain-action', 'deeplink.error.body_keyreg'],
+        [
+            'chain-action-unknown-account',
+            'deeplink.error.body_keyreg_unknown_account',
+        ],
+        ['chain-action-cannot-sign', 'deeplink.error.body_keyreg_cannot_sign'],
+    ] as const)(
+        'maps a keyreg action\'s "%s" variant to the key-registration copy',
+        (variant, body) => {
+            const { result } = renderHook(() => useDeeplinkErrorHandler())
+
+            act(() => {
+                result.current({ variant, action: 'keyreg' })
+                vi.advanceTimersByTime(500)
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledExactlyOnceWith(
+                'deeplink.error.title_keyreg',
+                body,
+            )
+        },
+    )
+
     it('overrides the caller-supplied variant when the error is tagged as a timeout', () => {
         // Any handler can throw a DeeplinkTimeoutError when withTimeout
         // races out. The error sheet should surface the timeout message
@@ -133,7 +151,8 @@ describe('useDeeplinkErrorHandler', () => {
 
         act(() => {
             result.current({
-                variant: 'keyreg',
+                variant: 'chain-action',
+                action: 'keyreg',
                 error: new DeeplinkTimeoutError(
                     'algokit.suggestedParams',
                     12_000,
@@ -153,7 +172,8 @@ describe('useDeeplinkErrorHandler', () => {
 
         act(() => {
             result.current({
-                variant: 'keyreg',
+                variant: 'chain-action',
+                action: 'keyreg',
                 error: new Error('algod returned 500'),
             })
             vi.advanceTimersByTime(500)

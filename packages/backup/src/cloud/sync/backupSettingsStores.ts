@@ -11,11 +11,15 @@
  */
 
 import {
+    AccountSortModes,
     chainAccountOf,
     findAccountByAddressOn,
+    findAccountByAnyChainAddress,
     LaunchAccountModes,
     useAccountsStore,
+    type AccountSortMode,
     type LaunchAccountMode,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
@@ -35,12 +39,55 @@ const CONFIRMATION_MODES: ReadonlySet<string> = new Set<ConfirmationMode>([
 const isLaunchAccountMode = (mode: string): mode is LaunchAccountMode =>
     (Object.values(LaunchAccountModes) as string[]).includes(mode)
 
+const isAccountSortMode = (mode: string): mode is AccountSortMode =>
+    (Object.values(AccountSortModes) as string[]).includes(mode)
+
+/** Prefers the scope chain so a multi-chain account has one name everywhere. */
+const orderAddressOf = (
+    account: WalletAccount,
+    chainId: ChainId,
+): string | undefined =>
+    chainAccountOf(account, chainId)?.address ??
+    Object.values(account.chains).find(entry => entry?.address)?.address
+
+const readAccountOrder = (
+    accounts: readonly WalletAccount[],
+    manualAccountOrder: readonly string[],
+    chainId: ChainId,
+): string[] => {
+    const byId = new Map(accounts.map(account => [account.id, account]))
+    return manualAccountOrder.flatMap(id => {
+        const account = byId.get(id)
+        const address = account ? orderAddressOf(account, chainId) : undefined
+        return address ? [address] : []
+    })
+}
+
+const applyAccountOrder = (addresses: readonly string[]): void => {
+    const { accounts, manualAccountOrder, setManualAccountOrder } =
+        useAccountsStore.getState()
+    const named = addresses.flatMap(address => {
+        const account = findAccountByAnyChainAddress(accounts, address)
+        return account ? [account.id] : []
+    })
+    const namedIds = new Set(named)
+    setManualAccountOrder([
+        ...namedIds,
+        ...manualAccountOrder.filter(id => !namedIds.has(id)),
+    ])
+}
+
 export const readBackupSettings = (chainId: ChainId): BackupSettings => {
     const { preferredCurrency, fallbackCurrency } =
         useCurrenciesStore.getState()
     const { language, confirmationMode } = useSettingsStore.getState()
-    const { launchAccountMode, launchAccountId, accounts } =
-        useAccountsStore.getState()
+    const {
+        launchAccountMode,
+        launchAccountId,
+        accounts,
+        sortMode,
+        manualAccountOrder,
+    } = useAccountsStore.getState()
     // The settings item names the launch account by its address, as the
     // backup format always has.
     const launchAccount = accounts.find(a => a.id === launchAccountId)
@@ -54,6 +101,10 @@ export const readBackupSettings = (chainId: ChainId): BackupSettings => {
         launchAccount: {
             mode: launchAccountMode,
             address: launchAccountAddress,
+        },
+        accountOrder: {
+            mode: sortMode,
+            addresses: readAccountOrder(accounts, manualAccountOrder, chainId),
         },
     }
 }
@@ -74,7 +125,13 @@ export const applyBackupSettings = (
     settings: Partial<BackupSettings>,
     chainId: ChainId,
 ): void => {
-    const { currency, language, confirmationMode, launchAccount } = settings
+    const {
+        currency,
+        language,
+        confirmationMode,
+        launchAccount,
+        accountOrder,
+    } = settings
 
     if (currency) {
         useCurrenciesStore.getState().setCurrencyPreference({
@@ -95,5 +152,11 @@ export const applyBackupSettings = (
             ? findAccountByAddressOn(accounts, chainId, launchAccount.address)
             : undefined
         setLaunchAccountPreference(launchAccount.mode, pinned?.id ?? null)
+    }
+    if (accountOrder) {
+        if (isAccountSortMode(accountOrder.mode)) {
+            useAccountsStore.getState().setSortMode(accountOrder.mode)
+        }
+        applyAccountOrder(accountOrder.addresses)
     }
 }

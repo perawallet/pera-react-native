@@ -13,6 +13,7 @@
 import { useCallback, useRef } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
+    chainAccountOf,
     hdIndexOf,
     signingKeyOn,
     type LocalAccount,
@@ -26,7 +27,8 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
-import type { SerializeHdResolver } from '../sync/types'
+import { useSeedReferencesStore } from '../store/seedReferencesStore'
+import type { SeedSecretsCache, SerializeHdResolver } from '../sync/types'
 
 type KMS = ReturnType<typeof useKMS>
 
@@ -65,19 +67,31 @@ const cached = async (
     return value
 }
 
+const rememberedSeedReference = async (
+    chainId: ChainId,
+    seedKeyId: string,
+): Promise<string> => {
+    const key = `${chainId}|${seedKeyId}`
+    const { references, setReference } = useSeedReferencesStore.getState()
+    const remembered = references[key]
+    if (remembered !== undefined) return remembered
+    const reference = await backupSeedReference(seedKeyId, chainId)
+    setReference(key, reference)
+    return reference
+}
+
 /** Resolves null when the seed is unavailable, which skips that account.
  *  `seedHex`/`entropyHex` are hex; `seedFirstDerivedAddress` is the chain's seed reference. */
 export const useResolveHdSeedForBackup = (
     chainId: ChainId,
 ): SerializeHdResolver => {
     const { seedIdOf, withExportedKey, executeWithMnemonic } = useKMS()
-    // Both are public and fixed for a given key id, and deriving them is most
-    // of what a sync spends on an HD account, on every run.
-    const seedReferences = useRef(new Map<string, string>())
+    // Public and fixed for a given key id; deriving it is most of what a sync
+    // spends on an HD account on a chain whose address doesn't carry it.
     const publicKeys = useRef(new Map<string, string>())
 
     return useCallback<SerializeHdResolver>(
-        async (account: LocalAccount) => {
+        async (account: LocalAccount, seedSecrets?: SeedSecretsCache) => {
             const adapter = backupAdapterFor(chainId)
             // An account with no key on this chain still backs up its other
             // chains; any of its keys finds the seed.
@@ -90,39 +104,51 @@ export const useResolveHdSeedForBackup = (
             const seedKeyId = seedIdOf(keyPairId)
             if (!keyPairId || !index || !seedKeyId) return null
             try {
-                const seedFirstDerivedAddress = await cached(
-                    seedReferences.current,
-                    `${chainId}|${seedKeyId}`,
-                    () => backupSeedReference(seedKeyId, chainId),
+                const seedFirstDerivedAddress = await rememberedSeedReference(
+                    chainId,
+                    seedKeyId,
                 )
-                const publicKeyHex = scopeKeyPairId
-                    ? await cached(
-                          publicKeys.current,
-                          `${chainId}|${scopeKeyPairId}`,
-                          async () => {
-                              const child = await adapter.deriveHdAccount(
-                                  kmsCore,
-                                  seedKeyId,
-                                  index,
-                              )
-                              return bytesToHex(child.publicKey)
-                          },
-                      )
-                    : null
-                const entropyHex = await readEntropyHex(
-                    executeWithMnemonic,
-                    keyPairId,
-                )
-
-                const seedHex = await readSeedHex(withExportedKey, seedKeyId)
-                if (!seedHex) return null
-
-                return {
-                    seedFirstDerivedAddress,
-                    publicKeyHex,
-                    seedHex,
-                    entropyHex,
+                const scopeAddress = chainAccountOf(account, chainId)?.address
+                // Deriving commits the child key to the keystore, so a chain
+                // whose address carries the key skips it.
+                const publicKeyHex = !scopeKeyPairId
+                    ? null
+                    : scopeAddress && adapter.publicKeyHexOf
+                      ? adapter.publicKeyHexOf(scopeAddress)
+                      : await cached(
+                            publicKeys.current,
+                            `${chainId}|${scopeKeyPairId}`,
+                            async () => {
+                                const child = await adapter.deriveHdAccount(
+                                    kmsCore,
+                                    seedKeyId,
+                                    index,
+                                )
+                                return bytesToHex(child.publicKey)
+                            },
+                        )
+                const readSecrets = async () => {
+                    const entropyHex = await readEntropyHex(
+                        executeWithMnemonic,
+                        keyPairId,
+                    )
+                    const seedHex = await readSeedHex(
+                        withExportedKey,
+                        seedKeyId,
+                    )
+                    return seedHex ? { seedHex, entropyHex } : null
                 }
+                // Every account of a seed carries the same secrets, so a sync
+                // reads them once rather than once per account.
+                let secrets = seedSecrets?.get(seedKeyId)
+                if (!secrets) {
+                    secrets = readSecrets()
+                    seedSecrets?.set(seedKeyId, secrets)
+                }
+                const resolved = await secrets
+                if (!resolved) return null
+
+                return { seedFirstDerivedAddress, publicKeyHex, ...resolved }
             } catch (error) {
                 logger.warn('useResolveHdSeedForBackup: resolve failed', {
                     error:

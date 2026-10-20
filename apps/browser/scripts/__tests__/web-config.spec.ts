@@ -19,6 +19,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
     WEB_CONFIG_ALLOWLIST,
     assertWebConfigAllowlisted,
+    bakedIntegrityFlags,
 } from '../web-config.mjs'
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
@@ -56,6 +57,35 @@ describe('WEB_CONFIG_ALLOWLIST', () => {
         ]) {
             expect(WEB_CONFIG_ALLOWLIST).not.toContain(key)
         }
+    })
+})
+
+describe('the backend API key', () => {
+    it('is never baked: the extension authenticates with its integrity token', () => {
+        expect(WEB_CONFIG_ALLOWLIST).not.toContain('backendAPIKey')
+    })
+})
+
+describe('bakedIntegrityFlags', () => {
+    it('reads each flag the generated env sets to true', () => {
+        const source =
+            'export const generatedEnv = {\n  webIntegrityMintEnabled: true,\n  webIntegrityBearerEnabled: false,\n  webIntegrityEnrolEnabled: true,\n} as const;\n'
+
+        expect(bakedIntegrityFlags(source)).toEqual({
+            WEB_INTEGRITY_MINT_ENABLED: true,
+            WEB_INTEGRITY_BEARER_ENABLED: false,
+            WEB_INTEGRITY_ENROL_ENABLED: true,
+        })
+    })
+
+    it('reads a flag generate-config.sh left out as off', () => {
+        expect(
+            bakedIntegrityFlags('export const generatedEnv = {\n} as const;\n'),
+        ).toEqual({
+            WEB_INTEGRITY_MINT_ENABLED: false,
+            WEB_INTEGRITY_BEARER_ENABLED: false,
+            WEB_INTEGRITY_ENROL_ENABLED: false,
+        })
     })
 })
 
@@ -103,8 +133,9 @@ describe('assertWebConfigAllowlisted', () => {
             const generated = readFileSync(out, 'utf8')
 
             expect(() => assertWebConfigAllowlisted(generated)).not.toThrow()
-            expect(generated).toContain('backendAPIKey: "value"')
+            expect(generated).toContain('sentryDsn: "value"')
             expect(generated).not.toContain('googleIosClientId')
+            expect(generated).not.toContain('backendAPIKey')
         })
     })
 })

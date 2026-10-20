@@ -19,49 +19,42 @@ import {
     addressCodecs,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { ChainActionDeeplink } from '@perawallet/wallet-core-deeplinks'
+import {
+    ChainActionBuildError,
+    deeplinkAdapters,
+    DeeplinkType,
+    type ChainActionDeeplink,
+} from '@perawallet/wallet-core-deeplinks'
 import {
     plannerChainAdapters,
     useMinimumFeeCalculatorFor,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { buildKeyRegistrationTx } from '@perawallet/wallet-core-transactions'
 import {
     findAccountByAddressOn,
     resolveSignerForAccount,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    decodeFromBase64,
-    generateOrderedUniqueId,
-    logger,
-    toBigInt,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
 
-export type KeyregDeeplinkHandler = (data: ChainActionDeeplink) => Promise<void>
+export type ChainActionDeeplinkHandler = (
+    data: ChainActionDeeplink,
+) => Promise<void>
+
+const PARSED_TYPE = DeeplinkType.CHAIN_ACTION
 
 /**
- * Building the transaction fetches `suggestedParams()` internally, which hangs
- * indefinitely on an unreachable algod — leaving the dispatcher's `await`
- * pending and the QR scanner open with no feedback.
+ * Building fetches the chain's fee parameters, which hangs indefinitely on an
+ * unreachable node, leaving the dispatcher's `await` pending and the QR
+ * scanner open with no feedback.
  */
-const KEYREG_BUILD_TIMEOUT_MS = 12_000
-
-/**
- * Native QR generators emit unpadded base64 (a 32-byte key is 43 chars, not
- * 44), which `base64-js` rejects — it needs a length divisible by 4. Re-pad so
- * URL-safe and unpadded forms both decode.
- */
-const decodeKeyregBase64 = (key: string): Uint8Array => {
-    const padLen = (4 - (key.length % 4)) % 4
-    return decodeFromBase64(key + '='.repeat(padLen))
-}
+const CHAIN_ACTION_BUILD_TIMEOUT_MS = 12_000
 
 type Ineligible = {
-    variant: 'keyreg-unknown-account' | 'keyreg-cannot-sign'
+    variant: 'chain-action-unknown-account' | 'chain-action-cannot-sign'
     reason: string
 }
 
@@ -87,7 +80,7 @@ const checkSigningEligibility = (
     const account = findAccountByAddressOn(accounts, chainId, senderAddress)
     if (!account) {
         return {
-            variant: 'keyreg-unknown-account',
+            variant: 'chain-action-unknown-account',
             reason: `Account ${senderAddress} is not in this wallet`,
         }
     }
@@ -100,17 +93,17 @@ const checkSigningEligibility = (
     }
     if (resolution.kind === 'authMissing') {
         return {
-            variant: 'keyreg-unknown-account',
+            variant: 'chain-action-unknown-account',
             reason: `Rekey target ${resolution.authorityAddress} is not in this wallet`,
         }
     }
     return {
-        variant: 'keyreg-cannot-sign',
+        variant: 'chain-action-cannot-sign',
         reason: `Account ${senderAddress} cannot sign (${resolution.kind})`,
     }
 }
 
-export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
+export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
@@ -118,11 +111,26 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
 
     return useCallback(
         async ({ chainData, target }: ChainActionDeeplink) => {
+            const buildChainAction = deeplinkAdapters.has(target.chainId)
+                ? deeplinkAdapters.get(target.chainId).buildChainAction
+                : undefined
+            if (!buildChainAction) {
+                showError({
+                    variant: 'unsupported-on-chain',
+                    parsedType: PARSED_TYPE,
+                    values: {
+                        chain: getChainDescriptor(target.chainId).displayName,
+                    },
+                })
+                return
+            }
+
             const scope = getSelectedScope(target.chainId)
             if (!addressCodecs.get(target.chainId).isValid(chainData.sender)) {
                 showError({
-                    variant: 'keyreg',
-                    parsedType: 'KEYREG',
+                    variant: 'chain-action',
+                    action: chainData.action,
+                    parsedType: PARSED_TYPE,
                     error: 'Invalid sender address',
                 })
                 return
@@ -140,7 +148,8 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             if (ineligible) {
                 showError({
                     variant: ineligible.variant,
-                    parsedType: 'KEYREG',
+                    action: chainData.action,
+                    parsedType: PARSED_TYPE,
                     error: ineligible.reason,
                 })
                 return
@@ -148,11 +157,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
 
             // The dispatcher refuses this first; kept here because the txn is
             // built on the selected network and carries its genesis hash, so a
-            // wrong-network keyreg looks valid to every later check.
+            // wrong-network action looks valid to every later check.
             if (target.networkId && target.networkId !== scope.networkId) {
                 showError({
                     variant: 'network-mismatch',
-                    parsedType: 'KEYREG',
+                    parsedType: PARSED_TYPE,
                     error: `Deeplink targets ${target.networkId}, wallet is on ${scope.networkId}`,
                     values: {
                         network:
@@ -165,72 +174,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             }
 
             try {
-                // Editable note + locked xnote both end up in the txn note.
-                // Native shows xnote read-only in its review UI; the signing
-                // modal here just displays the resulting note string.
-                const note = chainData.note ?? chainData.xnote
-                const noteBytes = note
-                    ? new TextEncoder().encode(note)
-                    : undefined
-                // `BigInt()` throws on a malformed round or dilution, so keep the
-                // coercion inside the try — a bad deeplink should reach the error
-                // sheet, not throw out of the handler. An out-of-range fee is
-                // caught at review time by the high-fee warning.
-                const dAppFee = chainData.fee
-                    ? toBigInt(chainData.fee)
-                    : undefined
-
-                let tx
-                if (chainData.keyregType === 'offline') {
-                    tx = await withTimeout(
-                        'offlineKeyRegistration',
-                        KEYREG_BUILD_TIMEOUT_MS,
-                        buildKeyRegistrationTx({
-                            kind: 'offline',
-                            scope,
-                            sender: chainData.sender,
-                            note: noteBytes,
-                            fee: dAppFee,
-                        }),
-                    )
-                } else {
-                    if (
-                        !chainData.voteKey ||
-                        !chainData.selectionKey ||
-                        !chainData.stateProofKey ||
-                        !chainData.voteFirst ||
-                        !chainData.voteLast ||
-                        !chainData.voteKeyDilution
-                    ) {
-                        showError({
-                            variant: 'keyreg',
-                            parsedType: 'KEYREG',
-                            error: 'Missing required participation key fields',
-                        })
-                        return
-                    }
-                    tx = await withTimeout(
-                        'onlineKeyRegistration',
-                        KEYREG_BUILD_TIMEOUT_MS,
-                        buildKeyRegistrationTx({
-                            kind: 'online',
-                            scope,
-                            sender: chainData.sender,
-                            voteKey: decodeKeyregBase64(chainData.voteKey),
-                            selectionKey: decodeKeyregBase64(
-                                chainData.selectionKey,
-                            ),
-                            stateProofKey: decodeKeyregBase64(
-                                chainData.stateProofKey,
-                            ),
-                            voteFirst: BigInt(chainData.voteFirst),
-                            voteLast: BigInt(chainData.voteLast),
-                            voteKeyDilution: BigInt(chainData.voteKeyDilution),
-                            note: noteBytes,
-                            fee: dAppFee,
-                        }),
-                    )
-                }
+                const tx = await withTimeout(
+                    `${chainData.action}ChainAction`,
+                    CHAIN_ACTION_BUILD_TIMEOUT_MS,
+                    buildChainAction(chainData, { scope }),
+                )
 
                 // Adds a quantum sender's PQ surcharge (mirrors the WC/webview
                 // enqueue path); a non-quantum sender is a free no-op — same
@@ -252,22 +200,33 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     chainData: plannerChainAdapters
                         .get(scope.chainId)
                         .signRequestChainData({
-                            // An explicit dApp fee we raised is surfaced as an
+                            // An explicit link fee we raised is surfaced as an
                             // adjustment (original → new, matching the WC
                             // path); a fee we filled in ourselves when the
-                            // deeplink omitted one is Pera-set, not an
-                            // override — no delta to show.
+                            // link omitted one is Pera-set, not an override —
+                            // no delta to show.
                             feeAdjustments:
-                                dAppFee !== undefined && adjustments.length > 0
+                                chainData.fee !== undefined &&
+                                adjustments.length > 0
                                     ? adjustments
                                     : undefined,
                         }),
                 })
             } catch (error) {
-                logger.error('[deeplink/keyreg] failed', { error })
+                if (error instanceof ChainActionBuildError) {
+                    showError({
+                        variant: 'chain-action',
+                        action: chainData.action,
+                        parsedType: PARSED_TYPE,
+                        error: error.message,
+                    })
+                    return
+                }
+                logger.error('[deeplink/chain-action] failed', { error })
                 showError({
-                    variant: 'keyreg',
-                    parsedType: 'KEYREG',
+                    variant: 'chain-action',
+                    action: chainData.action,
+                    parsedType: PARSED_TYPE,
                     error,
                 })
             }

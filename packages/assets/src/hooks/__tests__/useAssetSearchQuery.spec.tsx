@@ -222,7 +222,8 @@ describe('useAssetSearchQuery', () => {
     })
 
     it('propagates errors from the endpoint', async () => {
-        mocks.search.mockRejectedValue(new Error('network down'))
+        const failure = new Error('network down')
+        mocks.search.mockRejectedValue(failure)
 
         const { result } = renderHook(
             () => useAssetSearchQuery('oops', mainnetScope),
@@ -233,6 +234,7 @@ describe('useAssetSearchQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
+        expect(result.current.error).toBe(failure)
         expect(result.current.results).toEqual([])
     })
 

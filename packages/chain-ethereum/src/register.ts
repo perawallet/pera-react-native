@@ -36,6 +36,10 @@ import {
     reviewerChainAdapters,
     type BroadcasterChainAdapter,
 } from '@perawallet/wallet-core-signing'
+import {
+    nodeEndpointAdapters,
+    type NodeEndpointAdapter,
+} from '@perawallet/wallet-core-chain-shared'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
@@ -49,6 +53,7 @@ import {
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { createEthereumNodeEndpointAdapter } from './blockchain/node-endpoint'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
 import { ethereumHistoryAdapter } from './history'
@@ -71,6 +76,7 @@ let assetsAdapter: AssetsChainAdapter | undefined
 let transferAdapter: TransferChainAdapter | undefined
 let broadcasterAdapter: BroadcasterChainAdapter | undefined
 let dappRequestAdapter: DappRequestChainAdapter | undefined
+let nodeEndpointAdapter: NodeEndpointAdapter | undefined
 
 export const registerChain = (ctx: ChainContext): void => {
     accountsAdapter ??= createEthereumAccountsAdapter(ctx)
@@ -78,6 +84,7 @@ export const registerChain = (ctx: ChainContext): void => {
     transferAdapter ??= createEthereumTransferAdapter(ctx)
     broadcasterAdapter ??= createEthereumBroadcasterAdapter(ctx)
     dappRequestAdapter ??= createEthereumDappRequestAdapter(ctx)
+    nodeEndpointAdapter ??= createEthereumNodeEndpointAdapter(ctx)
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
@@ -91,6 +98,7 @@ export const registerChain = (ctx: ChainContext): void => {
     broadcasterChainAdapters.register(broadcasterAdapter)
     historyChainAdapters.register(ethereumHistoryAdapter)
     dappRequestChainAdapters.register(dappRequestAdapter)
+    nodeEndpointAdapters.register(nodeEndpointAdapter)
     deeplinkAdapters.register(ethereumDeeplinkAdapter)
     ledgerAppDriverRegistry.register(ethereumLedgerAppDriver)
 }

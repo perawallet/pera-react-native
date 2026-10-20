@@ -115,6 +115,7 @@ describe('authenticator core wired to a real dp256-backed KeystoreSigner', () =>
                 }
             },
             signP256: async () => new Uint8Array(64),
+            recordP256Use: async () => {},
             listP256Credentials: async () => [],
         }
 

@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     withSecret: withSecretMock,
     useKMS: () => ({
         seedIdOf: (childId?: string) =>
-            childId === 'child-1' ? 'seed-1' : undefined,
+            childId?.startsWith('child-') ? 'seed-1' : undefined,
         withExportedKey: withExportedKeyMock,
         executeWithMnemonic: executeWithMnemonicMock,
     }),
@@ -60,6 +60,8 @@ import {
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useResolveHdSeedForBackup } from '../useResolveHdSeedForBackup'
+import type { SeedSecretsCache } from '../../sync/types'
+import { useSeedReferencesStore } from '../../store/seedReferencesStore'
 
 const ENTROPY = Uint8Array.from({ length: 16 }, (_, i) => i)
 
@@ -124,6 +126,7 @@ describe('useResolveHdSeedForBackup', () => {
                 },
             )
         loggerWarnMock.mockReset()
+        useSeedReferencesStore.getState().resetState()
     })
 
     it('derives the public values once but reads the secrets on every run', async () => {
@@ -142,6 +145,66 @@ describe('useResolveHdSeedForBackup', () => {
             seedFirstDerivedAddress: 'ADDR-1',
             publicKeyHex: '02',
         })
+    })
+
+    it('reads the public key from the address when the chain encodes it there', async () => {
+        backupChainAdapters.reset()
+        backupChainAdapters.register(
+            fakeBackupAdapter({
+                seedReference: seedReferenceMock,
+                deriveHdAccount: deriveHdAccountMock,
+                publicKeyHexOf: address => `pk-of-${address}`,
+            }),
+        )
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
+
+        const resolved = await result.current(account)
+
+        expect(resolved).toMatchObject({ publicKeyHex: 'pk-of-ADDR-2' })
+        expect(deriveHdAccountMock).not.toHaveBeenCalled()
+    })
+
+    it("reads a seed's secrets once for every account of it within one sync", async () => {
+        const sibling: LocalAccount = {
+            ...account,
+            id: 'acc-2',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 4, keyIndex: 0 },
+            },
+            chains: { algorand: { address: 'ADDR-3', keyPairId: 'child-2' } },
+        }
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
+        const seedSecrets: SeedSecretsCache = new Map()
+
+        const first = await result.current(account, seedSecrets)
+        const second = await result.current(sibling, seedSecrets)
+        await result.current(account, new Map())
+
+        expect(second).toMatchObject({
+            seedHex: first?.seedHex,
+            entropyHex: first?.entropyHex,
+        })
+        // Once for the shared sync, once more for the next one.
+        expect(withExportedKeyMock).toHaveBeenCalledTimes(2)
+        expect(executeWithMnemonicMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('remembers the seed reference for the next app launch', async () => {
+        const first = renderHook(() => useResolveHdSeedForBackup('algorand'))
+        await first.result.current(account)
+        first.unmount()
+
+        const next = renderHook(() => useResolveHdSeedForBackup('algorand'))
+        const resolved = await next.result.current(account)
+
+        expect(resolved).toMatchObject({ seedFirstDerivedAddress: 'ADDR-1' })
+        expect(seedReferenceMock).toHaveBeenCalledTimes(1)
     })
 
     it('does not cache a derivation that failed', async () => {

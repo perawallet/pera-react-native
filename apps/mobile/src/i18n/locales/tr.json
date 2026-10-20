@@ -1143,6 +1143,12 @@
         "pera_service": {
             "unavailable": "Pera hizmetleri bu ağda kullanılamıyor. Bu özelliği kullanmak için MainNet’e geç."
         },
+        "integrity": {
+            "unavailable": {
+                "title": "Pera hizmetleri kullanılamıyor",
+                "body": "Pera bu uzantıyı şu anda doğrulayamadı. Birkaç dakika sonra tekrar dene."
+            }
+        },
         "api": {
             "generic": {
                 "title": "İstek başarısız oldu",
@@ -2925,7 +2931,16 @@
                 "genesis_id_required": "Genesis ID’yi al veya gir",
                 "save": "Kaydet ve geç",
                 "cancel": "İptal",
-                "reset": "Varsayılanlara dön"
+                "reset": "Varsayılanlara dön",
+                "override_endpoint": "RPC’yi değiştir",
+                "endpoint_overridden": "{{host}} (değiştirildi)",
+                "endpoint_sheet_title": "{{network}} RPC",
+                "endpoint_current": "Şu an: {{host}}",
+                "endpoint_url_label": "RPC URL’si",
+                "endpoint_wrong_network": "Bu RPC farklı bir ağa ait. {{network}} ağı için bir RPC gir.",
+                "endpoint_unreachable": "Bu RPC’ye ulaşılamadı.",
+                "endpoint_save": "Kaydet",
+                "endpoint_reset": "Yapılandırılmış RPC’ye dön"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Önbelleği yönet",
@@ -2946,6 +2961,11 @@
             "app_integrity_none": "yok",
             "app_integrity_verify_ok": "tamam",
             "app_integrity_verify_failed": "başarısız",
+            "app_integrity_access_state": "Erişim durumu: {{value}}",
+            "app_integrity_cause": "Neden: {{value}}",
+            "app_integrity_next_attempt": "Sonraki deneme: {{value}}",
+            "app_integrity_force_enrol": "Kaydı zorla",
+            "app_integrity_clear_backoff": "Backoff’ları temizle",
             "refresh_cache": "Tüm önbelleği yenile",
             "refresh_cache_success_title": "Önbellek yenilendi",
             "refresh_cache_success_body": "Tüm hesaplar yeniden çekildi ve sorgular geçersiz kılındı.",
@@ -4291,7 +4311,29 @@
         }
     },
     "integrityCheck": {
-        "frame_title": "Pera Wallet doğrulaması"
+        "frame_title": "Pera Wallet doğrulaması",
+        "frame_heading": "Pera hizmetlerini kullanmadan önce kısa bir doğrulama",
+        "frame_dismiss": "Şimdi değil",
+        "banner": {
+            "checking_label": "Bu uzantı doğrulanıyor",
+            "service_label": "Pera hizmetleri kullanılamıyor",
+            "service_body": "Pera hizmetlerine şu anda ulaşılamıyor. Hesaplarını kullanmaya ve işlem imzalamaya devam edebilirsin. Fiyatlar ve bazı özellikler güncel olmayabilir.",
+            "verify_label": "Doğrulama gerekli",
+            "verify_body": "Fiyatlar, swap ve bildirimler gibi Pera hizmetlerini kullanmak için bu uzantıyı doğrula. Hesaplarını kullanmaya ve işlem imzalamaya devam edebilirsin.",
+            "blocked_body": "Bu kurulum doğrulanamadı. Yardım için Pera destek ekibiyle iletişime geç.",
+            "restored_label": "Pera hizmetleri yeniden kullanılabilir",
+            "retry": "Tekrar dene",
+            "verify": "Doğrula"
+        },
+        "surface": {
+            "service_title": "Pera hizmetleri kullanılamıyor",
+            "service_body": "Bu içerik için Pera hizmetleri gerekiyor ve şu anda bu hizmetlere ulaşılamıyor. Hizmetler geri geldiğinde yüklenecek.",
+            "verify_title": "Doğrulama gerekli",
+            "verify_body": "Bu içeriği yüklemek için bu uzantıyı doğrula. Bu durum hesaplarını ve işlem imzalamayı etkilemez.",
+            "blocked_body": "Bu kurulum doğrulanamadığı için bu içerik yüklenemiyor. Yardım için Pera destek ekibiyle iletişime geç."
+        },
+        "approval_notice": "Pera hizmetleri kullanılamadığı için sponsorlu ücretler ve varlık detayları eksik olabilir. Yine de imzalayabilirsin.",
+        "approval_open": "Pera’yı aç"
     },
     "analytics_consent": {
         "prompt": {

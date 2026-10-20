@@ -106,20 +106,42 @@ describe('stampManifest', () => {
 })
 
 describe('assertReleaseEnv', () => {
-    it('fails a production build without a backend API key', () => {
+    const allOn = {
+        WEB_INTEGRITY_MINT_ENABLED: true,
+        WEB_INTEGRITY_BEARER_ENABLED: true,
+        WEB_INTEGRITY_ENROL_ENABLED: true,
+    }
+
+    it('accepts a production build with the integrity token fully on', () => {
         expect(() =>
             assertReleaseEnv({
                 appEnvironment: 'production',
-                hasBackendApiKey: false,
+                integrityFlags: allOn,
             }),
-        ).toThrow(/BACKEND_API_KEY/)
+        ).not.toThrow()
     })
 
-    it('lets a development build run without one', () => {
+    it('fails a production build with any integrity flag off, naming it', () => {
+        expect(() =>
+            assertReleaseEnv({
+                appEnvironment: 'production',
+                integrityFlags: {
+                    ...allOn,
+                    WEB_INTEGRITY_ENROL_ENABLED: false,
+                },
+            }),
+        ).toThrow(/WEB_INTEGRITY_ENROL_ENABLED/)
+    })
+
+    it('lets a development build run with the flags off', () => {
         expect(() =>
             assertReleaseEnv({
                 appEnvironment: 'development',
-                hasBackendApiKey: false,
+                integrityFlags: {
+                    WEB_INTEGRITY_MINT_ENABLED: false,
+                    WEB_INTEGRITY_BEARER_ENABLED: false,
+                    WEB_INTEGRITY_ENROL_ENABLED: false,
+                },
             }),
         ).not.toThrow()
     })

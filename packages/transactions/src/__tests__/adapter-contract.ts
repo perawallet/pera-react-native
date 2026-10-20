@@ -23,7 +23,6 @@ import type {
     InboxClaimTxsParams,
     InboxRejectTxsParams,
     InboxSendTxsParams,
-    KeyRegistrationTxParams,
     RekeyTxParams,
     SendFlowChainAdapter,
     TransferTxsParams,
@@ -41,7 +40,6 @@ export interface SendFlowContractFixtures {
     optIn?: AssetOptInTxsParams
     optOut?: AssetOptOutTxsParams
     rekey?: RekeyTxParams
-    keyRegistration?: KeyRegistrationTxParams
 }
 
 type Build = (adapter: SendFlowChainAdapter) => Promise<UnsignedTransaction[]>
@@ -92,14 +90,6 @@ export const sendFlowContractTests = (
             fixtures.rekey &&
                 adapter.rekey &&
                 (a => one(a.rekey!.buildTx(fixtures.rekey!))),
-        ],
-        [
-            'a key registration',
-            fixtures.keyRegistration?.scope,
-            fixtures.keyRegistration &&
-                adapter.keyRegistration &&
-                (a =>
-                    one(a.keyRegistration!.buildTx(fixtures.keyRegistration!))),
         ],
         [
             'an inbox send',

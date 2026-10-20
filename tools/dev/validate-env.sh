@@ -145,10 +145,11 @@ case "$PROFILE" in
     required_global+=(
       "SLACK_WEBHOOK_URL"
     )
+    # No BACKEND_API_KEY: the extension bakes none and authenticates with its
+    # integrity token (apps/browser/scripts/web-config.mjs).
     required_prefixed+=(
       "MAINNET_BACKEND_URL"
       "TESTNET_BACKEND_URL"
-      "BACKEND_API_KEY"
     )
     # Firebase Web SDK / GA4 / Sentry are extension-only features that
     # degrade gracefully when unset (see extensions/platform-chrome/src/

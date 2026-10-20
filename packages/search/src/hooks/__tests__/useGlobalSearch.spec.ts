@@ -99,6 +99,7 @@ const mockAssetSearchQuery = (overrides: {
     hasNextPage: boolean
     isFetchingNextPage: boolean
     fetchNextPage: () => void
+    error?: unknown
 }) => mockUseAssetSearchQuery.mockReturnValue(overrides)
 
 beforeEach(() => {
@@ -118,6 +119,7 @@ describe('useGlobalSearch', () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])
         setOwnedAssets([])
+        const failure = new Error('refused')
         mockAssetSearchQuery({
             results: [],
             isLoading: false,
@@ -126,6 +128,7 @@ describe('useGlobalSearch', () => {
             hasNextPage: false,
             isFetchingNextPage: false,
             fetchNextPage: vi.fn(),
+            error: failure,
         })
 
         const { result } = renderHook(
@@ -134,6 +137,7 @@ describe('useGlobalSearch', () => {
         )
 
         expect(result.current.isRemoteError).toBe(true)
+        expect(result.current.remoteError).toBe(failure)
         expect(result.current.isRemotePaused).toBe(false)
     })
 

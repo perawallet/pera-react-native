@@ -36,6 +36,7 @@ const {
     deriveMultisigAddressMock,
     isValidAddressMock,
     callOrder,
+    markBackedUpMock,
     DuplicateAccountError,
     MOCK_WORDLIST,
 } = vi.hoisted(() => {
@@ -63,6 +64,7 @@ const {
         deriveMultisigAddressMock: vi.fn(),
         isValidAddressMock: vi.fn((_address?: string) => true),
         callOrder: [] as string[],
+        markBackedUpMock: vi.fn(),
         DuplicateAccountError,
         MOCK_WORDLIST: [
             'abandon',
@@ -134,6 +136,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useUpdateAccount: () => updateAccountMock,
     }
 })
+
+vi.mock('../../../mnemonic/hooks', () => ({
+    useMarkMnemonicBackupComplete: () => markBackedUpMock,
+}))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     multisigChainAdapters: {
@@ -577,6 +583,64 @@ describe('useCloudBackupImport', () => {
         expect(summary.skippedDuplicate).toBe(1)
         expect(summary.imported).toBe(0)
         expect(setAccountsMock).not.toHaveBeenCalled()
+    })
+
+    test('renames an already-present account to the name the backup carries', async () => {
+        storeState.accounts = [{ ...held('WATCH_ADDR'), name: 'Old' }]
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                ...watchAccount('WATCH_ADDR'),
+                chain: 'algorand',
+                addressPayload: {
+                    type: 'watch',
+                    address: 'WATCH_ADDR',
+                    customName: 'New',
+                },
+            },
+        ])
+
+        expect(summary.skippedDuplicate).toBe(1)
+        expect(storeState.accounts[0].name).toBe('New')
+    })
+
+    test("clears an already-present account's name when its record has none", async () => {
+        storeState.accounts = [{ ...held('WATCH_ADDR'), name: 'Old' }]
+        const { current } = renderImport()
+
+        await current.importAccounts([
+            { ...watchAccount('WATCH_ADDR'), chain: 'algorand' },
+        ])
+
+        expect(storeState.accounts[0]).not.toHaveProperty('name')
+    })
+
+    test('keeps the name of an already-present account a nameless legacy item names', async () => {
+        storeState.accounts = [{ ...held('WATCH_ADDR'), name: 'Old' }]
+        const { current } = renderImport()
+
+        await current.importAccounts([watchAccount('WATCH_ADDR')])
+
+        expect(setAccountsMock).not.toHaveBeenCalled()
+        expect(storeState.accounts[0].name).toBe('Old')
+    })
+
+    test('marks every account the batch creates as backed up, and none already held', async () => {
+        storeState.accounts = [held('HELD_ADDR')]
+        const { current } = renderImport()
+
+        await current.importAccounts([
+            watchAccount('HELD_ADDR'),
+            watchAccount('NEW_ADDR'),
+        ])
+
+        expect(markBackedUpMock).toHaveBeenCalledTimes(1)
+        expect(markBackedUpMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chains: { algorand: { address: 'NEW_ADDR' } },
+            }),
+        )
     })
 
     test('one failing account does not abort the batch and is recorded in failed', async () => {
@@ -1561,7 +1625,7 @@ describe('useCloudBackupImport on another chain', () => {
                 imported: 0,
                 skippedDuplicate: 1,
             })
-            expect(setAccountsMock).not.toHaveBeenCalled()
+            expect(storeState.accounts).toHaveLength(1)
         })
     })
 })

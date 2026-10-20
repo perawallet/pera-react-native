@@ -13,3 +13,4 @@
 // Web-only (mounted by AppShell.web.tsx): the explicit .web suffix keeps it out
 // of native resolution by convention.
 export { IntegrityCheckFrameHost } from './IntegrityCheckFrameHost.web'
+export { useIntegrityCheckFrameStore } from './useIntegrityCheckFrameStore.web'
