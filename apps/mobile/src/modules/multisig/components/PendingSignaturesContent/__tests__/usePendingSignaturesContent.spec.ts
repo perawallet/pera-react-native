@@ -578,7 +578,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    signerOverrides: new Map([[0, 'A']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'A']]) },
+                    },
                 },
             ])
 
@@ -609,7 +611,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    signerOverrides: new Map([[0, 'A']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'A']]) },
+                    },
                 },
             ])
 
@@ -758,7 +762,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    signerOverrides: new Map([[0, 'L']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'L']]) },
+                    },
                 },
             ])
 
@@ -854,7 +860,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-1',
-                    signerOverrides: new Map([[0, 'C']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'C']]) },
+                    },
                 },
             ])
 
@@ -876,7 +884,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: 'sr-OTHER',
-                    signerOverrides: new Map([[0, 'C']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'C']]) },
+                    },
                 },
             ])
 
@@ -1019,7 +1029,9 @@ describe('usePendingSignaturesContent', () => {
                     type: 'transactions',
                     sourceType: 'multisig-cosign',
                     signRequestId: DRAFT_ID,
-                    signerOverrides: new Map([[0, 'L1']]),
+                    chainData: {
+                        algorand: { signerOverrides: new Map([[0, 'L1']]) },
+                    },
                 },
             ])
 
@@ -1045,7 +1057,9 @@ describe('usePendingSignaturesContent', () => {
                         type: 'transactions',
                         sourceType: 'multisig-cosign',
                         signRequestId: DRAFT_ID,
-                        signerOverrides: new Map([[0, 'L1']]),
+                        chainData: {
+                            algorand: { signerOverrides: new Map([[0, 'L1']]) },
+                        },
                     },
                 ])
 
@@ -1086,7 +1100,9 @@ describe('usePendingSignaturesContent', () => {
                         type: 'transactions',
                         sourceType: 'multisig-cosign',
                         signRequestId: 'sr-1',
-                        signerOverrides: new Map([[0, 'C']]),
+                        chainData: {
+                            algorand: { signerOverrides: new Map([[0, 'C']]) },
+                        },
                     },
                 ])
 

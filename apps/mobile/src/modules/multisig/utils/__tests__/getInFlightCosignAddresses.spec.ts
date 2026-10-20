@@ -29,7 +29,7 @@ const buildCosignRequest = (
         sourceType: 'multisig-cosign',
         signRequestId,
         txs: [],
-        signerOverrides: new Map([[0, signer]]),
+        chainData: { algorand: { signerOverrides: new Map([[0, signer]]) } },
     }) as unknown as SignRequest
 
 describe('getInFlightCosignAddresses', () => {
@@ -74,7 +74,7 @@ describe('getInFlightCosignAddresses', () => {
             transport: 'callback',
             sourceType: 'local',
             txs: [],
-            signerOverrides: new Map([[0, 'A']]),
+            chainData: { algorand: { signerOverrides: new Map([[0, 'A']]) } },
         } as unknown as SignRequest
 
         const result = getInFlightCosignAddresses([localRequest], 'sr-1')
