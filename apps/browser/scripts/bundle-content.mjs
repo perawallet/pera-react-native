@@ -10,12 +10,19 @@
  limitations under the License
  */
 
+import { createRequire } from 'node:module'
+
+// The Metro gate's own test, so both builds agree on which chains need viem.
+export const { listsEvmChain } = createRequire(import.meta.url)(
+    '../../mobile/metro-build-gates.js',
+)
+
 // viem's BaseError embeds `viem@<version>` in every message, and a string
 // literal survives minification.
 export const VIEM_MARKER = 'viem@'
 
 /**
- * Throws when a bundle built for a CHAINS that omits ethereum still carries viem.
+ * Throws when a bundle built for a CHAINS that lists no EVM chain still carries viem.
  *
  * @param {string} code
  * @param {string} surface
@@ -23,7 +30,7 @@ export const VIEM_MARKER = 'viem@'
 export const assertNoViem = (code, surface) => {
     if (!code.includes(VIEM_MARKER)) return
     throw new Error(
-        `${surface} contains viem but CHAINS does not list ethereum: ` +
+        `${surface} contains viem but CHAINS lists no EVM chain: ` +
             'chain-ethereum got past the Metro chain gate ' +
             '(apps/mobile/metro-build-gates.js)',
     )

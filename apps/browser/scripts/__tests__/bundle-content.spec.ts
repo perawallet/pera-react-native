@@ -14,9 +14,16 @@
 import { join } from 'node:path'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
-import { VIEM_MARKER, assertNoViem } from '../bundle-content.mjs'
+import { VIEM_MARKER, assertNoViem, listsEvmChain } from '../bundle-content.mjs'
 
 const CHAIN_ETHEREUM = join(__dirname, '../../../../packages/chain-ethereum')
+
+describe('listsEvmChain', () => {
+    it('keeps viem for a build that ships any EVM chain', () => {
+        expect(listsEvmChain(['algorand', 'base'])).toBe(true)
+        expect(listsEvmChain(['algorand'])).toBe(false)
+    })
+})
 
 describe('assertNoViem', () => {
     it('passes a bundle without viem', () => {
@@ -26,7 +33,7 @@ describe('assertNoViem', () => {
     it('throws naming the surface when viem is present', () => {
         expect(() =>
             assertNoViem(`x("${VIEM_MARKER}2.57.0")`, 'background.js'),
-        ).toThrow(/^background\.js contains viem but CHAINS does not list/)
+        ).toThrow(/^background\.js contains viem but CHAINS lists no EVM chain/)
     })
 
     // Minification must not erase the one string the guard keys on.

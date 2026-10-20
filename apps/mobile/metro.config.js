@@ -22,9 +22,10 @@ const buildGates = require('./metro-build-gates');
 const {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    ETHEREUM_CHAIN_MODULES,
+    EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     isE2eFixturesIncluded,
+    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,
@@ -232,17 +233,17 @@ console.log(
     `[metro] developer gallery: ${developerGalleryIncluded ? 'included' : 'stubbed'} (appEnvironment=${bakedAppEnvironment ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
 );
 
-// viem ships only in a build whose baked CHAINS lists ethereum. The baked file
+// viem ships only in a build whose baked CHAINS lists an EVM chain. The baked file
 // is the same source config.chains reads at runtime; a bundle started before
 // generate-config.sh rewrote it fails loudly in buildChainSetup instead of
 // silently running Algorand-only.
 const bakedChainIds = readBakedChainIds(
     path.resolve(monorepoRoot, 'packages/config/src/generated-env.ts'),
 );
-const ethereumIncluded = bakedChainIds?.includes('ethereum') ?? false;
+const evmIncluded = listsEvmChain(bakedChainIds ?? []);
 
 console.log(
-    `[metro] ethereum chain: ${ethereumIncluded ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
+    `[metro] EVM chains: ${evmIncluded ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
 );
 
 // Keyed on its own opt-in flag rather than the channel: staging builds go to
@@ -263,7 +264,7 @@ const buildStubs = {
     ...(developerGalleryIncluded
         ? {}
         : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
-    ...(ethereumIncluded ? {} : toStubMap(projectRoot, ETHEREUM_CHAIN_MODULES)),
+    ...(evmIncluded ? {} : toStubMap(projectRoot, EVM_CHAIN_MODULES)),
     ...(e2eFixturesIncluded ? {} : toStubMap(projectRoot, E2E_FIXTURE_MODULES)),
 };
 
