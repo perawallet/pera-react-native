@@ -207,6 +207,16 @@ describe('useAccountNetworks', () => {
         })
     })
 
+    it('does nothing when Add lands on a chain the account is already on', () => {
+        const { result } = render()
+
+        act(() => {
+            result.current.handleAddNetwork('algorand' as ChainId)
+        })
+
+        expect(mocks.enableChain).not.toHaveBeenCalled()
+    })
+
     it('enables once when Add is tapped twice before it settles', () => {
         mocks.options = [ALGORAND, ETHEREUM]
         mocks.enableChain.mockReturnValue(new Promise(() => {}))

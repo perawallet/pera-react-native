@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     accountChainOptions,
     useAllAccounts,
-    useEnableChain,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -23,17 +22,15 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainDisplayNameOf,
     useChainCapabilityCheck,
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useIsMounted } from '@hooks/useIsMounted'
+import { useEnableChainAction } from '@hooks/useEnableChainAction'
 import { useLanguage } from '@hooks/useLanguage'
+import { displayChainOption } from '@utils/chainOptionDisplay'
 import {
     trackEvent,
     AccountOptionsEvent,
@@ -83,9 +80,8 @@ export const useAccountNetworks = ({
 }: UseAccountNetworksParams): UseAccountNetworksResult => {
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { showError } = useErrorToast()
-    const enableChain = useEnableChain()
-    const isMounted = useIsMounted()
+    const { enablingChainId: addingChainId, enableChain } =
+        useEnableChainAction(t('account_options.add_network_error'))
     const checkCapability = useChainCapabilityCheck()
     const switchedOff = useSwitchedOffChainIds()
     const accounts = useAllAccounts()
@@ -93,10 +89,8 @@ export const useAccountNetworks = ({
 
     const [isShowingAll, setIsShowingAll] = useState(false)
     const [expandedChainId, setExpandedChainId] = useState<Optional<ChainId>>()
-    const [addingChainId, setAddingChainId] = useState<Optional<ChainId>>()
-    // State lags a second tap that lands before the re-render.
-    const isAddingRef = useRef(false)
 
+    // Every family the custody reaches, unlike receive's picker: this sheet is where the user adds a new family on purpose.
     const options = useMemo(
         () =>
             accountChainOptions(
@@ -113,17 +107,28 @@ export const useAccountNetworks = ({
 
     const rows = useMemo((): AccountNetworkRow[] => {
         const { chains } = getProvider()
-        return options.map(({ chainId, isEnabled, address }) => ({
-            chainId,
-            family: chains.get(chainId).descriptor.family,
-            displayName: chainDisplayNameOf(chainId) ?? chainId,
-            address: address && addressCodecs.get(chainId).truncate(address),
-            isEnabled,
-            canShowQr:
-                isEnabled &&
-                checkCapability({ chain: { chainId, capability: 'receive' } }),
-        }))
+        return options.map(option => {
+            const { chainId, isEnabled, displayName, address } =
+                displayChainOption(option)
+            return {
+                chainId,
+                family: chains.get(chainId).descriptor.family,
+                displayName,
+                address,
+                isEnabled,
+                canShowQr:
+                    isEnabled &&
+                    checkCapability({
+                        chain: { chainId, capability: 'receive' },
+                    }),
+            }
+        })
     }, [options, checkCapability])
+
+    const rowByChain = useMemo(
+        () => new Map(rows.map(row => [row.chainId, row])),
+        [rows],
+    )
 
     const isCollapsed = !isShowingAll && rows.length > COLLAPSED_NETWORK_COUNT
     const visibleRows = isCollapsed
@@ -141,24 +146,10 @@ export const useAccountNetworks = ({
 
     const handleAddNetwork = useCallback(
         (chainId: ChainId) => {
-            if (isAddingRef.current) return
-            isAddingRef.current = true
-            setAddingChainId(chainId)
-            void (async () => {
-                try {
-                    await enableChain(account.id, chainId, 'user')
-                } catch (error) {
-                    if (!isMounted()) return
-                    showError(error, t('account_options.add_network_error'), {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    })
-                } finally {
-                    isAddingRef.current = false
-                    if (isMounted()) setAddingChainId(undefined)
-                }
-            })()
+            if (rowByChain.get(chainId)?.isEnabled !== false) return
+            enableChain(account.id, chainId)
         },
-        [account.id, enableChain, isMounted, showError, t],
+        [rowByChain, account.id, enableChain],
     )
 
     const handleCopyAddress = useCallback(
