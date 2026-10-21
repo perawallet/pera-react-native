@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Staking screen. */
 export enum StakingEvent {
@@ -20,7 +21,8 @@ export enum StakingEvent {
 
 /** Project name/url come from the selected staking project and are always present. */
 export interface StakingRequiredPayloads {
-    [StakingEvent.SelectProject]: {
+    [StakingEvent.Open]: ChainPayload
+    [StakingEvent.SelectProject]: ChainPayload & {
         [Key.Name]: string
         [Key.Url]: string
     }

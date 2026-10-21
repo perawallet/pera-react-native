@@ -16,7 +16,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { MultisigEvent } from '@analytics'
+import { AnalyticsMetadataKey, MultisigEvent } from '@analytics'
 
 import type { MultisigInvitationParam } from '../../../routes/types'
 import { useMultisigInvitationDetailContent } from '../useMultisigInvitationDetailContent'
@@ -123,6 +123,7 @@ describe('useMultisigInvitationDetailContent', () => {
 
         expect(mocks.trackEvent).toHaveBeenCalledWith(
             MultisigEvent.InviteAddPressed,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
         expect(onAccepted).toHaveBeenCalledTimes(1)
     })
@@ -134,6 +135,7 @@ describe('useMultisigInvitationDetailContent', () => {
 
         expect(mocks.trackEvent).toHaveBeenCalledWith(
             MultisigEvent.InviteIgnorePressed,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
         expect(mocks.mutateAsync).toHaveBeenCalledWith({
             multisigAddress: 'MSIG_ADDR',

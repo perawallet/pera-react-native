@@ -11,16 +11,22 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { buildDeeplink, DeeplinkType } from '@modules/deeplink/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { trackEvent, AccountDetailsEvent } from '@analytics'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 
 export type UseExportShareAccountContentParams = {
     accountAddress: string
+    chainId: ChainId
 }
 
 export type UseExportShareAccountContentResult = {
@@ -31,6 +37,7 @@ export type UseExportShareAccountContentResult = {
 
 export const useExportShareAccountContent = ({
     accountAddress,
+    chainId,
 }: UseExportShareAccountContentParams): UseExportShareAccountContentResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
@@ -46,12 +53,16 @@ export const useExportShareAccountContent = ({
     )
 
     const handleCopyUrl = useCallback(() => {
-        trackEvent(AccountDetailsEvent.JointAccountCopyUrl)
+        trackEvent(AccountDetailsEvent.JointAccountCopyUrl, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         void copyToClipboard(exportUrl)
-    }, [copyToClipboard, exportUrl])
+    }, [chainId, copyToClipboard, exportUrl])
 
     const handleShareUrl = useCallback(async () => {
-        trackEvent(AccountDetailsEvent.JointAccountShareUrl)
+        trackEvent(AccountDetailsEvent.JointAccountShareUrl, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         try {
             await shareText({
                 title: t('multisig.export.title'),
@@ -62,7 +73,7 @@ export const useExportShareAccountContent = ({
                 notifier: bottomSheetNotifier.current ?? undefined,
             })
         }
-    }, [exportUrl, showError, t])
+    }, [chainId, exportUrl, showError, t])
 
     return {
         exportUrl,

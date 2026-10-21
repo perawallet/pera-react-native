@@ -18,7 +18,7 @@ import {
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { OnboardingEvent } from '@analytics'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
@@ -764,6 +764,7 @@ describe('useAddAccountScreen', () => {
 
         expect(mockTrackEvent).toHaveBeenCalledWith(
             OnboardingEvent.CreateAccountQuantum,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
     })
 

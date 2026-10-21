@@ -36,7 +36,7 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
-import { trackEvent, AssetDetailsEvent } from '@analytics'
+import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAssetActionButtons } from './useAssetActionButtons'
 
 export type AssetActionButtonsProps = {
@@ -74,7 +74,9 @@ export const AssetActionButtons = ({
     )
 
     const openReceiveFunds = useCallback(() => {
-        trackEvent(AssetDetailsEvent.Receive)
+        trackEvent(AssetDetailsEvent.Receive, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         // The sheet picks its first screen on its first render, before its own effects can write the store.
         if (account) {
             setCanSelectReceiveAccount(false)
@@ -111,7 +113,9 @@ export const AssetActionButtons = ({
         const nativeAsset = nativeAssetFor(chainId)
         const isAlgo = asset.assetId === nativeAsset.assetId
         if (isAlgo) {
-            trackEvent(AssetDetailsEvent.SwapAlgo)
+            trackEvent(AssetDetailsEvent.SwapAlgo, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
         }
         navigation.replace('TabBar', {
             screen: 'Swap',
@@ -122,7 +126,9 @@ export const AssetActionButtons = ({
     }, [asset.assetId, chainId, navigation])
 
     const handleSend = useCallback(() => {
-        trackEvent(AssetDetailsEvent.Send)
+        trackEvent(AssetDetailsEvent.Send, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         if (assetHolding) {
             setSelectedAsset({ chainId, assetId: assetHolding.assetId })
             setCanSelectAsset(false)

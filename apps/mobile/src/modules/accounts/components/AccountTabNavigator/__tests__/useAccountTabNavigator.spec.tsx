@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { AccountDetailsEvent } from '@analytics'
+import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     setCapabilityOverrides,
     setChainEnabled,
@@ -83,6 +83,7 @@ describe('useAccountTabNavigator', () => {
 
         expect(mocks.trackEvent).toHaveBeenCalledWith(
             AccountDetailsEvent.History,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
     })
 
@@ -109,6 +110,7 @@ describe('useAccountTabNavigator', () => {
         act(() => result.current.handleIndexChange(1))
         expect(mocks.trackEvent).toHaveBeenCalledWith(
             AccountDetailsEvent.History,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
         )
     })
 

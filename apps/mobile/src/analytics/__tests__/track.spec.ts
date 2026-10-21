@@ -53,25 +53,29 @@ describe('trackEvent', () => {
     })
 
     it('forwards the raw event name unchanged on mainnet for a parameterless event', () => {
-        trackEvent(HomeEvent.Send)
+        trackEvent(HomeEvent.Sort)
 
-        expect(logEvent).toHaveBeenCalledWith('homescr_send_click', undefined)
+        expect(logEvent).toHaveBeenCalledWith('homescr_sort_tap', undefined)
     })
 
-    it('forwards the payload using raw metadata keys', () => {
+    it('forwards the payload using raw metadata keys, the chain beside the rest', () => {
         trackEvent(OnboardingEvent.RegisterAccount, {
             [AnalyticsMetadataKey.AccountCreationType]: 'create',
+            [AnalyticsMetadataKey.ChainId]: 'ethereum',
         })
 
-        expect(logEvent).toHaveBeenCalledWith('register', { type: 'create' })
+        expect(logEvent).toHaveBeenCalledWith('register', {
+            type: 'create',
+            chain_id: 'ethereum',
+        })
     })
 
     it('prepends the testnet prefix when the active network is testnet', () => {
         currentNetwork = 'testnet'
 
-        trackEvent(HomeEvent.Send)
+        trackEvent(HomeEvent.Sort)
 
-        expect(logEvent).toHaveBeenCalledWith('t_homescr_send_click', undefined)
+        expect(logEvent).toHaveBeenCalledWith('t_homescr_sort_tap', undefined)
     })
 
     it('omits the payload for an optional-payload event when none is given', () => {
@@ -86,7 +90,7 @@ describe('trackEvent', () => {
             throw new Error('analytics backend exploded')
         })
 
-        expect(() => trackEvent(HomeEvent.Send)).not.toThrow()
+        expect(() => trackEvent(HomeEvent.Sort)).not.toThrow()
         expect(warnSpy).toHaveBeenCalled()
 
         warnSpy.mockRestore()

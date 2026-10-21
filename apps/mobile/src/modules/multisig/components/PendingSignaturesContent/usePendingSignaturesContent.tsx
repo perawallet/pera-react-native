@@ -28,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
@@ -285,10 +285,12 @@ export const usePendingSignaturesContent =
                   i18nKey('multisig.pending_signatures.failed_default'))
 
         const handleClose = useCallback(() => {
-            trackEvent(MultisigEvent.CloseForNow)
+            trackEvent(MultisigEvent.CloseForNow, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+            })
             closeSheet()
             dismiss()
-        }, [closeSheet, dismiss])
+        }, [closeSheet, dismiss, scope.chainId])
 
         const canSign = localKeyUnsignedSigners.length > 0
 
@@ -332,7 +334,9 @@ export const usePendingSignaturesContent =
                 chainId: scope.chainId,
             })
             if (toDispatch.length === 0) return
-            trackEvent(MultisigEvent.ConfirmTransaction)
+            trackEvent(MultisigEvent.ConfirmTransaction, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+            })
             for (const address of toDispatch) {
                 dispatchCosign(address)
             }
@@ -380,7 +384,9 @@ export const usePendingSignaturesContent =
         })
 
         const handleCancel = useCallback(async () => {
-            trackEvent(MultisigEvent.CancelTransaction)
+            trackEvent(MultisigEvent.CancelTransaction, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+            })
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <ConfirmActionContent
@@ -404,7 +410,14 @@ export const usePendingSignaturesContent =
             await cancelMutationCall()
             closeSheet()
             dismiss()
-        }, [requestBottomSheet, t, cancelMutationCall, closeSheet, dismiss])
+        }, [
+            requestBottomSheet,
+            t,
+            cancelMutationCall,
+            closeSheet,
+            dismiss,
+            scope.chainId,
+        ])
 
         return {
             isLoading,

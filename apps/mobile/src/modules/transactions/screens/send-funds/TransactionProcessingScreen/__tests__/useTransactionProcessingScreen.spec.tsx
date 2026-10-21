@@ -25,7 +25,10 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
-const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+const { mockTrackEvent, mockUseSendScope } = vi.hoisted(() => ({
+    mockTrackEvent: vi.fn(),
+    mockUseSendScope: vi.fn(),
+}))
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
     trackEvent: mockTrackEvent,
@@ -85,7 +88,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
-    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useSendScope: mockUseSendScope,
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -125,6 +128,10 @@ describe('useTransactionProcessingScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseSendScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         mockExecute.mockResolvedValue('TX_ID_123')
         ;(useErrorToast as Mock).mockReturnValue({
             showError: mockShowError,
@@ -272,8 +279,40 @@ describe('useTransactionProcessingScreen', () => {
         expect(accountKindIdOf).toHaveBeenCalledWith(mockAccount, 'algorand')
         expect(mockTrackEvent).toHaveBeenCalledWith(
             TransactionsEvent.Complete,
-            expect.objectContaining({
+            {
+                [AnalyticsMetadataKey.AssetId]: '123',
+                [AnalyticsMetadataKey.Amount]: 5,
+                [AnalyticsMetadataKey.TransactionId]: 'TX_ID_123',
                 [AnalyticsMetadataKey.AccountType]: 'standalone',
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            },
+        )
+    })
+
+    it('reports the send scope chain with the completed send', async () => {
+        mockUseSendScope.mockReturnValue({
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+        ;(useSelectedAccount as Mock).mockReturnValue({
+            ...mockAccount,
+            chains: { ethereum: { address: '0xTEST' } },
+        })
+        ;(useSendFunds as Mock).mockReturnValue({
+            ...mockSendFundsState,
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+            destination: '0xDEST',
+        })
+
+        await act(async () => {
+            renderHook(() => useTransactionProcessingScreen())
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            TransactionsEvent.Complete,
+            expect.objectContaining({
+                [AnalyticsMetadataKey.ChainId]: 'ethereum',
             }),
         )
     })

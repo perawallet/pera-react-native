@@ -26,7 +26,11 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
-import { trackEvent, AccountDetailsEvent } from '@analytics'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 
 export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
 
@@ -127,9 +131,11 @@ export const useAccountTabNavigator = (
             if (!key) return
             setActiveKey(key)
             markVisited(nextIndex)
-            trackEvent(TAB_EVENTS[key])
+            trackEvent(TAB_EVENTS[key], {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
         },
-        [markVisited, tabs],
+        [chainId, markVisited, tabs],
     )
 
     const isPageVisited = useCallback(

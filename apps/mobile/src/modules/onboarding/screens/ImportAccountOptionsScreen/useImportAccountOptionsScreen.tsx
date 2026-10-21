@@ -130,6 +130,7 @@ export const useImportAccountOptionsScreen =
             trackChainOnboardingEvent(
                 keyKindOptionsOf(LEGACY_CHAIN_ID, result)?.recover
                     ?.analyticsEvent,
+                LEGACY_CHAIN_ID,
             )
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])

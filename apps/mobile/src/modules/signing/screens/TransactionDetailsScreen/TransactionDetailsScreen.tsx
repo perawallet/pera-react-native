@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
-
-import { trackScreen, AnalyticsScreenName } from '@analytics'
-
 import { PWButton, PWScreen } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import { LoadingView } from '@components/LoadingView'
@@ -26,14 +22,6 @@ import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
 export const TransactionDetailsScreen = () => {
     const { t } = useLanguage()
-
-    // Tracked in-screen rather than via the navigator's screenListeners: this
-    // screen is also mounted inside the signing flow's own NavigationContainer
-    // (SignRequestView), which has no screenListeners, so a centralized listener
-    // would miss that path.
-    useEffect(() => {
-        trackScreen(AnalyticsScreenName.TransactionDetail)
-    }, [])
 
     const {
         renderState,

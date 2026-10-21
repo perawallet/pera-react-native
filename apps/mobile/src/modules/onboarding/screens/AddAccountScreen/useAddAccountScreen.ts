@@ -208,13 +208,13 @@ export const useAddAccountScreen = () => {
     // The account is built in memory; NameAccount persists it once named.
     const handleCreateKind = useCallback(
         (seed: LocalKeySeed, option: LocalKeyCreateOption) => {
-            trackChainOnboardingEvent(option.analyticsEvent)
+            trackChainOnboardingEvent(option.analyticsEvent, scope.chainId)
             runCreateAccount(
                 () => buildSingleKeyAccount({ seed }),
                 option.progressTitleKey,
             )
         },
-        [buildSingleKeyAccount, runCreateAccount],
+        [buildSingleKeyAccount, runCreateAccount, scope.chainId],
     )
 
     const createOptions = useMemo(() => {

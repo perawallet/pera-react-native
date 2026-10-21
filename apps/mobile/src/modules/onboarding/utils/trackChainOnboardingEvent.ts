@@ -10,25 +10,32 @@
  limitations under the License
  */
 
-import { trackEvent, OnboardingEvent, type NoPayloadEvent } from '@analytics'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 
-const PAYLOAD_FREE_ONBOARDING_EVENTS = new Set<string>(
-    Object.values(OnboardingEvent).filter(
-        event => event !== OnboardingEvent.RegisterAccount,
-    ),
-)
+// The events a chain's key kinds may name: each carries only the chain.
+const KEY_KIND_ONBOARDING_EVENTS = [
+    OnboardingEvent.RecoverAlgo25,
+    OnboardingEvent.RecoverOneKey,
+    OnboardingEvent.CreateAccountQuantum,
+] as const
 
-const isPayloadFreeOnboardingEvent = (
+type KeyKindOnboardingEvent = (typeof KEY_KIND_ONBOARDING_EVENTS)[number]
+
+const isKeyKindOnboardingEvent = (
     name: string,
-): name is Extract<OnboardingEvent, NoPayloadEvent> =>
-    PAYLOAD_FREE_ONBOARDING_EVENTS.has(name)
+): name is KeyKindOnboardingEvent =>
+    (KEY_KIND_ONBOARDING_EVENTS as readonly string[]).includes(name)
 
 /**
  * A chain names the events its key kinds log as strings; only one the
- * onboarding catalog sends without a payload is tracked.
+ * onboarding catalog lists for key kinds is tracked.
  */
-export const trackChainOnboardingEvent = (name: string | undefined): void => {
-    if (name !== undefined && isPayloadFreeOnboardingEvent(name)) {
-        trackEvent(name)
+export const trackChainOnboardingEvent = (
+    name: string | undefined,
+    chainId: ChainId,
+): void => {
+    if (name !== undefined && isKeyKindOnboardingEvent(name)) {
+        trackEvent(name, { [AnalyticsMetadataKey.ChainId]: chainId })
     }
 }

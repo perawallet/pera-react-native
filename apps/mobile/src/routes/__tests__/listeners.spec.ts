@@ -22,6 +22,7 @@ import {
     trackScreen,
     trackEvent,
     AnalyticsScreenName,
+    AnalyticsMetadataKey,
     NavigationEvent,
 } from '@analytics'
 
@@ -46,6 +47,7 @@ vi.mock('@analytics', () => ({
         ContactList: 'screen_contacts',
     },
     AnalyticsMetadataKey: {
+        ChainId: 'chain_id',
         PageTitle: 'page_title',
         PreviousScreen: 'previous',
         Path: 'path',
@@ -193,21 +195,25 @@ describe('screenListeners', () => {
                 route: createRoute(routeName) as any,
             }).focus()
 
-            expect(trackScreen).toHaveBeenCalledWith(screen)
+            expect(trackScreen).toHaveBeenCalledWith(screen, undefined)
         })
 
-        it('tracks the collectible detail with its chain-keyed params', () => {
-            screenListeners({
-                route: createRoute('CollectibleDetails', undefined, {
-                    assetId: '1',
-                    chainId: 'algorand',
-                }) as any,
-            }).focus()
+        it.each(['algorand', 'ethereum'])(
+            'tracks the collectible detail with the %s chain its params name',
+            chainId => {
+                screenListeners({
+                    route: createRoute('CollectibleDetails', undefined, {
+                        assetId: '1',
+                        chainId,
+                    }) as any,
+                }).focus()
 
-            expect(trackScreen).toHaveBeenCalledWith(
-                AnalyticsScreenName.CollectibleList,
-            )
-        })
+                expect(trackScreen).toHaveBeenCalledWith(
+                    AnalyticsScreenName.CollectibleList,
+                    { [AnalyticsMetadataKey.ChainId]: chainId },
+                )
+            },
+        )
 
         it('does not track a catalog screen for an unmapped route', () => {
             screenListeners({ route: createRoute('SendAlgo') as any }).focus()
@@ -232,12 +238,14 @@ describe('screenListeners', () => {
             screenListeners({
                 route: createRoute('AssetDetails', undefined, {
                     assetId: '123',
+                    chainId: 'algorand',
                     isCollectible: false,
                 }) as any,
             }).focus()
 
             expect(trackScreen).toHaveBeenCalledWith(
                 AnalyticsScreenName.AssetDetail,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
             )
         })
 

@@ -899,7 +899,10 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ExportShareAccountContent accountAddress={A} />
+                                <ExportShareAccountContent
+                                    accountAddress={A}
+                                    chainId='algorand'
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: {

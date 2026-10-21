@@ -11,8 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { trackEvent, HomeEvent } from '@analytics'
+import {
+    accountChainIdOf,
+    useRegisteredChainIds,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCanFundAccount } from '@modules/onramp'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
@@ -26,13 +30,23 @@ export type UseNoFundsButtonPanelResult = {
 
 export const useNoFundsButtonPanel = (): UseNoFundsButtonPanelResult => {
     const navigation = useAppNavigation()
-    const canBuy = useCanFundAccount(useSelectedAccount())
+    const account = useSelectedAccount()
+    const registeredChainIds = useRegisteredChainIds()
+    const canBuy = useCanFundAccount(account)
     const { openReceiveFunds, openAccountOptions } = useAccountOverviewModal()
 
     const handleBuy = useCallback(() => {
-        trackEvent(HomeEvent.Fund)
+        // No account, no chain to report; the panel only shows for a selected account.
+        if (account) {
+            trackEvent(HomeEvent.Fund, {
+                [AnalyticsMetadataKey.ChainId]: accountChainIdOf(
+                    account,
+                    registeredChainIds,
+                ),
+            })
+        }
         navigation.navigate('TabBar', { screen: 'Fund' })
-    }, [navigation])
+    }, [account, navigation, registeredChainIds])
 
     return {
         canBuy,

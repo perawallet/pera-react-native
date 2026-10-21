@@ -11,7 +11,8 @@
  */
 
 import { renderHook, act, waitFor } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
@@ -30,7 +31,10 @@ import {
 } from '@test-utils/algorandAccountsAdapter'
 import {
     allCapabilities,
+    ETHEREUM_CHAIN_ID,
     fixtureEthereumDescriptor,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 
 const VALID_ALGORAND_ADDRESS =
@@ -48,7 +52,15 @@ const FIXTURE_ADDRESS = `fx${'ab'.repeat(20)}`
 const QUANTUM_TEST_ADDRESS =
     'XGOHUMHM7JDVEMHV4GP6JRFDVMLIF72P76O5756D2C427WJOM7PFB6ZXK4'
 
+const ETHEREUM_ADDRESS = `0x${'ab'.repeat(20)}`
+
 const mockNavigate = vi.fn()
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
 
@@ -269,6 +281,42 @@ describe('useWatchAccountScreen', () => {
                 chainId: 'algorand',
             }),
         )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.WatchAccountComplete,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+    })
+
+    describe('with Ethereum registered', () => {
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('tracks watching a 0x address on ethereum', async () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(ETHEREUM_ADDRESS)
+            })
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            await waitFor(() =>
+                expect(mockTrackEvent).toHaveBeenCalledWith(
+                    OnboardingEvent.WatchAccountComplete,
+                    { [AnalyticsMetadataKey.ChainId]: ETHEREUM_CHAIN_ID },
+                ),
+            )
+            expect(mockImportWatchAccount).toHaveBeenCalledWith(
+                ETHEREUM_CHAIN_ID,
+                ETHEREUM_ADDRESS,
+            )
+        })
     })
 
     it('shows why, and stays, when the store refuses the address', async () => {

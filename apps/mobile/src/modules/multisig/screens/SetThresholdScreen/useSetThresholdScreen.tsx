@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { BeforeYouCreateContent } from '../../components/BeforeYouCreateContent'
 import {
     useMultisigCreationStore,
@@ -55,7 +55,9 @@ export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
     }, [threshold, setThreshold])
 
     const handleContinue = useCallback(async () => {
-        trackEvent(MultisigEvent.ThresholdContinue)
+        trackEvent(MultisigEvent.ThresholdContinue, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         const result = await requestBottomSheet<'proceed'>({
             contents: <BeforeYouCreateContent />,
             options: {

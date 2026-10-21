@@ -25,6 +25,7 @@ import {
     multisigParametersOf,
     standaloneSecretOf,
     useAccountCapabilityScope,
+    useAccountChainId,
     useAllAccounts,
     useAuthorityOf,
     useCanSignWith,
@@ -67,6 +68,7 @@ import {
     trackEvent,
     AccountDetailsEvent,
     AccountOptionsEvent,
+    AnalyticsMetadataKey,
 } from '@analytics'
 import { RenameAccountContent } from './RenameAccountContent'
 import {
@@ -136,6 +138,7 @@ export const useAccountOptions = ({
     const { openRevealPrivateKeyFlow } = useRevealPrivateKeyFlow()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
 
@@ -169,10 +172,12 @@ export const useAccountOptions = ({
     const authAccount = useFindAccountByAddress(authority ?? '', scope)
 
     const handleCopyAddress = useCallback(() => {
-        trackEvent(AccountOptionsEvent.CopyAddress)
+        trackEvent(AccountOptionsEvent.CopyAddress, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         void copyToClipboard(address)
         onClose()
-    }, [copyToClipboard, address, onClose])
+    }, [copyToClipboard, address, onClose, accountChainId])
 
     const handleShowAddress = useCallback(() => {
         onClose()
@@ -180,12 +185,14 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
-        trackEvent(AccountOptionsEvent.ViewPassphrase)
+        trackEvent(AccountOptionsEvent.ViewPassphrase, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
         void openViewPassphraseFlow(address)
-    }, [onClose, openViewPassphraseFlow, address])
+    }, [onClose, openViewPassphraseFlow, address, accountChainId])
 
     const handleViewPrivateKey = useCallback(() => {
         if (!privateKeyScope) return
@@ -207,7 +214,9 @@ export const useAccountOptions = ({
         (target: AuthorityTargetCategory) => {
             switch (target) {
                 case AuthorityTargetCategories.hardware: {
-                    trackEvent(AccountOptionsEvent.RekeyToLedger)
+                    trackEvent(AccountOptionsEvent.RekeyToLedger, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToLedger', {
                         screen: 'RekeyToLedgerIntro',
                         params: { sourceAddress: address },
@@ -215,7 +224,9 @@ export const useAccountOptions = ({
                     return
                 }
                 case AuthorityTargetCategories.standard: {
-                    trackEvent(AccountOptionsEvent.RekeyToStandard)
+                    trackEvent(AccountOptionsEvent.RekeyToStandard, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToStandard', {
                         screen: 'RekeyToStandardIntro',
                         params: { sourceAddress: address },
@@ -223,7 +234,9 @@ export const useAccountOptions = ({
                     return
                 }
                 case AuthorityTargetCategories.postQuantum: {
-                    trackEvent(AccountOptionsEvent.RekeyToQuantum)
+                    trackEvent(AccountOptionsEvent.RekeyToQuantum, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToQuantum', {
                         screen: 'RekeyToQuantumIntro',
                         params: { sourceAddress: address },
@@ -231,7 +244,9 @@ export const useAccountOptions = ({
                     return
                 }
                 case AuthorityTargetCategories.shared: {
-                    trackEvent(AccountDetailsEvent.JointAccountRekey)
+                    trackEvent(AccountDetailsEvent.JointAccountRekey, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToShared', {
                         screen: 'RekeyToSharedIntro',
                         params: { sourceAddress: address },
@@ -239,7 +254,7 @@ export const useAccountOptions = ({
                 }
             }
         },
-        [navigation, address],
+        [navigation, address, scope.chainId],
     )
 
     const handleRekeyAccount = useCallback(async () => {
@@ -263,30 +278,41 @@ export const useAccountOptions = ({
     }, [onClose, isSharedAccount, requestBottomSheet, navigateToRekeyFlow])
 
     const handleScanRekeyed = useCallback(() => {
-        trackEvent(AccountOptionsEvent.ScanRekeyed)
+        trackEvent(AccountOptionsEvent.ScanRekeyed, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         onClose()
         navigation.navigate('RescanRekeyed', {
             screen: 'RescanRekeyedSelect',
             params: { sourceAddress: address },
         })
-    }, [onClose, navigation, address])
+    }, [onClose, navigation, address, scope.chainId])
 
     const handleExportShareAccount = useCallback(async () => {
-        trackEvent(AccountDetailsEvent.JointAccountExport)
+        trackEvent(AccountDetailsEvent.JointAccountExport, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         onClose()
         await requestBottomSheet<void>({
-            contents: <ExportShareAccountContent accountAddress={address} />,
+            contents: (
+                <ExportShareAccountContent
+                    accountAddress={address}
+                    chainId={accountChainId}
+                />
+            ),
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [onClose, requestBottomSheet, address])
+    }, [onClose, requestBottomSheet, address, accountChainId])
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
         if (!isMultisigAccount(account) || !multisigParameters) return
-        trackEvent(AccountDetailsEvent.JointAccountDetail)
+        trackEvent(AccountDetailsEvent.JointAccountDetail, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',
@@ -303,10 +329,19 @@ export const useAccountOptions = ({
                 autoCreateContainer: false,
             },
         })
-    }, [onClose, requestBottomSheet, account, address, multisigParameters])
+    }, [
+        onClose,
+        requestBottomSheet,
+        account,
+        address,
+        multisigParameters,
+        accountChainId,
+    ])
 
     const handleOpenRename = useCallback(async () => {
-        trackEvent(AccountOptionsEvent.Rename)
+        trackEvent(AccountOptionsEvent.Rename, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         onClose()
         const newName = await requestBottomSheet<string>({
             contents: <RenameAccountContent accountAddress={address} />,
@@ -327,6 +362,7 @@ export const useAccountOptions = ({
             { delayLength: 'short' },
         )
     }, [
+        accountChainId,
         onClose,
         requestBottomSheet,
         account,
@@ -403,7 +439,9 @@ export const useAccountOptions = ({
         useState<RemoveConfirmView>('none')
 
     const handleOpenRemoveConfirm = useCallback(() => {
-        trackEvent(AccountOptionsEvent.Remove)
+        trackEvent(AccountOptionsEvent.Remove, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         // Render confirmation inline inside the already-open AccountOptions sheet
         // instead of opening a second BottomSheetModal. gorhom's stackBehavior='push'
         // causes the second modal's window to sit behind the first on iOS, making the
@@ -413,7 +451,7 @@ export const useAccountOptions = ({
         } else {
             setRemoveConfirmView('remove-confirm')
         }
-    }, [account])
+    }, [account, accountChainId])
 
     const handleConfirmBackupWarning = useCallback(() => {
         setRemoveConfirmView('remove-confirm')
@@ -480,7 +518,9 @@ export const useAccountOptions = ({
     )
 
     const handleDeleteFromBackup = useCallback(() => {
-        trackEvent(AccountOptionsEvent.DeleteFromCloudBackup)
+        trackEvent(AccountOptionsEvent.DeleteFromCloudBackup, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         return finishRemoveWithBackupChoice(
             'delete',
             async () =>
@@ -489,16 +529,18 @@ export const useAccountOptions = ({
                 )) !== 'refused',
             i18nKey('cloud_backup.accounts.delete_error'),
         )
-    }, [finishRemoveWithBackupChoice, address])
+    }, [finishRemoveWithBackupChoice, address, accountChainId])
 
     const handleKeepInBackup = useCallback(() => {
-        trackEvent(AccountOptionsEvent.KeepInCloudBackup)
+        trackEvent(AccountOptionsEvent.KeepInCloudBackup, {
+            [AnalyticsMetadataKey.ChainId]: accountChainId,
+        })
         return finishRemoveWithBackupChoice(
             'keep',
             () => getBackupSyncManager().keepAccountInBackup(address),
             i18nKey('cloud_backup.accounts.keep_error'),
         )
-    }, [finishRemoveWithBackupChoice, address])
+    }, [finishRemoveWithBackupChoice, address, accountChainId])
 
     const handleCancelRemove = useCallback(() => {
         setRemoveConfirmView('none')

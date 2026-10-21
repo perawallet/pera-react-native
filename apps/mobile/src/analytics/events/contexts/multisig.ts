@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ChainPayload } from '../chain-payload'
+
 /**
  * Multisig (joint account) creation, invite and pending-transaction flows.
  * Account-detail menu items for joint accounts live in `AccountDetailsEvent`.
@@ -26,4 +28,8 @@ export enum MultisigEvent {
     CloseForNow = 'jointAccount_closeForNow_press', // Tapped "close for now" on the pending-signatures sheet
     InviteIgnorePressed = 'inbox_jointAccount_invite_ignore_press', // Ignored a joint-account invite
     InviteAddPressed = 'inbox_jointAccount_invite_add_press', // Accepted a joint-account invite
+}
+
+export type MultisigRequiredPayloads = {
+    [E in MultisigEvent]: ChainPayload
 }

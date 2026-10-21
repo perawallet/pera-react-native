@@ -28,7 +28,7 @@ import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
-import { OnboardingEvent, trackEvent } from '@analytics'
+import { AnalyticsMetadataKey, OnboardingEvent, trackEvent } from '@analytics'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -292,7 +292,9 @@ describe('useImportAccountOptionsScreen', () => {
                     .onPress()
             })
 
-            expect(trackEvent).toHaveBeenCalledWith(event)
+            expect(trackEvent).toHaveBeenCalledWith(event, {
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            })
         },
     )
 

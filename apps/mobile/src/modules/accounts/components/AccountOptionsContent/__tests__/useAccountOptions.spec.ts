@@ -12,7 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { trackEvent, AccountOptionsEvent } from '@analytics'
+import {
+    trackEvent,
+    AccountOptionsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
 import {
     useAccountChainStateStore,
@@ -163,6 +167,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics/events/contexts')),
+    ...(await vi.importActual<object>('@analytics/events/metadata-keys')),
     trackEvent: vi.fn(),
 }))
 
@@ -440,6 +445,36 @@ describe('useAccountOptions', () => {
             expect(idsFor(privateKeyAccount)).toContain('view-private-key')
         })
 
+        it('reports actions on the account record and its address on its own chain', async () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: privateKeyAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await act(async () => {
+                await result.current.options
+                    .find(o => o.id === 'rename-account')
+                    ?.onPress()
+            })
+            act(() => {
+                result.current.options
+                    .find(o => o.id === 'copy-address')
+                    ?.onPress()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(
+                AccountOptionsEvent.Rename,
+                { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+            )
+            expect(trackEvent).toHaveBeenCalledWith(
+                AccountOptionsEvent.CopyAddress,
+                { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+            )
+        })
+
         it('offers it for no HD, Algo25 or watch account', () => {
             const hdAccount: WalletAccount = {
                 id: 'acc-hd',
@@ -623,6 +658,10 @@ describe('useAccountOptions', () => {
 
             expect(mockCopyToClipboard).toHaveBeenCalledWith('ALGO25ADDRESS')
             expect(mockOnClose).toHaveBeenCalled()
+            expect(trackEvent).toHaveBeenCalledWith(
+                AccountOptionsEvent.CopyAddress,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+            )
         })
 
         it('includes truncated address as subtitle on copy-address option', () => {
@@ -939,6 +978,7 @@ describe('useAccountOptions', () => {
 
             expect(trackEvent).toHaveBeenCalledWith(
                 AccountOptionsEvent.DeleteFromCloudBackup,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
             )
             expect(mockDeleteAccountFromBackup).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
@@ -998,6 +1038,7 @@ describe('useAccountOptions', () => {
 
             expect(trackEvent).toHaveBeenCalledWith(
                 AccountOptionsEvent.KeepInCloudBackup,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
             )
             expect(mockKeepAccountInBackup).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',

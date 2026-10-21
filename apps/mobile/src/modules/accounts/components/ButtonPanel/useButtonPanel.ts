@@ -15,7 +15,7 @@ import { useAccountChainId } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
-import { trackEvent, HomeEvent } from '@analytics'
+import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
@@ -39,9 +39,9 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     const canReceive = useChainCapability(chainId, 'receive')
 
     const handleSwap = useCallback(() => {
-        trackEvent(HomeEvent.Swap)
+        trackEvent(HomeEvent.Swap, { [AnalyticsMetadataKey.ChainId]: chainId })
         navigation.replace('TabBar', { screen: 'Swap' })
-    }, [navigation])
+    }, [chainId, navigation])
 
     return {
         canSwap,
