@@ -12,7 +12,8 @@
 
 // node tools/release/upload-chrome-web-store.mjs <zip>
 //
-// Uploads an extension zip to its Chrome Web Store item as the pending draft.
+// Uploads an extension zip to its Chrome Web Store item as the pending draft,
+// signed into a CRX first when a signing key is configured.
 // It never publishes: submitting for review stays a manual step in the
 // Developer Dashboard, as promotion to production is for the mobile stores.
 //
@@ -20,11 +21,18 @@
 //   CWS_SERVICE_ACCOUNT_BASE64  service-account JSON key, base64; its email must
 //                               be added under Account in the Developer Dashboard
 //   CWS_PUBLISHER_ID, CWS_ITEM_ID
+//   CWS_CRX_SIGNING_KEY_BASE64  optional RSA private key (PEM), base64. Set, the
+//                               zip is uploaded as a CRX signed with it, which
+//                               the store requires once the item has Verified
+//                               CRX Uploads on; unset, the zip goes up as is
 //   DRY_RUN                     when "1": check inputs, print the target, upload nothing
 //   CWS_API_BASE, CWS_TOKEN_URL, CWS_POLL_INTERVAL_MS  test overrides only
 
 import { createSign } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
+import { basename } from 'node:path'
+
+import { packCrx3 } from './crx3.mjs'
 
 const SCOPE = 'https://www.googleapis.com/auth/chromewebstore'
 const API_BASE =
@@ -42,6 +50,7 @@ const {
     CWS_SERVICE_ACCOUNT_BASE64: keyBase64,
     CWS_PUBLISHER_ID: publisherId,
     CWS_ITEM_ID: itemId,
+    CWS_CRX_SIGNING_KEY_BASE64: crxKeyBase64,
 } = process.env
 
 if (!zipPath) fail('no zip path given')
@@ -66,9 +75,29 @@ if (!key.client_email || !key.private_key) {
 const zip = await readFile(zipPath).catch(() => fail(`cannot read ${zipPath}`))
 const itemPath = `publishers/${publisherId}/items/${itemId}`
 
+let upload = { body: zip, headers: {}, description: 'the zip' }
+if (crxKeyBase64) {
+    let crx
+    try {
+        crx = packCrx3(zip, Buffer.from(crxKeyBase64, 'base64'))
+    } catch {
+        fail(
+            'CWS_CRX_SIGNING_KEY_BASE64 is not a base64-encoded RSA private key',
+        )
+    }
+    upload = {
+        body: crx,
+        headers: {
+            'X-Goog-Upload-Protocol': 'raw',
+            'X-Goog-Upload-File-Name': `${basename(zipPath, '.zip')}.crx`,
+        },
+        description: 'a signed CRX',
+    }
+}
+
 if (process.env.DRY_RUN === '1') {
     console.log(
-        `DRY_RUN: would upload ${zipPath} (${zip.length} bytes) to the configured item`,
+        `DRY_RUN: would upload ${zipPath} as ${upload.description} (${upload.body.length} bytes) to the configured item`,
     )
     process.exit(0)
 }
@@ -121,10 +150,10 @@ const errorMessage = text => {
 
 // Messages name the step, never the URL or response: both carry the publisher
 // and item ids, which are CI secrets.
-const call = async (token, step, method, url, body) => {
+const call = async (token, step, method, url, body, headers = {}) => {
     const response = await fetch(url, {
         method,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { ...headers, Authorization: `Bearer ${token}` },
         body,
     })
     const text = await response.text()
@@ -134,15 +163,16 @@ const call = async (token, step, method, url, body) => {
 }
 
 const token = await accessToken()
-const upload = await call(
+const uploaded = await call(
     token,
     'upload',
     'POST',
     `${API_BASE}/upload/v2/${itemPath}:upload`,
-    zip,
+    upload.body,
+    upload.headers,
 )
 
-let state = upload.uploadState
+let state = uploaded.uploadState
 for (
     let attempt = 0;
     state === 'IN_PROGRESS' && attempt < POLL_ATTEMPTS;
@@ -162,5 +192,5 @@ if (state !== 'SUCCEEDED') {
     fail(`upload ended in state ${state ?? 'unknown'}`)
 }
 console.log(
-    `Uploaded ${upload.crxVersion ?? 'the package'} as a draft. Submit it for review in the Developer Dashboard.`,
+    `Uploaded ${uploaded.crxVersion ?? 'the package'} as a draft. Submit it for review in the Developer Dashboard.`,
 )
