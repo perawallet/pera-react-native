@@ -11,8 +11,4 @@
  */
 
 export { AlgorandAccountSection } from './AlgorandAccountSection'
-export {
-    useAlgorandAccountSection,
-    useHasAlgorandAccountSection,
-    type UseAlgorandAccountSectionResult,
-} from './useAlgorandAccountSection'
+export { useHasAlgorandAccountSection } from './useAlgorandAccountSection'

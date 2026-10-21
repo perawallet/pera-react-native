@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const SQUARE_BUTTON_SIZE = 32
-
 export const useStyles = makeStyles(theme => ({
     topActions: {
         flexDirection: 'row',
@@ -61,9 +59,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         gap: theme.spacing.sm,
     },
+    // A 16pt icon in sm padding: the design's 32pt square.
     squareButton: {
-        width: SQUARE_BUTTON_SIZE,
-        height: SQUARE_BUTTON_SIZE,
+        padding: theme.spacing.sm,
         borderRadius: theme.borderRadius.sm,
         backgroundColor: theme.colors.buttonSquareBg,
         alignItems: 'center',
