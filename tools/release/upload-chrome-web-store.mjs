@@ -68,7 +68,7 @@ const itemPath = `publishers/${publisherId}/items/${itemId}`
 
 if (process.env.DRY_RUN === '1') {
     console.log(
-        `DRY_RUN: would upload ${zipPath} (${zip.length} bytes) to ${itemPath} as ${key.client_email}`,
+        `DRY_RUN: would upload ${zipPath} (${zip.length} bytes) to the configured item`,
     )
     process.exit(0)
 }
@@ -111,7 +111,17 @@ const accessToken = async () => {
     return body.access_token
 }
 
-const call = async (token, method, url, body) => {
+const errorMessage = text => {
+    try {
+        return JSON.parse(text).error?.message ?? 'no detail'
+    } catch {
+        return 'no detail'
+    }
+}
+
+// Messages name the step, never the URL or response: both carry the publisher
+// and item ids, which are CI secrets.
+const call = async (token, step, method, url, body) => {
     const response = await fetch(url, {
         method,
         headers: { Authorization: `Bearer ${token}` },
@@ -119,13 +129,14 @@ const call = async (token, method, url, body) => {
     })
     const text = await response.text()
     if (!response.ok)
-        fail(`${method} ${url} failed (${response.status}): ${text}`)
+        fail(`${step} failed (${response.status}): ${errorMessage(text)}`)
     return JSON.parse(text)
 }
 
 const token = await accessToken()
 const upload = await call(
     token,
+    'upload',
     'POST',
     `${API_BASE}/upload/v2/${itemPath}:upload`,
     zip,
@@ -140,6 +151,7 @@ for (
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
     const status = await call(
         token,
+        'status check',
         'GET',
         `${API_BASE}/v2/${itemPath}:fetchStatus`,
     )
@@ -147,10 +159,8 @@ for (
 }
 
 if (state !== 'SUCCEEDED') {
-    fail(
-        `upload ended in state ${state ?? 'unknown'}: ${JSON.stringify(upload)}`,
-    )
+    fail(`upload ended in state ${state ?? 'unknown'}`)
 }
 console.log(
-    `Uploaded ${upload.crxVersion ?? 'the package'} to ${itemPath} as a draft. Submit it for review in the Developer Dashboard.`,
+    `Uploaded ${upload.crxVersion ?? 'the package'} as a draft. Submit it for review in the Developer Dashboard.`,
 )

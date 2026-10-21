@@ -70,6 +70,7 @@ STUB
 
 : > "$WORK/log"
 : > "$WORK/all.log"
+: > "$WORK/all.out"
 node "$WORK/stub.mjs" "$WORK/pub.pem" "$WORK/scenario" "$WORK/log" "$WORK/port" &
 STUB_PID=$!
 for _ in $(seq 50); do [ -s "$WORK/port" ] && break; sleep 0.1; done
@@ -90,6 +91,7 @@ run_case() {
         node "$SCRIPT" "$WORK/ext.zip" 2>&1)
     status=$?
     cat "$WORK/log" >> "$WORK/all.log"
+    printf '%s\n' "$output" >> "$WORK/all.out"
     if [ "$status" -eq "$want" ] && [[ "$output" == *"$expect"* ]]; then
         echo "  ok    ${label}"
     else
@@ -99,16 +101,22 @@ run_case() {
     fi
 }
 
-run_case "uploads and reports the version" ok 0 "Uploaded 7.2.1.123 to publishers/pub/items/item as a draft"
+run_case "uploads and reports the version" ok 0 "Uploaded 7.2.1.123 as a draft"
 run_case "polls an async upload until it succeeds" async 0 "as a draft"
 run_case "fails when the store rejects the package" failed 1 "upload ended in state FAILED"
-run_case "fails on an HTTP error from the store" forbidden 1 "failed (403)"
+run_case "fails on an HTTP error from the store" forbidden 1 "upload failed (403): not a publisher member"
 run_case "fails without an item id" ok 1 "CWS_ITEM_ID is not set" CWS_ITEM_ID=
 run_case "fails on a key that is not base64 JSON" ok 1 "not a base64-encoded JSON key" CWS_SERVICE_ACCOUNT_BASE64=not-json
 
 run_case "DRY_RUN uploads nothing" ok 0 "DRY_RUN: would upload" DRY_RUN=1
 if [ -s "$WORK/log" ]; then
     echo "  FAIL  DRY_RUN made requests: $(tr '\n' ' ' < "$WORK/log")"
+    failures=$((failures + 1))
+fi
+
+# The publisher and item ids and the account email are CI secrets.
+if grep -qE "publishers/|items/|ci@peraci" "$WORK/all.out"; then
+    echo "  FAIL  output carried a secret value: $(grep -E "publishers/|items/|ci@peraci" "$WORK/all.out" | head -1)"
     failures=$((failures + 1))
 fi
 
