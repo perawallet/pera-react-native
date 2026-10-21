@@ -172,10 +172,13 @@ Text Inside
     ${found}    ${nodes}=    Run Keyword And Ignore Error    Get Webelements
     ...    xpath=(${xpath})//*[string-length(@text) > 0 or string-length(@label) > 0]
     IF    '${found}' != 'PASS'    RETURN    ${EMPTY}
+    # iOS reports a node's name AND its label, so the same string arrives twice and a row
+    # reads back as "Vestige V4 Vestige V4". Keep the first of each, in order.
     VAR    @{parts}
     FOR    ${node}    IN    @{nodes}
         ${text}=    Get Text    ${node}
-        VAR    @{parts}    @{parts}    ${text}
+        ${seen}=    Evaluate    $text in $parts
+        IF    not ${seen}    VAR    @{parts}    @{parts}    ${text}
     END
     RETURN    ${{ ' '.join($parts) }}
 

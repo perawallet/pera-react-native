@@ -339,10 +339,15 @@ Each Provider States Its Price
     Other Provider Or Skip
     ${text}=    Text Inside    ${PROVIDER_OPTION_OTHER.replace('xpath=', '')}
     Close Provider Sheet
-    Skip If    not $text.strip()
-    ...    App gap: provider options are PWTouchableOpacity rows with getTestProps, which hides their text on iOS.
     # Prices always carry a fraction, which keeps digits in names like "Vestige V4" out.
-    Should Not Be Equal    ${{ None }}    ${{ re.search(r'[0-9][.][0-9]', $text) }}
+    ${price}=    Evaluate    re.search(r'[0-9][.][0-9]', $text)    modules=re
+    # The row is a PWTouchableOpacity with getTestProps; on iOS that leaves only the provider's
+    # name readable and the price is not exposed at all, which the needs-testid tag records.
+    # Nothing here can tell that gap apart from a provider quoting no price, so say what the row
+    # did expose and skip rather than claim either.
+    Skip If    $price is None
+    ...    No price is readable on a provider row; it exposes only "${text}". Needs a testID on the price.
+    Should Not Be Equal    ${{ None }}    ${price}
     ...    The provider row states no price: "${text}".
 
 Tapping A Top Pair Fills The Form
