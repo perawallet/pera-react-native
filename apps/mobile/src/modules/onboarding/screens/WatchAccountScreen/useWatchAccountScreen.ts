@@ -17,6 +17,7 @@ import {
     useAccountsStore,
     useAllAccounts,
     findAccountByAddressOn,
+    preferDefaultChain,
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
@@ -77,9 +78,11 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
                     chain: { chainId, capability: 'watchAccounts' },
                 }),
         )
-    // Registration order decides when several chains accept the same address.
-    const watchChainId = watchableChainIds.find(chainId =>
-        addressCodecs.get(chainId).isValid(resolvedAddress),
+    // The default chain decides when several chains accept the same address.
+    const watchChainId = preferDefaultChain(
+        watchableChainIds.filter(chainId =>
+            addressCodecs.get(chainId).isValid(resolvedAddress),
+        ),
     )
 
     const isValidAddress = watchChainId !== undefined
