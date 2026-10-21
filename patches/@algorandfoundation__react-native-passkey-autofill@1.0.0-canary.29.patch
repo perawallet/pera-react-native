@@ -149,7 +149,7 @@ index 9ef8371e77ab492558db5bfc048557edc669c813..527f7ddd299026751e39aced06f69260
              // On registration we advertise `enabled = true` whenever the RP
              // asked for the extension, signalling that the credential can be
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
-index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f3a27a6f2 100644
+index 57f9b7c6f01682b537cd0b5b8c188f025965586d..bbf4400076c7675c195f9efa1d03d542dbe68039 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 @@ -23,13 +23,14 @@ import androidx.credentials.provider.ProviderGetCredentialRequest
@@ -169,7 +169,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
  import co.algorand.passkeyautofill.utils.PasskeyUtils
  import co.algorand.passkeyautofill.utils.PrivilegedBrowserAllowlist
  import java.security.KeyPair
-@@ -388,47 +389,41 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -388,47 +389,44 @@ class GetPasskeyActivity : AppCompatActivity() {
          isHandling = true
          PasskeyLog.d(TAG, "handleAssertion started, userVerification=$userVerification")
          lifecycleScope.launch {
@@ -177,26 +177,8 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
 -            val biometricIv = credentialData?.getString("biometricIv")
 -            PasskeyLog.d(TAG, "biometricIv from bundle: present=${biometricIv != null}")
 -            
-+            // PERA LOCAL PATCH: the ceremony follows what the STORED credential
-+            // needs unlocked. The pending intent's copy of the biometric IV is
-+            // never read, and the repository refuses to open key material
-+            // without the matching proof whatever this flow decides.
-+            val requirement = BiometricRequirement.resolve(this@GetPasskeyActivity)
-+            val credId = credentialIdEnc?.let { decodeCredentialId(it) }
-+            val includePrfSecret = credId != null && requestsPrf(credId)
-+            val unlock = credId?.let {
-+                credentialRepository.assertionUnlock(this@GetPasskeyActivity, it, includePrfSecret)
-+            }
-+            if (credId == null || unlock == null) {
-+                PasskeyLog.e(TAG, "Selected credential is not stored on this device")
-+                setupErrorUI("Something went wrong while signing in. Please try again.", allowRetry = false)
-+                isHandling = false
-+                return@launch
-+            }
-+            PasskeyLog.d(TAG, "Assertion unlock: ${unlock.javaClass.simpleName}")
-+
-             // A manual BiometricPrompt this activity showed succeeded.
-             var manualVerified = false
+-            // A manual BiometricPrompt this activity showed succeeded.
+-            var manualVerified = false
 -            var cipherToUse = systemUnlockedCipher ?: run {
 -                if (biometricPromptResult != null) {
 -                    try {
@@ -213,9 +195,29 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
 -                        null
 -                    }
 -                } else {
--                    null
--                }
--            }
++            // PERA LOCAL PATCH: the prompt follows what the STORED record needs
++            // unlocked, never the intent; the repository enforces it regardless.
++            val requirement = BiometricRequirement.resolve(this@GetPasskeyActivity)
++            val credId = credentialIdEnc?.let { decodeCredentialId(it) }
++            val includePrfSecret = credId != null && requestsPrf(credId)
++            val unlock = credId?.let {
++                try {
++                    credentialRepository.assertionUnlock(this@GetPasskeyActivity, it, includePrfSecret)
++                } catch (e: Exception) {
++                    PasskeyLog.e(TAG, "Stored credential record is unreadable (${e.javaClass.simpleName})")
+                     null
+                 }
+             }
++            if (credId == null || unlock == null) {
++                PasskeyLog.e(TAG, "Selected credential is missing or unreadable")
++                setupErrorUI("Something went wrong while signing in. Please try again.", allowRetry = false)
++                isHandling = false
++                return@launch
++            }
++            PasskeyLog.d(TAG, "Assertion unlock: ${unlock.javaClass.simpleName}")
++
++            // A manual BiometricPrompt this activity showed succeeded.
++            var manualVerified = false
 +            // A cipher is built without a prompt only after the system's own
 +            // prompt succeeded (Single Tap that returned no CryptoObject).
 +            var cipherToUse = systemUnlockedCipher ?: if (systemVerified) unlockCipherFor(unlock, requirement) else null
@@ -242,7 +244,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
                          val canUseBiometrics =
                              BiometricManager.from(this@GetPasskeyActivity)
                                  .canAuthenticate(
-@@ -446,7 +441,7 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -446,13 +444,15 @@ class GetPasskeyActivity : AppCompatActivity() {
                          return@launch
                      }
                      manualVerified = true
@@ -251,7 +253,15 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
                  } else if (!systemVerified) {
                      PasskeyLog.d(TAG, "userVerification is $userVerification and key is not locked, skipping manual biometrics")
                  }
-@@ -477,9 +472,6 @@ class GetPasskeyActivity : AppCompatActivity() {
+             }
+ 
+             var finalCipher = cipherToUse
++            // Zeroed on every exit, including a throw before the PRF block uses it.
++            var openedPrfSecret: ByteArray? = null
+ 
+             try {
+                 val req = request ?: throw IllegalStateException("No request found")
+@@ -477,9 +477,6 @@ class GetPasskeyActivity : AppCompatActivity() {
                  throw e
              }
  
@@ -261,7 +271,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
              val passkeyRequestJsonObj = JSONObject(passkeyReqJson)
              val challenge = if (passkeyRequestJsonObj.has("challenge")) {
                  passkeyRequestJsonObj.getString("challenge")
-@@ -550,30 +542,21 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -550,30 +547,22 @@ class GetPasskeyActivity : AppCompatActivity() {
                  return@launch
              }
  
@@ -301,11 +311,12 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
 +                credentialRepository.openAssertionKeys(this@GetPasskeyActivity, credId, finalCipher, includePrfSecret)
 +                    ?: throw IllegalStateException("No keypair found after manual prompt")
              }
++            openedPrfSecret = keys.prfParentSecret?.bytes
 +            val keyPair = keys.keyPair
  
              // UV reflects what actually happened in this operation. UP stays set:
              // the user chose this credential's entry in the system chooser (or
-@@ -639,22 +622,22 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -639,24 +628,30 @@ class GetPasskeyActivity : AppCompatActivity() {
                  )
                  val prfInput = Prf.parseInput(passkeyRequestJsonObj, credentialIdB64Url)
                  if (prfInput != null) {
@@ -331,6 +342,8 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
 -                            relyingPartyIdentifier = displayOrigin,
 -                            userHandle = dbCred.userHandle,
 -                        )
+-                        val first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
+-                        val second = prfInput.second?.let { Prf.evaluate(credRandom, it, prfInput.alreadyHashed) }
 +                        val credRandom = try {
 +                            Prf.credRandom(
 +                                hdRootSecret = parent.bytes,
@@ -340,10 +353,24 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
 +                        } finally {
 +                            parent.bytes.fill(0)
 +                        }
-                         val first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
-                         val second = prfInput.second?.let { Prf.evaluate(credRandom, it, prfInput.alreadyHashed) }
++                        val first: ByteArray
++                        val second: ByteArray?
++                        try {
++                            first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
++                            second = prfInput.second?.let { Prf.evaluate(credRandom, it, prfInput.alreadyHashed) }
++                        } finally {
++                            credRandom.fill(0)
++                        }
  
-@@ -705,7 +688,63 @@ class GetPasskeyActivity : AppCompatActivity() {
+                         val prfResults = JSONObject().put("first", Prf.encodeOutput(first))
+                         if (second != null) {
+@@ -701,11 +696,69 @@ class GetPasskeyActivity : AppCompatActivity() {
+                 allowRetry = true,
+             )
+             isHandling = false
++        } finally {
++            openedPrfSecret?.fill(0)
+         }
      }
      }
  
@@ -408,7 +435,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..23e1420ddd6a649c178b5c51d09d230f
          val requirement = BiometricRequirement.resolve(this)
          return suspendCoroutine { continuation ->
              val biometricPrompt = BiometricPrompt(
-@@ -736,15 +775,9 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -736,15 +789,9 @@ class GetPasskeyActivity : AppCompatActivity() {
              }
              val promptInfo = promptInfoBuilder.build()
  
@@ -583,7 +610,7 @@ index 0000000000000000000000000000000000000000..f48852f308641bb9a28a62eaeab8c24a
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/AssertionKeys.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/AssertionKeys.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e0a244042c0a94745a5e3d0a373a3a80b466166
+index 0000000000000000000000000000000000000000..c08b47f5cc6e2ca671947a4dc4eae5d3d42c3f59
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/AssertionKeys.kt
 @@ -0,0 +1,43 @@
@@ -595,8 +622,8 @@ index 0000000000000000000000000000000000000000..8e0a244042c0a94745a5e3d0a373a3a8
 + * PERA LOCAL PATCH — what one assertion needs, opened under a single proof of user authentication.
 + *
 + * [prfParentSecret] is set only when the caller asked for it and a Keystore
-+ * operation that requires user authentication succeeded for this assertion.
-+ * The caller zeroes its `bytes` once the PRF output is computed.
++ * operation that requires user authentication succeeded. The caller zeroes its
++ * `bytes` once the PRF output is computed.
 + */
 +class AssertionKeys(val keyPair: KeyPair, val prfParentSecret: ParentSecret?)
 +
@@ -672,10 +699,18 @@ index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cb
  )
 \ No newline at end of file
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a19e8b0b94 100644
+index fab158d8d072a437ce1518e038cf2479664018a6..34d2b308fea94a7a82b64433581b04fe4d60df87 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-@@ -88,7 +88,50 @@ interface CredentialRepository {
+@@ -4,6 +4,7 @@ import android.content.Context
+ import android.content.SharedPreferences
+ import android.os.Build
+ import android.security.keystore.KeyGenParameterSpec
++import android.security.keystore.KeyPermanentlyInvalidatedException
+ import android.security.keystore.KeyProperties
+ import co.algorand.passkeyautofill.utils.PasskeyLog
+ import androidx.annotation.RequiresApi
+@@ -88,7 +89,44 @@ interface CredentialRepository {
      val keyStore: KeyStore
      fun saveCredential(context: Context, credential: Credential, biometricCipher: Cipher? = null)
      fun generateCredentialId(keyPair: KeyPair): ByteArray
@@ -692,17 +727,11 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +    /**
 +     * PERA LOCAL PATCH — the only way the get flow reaches a signing key or the parent secret.
 +     *
-+     * Opens what one assertion needs, enforcing user authentication in the
-+     * Keystore rather than in the caller's prompt logic:
-+     *  - a biometric-wrapped key opens only through `biometricCipher` (the
-+     *    unwrap is the proof), and is never re-derived;
-+     *  - a key with no stored material is re-derived from its pinned parent only
-+     *    after an encryption-mode `biometricCipher` completes an operation, which
-+     *    the Keystore refuses unless the user authenticated;
-+     *  - the PRF parent secret (`includePrfSecret`) needs the same proof.
-+     *
-+     * Under a [BiometricRequirement] that is not crypto-bound the biometric key
-+     * is not user-auth-bound, so no proof is demanded beyond the unwrap.
++     * The proof is a Keystore operation on the user-auth-bound biometric key: the
++     * unwrap for a wrapped key (never re-derived), otherwise an encryption-mode
++     * `biometricCipher` completing a probe. That key is time-bound, so the proof
++     * is "authenticated within its validity window", not per operation. A
++     * requirement that is not crypto-bound demands no proof beyond the unwrap.
 +     *
 +     * @return `null` when no credential is stored under `credentialId`.
 +     * @throws UserAuthenticationRequiredException when the proof is missing or fails.
@@ -726,7 +755,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
      fun createDeterministicKeyPair(context: Context, origin: String, userHandle: String, biometricCipher: Cipher? = null): KeyPair
  
      /**
-@@ -144,20 +187,18 @@ interface CredentialRepository {
+@@ -144,20 +182,18 @@ interface CredentialRepository {
       */
      fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential?
  
@@ -756,7 +785,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
      fun getPublicKeyFromKeyPair(keyPair: KeyPair?): ByteArray
      fun sign(keyPair: KeyPair, payload: ByteArray): ByteArray
      /**
-@@ -214,23 +255,6 @@ interface CredentialRepository {
+@@ -214,23 +250,6 @@ interface CredentialRepository {
      fun getBiometricCipherForEncryption(context: Context, requirement: BiometricRequirement): Cipher
      fun getBiometricCipherForDecryption(context: Context, iv: ByteArray, requirement: BiometricRequirement): Cipher
  
@@ -780,7 +809,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
      companion object {
          const val TAG = "CredentialRepository"
          const val PASSKEYS_MMKV_ID = "keystore"
-@@ -269,11 +293,12 @@ interface CredentialRepository {
+@@ -269,11 +288,12 @@ interface CredentialRepository {
  fun CredentialRepository(): CredentialRepository = Repository()
  
  class Repository() : CredentialRepository {
@@ -796,7 +825,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
      }
  
      private fun getPasskeysMMKV(context: Context): MMKV {
-@@ -287,35 +312,25 @@ class Repository() : CredentialRepository {
+@@ -287,35 +307,25 @@ class Repository() : CredentialRepository {
          return MMKV.mmkvWithID(CredentialRepository.PASSKEY_AUTOFILL_MMKV_ID, MMKV.MULTI_PROCESS_MODE)
      }
  
@@ -847,7 +876,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
          val metadata = JSONObject()
          metadata.put("origin", credential.origin)
          metadata.put("userHandle", credential.userHandle)
-@@ -327,122 +342,69 @@ class Repository() : CredentialRepository {
+@@ -327,122 +337,69 @@ class Repository() : CredentialRepository {
          credential.parentKeyId?.let { metadata.put("parentKeyId", it) }
          credential.derivationScheme?.let { metadata.put("scheme", it) }
          metadata.put("derivationVersion", credential.derivationVersion)
@@ -948,11 +977,13 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
              }
          }
 -        return credentials
--    }
--
--    /**
++        return summaries
+     }
+ 
+     /**
 -     * Builds a [Credential] from a decoded legacy flat record (`KeyData` JSON).
--     *
++     * PERA LOCAL PATCH — the biometric IV lives in plaintext `k/`, so the chooser can build its `CryptoObject`.
+      *
 -     * @param includeMaterial whether to materialise the private key. `false`
 -     *   for enumeration and pre-signing lookups; `true` only for the single
 -     *   credential the user selected and verified for.
@@ -997,13 +1028,11 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 -            derivationVersion = metadata?.optInt("derivationVersion", PasskeyDerivation.VERSION_LEGACY_LABEL)
 -                ?: PasskeyDerivation.VERSION_LEGACY_LABEL,
 -        )
-+        return summaries
-     }
- 
-     /**
+-    }
+-
+-    /**
 -     * Builds a [Credential] from a split-layout `k/<id>` metadata record.
-+     * PERA LOCAL PATCH — the biometric IV lives in plaintext `k/`, so the chooser can build its `CryptoObject`.
-      *
+-     *
 -     * These carry no material: a domain key is defined by its parent plus its
 -     * domain descriptor, so the private key is re-derived on demand (see
 -     * [getKeyPair]) rather than stored twice.
@@ -1015,7 +1044,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
       */
      private fun credentialFromMetadataRecord(json: JSONObject): Credential? {
          val id = json.optString("id").takeUnless { it.isEmpty() } ?: return null
-@@ -457,20 +419,13 @@ class Repository() : CredentialRepository {
+@@ -457,20 +414,13 @@ class Repository() : CredentialRepository {
              publicKey = AndroidBase64.encodeToString(publicKey, AndroidBase64.DEFAULT),
              privateKey = "",
              count = metadata.optInt("count", 0),
@@ -1037,7 +1066,7 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
      override fun generateCredentialId(keyPair: KeyPair): ByteArray {
          val publicKeyBytes = keyPair.public.encoded
          val messageDigest = MessageDigest.getInstance("SHA-256")
-@@ -483,46 +438,170 @@ class Repository() : CredentialRepository {
+@@ -483,46 +433,175 @@ class Repository() : CredentialRepository {
      override fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential? =
          readCredential(context, credentialId, biometricCipher = null, includeMaterial = false)
  
@@ -1098,16 +1127,24 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +    override fun assertionUnlock(context: Context, credentialId: ByteArray, includePrfSecret: Boolean): AssertionUnlock? {
 +        val (candidate, credential) = findCredentialRecord(context, credentialId) ?: return null
 +        credential.biometricIv?.let {
-+            return AssertionUnlock.UnwrapCipher(AndroidBase64.decode(it, AndroidBase64.DEFAULT))
++            val iv = try {
++                AndroidBase64.decode(it, AndroidBase64.DEFAULT)
++            } catch (e: IllegalArgumentException) {
++                throw IllegalStateException("Stored biometric IV is not valid base64", e)
+             }
++            return AssertionUnlock.UnwrapCipher(iv)
 +        }
 +        val needsProof = includePrfSecret || !hasStoredMaterial(context, candidate)
 +        return if (needsProof && BiometricRequirement.resolve(context).isCryptoBound) {
 +            AssertionUnlock.AuthenticatedCipher
 +        } else {
 +            AssertionUnlock.None
-+        }
+         }
 +    }
-+
+ 
+-        val payload = mmkv.decodeString(id) ?: run {
+-            PasskeyLog.w(CredentialRepository.TAG, "No payload found for credential id")
+-            return null
 +    override fun openAssertionKeys(
 +        context: Context,
 +        credentialId: ByteArray,
@@ -1124,12 +1161,19 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +            // The wrapped key is the credential's only copy; re-deriving would
 +            // sign without the unwrap that proves the user.
 +            throw IllegalStateException("Biometric-wrapped passkey has no stored material")
-+        }
+         }
+-        val masterKey = getMasterKey(context) ?: run {
+-            PasskeyLog.e(CredentialRepository.TAG, "Master key not found")
+-            return null
 +        // A wrapped key's unwrap is its own proof; everything else that reaches
 +        // the parent secret proves the user with a separate Keystore operation.
 +        if (!wrapped && (includePrfSecret || !hasMaterial)) {
 +            proveUserAuthentication(biometricCipher, requirement)
-+        }
+         }
+-        return try {
+-            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
+-            credentialFromLegacyRecord(json, biometricCipher, includeMaterial)
+-        } catch (e: Exception) {
 +
 +        val keyPair = if (hasMaterial) {
 +            val material = readCredentialMaterial(context, candidate, credential.biometricIv, biometricCipher)
@@ -1138,13 +1182,10 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +        } else {
 +            if (credential.origin.isEmpty() || credential.userHandle.isEmpty()) {
 +                throw IllegalStateException("Passkey record lacks the origin or user handle to re-derive from")
-             }
++            }
 +            createDomainKeyPair(context, credential.origin, credential.userHandle, pinnedScheme).keyPair
-         }
- 
--        val payload = mmkv.decodeString(id) ?: run {
--            PasskeyLog.w(CredentialRepository.TAG, "No payload found for credential id")
--            return null
++        }
++
 +        val prfParentSecret = if (includePrfSecret) {
 +            when (val parent = resolveParentSecret(context, pinnedScheme)) {
 +                is ParentSecretResult.Available -> parent.secret
@@ -1154,14 +1195,13 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +                }
 +            }
 +        } else {
-+            null
+             null
          }
--        val masterKey = getMasterKey(context) ?: run {
--            PasskeyLog.e(CredentialRepository.TAG, "Master key not found")
--            return null
 +        return AssertionKeys(keyPair, prfParentSecret)
-+    }
-+
+     }
+ 
+-    override fun getCredentialByOrigin(context: Context, origin: String): Credential? {
+-        return getAllCredentials(context).find { it.origin == origin }
 +    /**
 +     * Throws unless [cipher] completes an operation on the biometric key, which
 +     * the Keystore allows only once the user has authenticated. Only an
@@ -1172,21 +1212,15 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
 +        if (!requirement.isCryptoBound) return
 +        if (cipher == null) {
 +            throw UserAuthenticationRequiredException("Opening this passkey needs a biometric cipher the user unlocked")
-         }
--        return try {
--            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
--            credentialFromLegacyRecord(json, biometricCipher, includeMaterial)
++        }
 +        val output = try {
 +            cipher.doFinal(ByteArray(PROOF_PROBE_LENGTH))
-         } catch (e: Exception) {
--            null
++        } catch (e: Exception) {
 +            throw UserAuthenticationRequiredException("The biometric cipher did not prove user authentication", e)
-         }
++        }
 +        output.fill(0)
-     }
- 
--    override fun getCredentialByOrigin(context: Context, origin: String): Credential? {
--        return getAllCredentials(context).find { it.origin == origin }
++    }
++
 +    /**
 +     * PERA LOCAL PATCH — the only place a credential's sealed material is opened.
 +     *
@@ -1399,6 +1433,24 @@ index fab158d8d072a437ce1518e038cf2479664018a6..4b8c74d71c5c1f1006221120abbdc5a1
          val mmkv = getAutofillMMKV(context)
          val storedLevel = mmkv.decodeString(CredentialRepository.BIOMETRIC_KEY_LEVEL_KEY)
          if (keyStore.containsAlias(CredentialRepository.BIOMETRIC_KEY_ALIAS) &&
+@@ -1079,7 +1114,16 @@ class Repository() : CredentialRepository {
+ 
+     override fun getBiometricCipherForEncryption(context: Context, requirement: BiometricRequirement): Cipher {
+         val cipher = newAndroidKeyStoreAesGcmCipher()
+-        cipher.init(Cipher.ENCRYPT_MODE, getBiometricSecretKey(context, requirement))
++        try {
++            cipher.init(Cipher.ENCRYPT_MODE, getBiometricSecretKey(context, requirement))
++        } catch (e: KeyPermanentlyInvalidatedException) {
++            // Removing the screen lock or enrolling a biometric kills the key for good.
++            // Without a fresh one, no proof of user authentication could ever pass again;
++            // keys it wrapped are already unrecoverable.
++            PasskeyLog.w(CredentialRepository.TAG, "Biometric key permanently invalidated; regenerating")
++            keyStore.deleteEntry(CredentialRepository.BIOMETRIC_KEY_ALIAS)
++            cipher.init(Cipher.ENCRYPT_MODE, getBiometricSecretKey(context, requirement))
++        }
+         return cipher
+     }
+ 
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 index 3256e6d20df3e978e4d08e2e52fc118da45c4415..f3f373a974651cfd06463be27e31dfc95aa700e4 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
@@ -1544,17 +1596,19 @@ index 0000000000000000000000000000000000000000..e0d0f1e00ba916899c30daa72aa9de6b
 +}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt b/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..4b1fdfccb8d93b6da6f7c3c6cf8875d9d69fecd9
+index 0000000000000000000000000000000000000000..f728b288f45c85f734205a636a3c33d7c65c66ec
 --- /dev/null
 +++ b/android/src/test/java/co/algorand/passkeyautofill/credentials/CredentialRepositoryAssertionKeysTest.kt
-@@ -0,0 +1,293 @@
+@@ -0,0 +1,341 @@
 +package co.algorand.passkeyautofill.credentials
 +
 +import android.content.Context
 +import android.util.Base64 as AndroidBase64
++import co.algorand.passkeyautofill.auth.BiometricRequirement
 +import com.tencent.mmkv.MMKV
 +import io.mockk.every
 +import io.mockk.mockk
++import io.mockk.mockkObject
 +import io.mockk.mockkStatic
 +import io.mockk.spyk
 +import io.mockk.unmockkAll
@@ -1743,6 +1797,52 @@ index 0000000000000000000000000000000000000000..4b1fdfccb8d93b6da6f7c3c6cf8875d9
 +    }
 +
 +    @Test
++    fun `a wrapped credential's unwrap is the proof for its PRF parent secret`() {
++        val iv = storeWrappedCredential()
++        val parent = ParentSecret("parent", KeystoreRecords.SCHEME_PBKDF2_P256, ByteArray(32) { 7 })
++        every { repository["resolveParentSecret"](any<Context>(), any<String>()) } returns
++            ParentSecretResult.Available(parent)
++
++        val keys = repository.openAssertionKeys(context, credentialId, decryptCipher(iv), includePrfSecret = true)
++
++        assertSame(parent, keys!!.prfParentSecret)
++        verify(exactly = 0) { repository.createDomainKeyPair(any(), any(), any(), any()) }
++    }
++
++    @Test
++    fun `a wrapped credential with no stored material throws and is never re-derived`() {
++        storeMetadata(biometricIv = ByteArray(12))
++
++        val error = assertThrows(IllegalStateException::class.java) {
++            repository.getKeyPair(context, credentialId, encryptCipher())
++        }
++        assertFalse(error is UserAuthenticationRequiredException)
++        verifyNothingDerived()
++    }
++
++    @Test
++    fun `a stored IV that is not base64 is reported as an unreadable record`() {
++        storeMetadata(biometricIv = null, rawIv = "not base64 !!")
++
++        val error = assertThrows(IllegalStateException::class.java) {
++            repository.assertionUnlock(context, credentialId, includePrfSecret = false)
++        }
++        assertFalse(error is UserAuthenticationRequiredException)
++    }
++
++    @Test
++    fun `a requirement that is not crypto-bound re-derives without a proof`() {
++        mockkObject(BiometricRequirement.Companion)
++        every { BiometricRequirement.resolve(any()) } returns BiometricRequirement.WEAK_OR_CREDENTIAL
++        storeMetadata(biometricIv = null)
++        every { repository.createDomainKeyPair(any(), any(), any(), any()) } returns
++            DerivedDomainKeyPair(storedKeyPair, "parent", KeystoreRecords.SCHEME_PBKDF2_P256)
++
++        assertEquals(AssertionUnlock.None, repository.assertionUnlock(context, credentialId, includePrfSecret = false))
++        assertSame(storedKeyPair, repository.getKeyPair(context, credentialId, null))
++    }
++
++    @Test
 +    fun `an unknown credential opens nothing`() {
 +        assertNull(repository.getKeyPair(context, credentialId, null))
 +        assertNull(repository.assertionUnlock(context, credentialId, includePrfSecret = false))
@@ -1794,7 +1894,7 @@ index 0000000000000000000000000000000000000000..4b1fdfccb8d93b6da6f7c3c6cf8875d9
 +        return iv
 +    }
 +
-+    private fun storeMetadata(biometricIv: ByteArray?) {
++    private fun storeMetadata(biometricIv: ByteArray?, rawIv: String? = null) {
 +        val record = JSONObject()
 +            .put("id", storedId)
 +            .put("type", "hd-derived-p256")
@@ -1809,8 +1909,8 @@ index 0000000000000000000000000000000000000000..4b1fdfccb8d93b6da6f7c3c6cf8875d9
 +                    .put("userId", "dXNlcg")
 +                    .put("scheme", KeystoreRecords.SCHEME_PBKDF2_P256),
 +            )
-+        biometricIv?.let {
-+            record.put("privateKeyEnc", JSONObject().put("iv", AndroidBase64.encodeToString(it, AndroidBase64.NO_WRAP)))
++        (rawIv ?: biometricIv?.let { AndroidBase64.encodeToString(it, AndroidBase64.NO_WRAP) })?.let {
++            record.put("privateKeyEnc", JSONObject().put("iv", it))
 +        }
 +        keystoreRecords[KeystoreRecords.metadataKey(storedId)] = record.toString()
 +    }
