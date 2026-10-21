@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -128,6 +128,11 @@ import {
     usePendingSignaturesContent,
 } from '../usePendingSignaturesContent'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const buildSignRequest = (
     overrides: Partial<MultisigSignRequest> = {},
@@ -187,7 +192,10 @@ describe('usePendingSignaturesContent', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         vi.setSystemTime(new Date('2026-05-06T10:00:00Z'))
-        usePendingSignaturesSheetStore.setState({ signRequestId: null })
+        usePendingSignaturesSheetStore.setState({
+            signRequestId: null,
+            chainId: null,
+        })
         useSignRequestDetailQueryMock.mockReset()
         mockQueryReturn(undefined)
         localUnsignedSignersMock.mockReturnValue([])
@@ -893,6 +901,82 @@ describe('usePendingSignaturesContent', () => {
             const row = result.current.signers.find(s => s.address === 'C')
             expect(row?.isSigning).toBe(false)
             expect(row?.canSignAsHardware).toBe(true)
+        })
+    })
+
+    describe('chain resolution', () => {
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+            useDraftSignRequestStore.getState().resetState()
+        })
+
+        it('reads the request on the chain its opener passed', () => {
+            registerEthereumChain()
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: 'sr-1',
+                chainId: ETHEREUM_CHAIN_ID,
+            })
+
+            renderHook(() => usePendingSignaturesContent())
+
+            expect(useSignRequestDetailQueryMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    scope: expect.objectContaining({
+                        chainId: ETHEREUM_CHAIN_ID,
+                    }),
+                }),
+            )
+        })
+
+        it('falls back to the multisig chain when the opener named none', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+
+            renderHook(() => usePendingSignaturesContent())
+
+            expect(useSignRequestDetailQueryMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    scope: expect.objectContaining({ chainId: 'algorand' }),
+                }),
+            )
+        })
+
+        it("uses a draft's own scope over the opener's chain", () => {
+            registerEthereumChain()
+            useDraftSignRequestStore.setState({
+                drafts: {
+                    'draft-eth': {
+                        localId: 'draft-eth',
+                        scope: {
+                            chainId: ETHEREUM_CHAIN_ID,
+                            networkId: 'sepolia',
+                        },
+                        multisigAddress: 'DRAFT_MULTISIG',
+                        multisigDetails: {
+                            threshold: 1,
+                            version: 1,
+                            participantAddresses: ['L1'],
+                        },
+                        rawTransactionsBase64: ['raw'],
+                        proposeType: 'async',
+                        createdAt: new Date('2026-05-06T09:00:00Z'),
+                    },
+                },
+            })
+            usePendingSignaturesSheetStore.setState({
+                signRequestId: 'draft-eth',
+                chainId: 'algorand',
+            })
+
+            renderHook(() => usePendingSignaturesContent())
+
+            expect(useSignRequestDetailQueryMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    scope: {
+                        chainId: ETHEREUM_CHAIN_ID,
+                        networkId: 'sepolia',
+                    },
+                }),
+            )
         })
     })
 

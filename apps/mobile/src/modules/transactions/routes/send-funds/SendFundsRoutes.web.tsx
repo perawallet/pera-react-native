@@ -36,7 +36,7 @@ import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
 import { SelectDestinationScreen } from '../../screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionConfirmationScreen } from '../../screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { ExpressSendScreen } from '../../screens/send-funds/ExpressSendScreen'
-import { ARC59SendSummaryScreen } from '../../screens/send-funds/ARC59SendSummaryScreen'
+import { AssetInboxSendSummaryScreen } from '../../screens/send-funds/AssetInboxSendSummaryScreen'
 import { InsufficientBalanceScreen } from '../../screens/send-funds/InsufficientBalanceScreen'
 import { TransactionProcessingScreen } from '../../screens/send-funds/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
@@ -123,8 +123,8 @@ export const SendFundsRoutes = () => {
             />
 
             <Stack.Screen
-                name='ARC59SendSummary'
-                component={ARC59SendSummaryScreen}
+                name='AssetInboxSendSummary'
+                component={AssetInboxSendSummaryScreen}
                 options={{
                     headerShown: false,
                 }}

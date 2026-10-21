@@ -92,6 +92,7 @@ const OptInHost = ({
                 <OptInConfirmationContent
                     assetId={assetId}
                     accountAddress={addressOf(sender)}
+                    scope={MAINNET_SCOPE}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
@@ -140,6 +141,7 @@ const OptOutHost = ({
                 <OptOutConfirmationContent
                     assetId={accountBalance.assetId}
                     accountAddress={addressOf(sender)}
+                    scope={MAINNET_SCOPE}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },

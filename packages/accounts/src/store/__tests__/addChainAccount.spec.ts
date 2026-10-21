@@ -235,9 +235,10 @@ describe('addChainAccount', () => {
 
         const again = await add(FREE)
 
-        expect(again.chains[FIXTURE_CHAIN_ID]).toEqual(
-            first.chains[FIXTURE_CHAIN_ID],
-        )
+        expect(again.chains[FIXTURE_CHAIN_ID]).toEqual({
+            ...first.chains[FIXTURE_CHAIN_ID],
+            enabledAt: expect.any(Number),
+        })
     })
 
     test('derives for the chain default testnet in developer mode', async () => {

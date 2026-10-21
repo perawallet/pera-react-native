@@ -16,32 +16,32 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type ARC59WarningContentProps = Record<string, never>
+export type AssetInboxWarningContentProps = Record<string, never>
 
 const WARNING_ITEMS = [
     {
-        title: i18nKey('send_funds.arc59_warning.item1'),
+        title: i18nKey('send_funds.asset_inbox_warning.item1'),
         success: true,
     },
     {
-        title: i18nKey('send_funds.arc59_warning.item2'),
+        title: i18nKey('send_funds.asset_inbox_warning.item2'),
         success: true,
     },
     {
-        title: i18nKey('send_funds.arc59_warning.item3'),
+        title: i18nKey('send_funds.asset_inbox_warning.item3'),
         success: false,
     },
     {
-        title: i18nKey('send_funds.arc59_warning.item4'),
+        title: i18nKey('send_funds.asset_inbox_warning.item4'),
         success: false,
     },
     {
-        title: i18nKey('send_funds.arc59_warning.item5'),
+        title: i18nKey('send_funds.asset_inbox_warning.item5'),
         success: false,
     },
 ]
 
-export const ARC59WarningContent = () => {
+export const AssetInboxWarningContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -49,14 +49,14 @@ export const ARC59WarningContent = () => {
         <ConfirmActionContent
             icon='warning'
             iconVariant='error'
-            title={t('send_funds.arc59_warning.title')}
+            title={t('send_funds.asset_inbox_warning.title')}
             message={
                 <PWView style={styles.body}>
                     <PWText
                         variant='body'
                         style={styles.intro}
                     >
-                        {t('send_funds.arc59_warning.message')}
+                        {t('send_funds.asset_inbox_warning.message')}
                     </PWText>
                     <PWView style={styles.warningItems}>
                         {WARNING_ITEMS.map((item, index) => (
@@ -80,8 +80,8 @@ export const ARC59WarningContent = () => {
                 </PWView>
             }
             confirmValue='confirm'
-            confirmLabel={t('send_funds.arc59_warning.confirm')}
-            cancelLabel={t('send_funds.arc59_warning.cancel')}
+            confirmLabel={t('send_funds.asset_inbox_warning.confirm')}
+            cancelLabel={t('send_funds.asset_inbox_warning.cancel')}
             buttonPaddingStyle='dense'
         />
     )

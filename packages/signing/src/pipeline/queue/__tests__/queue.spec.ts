@@ -17,7 +17,7 @@ import type { TransactionSignRequest } from '../../../models'
 const makeRequest = (id: string): TransactionSignRequest => ({
     id,
     type: 'transactions',
-    transport: 'algod',
+    transport: 'network',
     txs: [{ sender: { toString: () => 'ADDR1' } } as any],
 })
 

@@ -178,7 +178,7 @@ export interface SourceMetadata {
     type: SourceType
 
     /**
-     * See {@link SignRequestTransport}; `'algod'` is the implicit default for
+     * See {@link SignRequestTransport}; `'network'` is the implicit default for
      * local requests. External sources always deliver via their own transport
      * regardless — the selector dispatches on `type` first.
      */

@@ -38,8 +38,9 @@ const UNREACHABLE = [
  *
  * `algokit localnet start` reports the indexer healthy as soon as its HTTP
  * endpoint answers, which says nothing about whether conduit is ingesting.
- * A cached `algorandfoundation/conduit-localnet` image that predates the
- * running algod cannot decode its blocks at all, so the indexer answers 200
+ * A conduit that predates the running algod (a stale cached image, or an algod
+ * newer than any published conduit, which `tools/dev/localnet.compose.yml`
+ * pins against) cannot decode its blocks at all, so the indexer answers 200
  * and sits at round 0 forever — algod-only suites stay green and only
  * indexer-backed ones fail, several files later, with a timeout that reads
  * like flake.
@@ -74,13 +75,16 @@ export const assertIndexerCaughtUp = async (
             `The indexer is at round ${indexerRound} but algod is at ${algodRound}, after ${timeoutMs}ms.`,
             '',
             'Check whether conduit is ingesting at all:',
-            '  docker logs algokit_sandbox_conduit',
+            '  pnpm localnet:logs',
             '',
             'If it reports "unknown protocol ... you need to upgrade" or',
-            '"error decoding block", the cached conduit image predates the',
-            'running algod and cannot read its blocks. Fix with:',
+            '"error decoding block", conduit cannot read the running algod\'s',
+            'blocks. Either the cached conduit image is stale:',
             '  docker pull algorandfoundation/conduit-localnet:latest',
             '  pnpm localnet:reset',
+            'or algod is newer than any published conduit. `pnpm localnet` pins',
+            'it (tools/dev/localnet.compose.yml); make sure LocalNet was started',
+            'that way, not with `algokit localnet start`, then pnpm localnet:reset.',
         ].join('\n'),
     )
 }

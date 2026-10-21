@@ -15,10 +15,11 @@ import {
     isDraftSignRequestId,
     useDraftSignRequestStore,
 } from '@perawallet/wallet-core-multisig'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 
 export type UsePendingSignaturesSheetResult = {
-    showSignRequest: (signRequestId: string) => void
+    showSignRequest: (signRequestId: string, chainId?: ChainId) => void
 }
 
 /**
@@ -33,7 +34,7 @@ export const usePendingSignaturesSheet =
         )
 
         const showSignRequest = useCallback(
-            (signRequestId: string) => {
+            (signRequestId: string, chainId?: ChainId) => {
                 // Reads the live id at call time (not a render-captured value)
                 // so a draft the propose just superseded is detected and its
                 // orphaned draft dropped before pointing the sheet at the real id.
@@ -46,7 +47,7 @@ export const usePendingSignaturesSheet =
                 ) {
                     useDraftSignRequestStore.getState().deleteDraft(currentId)
                 }
-                openSheet(signRequestId)
+                openSheet(signRequestId, chainId)
             },
             [openSheet],
         )

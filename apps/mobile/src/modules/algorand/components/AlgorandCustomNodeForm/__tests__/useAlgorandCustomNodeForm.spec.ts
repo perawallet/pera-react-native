@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     customNodeAdapters,
     useNetworkStore,
@@ -24,8 +25,12 @@ import {
     getCustomNetworkConfig,
     setCustomNetwork,
 } from '@packages/chain-algorand/src/blockchain/store/custom-network'
-import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    allCapabilities,
+    fixtureEthereumDescriptor,
+} from '@test-utils/chain-fixtures'
+import { useAlgorandCustomNodeForm } from '../useAlgorandCustomNodeForm'
 
 const { fetchGenesisFromNode, clearCustomNetworkCache } = vi.hoisted(() => ({
     fetchGenesisFromNode: vi.fn(),
@@ -45,7 +50,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     clearCustomNetworkCache,
 }))
 
-describe('useCustomNetworkSheet', () => {
+describe('useAlgorandCustomNodeForm', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
         // The real read and save, with only the network fetch stubbed.
@@ -72,7 +77,9 @@ describe('useCustomNetworkSheet', () => {
             genesisId: 'g',
         })
 
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         expect(result.current.draft).toMatchObject({
             algodUrl: 'http://old:4001',
@@ -83,7 +90,9 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('with no persisted config, the draft seeds blank', () => {
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         expect(result.current.draft).toEqual({
             algodUrl: '',
@@ -96,7 +105,7 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('mounting the hook does not switch the network', () => {
-        renderHook(() => useCustomNetworkSheet())
+        renderHook(() => useAlgorandCustomNodeForm(LEGACY_CHAIN_ID))
 
         expect(useNetworkStore.getState().mode).toBe('live')
     })
@@ -120,7 +129,9 @@ describe('useCustomNetworkSheet', () => {
             }
         })
 
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -153,7 +164,9 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('not calling save persists nothing and does not switch', () => {
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -164,7 +177,9 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('an invalid URL blocks save entirely, including the switch', async () => {
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'not-a-url')
@@ -186,7 +201,9 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('a missing genesis hash blocks save', async () => {
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -208,7 +225,9 @@ describe('useCustomNetworkSheet', () => {
         // `genesis-id`, so without this an otherwise "valid" saved config can
         // carry an empty one — and the extension advertises genesisId to every
         // connected dApp.
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -232,7 +251,9 @@ describe('useCustomNetworkSheet', () => {
             genesisHash: 'FETCHED=',
             genesisId: 'dockernet-v1',
         })
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -252,7 +273,9 @@ describe('useCustomNetworkSheet', () => {
 
     test('a failed fetch surfaces an error but does not block manual entry', async () => {
         fetchGenesisFromNode.mockRejectedValue(new Error('unreachable'))
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
@@ -276,7 +299,9 @@ describe('useCustomNetworkSheet', () => {
             genesisHash: 'OLD=',
             genesisId: 'g',
         })
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => result.current.handleReset())
 
@@ -292,7 +317,9 @@ describe('useCustomNetworkSheet', () => {
             genesisHash: 'OLD=',
             genesisId: 'g',
         })
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('genesisHash', 'NEW=')
@@ -323,7 +350,9 @@ describe('useCustomNetworkSheet', () => {
             configAtClearTime = getCustomNetworkConfig()
         })
 
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('genesisHash', 'NEW=')
@@ -343,7 +372,9 @@ describe('useCustomNetworkSheet', () => {
             genesisHash: 'SAME=',
             genesisId: 'g',
         })
-        const { result } = renderHook(() => useCustomNetworkSheet())
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+        )
 
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://new:4001')
@@ -361,7 +392,9 @@ describe('useCustomNetworkSheet', () => {
         })
 
         test('fetch reports an error and save stays open', async () => {
-            const { result } = renderHook(() => useCustomNetworkSheet())
+            const { result } = renderHook(() =>
+                useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            )
 
             act(() => {
                 result.current.handleFieldChange(
@@ -389,5 +422,33 @@ describe('useCustomNetworkSheet', () => {
             expect(getCustomNetworkConfig()).toBeUndefined()
             expect(useNetworkStore.getState().mode).toBe('live')
         })
+    })
+
+    test('saves nothing for a chain with no custom node adapter', async () => {
+        getProvider().chains.register(
+            fixtureEthereumDescriptor,
+            allCapabilities(false),
+        )
+        const { result } = renderHook(() =>
+            useAlgorandCustomNodeForm('ethereum'),
+        )
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+            result.current.handleFieldChange('genesisHash', 'HASH=')
+            result.current.handleFieldChange('genesisId', 'dockernet-v1')
+        })
+        let saved: boolean | undefined
+        await act(async () => {
+            saved = await result.current.handleSave()
+        })
+
+        expect(saved).toBe(false)
+        expect(getCustomNetworkConfig()).toBeUndefined()
+        expect(useNetworkStore.getState().selectedNetworkByChain).toEqual({})
     })
 })

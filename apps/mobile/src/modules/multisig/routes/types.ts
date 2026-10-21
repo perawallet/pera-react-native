@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+
 /**
- * Params passed to `NameMultisig` when naming an imported shared account
- * (scanned via QR) rather than one built through the in-app creation flow.
- * When absent, `NameMultisig` reads the participants/threshold from the
- * multisig creation store instead.
+ * Passed to `NameMultisig` when naming an imported shared account (scanned via
+ * QR) rather than one built through the in-app creation flow. When absent,
+ * `NameMultisig` reads the participants/threshold from the creation store.
  */
 export type NameMultisigImportParams = {
     address: string
@@ -24,9 +25,9 @@ export type NameMultisigImportParams = {
 }
 
 export type MultisigStackParamList = {
-    CreateMultisig: undefined
+    CreateMultisig: { chainId: ChainId }
     EditParticipant: { index: number; address: string }
-    SetThreshold: undefined
-    NameMultisig: NameMultisigImportParams | undefined
-    ImportSharedAccount: { address: string }
+    SetThreshold: { chainId: ChainId }
+    NameMultisig: { chainId: ChainId; imported?: NameMultisigImportParams }
+    ImportSharedAccount: { address: string; chainId: ChainId }
 }

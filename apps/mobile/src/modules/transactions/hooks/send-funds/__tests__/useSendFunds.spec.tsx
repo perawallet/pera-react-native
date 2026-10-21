@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { toAssetInboxQuote } from '@perawallet/wallet-core-transactions'
 
 import { useSendFundsStore, useSendFunds } from '../useSendFunds'
 
@@ -66,6 +67,25 @@ describe('useSendFundsStore', () => {
         })
 
         expect(result.current.amount).toBe(amount)
+    })
+
+    it('holds the asset inbox quote until the flow resets', () => {
+        const { result } = renderHook(() => useSendFundsStore())
+        const quote = toAssetInboxQuote({ fee: 1 })
+
+        act(() => {
+            result.current.setSendMode('sendAssetInbox')
+            result.current.setAssetInboxQuote(quote)
+        })
+
+        expect(result.current.sendMode).toBe('sendAssetInbox')
+        expect(result.current.assetInboxQuote).toBe(quote)
+
+        act(() => {
+            result.current.reset()
+        })
+
+        expect(result.current.assetInboxQuote).toBeUndefined()
     })
 
     it('sets note', () => {

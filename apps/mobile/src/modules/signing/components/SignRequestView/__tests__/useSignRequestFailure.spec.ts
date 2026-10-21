@@ -115,7 +115,7 @@ const WALLETCONNECT_REQUEST = {
 const DEEPLINK_REQUEST = {
     id: 'req-3',
     type: 'transactions',
-    transport: 'algod',
+    transport: 'network',
     sourceType: 'deeplink',
 } as unknown as SignRequest
 

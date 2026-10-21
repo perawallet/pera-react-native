@@ -106,7 +106,9 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    setOnConfirmedHandler: mocks.setOnConfirmedHandler,
+    broadcasterChainAdapters: {
+        list: () => [{ setOnConfirmedHandler: mocks.setOnConfirmedHandler }],
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({

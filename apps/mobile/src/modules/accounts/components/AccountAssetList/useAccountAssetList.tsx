@@ -20,7 +20,8 @@ import {
     useAccountHoldingSources,
     useCanSignWith,
     assetFromHoldingLiteRow,
-    useAccountScope,
+    accountChainIdOf,
+    useRegisteredChainIds,
     type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
@@ -37,13 +38,11 @@ import {
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useIsChainSwitchedOff,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
@@ -129,7 +128,9 @@ export const useAccountAssetList = ({
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
     // The account's own chain: opt-out and asset management act here.
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(
+        accountChainIdOf(account, useRegisteredChainIds()),
+    )
     const accountAddress = addressOn(account, scope) ?? ''
     const isOwnChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
     const canManageAssets =
@@ -314,6 +315,7 @@ export const useAccountAssetList = ({
                     <OptOutConfirmationContent
                         assetId={item.assetId}
                         accountAddress={accountAddress}
+                        scope={scope}
                     />
                 ),
                 options: {
@@ -350,7 +352,7 @@ export const useAccountAssetList = ({
             showToast,
             t,
             showError,
-            scope.chainId,
+            scope,
         ],
     )
 

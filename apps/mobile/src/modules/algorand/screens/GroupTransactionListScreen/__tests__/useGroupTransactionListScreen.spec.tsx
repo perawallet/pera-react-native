@@ -135,6 +135,7 @@ describe('useGroupTransactionListScreen', () => {
         result.current.handleTransactionPress(row)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            scope: expect.objectContaining({ chainId: 'algorand' }),
             transaction: row.native,
             groupId: 'GROUP_ABC',
         })

@@ -18,6 +18,8 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useGroupTransactionsQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { RootStackParamList } from '@routes/types'
 import {
     toGroupTransactionRows,
@@ -43,6 +45,7 @@ export const useGroupTransactionListScreen =
         const navigation = useNavigation<NavigationProp>()
         const route = useRoute<ScreenRouteProp>()
         const { groupId } = route.params
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
         const { groupTransactions, isLoading, isError } =
             useGroupTransactionsQuery({ groupId })
@@ -54,11 +57,12 @@ export const useGroupTransactionListScreen =
         const handleTransactionPress = useCallback(
             (row: GroupTransactionRow) => {
                 navigation.navigate('TransactionDetails', {
+                    scope,
                     transaction: row.native,
                     groupId,
                 })
             },
-            [navigation, groupId],
+            [navigation, scope, groupId],
         )
 
         const keyExtractor = useCallback(

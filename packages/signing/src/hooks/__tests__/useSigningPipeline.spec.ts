@@ -137,7 +137,7 @@ describe('useSigningPipeline', () => {
             id: 'req-1',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
             ],
@@ -154,7 +154,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [makeUnsignedTransaction('0xFROM')],
         } satisfies TransactionSignRequest
 
@@ -236,7 +236,7 @@ describe('useSigningPipeline', () => {
             id: 'shared-req',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: txs as never,
         }
         mockSigningRequest.currentRequest = request
@@ -259,7 +259,7 @@ describe('useSigningPipeline', () => {
             id: 'kept-req',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: txs as never,
         }
         mockSigningRequest.currentRequest = request
@@ -285,7 +285,7 @@ describe('useSigningPipeline', () => {
             id: 'req-3',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
@@ -376,7 +376,7 @@ describe('useSigningPipeline', () => {
             id: 'req-1',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: [],
         }
         mockSigningRequest.currentRequest = request
@@ -399,7 +399,7 @@ describe('useSigningPipeline', () => {
             id: 'req-1',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: [],
         } as TransactionSignRequest
 
@@ -414,7 +414,7 @@ describe('useSigningPipeline', () => {
             id: 'req-1',
             type: 'transactions',
             chainId: 'algorand',
-            transport: 'algod',
+            transport: 'network',
             txs: [],
         } as TransactionSignRequest
 
@@ -462,7 +462,7 @@ describe('useSigningPipeline', () => {
                     id: 'r1',
                     type: 'transactions',
                     sourceType: 'local',
-                    transport: 'algod',
+                    transport: 'network',
                     txs: [{}],
                 },
                 signableGroups: [{ signerAddress: 'A123' }],

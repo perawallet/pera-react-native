@@ -97,7 +97,7 @@ describe('useSigningActionButtons', () => {
     const mockNavigate = vi.fn()
     const mockGetPreference = vi.fn()
     const mockRequestBottomSheet = vi.fn()
-    const mockRequest = { id: 'test', transport: 'algod', txs: [] }
+    const mockRequest = { id: 'test', transport: 'network', txs: [] }
 
     const setupPipeline = (
         warnings: TransactionWarning[] = [],
@@ -299,7 +299,7 @@ describe('useSigningActionButtons', () => {
         it('skips showError when the resolved signer is hardware', () => {
             setupPipelineCapturingHandler({
                 signerType: 'hardware',
-                transport: { kind: 'algod' },
+                transport: { kind: 'network' },
                 kind: { type: 'transactions' },
             })
 
@@ -318,7 +318,7 @@ describe('useSigningActionButtons', () => {
         it('calls showError when the resolved signer is a local key over algod', () => {
             setupPipelineCapturingHandler({
                 signerType: 'local',
-                transport: { kind: 'algod' },
+                transport: { kind: 'network' },
                 kind: { type: 'transactions' },
             })
 
@@ -337,7 +337,7 @@ describe('useSigningActionButtons', () => {
         it('hands the pipeline error to showError unchanged', () => {
             setupPipelineCapturingHandler({
                 signerType: 'local',
-                transport: { kind: 'algod' },
+                transport: { kind: 'network' },
                 kind: { type: 'transactions' },
             })
 
@@ -358,7 +358,7 @@ describe('useSigningActionButtons', () => {
             )
         })
 
-        it('skips showError when transport is not algod (existing behavior preserved)', () => {
+        it('skips showError when transport is not network (existing behavior preserved)', () => {
             setupPipelineCapturingHandler({
                 signerType: 'local',
                 transport: { kind: 'callback' },

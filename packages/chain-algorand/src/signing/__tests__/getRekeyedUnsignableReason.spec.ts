@@ -93,7 +93,7 @@ const txRequest = (senders: string[], overrides: object = {}): SignRequest =>
     ({
         id: 'r1',
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         txs: senders.map(sender =>
             asUnsignedAlgorandTransaction(
                 makeTestPaymentTx(Address.fromString(sender), {
@@ -209,7 +209,7 @@ describe('resolveAllSignerAddresses', () => {
         ({
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [1n, 2n].map(amount =>
                 asUnsignedAlgorandTransaction(
                     makeTestPaymentTx(SENDER, {
@@ -246,7 +246,7 @@ describe('resolveAllSignerAddresses', () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [makeUnsignedAlgorandTransaction()],
         } as SignRequest
 

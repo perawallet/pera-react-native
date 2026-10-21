@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
-import { useARC59SendSummaryScreen } from '../useARC59SendSummaryScreen'
+import { useAssetInboxSendSummaryScreen } from '../useAssetInboxSendSummaryScreen'
 import { Decimal } from 'decimal.js'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
@@ -21,7 +21,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
-const mockSetArc59Summary = vi.fn()
+const mockSetAssetInboxQuote = vi.fn()
 
 const { mockRequestBottomSheet, mockPushWebView } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -38,9 +38,9 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/components/send-funds/ARC59WarningContent',
+    '@modules/transactions/components/send-funds/AssetInboxWarningContent',
     () => ({
-        ARC59WarningContent: () => null,
+        AssetInboxWarningContent: () => null,
     }),
 )
 
@@ -70,25 +70,32 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     useSpendableBalanceQuery: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+const { sendScope, NATIVE_ASSETS } = vi.hoisted(() => ({
+    sendScope: { current: { chainId: 'algorand', networkId: 'mainnet' } },
+    NATIVE_ASSETS: {
+        algorand: { assetId: '0', decimals: 6, unitName: 'ALGO' },
+        ethereum: { assetId: 'eth', decimals: 18, unitName: 'ETH' },
+    } as Record<
+        string,
+        { assetId: string; decimals: number; unitName: string }
+    >,
 }))
 
-const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
-
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useNativeAsset: () => NATIVE_ASSET,
-    toWholeUnits: vi.fn((value: number | bigint) => Number(value) / 1_000_000),
+    useNativeAsset: (scope: { chainId: string }) =>
+        NATIVE_ASSETS[scope.chainId],
+    toWholeUnits: vi.fn(
+        (value: bigint, asset: { decimals: number }) =>
+            Number(value) / 10 ** asset.decimals,
+    ),
+    formatAssetAmount: vi.fn(
+        (value: Decimal, asset: { unitName: string }) =>
+            `${value.toString()} base ${asset.unitName}`,
+    ),
     useSingleAssetDetailsQuery: vi.fn(() => ({
         data: null,
         isLoading: false,
     })),
-}))
-
-// Stands in for the real network store, which needs the shared store registry this spec mocks away.
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => {
@@ -105,11 +112,6 @@ vi.mock('@perawallet/wallet-core-shared', () => {
         IntegrityRequiredError,
         isIntegrityRequiredError: (error: unknown) =>
             error instanceof IntegrityRequiredError,
-        ALGO_ASSET_NAME: 'ALGO',
-        formatCurrency: vi.fn(
-            (value: number, _precision: number, currency: string) =>
-                `${value.toFixed(6)} ${currency}`,
-        ),
         generateOrderedUniqueId: vi.fn(() => 'webview-id'),
         logger: {
             debug: vi.fn(),
@@ -154,9 +156,10 @@ vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useSendScope: () => sendScope.current,
 }))
 
-// Base units of ALGO.
+// Base units of the native asset.
 const spendableWithMax = (max: number) =>
     (useSpendableBalanceQuery as Mock).mockReturnValue({
         data: {
@@ -171,15 +174,16 @@ const spendableWithMax = (max: number) =>
 // what the send flow carries on to the builder.
 const mockSummary = { quote: { opaque: true }, fundingAmount: 300_000n }
 
-describe('useARC59SendSummaryScreen', () => {
+describe('useAssetInboxSendSummaryScreen', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
+        sendScope.current = { chainId: 'algorand', networkId: 'mainnet' }
         mockRequestBottomSheet.mockResolvedValue(undefined)
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: '123',
             destination: 'RECEIVERADDR',
             amount: '50',
-            setArc59Summary: mockSetArc59Summary,
+            setAssetInboxQuote: mockSetAssetInboxQuote,
         })
 
         // Reset query mocks to known defaults — `vi.clearAllMocks()` clears
@@ -194,13 +198,13 @@ describe('useARC59SendSummaryScreen', () => {
     })
 
     it('returns loading state when query is loading', () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.isLoading).toBe(true)
     })
 
     it('requests the warning bottom sheet on handleSend', async () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         await act(async () => {
             result.current.handleSend()
@@ -217,7 +221,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it("navigates to TransactionProcessing when warning resolves with 'confirm'", async () => {
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         await act(async () => {
             result.current.handleSend()
@@ -231,7 +235,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it('does not navigate when warning is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         await act(async () => {
             result.current.handleSend()
@@ -243,7 +247,7 @@ describe('useARC59SendSummaryScreen', () => {
     })
 
     it('goes back on handleClose', () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         result.current.handleClose()
 
@@ -251,7 +255,7 @@ describe('useARC59SendSummaryScreen', () => {
     })
 
     it('opens the asset inbox support article on handleReadMore', async () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         await act(async () => {
             result.current.handleReadMore()
@@ -273,9 +277,9 @@ describe('useARC59SendSummaryScreen', () => {
             isLoading: false,
         })
 
-        renderHook(() => useARC59SendSummaryScreen())
+        renderHook(() => useAssetInboxSendSummaryScreen())
 
-        expect(mockSetArc59Summary).toHaveBeenCalledWith(mockSummary.quote)
+        expect(mockSetAssetInboxQuote).toHaveBeenCalledWith(mockSummary.quote)
     })
 
     it('computes fee from summary', async () => {
@@ -286,7 +290,7 @@ describe('useARC59SendSummaryScreen', () => {
             isLoading: false,
         })
 
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.fee).toBe(0.3)
         expect(result.current.isLoading).toBe(false)
@@ -301,7 +305,7 @@ describe('useARC59SendSummaryScreen', () => {
             isUnavailableOnNetwork: true,
         })
 
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
     })
@@ -320,7 +324,7 @@ describe('useARC59SendSummaryScreen', () => {
             }),
         })
 
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.isIntegrityBlocked).toBe(true)
     })
@@ -335,44 +339,72 @@ describe('useARC59SendSummaryScreen', () => {
             error: new Error('boom'),
         })
 
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
         expect(result.current.isIntegrityBlocked).toBe(false)
     })
 
-    it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
-        const { useAssetInboxSendSummaryQuery } =
-            await import('@perawallet/wallet-core-transactions')
-        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
-            data: mockSummary,
-            isLoading: false,
+    describe.each([
+        {
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            nativeAssetId: '0',
+            unitName: 'ALGO',
+        },
+        {
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            nativeAssetId: 'eth',
+            unitName: 'ETH',
+        },
+    ])('on $scope.chainId', ({ scope, nativeAssetId, unitName }) => {
+        beforeEach(async () => {
+            sendScope.current = scope
+            const { useAssetInboxSendSummaryQuery } =
+                await import('@perawallet/wallet-core-transactions')
+            ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
+                data: mockSummary,
+                isLoading: false,
+            })
         })
-        spendableWithMax(150_000)
 
-        renderHook(() => useARC59SendSummaryScreen())
+        it("quotes the send on the send flow's scope", async () => {
+            const { useAssetInboxSendSummaryQuery } =
+                await import('@perawallet/wallet-core-transactions')
 
-        expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
-            requiredBalanceLabel: '0.300000 ALGO',
+            const { result } = renderHook(() =>
+                useAssetInboxSendSummaryScreen(),
+            )
+
+            expect(useAssetInboxSendSummaryQuery).toHaveBeenCalledWith(
+                scope,
+                'RECEIVERADDR',
+                '123',
+            )
+            expect(result.current.nativeAsset.unitName).toBe(unitName)
         })
-    })
 
-    it('stays on the summary when the spendable ALGO covers the inbox fees', async () => {
-        const { useAssetInboxSendSummaryQuery } =
-            await import('@perawallet/wallet-core-transactions')
-        ;(useAssetInboxSendSummaryQuery as Mock).mockReturnValue({
-            data: mockSummary,
-            isLoading: false,
+        it('redirects to InsufficientBalance labelled in the native asset when spendable funds fall short', () => {
+            spendableWithMax(150_000)
+
+            renderHook(() => useAssetInboxSendSummaryScreen())
+
+            expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
+                requiredBalanceLabel: `300000 base ${unitName}`,
+            })
         })
-        spendableWithMax(300_000)
 
-        renderHook(() => useARC59SendSummaryScreen())
+        it("stays on the summary when the transfer adapter's spendable native funds cover the quote", () => {
+            spendableWithMax(300_000)
 
-        expect(mockReplace).not.toHaveBeenCalled()
-        expect(useSpendableBalanceQuery).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                asset: { chainId: 'algorand', assetId: '0' },
-                fee: new Decimal(0),
-            }),
-        )
+            renderHook(() => useAssetInboxSendSummaryScreen())
+
+            expect(mockReplace).not.toHaveBeenCalled()
+            expect(useSpendableBalanceQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    asset: { chainId: scope.chainId, assetId: nativeAssetId },
+                    scope,
+                    fee: new Decimal(0),
+                }),
+            )
+        })
     })
 })

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { StackScreenProps } from '@react-navigation/stack'
@@ -27,12 +28,14 @@ export type MessagesStackParamList = {
     MessagesHome: Optional<{ initialTab?: 'Inbox' | 'Notifications' }>
     AssetTransferRequests: {
         item: ASAInbox
+        scope: ChainScope
     }
-    AssetClaimDetail: { assetIndex: number }
+    AssetClaimDetail: { assetIndex: number; scope: ChainScope }
     ClaimProcessing: {
-        mode: 'claimArc59' | 'rejectArc59'
+        mode: 'claim' | 'reject'
         assetIndex: number
         shouldClaimAlgo: boolean
+        scope: ChainScope
     }
     ClaimSuccess: {
         transactionId: string
