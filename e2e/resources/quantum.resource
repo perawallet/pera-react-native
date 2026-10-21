@@ -48,7 +48,8 @@ Reveal Passphrase
         Tap    ${row_locator}
     END
     Tap    ${PASSPHRASE_ACK_REVEAL}
-    Wait Until Page Contains Element    ${PASSPHRASE_WORD}1    timeout=20s
+    ${first_word}=    Indexed Row    ${PASSPHRASE_WORD_ID}    1
+    Wait Until Page Contains Element    ${first_word}    timeout=20s
 
 Passphrase Should Have Words
     [Arguments]    ${count}
