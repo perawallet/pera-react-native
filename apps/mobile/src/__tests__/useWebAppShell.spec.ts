@@ -165,10 +165,18 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
     return {
         ...original,
-        // Identity matters here: the hook passes this reference through to
-        // initializeSyncService verbatim, so the mock must be the exact
-        // same function object rather than a wrapper.
-        setOnConfirmedHandler: mocks.setOnConfirmedHandler,
+        broadcasterChainAdapters: {
+            list: () => [
+                {
+                    chainId: 'algorand',
+                    setOnConfirmedHandler: mocks.setOnConfirmedHandler,
+                },
+                {
+                    chainId: 'ethereum',
+                    setOnConfirmedHandler: mocks.setOnConfirmedHandler,
+                },
+            ],
+        },
     }
 })
 
@@ -425,7 +433,7 @@ describe('useWebAppShell', () => {
         },
     )
 
-    it('bootstraps in order: keystore ready before initializeDatabase; seedNativeAssets receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
+    it('bootstraps in order: keystore ready before initializeDatabase; seedNativeAssets receives getDatabase(); initializeSyncService called once with queryClient + a completion handler for every broadcaster', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -471,10 +479,10 @@ describe('useWebAppShell', () => {
         expect(initArgs.queryClient).toBeDefined()
         const handler = vi.fn()
         ;(initArgs.registerCompletionHandler as (h: unknown) => void)(handler)
-        expect(mocks.setOnConfirmedHandler).toHaveBeenCalledWith(
-            'algorand',
-            handler,
-        )
+        expect(mocks.setOnConfirmedHandler.mock.calls).toEqual([
+            [handler],
+            [handler],
+        ])
     })
 
     it('starts sync when hasAccounts && unlocked, stops on lock, never starts with no accounts', async () => {

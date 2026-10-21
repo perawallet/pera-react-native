@@ -39,7 +39,7 @@ export const InsufficientBalanceScreen = () => {
             variant='error'
             testID='send_insufficient_balance'
             title={t('send_funds.insufficient_balance.title')}
-            body={t('send_funds.insufficient_balance.message', {
+            body={t('send_funds.insufficient_balance.required_message', {
                 amount: requiredBalanceLabel,
             })}
             primaryAction={{

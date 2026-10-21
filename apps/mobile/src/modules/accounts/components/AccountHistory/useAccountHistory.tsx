@@ -231,12 +231,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 navigation.navigate('GroupTransactionList', { groupId })
             } else {
                 navigation.navigate('TransactionDetails', {
+                    scope,
                     transactionId: transaction.id,
                     historyTransaction: transaction,
                 })
             }
         },
-        [navigation, scope.chainId],
+        [navigation, scope],
     )
 
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the

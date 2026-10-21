@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -26,6 +25,8 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
+    useAccountScope,
+    useRegisteredChainIds,
     useCanSignWith,
     useAccountAssetBalanceQuery,
     type AssetWithAccountBalance,
@@ -38,7 +39,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -91,13 +91,13 @@ type UseCollectibleDetailResult = {
 export const useCollectibleDetail = (
     assetId: string,
 ): UseCollectibleDetailResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useSelectedAccount()
+    const scope = useAccountScope(account, useRegisteredChainIds()[0])
     const { data: asset, isPending } = useSingleAssetDetailsQuery(
         assetId,
         scope,
         false,
     )
-    const account = useSelectedAccount()
     const isReadOnly = !useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
         chain: { chainId: scope.chainId, capability: 'manageAssets' },
@@ -203,6 +203,7 @@ export const useCollectibleDetail = (
                 <OptOutConfirmationContent
                     assetId={assetBalance.assetId}
                     accountAddress={accountAddress}
+                    scope={scope}
                 />
             ),
             options: {
@@ -236,6 +237,7 @@ export const useCollectibleDetail = (
     }, [
         account,
         accountAddress,
+        scope,
         asset,
         assetId,
         assetBalance,

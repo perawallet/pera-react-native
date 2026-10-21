@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { Decimal } from 'decimal.js'
 import {
     i18nKey,
     type ChainScope,
@@ -232,7 +233,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         }
         return ids[key]?.[scope.networkId] ?? null
     }),
-    useNativeAsset: () => nativeAsset,
+    useNativeAsset: (scope?: { chainId: string }) =>
+        scope?.chainId === 'ethereum' ? ethereumNativeAsset : nativeAsset,
+    formatAssetAmount: (
+        amount: Decimal,
+        asset: { decimals?: number; unitName?: string },
+    ) =>
+        `${amount.div(10 ** (asset.decimals ?? 0)).toFixed(2)} ${asset.unitName ?? ''}`.trim(),
     nativeAssetFor: () => nativeAsset,
     findNativeAsset: vi.fn((chainId: string) =>
         chainId === 'algorand'

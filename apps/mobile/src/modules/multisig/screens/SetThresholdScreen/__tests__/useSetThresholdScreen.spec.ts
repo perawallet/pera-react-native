@@ -15,10 +15,21 @@ import { renderHook, act } from '@testing-library/react'
 import { useSetThresholdScreen } from '../useSetThresholdScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
+
+const mockRoute = vi.hoisted(() => ({ chainId: 'algorand' }))
+
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return {
+        ...actual,
+        useRoute: () => ({ params: { chainId: mockRoute.chainId } }),
+    }
+})
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
@@ -38,6 +49,7 @@ describe('useSetThresholdScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRoute.chainId = 'algorand'
         ;(useAppNavigation as Mock).mockReturnValue({
             push: mockPush,
         })
@@ -108,7 +120,23 @@ describe('useSetThresholdScreen', () => {
             await result.current.handleContinue()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('NameMultisig')
+        expect(mockPush).toHaveBeenCalledWith('NameMultisig', {
+            chainId: 'algorand',
+        })
+    })
+
+    it('carries an Ethereum route chain to NameMultisig', async () => {
+        mockRoute.chainId = ETHEREUM_CHAIN_ID
+        mockRequestBottomSheet.mockResolvedValueOnce('proceed')
+        const { result } = renderHook(() => useSetThresholdScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('NameMultisig', {
+            chainId: ETHEREUM_CHAIN_ID,
+        })
     })
 
     it('does not navigate when the before-create sheet is dismissed', async () => {

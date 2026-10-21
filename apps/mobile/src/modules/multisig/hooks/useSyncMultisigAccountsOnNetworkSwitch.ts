@@ -10,43 +10,72 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
     chainAccountOf,
     isMultisigAccount,
     multisigParametersOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type WalletMode,
+import type {
+    ChainId,
+    ChainScope,
+    WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    selectChainNetworkId,
+    useNetworkStore,
     useOnDeploymentSwitch,
-    useSelectedScope,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForScope,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
+
+type SyncTarget = { scope: ChainScope; deviceId: string }
 
 /**
  * Re-registers every local multisig account on the new deployment's Pera
- * backend after a switch. The backend is per-deployment, so an account created
- * on one 404s on the other; `createMultisigAccount` is idempotent for a
- * (deterministic) address, so re-issuing it closes the gap. Best-effort:
- * failures are logged, the next switch retries. Ports Android's
- * `SyncJointAccountsOnNetworkSwitchUseCase`.
+ * backend after a switch, on each chain with multisig. The backend is
+ * per-deployment, so an account created on one 404s on the other;
+ * `createMultisigAccount` is idempotent for a (deterministic) address, so
+ * re-issuing it closes the gap. Best-effort: failures are logged, the next
+ * switch retries. Ports Android's `SyncJointAccountsOnNetworkSwitchUseCase`.
  */
 export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
     const deployment = useWalletDeployment()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const deviceId = useScopedDeviceID(scope)
+    const chainIds = useCapableChainIds('multisig')
+    // Primitive keys, so the effect below re-runs only when a multisig chain's
+    // network or device id changes, never on unrelated store writes.
+    const networksKey = useNetworkStore(state =>
+        chainIds.map(chainId => selectChainNetworkId(state, chainId)).join(),
+    )
+    const scopes = useMemo(() => {
+        const networkIds = networksKey.split(',')
+        return chainIds.map((chainId: ChainId, index): ChainScope => ({
+            chainId,
+            networkId: networkIds[index] ?? '',
+        }))
+    }, [chainIds, networksKey])
+    const deviceIdsKey = useDeviceStore(state =>
+        scopes.map(scope => deviceIdForScope(state, scope) ?? '').join(),
+    )
+    const targets = useMemo(() => {
+        const deviceIds = deviceIdsKey.split(',')
+        return scopes.flatMap((scope, index): SyncTarget[] => {
+            const deviceId = deviceIds[index]
+            return deviceId ? [{ scope, deviceId }] : []
+        })
+    }, [scopes, deviceIdsKey])
     const accounts = useAllAccounts()
 
     // The accounts array gets a fresh reference on every store write (incl.
     // background sync ticks). Keep it in a ref so the sync effect can depend
-    // solely on `deployment`/`deviceId` and not re-fire on every tick.
+    // solely on `deployment`/`targets` and not re-fire on every tick.
     const accountsRef = useRef(accounts)
     useEffect(() => {
         accountsRef.current = accounts
@@ -63,25 +92,25 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
 
     useEffect(() => {
         // Bail until the flagged switch's device id lands; this effect re-runs
-        // once `deviceId` updates.
-        if (pendingDeploymentRef.current !== deployment || !deviceId) return
+        // once a target's device id updates.
+        if (pendingDeploymentRef.current !== deployment || targets.length === 0)
+            return
 
         pendingDeploymentRef.current = null
 
-        const multisigAccounts = accountsRef.current
-            .filter(isMultisigAccount)
-            .flatMap(account => {
-                const parameters = multisigParametersOf(
-                    account,
-                    LEGACY_CHAIN_ID,
-                )
-                return parameters ? [{ account, parameters }] : []
-            })
-        if (multisigAccounts.length === 0) return
+        const jobs = targets.flatMap(({ scope, deviceId }) =>
+            accountsRef.current.filter(isMultisigAccount).flatMap(account => {
+                const parameters = multisigParametersOf(account, scope.chainId)
+                return parameters
+                    ? [{ account, parameters, scope, deviceId }]
+                    : []
+            }),
+        )
+        if (jobs.length === 0) return
 
         const run = async () => {
             const results = await Promise.allSettled(
-                multisigAccounts.map(({ parameters }) =>
+                jobs.map(({ parameters, scope, deviceId }) =>
                     createMultisigAccount(scope, {
                         version: parameters.version,
                         threshold: parameters.threshold,
@@ -92,12 +121,12 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
             )
             results.forEach((result, index) => {
                 if (result.status === 'rejected') {
+                    const { account, scope } = jobs[index]
                     logger.warn('Multisig network-switch sync failed', {
                         source: 'useSyncMultisigAccountsOnNetworkSwitch',
-                        address: chainAccountOf(
-                            multisigAccounts[index].account,
-                            LEGACY_CHAIN_ID,
-                        )?.address,
+                        address: chainAccountOf(account, scope.chainId)
+                            ?.address,
+                        chainId: scope.chainId,
                         deployment,
                         error: result.reason,
                     })
@@ -111,5 +140,5 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
                 error,
             })
         })
-    }, [deployment, scope, deviceId])
+    }, [deployment, targets])
 }

@@ -32,15 +32,21 @@ export const useTransactionListScreen = () => {
     const pipeline = useSigningPipeline()
     const { listItems, allTransactions, currentRequest } = pipeline
     const request = currentRequest as Optional<TransactionSignRequest>
+    const scope =
+        currentRequest && 'txs' in currentRequest
+            ? currentRequest.txs[0]?.scope
+            : undefined
 
     const handleTransactionPress = useCallback(
         (item: SingleTransactionItem) => {
+            if (!scope) return
             navigation.navigate('TransactionDetails', {
+                scope,
                 transaction: item.transaction,
                 isExternal: item.isExternal,
             })
         },
-        [navigation],
+        [navigation, scope],
     )
 
     const handleGroupPress = useCallback(

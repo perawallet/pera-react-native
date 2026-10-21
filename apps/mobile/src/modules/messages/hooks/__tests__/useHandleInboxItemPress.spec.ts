@@ -17,6 +17,8 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mockErrorToast = vi.fn()
 
 // `pushScreen` is referenced directly by the mock factory (not behind a hook
@@ -76,7 +78,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt: new Date(0),
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
         act(() => {
             result.current(asInboxItem(asaItem))
         })
@@ -89,7 +91,7 @@ describe('useHandleInboxItemPress', () => {
         type => {
             setCapabilityOverrides({ multisig: false })
 
-            const { result } = renderHook(() => useHandleInboxItemPress())
+            const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
             act(() => {
                 result.current(
                     asInboxItem({ type, data: {}, createdAt: new Date(0) }),
@@ -108,7 +110,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt: new Date(0),
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         act(() => {
             result.current(asInboxItem(asaItem))
@@ -116,7 +118,7 @@ describe('useHandleInboxItemPress', () => {
 
         expect(mockPush).toHaveBeenCalledWith('Messages', {
             screen: 'AssetTransferRequests',
-            params: { item: asaItem.data },
+            params: { item: asaItem.data, scope: SCOPE },
         })
     })
 
@@ -136,7 +138,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt,
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         await act(async () => {
             result.current(asInboxItem(importItem))
@@ -168,7 +170,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt,
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         await act(async () => {
             result.current(asInboxItem(importItem))
@@ -205,7 +207,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt,
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         await act(async () => {
             result.current(asInboxItem(importItem))
@@ -221,7 +223,7 @@ describe('useHandleInboxItemPress', () => {
             createdAt: new Date(0),
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         act(() => {
             result.current(asInboxItem(signItem))

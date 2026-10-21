@@ -97,7 +97,7 @@ describe('signing an Ethereum transaction through the machine', () => {
         const request: TransactionSignRequest = {
             id: 'eth-transfer',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [transfer],
         }
         const input = {
@@ -150,7 +150,7 @@ describe('signing an Ethereum transaction through the machine', () => {
         const request: TransactionSignRequest = {
             id: 'eth-dapp-send',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             sourceType: 'walletconnect',
             txs: [transfer],
             approve,

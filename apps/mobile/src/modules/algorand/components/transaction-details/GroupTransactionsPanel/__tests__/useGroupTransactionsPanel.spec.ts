@@ -48,7 +48,7 @@ describe('useGroupTransactionsPanel', () => {
             useGroupTransactionsPanel({
                 groupId: 'GROUP1',
                 currentTransaction: native('B'),
-                onGroupTransactionPress: vi.fn(),
+                onRelatedTransactionPress: vi.fn(),
             }),
         )
 
@@ -62,19 +62,19 @@ describe('useGroupTransactionsPanel', () => {
     })
 
     it('hands a pressed group transaction on as the TransactionNative the query returned', () => {
-        const onGroupTransactionPress = vi.fn()
+        const onRelatedTransactionPress = vi.fn()
         const { result } = renderHook(() =>
             useGroupTransactionsPanel({
                 groupId: 'GROUP1',
                 currentTransaction: native('B'),
-                onGroupTransactionPress,
+                onRelatedTransactionPress,
             }),
         )
 
         const row = result.current.otherTransactions[1]
         act(() => result.current.handlePress(row.view))
 
-        expect(onGroupTransactionPress).toHaveBeenCalledWith(row.native)
+        expect(onRelatedTransactionPress).toHaveBeenCalledWith(row.native)
         expect(row.native).toEqual(native('C'))
     })
 
@@ -84,7 +84,7 @@ describe('useGroupTransactionsPanel', () => {
         const { result } = renderHook(() =>
             useGroupTransactionsPanel({
                 currentTransaction: native('A'),
-                onGroupTransactionPress: vi.fn(),
+                onRelatedTransactionPress: vi.fn(),
             }),
         )
 

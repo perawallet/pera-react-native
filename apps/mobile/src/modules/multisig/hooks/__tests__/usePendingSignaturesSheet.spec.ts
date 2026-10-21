@@ -59,8 +59,16 @@ describe('usePendingSignaturesSheet', () => {
 
         act(() => result.current.showSignRequest('sr-1'))
 
-        expect(openSheetMock).toHaveBeenCalledWith('sr-1')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-1', undefined)
         expect(deleteDraftMock).not.toHaveBeenCalled()
+    })
+
+    it('carries the opener chain to the sheet', () => {
+        const { result } = renderHook(() => usePendingSignaturesSheet())
+
+        act(() => result.current.showSignRequest('sr-1', 'ethereum'))
+
+        expect(openSheetMock).toHaveBeenCalledWith('sr-1', 'ethereum')
     })
 
     it('drops the superseded draft and swaps to the real id when the open sheet shows a draft', () => {
@@ -71,7 +79,7 @@ describe('usePendingSignaturesSheet', () => {
 
         expect(deleteDraftMock).toHaveBeenCalledTimes(1)
         expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
-        expect(openSheetMock).toHaveBeenCalledWith('sr-real')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-real', undefined)
     })
 
     it('does not delete a draft when the open sheet id is already real', () => {
@@ -81,7 +89,7 @@ describe('usePendingSignaturesSheet', () => {
         act(() => result.current.showSignRequest('sr-real'))
 
         expect(deleteDraftMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('sr-real')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-real', undefined)
     })
 
     it('does not delete the draft when the incoming id is also a draft', () => {
@@ -91,6 +99,6 @@ describe('usePendingSignaturesSheet', () => {
         act(() => result.current.showSignRequest('draft-abc'))
 
         expect(deleteDraftMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('draft-abc')
+        expect(openSheetMock).toHaveBeenCalledWith('draft-abc', undefined)
     })
 })

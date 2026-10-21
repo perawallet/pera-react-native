@@ -11,7 +11,10 @@
  */
 
 import { createWalletAlgorandClient } from '../blockchain'
-import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
+import {
+    toAssetInboxQuote,
+    type AssetInboxSendFlow,
+} from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../network-id'
 import {
     fetchArc59AssetRequests,
@@ -37,17 +40,20 @@ export const algorandAssetInbox: AssetInboxSendFlow = {
             receiver,
             assetId,
         )
-        return { quote, fundingAmount: getArc59SignedFundingAmount(quote) }
+        return {
+            quote: toAssetInboxQuote(quote),
+            fundingAmount: getArc59SignedFundingAmount(quote),
+        }
     },
-    buildSendTxs: async ({ scope, summary, ...params }) => {
+    buildSendTxs: async ({ scope, quote, ...params }) => {
         const network = algorandNetworkOf(scope)
         const transactions = await buildArc59SendViaInboxTxs(
             { algokit: createWalletAlgorandClient(network), network },
             {
                 ...params,
                 // Re-validated here because the send flow carries the
-                // summary opaquely and it decides a headlessly signed payment.
-                summary: arc59SendSummaryResponseSchema.parse(summary),
+                // quote opaquely and it decides a headlessly signed payment.
+                summary: arc59SendSummaryResponseSchema.parse(quote),
             },
         )
         return toUnsignedAlgorandTransactions(transactions, scope)

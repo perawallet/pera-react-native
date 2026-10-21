@@ -18,8 +18,7 @@ import {
     findAddressHolder,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,19 +29,20 @@ import { useStyles } from './styles'
 export type OptOutConfirmationContentProps = {
     assetId: string
     accountAddress: string
+    scope: ChainScope
 }
 
 export const OptOutConfirmationContent = ({
     assetId,
     accountAddress,
+    scope,
 }: OptOutConfirmationContentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
-    const { fee } = useOptOutConfirmationContent()
+    const { fee } = useOptOutConfirmationContent(accountAddress, scope)
 
     const accountName = useAccountsStore(s => {
         const account = findAddressHolder(s.accounts, scope, accountAddress)
