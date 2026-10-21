@@ -25,9 +25,16 @@ import {
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
+import {
+    findContactByAddress,
+    useContacts,
+    type Contact,
+} from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { IconName } from '@components/core'
@@ -119,7 +126,7 @@ export const useAddressDisplay = ({
     const { copyToClipboard } = useClipboard()
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
-    const { findContacts } = useContacts()
+    const { contacts } = useContacts()
 
     const isAddressOnly = displayType === 'address-only'
 
@@ -130,19 +137,20 @@ export const useAddressDisplay = ({
         return findAccountByAddressOn(accounts, scope.chainId, address) ?? null
     }, [displayType, accounts, address, scope.chainId])
 
+    // A caller that names the address's chain gets only that family's
+    // contacts; without one the address may belong to any family.
+    const contactFamily = addressScope
+        ? getChainDescriptor(addressScope.chainId).family
+        : undefined
     const contact = useMemo(() => {
         if (isAddressOnly) {
             return null
         }
         return (
-            findContacts({
-                keyword: address,
-                matchAddress: true,
-                matchName: false,
-                matchNFD: true,
-            }).at(0) ?? null
+            findContactByAddress(contacts, address, contactFamily) ??
+            null
         )
-    }, [isAddressOnly, address, findContacts])
+    }, [isAddressOnly, address, contacts, contactFamily])
 
     const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
         enabled: !isAddressOnly && !account && !contact,

@@ -94,3 +94,22 @@ export const isSameFamilyAddress = (
     if (codec === undefined) return a === b
     return codec.isValid(a) && codec.isValid(b) && codec.areEqual(a, b)
 }
+
+/**
+ * The first contact holding `address`, compared by each family's codec so
+ * checksum case doesn't matter; only on `family` when given.
+ */
+export const findContactByAddress = <C extends Pick<Contact, 'addresses'>>(
+    contacts: readonly C[],
+    address: string,
+    family?: ChainFamily,
+): Optional<C> =>
+    contacts.find(contact => {
+        if (family !== undefined) {
+            const held = contact.addresses[family]
+            return !!held && isSameFamilyAddress(family, held, address)
+        }
+        return contactAddressEntries(contact.addresses).some(entry =>
+            isSameFamilyAddress(entry.family, entry.address, address),
+        )
+    })

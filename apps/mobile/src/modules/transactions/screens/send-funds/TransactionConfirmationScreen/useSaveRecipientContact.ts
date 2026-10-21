@@ -20,7 +20,7 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
-    isSameFamilyAddress,
+    findContactByAddress,
     useContacts,
 } from '@perawallet/wallet-core-contacts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -47,10 +47,8 @@ export const useSaveRecipientContact = (
         if (findAccountByAddressOn(accounts, scope.chainId, destination)) {
             return false
         }
-        return !contacts.some(contact => {
-            const held = contact.addresses[family]
-            return !!held && isSameFamilyAddress(family, held, destination)
-        })
+        // The To row resolves its contact by the same rule.
+        return !findContactByAddress(contacts, destination, family)
     }, [destination, accounts, scope.chainId, contacts, family])
 
     const saveRecipient = useCallback(() => {

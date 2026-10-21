@@ -37,8 +37,16 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: () => ({ contacts: mocks.contacts }),
-    isSameFamilyAddress: (_family: string, a: string, b: string) =>
-        a.toLowerCase() === b.toLowerCase(),
+    findContactByAddress: (
+        contacts: { addresses: Record<string, string> }[],
+        address: string,
+        family: string,
+    ) =>
+        contacts.find(
+            contact =>
+                contact.addresses[family]?.toLowerCase() ===
+                address.toLowerCase(),
+        ),
 }))
 
 vi.mock('@react-navigation/native', () => ({

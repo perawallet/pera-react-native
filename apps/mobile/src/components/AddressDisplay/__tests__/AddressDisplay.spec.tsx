@@ -11,16 +11,27 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    onTestFinished,
+    vi,
+} from 'vitest'
 import {
     type Optional,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { PWText } from '@components/core'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { AddressDisplay } from '../AddressDisplay'
 
 const mockUseAllAccounts = vi.fn(() => [] as unknown[])
-const mockFindContacts = vi.fn(() => [] as unknown[])
+let mockContacts: { name: string; addresses: Record<string, string> }[] = []
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     findAccountByAddressOn: (
@@ -42,7 +53,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: () => ({ findContacts: mockFindContacts }),
+    useContacts: () => ({ contacts: mockContacts }),
+    findContactByAddress: (
+        contacts: { addresses: Record<string, string> }[],
+        address: string,
+    ) =>
+        contacts.find(contact =>
+            Object.values(contact.addresses).includes(address),
+        ),
 }))
 
 const mockUseNfdForAddress = vi.fn(() => ({
@@ -59,7 +77,7 @@ describe('AddressDisplay', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
+        mockContacts = []
         mockUseNfdForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
@@ -67,6 +85,8 @@ describe('AddressDisplay', () => {
     })
 
     it("resolves names on the address's own chain when given its scope", () => {
+        registerEthereumChain()
+        onTestFinished(restoreAlgorandOnlyChains)
         const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
         render(
@@ -100,7 +120,7 @@ describe('AddressDisplay', () => {
 
     it('renders a matched contact without an image as a person icon, the contact name and the truncated address', () => {
         const address = 'A'.repeat(58)
-        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
+        mockContacts = [{ name: 'Alice', addresses: { algorand: address } }]
 
         render(<AddressDisplay address={address} />)
 
@@ -146,7 +166,7 @@ describe('AddressDisplay', () => {
     it('renders only the contact name when it equals the truncated address', () => {
         const address = 'A'.repeat(58)
         const truncated = truncateAlgorandAddress(address)
-        mockFindContacts.mockReturnValue([{ name: truncated, address }])
+        mockContacts = [{ name: truncated, addresses: { algorand: address } }]
 
         render(<AddressDisplay address={address} />)
 
@@ -169,7 +189,7 @@ describe('AddressDisplay', () => {
 
     it('forwards arbitrary textProps to the contact name text', () => {
         const address = 'A'.repeat(58)
-        mockFindContacts.mockReturnValue([{ name: 'Alice', address }])
+        mockContacts = [{ name: 'Alice', addresses: { algorand: address } }]
 
         render(
             <AddressDisplay
@@ -217,7 +237,7 @@ describe('AddressDisplay', () => {
 
         it('renders truncated address as primary and contact name as secondary when the address matches a contact', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
 
             render(
                 <AddressDisplay
@@ -255,7 +275,7 @@ describe('AddressDisplay', () => {
 
         it('prefers contact name over NFD when both match the same address', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
             mockUseNfdForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
@@ -286,7 +306,7 @@ describe('AddressDisplay', () => {
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
             })
-            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
 
             render(
                 <AddressDisplay
