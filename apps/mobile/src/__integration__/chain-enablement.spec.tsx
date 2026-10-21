@@ -164,7 +164,7 @@ describe('Flow: an account enables chains as it is used on them', () => {
         useReceiveFundsStore.getState().reset()
     })
 
-    it('Given an HD account on Ethereum alone, when the user receives on Base, then Base joins it at the same address and its balance is read from Base', async () => {
+    it('Given an HD account on Ethereum alone, when the user adds Base on Choose Network, then Base joins it at the same address, the list stays open, and the Base row opens its QR', async () => {
         server.use(...handlersFor([]))
         const account = await seedEthereumOnlyHdAccount()
         const ethereumAddress = chainAccountOf(account, 'ethereum')!.address
@@ -183,26 +183,34 @@ describe('Flow: an account enables chains as it is used on them', () => {
             'polygon',
         ]) {
             expect(
-                screen.getByTestId(`receive_chain_row_${chainId}`),
+                screen.getByTestId(`receive_chain_add_${chainId}`),
             ).toBeTruthy()
         }
+        expect(screen.queryByTestId('receive_chain_add_ethereum')).toBeNull()
+        // EVM chains share one address, so a chain not added yet shows it too.
         expect(
             screen.getAllByText(
-                'receive_funds.chain_selection.eligible_subtitle',
+                addressCodecs.get('ethereum').truncate(ethereumAddress),
             ),
-        ).toHaveLength(5)
-        // Algorand is another family: a receive doesn't add it in passing.
+        ).toHaveLength(6)
+        // Algorand is another family: receive doesn't offer it.
         expect(screen.queryByTestId('receive_chain_row_algorand')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('receive_chain_add_base'))
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.queryByTestId('receive_chain_add_base'),
+                ).toBeNull(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(screen.queryByTestId('QRCode')).toBeNull()
 
         fireEvent.click(screen.getByTestId('receive_chain_row_base'))
 
         const checksummed = addressCodecs.get('base').normalize(ethereumAddress)
-        await waitFor(
-            () => expect(screen.getByText(checksummed)).toBeTruthy(),
-            {
-                timeout: SLOW_WAIT_TIMEOUT_MS,
-            },
-        )
+        expect(screen.getByText(checksummed)).toBeTruthy()
         const [held] = useAccountsStore.getState().accounts
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(chainAccountOf(held!, 'base')).toMatchObject({

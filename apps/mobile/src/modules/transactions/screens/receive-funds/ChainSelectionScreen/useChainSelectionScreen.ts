@@ -19,7 +19,10 @@ import {
     useEnableChain,
     type AccountChainOption,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
@@ -30,6 +33,7 @@ import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
+/** `address` is truncated by the chain's codec for display. */
 export type ReceiveChainRow = AccountChainOption & { displayName: string }
 
 export type UseChainSelectionScreenResult = {
@@ -37,6 +41,7 @@ export type UseChainSelectionScreenResult = {
     /** The chain being enabled while its address is derived; unset otherwise. */
     enablingChainId: Optional<ChainId>
     handleSelectChain: (chainId: ChainId) => void
+    handleAddChain: (chainId: ChainId) => void
 }
 
 export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
@@ -60,6 +65,11 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
                       ...option,
                       displayName:
                           chainDisplayNameOf(option.chainId) ?? option.chainId,
+                      address:
+                          option.address &&
+                          addressCodecs
+                              .get(option.chainId)
+                              .truncate(option.address),
                   }))
                 : [],
         [selectedAccount, optionsOf],
@@ -71,13 +81,18 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
 
     const handleSelectChain = useCallback(
         (chainId: ChainId) => {
+            if (!rowByChain.get(chainId)?.isEnabled) return
+            setChainId(chainId)
+            navigation.navigate('QRView')
+        },
+        [rowByChain, setChainId, navigation],
+    )
+
+    const handleAddChain = useCallback(
+        (chainId: ChainId) => {
             const row = rowByChain.get(chainId)
-            if (!selectedAccount || !row || isEnablingRef.current) return
-            if (row.isEnabled) {
-                setChainId(chainId)
-                navigation.navigate('QRView')
-                return
-            }
+            if (!selectedAccount || !row || row.isEnabled) return
+            if (isEnablingRef.current) return
             isEnablingRef.current = true
             setEnablingChainId(chainId)
             void (async () => {
@@ -87,10 +102,7 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
                         chainId,
                         'user',
                     )
-                    if (!isMounted()) return
-                    setSelectedAccount(account)
-                    setChainId(chainId)
-                    navigation.navigate('QRView')
+                    if (isMounted()) setSelectedAccount(account)
                 } catch (error) {
                     if (!isMounted()) return
                     showError(error, t('errors.general.title'), {
@@ -106,8 +118,6 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
             rowByChain,
             selectedAccount,
             setSelectedAccount,
-            setChainId,
-            navigation,
             enableChain,
             isMounted,
             showError,
@@ -115,5 +125,5 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
         ],
     )
 
-    return { rows, enablingChainId, handleSelectChain }
+    return { rows, enablingChainId, handleSelectChain, handleAddChain }
 }

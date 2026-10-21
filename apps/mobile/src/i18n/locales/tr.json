@@ -2611,7 +2611,7 @@
         },
         "chain_selection": {
             "title": "Ağ seç",
-            "eligible_subtitle": "Henüz eklenmedi"
+            "add_action": "Ekle"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",

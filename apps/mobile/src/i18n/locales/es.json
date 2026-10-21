@@ -2610,8 +2610,8 @@
             "title": "Seleccionar cuenta"
         },
         "chain_selection": {
-            "title": "Seleccionar red",
-            "eligible_subtitle": "Aún no añadida"
+            "title": "Elegir red",
+            "add_action": "Añadir"
         },
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
