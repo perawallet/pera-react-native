@@ -175,6 +175,8 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             [AnalyticsMetadataKey.DappUrl]:
                 currentRequest.sourceMetadata?.url ?? '',
             [AnalyticsMetadataKey.TransactionCount]: allTransactions.length,
+            [AnalyticsMetadataKey.ChainId]:
+                chainIdOfSignRequest(currentRequest),
         }
     }, [currentRequest, allTransactions.length])
 

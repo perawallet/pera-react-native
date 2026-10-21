@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import {
     findAccountByAddressOn,
     useAllAccounts,
+    useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -37,7 +38,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
-import { getPreferredDappIcon } from '@modules/walletconnect'
+import { getPreferredDappIcon, uniqueChainIds } from '@modules/walletconnect'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
@@ -131,6 +132,8 @@ export const useSettingsWalletConnectDetailsScreen = (
     const { pushWebView } = useWebView()
     const navigation = useNavigation()
     const accounts = useAllAccounts()
+    // A session listing no network still logs its disconnect once.
+    const fallbackChainId = useRegisteredChainIds()[0]
 
     const connectedAccounts = useMemo(
         () =>
@@ -146,15 +149,22 @@ export const useSettingsWalletConnectDetailsScreen = (
 
     const handleDelete = () => {
         setIsLoading(true)
-        trackEvent(WalletConnectEvent.SessionDisconnected, {
-            [AnalyticsMetadataKey.DappName]: connection.peer.name,
-            [AnalyticsMetadataKey.DappUrl]: connection.peer.url ?? '',
-            // Not the session topic: `WcSessionTopic` would identify one
-            // user's live session in the analytics pipeline.
-            [AnalyticsMetadataKey.WcVersion]: wcVersionFor(
-                connection.protocolVersion,
-            ),
-        })
+        // Firebase params are scalars, so a session spanning chains logs once per chain.
+        for (const chainId of uniqueChainIds(
+            connection.networks.map(network => network.chainId),
+            fallbackChainId,
+        )) {
+            trackEvent(WalletConnectEvent.SessionDisconnected, {
+                [AnalyticsMetadataKey.DappName]: connection.peer.name,
+                [AnalyticsMetadataKey.DappUrl]: connection.peer.url ?? '',
+                // Not the session topic: `WcSessionTopic` would identify one
+                // user's live session in the analytics pipeline.
+                [AnalyticsMetadataKey.WcVersion]: wcVersionFor(
+                    connection.protocolVersion,
+                ),
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
+        }
         void revoke(connection.id)
             .then(() => {
                 // Only leave the screen once the session is genuinely gone —

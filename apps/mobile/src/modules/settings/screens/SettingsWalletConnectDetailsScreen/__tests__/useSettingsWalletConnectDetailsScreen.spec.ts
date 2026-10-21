@@ -70,6 +70,7 @@ vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mocks.accounts,
+    useRegisteredChainIds: () => ['algorand', 'ethereum'],
     findAccountByAddressOn: (
         accounts: MockAccount[],
         chainId: string,
@@ -99,6 +100,7 @@ vi.mock('@analytics', () => ({
         DappName: 'dappName',
         DappUrl: 'dappUrl',
         WcVersion: 'wcVersion',
+        ChainId: 'chain_id',
     },
 }))
 
@@ -155,8 +157,56 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
 
         expect(trackEvent).toHaveBeenCalledWith(
             'session-disconnected',
-            expect.objectContaining({ wcVersion: '2' }),
+            expect.objectContaining({ wcVersion: '2', chain_id: 'algorand' }),
         )
+    })
+
+    it('still tracks the disconnect once when the session lists no network', async () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                networks: [],
+            }),
+        )
+
+        await act(async () => {
+            result.current.handleDelete()
+        })
+
+        expect(vi.mocked(trackEvent).mock.calls).toEqual([
+            [
+                'session-disconnected',
+                expect.objectContaining({ chain_id: 'algorand' }),
+            ],
+        ])
+    })
+
+    it('tracks the disconnect once per distinct chain the session spans', async () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                networks: [
+                    { chainId: 'algorand', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'sepolia' },
+                ],
+            }),
+        )
+
+        await act(async () => {
+            result.current.handleDelete()
+        })
+
+        expect(vi.mocked(trackEvent).mock.calls).toEqual([
+            [
+                'session-disconnected',
+                expect.objectContaining({ chain_id: 'algorand' }),
+            ],
+            [
+                'session-disconnected',
+                expect.objectContaining({ chain_id: 'ethereum' }),
+            ],
+        ])
     })
 
     // goBack() must not run from .finally: a failed revoke would close the

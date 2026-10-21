@@ -19,7 +19,10 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
@@ -40,8 +43,29 @@ import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
+import { uniqueChainIds } from '../../utils/uniqueChainIds'
 
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
+
+type ApprovedChain = { chainId: ChainId; address: string | undefined }
+
+// The chains the session settles with an address, each with its first
+// selected address on that chain; a requested chain no selected account holds
+// is not approved. With none, the session still logs once, on `fallback`.
+const approvedChainsOf = (
+    selected: readonly WalletAccount[],
+    accounts: WalletAccount[],
+    requestedChains: readonly ChainId[],
+    fallback: ApprovedChain,
+): ApprovedChain[] => {
+    const approved = uniqueChainIds(requestedChains).flatMap(chainId => {
+        const [address] = selected.flatMap(account =>
+            signingAddressesOn(account, accounts, [chainId]),
+        )
+        return address === undefined ? [] : [{ chainId, address }]
+    })
+    return approved.length > 0 ? approved : [fallback]
+}
 
 export type UseConnectionApprovalViewResult = {
     /** The accounts that can sign on the proposal's chains, in the user's sort order. */
@@ -117,6 +141,8 @@ export const useConnectionApprovalView = (
     const { pushWebView } = useWebView()
     const accounts = useAllAccounts()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    // A proposal naming no chain still logs its session event once.
+    const fallbackChainId = scope.chainId
     const signingAccounts = useSigningAccountsOn(proposal.requested.chains)
     // Totals are keyed by address across every chain, so an Ethereum account
     // ranks by its own balance rather than as if empty.
@@ -149,10 +175,16 @@ export const useConnectionApprovalView = (
     // directly; `handleCancel` would see the guard held and no-op.
     const rejectProposal = useCallback(
         async (reason?: string) => {
-            trackEvent(WalletConnectEvent.SessionRejected, {
-                [AnalyticsMetadataKey.DappName]: proposal.peer.name,
-                [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
-            })
+            for (const chainId of uniqueChainIds(
+                proposal.requested.chains,
+                fallbackChainId,
+            )) {
+                trackEvent(WalletConnectEvent.SessionRejected, {
+                    [AnalyticsMetadataKey.DappName]: proposal.peer.name,
+                    [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
+                    [AnalyticsMetadataKey.ChainId]: chainId,
+                })
+            }
             try {
                 await proposal.reject(reason)
             } catch (error) {
@@ -161,7 +193,7 @@ export const useConnectionApprovalView = (
                 })
             }
         },
-        [proposal],
+        [fallbackChainId, proposal],
     )
 
     const handleCancel = useCallback(async () => {
@@ -184,16 +216,17 @@ export const useConnectionApprovalView = (
             //
             // Before approve, so a 'cancel' can't leave a half-approved connection;
             // this await is the async gap `isHandlingRef` covers.
-            const addresses = selectedAccounts.flatMap(accountId => {
+            const selected = selectedAccounts.flatMap(accountId => {
                 const account = accounts.find(({ id }) => id === accountId)
-                return account
-                    ? signingAddressesOn(
-                          account,
-                          accounts,
-                          proposal.requested.chains,
-                      )
-                    : []
+                return account ? [account] : []
             })
+            const addresses = selected.flatMap(account =>
+                signingAddressesOn(
+                    account,
+                    accounts,
+                    proposal.requested.chains,
+                ),
+            )
             const decision = await confirmQuantumDappUsage(addresses)
             if (decision === 'cancel') {
                 await rejectProposal()
@@ -203,13 +236,22 @@ export const useConnectionApprovalView = (
             setIsConnecting(true)
             try {
                 await proposal.approve(addresses)
-                trackEvent(WalletConnectEvent.SessionApproved, {
-                    [AnalyticsMetadataKey.DappName]: proposal.peer.name,
-                    [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
-                    [AnalyticsMetadataKey.AccountAddress]: addresses[0],
-                    [AnalyticsMetadataKey.TotalAccount]:
-                        selectedAccounts.length,
-                })
+                // Firebase params are scalars, so a session spanning chains logs once per chain.
+                for (const { chainId, address } of approvedChainsOf(
+                    selected,
+                    accounts,
+                    proposal.requested.chains,
+                    { chainId: fallbackChainId, address: addresses[0] },
+                )) {
+                    trackEvent(WalletConnectEvent.SessionApproved, {
+                        [AnalyticsMetadataKey.DappName]: proposal.peer.name,
+                        [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
+                        [AnalyticsMetadataKey.AccountAddress]: address,
+                        [AnalyticsMetadataKey.TotalAccount]:
+                            selectedAccounts.length,
+                        [AnalyticsMetadataKey.ChainId]: chainId,
+                    })
+                }
             } catch (error) {
                 logger.error('Failed to approve a connection proposal', {
                     error,
@@ -245,6 +287,7 @@ export const useConnectionApprovalView = (
         errorToast,
         showError,
         t,
+        fallbackChainId,
     ])
 
     // dApp-asserted and not yet approved: gated to https:// before the WebView.

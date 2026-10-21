@@ -364,6 +364,105 @@ describe('useConnectionApprovalView', () => {
                 [AnalyticsMetadataKey.DappUrl]: 'https://tinyman.org',
                 [AnalyticsMetadataKey.AccountAddress]: 'AAAA',
                 [AnalyticsMetadataKey.TotalAccount]: 1,
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            }),
+        )
+    })
+
+    it('tracks SessionApproved once per distinct requested chain', async () => {
+        const proposal = makeProposal({
+            requested: {
+                networks: ['mainnet'],
+                chains: ['algorand', 'ethereum'],
+                methods: [],
+            },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-both'))
+        await act(() => result.current.handleConnect())
+
+        const approved = trackEvent.mock.calls
+            .filter(([event]) => event === WalletConnectEvent.SessionApproved)
+            .map(([, props]) => [
+                props?.[AnalyticsMetadataKey.ChainId],
+                props?.[AnalyticsMetadataKey.AccountAddress],
+            ])
+        expect(approved).toEqual([
+            ['algorand', 'BBBB'],
+            ['ethereum', '0xBBBB'],
+        ])
+    })
+
+    it('tracks SessionApproved only for the requested chains a selected account holds', async () => {
+        const proposal = makeProposal({
+            requested: {
+                networks: ['mainnet'],
+                chains: ['algorand', 'ethereum'],
+                methods: [],
+            },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-algo'))
+        await act(() => result.current.handleConnect())
+
+        const approvedChains = trackEvent.mock.calls
+            .filter(([event]) => event === WalletConnectEvent.SessionApproved)
+            .map(([, props]) => props?.[AnalyticsMetadataKey.ChainId])
+        expect(approvedChains).toEqual(['algorand'])
+    })
+
+    it('still tracks SessionApproved and SessionRejected once when the proposal names no chain', async () => {
+        const proposal = makeProposal({
+            requested: { networks: ['mainnet'], chains: [], methods: [] },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-algo'))
+        await act(() => result.current.handleConnect())
+        await act(() => result.current.handleCancel())
+
+        const chainsOf = (event: string) =>
+            trackEvent.mock.calls
+                .filter(([name]) => name === event)
+                .map(([, props]) => props?.[AnalyticsMetadataKey.ChainId])
+        expect(chainsOf(WalletConnectEvent.SessionApproved)).toEqual([
+            'algorand',
+        ])
+        expect(chainsOf(WalletConnectEvent.SessionRejected)).toEqual([
+            'algorand',
+        ])
+    })
+
+    it('tracks SessionApproved once for a chain requested on two networks', async () => {
+        const proposal = makeProposal({
+            requested: {
+                networks: ['mainnet', 'testnet'],
+                chains: ['algorand', 'algorand'],
+                methods: [],
+            },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-algo'))
+        await act(() => result.current.handleConnect())
+
+        const approvedCalls = trackEvent.mock.calls.filter(
+            ([event]) => event === WalletConnectEvent.SessionApproved,
+        )
+        expect(approvedCalls).toHaveLength(1)
+        expect(approvedCalls[0][1]).toEqual(
+            expect.objectContaining({
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
             }),
         )
     })
@@ -381,6 +480,7 @@ describe('useConnectionApprovalView', () => {
             expect.objectContaining({
                 [AnalyticsMetadataKey.DappName]: 'Tinyman',
                 [AnalyticsMetadataKey.DappUrl]: 'https://tinyman.org',
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
             }),
         )
     })
