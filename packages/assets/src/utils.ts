@@ -42,7 +42,7 @@ export const isCollectible = (asset: PeraAsset): boolean => {
 
 /** A collectible whose chain says a holding can only ever be 1. */
 export const isUniqueCollectible = (asset: PeraAsset): boolean =>
-    isCollectible(asset) && asset.peraMetadata?.collectible?.isUnique === true
+    isCollectible(asset) && asset.peraMetadata?.isUnique === true
 
 /**
  * Unique collectibles format to an empty string — their quantity is implicit.

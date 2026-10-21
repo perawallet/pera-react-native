@@ -124,7 +124,7 @@ describe('useCollectibleItem', () => {
                     isDeleted: false,
                     verificationTier: 'verified',
                     type: PeraAssetType.collectible,
-                    collectible: { isUnique },
+                    isUnique,
                 },
             })
 

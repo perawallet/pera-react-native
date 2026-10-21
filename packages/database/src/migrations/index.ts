@@ -32,7 +32,7 @@ import m0016 from './0016_submission_attempts_history_entry.sql?raw'
 import m0017 from './0017_submission_attempts_max_fee.sql?raw'
 import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
 import m0019 from './0019_chain_data_scope_columns.sql?raw'
-import m0020 from './0020_collectible_uniqueness_refetch.sql?raw'
+import m0020 from './0020_collectible_uniqueness_backfill.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -89,7 +89,7 @@ export const migrations: MigrationConfig = {
     // Copied in SQL before the drops so a pending attempt keeps its validity
     // window; the renames carry primary keys and indexes along.
     '0019_chain_data_scope_columns': m0019,
-    // Marks cached collectibles stale so the next sync re-fetches them and
-    // writes the chain-set uniqueness flag; until then they read as not unique.
-    '0020_collectible_uniqueness_refetch': m0020,
+    // Writes Algorand's uniqueness flag (supply 1, no decimals) into cached
+    // collectibles locally, so they don't read as editions until a refetch.
+    '0020_collectible_uniqueness_backfill': m0020,
 }

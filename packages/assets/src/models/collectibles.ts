@@ -47,11 +47,6 @@ export type CollectibleTrait = {
 export type PeraCollectible = {
     title?: string
     standard?: CollectibleStandard
-    /**
-     * Set by the chain: true when a holding can only ever be 1. Absent on a row
-     * cached before the chain set it, which reads as false.
-     */
-    isUnique?: boolean
     primaryImage?: string
     mediaType?: CollectibleMediaType
     explorerUrl?: string

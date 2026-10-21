@@ -43,12 +43,10 @@ export const resolveMediaType = (
 
 export const transformCollectibleResponse = (
     data: CollectibleResponse,
-    supply: { totalSupply: Decimal; decimals: number },
 ): PeraCollectible => {
     return {
         title: data.title,
         standard: data.standard as Optional<CollectibleStandard>,
-        isUnique: isUniqueAlgorandCollectible(supply),
         primaryImage: data.primary_image ?? undefined,
         mediaType: data.media_type as CollectibleMediaType,
         explorerUrl: data.explorer_url,
@@ -86,11 +84,15 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
             isVerified: data.is_verified ?? false,
             explorerUrl: data.explorer_url ?? undefined,
             collectible: data.collectible
-                ? transformCollectibleResponse(data.collectible, {
-                      totalSupply,
-                      decimals: data.fraction_decimals,
-                  })
+                ? transformCollectibleResponse(data.collectible)
                 : undefined,
+            isUnique:
+                data.type === 'collectible'
+                    ? isUniqueAlgorandCollectible({
+                          totalSupply,
+                          decimals: data.fraction_decimals,
+                      })
+                    : undefined,
             type: data.type as PeraAssetType,
             labels: data.labels ?? undefined,
             logo: data.logo,

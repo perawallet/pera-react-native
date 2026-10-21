@@ -63,8 +63,8 @@ const NFT: PeraAsset = {
         collectible: {
             title: 'Cool NFT #1',
             collection: { name: 'Cool Collection' },
-            isUnique: true,
         },
+        isUnique: true,
     },
 }
 
@@ -76,7 +76,7 @@ const EDITION: PeraAsset = {
     totalSupply: new Decimal(500),
     peraMetadata: {
         ...NFT.peraMetadata!,
-        collectible: { ...NFT.peraMetadata!.collectible, isUnique: false },
+        isUnique: false,
     },
 }
 

@@ -188,7 +188,7 @@ describe('utils', () => {
                 isDeleted: false,
                 verificationTier: 'unverified',
                 type: PeraAssetType.collectible,
-                collectible: { isUnique },
+                isUnique,
             },
         })
 
@@ -285,7 +285,7 @@ describe('utils', () => {
                     isDeleted: false,
                     verificationTier: 'unverified',
                     type: PeraAssetType.collectible,
-                    collectible: { isUnique: true },
+                    isUnique: true,
                 },
             }
 

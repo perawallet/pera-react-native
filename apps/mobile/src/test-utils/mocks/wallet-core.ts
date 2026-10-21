@@ -217,10 +217,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset.peraMetadata?.type === 'collectible',
     isUniqueCollectible: (asset: {
-        peraMetadata?: { type?: string; collectible?: { isUnique?: boolean } }
+        peraMetadata?: { type?: string; isUnique?: boolean }
     }) =>
         asset.peraMetadata?.type === 'collectible' &&
-        asset.peraMetadata.collectible?.isUnique === true,
+        asset.peraMetadata.isUnique === true,
     KNOWN_ASSET_IDS: {
         USDC: new Map([
             ['algorand/mainnet', '31566704'],
