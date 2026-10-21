@@ -59,6 +59,7 @@ import {
     canDerive,
     canImportRawKey,
     chainAccountOf,
+    defaultChains,
     eligibleChains,
     eligibleChainsInFamily,
     findAddressHolder,
@@ -689,6 +690,46 @@ const removeUnreferencedKeys = async (
     for (const keyPairId of new Set(keyPairIds)) {
         await removeUnreferencedKey(accounts, keyPairId)
     }
+}
+
+/**
+ * `draft` with an entry, enabled as `'created'`, on each default chain it is
+ * eligible for and lacks. A chain whose entry can't be resolved, or whose
+ * address another account holds, is left off; the draft is never written.
+ */
+export const withDefaultChains = async <A extends WalletAccount>(
+    draft: A,
+): Promise<A> => {
+    const missing = defaultChains(draft).filter(
+        chainId => !chainAccountOf(draft, chainId),
+    )
+    if (missing.length === 0) return draft
+    const chains: AccountChains = { ...draft.chains }
+    const unusedKeys: string[] = []
+    const enabledAt = Date.now()
+    for (const chainId of missing) {
+        let entry: ChainAccount
+        try {
+            entry = await resolveChainEntry(draft, chainId)
+        } catch (error) {
+            logger.warn(
+                `Could not add default chain ${chainId}: ${error instanceof Error ? error.message : 'unknown error'}`,
+            )
+            continue
+        }
+        const { accounts } = useAccountsStore.getState()
+        if (holdsAddressOn(accounts, entry.address, chainId)) {
+            if (entry.keyPairId !== undefined) unusedKeys.push(entry.keyPairId)
+            continue
+        }
+        chains[chainId] = withEnablement(entry, 'created', enabledAt)
+    }
+    const account = { ...draft, chains }
+    await removeUnreferencedKeys(
+        [...useAccountsStore.getState().accounts, account],
+        unusedKeys,
+    )
+    return account
 }
 
 const accountQueues = new Map<string, Promise<unknown>>()

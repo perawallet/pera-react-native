@@ -172,7 +172,9 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
 /** Whether the chain is registered and flagged to be enabled on a new account unasked. */
 export const isEnabledByDefault = (chainId: ChainId): boolean => {
     const { chains } = getProvider()
-    return chains.has(chainId) && chains.get(chainId).descriptor.enabledByDefault
+    return (
+        chains.has(chainId) && chains.get(chainId).descriptor.enabledByDefault
+    )
 }
 
 /** The eligible chains a new account starts enabled on, in registry order. */
