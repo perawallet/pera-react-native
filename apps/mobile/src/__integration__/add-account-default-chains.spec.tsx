@@ -374,6 +374,33 @@ describe('Flow: adding an account lands it on its default chains', () => {
         expect(useAccountsStore.getState().accounts).toEqual([imported])
     })
 
+    it('Given a key active only on Polygon, when it is imported, then the account holds Polygon alone and is named from its Polygon address', async () => {
+        server.use(...handlersFor(['polygon']))
+        renderWithNavigation(
+            ImportAccountOptionsScreen,
+            'ImportAccountOptions',
+            {
+                additionalScreens: [importPrivateKeyScreen, nameAccountScreen],
+            },
+        )
+
+        await importKeyThroughOptions()
+
+        const nameInput = await waitFor(
+            () => screen.getByTestId('name_account_name_input'),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect((nameInput as HTMLInputElement).value).not.toBe(
+            'No Address Found',
+        )
+        expect((nameInput as HTMLInputElement).value.toLowerCase()).toContain(
+            TEST_PRIVATE_KEY_ADDRESS.slice(2, 6),
+        )
+        const account = theOnlyAccount()
+        expect(Object.keys(account.chains)).toEqual(['polygon'])
+        expect(chainAccountOf(account, 'polygon')?.enabledBy).toBe('discovery')
+    })
+
     it('Given a key with no activity, when it is imported from add-account, then one account holds Ethereum alone', async () => {
         renderWithNavigation(AddAccountScreen, 'AddAccountHome', {
             additionalScreens: [

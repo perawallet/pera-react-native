@@ -84,6 +84,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: string,
     ) => account.chains[chainId],
     findAccountByAddressOn: () => undefined,
+    preferDefaultChain: (chainIds: string[]) => chainIds[0],
     isWatchAccount: (account: { custody?: { kind: string } }) =>
         account?.custody?.kind === 'watch',
     isHardwareWalletAccount: (account: { custody?: { kind: string } }) =>
@@ -234,6 +235,18 @@ describe('useNameAccountScreen', () => {
                 account,
                 CHAIN_ID,
             )
+        })
+
+        it("names the account from a chain it holds when the given chain isn't one of them", () => {
+            mockRouteParams = { account, chainId: 'dropped-chain' }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
+                account,
+                CHAIN_ID,
+            )
+            expect(result.current.chainId).toBe(CHAIN_ID)
         })
 
         it('updates an account already stored under its id instead of adding it again', async () => {

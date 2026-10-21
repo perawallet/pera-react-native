@@ -17,6 +17,7 @@ import {
     chainAccountOf,
     findAccountByAddressOn,
     getAccountDisplayName,
+    preferDefaultChain,
     hdIndexOf,
     isHardwareWalletAccount,
     isWatchAccount,
@@ -66,7 +67,14 @@ export const useNameAccountScreen = () => {
     const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
-    const chainId = route.params?.chainId ?? LEGACY_CHAIN_ID
+    const requestedChainId = route.params?.chainId ?? LEGACY_CHAIN_ID
+    // Discovery can leave the chain an import was made on off the account.
+    const chainId =
+        routeAccount && !chainAccountOf(routeAccount, requestedChainId)
+            ? (preferDefaultChain(
+                  Object.keys(routeAccount.chains) as ChainId[],
+              ) ?? requestedChainId)
+            : requestedChainId
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
     const registeredChainIds = useRegisteredChainIds()
@@ -175,7 +183,7 @@ export const useNameAccountScreen = () => {
 
             // Explicitly select the new account to ensure it's ready for AccountScreen
             // This triggers navigation via useShowOnboarding(), which waits for selection
-            setSelectedAccountId(targetAccount.id)
+            setSelectedAccountId(stored?.id ?? targetAccount.id)
 
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)
@@ -198,6 +206,7 @@ export const useNameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        chainId,
         enabledChainIds,
     }
 }

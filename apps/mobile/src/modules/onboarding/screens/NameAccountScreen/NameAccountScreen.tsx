@@ -15,7 +15,6 @@ import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { ChainIcon } from '@modules/chain-ui'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
@@ -30,6 +29,7 @@ export const NameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        chainId,
         enabledChainIds,
     } = useNameAccountScreen()
 
@@ -51,7 +51,7 @@ export const NameAccountScreen = () => {
                     style={styles.nameText}
                 >
                     {account
-                        ? getAccountDisplayName(account, LEGACY_CHAIN_ID)
+                        ? getAccountDisplayName(account, chainId)
                         : t('onboarding.name_account.wallet_label', {
                               count: numWallets + 1,
                           })}
