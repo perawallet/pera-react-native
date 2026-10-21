@@ -36,7 +36,9 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 
 ### Browser extension
 
-- Builds a zip of `apps/browser/dist`, `pera-extension-web-<environment>-<tag>-<sha7>.zip`, with a `.sha256` beside it. Neither CI uploads to the Chrome Web Store: the production zip is uploaded by hand in the Chrome Web Store Developer Dashboard, after checking it against its `.sha256`. Review and publishing happen there too.
+- Builds a zip of `apps/browser/dist`, `pera-extension-web-<environment>-<tag>-<sha7>.zip`, with a `.sha256` beside it.
+- On a release tag, Bitrise `web-production` uploads that zip to the Chrome Web Store item as its pending draft (`tools/release/upload-chrome-web-store.mjs`). It never publishes: submitting the draft for review stays a manual step in the Developer Dashboard. pera-ci builds the same zip but does not upload it, so the store only ever receives Bitrise's build. A `support/*` branch runs its own `.bitrise/bitrise.yml`, so it uploads only once that step is on the branch; until then, upload its zip by hand after checking it against its `.sha256`.
+- The upload authenticates as a Google service account whose email is added under Account in the Developer Dashboard. A dashboard change to the item's visibility blocks publishing through the API until one manual publish, but not uploading.
 - Upload only a `production` zip. A staging zip talks to the staging backend and carries "(staging build)" in its description.
 - A production zip carries no API key and needs `WEB_INTEGRITY_MINT_ENABLED`, `WEB_INTEGRITY_BEARER_ENABLED` and `WEB_INTEGRITY_ENROL_ENABLED` all on (`apps/browser/scripts/manifest.mjs` fails the build otherwise), so the production backend must accept enrolled web tokens before such a zip is uploaded.
 - Shipping the extension alone: tag on the `support/vX.Y.Z` branch, then start Bitrise `web-production` by hand on that tag rather than the whole `release-builds` pipeline, so no mobile artifact is built for it. The same CI change also lands on `main`, because pera-ci reads `ci/pipelines.yml` only from there.
@@ -48,6 +50,7 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 
 - `ANDROID_JSON_KEY_FILE`: Play service-account JSON (global secret; written to `apps/mobile/config/api-key.json`).
 - `FIREBASE_SERVICE_ACCOUNT_BASE64`: Firebase service account (base64).
+- `CWS_SERVICE_ACCOUNT_BASE64`, `CWS_PUBLISHER_ID`, `CWS_ITEM_ID`: Chrome Web Store service-account JSON key (base64, from the PeraCI Google Cloud project), publisher and extension item. Without them `web-production` fails at the upload step on a release tag, after the zip is built.
 - `PRODUCTION_FIREBASE_APP_ID_ANDROID`: Firebase Android app ID, aliased to `FIREBASE_APP_ID_ANDROID` by `setup-env-secrets.sh`. Required. If unset, the Firebase step aborts the release with `app: nil` _after_ the AAB is already on Play.
 - `PRODUCTION_ANDROID_GOOGLE_SERVICES_BASE64`, `PRODUCTION_IOS_GOOGLE_SERVICE_INFO_BASE64`, and the iOS signing/profile secrets, as already used by the production workflows.
 
