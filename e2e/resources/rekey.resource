@@ -55,7 +55,7 @@ Go Home Without Rekey Sheet
     Wait Until Page Does Not Contain Element    ${TARGET_STANDARD}    timeout=10s
 
 Open Rekey Target Sheet
-    Open Account Option    ${OPTION_REKEY_ACCOUNT}
+    Open Algorand Account Option    ${OPTION_REKEY_ACCOUNT}
     Wait Until Settled    ${TARGET_STANDARD}
 
 Open Standard Rekey Intro
@@ -81,7 +81,7 @@ Rekey Should Be Blocked As Underfunded
     Expect Element    ${cta}    disabled
 
 Open Rescan Rekeyed
-    Open Account Option    ${OPTION_SCAN_REKEYED}
+    Open Algorand Account Option    ${OPTION_SCAN_REKEYED}
     Wait Until Page Contains Element    ${RESCAN_SETTLED}    timeout=30s
     Page Should Not Contain Element    ${RESCAN_ERROR}    Rescan settled on its error state: discovery failed.
 
