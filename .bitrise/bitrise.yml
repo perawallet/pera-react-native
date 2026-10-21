@@ -1153,6 +1153,24 @@ workflows:
             cat "${DEST}.sha256"
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
     - script@1:
+        title: Sign extension CRX
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # Without the key the zip stays the package, so this step can ship
+            # before the store's verified-CRX opt-in; the secret and the opt-in
+            # go live together.
+            if [ -z "${CWS_CRX_SIGNING_KEY_BASE64:-}" ]; then
+              echo "No CRX signing key, so the zip is the package"
+              exit 0
+            fi
+            node tools/release/sign-extension-crx.mjs "$BITRISE_EXTENSION_ZIP_PATH"
+            CRX="${BITRISE_EXTENSION_ZIP_PATH%.zip}.crx"
+            cat "${CRX}.sha256"
+            envman add --key BITRISE_EXTENSION_CRX_PATH --value "$CRX"
+    - script@1:
         title: Upload to Chrome Web Store (draft)
         run_if: '{{enveq "ENVIRONMENT" "production"}}'
         inputs:
@@ -1166,7 +1184,9 @@ workflows:
               echo "No release tag, so no Chrome Web Store upload"
               exit 0
             fi
-            node tools/release/upload-chrome-web-store.mjs "$BITRISE_EXTENSION_ZIP_PATH"
+            # A CRX exists only when CWS_CRX_SIGNING_KEY_BASE64 is set; once the
+            # store's verified-CRX opt-in is on it rejects the zip.
+            node tools/release/upload-chrome-web-store.mjs "${BITRISE_EXTENSION_CRX_PATH:-$BITRISE_EXTENSION_ZIP_PATH}"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:

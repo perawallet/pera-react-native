@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-// node tools/release/upload-chrome-web-store.mjs <zip>
+// node tools/release/upload-chrome-web-store.mjs <zip|crx>
 //
-// Uploads an extension zip to its Chrome Web Store item as the pending draft.
+// Uploads an extension package to its Chrome Web Store item as the pending draft.
 // It never publishes: submitting for review stays a manual step in the
 // Developer Dashboard, as promotion to production is for the mobile stores.
+// A .crx (tools/release/sign-extension-crx.mjs) is sent with the two
+// X-Goog-Upload headers Google documents for verified CRX uploads; a .zip goes
+// as a plain POST body.
 //
 // Env:
 //   CWS_SERVICE_ACCOUNT_BASE64  service-account JSON key, base64; its email must
@@ -25,6 +28,7 @@
 
 import { createSign } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
+import { basename } from 'node:path'
 
 const SCOPE = 'https://www.googleapis.com/auth/chromewebstore'
 const API_BASE =
@@ -37,14 +41,14 @@ const fail = message => {
     process.exit(1)
 }
 
-const zipPath = process.argv[2]
+const packagePath = process.argv[2]
 const {
     CWS_SERVICE_ACCOUNT_BASE64: keyBase64,
     CWS_PUBLISHER_ID: publisherId,
     CWS_ITEM_ID: itemId,
 } = process.env
 
-if (!zipPath) fail('no zip path given')
+if (!packagePath) fail('no package path given')
 for (const [name, value] of Object.entries({
     CWS_SERVICE_ACCOUNT_BASE64: keyBase64,
     CWS_PUBLISHER_ID: publisherId,
@@ -63,12 +67,14 @@ if (!key.client_email || !key.private_key) {
     fail('the service-account key has no client_email or private_key')
 }
 
-const zip = await readFile(zipPath).catch(() => fail(`cannot read ${zipPath}`))
+const packageBytes = await readFile(packagePath).catch(() =>
+    fail(`cannot read ${packagePath}`),
+)
 const itemPath = `publishers/${publisherId}/items/${itemId}`
 
 if (process.env.DRY_RUN === '1') {
     console.log(
-        `DRY_RUN: would upload ${zipPath} (${zip.length} bytes) to the configured item`,
+        `DRY_RUN: would upload ${packagePath} (${packageBytes.length} bytes) to the configured item`,
     )
     process.exit(0)
 }
@@ -121,10 +127,10 @@ const errorMessage = text => {
 
 // Messages name the step, never the URL or response: both carry the publisher
 // and item ids, which are CI secrets.
-const call = async (token, step, method, url, body) => {
+const call = async (token, step, method, url, body, headers = {}) => {
     const response = await fetch(url, {
         method,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, ...headers },
         body,
     })
     const text = await response.text()
@@ -133,13 +139,22 @@ const call = async (token, step, method, url, body) => {
     return JSON.parse(text)
 }
 
+// Google documents these two headers for a CRX upload only.
+const uploadHeaders = packagePath.endsWith('.crx')
+    ? {
+          'X-Goog-Upload-Protocol': 'raw',
+          'X-Goog-Upload-File-Name': basename(packagePath),
+      }
+    : {}
+
 const token = await accessToken()
 const upload = await call(
     token,
     'upload',
     'POST',
     `${API_BASE}/upload/v2/${itemPath}:upload`,
-    zip,
+    packageBytes,
+    uploadHeaders,
 )
 
 let state = upload.uploadState

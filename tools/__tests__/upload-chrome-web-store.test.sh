@@ -13,6 +13,9 @@ trap '[ -n "$STUB_PID" ] && { kill "$STUB_PID"; wait "$STUB_PID"; } 2>/dev/null;
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/key.pem" 2>/dev/null
 openssl pkey -in "$WORK/key.pem" -pubout -out "$WORK/pub.pem" 2>/dev/null
 printf 'PK\003\004 not a real zip' > "$WORK/ext.zip"
+printf 'Cr24\003\000\000\000 not a real crx' > "$WORK/ext.crx"
+ZIP_SHA=$(openssl dgst -sha256 -r "$WORK/ext.zip" | cut -d' ' -f1)
+CRX_SHA=$(openssl dgst -sha256 -r "$WORK/ext.crx" | cut -d' ' -f1)
 
 KEY_B64=$(node -e '
 const fs = require("fs")
@@ -22,7 +25,7 @@ process.stdout.write(Buffer.from(JSON.stringify(key)).toString("base64"))
 
 cat > "$WORK/stub.mjs" <<'STUB'
 import { createServer } from 'node:http'
-import { createVerify } from 'node:crypto'
+import { createHash, createVerify } from 'node:crypto'
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 
 const [publicKeyPath, scenarioPath, logPath, portPath] = process.argv.slice(2)
@@ -30,17 +33,21 @@ const publicKey = readFileSync(publicKeyPath, 'utf8')
 let fetchCount = 0
 
 createServer((request, response) => {
-    let body = ''
-    request.on('data', chunk => (body += chunk))
+    const chunks = []
+    request.on('data', chunk => chunks.push(chunk))
     request.on('end', () => {
+        const body = Buffer.concat(chunks)
         const scenario = readFileSync(scenarioPath, 'utf8').trim()
-        appendFileSync(logPath, `${request.method} ${request.url}\n`)
+        appendFileSync(
+            logPath,
+            `${request.method} ${request.url} protocol=${request.headers['x-goog-upload-protocol'] ?? '-'} name=${request.headers['x-goog-upload-file-name'] ?? '-'} sha256=${createHash('sha256').update(body).digest('hex')}\n`,
+        )
         const send = (status, json) => {
             response.writeHead(status, { 'Content-Type': 'application/json' })
             response.end(JSON.stringify(json))
         }
         if (request.url === '/token') {
-            const assertion = new URLSearchParams(body).get('assertion') ?? ''
+            const assertion = new URLSearchParams(body.toString()).get('assertion') ?? ''
             const [header, claims, signature] = assertion.split('.')
             const valid = createVerify('RSA-SHA256')
                 .update(`${header}.${claims}`)
@@ -79,7 +86,7 @@ BASE="http://127.0.0.1:$(cat "$WORK/port")"
 failures=0
 
 # $1 label  $2 scenario  $3 expected exit  $4 text the output must contain
-# Remaining args are extra env assignments for this case.
+# Remaining args are extra env assignments for this case; PACKAGE picks the file.
 run_case() {
     local label="$1" scenario="$2" want="$3" expect="$4"
     shift 4
@@ -88,7 +95,7 @@ run_case() {
     local output status
     output=$(env CWS_SERVICE_ACCOUNT_BASE64="$KEY_B64" CWS_PUBLISHER_ID=pub CWS_ITEM_ID=item \
         CWS_API_BASE="$BASE" CWS_TOKEN_URL="$BASE/token" CWS_POLL_INTERVAL_MS=1 "$@" \
-        node "$SCRIPT" "$WORK/ext.zip" 2>&1)
+        node "$SCRIPT" "${PACKAGE:-$WORK/ext.zip}" 2>&1)
     status=$?
     cat "$WORK/log" >> "$WORK/all.log"
     printf '%s\n' "$output" >> "$WORK/all.out"
@@ -101,7 +108,21 @@ run_case() {
     fi
 }
 
+# $1 label  $2 text the :upload line of the last case's log must contain
+check_upload_line() {
+    if grep -F ':upload ' "$WORK/log" | grep -qF "$2"; then
+        echo "  ok    $1"
+    else
+        echo "  FAIL  $1: got $(grep -F ':upload ' "$WORK/log")"
+        failures=$((failures + 1))
+    fi
+}
+
 run_case "uploads and reports the version" ok 0 "Uploaded 7.2.1.123 as a draft"
+check_upload_line "a zip goes up without the CRX upload headers" "protocol=- name=- sha256=${ZIP_SHA}"
+PACKAGE="$WORK/ext.crx" run_case "uploads a crx" ok 0 "Uploaded 7.2.1.123 as a draft"
+check_upload_line "a crx goes up with the raw upload protocol, its file name and its exact bytes" \
+    "protocol=raw name=ext.crx sha256=${CRX_SHA}"
 run_case "polls an async upload until it succeeds" async 0 "as a draft"
 run_case "fails when the store rejects the package" failed 1 "upload ended in state FAILED"
 run_case "fails on an HTTP error from the store" forbidden 1 "upload failed (403): not a publisher member"
