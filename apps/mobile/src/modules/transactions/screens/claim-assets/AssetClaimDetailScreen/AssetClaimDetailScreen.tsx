@@ -41,6 +41,8 @@ export const AssetClaimDetailScreen = () => {
     const {
         request,
         amount,
+        nativeSymbol,
+        claimGainLabel,
         receiverAccount,
         isClaimBlocked,
         isRejectBlocked,
@@ -54,8 +56,8 @@ export const AssetClaimDetailScreen = () => {
     if (!request) {
         return (
             <EmptyView
-                title={t('arc59.requests.empty_title')}
-                body={t('arc59.requests.empty_body')}
+                title={t('asset_inbox.requests.empty_title')}
+                body={t('asset_inbox.requests.empty_body')}
             />
         )
     }
@@ -64,24 +66,21 @@ export const AssetClaimDetailScreen = () => {
         <PWScreen
             footer={
                 <>
-                    {!request.microAlgoGainOnClaim.isZero() && (
+                    {claimGainLabel && (
                         <>
                             <PWDivider style={styles.separator} />
-                            <PWView style={styles.algoGainRow}>
+                            <PWView style={styles.nativeGainRow}>
                                 <PWIcon
                                     name='info'
                                     variant='secondary'
-                                    style={styles.algoGainIcon}
+                                    style={styles.nativeGainIcon}
                                 />
                                 <PWText
                                     variant='caption'
-                                    style={styles.algoGainText}
+                                    style={styles.nativeGainText}
                                 >
-                                    {t('arc59.claim.algo_gain', {
-                                        amount: baseUnitsToDisplayUnits(
-                                            request.microAlgoGainOnClaim,
-                                            6,
-                                        ),
+                                    {t('asset_inbox.claim.native_gain', {
+                                        amount: claimGainLabel,
                                     })}
                                 </PWText>
                             </PWView>
@@ -95,24 +94,26 @@ export const AssetClaimDetailScreen = () => {
                                 iconSize='sm'
                                 titleVariant='bodySemibold'
                                 title={t(
-                                    'messages.claim.insufficient_algo_title',
+                                    'messages.claim.insufficient_native_title',
+                                    { symbol: nativeSymbol },
                                 )}
                                 body={t(
                                     isClaimBlocked
-                                        ? 'messages.claim.insufficient_algo_claim'
-                                        : 'messages.claim.insufficient_algo_reject',
+                                        ? 'messages.claim.insufficient_native_claim'
+                                        : 'messages.claim.insufficient_native_reject',
+                                    { symbol: nativeSymbol },
                                 )}
-                                testID='arc59_claim_insufficient_algo'
+                                testID='asset_inbox_claim_insufficient_funds'
                             />
                             {canBuy && (
                                 <PWButton
                                     variant='secondary'
                                     title={t(
-                                        'messages.claim.insufficient_algo_cta',
+                                        'messages.claim.insufficient_native_cta',
                                     )}
                                     onPress={handleAddFunds}
                                     style={styles.addFundsButton}
-                                    testID='arc59_claim_add_funds'
+                                    testID='asset_inbox_claim_add_funds'
                                 />
                             )}
                         </PWView>
@@ -122,11 +123,11 @@ export const AssetClaimDetailScreen = () => {
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleClaim}
                             isDisabled={isClaimBlocked}
-                            testID='arc59_claim_confirm_slide'
+                            testID='asset_inbox_claim_confirm_slide'
                         />
                         <PWButton
                             variant='linkNeutral'
-                            title={t('arc59.claim.reject')}
+                            title={t('asset_inbox.claim.reject')}
                             onPress={handleRejectPress}
                             isDisabled={isRejectBlocked}
                         />
@@ -137,7 +138,7 @@ export const AssetClaimDetailScreen = () => {
             <PWView style={styles.amountSection}>
                 <PWView
                     style={styles.assetPreview}
-                    testID='arc59_claim_asset_preview'
+                    testID='asset_inbox_claim_asset_preview'
                 >
                     <AssetIcon
                         asset={request.asset}

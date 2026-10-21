@@ -77,7 +77,7 @@ describe('buildResolvedSignRequest', () => {
                 type: 'transactions',
                 chainId: 'algorand',
                 sourceType: 'local',
-                transport: 'algod',
+                transport: 'network',
                 txs: [{}],
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
@@ -90,7 +90,7 @@ describe('buildResolvedSignRequest', () => {
         expect(result!.signerType).toBe('local')
         expect(result!.signerAccount).toBe(account)
         expect(result!.source).toEqual({ kind: 'local', isInteractive: false })
-        expect(result!.transport).toEqual({ kind: 'algod' })
+        expect(result!.transport).toEqual({ kind: 'network' })
         expect(result!.kind).toEqual({
             type: 'transactions',
             isMultisigCosign: false,

@@ -52,7 +52,7 @@ const txRequest = (overrides: object = {}): SignRequest =>
     ({
         id: 'r1',
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         txs: [sentBy(SIGNER)],
         ...overrides,
     }) as SignRequest

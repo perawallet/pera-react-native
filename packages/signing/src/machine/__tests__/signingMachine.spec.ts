@@ -74,7 +74,7 @@ const mockTx = mockAlgorandTx(MOCK_ADDRESS)
 const mockRequest: TransactionSignRequest = {
     id: 'req-1',
     type: 'transactions',
-    transport: 'algod',
+    transport: 'network',
     txs: [mockTx],
 }
 
@@ -506,7 +506,7 @@ describe('signingMachine', () => {
         const localRequest: TransactionSignRequest = {
             id: 'req-local-unknown',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             // sourceType defaults to 'local' when absent
             txs: [unknownTx],
         }
@@ -531,7 +531,7 @@ describe('signingMachine', () => {
         const mixedRequest: TransactionSignRequest = {
             id: 'req-mixed',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [mockTx, mockTxFromMultisig],
         }
 
@@ -779,7 +779,7 @@ describe('signingMachine', () => {
         const hwRequest: TransactionSignRequest = {
             id: 'req-hw',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [hwTx],
         }
 

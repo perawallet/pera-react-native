@@ -102,8 +102,8 @@ export const useSendDestinationRouter = () => {
             })
             return
         }
-        setSendMode('sendArc59')
-        navigation.navigate('ARC59SendSummary')
+        setSendMode('sendAssetInbox')
+        navigation.navigate('AssetInboxSendSummary')
     }, [canUseAssetInbox, scope, showToast, t, setSendMode, navigation])
 
     useEffect(() => {

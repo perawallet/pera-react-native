@@ -18,7 +18,7 @@ export type SendFundsStackParamList = {
     SelectDestination: undefined
     ConfirmTransaction: undefined
     ExpressSend: undefined
-    ARC59SendSummary: undefined
+    AssetInboxSendSummary: undefined
     InsufficientBalance: { requiredBalanceLabel: string }
     TransactionProcessing: undefined
     TransactionSuccess: {

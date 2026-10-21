@@ -15,18 +15,13 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
+import { useAssetInboxSendSummaryScreen } from './useAssetInboxSendSummaryScreen'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetTitle } from '@modules/assets'
 import { LoadingView } from '@components/LoadingView'
 
-export const ARC59SendSummaryScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset(scope)
+export const AssetInboxSendSummaryScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -39,13 +34,14 @@ export const ARC59SendSummaryScreen = () => {
         assetId,
         recipientAddress,
         fee,
+        nativeAsset,
         asset,
         HeaderImageComponent,
         handleSend,
         handleClose,
         handleReadMore,
         isProcessing,
-    } = useARC59SendSummaryScreen()
+    } = useAssetInboxSendSummaryScreen()
 
     // Unavailable is defence-in-depth: useSendDestinationRouter already blocks
     // routing here on a non-Pera-backed network; this only guards a
@@ -79,13 +75,13 @@ export const ARC59SendSummaryScreen = () => {
                         onConfirm={handleSend}
                         isLoading={isProcessing}
                         isDisabled={!summary}
-                        testID='arc59_send_confirm_slide'
+                        testID='asset_inbox_send_confirm_slide'
                     />
                     <PWButton
                         title={t('common.go_back.label')}
                         variant='linkNeutral'
                         onPress={handleClose}
-                        testID='arc59_go_back_button'
+                        testID='asset_inbox_go_back_button'
                     />
                 </PWView>
             }
@@ -95,19 +91,19 @@ export const ARC59SendSummaryScreen = () => {
                     variant='h3'
                     style={styles.title}
                 >
-                    {t('send_funds.arc59_summary.title')}
+                    {t('send_funds.asset_inbox_summary.title')}
                 </PWText>
 
                 <PWView style={styles.header}>
                     <HeaderImageComponent style={styles.inboxIcon} />
 
                     <PWText style={styles.description}>
-                        {t('send_funds.arc59_summary.description')}{' '}
+                        {t('send_funds.asset_inbox_summary.description')}{' '}
                         <PWText
                             style={styles.readMoreText}
                             onPress={handleReadMore}
                         >
-                            {t('send_funds.arc59_summary.read_more')}
+                            {t('send_funds.asset_inbox_summary.read_more')}
                         </PWText>
                     </PWText>
                 </PWView>
@@ -136,7 +132,9 @@ export const ARC59SendSummaryScreen = () => {
 
                     <PWView style={styles.row}>
                         <PWText style={styles.rowLabel}>
-                            {t('send_funds.arc59_summary.recipient_label')}
+                            {t(
+                                'send_funds.asset_inbox_summary.recipient_label',
+                            )}
                         </PWText>
                         <AddressDisplay address={recipientAddress} />
                     </PWView>
@@ -145,7 +143,7 @@ export const ARC59SendSummaryScreen = () => {
 
                     <PWView style={styles.row}>
                         <PWText style={styles.rowLabel}>
-                            {t('send_funds.arc59_summary.fees_label')}
+                            {t('send_funds.asset_inbox_summary.fees_label')}
                         </PWText>
                         <AssetAmount
                             value={fee}
@@ -155,7 +153,7 @@ export const ARC59SendSummaryScreen = () => {
                     </PWView>
 
                     <PWText style={styles.disclaimer}>
-                        {t('send_funds.arc59_summary.disclaimer')}
+                        {t('send_funds.asset_inbox_summary.disclaimer')}
                     </PWText>
                 </PWView>
             </PWView>

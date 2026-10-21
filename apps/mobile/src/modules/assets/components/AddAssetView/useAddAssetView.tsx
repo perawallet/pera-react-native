@@ -21,10 +21,11 @@ import {
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -34,7 +35,6 @@ import {
     isIntegrityRequiredError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
@@ -61,7 +61,6 @@ type UseAddAssetViewResult = {
 export const useAddAssetView = (
     options?: UseAddAssetViewOptions,
 ): UseAddAssetViewResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
     const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
@@ -74,6 +73,8 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    // The chain assets are added on, not the account's: an account not on it yet is enabled there on add.
+    const scope = useSelectedScope(useCapableChainId('manageAssets'))
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
@@ -164,7 +165,7 @@ export const useAddAssetView = (
 
             const result = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: sender },
+                { assetId, accountAddress: sender, scope },
                 {
                     size: 'auto',
                     enablePanDownToClose: true,
@@ -212,6 +213,7 @@ export const useAddAssetView = (
         },
         [
             resolveSender,
+            scope,
             optingInAssetIds,
             requestByType,
             results,

@@ -24,7 +24,7 @@ const mockAccount = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 const mockRequest: TransactionSignRequest = {
     id: 'req-create-1',
     type: 'transactions',
-    transport: 'algod',
+    transport: 'network',
     txs: [
         {
             sender: { toString: () => MOCK_ADDRESS },

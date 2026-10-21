@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { ARC59SendSummaryScreen } from './ARC59SendSummaryScreen'
+export { AlgorandCustomNodeForm } from './AlgorandCustomNodeForm'

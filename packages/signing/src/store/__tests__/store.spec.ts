@@ -57,7 +57,7 @@ describe('SigningStore', () => {
             id: 'test-id',
             txs: [],
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
         }
 
         let added = false
@@ -74,7 +74,7 @@ describe('SigningStore', () => {
             id: 'test-id',
             txs: [],
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
         }
 
         act(() => {
@@ -94,7 +94,7 @@ describe('SigningStore', () => {
         const request: SignRequest = {
             txs: [],
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
         } as unknown as SignRequest
 
         act(() => {
@@ -111,7 +111,7 @@ describe('SigningStore', () => {
             id: 'test-id',
             txs: [],
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
         }
 
         act(() => {
@@ -135,7 +135,7 @@ describe('SigningStore', () => {
             id: 'test-id',
             txs: [],
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
         }
 
         let removed = true
@@ -153,7 +153,7 @@ describe('SigningStore', () => {
         act(() => {
             result.current.addSignRequest({
                 id: '1',
-                transport: 'algod',
+                transport: 'network',
                 txs: [],
                 type: 'transactions',
             })
@@ -203,7 +203,7 @@ describe('SigningStore', () => {
                         {
                             id: 'restored-1',
                             type: 'transaction',
-                            transport: 'algod',
+                            transport: 'network',
                             sourceType: 'walletconnect',
                             txs: [],
                         },
@@ -228,7 +228,7 @@ describe('SigningStore', () => {
                         {
                             id: 'unstamped-1',
                             type: 'transactions',
-                            transport: 'algod',
+                            transport: 'network',
                             sourceType: 'multisig-cosign',
                             txs: [],
                         },
@@ -268,7 +268,7 @@ describe('SigningStore writes before hydration', () => {
         id,
         txs: [],
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         sourceType: 'multisig-cosign',
     })
     const persisted = JSON.stringify({
@@ -330,7 +330,7 @@ describe('migrateSigningState', () => {
     const unstamped = {
         id: 'u',
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         sourceType: 'multisig-cosign',
         txs: [],
     }
@@ -366,13 +366,22 @@ describe('migrateSigningState', () => {
                 .pendingSignRequests,
         ).toEqual([])
     })
+
+    test('maps the pre-v3 broadcaster transport to network', () => {
+        const stored = { ...unstamped, chainId: 'algorand', transport: 'algod' }
+
+        expect(
+            migrateSigningState({ pendingSignRequests: [stored] })
+                .pendingSignRequests,
+        ).toEqual([{ ...stored, transport: 'network' }])
+    })
 })
 
 describe('isResumableRehydratedRequest', () => {
     const base = {
         id: '1',
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         chainId: 'algorand',
     }
 
@@ -436,7 +445,7 @@ describe('isResumableRehydratedRequest', () => {
         expect(
             isResumableRehydratedRequest({
                 type: 'transactions',
-                transport: 'algod',
+                transport: 'network',
                 sourceType: 'multisig-cosign',
             }),
         ).toBe(false)

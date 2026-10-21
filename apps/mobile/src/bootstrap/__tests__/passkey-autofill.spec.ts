@@ -12,10 +12,15 @@
 
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const mocks = vi.hoisted(() => ({ bootstrapPasskeyAutofill: vi.fn() }))
 
@@ -32,6 +37,10 @@ describe('runPasskeyAutofillBootstrap', () => {
         Object.assign(getProvider(), { passkeyAutofill: {} })
     })
 
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
+
     it('bootstraps the credential provider at the Algorand defaults', async () => {
         await runPasskeyAutofillBootstrap()
 
@@ -44,5 +53,14 @@ describe('runPasskeyAutofillBootstrap', () => {
         await runPasskeyAutofillBootstrap()
 
         expect(mocks.bootstrapPasskeyAutofill).not.toHaveBeenCalled()
+    })
+
+    it('bootstraps when any registered chain has liquidAuth', async () => {
+        registerEthereumChain()
+        setCapabilityOverrides({ liquidAuth: false }, ETHEREUM_CHAIN_ID)
+
+        await runPasskeyAutofillBootstrap()
+
+        expect(mocks.bootstrapPasskeyAutofill).toHaveBeenCalledTimes(1)
     })
 })

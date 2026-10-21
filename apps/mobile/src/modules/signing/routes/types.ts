@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import type { StackScreenProps } from '@react-navigation/stack'
@@ -19,6 +22,8 @@ export type SigningStackParamList = {
     SingleTransaction: undefined
     TransactionList: undefined
     TransactionDetails: {
+        /** Picks the chain UI that fetches and renders the transaction. */
+        scope: ChainScope
         /**
          * In-memory-only param. TransactionNative holds bigint /
          * Uint8Array / raw-txn fields that don't survive JSON serialization,

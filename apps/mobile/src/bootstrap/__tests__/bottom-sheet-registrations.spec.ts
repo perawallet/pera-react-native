@@ -11,9 +11,12 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OptInConfirmationContent } from '@modules/assets'
 import { registerAppBottomSheets } from '../bottom-sheet-registrations'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 describe('bottom-sheet registrations', () => {
     beforeAll(() => {
@@ -29,6 +32,7 @@ describe('bottom-sheet registrations', () => {
         useBottomSheetStore.getState().requestByType('asset-opt-in', {
             assetId: '31566704',
             accountAddress: 'AAA',
+            scope: SCOPE,
         })
 
         const { requests } = useBottomSheetStore.getState()
@@ -39,6 +43,7 @@ describe('bottom-sheet registrations', () => {
         expect(element.props).toEqual({
             assetId: '31566704',
             accountAddress: 'AAA',
+            scope: SCOPE,
         })
     })
 })

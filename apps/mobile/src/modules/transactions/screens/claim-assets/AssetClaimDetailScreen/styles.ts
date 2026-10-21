@@ -76,16 +76,16 @@ export const useStyles = makeStyles(theme => ({
     addFundsButton: {
         alignSelf: 'stretch',
     },
-    algoGainRow: {
+    nativeGainRow: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.lg,
     },
-    algoGainText: {
+    nativeGainText: {
         flexShrink: 1,
         flexWrap: 'wrap',
     },
-    algoGainIcon: {
+    nativeGainIcon: {
         marginTop: theme.spacing.xs,
     },
 }))

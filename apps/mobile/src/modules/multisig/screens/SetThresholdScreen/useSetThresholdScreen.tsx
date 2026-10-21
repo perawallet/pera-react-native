@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { trackEvent, MultisigEvent } from '@analytics'
@@ -19,6 +20,7 @@ import {
     useMultisigCreationStore,
     type Participant,
 } from '../../hooks/useMultisigCreation'
+import type { MultisigStackParamList } from '../../routes/types'
 
 type UseSetThresholdScreenResult = {
     threshold: number
@@ -31,6 +33,8 @@ type UseSetThresholdScreenResult = {
 
 export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
     const navigation = useAppNavigation()
+    const { chainId } =
+        useRoute<RouteProp<MultisigStackParamList, 'SetThreshold'>>().params
     const { request: requestBottomSheet } = useBottomSheet()
     const threshold = useMultisigCreationStore(state => state.threshold)
     const participants = useMultisigCreationStore(state => state.participants)
@@ -61,8 +65,8 @@ export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
             },
         })
         if (result !== 'proceed') return
-        navigation.push('NameMultisig')
-    }, [requestBottomSheet, navigation])
+        navigation.push('NameMultisig', { chainId })
+    }, [requestBottomSheet, navigation, chainId])
 
     return {
         threshold,

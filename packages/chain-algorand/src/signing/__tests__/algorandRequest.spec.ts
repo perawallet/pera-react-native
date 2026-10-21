@@ -69,7 +69,7 @@ describe('algorandRequestOf', () => {
         const request = {
             id: 'req',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             chainId: 'algorand',
             txs: GROUP,
         } as unknown as TransactionSignRequest

@@ -91,7 +91,7 @@ const makeTransactionSignRequest = (
     ({
         id: 'REQ-1',
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         sourceType: 'multisig-cosign',
         txs: txs.map(txn => asUnsignedAlgorandTransaction(txn)),
         ...overrides,
@@ -153,7 +153,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: txs.map(txn => asUnsignedAlgorandTransaction(txn)),
         } as SignRequest
 
@@ -172,7 +172,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [makeUnsignedAlgorandTransaction()],
         } as SignRequest
 
@@ -299,7 +299,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             await isRequestGroupAlreadySubmitted({
                 id: 'REQ-2',
                 type: 'arbitrary-data',
-                transport: 'algod',
+                transport: 'network',
                 data: [],
             } as SignRequest),
         ).toBe(false)

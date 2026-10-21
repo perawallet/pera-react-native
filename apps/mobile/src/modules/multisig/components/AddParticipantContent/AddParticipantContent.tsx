@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
@@ -19,13 +19,17 @@ import { useAddParticipantContent } from './useAddParticipantContent'
 import { useStyles } from './styles'
 import { canBeMultisigParticipant } from '../../utils/participantEligibility'
 
-export type AddParticipantContentProps = Record<string, never>
+export type AddParticipantContentProps = {
+    chainId: ChainId
+}
 
-export const AddParticipantContent = () => {
+export const AddParticipantContent = ({
+    chainId,
+}: AddParticipantContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleSelected, dismiss } = useAddParticipantContent()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId)
+    const { handleSelected, dismiss } = useAddParticipantContent({ scope })
 
     return (
         <PWView style={styles.container}>
@@ -52,7 +56,7 @@ export const AddParticipantContent = () => {
                 onSelected={handleSelected}
                 scope={scope}
                 accountFilter={account =>
-                    canBeMultisigParticipant(account, LEGACY_CHAIN_ID)
+                    canBeMultisigParticipant(account, chainId)
                 }
                 showAllContactsWhenEmpty
                 inBottomSheet

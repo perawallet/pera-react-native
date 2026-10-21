@@ -12,6 +12,7 @@
 
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import {
+    chainIdOfSignRequest,
     isTransactionRequest,
     useSigningEvent,
     useSigningRequest,
@@ -60,7 +61,10 @@ export const useMultisigProposeListener = () => {
                     r.signRequestId === result.signRequestId,
             )
             if (hasQueuedSiblingCosign) return
-            showSignRequest(result.signRequestId)
+            showSignRequest(
+                result.signRequestId,
+                chainIdOfSignRequest(event.request),
+            )
         },
     )
 }

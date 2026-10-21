@@ -11,52 +11,76 @@
  */
 
 import {
-    PWLoadingIndicator,
+    PWButton,
+    PWIcon,
+    PWListItemLayout,
     PWScrollView,
     PWText,
-    PWTouchableOpacity,
-    PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import { ChainIcon } from '@modules/chain-ui'
 import { useStyles } from './styles'
 import { useChainSelectionScreen } from './useChainSelectionScreen'
 
+const CHAIN_ICON_SIZE = 40
+
 export const ChainSelectionScreen = () => {
-    const { rows, enablingChainId, handleSelectChain } =
+    const { rows, enablingChainId, handleSelectChain, handleAddChain } =
         useChainSelectionScreen()
     const { t } = useLanguage()
     const styles = useStyles()
 
     return (
         <PWScrollView contentContainerStyle={styles.container}>
-            {rows.map(({ chainId, displayName, isEnabled }) => (
-                <PWTouchableOpacity
+            {rows.map(({ chainId, displayName, address, isEnabled }) => (
+                <PWListItemLayout
                     key={chainId}
                     style={styles.row}
-                    onPress={() => handleSelectChain(chainId)}
-                    disabled={enablingChainId !== undefined}
-                    {...getTestProps(`receive_chain_row_${chainId}`)}
-                >
-                    <ChainIcon chainId={chainId} />
-                    <PWView style={styles.labels}>
-                        <PWText style={styles.title}>{displayName}</PWText>
-                        {isEnabled ? null : (
-                            <PWText
-                                variant='caption'
-                                style={styles.subtitle}
-                            >
-                                {t(
-                                    'receive_funds.chain_selection.eligible_subtitle',
+                    left={
+                        <ChainIcon
+                            chainId={chainId}
+                            size={CHAIN_ICON_SIZE}
+                        />
+                    }
+                    right={
+                        isEnabled ? (
+                            <PWIcon
+                                variant='secondary'
+                                name='chevron-right'
+                            />
+                        ) : (
+                            <PWButton
+                                variant='helper'
+                                icon='plus'
+                                paddingStyle='dense'
+                                title={t(
+                                    'receive_funds.chain_selection.add_action',
                                 )}
-                            </PWText>
-                        )}
-                    </PWView>
-                    {enablingChainId === chainId ? (
-                        <PWLoadingIndicator />
+                                isLoading={enablingChainId === chainId}
+                                isDisabled={
+                                    enablingChainId !== undefined &&
+                                    enablingChainId !== chainId
+                                }
+                                onPress={() => handleAddChain(chainId)}
+                                testID={`receive_chain_add_${chainId}`}
+                            />
+                        )
+                    }
+                    onPress={
+                        isEnabled ? () => handleSelectChain(chainId) : undefined
+                    }
+                    testID={`receive_chain_row_${chainId}`}
+                >
+                    <PWText style={styles.title}>{displayName}</PWText>
+                    {address ? (
+                        <PWText
+                            variant='caption'
+                            style={styles.subtitle}
+                        >
+                            {address}
+                        </PWText>
                     ) : null}
-                </PWTouchableOpacity>
+                </PWListItemLayout>
             ))}
         </PWScrollView>
     )

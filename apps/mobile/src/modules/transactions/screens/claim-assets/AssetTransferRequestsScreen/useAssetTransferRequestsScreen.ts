@@ -12,18 +12,18 @@
 
 import { useCallback, useEffect } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetInboxRequestsQuery,
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
 
 type UseAssetTransferRequestsScreenResult = {
+    scope: ChainScope
     assetRequests: AssetInboxRequest[]
     isPending: boolean
     isUnavailableOnNetwork: boolean
@@ -33,12 +33,12 @@ type UseAssetTransferRequestsScreenResult = {
 
 export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { push } = useAppNavigation()
         const route =
             useRoute<
                 RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
             >()
+        const { scope } = route.params
         const { accountAddress, setAccountAddress, setAssetRequests } =
             useClaimAssets()
 
@@ -62,13 +62,15 @@ export const useAssetTransferRequestsScreen =
                     screen: 'AssetClaimDetail',
                     params: {
                         assetIndex: index,
+                        scope,
                     },
                 })
             },
-            [push, assetRequests, setAssetRequests],
+            [push, assetRequests, setAssetRequests, scope],
         )
 
         return {
+            scope,
             assetRequests: assetRequests ?? [],
             isPending,
             isUnavailableOnNetwork,

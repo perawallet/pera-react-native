@@ -26,7 +26,7 @@ jobs:
       # fallback, so it can only hit when node_modules below does too, and it
       # was a second 1 GB copy per PR in a repo cache that is already full.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -94,7 +94,7 @@ jobs:
       # exist fails the job with "Path Validation Error", *after* the real
       # work has already passed.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -133,7 +133,7 @@ jobs:
 
       # No `cache: pnpm` here — see the audit job's Setup Node.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -200,7 +200,7 @@ jobs:
 
       # No `cache: pnpm` here — see the audit job's Setup Node.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -264,7 +264,7 @@ jobs:
 
       # No `cache: pnpm` here — see the audit job's Setup Node.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -399,7 +399,7 @@ jobs:
 
       # No `cache: pnpm` here — see the audit job's Setup Node.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -537,7 +537,7 @@ jobs:
       # No `cache: pnpm` here — see the audit job's Setup Node.
       - name: Setup Node
         if: steps.changes.outputs.affected == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 
@@ -641,7 +641,7 @@ jobs:
 
       - name: Upload fidelity screenshots
         if: always() && steps.changes.outputs.affected == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension-fidelity-screenshots-${{ matrix.shard }}
           path: apps/browser/screenshots/
@@ -649,7 +649,7 @@ jobs:
 
       - name: Upload traces on failure
         if: failure() && steps.changes.outputs.affected == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension-e2e-traces-${{ matrix.shard }}
           path: apps/browser/test-results/
@@ -714,7 +714,7 @@ jobs:
       # No `cache: pnpm` here — same reasoning as the audit job above: this
       # job never runs `pnpm install`, so there is no store to cache.
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: ".tool-versions"
 

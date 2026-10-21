@@ -77,12 +77,22 @@ const isChainNeutralTransactionRequest = (
     request.txs.length > 0 &&
     isUnsignedTransaction(request.txs[0])
 
-const STORE_VERSION = 2
+const STORE_VERSION = 3
 
 // Set by rehydrateSigningStore before it hydrates. Read from the store's own
 // migrate rather than swapped in with setOptions, which would replace the
 // guardedPersist wrapper that quarantines a failed migration.
 let unstampedRequestChainId: Optional<ChainId>
+
+// Requests persisted before v3 name the broadcaster transport by its old value.
+const PRE_V3_NETWORK_TRANSPORT = 'algod'
+
+const withRenamedTransport = (
+    request: Record<string, unknown>,
+): Record<string, unknown> =>
+    request.transport === PRE_V3_NETWORK_TRANSPORT
+        ? { ...request, transport: 'network' }
+        : request
 
 /**
  * Requests persisted before v2 carry no chain stamp. The caller names the
@@ -98,17 +108,16 @@ export const migrateSigningState = (
         ? (state.pendingSignRequests as Record<string, unknown>[])
         : []
     const pendingSignRequests = requests.flatMap(request => {
-        if (
-            typeof request !== 'object' ||
-            request === null ||
-            'chainId' in request ||
-            isChainNeutralTransactionRequest(request)
-        ) {
+        if (typeof request !== 'object' || request === null) {
             return [request]
+        }
+        const renamed = withRenamedTransport(request)
+        if ('chainId' in renamed || isChainNeutralTransactionRequest(renamed)) {
+            return [renamed]
         }
         return unstampedRequestChainId === undefined
             ? []
-            : [{ ...request, chainId: unstampedRequestChainId }]
+            : [{ ...renamed, chainId: unstampedRequestChainId }]
     })
     return {
         pendingSignRequests: pendingSignRequests as unknown as SignRequest[],

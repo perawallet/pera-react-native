@@ -24,19 +24,21 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
+    i18nKey,
     type TransactionNative,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     getNetworkErrorMessageKeys,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { summarizeHistoryItem } from '@perawallet/wallet-core-transactions'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
-import { useAlgorandTransactionDetail } from '@modules/algorand'
+import { chainUiFor } from '@modules/chain-ui'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { useNoTransactionDetail } from './useNoTransactionDetail'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -70,6 +72,7 @@ export const useTransactionDetailsScreen =
         const route = useRoute<TransactionDetailsRouteProp>()
 
         const {
+            scope,
             transaction: paramTransaction,
             transactionId,
             groupId,
@@ -77,7 +80,15 @@ export const useTransactionDetailsScreen =
             historyTransaction,
         } = route.params
 
-        const detail = useAlgorandTransactionDetail({
+        // A route's scope never changes, so this resolves to the same hook on every render.
+        const chainUseTransactionDetail = chainUiFor(
+            getChainDescriptor(scope.chainId).family,
+        ).transactionDetails?.useTransactionDetail
+        const useTransactionDetail =
+            chainUseTransactionDetail ?? useNoTransactionDetail
+        const canFetchDetail = !!chainUseTransactionDetail
+        const detail = useTransactionDetail({
+            scope,
             transactionId: transactionId ?? '',
             historyTransaction,
             isEnabled: !paramTransaction && !!transactionId,
@@ -90,7 +101,7 @@ export const useTransactionDetailsScreen =
 
         const account = useSelectedAccount()
         const address = account
-            ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
+            ? (chainAccountOf(account, scope.chainId)?.address ?? '')
             : ''
         const notice = useMemo(
             () =>
@@ -99,11 +110,11 @@ export const useTransactionDetailsScreen =
                           summarizeHistoryItem(
                               historyTransaction,
                               address,
-                              LEGACY_CHAIN_ID,
+                              scope.chainId,
                           ).notice,
                       )
                     : null,
-            [historyTransaction, address],
+            [historyTransaction, address, scope.chainId],
         )
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
@@ -126,6 +137,13 @@ export const useTransactionDetailsScreen =
             if (detail.isLoading) {
                 return { kind: 'loading' }
             }
+            if (!canFetchDetail) {
+                return {
+                    kind: 'error',
+                    titleKey: i18nKey('transactions.unknown.title'),
+                    bodyKey: i18nKey('transactions.unknown.body'),
+                }
+            }
             const { titleKey, bodyKey } = getNetworkErrorMessageKeys(undefined)
             return { kind: 'error', titleKey, bodyKey }
         }, [
@@ -135,16 +153,18 @@ export const useTransactionDetailsScreen =
             detail.isPaused,
             detail.isLoading,
             hasInternet,
+            canFetchDetail,
         ])
 
         const handleRelatedTransactionPress = useCallback(
             (related: TransactionNative) => {
                 navigation.push('TransactionDetails', {
+                    scope,
                     transaction: related,
                     groupId,
                 })
             },
-            [navigation, groupId],
+            [navigation, scope, groupId],
         )
 
         const handleRetry = useCallback(() => {

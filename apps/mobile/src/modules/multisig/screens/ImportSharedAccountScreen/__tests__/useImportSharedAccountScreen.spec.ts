@@ -13,10 +13,16 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     registerAlgorandAccountsAdapter,
     registerAlgorandMultisigAdapter,
 } from '@test-utils/algorandAccountsAdapter'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { useImportSharedAccountScreen } from '../useImportSharedAccountScreen'
 
 const SCANNED_ADDRESS = 'SHARED_ADDR'
@@ -26,14 +32,17 @@ const mockRefetch = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockDeleteImportInbox = vi.fn()
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>(() => [])
-const mockUseMultisigAccountDetailQuery = vi.fn()
+const mockUseMultisigAccountDetailQuery = vi.fn<(params: unknown) => unknown>()
 const mockUseDeviceID = vi.fn<() => string | null>(() => 'device-1')
+const mockRoute = vi.hoisted(() => ({ chainId: 'algorand' as ChainId }))
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useRoute: () => ({ params: { address: SCANNED_ADDRESS } }),
+        useRoute: () => ({
+            params: { address: SCANNED_ADDRESS, chainId: mockRoute.chainId },
+        }),
     }
 })
 
@@ -66,7 +75,8 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-multisig')
     >()),
-    useMultisigAccountDetailQuery: () => mockUseMultisigAccountDetailQuery(),
+    useMultisigAccountDetailQuery: (params: unknown) =>
+        mockUseMultisigAccountDetailQuery(params),
     useDeleteImportInboxMutation: () => ({ mutate: mockDeleteImportInbox }),
 }))
 
@@ -89,6 +99,8 @@ const detail = {
 
 describe('useImportSharedAccountScreen', () => {
     beforeEach(() => {
+        mockRoute.chainId = 'algorand'
+        restoreAlgorandOnlyChains()
         registerAlgorandAccountsAdapter()
         registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
@@ -210,15 +222,70 @@ describe('useImportSharedAccountScreen', () => {
         result.current.handleAddAccount()
 
         expect(mockPush).toHaveBeenCalledWith('NameMultisig', {
-            address: SCANNED_ADDRESS,
-            threshold: 2,
-            addresses: ['P1', 'P2', 'P3'],
-            version: 1,
+            chainId: 'algorand',
+            imported: {
+                address: SCANNED_ADDRESS,
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
         })
         // Resolving the invitation clears it from the inbox, like Android.
         expect(mockDeleteImportInbox).toHaveBeenCalledWith({
             multisigAddress: SCANNED_ADDRESS,
         })
+    })
+
+    it('reads the shared account on the route chain', () => {
+        renderHook(() => useImportSharedAccountScreen())
+
+        expect(mockUseMultisigAccountDetailQuery).toHaveBeenCalledWith({
+            scope: expect.objectContaining({ chainId: 'algorand' }),
+            address: SCANNED_ADDRESS,
+        })
+    })
+
+    it('reads the shared account and participants on an Ethereum route', () => {
+        registerEthereumChain()
+        mockRoute.chainId = ETHEREUM_CHAIN_ID
+        mockUseAllAccounts.mockReturnValue([
+            {
+                chains: { algorand: { address: 'P1' } },
+                custody: { kind: 'local', seed: null },
+            } as WalletAccount,
+            {
+                chains: { [ETHEREUM_CHAIN_ID]: { address: 'P2' } },
+                custody: { kind: 'local', seed: null },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        expect(mockUseMultisigAccountDetailQuery).toHaveBeenCalledWith({
+            scope: expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+            address: SCANNED_ADDRESS,
+        })
+        expect(result.current.isUserIncluded).toBe(true)
+        result.current.handleAddAccount()
+        expect(mockPush).toHaveBeenCalledWith(
+            'NameMultisig',
+            expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+        )
+    })
+
+    it('ignores a participant held only on another chain', () => {
+        registerEthereumChain()
+        mockRoute.chainId = ETHEREUM_CHAIN_ID
+        mockUseAllAccounts.mockReturnValue([
+            {
+                chains: { algorand: { address: 'P2' } },
+                custody: { kind: 'local', seed: null },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useImportSharedAccountScreen())
+
+        expect(result.current.isUserIncluded).toBe(false)
     })
 
     it('refetches on retry', () => {

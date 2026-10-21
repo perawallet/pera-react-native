@@ -23,13 +23,11 @@ use_pinned_node() {
   fi
 }
 
-# Unpinned, `npm i -g pnpm` floats to latest, and a pnpm major changes
-# lockfile and hoisting behaviour under a release build with no repo change.
-# split('+') strips a Corepack hash suffix that npm can't install.
+# Corepack installs the exact pnpm in package.json's packageManager and checks
+# its sha512, so neither a pnpm release nor a tampered download changes a build.
 install_pinned_pnpm() {
-  local version
-  version=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-  npm install -g "pnpm@${version}"
+  corepack enable pnpm
+  corepack install
 }
 
 # Bitrise installs Ruby via asdf from .tool-versions; a workstation may use

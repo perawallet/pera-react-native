@@ -132,7 +132,7 @@ describe('resolveInitialContext — group integrity validation', () => {
         const request: TransactionSignRequest = {
             id: 'req-2',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: asNeutral(fullGroup),
         }
 
@@ -193,13 +193,13 @@ describe('resolveInitialContext — source callbacks', () => {
     })
 
     it('produces minimal local metadata for local+algod requests (no callbacks wired)', () => {
-        // The fast-path isLocalAlgod branch in buildSourceMetadata — sourceType
+        // The fast-path isLocalNetwork branch in buildSourceMetadata — sourceType
         // defaults to 'local' and transport is not 'callback', so the metadata
         // collapses to `{ type: 'local' }` with no callbacks.
         const request: TransactionSignRequest = {
             id: 'req-local-algod',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [neutralPayment(userAddr, 1n)],
         }
 
@@ -240,7 +240,7 @@ describe('resolveInitialContext — source callbacks', () => {
         const request: TransactionSignRequest = {
             id: 'req-tx-receipt',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             sourceType: 'gift-card',
             txs: [neutralPayment(userAddr, 1n)],
             approve: txApprove,
@@ -557,7 +557,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
         const request: TransactionSignRequest = {
             id: 'req-hw',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [neutralPayment(new Address(new Uint8Array(32).fill(3)), 1n)],
             chainData: {
                 algorand: {
@@ -582,7 +582,7 @@ describe('resolveInitialContext — signer account not found', () => {
         const request: TransactionSignRequest = {
             id: 'req-no-signer',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [neutralPayment(strangerAddr, 1n)],
             chainData: {
                 algorand: {
@@ -618,7 +618,7 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
         ...baseInput({
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs,
         }),
         allAccounts: [
@@ -725,7 +725,7 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
                 request: {
                     ...base.request,
                     sourceType: 'local',
-                    transport: 'algod',
+                    transport: 'network',
                     approve,
                 },
             }).signableGroups![0].source
@@ -1051,7 +1051,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         const request: TransactionSignRequest = {
             id: 'req-empty',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [],
         }
 
@@ -1160,7 +1160,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         const request: TransactionSignRequest = {
             id: 'req-rekeyed',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [
                 asUnsignedAlgorandTransaction(txn, {
                     authorizer: authAddr.toString(),

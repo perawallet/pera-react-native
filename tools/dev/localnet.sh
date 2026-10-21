@@ -6,6 +6,14 @@
 set -euo pipefail
 
 TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PIN_FILE="${SCRIPT_DIR}/localnet.compose.yml"
+
+# AlgoKit runs `docker compose` from its sandbox directory with our environment,
+# so this layers the pin without writing into ~/.config/algokit, which other
+# projects share. AlgoKit finds a running sandbox from the first file listed, so
+# its own docker-compose.yml must stay first.
+export COMPOSE_FILE="docker-compose.yml:${PIN_FILE}"
 
 usage() {
   cat >&2 <<EOF
@@ -16,6 +24,7 @@ Commands:
   stop     Stop the LocalNet
   reset    Reset the LocalNet (fresh chain; genesis hash changes)
   status   Show LocalNet status
+  logs     Print conduit's and indexer's container logs
 EOF
   exit 1
 }
@@ -40,6 +49,24 @@ require_docker() {
   fi
 }
 
+pinned_algod_image() {
+  sed -n 's/.*PERA_LOCALNET_ALGOD_IMAGE:-\([^}]*\)}.*/\1/p' "$PIN_FILE"
+}
+
+# Never fails: it runs after a failed suite, whose exit code is the one to keep.
+print_logs() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "docker not found; no LocalNet container logs to show."
+    return 0
+  fi
+  local name
+  for name in algokit_sandbox_conduit algokit_sandbox_indexer; do
+    echo ""
+    echo "── docker logs ${name} (last 300 lines) ──"
+    docker logs --tail 300 "$name" 2>&1 || true
+  done
+}
+
 cmd="${1:-}"
 case "$cmd" in
   start)
@@ -51,6 +78,7 @@ case "$cmd" in
     echo "  algod   http://localhost:4001   (token: ${TOKEN})"
     echo "  indexer http://localhost:8980"
     echo "  kmd     http://localhost:4002   (token: ${TOKEN})"
+    echo "  algod image: ${PERA_LOCALNET_ALGOD_IMAGE:-$(pinned_algod_image)}"
     echo ""
     echo "Next: in the app, Settings > Developer > Node Settings > Custom network"
     ;;
@@ -66,6 +94,9 @@ case "$cmd" in
   status)
     require_algokit
     algokit localnet status
+    ;;
+  logs)
+    print_logs
     ;;
   *)
     usage

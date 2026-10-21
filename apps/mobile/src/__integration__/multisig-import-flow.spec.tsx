@@ -98,7 +98,7 @@ describe('Flow: Import shared account by scanning its QR code', () => {
         )
 
         renderWithNavigation(ImportSharedAccountScreen, 'ImportSharedAccount', {
-            initialParams: { address: SHARED_ADDRESS },
+            initialParams: { address: SHARED_ADDRESS, chainId: 'algorand' },
             additionalScreens: [
                 { name: 'NameMultisig', component: NameMultisigScreen },
                 // exitAccountFlow resets to 'TabBar' after finishing

@@ -15,15 +15,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useClaimProcessingScreen } from '../useClaimProcessingScreen'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
+
+const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 
 const { mockRouteParams } = vi.hoisted(() => ({
     mockRouteParams: {
-        mode: 'claimArc59' as string,
+        mode: 'claim' as 'claim' | 'reject',
         assetIndex: 0,
         shouldClaimAlgo: false,
+        scope: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
     },
 }))
 
@@ -39,14 +44,16 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/native-stack', () => ({}))
 
-const { mockExecute } = vi.hoisted(() => ({
-    mockExecute: vi.fn(),
-}))
+const { mockExecute, mockUseTransactionSendFlow } = vi.hoisted(() => {
+    const mockExecute = vi.fn()
+    return {
+        mockExecute,
+        mockUseTransactionSendFlow: vi.fn(() => ({ execute: mockExecute })),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
-    useTransactionSendFlow: () => ({
-        execute: mockExecute,
-    }),
+    useTransactionSendFlow: mockUseTransactionSendFlow,
     useAssetInboxInvalidator: () => ({ remove: vi.fn() }),
 }))
 
@@ -113,9 +120,10 @@ vi.mock('react-native', () => ({
 describe('useClaimProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRouteParams.mode = 'claimArc59'
+        mockRouteParams.mode = 'claim'
         mockRouteParams.assetIndex = 0
         mockRouteParams.shouldClaimAlgo = false
+        mockRouteParams.scope = ALGORAND_SCOPE
         mockUseFindAccountByAddress.mockReturnValue(defaultAccount)
         mockUseClaimAssets.mockReturnValue({
             assetRequests: [defaultAssetRequest],
@@ -124,7 +132,28 @@ describe('useClaimProcessingScreen', () => {
         })
     })
 
-    describe('claimArc59 mode', () => {
+    it.each([
+        ['Algorand', ALGORAND_SCOPE],
+        ['Ethereum', { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }],
+    ])(
+        'resolves the account and sends on the %s scope it was opened for',
+        async (_, scope) => {
+            mockRouteParams.scope = scope as ChainScope
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockUseFindAccountByAddress).toHaveBeenCalledWith(
+                'test-address',
+                scope,
+            )
+            expect(mockUseTransactionSendFlow).toHaveBeenCalledWith(scope)
+        },
+    )
+
+    describe('claim mode', () => {
         it('navigates to ClaimSuccess with variant "claim" on successful execution', async () => {
             mockExecute.mockResolvedValueOnce('tx-id-123')
 
@@ -147,7 +176,7 @@ describe('useClaimProcessingScreen', () => {
 
             expect(mockExecute).toHaveBeenCalledWith({
                 params: expect.objectContaining({
-                    sendMode: 'claimArc59',
+                    sendMode: 'claimAssetInbox',
                     amount: new Decimal(250),
                 }),
             })
@@ -181,9 +210,23 @@ describe('useClaimProcessingScreen', () => {
         })
     })
 
-    describe('rejectArc59 mode', () => {
+    describe('reject mode', () => {
         beforeEach(() => {
-            mockRouteParams.mode = 'rejectArc59'
+            mockRouteParams.mode = 'reject'
+        })
+
+        it('asks the send flow to reject through the inbox', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-456')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockExecute).toHaveBeenCalledWith({
+                params: expect.objectContaining({
+                    sendMode: 'rejectAssetInbox',
+                }),
+            })
         })
 
         it('navigates to ClaimSuccess with variant "reject" on successful execution', async () => {

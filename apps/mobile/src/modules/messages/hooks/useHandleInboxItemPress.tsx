@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
 import { pushScreen } from '@modules/deeplink/core'
@@ -48,7 +49,10 @@ export type UseHandleInboxItemPressResult = (item: InboxItem) => void
 // `useAppNavigation`: `useNotificationDeeplinkListener` reaches this hook from
 // RootComponent, which sits above NavigationContainer, so `useNavigation` has
 // no context there and throws during render on every launch.
-export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
+/** `scope` is the one the inbox was fetched on, so its asset requests live there. */
+export const useHandleInboxItemPress = (
+    scope: ChainScope,
+): UseHandleInboxItemPressResult => {
     const { errorToast } = useToast()
     const handleMultisigSignTap = useHandleMultisigSignTap()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -91,7 +95,7 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                     const asaInbox = item.data as ASAInbox
                     pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
-                        params: { item: asaInbox },
+                        params: { item: asaInbox, scope },
                     })
                     return
                 }
@@ -119,6 +123,7 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
             openInvitationDetail,
             canUseAssetInbox,
             canUseMultisig,
+            scope,
         ],
     )
 }

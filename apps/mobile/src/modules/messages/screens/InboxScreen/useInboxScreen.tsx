@@ -63,7 +63,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isUnavailableOnNetwork,
     } = useInboxQuery(scope)
     useCleanupDuplicateMultisigInvitations(scope)
-    const handleInboxItemPress = useHandleInboxItemPress()
+    const handleInboxItemPress = useHandleInboxItemPress(scope)
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()
 
