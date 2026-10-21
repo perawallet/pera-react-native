@@ -101,11 +101,20 @@ vi.mock('@perawallet/wallet-core-config', async () => {
     >('@perawallet/wallet-core-config')
     return {
         ...actual,
-        config: { ...actual.config, webIntegrityMintEnabled: true },
+        config: {
+            ...actual.config,
+            webIntegrityMintEnabled: true,
+            webIntegrityEnrolEnabled: true,
+        },
     }
 })
 
 const NOW = Date.parse('2026-08-04T12:00:00.000Z')
+
+const jwt = (claims: Record<string, unknown>): string =>
+    `header.${btoa(JSON.stringify(claims)).replace(/=+$/, '')}.signature`
+const ENROLLED_JWT = jwt({ platform: 'web', enr: true })
+const UNENROLLED_JWT = jwt({ platform: 'web' })
 
 const forbidden = (code?: string) =>
     Object.assign(new Error('forbidden'), {
@@ -128,7 +137,11 @@ const mockMintFlag = (enabled: boolean): void => {
         >('@perawallet/wallet-core-config')
         return {
             ...actual,
-            config: { ...actual.config, webIntegrityMintEnabled: enabled },
+            config: {
+                ...actual.config,
+                webIntegrityMintEnabled: enabled,
+                webIntegrityEnrolEnabled: true,
+            },
         }
     })
 }
@@ -615,6 +628,7 @@ describe('integrity failures, recovery and control', () => {
         const {
             INTEGRITY_REVOCATIONS_SESSION_KEY,
             INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
+            INTEGRITY_ENROL_NEEDED_SESSION_KEY,
         } = await keys()
 
         await ensureIntegrityToken()
@@ -623,6 +637,9 @@ describe('integrity failures, recovery and control', () => {
             fake.session.get(INTEGRITY_ENROL_BACKOFF_SESSION_KEY),
         ).toBeUndefined()
 
+        // The fresh key re-enrols, which clears the marker; the backend then
+        // revokes it too.
+        fake.session.delete(INTEGRITY_ENROL_NEEDED_SESSION_KEY)
         vi.setSystemTime(NOW + 6 * 60 * 1000)
         await ensureIntegrityToken()
 
@@ -753,8 +770,8 @@ describe('integrity failures, recovery and control', () => {
             expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
         })
 
-        it("takes the refusal of a token it just minted as the backend's answer, not a reason to mint again", async () => {
-            const expiresAt = await storeToken('fresh-jwt', 10 * 1000)
+        it("takes the refusal of an enrolled token it just minted as the backend's answer, not a reason to mint again", async () => {
+            const expiresAt = await storeToken(ENROLLED_JWT, 10 * 1000)
             const { handleIntegrityControl } = await import('../integrity')
             const {
                 INTEGRITY_LAST_FAILURE_SESSION_KEY,
@@ -780,6 +797,83 @@ describe('integrity failures, recovery and control', () => {
             ).toMatchObject({
                 failures: 1,
             })
+        })
+
+        it('takes the refusal of an unenrolled token as enrolment still to do, not an outage', async () => {
+            const expiresAt = await storeToken(UNENROLLED_JWT, 10 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+            const {
+                INTEGRITY_LAST_FAILURE_SESSION_KEY,
+                INTEGRITY_BACKOFF_SESSION_KEY,
+                INTEGRITY_TOKEN_SESSION_KEY,
+                INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+            } = await keys()
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+            expect(fake.session.has(INTEGRITY_TOKEN_SESSION_KEY)).toBe(false)
+            expect(fake.session.has(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toBe(
+                false,
+            )
+            expect(fake.session.has(INTEGRITY_BACKOFF_SESSION_KEY)).toBe(false)
+            expect(fake.session.get(INTEGRITY_ENROL_NEEDED_SESSION_KEY)).toBe(
+                NOW,
+            )
+        })
+
+        it("mints afresh when the refused token predates this install's enrolment", async () => {
+            mockGetEnrolmentMarker.mockResolvedValueOnce({
+                kid: 'kid-current',
+                enrolledAt: new Date(NOW).toISOString(),
+            })
+            const expiresAt = await storeToken(UNENROLLED_JWT, 10 * 1000)
+            const { handleIntegrityControl } = await import('../integrity')
+            const {
+                INTEGRITY_LAST_FAILURE_SESSION_KEY,
+                INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+            } = await keys()
+
+            await handleIntegrityControl(
+                control({ kind: 'token-rejected', tokenExpiresAt: expiresAt }),
+            )
+
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+            expect(fake.session.has(INTEGRITY_LAST_FAILURE_SESSION_KEY)).toBe(
+                false,
+            )
+            expect(fake.session.has(INTEGRITY_ENROL_NEEDED_SESSION_KEY)).toBe(
+                false,
+            )
+        })
+
+        it('mints no token while enrolment is still to do', async () => {
+            const { INTEGRITY_ENROL_NEEDED_SESSION_KEY } = await keys()
+            fake.session.set(INTEGRITY_ENROL_NEEDED_SESSION_KEY, NOW)
+            const { ensureIntegrityToken } = await import('../integrity')
+
+            await ensureIntegrityToken()
+
+            expect(mockAttestDevice).not.toHaveBeenCalled()
+        })
+
+        it('replaces a token that still lives once the install enrols', async () => {
+            await storeToken(UNENROLLED_JWT, 2 * 60 * 1000)
+            const { replaceTokenAfterEnrolment } = await import('../integrity')
+            const { INTEGRITY_TOKEN_SESSION_KEY } = await keys()
+            mockAttestDevice.mockResolvedValue({
+                integrityToken: ENROLLED_JWT,
+                expiresAt: new Date(NOW + 15 * 60 * 1000).toISOString(),
+            })
+
+            await replaceTokenAfterEnrolment()
+
+            expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+            expect(fake.session.get(INTEGRITY_TOKEN_SESSION_KEY)).toMatchObject(
+                { integrityToken: ENROLLED_JWT },
+            )
         })
 
         it('ignores a rejection naming a token it has since replaced', async () => {
