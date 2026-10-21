@@ -13,11 +13,22 @@
 import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ContactAddressFields } from '@modules/contacts/components/ContactAddressFields'
 import { useAddContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
 
-export const AddContactScreen = () => {
+export type AddContactScreenProps = {
+    /**
+     * Where the submit button sits. `header` for a host where the keyboard
+     * would cover a footer, such as the Send sheet.
+     */
+    submitPlacement?: 'footer' | 'header'
+}
+
+export const AddContactScreen = ({
+    submitPlacement = 'footer',
+}: AddContactScreenProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
@@ -41,18 +52,36 @@ export const AddContactScreen = () => {
         onPickImage,
         save,
     } = useAddContactForm()
+    const submit = () => void handleSubmit(save)()
+    const isSubmitInHeader = submitPlacement === 'header'
+
+    useNavigationHeader({
+        enabled: isSubmitInHeader,
+        right: (
+            <PWButton
+                variant='linkPositive'
+                title={t('contacts.add_contact.add')}
+                onPress={submit}
+                isDisabled={!isValid}
+                paddingStyle='none'
+                testID='add_contact_button'
+            />
+        ),
+    })
 
     return (
         <PWScreen
             footer={
-                <PWButton
-                    onPress={() => void handleSubmit(save)()}
-                    title={t('contacts.edit_contact.add_contact')}
-                    variant='primary'
-                    isDisabled={!isValid}
-                    style={styles.footerButton}
-                    testID='add_contact_button'
-                />
+                isSubmitInHeader ? undefined : (
+                    <PWButton
+                        onPress={submit}
+                        title={t('contacts.edit_contact.add_contact')}
+                        variant='primary'
+                        isDisabled={!isValid}
+                        style={styles.footerButton}
+                        testID='add_contact_button'
+                    />
+                )
             }
         >
             <ContactForm

@@ -19,17 +19,6 @@ import {
     waitFor,
 } from '@testing-library/react'
 
-// `expo-image-picker` is a native module that crashes under jsdom; the form's
-// photo affordance is irrelevant here.
-vi.mock('expo-image-picker', () => ({
-    getMediaLibraryPermissionsAsync: vi.fn(async () => ({ granted: true })),
-    requestMediaLibraryPermissionsAsync: vi.fn(async () => ({ granted: true })),
-    launchImageLibraryAsync: vi.fn(async () => ({
-        canceled: true,
-        assets: [],
-    })),
-}))
-
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =

@@ -19,24 +19,6 @@ import {
     waitFor,
 } from '@testing-library/react'
 
-// `expo-image-picker` is a native module: importing it under jsdom drags in
-// `expo/src/winter/runtime` and crashes resolving `./ImportMetaRegistry`.
-// The contact form's image-picker affordance is irrelevant to CRUD, so stub
-// the surface `useImagePicker` consumes.
-vi.mock('expo-image-picker', () => ({
-    getMediaLibraryPermissionsAsync: vi.fn(async () => ({
-        granted: true,
-        canAskAgain: true,
-    })),
-    requestMediaLibraryPermissionsAsync: vi.fn(async () => ({
-        granted: true,
-    })),
-    launchImageLibraryAsync: vi.fn(async () => ({
-        canceled: true,
-        assets: [],
-    })),
-}))
-
 const {
     isCloudBackupEnabledMock,
     keepContactInBackupMock,

@@ -140,3 +140,19 @@ vi.mock('expo-device', () => ({
     modelId: 'iPhone13,2',
     modelName: 'iPhone 13',
 }))
+
+// Native entry crashes under jsdom resolving `./ImportMetaRegistry`; Send
+// reaches the contact form, which only needs the picker to decline.
+vi.mock('expo-image-picker', () => ({
+    getMediaLibraryPermissionsAsync: vi.fn(async () => ({
+        granted: true,
+        canAskAgain: true,
+    })),
+    requestMediaLibraryPermissionsAsync: vi.fn(async () => ({
+        granted: true,
+    })),
+    launchImageLibraryAsync: vi.fn(async () => ({
+        canceled: true,
+        assets: [],
+    })),
+}))
