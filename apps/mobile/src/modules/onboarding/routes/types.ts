@@ -97,6 +97,7 @@ export type ImportFlowParamList = {
     ImportAccount: {
         accountType: LocalKeySeed
     }
+    ImportPrivateKey: { chainId: ChainId }
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined
     LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>
@@ -150,7 +151,6 @@ export type AddAccountStackParamList = ImportFlowParamList & {
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget
     }>
-    ImportPrivateKey: { chainId: ChainId }
     WatchInfo: undefined
     WatchAccount: Optional<{
         // Set by the watch-account / register-watch-account deeplinks so the

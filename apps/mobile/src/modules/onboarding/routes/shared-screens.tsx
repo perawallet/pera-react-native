@@ -24,6 +24,7 @@ import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAc
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
+import { ImportPrivateKeyScreen } from '@modules/onboarding/screens/ImportPrivateKeyScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
@@ -75,6 +76,9 @@ const ImportAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportAccountScreen)
 const ImportInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportInfoScreen)
+const ImportPrivateKeyScreenWithErrorBoundary = withAccountErrorBoundary(
+    ImportPrivateKeyScreen,
+)
 const SearchAccountsScreenWithErrorBoundary =
     withAccountErrorBoundary(SearchAccountsScreen)
 const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
@@ -153,6 +157,7 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'ImportAccountOptions',
     'ImportInfo',
     'ImportAccount',
+    'ImportPrivateKey',
     'NameAccount',
     'SearchAccounts',
     'ImportSelectAddresses',
@@ -212,6 +217,13 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={ImportAccountScreenWithErrorBoundary}
         />
+        {isAllowed({ anyChain: 'privateKeys' }) && (
+            <Stack.Screen
+                name='ImportPrivateKey'
+                options={{ title: '' }}
+                component={ImportPrivateKeyScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='NameAccount'
             options={{ title: '' }}
