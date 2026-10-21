@@ -62,6 +62,7 @@ describe('Flow: Create a multisig account from scratch', () => {
 
     it('Given participants, when the user proceeds and raises the threshold to the participant count, then the threshold is committed and the warning gate hands off to the naming screen', async () => {
         renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
             additionalScreens: [
                 { name: 'SetThreshold', component: SetThresholdScreen },
                 { name: 'NameMultisig', component: NameMultisigScreen },
@@ -127,6 +128,7 @@ describe('Flow: Create a multisig account from scratch', () => {
         )
 
         renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
             additionalScreens: [
                 { name: 'SetThreshold', component: SetThresholdScreen },
                 { name: 'NameMultisig', component: NameMultisigScreen },
@@ -177,7 +179,9 @@ describe('Flow: Create a multisig account from scratch', () => {
             .getState()
             .addParticipant({ address: ALGO25_TEST_ADDRESS })
 
-        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig')
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
+        })
 
         const continueButton = await screen.findByTestId(
             'create_multisig_continue_button',

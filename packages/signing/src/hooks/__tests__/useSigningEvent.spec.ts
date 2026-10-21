@@ -27,7 +27,7 @@ describe('useSigningEvent', () => {
         signingEventBus.publish({
             type: 'completed',
             request: req('r1'),
-            result: { type: 'algod', txIds: [] } as never,
+            result: { type: 'network', txIds: [] } as never,
         })
         expect(handler).toHaveBeenCalledTimes(1)
         expect(handler.mock.calls[0][0].type).toBe('completed')

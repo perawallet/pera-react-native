@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { ARC59WarningContent } from './ARC59WarningContent'
-export type { ARC59WarningContentProps } from './ARC59WarningContent'
+export { RelatedTransactions } from './RelatedTransactions'

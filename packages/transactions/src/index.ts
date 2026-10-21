@@ -21,7 +21,9 @@ export * from './hooks'
 export {
     sendFlowChainAdapters,
     sendFlowFeatureFor,
+    toAssetInboxQuote,
     type SendFlowChainAdapter,
+    type AssetInboxQuote,
     type AssetInboxRequest,
     type AssetInboxSendFlow,
     type AssetInboxSendSummary,

@@ -16,17 +16,13 @@ import {
     useGroupTransactionsQuery,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type { RelatedTransactionsProps } from '@modules/signing'
 import {
     toGroupTransactionRows,
     type GroupTransactionRow,
 } from '../../../utils/groupTransactionRows'
 
-export type GroupTransactionsPanelProps = {
-    groupId?: string
-    currentTransaction: TransactionNative
-    onGroupTransactionPress: (transaction: TransactionNative) => void
-}
+export type GroupTransactionsPanelProps = RelatedTransactionsProps
 
 type UseGroupTransactionsPanelResult = {
     otherTransactions: GroupTransactionRow[]
@@ -37,7 +33,7 @@ type UseGroupTransactionsPanelResult = {
 export const useGroupTransactionsPanel = ({
     groupId,
     currentTransaction,
-    onGroupTransactionPress,
+    onRelatedTransactionPress,
 }: GroupTransactionsPanelProps): UseGroupTransactionsPanelResult => {
     const { groupTransactions } = useGroupTransactionsQuery({ groupId })
     const currentId = readAlgorandNative(currentTransaction)?.id ?? ''
@@ -54,10 +50,10 @@ export const useGroupTransactionsPanel = ({
         (view: AlgorandTransactionView) => {
             const row = otherTransactions.find(other => other.view === view)
             if (row) {
-                onGroupTransactionPress(row.native)
+                onRelatedTransactionPress(row.native)
             }
         },
-        [otherTransactions, onGroupTransactionPress],
+        [otherTransactions, onRelatedTransactionPress],
     )
 
     return {

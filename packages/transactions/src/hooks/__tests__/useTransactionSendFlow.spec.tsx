@@ -26,6 +26,7 @@ import {
 import { AssetFrozenError } from '../../errors'
 import {
     sendFlowChainAdapters,
+    toAssetInboxQuote,
     type SendFlowChainAdapter,
 } from '../../chain-adapter'
 import { transferChainAdapters } from '../../transfer-adapter'
@@ -501,7 +502,7 @@ describe('useTransactionSendFlow', () => {
         })
     })
 
-    it('sendArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
+    it('sendAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
                 chainId: LEGACY_CHAIN_ID,
@@ -511,17 +512,12 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             await result.current.execute({
                 params: {
-                    sendMode: 'sendArc59',
+                    sendMode: 'sendAssetInbox',
                     sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
-                    arc59Summary: {
-                        algo_fund_amount: 0,
-                        minimum_balance_requirement: 0,
-                        is_arc59_opted_in: true,
-                        inner_tx_count: 1,
-                    } as any,
+                    assetInboxQuote: toAssetInboxQuote({ fee: 0 }),
                 },
             })
         })
@@ -540,7 +536,7 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
-    it('sendArc59: passes the PQ-aware sender fee to the builder', async () => {
+    it('sendAssetInbox: passes the PQ-aware sender fee to the builder', async () => {
         mockResolveMinFeeForSender.mockReturnValue(3000n)
         const { result } = renderHook(() =>
             useTransactionSendFlow({
@@ -551,17 +547,12 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             await result.current.execute({
                 params: {
-                    sendMode: 'sendArc59',
+                    sendMode: 'sendAssetInbox',
                     sender: SENDER_ACCOUNT,
                     receiver: 'B',
                     asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
-                    arc59Summary: {
-                        algo_fund_amount: 0,
-                        minimum_balance_requirement: 0,
-                        is_arc59_opted_in: true,
-                        inner_tx_count: 1,
-                    } as any,
+                    assetInboxQuote: toAssetInboxQuote({ fee: 0 }),
                 },
             })
         })
@@ -577,7 +568,7 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
-    it('claimArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
+    it('claimAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
                 chainId: LEGACY_CHAIN_ID,
@@ -587,7 +578,7 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             await result.current.execute({
                 params: {
-                    sendMode: 'claimArc59',
+                    sendMode: 'claimAssetInbox',
                     sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
@@ -613,7 +604,7 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
-    it('claimArc59 with amount: optimistically credits the holding after submit', async () => {
+    it('claimAssetInbox with amount: optimistically credits the holding after submit', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
                 chainId: LEGACY_CHAIN_ID,
@@ -623,7 +614,7 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             const id = await result.current.execute({
                 params: {
-                    sendMode: 'claimArc59',
+                    sendMode: 'claimAssetInbox',
                     sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
@@ -645,7 +636,7 @@ describe('useTransactionSendFlow', () => {
         expect(mockInvalidateBalances).toHaveBeenCalled()
     })
 
-    it('claimArc59 without amount: skips the optimistic credit', async () => {
+    it('claimAssetInbox without amount: skips the optimistic credit', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
                 chainId: LEGACY_CHAIN_ID,
@@ -655,7 +646,7 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             await result.current.execute({
                 params: {
-                    sendMode: 'claimArc59',
+                    sendMode: 'claimAssetInbox',
                     sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
@@ -667,7 +658,7 @@ describe('useTransactionSendFlow', () => {
         expect(mockInvalidateBalances).not.toHaveBeenCalled()
     })
 
-    it('claimArc59: a failed optimistic credit does not fail the claim', async () => {
+    it('claimAssetInbox: a failed optimistic credit does not fail the claim', async () => {
         mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
         const { result } = renderHook(() =>
             useTransactionSendFlow({
@@ -678,7 +669,7 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             const id = await result.current.execute({
                 params: {
-                    sendMode: 'claimArc59',
+                    sendMode: 'claimAssetInbox',
                     sender: SENDER_ACCOUNT,
                     asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
@@ -690,7 +681,7 @@ describe('useTransactionSendFlow', () => {
         expect(mockInvalidateBalances).toHaveBeenCalled()
     })
 
-    it('rejectArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
+    it('rejectAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
                 chainId: LEGACY_CHAIN_ID,
@@ -700,7 +691,7 @@ describe('useTransactionSendFlow', () => {
         await act(async () => {
             await result.current.execute({
                 params: {
-                    sendMode: 'rejectArc59',
+                    sendMode: 'rejectAssetInbox',
                     sender: SENDER_ACCOUNT,
                     asset: {
                         assetId: 99n,
@@ -735,22 +726,22 @@ describe('useTransactionSendFlow', () => {
     })
 
     describe('send-flow chain adapter', () => {
-        const arc59Params = {
-            sendMode: 'sendArc59' as const,
+        const inboxSendParams = {
+            sendMode: 'sendAssetInbox' as const,
             sender: SENDER_ACCOUNT,
             receiver: 'B',
             asset: { assetId: '99', decimals: 0 } as any,
             amount: new Decimal(1),
-            arc59Summary: { inbox_address: null },
+            assetInboxQuote: toAssetInboxQuote({ fee: 0 }),
         }
         const claimParams = {
-            sendMode: 'claimArc59' as const,
+            sendMode: 'claimAssetInbox' as const,
             sender: SENDER_ACCOUNT,
             asset: { assetId: '99', decimals: 0 } as any,
             shouldClaimAlgo: false,
         }
 
-        it("hands the inbox send to the network's adapter with the summary untouched", async () => {
+        it("hands the inbox send to the network's adapter with the quote untouched", async () => {
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
                     chainId: LEGACY_CHAIN_ID,
@@ -758,7 +749,7 @@ describe('useTransactionSendFlow', () => {
                 } as const),
             )
             await act(async () => {
-                await result.current.execute({ params: arc59Params })
+                await result.current.execute({ params: inboxSendParams })
             })
             expect(mockBuildSendViaInbox).toHaveBeenCalledWith({
                 scope: {
@@ -769,7 +760,7 @@ describe('useTransactionSendFlow', () => {
                 receiver: 'B',
                 assetId: 99n,
                 amount: 1n,
-                summary: arc59Params.arc59Summary,
+                quote: inboxSendParams.assetInboxQuote,
                 senderMinFee: 1000n,
             })
         })
@@ -874,7 +865,7 @@ describe('useTransactionSendFlow', () => {
             await act(async () => {
                 await expect(
                     result.current.execute({
-                        params: { ...arc59Params, sendMode: 'normal' },
+                        params: { ...inboxSendParams, sendMode: 'normal' },
                     }),
                 ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
             })
@@ -891,7 +882,7 @@ describe('useTransactionSendFlow', () => {
             )
             await act(async () => {
                 await expect(
-                    result.current.execute({ params: arc59Params }),
+                    result.current.execute({ params: inboxSendParams }),
                 ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
             })
             expect(mockSubmit).not.toHaveBeenCalled()

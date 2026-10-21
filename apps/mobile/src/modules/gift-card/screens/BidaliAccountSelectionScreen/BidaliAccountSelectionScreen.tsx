@@ -12,15 +12,13 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import {
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountPicker } from '@components/AccountPicker'
 import { useBidali } from '../../hooks/useBidali'
+import { useGiftCardAccounts } from '../../hooks/useGiftCardAccounts'
 import { useStyles } from './styles'
 
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -29,7 +27,7 @@ import type { BidaliStackParamList } from '../../routes/types'
 export const BidaliAccountSelectionScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const accounts = useAllAccounts()
+    const accounts = useGiftCardAccounts()
     const { setSelectedAccount } = useBidali()
     const navigation =
         useNavigation<StackNavigationProp<BidaliStackParamList>>()

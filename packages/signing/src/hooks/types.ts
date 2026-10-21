@@ -125,7 +125,7 @@ export type SourceKind =
     | 'injected'
 
 export type TransportKind =
-    | 'algod'
+    | 'network'
     | 'callback'
     | 'multisig-propose'
     | 'multisig-cosign'

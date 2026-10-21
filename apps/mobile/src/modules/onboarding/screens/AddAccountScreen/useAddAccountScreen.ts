@@ -30,6 +30,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useModalState } from '@hooks/useModalState'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -67,6 +68,7 @@ export const useAddAccountScreen = () => {
     const { isAuthenticated } = useCardSession()
     const hasCardSession = isDebug || isStaging ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
+    const multisigChainId = useCapableChainId('multisig')
     const canUseMultisig = useCapability({
         platform: 'sharedAccounts',
         anyChain: 'multisig',
@@ -180,8 +182,17 @@ export const useAddAccountScreen = () => {
     const handleContinueMultisigIntroduction = useCallback(() => {
         closeMultisigIntroduction()
         resetMultisigCreation()
-        navigation.navigate('Multisig', { screen: 'CreateMultisig' })
-    }, [closeMultisigIntroduction, navigation, resetMultisigCreation])
+        // The first multisig chain until a picker covers several.
+        navigation.navigate('Multisig', {
+            screen: 'CreateMultisig',
+            params: { chainId: multisigChainId },
+        })
+    }, [
+        closeMultisigIntroduction,
+        navigation,
+        resetMultisigCreation,
+        multisigChainId,
+    ])
 
     const handleWatchAddress = useCallback(
         () => navigation.push('WatchInfo'),

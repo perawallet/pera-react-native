@@ -12,11 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -34,6 +30,7 @@ import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -123,14 +120,15 @@ const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, I18nKey> = {
 
 export const usePendingSignaturesContent =
     (): UsePendingSignaturesContentResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { t } = useLanguage()
         const { errorToast } = useToast()
-        const deviceId = useScopedDeviceID(scope) ?? ''
         const accounts = useAllAccounts()
         const { addSignRequest, pendingSignRequests } = useSigningRequest()
         const signRequestId = usePendingSignaturesSheetStore(
             state => state.signRequestId,
+        )
+        const openedChainId = usePendingSignaturesSheetStore(
+            state => state.chainId,
         )
         const closeSheet = usePendingSignaturesSheetStore(
             state => state.closeSheet,
@@ -146,6 +144,13 @@ export const usePendingSignaturesContent =
         const draft = useDraftSignRequestStore(state =>
             isDraft && signRequestId ? state.drafts[signRequestId] : undefined,
         )
+        // A sign-request deeplink names no chain; the multisig chain stands in.
+        const fallbackChainId = useCapableChainId('multisig')
+        const selectedScope = useSelectedScope(
+            draft?.scope.chainId ?? openedChainId ?? fallbackChainId,
+        )
+        const scope = draft?.scope ?? selectedScope
+        const deviceId = useScopedDeviceID(scope) ?? ''
 
         // Tracks whether the bounded recovery window for a `failed` request
         // has elapsed. While false, a `failed` request is treated as still
@@ -371,6 +376,7 @@ export const usePendingSignaturesContent =
         } = useMultisigSignRequestDecline({
             mode: 'cancel',
             signRequest,
+            chainId: scope.chainId,
         })
 
         const handleCancel = useCallback(async () => {

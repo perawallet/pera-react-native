@@ -22,7 +22,7 @@ import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 // laxer policy otherwise rehydrate for up to `reactQueryPersistenceAge`.
 // And when a query key changes shape: entries are stored by key hash, so ones
 // written under the old shape are never read again yet outlive that same age.
-export const PERSISTED_CACHE_BUSTER = 'asset-inbox-keys'
+export const PERSISTED_CACHE_BUSTER = 'asset-inbox-native-fields'
 
 /**
  * What each query-key prefix may write to the persisted cache, which is
