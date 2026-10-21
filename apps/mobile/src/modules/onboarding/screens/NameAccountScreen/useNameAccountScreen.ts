@@ -24,6 +24,7 @@ import {
     useAccountsStore,
     useAllAccounts,
     useCreateAccount,
+    useRegisteredChainIds,
     useSelectedAccountId,
     useUpdateAccount,
     type WalletAccount,
@@ -39,7 +40,10 @@ import {
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
@@ -65,6 +69,20 @@ export const useNameAccountScreen = () => {
     const chainId = route.params?.chainId ?? LEGACY_CHAIN_ID
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
+    const registeredChainIds = useRegisteredChainIds()
+
+    // The stored record, once there is one: discovery can add chains to it
+    // after the route param was made.
+    const storedAccount = account
+        ? accounts.find(a => a.id === account.id)
+        : undefined
+    const enabledChainIds = useMemo((): ChainId[] => {
+        const shown = storedAccount ?? account
+        if (!shown || registeredChainIds.length < 2) return []
+        return registeredChainIds.filter(chainId =>
+            chainAccountOf(shown, chainId),
+        )
+    }, [storedAccount, account, registeredChainIds])
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
@@ -122,27 +140,28 @@ export const useNameAccountScreen = () => {
                 account ||
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            const namedAccount = { ...targetAccount, name: walletDisplay }
             const storedAccounts = useAccountsStore.getState().accounts
             const targetAddress = chainAccountOf(
                 targetAccount,
                 chainId,
             )?.address
             // Watched, derived and imported accounts are persisted before
-            // naming, so naming updates them rather than adding a duplicate.
-            const isAlreadyInStore =
-                storedAccounts.some(a => a.id === targetAccount.id) ||
-                (targetAddress !== undefined &&
-                    !!findAccountByAddressOn(
-                        storedAccounts,
-                        chainId,
-                        targetAddress,
-                    ))
+            // naming, so naming renames the stored record: the route copy can
+            // lack chains enabled since it was made.
+            const stored =
+                storedAccounts.find(a => a.id === targetAccount.id) ??
+                (targetAddress !== undefined
+                    ? findAccountByAddressOn(
+                          storedAccounts,
+                          chainId,
+                          targetAddress,
+                      )
+                    : undefined)
 
-            if (isAlreadyInStore) {
-                updateAccount(namedAccount)
+            if (stored) {
+                updateAccount({ ...stored, name: walletDisplay })
             } else {
-                await saveAccount(namedAccount)
+                await saveAccount({ ...targetAccount, name: walletDisplay })
             }
 
             trackEvent(OnboardingEvent.RegisterAccount, {
@@ -179,5 +198,6 @@ export const useNameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        enabledChainIds,
     }
 }

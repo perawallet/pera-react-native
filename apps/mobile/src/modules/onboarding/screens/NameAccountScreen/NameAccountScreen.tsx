@@ -16,6 +16,7 @@ import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ChainIcon } from '@modules/chain-ui'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
 
@@ -29,6 +30,7 @@ export const NameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        enabledChainIds,
     } = useNameAccountScreen()
 
     return (
@@ -55,6 +57,20 @@ export const NameAccountScreen = () => {
                           })}
                 </PWText>
             </PWView>
+            {enabledChainIds.length > 0 && (
+                <PWView
+                    style={styles.chainIconRow}
+                    testID='name_account_chain_icons'
+                >
+                    {enabledChainIds.map(chainId => (
+                        <ChainIcon
+                            key={chainId}
+                            chainId={chainId}
+                            size={20}
+                        />
+                    ))}
+                </PWView>
+            )}
         </NameAccountForm>
     )
 }

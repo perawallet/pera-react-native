@@ -27,4 +27,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         alignSelf: 'center',
     },
+    chainIconRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
+    },
 }))
