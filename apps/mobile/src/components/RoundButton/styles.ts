@@ -38,6 +38,12 @@ export const useStyles = makeStyles(theme => {
         dimmed: {
             opacity: 0.5,
         },
+        destructiveIcon: {
+            backgroundColor: theme.colors.negativeLighter,
+        },
+        destructiveTitle: {
+            color: theme.colors.negative,
+        },
         titleStyle: {
             textAlign: 'center',
             width: '100%',
