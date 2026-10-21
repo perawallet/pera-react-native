@@ -45,7 +45,7 @@ import {
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
-import { useCapability, useCapabilityCheck } from '@hooks/useCapability'
+import { useCapability } from '@hooks/useCapability'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -61,6 +61,7 @@ import {
     type GroupedHoldingItem,
 } from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
+import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
 import {
@@ -143,13 +144,9 @@ export const useAccountAssetList = ({
     const addAssetChainId = useCapableChainId('manageAssets')
 
     const sources = useAccountHoldingSources(account)
-    const checkCapability = useCapabilityCheck()
     // A primitive, so the row press handler keeps its identity across renders.
-    const nftChainIds = sources
+    const nftChainIds = useNftHoldingSources(account)
         .map(({ scope: { chainId } }) => chainId)
-        .filter(chainId =>
-            checkCapability({ chain: { chainId, capability: 'nft' } }),
-        )
         .join()
     const isChainSwitchedOff = sources.length === 0
     const storedChainId = useAssetListViewStore(state => state.selectedChainId)
