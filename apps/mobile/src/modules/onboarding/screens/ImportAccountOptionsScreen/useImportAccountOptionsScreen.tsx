@@ -42,6 +42,7 @@ import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
+import { usePrivateKeyImportChainId } from '../../hooks/usePrivateKeyImportChainId'
 import type { ImportFlowParamList } from '../../routes/types'
 import { trackChainOnboardingEvent } from '../../utils'
 
@@ -90,6 +91,7 @@ export const useImportAccountOptionsScreen =
         const isCloudBackupConfigured = useCloudBackupStore(state =>
             state.isConfigured(),
         )
+        const privateKeyChainId = usePrivateKeyImportChainId()
 
         const {
             isOpen: isQRScannerVisible,
@@ -229,6 +231,29 @@ export const useImportAccountOptionsScreen =
             [navigation],
         )
 
+        const privateKeyImportOptions: AccountOption[] = useMemo(
+            () =>
+                privateKeyChainId
+                    ? [
+                          {
+                              testID: 'import_account_options_private_key_button',
+                              titleKey: i18nKey(
+                                  'onboarding.import_account_options.private_key_title',
+                              ),
+                              descriptionKey: i18nKey(
+                                  'onboarding.import_account_options.private_key_description',
+                              ),
+                              leftIcon: 'key' as IconName,
+                              onPress: () =>
+                                  navigation.push('ImportPrivateKey', {
+                                      chainId: privateKeyChainId,
+                                  }),
+                          },
+                      ]
+                    : [],
+            [privateKeyChainId, navigation],
+        )
+
         const kindImportOptions: AccountOption[] = useMemo(
             () =>
                 offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
@@ -265,6 +290,7 @@ export const useImportAccountOptionsScreen =
                     onPress: () => void handleOpenImportOptions(),
                 },
                 ...kindImportOptions,
+                ...privateKeyImportOptions,
                 {
                     testID: 'import_account_options_recover_qr_button',
                     titleKey: i18nKey(
@@ -378,6 +404,7 @@ export const useImportAccountOptionsScreen =
             handleImportPeraWeb,
             handleImportCloudBackup,
             kindImportOptions,
+            privateKeyImportOptions,
             isCloudBackupAvailable,
             canImportSecureBackup,
             canUseLedger,

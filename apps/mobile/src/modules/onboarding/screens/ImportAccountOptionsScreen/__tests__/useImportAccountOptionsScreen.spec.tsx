@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     detectImportKind,
     setPendingImportMnemonic,
@@ -23,6 +23,11 @@ import {
 } from '../useImportAccountOptionsScreen'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { OnboardingEvent, trackEvent } from '@analytics'
 
 const mockPush = vi.fn()
@@ -700,6 +705,47 @@ describe('useImportAccountOptionsScreen', () => {
             )
             expect(mockChooseRestoreRoute).not.toHaveBeenCalled()
             expect(mockPush).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('private-key import option', () => {
+        const PRIVATE_KEY_BUTTON = 'import_account_options_private_key_button'
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('is absent with Algorand alone', () => {
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(result.current.options.map(o => o.testID)).not.toContain(
+                PRIVATE_KEY_BUTTON,
+            )
+        })
+
+        it('opens the private-key import on the chain that imports raw keys', () => {
+            registerEthereumChain()
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const option = result.current.options.find(
+                o => o.testID === PRIVATE_KEY_BUTTON,
+            )
+            act(() => option!.onPress!())
+
+            expect(mockPush).toHaveBeenCalledWith('ImportPrivateKey', {
+                chainId: ETHEREUM_CHAIN_ID,
+            })
+        })
+
+        it('is absent while private keys are off', () => {
+            registerEthereumChain()
+            capabilityState.turnOff('privateKeys')
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(result.current.options.map(o => o.testID)).not.toContain(
+                PRIVATE_KEY_BUTTON,
+            )
         })
     })
 
