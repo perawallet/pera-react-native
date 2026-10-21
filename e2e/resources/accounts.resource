@@ -138,23 +138,6 @@ Tap More Until Options Open
     Tap    ${MORE_BUTTON}
     Wait Until Page Contains Element    ${OPTION_COPY_ADDRESS}    timeout=3s
 
-Scroll Until Tappable
-    [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.
-    ...                A row below the fold can be in the tree and report itself displayed, and
-    ...                tapping it there lands on whatever is at its off-screen coordinates instead.
-    [Arguments]    ${locator}
-    ${height}=    Get Window Height
-    FOR    ${i}    IN RANGE    6
-        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-        IF    ${present}
-            ${location}=    Get Element Location    ${locator}
-            ${size}=    Get Element Size    ${locator}
-            IF    ${location}[y] + ${size}[height] / 2 < ${height} * 0.95    RETURN
-        END
-        Swipe By Percent    50    75    50    35    duration=600ms
-    END
-    Fail    ${locator} never scrolled into view.
-
 Open Account Option
     [Arguments]    ${option}
     Open Account Options

@@ -247,11 +247,34 @@ Asked Word Position
     END
     Fail    Quiz item ${index} shows no "Select word #N" label.
 
+Quiz Option Locator
+    [Documentation]    The option under item ${index} that shows ${word}.
+    ...
+    ...                An option's testID carries its POSITION, not the word, and deliberately so:
+    ...                the options are words from the recovery phrase, and a word in a testID
+    ...                becomes a resource-id on Android - visible in the view hierarchy, in any
+    ...                captured tree and in CI artifacts. So match on what the option displays.
+    [Arguments]    ${index}    ${word}
+    ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
+    RETURN    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
+
+Quiz Option Words
+    [Documentation]    The words item ${index} is offering, read off the options themselves.
+    [Arguments]    ${index}
+    ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
+    @{elements}=    Get WebElements
+    ...    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')]
+    @{words}=    Create List
+    FOR    ${element}    IN    @{elements}
+        ${text}=    Get Text    ${element}
+        Append To List    ${words}    ${{ $text.strip() }}
+    END
+    RETURN    @{words}
+
 Distractor For
     [Documentation]    An option the app offers for the item that is not the correct word.
     [Arguments]    ${index}    ${correct}
-    ${src}=    Get Source
-    @{options}=    Get Regexp Matches    ${src}    cloud_backup_verify_item_${index}_option_([a-zA-Z]+)"    1
+    @{options}=    Quiz Option Words    ${index}
     Remove Values From List    ${options}    ${correct}
     Should Not Be Empty    ${options}
     ...    msg=Quiz item ${index} offers no word other than the correct "${correct}", so answering it proves nothing.
@@ -274,8 +297,9 @@ Answer Verify Quiz
             VAR    ${wrong}    ${word}
         END
         # The last item's options sit just above the sticky footer, below where Swipe Until In View settles.
-        Scroll Into View    cloud_backup_verify_item_${i}_option_${word}
-        Tap    xpath=//*[@resource-id='cloud_backup_verify_item_${i}_option_${word}' or @name='cloud_backup_verify_item_${i}_option_${word}' or @content-desc='cloud_backup_verify_item_${i}_option_${word}']
+        ${option}=    Quiz Option Locator    ${i}    ${word}
+        Scroll Until Tappable    ${option}
+        Tap    ${option}
     END
     RETURN    ${wrong}
 
