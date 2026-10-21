@@ -72,6 +72,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     BackupItemStatus,
@@ -102,30 +103,15 @@ const ContactsListPlaceholder = () => null
 // same `handleSubmit(save)` through a body button so the edit-save path is
 // reachable end-to-end.
 const EditContactHost = () => {
-    const {
-        control,
-        handleSubmit,
-        errors,
-        isValid,
-        rawAddressInput,
-        nfd,
-        onAddressInputChange,
-        contact,
-        save,
-    } = useEditContactForm()
+    const { control, handleSubmit, errors, isValid, save } =
+        useEditContactForm()
 
     return (
         <>
             <ContactForm
                 control={control}
-                address={contact?.addresses.algorand ?? ''}
                 nameLabel='name'
-                addressLabel='address'
                 nameError={errors.name?.message}
-                addressError={errors.address?.message}
-                onAddressInputChange={onAddressInputChange}
-                rawAddressInput={rawAddressInput}
-                nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
             />
             <PWButton
                 title='save'
@@ -280,7 +266,7 @@ describe('Flow: Contacts CRUD', () => {
         })
     })
 
-    it('Given a selected contact, when EditContactScreen mounts, then the form prefills with the contact name and address', () => {
+    it('Given a selected contact, when EditContactScreen mounts, then the form prefills with the contact name and its address row', () => {
         seedContact('Alice', HD_TEST_ADDRESS)
         selectContact(HD_TEST_ADDRESS)
 
@@ -294,10 +280,14 @@ describe('Flow: Contacts CRUD', () => {
             (screen.getByTestId('contact_name_input') as HTMLInputElement)
                 .value,
         ).toBe('Alice')
+        expect(screen.getByTestId('contact_address_row_algorand')).toBeTruthy()
         expect(
-            (screen.getByTestId('contact_address_input') as HTMLInputElement)
-                .value,
-        ).toBe(HD_TEST_ADDRESS)
+            screen.getByText(
+                addressCodecs.get('algorand').truncate(HD_TEST_ADDRESS),
+            ),
+        ).toBeTruthy()
+        // The entry field opens only on "Add address" once a row exists.
+        expect(screen.queryByTestId('contact_address_input')).toBeNull()
     })
 
     it('Given a selected contact, when the name is changed and the edit form is saved, then the store reflects the updated name', async () => {

@@ -10,49 +10,50 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import QRCode from 'react-native-qrcode-svg'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-import { PWButton, PWText, PWView } from '@components/core'
-import { useClipboard } from '@hooks/useClipboard'
+import {
+    PWButton,
+    PWChip,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { shareText } from '@utils/shareText'
 import { useStyles } from './styles'
+import { useContactQRContent } from './useContactQRContent'
 
 export type ContactQRContentProps = {
     contact: Contact
+    /** The family the sheet opens on; the first the contact holds otherwise. */
+    initialFamily?: ChainFamily
 }
 
-export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
+export const ContactQRContent = ({
+    contact,
+    initialFamily,
+}: ContactQRContentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { theme } = useTheme()
     const { width } = useWindowDimensions()
-    const { copyToClipboard } = useClipboard()
+    const {
+        familyOptions,
+        selectedFamily,
+        address,
+        shortAddress,
+        selectFamily,
+        handleCopy,
+        handleShare,
+    } = useContactQRContent(contact, initialFamily)
 
     const qrSize = width - theme.spacing['5xl'] * 2
-    const address = contact.addresses.algorand ?? ''
-
-    const handleCopy = useCallback(() => {
-        void copyToClipboard(address)
-    }, [address, copyToClipboard])
-
-    const handleShare = useCallback(async () => {
-        try {
-            await shareText({
-                title: contact.name,
-                message: address,
-            })
-        } catch {
-            // User cancelled — ignore.
-        }
-    }, [contact.name, address])
 
     return (
         <PWView
@@ -68,6 +69,30 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     {contact.name}
                 </PWText>
             </PWView>
+            {familyOptions.length > 0 ? (
+                <PWView style={styles.chips}>
+                    {familyOptions.map(({ family, label }) => (
+                        <PWTouchableOpacity
+                            key={family}
+                            onPress={() => selectFamily(family)}
+                            accessibilityState={{
+                                selected: family === selectedFamily,
+                            }}
+                            testID={`contact_qr_family_${family}`}
+                        >
+                            <PWChip
+                                title={label}
+                                variant={
+                                    family === selectedFamily
+                                        ? 'helper'
+                                        : 'outline'
+                                }
+                                forceUppercase={false}
+                            />
+                        </PWTouchableOpacity>
+                    ))}
+                </PWView>
+            ) : null}
             <PWView style={styles.qrSection}>
                 <PWView
                     accessibilityRole='image'
@@ -88,7 +113,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     variant='h3'
                     style={styles.shortAddress}
                 >
-                    {truncateAlgorandAddress(address)}
+                    {shortAddress}
                 </PWText>
                 <PWText
                     variant='body'

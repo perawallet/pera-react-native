@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { chainAccountOf } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { primaryContactAddress } from '@perawallet/wallet-core-contacts'
 import {
     PWFlatList,
     PWIcon,
@@ -100,10 +101,10 @@ export const SearchScreen = () => {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onContactPress(item.contact)}
-                            testID={`search_result_contact_${item.contact.addresses.algorand}`}
+                            testID={`search_result_contact_${primaryContactAddress(item.contact)}`}
                         >
                             <AddressDisplay
-                                address={item.contact.addresses.algorand ?? ''}
+                                address={primaryContactAddress(item.contact)}
                                 showCopy={false}
                                 style={styles.rowContainer}
                             />

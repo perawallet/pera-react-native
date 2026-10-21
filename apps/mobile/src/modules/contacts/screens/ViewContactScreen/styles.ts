@@ -29,31 +29,24 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         color: theme.colors.textMain,
     },
-    shortAddress: {
-        color: theme.colors.textGrayLighter,
-        textAlign: 'center',
-    },
     divider: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
         marginVertical: theme.spacing.xl,
     },
     addressSection: {
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
+    },
+    rowActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
     nfdSection: {
         marginTop: theme.spacing.xl,
     },
     addressLabel: {
         color: theme.colors.textMain,
-    },
-    addressRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.md,
-    },
-    addressTextWrapper: {
-        flex: 1,
     },
     fullAddress: {
         color: theme.colors.textMain,

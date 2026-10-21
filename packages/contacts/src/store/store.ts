@@ -11,7 +11,13 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import type { Contact, ContactsState, NewContact } from '../models'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type {
+    Contact,
+    ContactAddresses,
+    ContactsState,
+    NewContact,
+} from '../models'
 import { ContactNotFoundError } from '../errors'
 import { derivedContactId } from '../contactId'
 import {
@@ -38,6 +44,26 @@ const initialState = {
 // Nothing could ever find an address-less row again to edit or delete it.
 const holdsAnyAddress = ({ addresses }: NewContact): boolean =>
     Object.values(addresses).some(address => !!address)
+
+const heldFamilies = (addresses: ContactAddresses): Set<ChainFamily> =>
+    new Set(
+        (Object.keys(addresses) as ChainFamily[]).filter(
+            family => !!addresses[family],
+        ),
+    )
+
+const removedFamiliesAfterEdit = (
+    previous: Contact,
+    next: NewContact,
+): ChainFamily[] | undefined => {
+    const held = heldFamilies(next.addresses)
+    const removed = new Set([
+        ...(previous.removedFamilies ?? []),
+        ...heldFamilies(previous.addresses),
+    ])
+    const remaining = [...removed].filter(family => !held.has(family))
+    return remaining.length > 0 ? remaining : undefined
+}
 
 type V1Contact = Omit<Contact, 'id' | 'addresses'> & { address?: unknown }
 type V2Contact = Omit<Contact, 'id'>
@@ -98,7 +124,14 @@ export const useContactsStore: UseBoundStore<
                     throw new ContactNotFoundError(id)
                 }
                 const updated = [...existing]
-                updated[idx] = { ...contact, id }
+                const { removedFamilies: _, ...rest } = contact
+                const removedFamilies = removedFamiliesAfterEdit(
+                    existing[idx]!,
+                    contact,
+                )
+                updated[idx] = removedFamilies
+                    ? { ...rest, id, removedFamilies }
+                    : { ...rest, id }
                 set({ contacts: updated })
                 return true
             },

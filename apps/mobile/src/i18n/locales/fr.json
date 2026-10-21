@@ -1001,7 +1001,15 @@
             "remove_title": "Supprimer le contact",
             "remove_message": "Voulez-vous vraiment supprimer ce contact ?",
             "remove_confirm": "Oui, supprimer le contact",
-            "remove_cancel": "Le conserver"
+            "remove_cancel": "Le conserver",
+            "addresses_label": "Adresses",
+            "add_address": "Ajouter une adresse",
+            "invalid_address": "Ce n’est pas une adresse valide sur un réseau pris en charge",
+            "remove_address": "Supprimer l’adresse",
+            "replace_title": "Remplacer l’adresse {{network}} ?",
+            "replace_message": "Ce contact a déjà une adresse sur {{network}}. Voulez-vous la remplacer par la nouvelle ?",
+            "replace_confirm": "Remplacer",
+            "replace_cancel": "Conserver l’actuelle"
         },
         "add_contact": {
             "duplicate_address_warning": "Un contact existe déjà pour cette adresse."
@@ -1009,8 +1017,11 @@
         "view_contact": {
             "no_contact_title": "Aucun contact trouvé",
             "no_contact_body": "Une erreur semble s’être produite. Impossible de trouver le contact indiqué.",
-            "account_address": "Adresse du compte",
-            "nfd_label": "NFDomain"
+            "nfd_label": "NFDomain",
+            "send": "Envoyer",
+            "copy": "Copier l’adresse",
+            "show_qr": "Afficher le code QR",
+            "send_network_title": "Choisir un réseau"
         },
         "list": {
             "no_contacts_title": "Vous n’avez pas encore ajouté de contact",
@@ -1021,7 +1032,8 @@
             "no_matching_body": "Il n’y a aucun contact correspondant.",
             "qr_sheet_copy": "Copier l’adresse",
             "qr_sheet_share": "Partager l’adresse",
-            "qr_accessibility_label": "QR code pour {{name}}"
+            "qr_accessibility_label": "QR code pour {{name}}",
+            "networks_count": "{{count}} réseaux"
         }
     },
     "errors": {
@@ -4353,5 +4365,9 @@
             "decline": "Ne pas autoriser"
         },
         "settings_label": "Partager les statistiques d’utilisation"
+    },
+    "chain_families": {
+        "algorand": "Algorand",
+        "evm": "Ethereum et réseaux EVM"
     }
 }

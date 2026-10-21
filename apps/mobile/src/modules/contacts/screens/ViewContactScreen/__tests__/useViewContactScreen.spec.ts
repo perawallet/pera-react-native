@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => ({
     requestBottomSheet: vi.fn(),
     shareText: vi.fn(),
     useNfdForAddressQuery: vi.fn(),
+    copyToClipboard: vi.fn(),
+    sendTo: vi.fn(),
+    canSendOn: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -35,6 +38,17 @@ vi.mock('@modules/contacts/components/ContactQRContent', () => ({
     ContactQRContent: () => null,
 }))
 
+vi.mock('@modules/contacts/hooks', () => ({
+    useSendToContact: () => ({
+        canSendOn: mocks.canSendOn,
+        sendTo: mocks.sendTo,
+    }),
+}))
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mocks.copyToClipboard }),
+}))
+
 vi.mock('@utils/shareText', () => ({
     shareText: mocks.shareText,
 }))
@@ -46,7 +60,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 const CONTACT: Contact = {
     id: 'contact-1',
     name: 'Alice',
-    addresses: { algorand: 'ALICE_ADDRESS' },
+    addresses: { algorand: 'ALICE_ADDRESS', evm: '0xA11CE' },
 }
 
 const selectContact = (contact: Contact | null): void => {
@@ -62,12 +76,16 @@ describe('useViewContactScreen', () => {
             data: [{ name: 'alice.algo' }, { name: 'second.algo' }],
         })
         mocks.shareText.mockResolvedValue(undefined)
+        mocks.canSendOn.mockImplementation(family => family === 'evm')
     })
 
-    it('exposes the contact address and its first NFD name', () => {
+    it('lists one row per family, with whether the user can send there, and the first NFD name of the Algorand address', () => {
         const { result } = renderHook(() => useViewContactScreen())
 
-        expect(result.current.address).toBe('ALICE_ADDRESS')
+        expect(result.current.addressRows).toEqual([
+            { family: 'algorand', address: 'ALICE_ADDRESS', canSend: false },
+            { family: 'evm', address: '0xA11CE', canSend: true },
+        ])
         expect(result.current.nfdName).toBe('alice.algo')
         expect(mocks.useNfdForAddressQuery).toHaveBeenCalledWith(
             expect.anything(),
@@ -76,17 +94,33 @@ describe('useViewContactScreen', () => {
         )
     })
 
-    it('opens the contact QR sheet', () => {
+    it("opens the contact QR sheet on the row's family", () => {
         const { result } = renderHook(() => useViewContactScreen())
 
-        act(() => result.current.openQR())
+        act(() => result.current.openQR('evm'))
 
         expect(mocks.requestBottomSheet).toHaveBeenCalledWith({
             contents: expect.objectContaining({
-                props: { contact: CONTACT },
+                props: { contact: CONTACT, initialFamily: 'evm' },
             }),
             options: { size: 'auto', enablePanDownToClose: true },
         })
+    })
+
+    it("copies a row's address", () => {
+        const { result } = renderHook(() => useViewContactScreen())
+
+        act(() => result.current.copyAddress('0xA11CE'))
+
+        expect(mocks.copyToClipboard).toHaveBeenCalledWith('0xA11CE')
+    })
+
+    it("sends to a row's address on its family", () => {
+        const { result } = renderHook(() => useViewContactScreen())
+
+        act(() => result.current.sendTo('evm', '0xA11CE'))
+
+        expect(mocks.sendTo).toHaveBeenCalledWith('evm', '0xA11CE')
     })
 
     it('navigates to the edit screen', () => {
@@ -97,14 +131,14 @@ describe('useViewContactScreen', () => {
         expect(mocks.navigate).toHaveBeenCalledWith('EditContact')
     })
 
-    it('shares the contact name and address', async () => {
+    it('shares the contact name and every address', async () => {
         const { result } = renderHook(() => useViewContactScreen())
 
         await act(() => result.current.handleShare())
 
         expect(mocks.shareText).toHaveBeenCalledWith({
             title: 'Alice',
-            message: 'ALICE_ADDRESS',
+            message: 'ALICE_ADDRESS\n0xA11CE',
         })
     })
 
@@ -123,10 +157,10 @@ describe('useViewContactScreen', () => {
             mocks.useNfdForAddressQuery.mockReturnValue({ data: undefined })
         })
 
-        it('has an empty address and skips the NFD lookup', () => {
+        it('has no rows and skips the NFD lookup', () => {
             const { result } = renderHook(() => useViewContactScreen())
 
-            expect(result.current.address).toBe('')
+            expect(result.current.addressRows).toEqual([])
             expect(result.current.nfdName).toBeUndefined()
             expect(mocks.useNfdForAddressQuery).toHaveBeenCalledWith(
                 expect.anything(),
@@ -138,7 +172,7 @@ describe('useViewContactScreen', () => {
         it('opens no QR sheet', () => {
             const { result } = renderHook(() => useViewContactScreen())
 
-            act(() => result.current.openQR())
+            act(() => result.current.openQR('algorand'))
 
             expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
         })

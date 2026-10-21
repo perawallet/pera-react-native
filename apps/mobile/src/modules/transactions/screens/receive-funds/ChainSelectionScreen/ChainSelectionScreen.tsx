@@ -10,19 +10,11 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWListItemLayout,
-    PWScrollView,
-    PWText,
-} from '@components/core'
+import { PWButton, PWIcon, PWScrollView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainIcon } from '@modules/chain-ui'
+import { ChainRow } from '@modules/chain-ui'
 import { useStyles } from './styles'
 import { useChainSelectionScreen } from './useChainSelectionScreen'
-
-const CHAIN_ICON_SIZE = 40
 
 export const ChainSelectionScreen = () => {
     const { rows, enablingChainId, handleSelectChain, handleAddChain } =
@@ -33,15 +25,11 @@ export const ChainSelectionScreen = () => {
     return (
         <PWScrollView contentContainerStyle={styles.container}>
             {rows.map(({ chainId, displayName, address, isEnabled }) => (
-                <PWListItemLayout
+                <ChainRow
                     key={chainId}
-                    style={styles.row}
-                    left={
-                        <ChainIcon
-                            chainId={chainId}
-                            size={CHAIN_ICON_SIZE}
-                        />
-                    }
+                    chainId={chainId}
+                    title={displayName}
+                    subtitle={address}
                     right={
                         isEnabled ? (
                             <PWIcon
@@ -70,17 +58,7 @@ export const ChainSelectionScreen = () => {
                         isEnabled ? () => handleSelectChain(chainId) : undefined
                     }
                     testID={`receive_chain_row_${chainId}`}
-                >
-                    <PWText style={styles.title}>{displayName}</PWText>
-                    {address ? (
-                        <PWText
-                            variant='caption'
-                            style={styles.subtitle}
-                        >
-                            {address}
-                        </PWText>
-                    ) : null}
-                </PWListItemLayout>
+                />
             ))}
         </PWScrollView>
     )

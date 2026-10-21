@@ -43,19 +43,5 @@ export const useStyles = makeStyles(theme => {
         formContainer: {
             gap: theme.spacing.xl,
         },
-        nfdStatus: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-        },
-        nfdStatusText: {
-            color: theme.colors.textGray,
-        },
-        addressWarning: {
-            color: theme.colors.warningText,
-        },
-        scanIconWrapper: {
-            marginLeft: theme.spacing.sm,
-        },
     }
 })

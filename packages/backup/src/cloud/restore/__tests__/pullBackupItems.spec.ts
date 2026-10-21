@@ -1090,6 +1090,30 @@ describe('pullBackupItems on a contact record', () => {
         expect(result.skipped).toEqual([])
     })
 
+    it('hands the importer the families the record says were removed', async () => {
+        serving([
+            [
+                contactRecordKey('id-1'),
+                {
+                    ...record,
+                    addresses: [{ family: 'algorand', address: 'A' }],
+                    removed: ['evm'],
+                },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([
+            {
+                id: 'id-1',
+                name: 'Alice',
+                addresses: { algorand: 'A' },
+                removedFamilies: ['evm'],
+            },
+        ])
+    })
+
     it('caches what the record is filed under, with its content and label', async () => {
         serving([[contactRecordKey('id-1'), record]])
 

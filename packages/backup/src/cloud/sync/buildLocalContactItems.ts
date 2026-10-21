@@ -44,6 +44,9 @@ export const buildLocalContactItems = (
                     name: contact.name,
                     updatedAt,
                     addresses,
+                    ...(contact.removedFamilies?.length
+                        ? { removed: [...contact.removedFamilies] }
+                        : {}),
                 },
             }),
         ]

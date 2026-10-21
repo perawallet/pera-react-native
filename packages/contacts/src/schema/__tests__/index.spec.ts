@@ -10,88 +10,97 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, test, expect } from 'vitest'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { afterEach, beforeEach, describe, test, expect, vi } from 'vitest'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@perawallet/wallet-core-chain-contract/testing'
-import type { ContactAddresses } from '../../models'
 import { contactFromFormValues, contactSchema, contactToFormValues } from '..'
 
-// The form's address rule is whatever the Algorand-chain codec accepts, so a
-// stand-in codec under that chain id pins the delegation.
-const VALID_ADDRESS = `fx${'a'.repeat(40)}`
+const chains = vi.hoisted(() => ({
+    list: [] as { id: string; family: string }[],
+}))
 
-const parseAddress = (address: string) =>
-    contactSchema.safeParse({ name: 'Alice', address })
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ chains: { list: () => chains.list } }),
+}))
+
+// A stand-in codec per family pins the delegation: the rule for an address
+// is whatever its family's codec accepts.
+const ALGORAND_ADDRESS = `fx${'a'.repeat(40)}`
+const EVM_ADDRESS = `0x${'b'.repeat(40)}`
+
+const parseAddresses = (addresses: Record<string, string>) =>
+    contactSchema.safeParse({ name: 'Alice', addresses })
 
 beforeEach(() => {
-    addressCodecs.register({ ...fixtureCodec, chainId: LEGACY_CHAIN_ID })
+    chains.list = [
+        { id: 'algorand', family: 'algorand' },
+        { id: 'ethereum', family: 'evm' },
+    ]
+    addressCodecs.register({ ...fixtureCodec, chainId: 'algorand' as never })
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: 'ethereum' as never,
+        isValid: (address: string) => /^0x[0-9a-f]{40}$/.test(address),
+    })
 })
 
 afterEach(() => {
     addressCodecs.reset()
 })
 
-describe('contactSchema address validation', () => {
-    test("accepts an address the Algorand chain's codec accepts", () => {
-        expect(parseAddress(VALID_ADDRESS).success).toBe(true)
+describe('contactSchema addresses', () => {
+    test("accepts each address its family's codec accepts", () => {
+        expect(
+            parseAddresses({ algorand: ALGORAND_ADDRESS, evm: EVM_ADDRESS })
+                .success,
+        ).toBe(true)
     })
 
-    test("rejects an address the Algorand chain's codec rejects", () => {
-        expect(parseAddress(`${VALID_ADDRESS.slice(0, -1)}z`).success).toBe(
-            false,
-        )
-        expect(parseAddress('').success).toBe(false)
+    test("rejects an address its family's codec rejects", () => {
+        expect(
+            parseAddresses({
+                algorand: ALGORAND_ADDRESS,
+                evm: `${EVM_ADDRESS.slice(0, -1)}z`,
+            }).success,
+        ).toBe(false)
+    })
+
+    test('needs at least one address', () => {
+        expect(parseAddresses({}).success).toBe(false)
+        expect(parseAddresses({ algorand: '' }).success).toBe(false)
+    })
+
+    test('accepts the address of a family this build does not register', () => {
+        chains.list = [{ id: 'algorand', family: 'algorand' }]
+
+        expect(parseAddresses({ evm: 'anything' }).success).toBe(true)
     })
 })
 
 describe('contact form mapping', () => {
-    test('contactToFormValues edits the Algorand entry', () => {
+    test('contactToFormValues edits every family the contact holds', () => {
         expect(
             contactToFormValues({
                 id: 'id-1',
                 name: 'Alice',
                 nfd: 'alice.algo',
-                addresses: {
-                    algorand: VALID_ADDRESS,
-                    other: 'X',
-                } as ContactAddresses,
+                addresses: { algorand: ALGORAND_ADDRESS, evm: EVM_ADDRESS },
+                removedFamilies: [],
             }),
         ).toEqual({
             id: 'id-1',
             name: 'Alice',
             nfd: 'alice.algo',
-            address: VALID_ADDRESS,
+            addresses: { algorand: ALGORAND_ADDRESS, evm: EVM_ADDRESS },
         })
     })
 
-    test('contactFromFormValues writes the address into the Algorand entry', () => {
+    test('contactFromFormValues keeps only the families the form holds an address for', () => {
         expect(
-            contactFromFormValues({ name: 'Alice', address: VALID_ADDRESS }),
-        ).toEqual({ name: 'Alice', addresses: { algorand: VALID_ADDRESS } })
-    })
-
-    test("contactFromFormValues keeps the existing contact's other-family addresses", () => {
-        const existing = {
-            id: 'id-1',
-            name: 'Alice',
-            image: 'file://old.png',
-            addresses: { algorand: 'OLD', other: 'X' } as ContactAddresses,
-        }
-
-        expect(
-            contactFromFormValues(
-                { name: 'Alicia', address: VALID_ADDRESS },
-                existing,
-            ),
-        ).toEqual({
-            name: 'Alicia',
-            addresses: {
-                algorand: VALID_ADDRESS,
-                other: 'X',
-            } as ContactAddresses,
-        })
+            contactFromFormValues({
+                name: 'Alice',
+                addresses: { algorand: '', evm: EVM_ADDRESS },
+            }),
+        ).toEqual({ name: 'Alice', addresses: { evm: EVM_ADDRESS } })
     })
 })

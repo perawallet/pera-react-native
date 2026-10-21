@@ -1001,7 +1001,15 @@
             "remove_title": "Kişiyi sil",
             "remove_message": "Bu kişiyi silmek istediğinden emin misin?",
             "remove_confirm": "Evet, kişiyi sil",
-            "remove_cancel": "Hayır, kalsın"
+            "remove_cancel": "Hayır, kalsın",
+            "addresses_label": "Adresler",
+            "add_address": "Adres ekle",
+            "invalid_address": "Bu, desteklenen bir ağda geçerli bir adres değil",
+            "remove_address": "Adresi kaldır",
+            "replace_title": "Ağ adresi değiştirilsin mi?",
+            "replace_message": "Bu kişinin {{network}} ağında zaten bir adresi var. Yenisiyle değiştirilsin mi?",
+            "replace_confirm": "Değiştir",
+            "replace_cancel": "Mevcut olanı koru"
         },
         "add_contact": {
             "duplicate_address_warning": "Bu adres için bir kişi zaten var."
@@ -1009,8 +1017,11 @@
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
-            "account_address": "Hesap adresi",
-            "nfd_label": "NFDomain"
+            "nfd_label": "NFDomain",
+            "send": "Gönder",
+            "copy": "Adresi kopyala",
+            "show_qr": "QR kodunu göster",
+            "send_network_title": "Ağ seç"
         },
         "list": {
             "no_contacts_title": "Henüz hiç kişi eklemedin",
@@ -1021,7 +1032,8 @@
             "no_matching_body": "Eşleşen kişi bulunamadı.",
             "qr_sheet_copy": "Adresi kopyala",
             "qr_sheet_share": "Adresi paylaş",
-            "qr_accessibility_label": "{{name}} için QR kod"
+            "qr_accessibility_label": "{{name}} için QR kod",
+            "networks_count": "{{count}} ağ"
         }
     },
     "errors": {
@@ -4353,5 +4365,9 @@
             "decline": "İzin verme"
         },
         "settings_label": "Kullanım analizlerini paylaş"
+    },
+    "chain_families": {
+        "algorand": "Algorand",
+        "evm": "Ethereum ve EVM ağları"
     }
 }

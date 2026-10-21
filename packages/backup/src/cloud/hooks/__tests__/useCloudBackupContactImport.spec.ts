@@ -126,6 +126,32 @@ describe('useCloudBackupContactImport', () => {
         ])
     })
 
+    test('drops a family the record says was removed', async () => {
+        useContactsStore.getState().addContact({
+            id: 'id-1',
+            addresses: { algorand: 'A', evm: '0xB' },
+            name: 'Bob',
+        } as never)
+        const { result } = renderImport()
+
+        await result.current.importContacts([
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A' },
+                removedFamilies: ['evm'],
+                name: 'Bob',
+            },
+        ])
+
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A' },
+                name: 'Bob',
+            },
+        ])
+    })
+
     test('imports a record sharing addresses with two other contacts as its own contact', async () => {
         const store = useContactsStore.getState()
         store.addContact({

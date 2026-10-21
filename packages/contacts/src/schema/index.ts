@@ -11,12 +11,14 @@
  */
 
 import { z } from 'zod'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { NewContact } from '../models'
+import { CHAIN_FAMILIES } from '@perawallet/wallet-core-chain-contract'
+import type { ContactAddresses, NewContact } from '../models'
+import { isValidFamilyAddress } from '../utils/addressFamily'
+
+const heldAddresses = (addresses: ContactAddresses): ContactAddresses =>
+    Object.fromEntries(
+        Object.entries(addresses).filter(([, address]) => !!address),
+    ) as ContactAddresses
 
 export const contactSchema = z.object({
     id: z.string().optional(),
@@ -25,13 +27,21 @@ export const contactSchema = z.object({
         .min(1, { message: 'Please enter a valid name' }),
     // Checksum validation (not just shape) is what catches address typos;
     // a name attached to a mistyped address defeats the contact feature.
-    address: z
-        .string('Please enter a valid Algorand address')
+    addresses: z
+        .partialRecord(z.enum(CHAIN_FAMILIES), z.string())
+        .refine(addresses => Object.keys(heldAddresses(addresses)).length > 0, {
+            message: 'Please add an address',
+        })
         .refine(
-            address => addressCodecs.get(LEGACY_CHAIN_ID).isValid(address),
-            {
-                message: 'Please enter a valid Algorand address',
-            },
+            addresses =>
+                Object.entries(heldAddresses(addresses)).every(
+                    ([family, address]) =>
+                        isValidFamilyAddress(
+                            family as (typeof CHAIN_FAMILIES)[number],
+                            address,
+                        ),
+                ),
+            { message: 'Please enter a valid address' },
         ),
     //TODO we can probably do better with the NFD regex
     nfd: z
@@ -45,21 +55,20 @@ export const contactSchema = z.object({
 
 export type ContactFormValues = z.infer<typeof contactSchema>
 
-// The form's single address field is the Algorand entry.
 export const contactToFormValues = ({
     addresses,
+    removedFamilies: _,
     ...rest
 }: NewContact): ContactFormValues => ({
     ...rest,
-    address: addresses.algorand ?? '',
+    addresses: heldAddresses(addresses),
 })
 
-/** Every other field comes from the form; `existing` only contributes the
- *  addresses of families the form doesn't edit. */
-export const contactFromFormValues = (
-    { address, ...rest }: ContactFormValues,
-    existing?: Nullable<NewContact>,
-): NewContact => ({
+/** The form edits every family, so a family it lacks is one the user removed. */
+export const contactFromFormValues = ({
+    addresses,
+    ...rest
+}: ContactFormValues): NewContact => ({
     ...rest,
-    addresses: { ...existing?.addresses, algorand: address },
+    addresses: heldAddresses(addresses),
 })

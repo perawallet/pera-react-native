@@ -22,6 +22,12 @@ export type Contact = {
     id: string
     name: string
     addresses: ContactAddresses
+    /**
+     * Families the user removed an address from, so a backup write drops them
+     * from the record instead of keeping the backup's copy. Kept by
+     * `editContact`; a family leaves the list once it holds an address again.
+     */
+    removedFamilies?: ChainFamily[]
     image?: string
     nfd?: string
 }
@@ -37,7 +43,8 @@ export type ContactsState = BaseStoreState & {
     addContact: (contact: NewContact) => boolean
     /**
      * Replace the row `id` names, keeping its id; returns false, changing
-     * nothing, when `contact` holds no address. Throws `ContactNotFoundError`
+     * nothing, when `contact` holds no address. A family the row held that
+     * `contact` lacks joins `removedFamilies`. Throws `ContactNotFoundError`
      * if no contact has `id`.
      */
     editContact: (id: string, contact: NewContact) => boolean

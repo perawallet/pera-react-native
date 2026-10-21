@@ -17,8 +17,9 @@ import {
     type ChainFamily,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    contactAddressEntries,
     derivedContactId,
-    type ContactAddresses,
+    type ContactAddressEntry,
 } from '@perawallet/wallet-core-contacts'
 import { isContactItemKey, isContactRecordKey } from './itemKeys'
 import type { SyncItemState } from './syncState'
@@ -30,16 +31,9 @@ import {
     type ContactRecordPayload,
 } from './payloads'
 
-export type ContactRecordEntry = { family: ChainFamily; address: string }
+export type ContactRecordEntry = ContactAddressEntry
 
-/** The contact's non-empty addresses, in `CHAIN_FAMILIES` order. */
-export const contactAddressEntries = (
-    addresses: ContactAddresses,
-): ContactRecordEntry[] =>
-    CHAIN_FAMILIES.flatMap(family => {
-        const address = addresses[family]
-        return address ? [{ family, address }] : []
-    })
+export { contactAddressEntries }
 
 const familyRank = (family: string): number => {
     const index = (CHAIN_FAMILIES as readonly string[]).indexOf(family)
@@ -73,6 +67,14 @@ export const contactRecordEntries = (
           )
         : []
 
+/** The families the record says were removed that this build knows. */
+export const contactRecordRemovedFamilies = (
+    record: ContactRecordPayload,
+): ChainFamily[] =>
+    isContactRecordReadable(record)
+        ? (record.removed ?? []).filter(isChainFamily)
+        : []
+
 /** Every entry's address, read by this build or not, so `[0]` is the
  *  primary. */
 export const contactRecordAddresses = (
@@ -83,8 +85,9 @@ export const contactRecordAddresses = (
  * This device's record laid over the last one it saw remotely. A field or
  * family this build does not know is kept, and so is a family the contact
  * lacks here: an import that failed leaves the family off this device, and
- * dropping it on the next write would erase it from the backup. Removing a
- * family is therefore never a side effect of a write.
+ * dropping it on the next write would erase it from the backup. Only a family
+ * this device's record lists in `removed` is dropped; a removal another device
+ * wrote stays listed until a family holds an address again.
  */
 export const mergeContactRecord = (
     remote: Record<string, unknown> | null | undefined,
@@ -100,17 +103,30 @@ export const mergeContactRecord = (
             typeof (entry as { family?: unknown }).family === 'string',
     )
     const localByFamily = new Map(local.addresses.map(e => [e.family, e]))
-    const remoteFamilies = new Set(remoteAddresses.map(e => e.family))
+    const locallyRemoved = new Set(local.removed ?? [])
+    const kept = remoteAddresses.filter(e => !locallyRemoved.has(e.family))
+    const keptFamilies = new Set(kept.map(e => e.family))
+    const addresses = orderContactRecordAddresses([
+        ...kept.map(entry => ({
+            ...entry,
+            ...localByFamily.get(entry.family),
+        })),
+        ...local.addresses.filter(e => !keptFamilies.has(e.family)),
+    ])
+    const held = new Set(addresses.map(e => e.family))
+    const remoteRemoved = Array.isArray(remote.removed)
+        ? remote.removed.filter(
+              (family): family is string => typeof family === 'string',
+          )
+        : []
+    const removed = [...new Set([...remoteRemoved, ...locallyRemoved])].filter(
+        family => !held.has(family),
+    )
+    const { removed: _, ...merged } = { ...remote, ...local }
     return {
-        ...remote,
-        ...local,
-        addresses: orderContactRecordAddresses([
-            ...remoteAddresses.map(entry => ({
-                ...entry,
-                ...localByFamily.get(entry.family),
-            })),
-            ...local.addresses.filter(e => !remoteFamilies.has(e.family)),
-        ]),
+        ...merged,
+        addresses,
+        ...(removed.length > 0 ? { removed } : {}),
     }
 }
 

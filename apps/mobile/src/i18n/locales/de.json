@@ -993,7 +993,15 @@
             "remove_title": "Kontakt löschen",
             "remove_message": "Möchtest du diesen Kontakt wirklich löschen?",
             "remove_confirm": "Ja, Kontakt löschen",
-            "remove_cancel": "Behalten"
+            "remove_cancel": "Behalten",
+            "addresses_label": "Adressen",
+            "add_address": "Adresse hinzufügen",
+            "invalid_address": "Das ist keine gültige Adresse in einem unterstützten Netzwerk",
+            "remove_address": "Adresse entfernen",
+            "replace_title": "{{network}}-Adresse ersetzen?",
+            "replace_message": "Dieser Kontakt hat bereits eine Adresse in {{network}}. Durch die neue ersetzen?",
+            "replace_confirm": "Ersetzen",
+            "replace_cancel": "Aktuelle behalten"
         },
         "add_contact": {
             "duplicate_address_warning": "Für diese Adresse existiert bereits ein Kontakt."
@@ -1001,8 +1009,11 @@
         "view_contact": {
             "no_contact_title": "Kein Kontakt gefunden",
             "no_contact_body": "Es scheint ein Fehler aufgetreten zu sein.  Der angegebene Kontakt konnte nicht gefunden werden",
-            "account_address": "Kontoadresse",
-            "nfd_label": "NFDomain"
+            "nfd_label": "NFDomain",
+            "send": "Senden",
+            "copy": "Adresse kopieren",
+            "show_qr": "QR-Code anzeigen",
+            "send_network_title": "Netzwerk wählen"
         },
         "list": {
             "no_contacts_title": "Du hast noch keine Kontakte hinzugefügt",
@@ -1013,7 +1024,8 @@
             "no_matching_body": "Es gibt keine passenden Kontakte.",
             "qr_sheet_copy": "Adresse kopieren",
             "qr_sheet_share": "Adresse teilen",
-            "qr_accessibility_label": "QR-Code für {{name}}"
+            "qr_accessibility_label": "QR-Code für {{name}}",
+            "networks_count": "{{count}} Netzwerke"
         }
     },
     "errors": {
@@ -4353,5 +4365,9 @@
             "decline": "Nicht erlauben"
         },
         "settings_label": "Nutzungsanalysen teilen"
+    },
+    "chain_families": {
+        "algorand": "Algorand",
+        "evm": "Ethereum & EVM-Netzwerke"
     }
 }

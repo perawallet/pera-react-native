@@ -39,6 +39,7 @@ import {
     accountRecordType,
     contactRecordAddresses,
     contactRecordEntries,
+    contactRecordRemovedFamilies,
     isAccountRecordKey,
     isAccountRecordReadable,
     isContactRecordKey,
@@ -399,6 +400,7 @@ export const buildPulledContacts = ({
     return [
         ...records.flatMap(record => {
             const entries = contactRecordEntries(record)
+            const removedFamilies = contactRecordRemovedFamilies(record)
             return entries.length === 0
                 ? []
                 : [
@@ -411,6 +413,9 @@ export const buildPulledContacts = ({
                                   address,
                               ]),
                           ) as ContactAddresses,
+                          ...(removedFamilies.length > 0
+                              ? { removedFamilies }
+                              : {}),
                       },
                   ]
         }),

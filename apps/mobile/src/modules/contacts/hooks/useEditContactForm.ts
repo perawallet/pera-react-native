@@ -103,7 +103,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             if (!form.isValid || !targetContact) return
 
             const contact = {
-                ...contactFromFormValues(data, targetContact),
+                ...contactFromFormValues(data),
                 id: targetId,
             }
             try {

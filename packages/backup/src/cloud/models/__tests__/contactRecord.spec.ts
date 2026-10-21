@@ -15,6 +15,7 @@ import {
     contactAddressEntries,
     contactRecordAddresses,
     contactRecordEntries,
+    contactRecordRemovedFamilies,
     isNewerContactRecord,
     mergeContactRecord,
     orderContactRecordAddresses,
@@ -99,6 +100,27 @@ describe('contactRecordEntries', () => {
     })
 })
 
+describe('contactRecordRemovedFamilies', () => {
+    it('returns the removed families this build knows', () => {
+        expect(
+            contactRecordRemovedFamilies(
+                recordOf([algorand], { removed: ['evm', 'solana'] }),
+            ),
+        ).toEqual(['evm'])
+    })
+
+    it('returns nothing for a record a newer client wrote', () => {
+        expect(
+            contactRecordRemovedFamilies(
+                recordOf([algorand], {
+                    formatVersion: CONTACT_RECORD_FORMAT_VERSION + 1,
+                    removed: ['evm'],
+                }),
+            ),
+        ).toEqual([])
+    })
+})
+
 describe('contactRecordAddresses', () => {
     it('includes an unknown family, after the known ones', () => {
         expect(
@@ -149,6 +171,36 @@ describe('mergeContactRecord', () => {
         )
 
         expect(merged.addresses).toEqual([algorand, evm])
+    })
+
+    it('drops a remote family this device removed and lists it as removed', () => {
+        const merged = mergeContactRecord(
+            recordOf([algorand, evm]),
+            recordOf([algorand], { removed: ['evm'] }),
+        )
+
+        expect(merged.addresses).toEqual([algorand])
+        expect(merged.removed).toEqual(['evm'])
+    })
+
+    it("keeps another device's removal listed when this device does not hold that family", () => {
+        const merged = mergeContactRecord(
+            recordOf([algorand], { removed: ['evm'] }),
+            recordOf([algorand]),
+        )
+
+        expect(merged.addresses).toEqual([algorand])
+        expect(merged.removed).toEqual(['evm'])
+    })
+
+    it('stops listing a removed family once it holds an address again', () => {
+        const merged = mergeContactRecord(
+            recordOf([algorand], { removed: ['evm'] }),
+            recordOf([algorand, evm]),
+        )
+
+        expect(merged.addresses).toEqual([algorand, evm])
+        expect(merged).not.toHaveProperty('removed')
     })
 
     it('lets the local address win within a family', () => {

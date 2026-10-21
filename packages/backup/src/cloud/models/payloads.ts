@@ -368,6 +368,10 @@ export const contactRecordPayloadSchema = z.looseObject({
     name: z.string(),
     updatedAt,
     addresses: z.array(contactRecordAddressSchema).min(1),
+    /** Families the contact's address was removed from, so a merge drops the
+     *  backup's copy rather than keeping it. Never names a family in
+     *  `addresses`; a build that predates it keeps it as an unknown field. */
+    removed: z.array(z.string().min(1)).optional(),
 })
 export type ContactRecordPayload = z.infer<typeof contactRecordPayloadSchema>
 

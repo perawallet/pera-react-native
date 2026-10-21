@@ -12,10 +12,7 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type {
-    Contact,
-    ContactAddresses,
-} from '@perawallet/wallet-core-contacts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { useEditParticipantScreen } from '../useEditParticipantScreen'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
@@ -111,7 +108,9 @@ describe('useEditParticipantScreen', () => {
         const { result } = renderHook(() => useEditParticipantScreen())
 
         expect(result.current.control._defaultValues.name).toBe('')
-        expect(result.current.control._defaultValues.address).toBe(ADDR1)
+        expect(result.current.control._defaultValues.addresses).toEqual({
+            algorand: ADDR1,
+        })
     })
 
     it('initializes with existing contact values as defaults', () => {
@@ -186,10 +185,7 @@ describe('useEditParticipantScreen', () => {
         mockFindContacts.mockReturnValue([
             {
                 id: 'alice-id',
-                addresses: {
-                    algorand: ADDR1,
-                    other: 'OTHER',
-                } as ContactAddresses,
+                addresses: { algorand: ADDR1, evm: '0xA11CE' },
                 name: 'Alice',
             },
         ])
@@ -207,10 +203,7 @@ describe('useEditParticipantScreen', () => {
         expect(mockEditContact).toHaveBeenCalledWith(
             'alice-id',
             expect.objectContaining({
-                addresses: {
-                    algorand: ADDR1,
-                    other: 'OTHER',
-                } as ContactAddresses,
+                addresses: { algorand: ADDR1, evm: '0xA11CE' },
             }),
         )
     })

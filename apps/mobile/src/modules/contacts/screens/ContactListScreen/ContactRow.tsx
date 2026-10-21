@@ -13,8 +13,15 @@
 import { useCallback } from 'react'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 
-import { PWTouchableIcon } from '@components/core'
-import { AddressListItem } from '@components/AddressListItem'
+import {
+    PWListItemLayout,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { useStyles } from './styles'
+import { useContactRow } from './useContactRow'
 
 type ContactRowProps = {
     contact: Contact
@@ -27,6 +34,8 @@ export const ContactRow = ({
     onShowQR,
     onSelect,
 }: ContactRowProps) => {
+    const styles = useStyles()
+    const { primaryAddress, subtitle } = useContactRow(contact)
     const handlePress = useCallback(
         () => onSelect(contact),
         [contact, onSelect],
@@ -35,22 +44,44 @@ export const ContactRow = ({
         () => onShowQR(contact),
         [contact, onShowQR],
     )
-    const address = contact.addresses.algorand ?? ''
 
     return (
-        <AddressListItem
-            address={address}
+        <PWListItemLayout
             onPress={handlePress}
             showDivider
-            testID={`contact_row_${address}`}
+            testID={`contact_row_${primaryAddress}`}
+            left={
+                <ContactAvatar
+                    size='md'
+                    contact={contact}
+                />
+            }
             right={
                 <PWTouchableIcon
                     name='qr'
                     variant='primary'
                     onPress={handleShowQR}
-                    testID={`contact_row_qr_button_${address}`}
+                    testID={`contact_row_qr_button_${primaryAddress}`}
                 />
             }
-        />
+        >
+            <PWView>
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                    numberOfLines={1}
+                >
+                    {contact.name}
+                </PWText>
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.rowSubtitle}
+                    numberOfLines={1}
+                >
+                    {subtitle}
+                </PWText>
+            </PWView>
+        </PWListItemLayout>
     )
 }
