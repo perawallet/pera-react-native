@@ -89,6 +89,7 @@ export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
         finality: row.finality,
         // Every EVM chain shares EIP-681's scheme; one deeplink adapter claims it.
         uriSchemes: ['ethereum'],
+        enabledByDefault: row.enabledByDefault,
     }
 }
 

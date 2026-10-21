@@ -118,6 +118,7 @@ export const algorandDescriptor: ChainDescriptor = {
     },
     finality: { kind: 'instant' },
     uriSchemes: ['algorand'],
+    enabledByDefault: true,
 }
 
 // Indexer, AlgoKit and Pera API ids arrive as strings, numbers or bigints; a
