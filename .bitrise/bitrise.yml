@@ -1186,7 +1186,7 @@ workflows:
             fi
             # A CRX exists only when CWS_CRX_SIGNING_KEY_BASE64 is set; once the
             # store's verified-CRX opt-in is on it rejects the zip.
-            node tools/release/upload-chrome-web-store.mjs "${BITRISE_EXTENSION_CRX_PATH:-$BITRISE_EXTENSION_ZIP_PATH}"
+            pnpm run release:upload-chrome-web-store "${BITRISE_EXTENSION_CRX_PATH:-$BITRISE_EXTENSION_ZIP_PATH}"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
