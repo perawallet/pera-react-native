@@ -59,9 +59,11 @@ fi
 
 # Behind CI_UPLOADS_ENABLED like the mobile uploads: while Bitrise still
 # uploads the same tag, a second upload would replace its draft. Staging never
-# uploads; its zip talks to the staging backend.
-if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ]; then
+# uploads; its zip talks to the staging backend. rc tags only, as on Bitrise: a
+# stable tag re-tags the rc's commit, whose package the store already holds.
+if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ] &&
+  [[ "${CI_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
   pnpm run release:upload-chrome-web-store "$PACKAGE"
 else
-  echo "pera-ci: uploads disabled or not production; no Chrome Web Store upload"
+  echo "pera-ci: uploads disabled, not production or not an rc tag; no Chrome Web Store upload"
 fi

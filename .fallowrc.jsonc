@@ -15,8 +15,8 @@
     // EVM config key naming: generate-config.sh runs it with node, and the
     // browser build loads it through createRequire.
     "tools/dev/evm-config-keys.cjs",
-    // Release scripts Bitrise runs with node by path (.bitrise/bitrise.yml);
-    // the shell tests under tools/__tests__ are their only other callers.
+    // Release scripts CI runs with node by path (.bitrise/bitrise.yml,
+    // ci/jobs/web.sh) rather than importing them.
     "tools/release/*.mjs"
   ],
 
