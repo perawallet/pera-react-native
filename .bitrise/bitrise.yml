@@ -1166,7 +1166,7 @@ workflows:
               echo "No release tag, so no Chrome Web Store upload"
               exit 0
             fi
-            node tools/release/upload-chrome-web-store.mjs "$BITRISE_EXTENSION_ZIP_PATH"
+            pnpm run release:upload-chrome-web-store "$BITRISE_EXTENSION_ZIP_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
