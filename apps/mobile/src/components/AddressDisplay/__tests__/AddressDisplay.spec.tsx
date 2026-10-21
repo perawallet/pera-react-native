@@ -11,14 +11,7 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import {
-    beforeEach,
-    describe,
-    expect,
-    it,
-    onTestFinished,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
     type Optional,
     truncateAlgorandAddress,
@@ -237,7 +230,9 @@ describe('AddressDisplay', () => {
 
         it('renders truncated address as primary and contact name as secondary when the address matches a contact', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
+            mockContacts = [
+                { name: 'Joseph', addresses: { algorand: address } },
+            ]
 
             render(
                 <AddressDisplay
@@ -275,7 +270,9 @@ describe('AddressDisplay', () => {
 
         it('prefers contact name over NFD when both match the same address', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
+            mockContacts = [
+                { name: 'Joseph', addresses: { algorand: address } },
+            ]
             mockUseNfdForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
@@ -306,7 +303,9 @@ describe('AddressDisplay', () => {
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
             })
-            mockContacts = [{ name: 'Joseph', addresses: { algorand: address } }]
+            mockContacts = [
+                { name: 'Joseph', addresses: { algorand: address } },
+            ]
 
             render(
                 <AddressDisplay

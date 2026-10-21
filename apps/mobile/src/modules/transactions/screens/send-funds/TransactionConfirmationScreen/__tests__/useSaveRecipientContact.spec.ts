@@ -64,7 +64,7 @@ describe('useSaveRecipientContact', () => {
 
     it('offers to save a recipient the user does not know', () => {
         const { result } = renderHook(() =>
-            useSaveRecipientContact('0xB0B', ETHEREUM),
+            useSaveRecipientContact('0xB0B', ETHEREUM, false),
         )
 
         expect(result.current.canSaveRecipient).toBe(true)
@@ -74,7 +74,7 @@ describe('useSaveRecipientContact', () => {
         mocks.accounts = [{ address: '0xB0B' }]
 
         const { result } = renderHook(() =>
-            useSaveRecipientContact('0xB0B', ETHEREUM),
+            useSaveRecipientContact('0xB0B', ETHEREUM, false),
         )
 
         expect(result.current.canSaveRecipient).toBe(false)
@@ -84,7 +84,7 @@ describe('useSaveRecipientContact', () => {
         mocks.contacts = [{ addresses: { evm: '0xb0b' } }]
 
         const { result } = renderHook(() =>
-            useSaveRecipientContact('0xB0B', ETHEREUM),
+            useSaveRecipientContact('0xB0B', ETHEREUM, false),
         )
 
         expect(result.current.canSaveRecipient).toBe(false)
@@ -94,7 +94,7 @@ describe('useSaveRecipientContact', () => {
         mocks.contacts = [{ addresses: { algorand: '0xB0B' } }]
 
         const { result } = renderHook(() =>
-            useSaveRecipientContact('0xB0B', ETHEREUM),
+            useSaveRecipientContact('0xB0B', ETHEREUM, false),
         )
 
         expect(result.current.canSaveRecipient).toBe(true)
@@ -102,7 +102,7 @@ describe('useSaveRecipientContact', () => {
 
     it('opens Add Contact prefilled with the recipient on its chain', () => {
         const { result } = renderHook(() =>
-            useSaveRecipientContact('0xB0B', ETHEREUM),
+            useSaveRecipientContact('0xB0B', ETHEREUM, false),
         )
 
         act(() => result.current.saveRecipient())
@@ -113,9 +113,17 @@ describe('useSaveRecipientContact', () => {
         })
     })
 
+    it('offers nothing while the send is signing', () => {
+        const { result } = renderHook(() =>
+            useSaveRecipientContact('0xB0B', ETHEREUM, true),
+        )
+
+        expect(result.current.canSaveRecipient).toBe(false)
+    })
+
     it('offers nothing without a recipient', () => {
         const { result } = renderHook(() =>
-            useSaveRecipientContact(undefined, ETHEREUM),
+            useSaveRecipientContact(undefined, ETHEREUM, false),
         )
 
         expect(result.current.canSaveRecipient).toBe(false)

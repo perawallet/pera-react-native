@@ -146,10 +146,7 @@ export const useAddressDisplay = ({
         if (isAddressOnly) {
             return null
         }
-        return (
-            findContactByAddress(contacts, address, contactFamily) ??
-            null
-        )
+        return findContactByAddress(contacts, address, contactFamily) ?? null
     }, [isAddressOnly, address, contacts, contactFamily])
 
     const { data: nfdNames } = useNfdForAddressQuery(scope, address, {

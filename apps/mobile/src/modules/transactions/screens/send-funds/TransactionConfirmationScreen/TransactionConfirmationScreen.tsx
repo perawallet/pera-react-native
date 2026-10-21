@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWDivider,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWDivider, PWScreen, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -67,6 +61,7 @@ export const TransactionConfirmationScreen = () => {
     const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
         destination,
         scope,
+        isSigning,
     )
 
     if (!isReady) {
@@ -131,17 +126,16 @@ export const TransactionConfirmationScreen = () => {
                             showSecondaryAddress
                         />
                         {canSaveRecipient ? (
-                            <PWTouchableOpacity
+                            <PWButton
+                                variant='linkPositive'
+                                title={t(
+                                    'send_funds.confirmation.add_to_contacts',
+                                )}
+                                paddingStyle='none'
                                 onPress={saveRecipient}
                                 style={styles.addContact}
                                 testID='send_save_recipient_contact_button'
-                            >
-                                <PWText style={styles.addContactLabel}>
-                                    {t(
-                                        'send_funds.confirmation.add_to_contacts',
-                                    )}
-                                </PWText>
-                            </PWTouchableOpacity>
+                            />
                         ) : null}
                     </KeyValueRow>
                 )}

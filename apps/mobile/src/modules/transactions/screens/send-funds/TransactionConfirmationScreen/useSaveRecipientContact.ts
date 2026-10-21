@@ -27,7 +27,11 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
 export type UseSaveRecipientContactResult = {
-    /** The recipient is neither one of the user's accounts nor a contact on its family. */
+    /**
+     * The recipient is neither one of the user's accounts nor a contact on its
+     * family, and nothing is signing: Add Contact would open over a Ledger or
+     * biometric prompt and the send would move on underneath it.
+     */
     canSaveRecipient: boolean
     saveRecipient: () => void
 }
@@ -35,6 +39,7 @@ export type UseSaveRecipientContactResult = {
 export const useSaveRecipientContact = (
     destination: Optional<string>,
     scope: ChainScope,
+    isSigning: boolean,
 ): UseSaveRecipientContactResult => {
     const accounts = useAllAccounts()
     const { contacts } = useContacts()
@@ -43,13 +48,13 @@ export const useSaveRecipientContact = (
     const family = getChainDescriptor(scope.chainId).family
 
     const canSaveRecipient = useMemo(() => {
-        if (!destination) return false
+        if (!destination || isSigning) return false
         if (findAccountByAddressOn(accounts, scope.chainId, destination)) {
             return false
         }
         // The To row resolves its contact by the same rule.
         return !findContactByAddress(contacts, destination, family)
-    }, [destination, accounts, scope.chainId, contacts, family])
+    }, [destination, isSigning, accounts, scope.chainId, contacts, family])
 
     const saveRecipient = useCallback(() => {
         if (!destination) return

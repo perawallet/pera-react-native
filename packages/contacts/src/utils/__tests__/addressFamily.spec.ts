@@ -111,7 +111,11 @@ describe('findContactByAddress', () => {
 
     test("finds the contact holding the address in that family, by the family's codec", () => {
         expect(
-            findContactByAddress([ALICE, BOB], EVM_ADDRESS.toUpperCase(), 'evm'),
+            findContactByAddress(
+                [ALICE, BOB],
+                EVM_ADDRESS.toUpperCase(),
+                'evm',
+            ),
         ).toBe(BOB)
     })
 
