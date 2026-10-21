@@ -43,7 +43,11 @@ import {
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-core-browser-runtime'
-import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
+import {
+    enrolBackoff,
+    isEnrolmentNeeded,
+    markEnrolmentNeeded,
+} from './enrol-attempt'
 import {
     clearLastFailure,
     readLastAnsweredFailureAt,
@@ -176,6 +180,26 @@ const countRevocation = async (): Promise<void> => {
     if (count >= REVOCATIONS_BEFORE_BLOCKED) await enrolBackoff.exhaust()
 }
 
+// Only an enrolled token stands in for the API key, so a token minted while
+// enrolment is still to do would only be refused. Without enrolment there is
+// no other kind of token, so the hold applies only where enrolment runs.
+const isMintHeld = async (): Promise<boolean> =>
+    (await mintBackoff.isBlocked()) ||
+    (config.webIntegrityEnrolEnabled && (await isEnrolmentNeeded()))
+
+// The claim is read, never trusted: it only decides how a refusal is taken.
+// An unreadable token keeps the stricter reading, an outage.
+const isEnrolledToken = (integrityToken: string): boolean => {
+    try {
+        const payload = integrityToken.split('.')[1]
+        if (!payload) return true
+        const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+        return (JSON.parse(json) as { enr?: unknown }).enr === true
+    } catch {
+        return true
+    }
+}
+
 /**
  * Ensures a warm integrity token exists, minting or renewing if not. Safe to
  * call from any service-worker wake path — concurrent callers collapse to one
@@ -189,7 +213,7 @@ export const ensureIntegrityToken = async (): Promise<void> => {
         if (existing) cachedToken = existing
         if (existing && !isIntegrityTokenStale(existing, Date.now())) return
 
-        if (await mintBackoff.isBlocked()) return
+        if (await isMintHeld()) return
 
         await withNamedLock('pera-integrity-mint', async () => {
             // Re-check both gates inside the lock: another realm (or a
@@ -199,7 +223,7 @@ export const ensureIntegrityToken = async (): Promise<void> => {
             if (fresh) cachedToken = fresh
             if (fresh && !isIntegrityTokenStale(fresh, Date.now())) return
 
-            if (await mintBackoff.isBlocked()) return
+            if (await isMintHeld()) return
 
             const network = await readActiveNetwork()
             try {
@@ -301,12 +325,19 @@ export const resumeIntegrityMint = async (): Promise<void> => {
     await ensureIntegrityToken()
 }
 
+// A token minted before enrolment never carries it, however long it has left.
+export const replaceTokenAfterEnrolment = async (): Promise<void> => {
+    await clearSessionIntegrityToken()
+    cachedToken = null
+    await resumeIntegrityMint()
+}
+
 let lastRetryAt = 0
 let lastRejectedToken: string | null = null
 
-// A token the backend refuses within this long of issuing it was not stale: it
-// is the backend's answer (bearer acceptance off, an un-enrolled key), and
-// minting again would only feed the refetch of everything that failed with it.
+// An enrolled token the backend refuses within this long of issuing it was not
+// stale: it is the backend's answer (bearer acceptance off), and minting again
+// would only feed the refetch of everything that failed with it.
 const FRESH_TOKEN_MS = 60 * 1000
 
 const isNamedToken = (
@@ -333,6 +364,20 @@ const replaceRejectedToken = async (
     lastRejectedToken = current.integrityToken
     await clearSessionIntegrityToken()
     cachedToken = null
+    // An unenrolled token is refused by design, so the refusal says enrolment is
+    // still to do (the welcome screen defers it), never that Pera is down.
+    if (
+        config.webIntegrityEnrolEnabled &&
+        !isEnrolledToken(current.integrityToken)
+    ) {
+        if (await isMarkedEnrolled(await readActiveNetwork())) {
+            await ensureIntegrityToken()
+            return
+        }
+        await markEnrolmentNeeded()
+        logger.info('Web integrity token refused before enrolment')
+        return
+    }
     if (Date.now() - Date.parse(current.mintedAt) < FRESH_TOKEN_MS) {
         await recordLastFailure({
             phase: 'mint',

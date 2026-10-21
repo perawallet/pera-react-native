@@ -94,6 +94,13 @@ export const markEnrolmentNeeded = async (): Promise<void> => {
     })
 }
 
+export const isEnrolmentNeeded = async (): Promise<boolean> => {
+    const stored = await chrome.storage.session.get(
+        INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+    )
+    return typeof stored[INTEGRITY_ENROL_NEEDED_SESSION_KEY] === 'number'
+}
+
 export const clearEnrolmentNeeded = async (): Promise<void> => {
     await chrome.storage.session.remove(INTEGRITY_ENROL_NEEDED_SESSION_KEY)
 }

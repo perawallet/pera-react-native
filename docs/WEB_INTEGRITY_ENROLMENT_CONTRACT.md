@@ -414,6 +414,15 @@ A mint that got no answer at all (offline, timeout) records `integrity:last-fail
 advancing the backoff, and while the current token still lives the backoff floor is a minute, so the
 next renewal alarm is never held back by the failure before it.
 
+A page that sees a guarded request refused while it held a token reports `token-rejected`. Only an
+enrolled token (`enr` claim) stands in for the API key, so the refusal of an unenrolled one is
+expected until enrolment: if this install's key is already enrolled, the token predates that and is
+replaced; otherwise the worker drops it and raises `integrity:enrol-needed` without recording a
+failure, and the welcome screen keeps deferring the check. While the flag is up the mint loop holds,
+since attest can only issue another unenrolled token, and a successful enrolment replaces whatever
+token is held. An enrolled token refused within a minute of minting is the backend's answer (bearer
+acceptance off), so it is recorded as a mint failure rather than minted again.
+
 ## 6. Backend contract
 
 ### 6.1 Endpoint
