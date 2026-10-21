@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Mirrors bitrise.yml's _web-build: a zip only. There is no Chrome Web Store
-# upload on either CI, so CI_UPLOADS_ENABLED changes nothing here.
+# Mirrors bitrise.yml's web-production: the zip, then on a production release
+# tag its upload to the Chrome Web Store as a draft.
 
 source ci/jobs/lib/toolchain.sh
 use_pinned_node
@@ -46,3 +46,12 @@ NAME="pera-extension-web-${ENVIRONMENT}-${CI_TAG:-b$BUILD_NUMBER}-${SHA}.zip"
 # sha256sum, which macOS does not ship.
 (cd "$CI_ARTIFACT_DIR" && shasum -a 256 "$NAME" >"$NAME.sha256")
 cat "$CI_ARTIFACT_DIR/$NAME.sha256"
+
+# Behind CI_UPLOADS_ENABLED like the mobile uploads: while Bitrise still
+# uploads the same tag, a second upload would replace its draft. Staging never
+# uploads; its zip talks to the staging backend.
+if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ]; then
+  pnpm run release:upload-chrome-web-store "$CI_ARTIFACT_DIR/$NAME"
+else
+  echo "pera-ci: uploads disabled or not production; no Chrome Web Store upload"
+fi
