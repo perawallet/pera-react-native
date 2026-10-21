@@ -157,3 +157,13 @@ Match Biometric
     [Documentation]    The simulator's model decides Face ID or Touch ID; the other notification is ignored.
     Execute Script    mobile: sendBiometricMatch    type=faceId    match=${True}
     Execute Script    mobile: sendBiometricMatch    type=touchId    match=${True}
+
+Rows With Prefix
+    [Documentation]    Every element whose testID begins with ${prefix}.
+    ...
+    ...                A predicate is evaluated inside XCUITest; the equivalent xpath walks the
+    ...                entire element tree on every poll. Waiting for the pay-asset rows to GO
+    ...                that way hung one command past WebDriverAgent's 240s proxy timeout and took
+    ...                the whole session with it, which then failed the two suites after it too.
+    [Arguments]    ${prefix}
+    RETURN    predicate=name BEGINSWITH '${prefix}'

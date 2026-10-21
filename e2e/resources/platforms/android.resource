@@ -151,3 +151,9 @@ Match Biometric
     Skip If    not $ANDROID_UDID.startswith('emulator-')
     ...    A physical Android device cannot be fed a fingerprint from the host.
     Adb    emu    finger    touch    1
+
+Rows With Prefix
+    [Documentation]    Every element whose testID begins with ${prefix}. See the iOS twin: there a
+    ...                predicate replaces the xpath for speed; UiAutomator2 handles the xpath fine.
+    [Arguments]    ${prefix}
+    RETURN    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@content-desc,'${prefix}')]

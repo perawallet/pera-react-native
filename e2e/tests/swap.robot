@@ -198,9 +198,13 @@ Pay Picker Leaves Out An Asset The Account Does Not Hold
     Wait For USDC Receive Row
     Close Picker Back To Form
     Open Pay Asset Picker
-    Wait Until Page Contains Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
+    # The "no rows left" wait polls its locator repeatedly; as an xpath that is a full
+    # element-tree walk per poll on iOS, which ran past WebDriverAgent's proxy timeout and
+    # killed the session. The adapter gives each platform a form it can answer cheaply.
+    ${pay_rows}=    Rows With Prefix    ${PAY_ASSET_ROW_PREFIX}
+    Wait Until Page Contains Element    ${pay_rows}    timeout=15s
     Search Assets    USDC
-    Wait Until Page Does Not Contain Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
+    Wait Until Page Does Not Contain Element    ${pay_rows}    timeout=15s
     Close Picker Back To Form
 
 Receive Picker Lists USDC
