@@ -138,8 +138,8 @@ _web_secrets: &web_secrets
   - GA_MEASUREMENT_API_SECRET
   - SENTRY_DSN
 
-# The web list plus the Chrome Web Store upload's, which only web-production
-# runs. CWS_CRX_SIGNING_KEY_BASE64 may be stored empty: the daemon has no
+# The web list plus the Chrome Web Store and Edge Add-ons uploads', which only
+# web-production runs. CWS_CRX_SIGNING_KEY_BASE64 may be stored empty: the daemon has no
 # optional secrets, and an empty key uploads the zip unsigned (see
 # tools/release/upload-chrome-web-store.mjs).
 _web_production_secrets: &web_production_secrets
@@ -174,6 +174,9 @@ _web_production_secrets: &web_production_secrets
   - CWS_PUBLISHER_ID
   - CWS_ITEM_ID
   - CWS_CRX_SIGNING_KEY_BASE64
+  - EDGE_CLIENT_ID
+  - EDGE_API_KEY
+  - EDGE_PRODUCT_ID
 
 pipelines:
   release:

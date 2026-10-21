@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # Mirrors bitrise.yml's web-production: the zip, then on a production release
-# tag its upload to the Chrome Web Store as a draft.
+# tag its upload to the Chrome Web Store and Microsoft Edge Add-ons as drafts.
 
 source ci/jobs/lib/toolchain.sh
 use_pinned_node
@@ -52,6 +52,7 @@ cat "$CI_ARTIFACT_DIR/$NAME.sha256"
 # uploads; its zip talks to the staging backend.
 if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ]; then
   pnpm run release:upload-chrome-web-store "$CI_ARTIFACT_DIR/$NAME"
+  pnpm run release:upload-edge-add-ons "$CI_ARTIFACT_DIR/$NAME"
 else
-  echo "pera-ci: uploads disabled or not production; no Chrome Web Store upload"
+  echo "pera-ci: uploads disabled or not production; no store uploads"
 fi

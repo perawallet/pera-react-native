@@ -1159,6 +1159,19 @@ workflows:
               exit 0
             fi
             pnpm run release:upload-chrome-web-store "$BITRISE_EXTENSION_ZIP_PATH"
+    - script@1:
+        title: Upload to Microsoft Edge Add-ons (draft)
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # As the Chrome Web Store step: release tags only, and never publishes.
+            if [ -z "${BITRISE_GIT_TAG:-}" ]; then
+              echo "No release tag, so no Edge Add-ons upload"
+              exit 0
+            fi
+            pnpm run release:upload-edge-add-ons "$BITRISE_EXTENSION_ZIP_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
