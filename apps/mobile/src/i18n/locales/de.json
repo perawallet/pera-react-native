@@ -2602,8 +2602,8 @@
             "title": "Konto auswählen"
         },
         "chain_selection": {
-            "title": "Netzwerk auswählen",
-            "eligible_subtitle": "Noch nicht hinzugefügt"
+            "title": "Netzwerk wählen",
+            "add_action": "Hinzufügen"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",

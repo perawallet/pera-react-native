@@ -14,16 +14,15 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.lg,
+        gap: theme.spacing.md,
     },
     row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-    },
-    labels: {
-        flex: 1,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.lg,
     },
     title: {
         color: theme.colors.textMain,

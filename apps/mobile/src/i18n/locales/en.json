@@ -2610,8 +2610,8 @@
             "title": "Select Account"
         },
         "chain_selection": {
-            "title": "Select Network",
-            "eligible_subtitle": "Not added yet"
+            "title": "Choose Network",
+            "add_action": "Add"
         },
         "qrview": {
             "error_title": "No Account Selected",
