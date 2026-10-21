@@ -83,8 +83,14 @@ import { useSigningStore } from '@packages/signing/src/store'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
+import { AnalyticsMetadataKey, WalletConnectEvent } from '@analytics'
 import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
@@ -262,6 +268,14 @@ const approvedNamespaces = (walletKit: FakeWalletKit) =>
     >
 
 describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     setSuiteUnhandledRequestMode('bypass')
 
     beforeEach(async () => {
@@ -324,6 +338,23 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 `${ETH_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
             ])
             expect(namespaces.eip155.methods).toEqual(ETHEREUM_METHODS)
+            expectFlowEvents(analytics, 'walletConnectApprove', 'ethereum')
+        })
+
+        it('Given an eip155-only proposal, when the user cancels, then the rejection is tracked on ethereum', async () => {
+            await mountProvider()
+            await propose(eip155Namespace('requiredNamespaces'))
+
+            await waitFor(() => {
+                expect(findButton('common.cancel.label')).toBeTruthy()
+            })
+            await act(async () => {
+                fireEvent.click(findButton('common.cancel.label')!)
+            })
+
+            await waitFor(() => {
+                expectFlowEvents(analytics, 'walletConnectReject', 'ethereum')
+            })
         })
 
         it('Given a proposal requiring algorand and eip155, when the user selects both accounts, then each namespace carries only its own chain’s address', async () => {
@@ -340,6 +371,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             expect(namespaces.eip155.accounts).toEqual([
                 `${ETH_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
             ])
+            expect(
+                analytics
+                    .events([WalletConnectEvent.SessionApproved])
+                    .map(
+                        ({ payload }) =>
+                            payload?.[AnalyticsMetadataKey.ChainId],
+                    ),
+            ).toEqual(['algorand', 'ethereum'])
         })
 
         it('Given a settled eip155 session, when the dApp calls methods the wallet does not list, then they are refused with 4200 without a review and eth_chainId is answered', async () => {

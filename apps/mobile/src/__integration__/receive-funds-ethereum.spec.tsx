@@ -23,6 +23,11 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { ChainSelectionScreen } from '@modules/transactions/screens/receive-funds/ChainSelectionScreen/ChainSelectionScreen'
 import { QRViewScreen } from '@modules/transactions/screens/receive-funds/QRViewScreen/QRViewScreen'
 import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/useReceiveFunds'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -61,6 +66,14 @@ const MULTI_CHAIN_ACCOUNT: WalletAccount = {
 }
 
 describe('Flow: Receive funds on Ethereum', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     beforeEach(() => {
         useAccountsStore.getState().setAccounts([ETHEREUM_ACCOUNT])
         useReceiveFundsStore.getState().reset()
@@ -82,6 +95,7 @@ describe('Flow: Receive funds on Ethereum', () => {
             `ethereum:${CHECKSUMMED_ADDRESS}@1`,
         )
         expect(screen.getByText(CHECKSUMMED_ADDRESS)).toBeTruthy()
+        expectFlowEvents(analytics, 'receive', 'ethereum')
     })
 
     it('Given an Ethereum account, when the user taps "Copy address", then the checksummed address is written to the clipboard', () => {

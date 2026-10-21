@@ -12,6 +12,7 @@
 
 import {
     afterAll,
+    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -67,6 +68,11 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 const NATIVE_ASSET_ID = '0'
 
@@ -117,6 +123,14 @@ const renderSendConfirmationStack = () =>
     })
 
 describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     beforeAll(async () => {
         await setupTestDatabase()
     })
@@ -211,6 +225,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Sender state survived the screen transitions.
         expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
+        expectFlowEvents(analytics, 'send', 'algorand')
     })
 
     it('Given the recipient-info lookup is still in flight, when the confirmation screen mounts, then the confirm button is disabled but not in the loading state', async () => {

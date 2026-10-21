@@ -117,6 +117,11 @@ import {
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import { addressOf } from './__fixtures__/accounts'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 // v2 has no anonymous mode: with no Reown project id the handler reports
 // itself unavailable and builds no client at all. `generated-env.ts` is
@@ -377,6 +382,14 @@ const signedSlotsFrom = (walletKit: FakeWalletKit): Nullable<string>[] => {
 }
 
 describe('Flow: ConnectionsProvider pair → approve → sign', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     // Outside the signing-pipeline suite the approval header's projects lookup
     // is left unmocked; these cases assert pairing, not project metadata.
     setSuiteUnhandledRequestMode('bypass')
@@ -422,6 +435,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         // The session key never reaches the record — it lives in the
         // keystore behind `secretRef`.
         expect(stored[0].accounts).toEqual([addressOf(SIGNING_ACCOUNT)])
+        expectFlowEvents(analytics, 'walletConnectApprove', 'algorand')
     })
 
     it('Given a v2 URI arrives at the deeplink front door, when the dApp proposes, then the approval sheet opens and the session is persisted', async () => {
@@ -547,6 +561,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         // stops a late `session_request` popping a ghost approval sheet.
         expect(connector.transportCloseCalls).toBe(1)
         expect(connector.approveSessionCalls).toHaveLength(0)
+        expectFlowEvents(analytics, 'walletConnectReject', 'algorand')
     })
 
     it('Given an approved session, when it is revoked through the registry, then the peer is killed and the record is gone', async () => {
@@ -840,6 +855,57 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 ),
             ).toBe(true)
             expect(connector.rejectRequestCalls).toHaveLength(0)
+            expectFlowEvents(analytics, 'walletConnectConfirm', 'algorand')
+        })
+
+        it('Given a session approved for an account the wallet holds, when the user rejects the requested signature, then the peer is rejected and the decline is tracked on algorand', async () => {
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Declining dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
+
+            const requested = buildPaymentTransaction({
+                sender: addressOf(signer),
+                receiver: HD_TEST_ADDRESS,
+                amount: 1_000_000n,
+            })
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: 9304,
+                    method: 'algo_signTxn',
+                    params: [
+                        [
+                            {
+                                txn: encodeToBase64(
+                                    encodeTransactionRaw(requested),
+                                ),
+                            },
+                        ],
+                    ],
+                })
+            })
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('signing_reject_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+            fireEvent.click(screen.getByTestId('signing_reject_button'))
+
+            await waitFor(
+                () => {
+                    expect(connector.rejectRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000 },
+            )
+            expect(connector.approveRequestCalls).toHaveLength(0)
+            expectFlowEvents(analytics, 'walletConnectDecline', 'algorand')
         })
 
         it("Given a dApp names the wallet's account as the authority for a sender the wallet doesn't hold, when the user confirms, then the peer is answered with the transaction signed by that authority", async () => {
