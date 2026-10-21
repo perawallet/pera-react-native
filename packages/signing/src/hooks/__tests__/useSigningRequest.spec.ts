@@ -161,7 +161,7 @@ const makeTxRequest = (
 ): TransactionSignRequest => ({
     id: 'tx-1',
     type: 'transactions',
-    transport: 'algod',
+    transport: 'network',
     txs: [{ sender: { toString: () => 'ADDR1' } } as any],
     ...overrides,
 })
@@ -469,7 +469,7 @@ describe('useSigningRequest', () => {
 
             const { result } = renderHook(() => useSigningRequest())
             const request = makeTxRequest({
-                transport: 'algod',
+                transport: 'network',
                 sourceType: 'walletconnect',
             })
 
@@ -529,7 +529,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.rejectRequest(
                     makeTxRequest({
-                        transport: 'algod',
+                        transport: 'network',
                         reject: mockReject,
                     } as never),
                 )
@@ -609,7 +609,7 @@ describe('useSigningRequest', () => {
             const mockReject = vi.fn()
             const { result } = renderHook(() => useSigningRequest())
             const request = makeTxRequest({
-                transport: 'algod',
+                transport: 'network',
                 reject: mockReject,
             })
 

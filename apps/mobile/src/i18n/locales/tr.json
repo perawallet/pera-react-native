@@ -202,7 +202,7 @@
         "nfd_resolving": "NFD çözümleniyor...",
         "nfd_resolved": "{{name}} üzerinden çözümlendi"
     },
-    "arc59": {
+    "asset_inbox": {
         "requests": {
             "empty_title": "Bekleyen varlık transfer isteği yok",
             "empty_body": "Bir varlık transfer isteğin olduğunda burada görüntüleyebilirsin. Bu özellik hakkında daha fazla bilgi için dokun.",
@@ -211,7 +211,7 @@
         },
         "claim": {
             "reject": "Reddet",
-            "algo_gain": "Opt-in masraflarını karşılamak için {{amount}} ALGO alacaksın."
+            "native_gain": "Opt-in masraflarını karşılamak için {{amount}} alacaksın."
         }
     },
     "asset": {
@@ -1248,6 +1248,10 @@
             "title": "Hesap seç",
             "subtitle": "Devam etmek için bir hesap seç"
         },
+        "unavailable": {
+            "title": "Hediye kartları kullanılamıyor",
+            "body": "Bu hesapla hediye kartı alınamaz. Desteklenen bir ağdaki bir hesap seç."
+        },
         "signing": {
             "source_name": "Bidali",
             "source_description": "Bidali ile hediye kartı satın alma"
@@ -1843,17 +1847,17 @@
             "account": "Hesap",
             "reject": "Reddet",
             "reject_title": "İstekler reddediliyor",
-            "reject_body": "Bu isteği reddedersen gelen varlık kalıcı olarak dolaşımdan çıkarılır ve gönderene geri dönmez. Bunun yerine, geri alınamayan bu işlem tamamlandığında {{algoAmount}} ALGO alırsın. Reddedildikten sonra varlığın kurtarılamayacağını lütfen unutma.",
+            "reject_gain_body": "Bu isteği reddedersen gelen varlık kalıcı olarak dolaşımdan çıkarılır ve gönderene geri dönmez. Bunun yerine, geri alınamayan bu işlem tamamlandığında {{amount}} alırsın. Reddedildikten sonra varlığın kurtarılamayacağını lütfen unutma.",
             "reject_cancel": "İptal",
             "processing_title": "İşlem gönderiliyor",
             "processing_subtitle": "İşlemin Algorand ağı tarafından işleniyor",
             "success_title": "İşlem tamamlandı",
             "success_subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
             "sender_count_more": "+{{count}} daha",
-            "insufficient_algo_title": "Yeterli ALGO yok",
-            "insufficient_algo_claim": "Bu varlığı talep etmek için yeterli ALGO yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
-            "insufficient_algo_reject": "Bu varlığı reddetmek için yeterli ALGO yok. İşlem ücretlerini karşılamak için fon ekle.",
-            "insufficient_algo_cta": "Bakiye ekle"
+            "insufficient_native_title": "Yeterli {{symbol}} yok",
+            "insufficient_native_claim": "Bu varlığı talep etmek için yeterli {{symbol}} yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
+            "insufficient_native_reject": "Bu varlığı reddetmek için yeterli {{symbol}} yok. İşlem ücretlerini karşılamak için fon ekle.",
+            "insufficient_native_cta": "Bakiye ekle"
         }
     },
     "multisig": {
@@ -2607,7 +2611,7 @@
         },
         "chain_selection": {
             "title": "Ağ seç",
-            "eligible_subtitle": "Henüz eklenmedi"
+            "add_action": "Ekle"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",
@@ -2703,7 +2707,8 @@
             "done": "Bitti",
             "placeholder": "Notunu gir",
             "button": "+ Not ekle",
-            "edit": "Notu düzenle"
+            "edit": "Notu düzenle",
+            "too_long": "Notlar en fazla {{maxBytes}} bayt olabilir"
         },
         "asset_selection": {
             "title": "Varlık seç",
@@ -2812,7 +2817,7 @@
             "continue": "Devam et",
             "dont_show_again": "Bunu tekrar gösterme"
         },
-        "arc59_summary": {
+        "asset_inbox_summary": {
             "title": "Varlık gelen kutusuna gönder",
             "description": "Alıcı bu varlığı eklemedi. Bunun yerine varlığı, alıcının varlık gelen kutusuna gönderebilirsin.",
             "read_more": "Daha fazla bilgi",
@@ -2820,7 +2825,7 @@
             "fees_label": "Protokol ve minimum bakiye ücretleri",
             "disclaimer": "Yukarıdaki ücret, alıcının minimum bakiye gereksinimlerini karşılamak için kullanılacak. Alıcı varlığı reddederse sana hiçbir şey geri dönmez."
         },
-        "arc59_warning": {
+        "asset_inbox_warning": {
             "title": "Uyarı",
             "message": "Bu fonları göndermeden önce kullanıcının varlık gelen kutusuna erişebildiğinden emin ol:",
             "confirm": "Anladım",
@@ -2833,7 +2838,7 @@
         },
         "insufficient_balance": {
             "title": "Minimum bakiye",
-            "message": "Bu hesapta, bu işlem için gerekli olan {{amount}} ALGO’luk minimum bakiye yok.",
+            "required_message": "Bu hesapta, bu işlem için gereken minimum bakiye yok: {{amount}}.",
             "done": "Bitti"
         },
         "select_sender": {

@@ -165,8 +165,8 @@ export const mapArc59AssetRequest = (
         totalSupply: new Decimal(0),
     },
     usdValue: raw.asset.usd_value ? new Decimal(raw.asset.usd_value) : null,
-    microAlgoGainOnClaim: new Decimal(raw.algo_gain_on_claim),
-    microAlgoGainOnReject: new Decimal(raw.algo_gain_on_reject),
+    nativeGainOnClaim: new Decimal(raw.algo_gain_on_claim),
+    nativeGainOnReject: new Decimal(raw.algo_gain_on_reject),
     senders: {
         count: raw.senders.count,
         results: raw.senders.results.map(s => ({
@@ -174,8 +174,8 @@ export const mapArc59AssetRequest = (
             amount: new Decimal(s.amount),
         })),
     },
-    insufficientAlgoForClaiming: raw.insufficient_algo_for_claiming,
-    insufficientAlgoForRejecting: raw.insufficient_algo_for_rejecting,
+    insufficientNativeForClaiming: raw.insufficient_algo_for_claiming,
+    insufficientNativeForRejecting: raw.insufficient_algo_for_rejecting,
     shouldUseFundsBeforeClaiming: raw.should_use_funds_before_claiming,
     shouldUseFundsBeforeRejecting: raw.should_use_funds_before_rejecting,
 })

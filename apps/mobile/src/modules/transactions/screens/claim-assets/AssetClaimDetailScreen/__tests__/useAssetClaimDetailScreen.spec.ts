@@ -11,12 +11,25 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { useAssetClaimDetailScreen } from '../useAssetClaimDetailScreen'
+
+const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM_SCOPE = { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }
+
+const { routeParams, mockRequestBottomSheet } = vi.hoisted(() => ({
+    routeParams: { current: {} as Record<string, unknown> },
+    mockRequestBottomSheet: vi.fn(),
+}))
 
 const mockPush = vi.fn()
 const mockNavigate = vi.fn()
@@ -35,6 +48,7 @@ vi.mock('@modules/transactions/hooks', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [
         { chains: { algorand: { address: 'ACCOUNT_ADDR' } }, name: 'Main' },
+        { chains: { ethereum: { address: 'ACCOUNT_ADDR' } }, name: 'Eth' },
     ],
     findAccountByAddressOn: (
         accounts: { chains: Record<string, { address: string }> }[],
@@ -48,7 +62,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@react-navigation/native', () => ({
-    useRoute: () => ({ params: { assetIndex: 0 } }),
+    useRoute: () => ({ params: routeParams.current }),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -56,7 +70,7 @@ vi.mock('@hooks/useClipboard', () => ({
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: vi.fn() }),
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -65,10 +79,12 @@ vi.mock('@hooks/useToast', () => ({
 
 const buildRequest = (
     overrides: {
-        insufficientAlgoForClaiming?: boolean
+        insufficientNativeForClaiming?: boolean
         shouldUseFundsBeforeClaiming?: boolean
-        insufficientAlgoForRejecting?: boolean
+        insufficientNativeForRejecting?: boolean
         shouldUseFundsBeforeRejecting?: boolean
+        nativeGainOnClaim?: Decimal
+        nativeGainOnReject?: Decimal
     } = {},
 ) => ({
     id: '123',
@@ -76,11 +92,11 @@ const buildRequest = (
     totalAmount: new Decimal(5),
     asset: { assetId: '123', decimals: 0, name: 'TEST' },
     usdValue: null,
-    microAlgoGainOnClaim: new Decimal(0),
-    microAlgoGainOnReject: new Decimal(0),
+    nativeGainOnClaim: new Decimal(0),
+    nativeGainOnReject: new Decimal(0),
     senders: { count: 0, results: [] },
-    insufficientAlgoForClaiming: false,
-    insufficientAlgoForRejecting: false,
+    insufficientNativeForClaiming: false,
+    insufficientNativeForRejecting: false,
     shouldUseFundsBeforeClaiming: false,
     shouldUseFundsBeforeRejecting: false,
     ...overrides,
@@ -90,6 +106,7 @@ describe('useAssetClaimDetailScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerAlgorandRampAdapter()
+        routeParams.current = { assetIndex: 0, scope: ALGORAND_SCOPE }
         mockAssetRequests = [buildRequest()]
     })
 
@@ -101,7 +118,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('blocks the claim when the account cannot cover the opt-in', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -112,7 +129,7 @@ describe('useAssetClaimDetailScreen', () => {
     it('does not block when the inbox funds cover the opt-in', () => {
         mockAssetRequests = [
             buildRequest({
-                insufficientAlgoForClaiming: true,
+                insufficientNativeForClaiming: true,
                 shouldUseFundsBeforeClaiming: true,
             }),
         ]
@@ -128,16 +145,17 @@ describe('useAssetClaimDetailScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('Messages', {
             screen: 'ClaimProcessing',
             params: {
-                mode: 'claimArc59',
+                mode: 'claim',
                 assetIndex: 0,
                 shouldClaimAlgo: true,
+                scope: ALGORAND_SCOPE,
             },
         })
     })
 
     it('blocks the reject when the account cannot cover its fee', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForRejecting: true }),
+            buildRequest({ insufficientNativeForRejecting: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -149,7 +167,7 @@ describe('useAssetClaimDetailScreen', () => {
     it('does not block the reject when the inbox funds cover the fee', () => {
         mockAssetRequests = [
             buildRequest({
-                insufficientAlgoForRejecting: true,
+                insufficientNativeForRejecting: true,
                 shouldUseFundsBeforeRejecting: true,
             }),
         ]
@@ -161,7 +179,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('sends the user to the fund tab to cover the shortfall', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -188,7 +206,7 @@ describe('useAssetClaimDetailScreen', () => {
 
     it('never navigates to processing while the claim is blocked', () => {
         mockAssetRequests = [
-            buildRequest({ insufficientAlgoForClaiming: true }),
+            buildRequest({ insufficientNativeForClaiming: true }),
         ]
 
         const { result } = renderHook(() => useAssetClaimDetailScreen())
@@ -200,4 +218,80 @@ describe('useAssetClaimDetailScreen', () => {
         expect(mockPush).not.toHaveBeenCalled()
         expect(mockShowToast).toHaveBeenCalled()
     })
+
+    describe.each([
+        {
+            scope: ALGORAND_SCOPE,
+            gainBaseUnits: new Decimal(1_500_000),
+            nativeSymbol: 'ALGO',
+            accountName: 'Main',
+        },
+        {
+            scope: ETHEREUM_SCOPE,
+            gainBaseUnits: new Decimal('1500000000000000000'),
+            nativeSymbol: 'ETH',
+            accountName: 'Eth',
+        },
+    ])(
+        'opened for $scope.chainId',
+        ({ scope, gainBaseUnits, nativeSymbol, accountName }) => {
+            beforeEach(() => {
+                registerEthereumChain()
+                routeParams.current = { assetIndex: 0, scope }
+            })
+
+            afterEach(() => {
+                restoreAlgorandOnlyChains()
+            })
+
+            it("resolves the receiving account on the scope's chain", () => {
+                const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+                expect(result.current.receiverAccount).toEqual(
+                    expect.objectContaining({ name: accountName }),
+                )
+            })
+
+            it('labels the claim gain in the native asset', () => {
+                mockAssetRequests = [
+                    buildRequest({ nativeGainOnClaim: gainBaseUnits }),
+                ]
+
+                const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+                expect(result.current.nativeSymbol).toBe(nativeSymbol)
+                expect(result.current.claimGainLabel).toBe(
+                    `1.50 ${nativeSymbol}`,
+                )
+            })
+
+            it('has no claim gain label when the claim credits nothing', () => {
+                const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+                expect(result.current.claimGainLabel).toBeNull()
+            })
+
+            it('carries the scope into a confirmed reject', async () => {
+                mockRequestBottomSheet.mockResolvedValueOnce(true)
+                mockAssetRequests = [
+                    buildRequest({ nativeGainOnReject: gainBaseUnits }),
+                ]
+
+                const { result } = renderHook(() => useAssetClaimDetailScreen())
+                await act(async () => {
+                    result.current.handleRejectPress()
+                })
+
+                expect(mockPush).toHaveBeenCalledWith('Messages', {
+                    screen: 'ClaimProcessing',
+                    params: {
+                        mode: 'reject',
+                        assetIndex: 0,
+                        shouldClaimAlgo: false,
+                        scope,
+                    },
+                })
+            })
+        },
+    )
 })

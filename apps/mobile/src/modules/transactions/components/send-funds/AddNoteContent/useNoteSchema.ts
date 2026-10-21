@@ -14,14 +14,16 @@ import { useMemo } from 'react'
 import { z } from 'zod'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useLanguage } from '@hooks/useLanguage'
 
 type NoteForm = { note?: string }
 
 /** Accepts any note when the chain declares no limit. */
 export const useNoteSchema = (
     chainId: ChainId,
-): z.ZodType<NoteForm, NoteForm> =>
-    useMemo(() => {
+): z.ZodType<NoteForm, NoteForm> => {
+    const { t } = useLanguage()
+    return useMemo(() => {
         const { maxNoteBytes } =
             getProvider().chains.get(chainId).descriptor.protocol
         return z.object({
@@ -32,8 +34,13 @@ export const useNoteSchema = (
                         maxNoteBytes === undefined ||
                         new TextEncoder().encode(data).byteLength <=
                             maxNoteBytes,
-                    { error: 'Notes may not exceed 1kb in length' },
+                    {
+                        error: t('send_funds.add_note.too_long', {
+                            maxBytes: maxNoteBytes,
+                        }),
+                    },
                 )
                 .optional(),
         })
-    }, [chainId])
+    }, [chainId, t])
+}

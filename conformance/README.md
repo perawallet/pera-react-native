@@ -48,6 +48,10 @@ pnpm test:conformance   # from the repo root, or `pnpm exec vitest run` from her
 `src/harness/localnet.ts` fails fast with a clear message if LocalNet isn't
 reachable at `http://localhost:4001`.
 
+`pnpm localnet` pins algod to a version the published conduit and indexer can
+ingest; `tools/dev/localnet.compose.yml` records why and when the pin lifts.
+Starting LocalNet with `algokit localnet start` directly skips the pin.
+
 Two vitest projects share the run: `chain` stubs the accounts barrel's persisted
 store, and `store-migration` loads it for real. `vitest --project <name>` runs
 one.
@@ -307,16 +311,19 @@ disagrees. `conformance/src/suites/submission/rejections.spec.ts` and
   running, or the containers aren't up. `pnpm localnet:status`, then
   `pnpm localnet`.
 - The indexer sits at round 0 and `suites/history` or `suites/accounts`
-  time out waiting for a transaction to appear. This is a stale
-  `algorandfoundation/conduit-localnet` image. Conduit logs
-  (`docker logs algokit_sandbox_conduit`) show
-  `unknown protocol ... this usually means you need to upgrade` and
-  `error decoding block for round 1`: the pinned image predates the running
-  algod's block format, so nothing is ever ingested and algod-only suites
-  stay green while indexer-backed ones cannot pass.
-  `docker pull algorandfoundation/conduit-localnet:latest` then
-  `pnpm localnet:reset`. CI pulls fresh images, so this is a local-only
-  trap.
+  time out waiting for a transaction to appear. Conduit logs
+  (`pnpm localnet:logs`, which a failed `pnpm test:conformance` also prints)
+  show `unknown protocol ... this usually means you need to upgrade` and
+  `error decoding block for round 1`: conduit predates the running algod's
+  block format, so nothing is ever ingested and algod-only suites stay green
+  while indexer-backed ones cannot pass. Either the cached
+  `algorandfoundation/conduit-localnet` image is stale
+  (`docker pull algorandfoundation/conduit-localnet:latest`, then
+  `pnpm localnet:reset`), or algod is newer than any published conduit. The
+  second is what the pin in `tools/dev/localnet.compose.yml` guards against,
+  so check LocalNet was started with `pnpm localnet`.
+- A LocalNet created on a newer algod than the pin cannot be continued by the
+  pinned one. Recreate it once with `pnpm localnet:reset`.
 - Stale containers or weird chain state: `pnpm localnet:reset` wipes and
   restarts LocalNet with a clean genesis. That changes the genesis hash, so if
   you have the app pointed at a custom LocalNet network config (Settings,

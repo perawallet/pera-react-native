@@ -64,7 +64,7 @@ export const useTransactionProcessingScreen =
             destination,
             note,
             sendMode,
-            arc59Summary,
+            assetInboxQuote,
             isCloseAccount,
             feePreset,
             onFinished,
@@ -142,7 +142,7 @@ export const useTransactionProcessingScreen =
                 note,
                 isCloseAccount,
                 feePreset,
-                arc59Summary,
+                assetInboxQuote,
             } as SendTransactionParams
 
             // A Bluetooth Ledger in the extension popup can't sign; this lets

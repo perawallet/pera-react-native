@@ -24,12 +24,13 @@
     "test:unit": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test:unit",
     "test:coverage": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test -- --coverage",
     "test:integration": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && pnpm --recursive --if-present run test:integration",
-    "test:conformance": "bash tools/dev/generate-config.sh && pnpm --filter @perawallet/conformance test:conformance",
+    "test:conformance": "bash tools/dev/generate-config.sh && bash tools/dev/conformance.sh",
     "generate:config": "bash tools/dev/generate-config.sh",
     "localnet": "bash tools/dev/localnet.sh start",
     "localnet:stop": "bash tools/dev/localnet.sh stop",
     "localnet:reset": "bash tools/dev/localnet.sh reset",
     "localnet:status": "bash tools/dev/localnet.sh status",
+    "localnet:logs": "bash tools/dev/localnet.sh logs",
     "localnet:fund": "tsx tools/localnet-fund.ts",
     "localnet:quantum-check": "tsx tools/localnet-quantum-check.ts",
     "bump-version": "bash tools/release/bump-version.sh",
@@ -68,6 +69,6 @@
     "util": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
   "name": "with-vite"
 }

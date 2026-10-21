@@ -18,7 +18,9 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { ChainSelectionScreen } from '@modules/transactions/screens/receive-funds/ChainSelectionScreen/ChainSelectionScreen'
 import { QRViewScreen } from '@modules/transactions/screens/receive-funds/QRViewScreen/QRViewScreen'
 import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/useReceiveFunds'
 
@@ -43,6 +45,19 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     custody: { kind: 'watch' },
     chains: { ethereum: { address: STORED_ADDRESS } },
     name: 'Ethereum watch',
+}
+
+const ALGORAND_ADDRESS =
+    'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+
+const MULTI_CHAIN_ACCOUNT: WalletAccount = {
+    id: 'multi-watch-1',
+    custody: { kind: 'watch' },
+    chains: {
+        algorand: { address: ALGORAND_ADDRESS },
+        ethereum: { address: STORED_ADDRESS },
+    },
+    name: 'Multi-chain watch',
 }
 
 describe('Flow: Receive funds on Ethereum', () => {
@@ -76,6 +91,35 @@ describe('Flow: Receive funds on Ethereum', () => {
 
         expect(vi.mocked(Clipboard.setStringAsync)).toHaveBeenCalledWith(
             CHECKSUMMED_ADDRESS,
+        )
+    })
+
+    it('Given an account on Algorand and Ethereum, when the user picks Ethereum on Choose Network, then the QR encodes an EIP-681 URI of its checksummed address', () => {
+        useAccountsStore.getState().setAccounts([MULTI_CHAIN_ACCOUNT])
+        useReceiveFundsStore.getState().setSelectedAccount(MULTI_CHAIN_ACCOUNT)
+
+        renderWithNavigation(ChainSelectionScreen, 'ChainSelection', {
+            additionalScreens: [{ name: 'QRView', component: QRViewScreen }],
+        })
+
+        expect(
+            screen.getByText(
+                addressCodecs.get('algorand').truncate(ALGORAND_ADDRESS),
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                addressCodecs.get('ethereum').truncate(STORED_ADDRESS),
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('receive_chain_add_algorand')).toBeNull()
+        expect(screen.queryByTestId('receive_chain_add_ethereum')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('receive_chain_row_ethereum'))
+
+        const qr = screen.getByTestId('QRCode') as HTMLElement
+        expect(qr.getAttribute('value')).toBe(
+            `ethereum:${CHECKSUMMED_ADDRESS}@1`,
         )
     })
 })

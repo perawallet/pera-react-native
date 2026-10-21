@@ -30,7 +30,11 @@ type GroupDetailRouteProp = RouteProp<SigningStackParamList, 'GroupDetail'>
 export const useGroupDetailScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<GroupDetailRouteProp>()
-    const { listItems } = useSigningPipeline()
+    const { listItems, currentRequest } = useSigningPipeline()
+    const scope =
+        currentRequest && 'txs' in currentRequest
+            ? currentRequest.txs[0]?.scope
+            : undefined
 
     const { groupIndex } = route.params
     const groupItem = listItems.find(
@@ -41,12 +45,14 @@ export const useGroupDetailScreen = () => {
 
     const handleTransactionPress = useCallback(
         (item: SingleTransactionItem) => {
+            if (!scope) return
             navigation.navigate('TransactionDetails', {
+                scope,
                 transaction: item.transaction,
                 isExternal: item.isExternal,
             })
         },
-        [navigation],
+        [navigation, scope],
     )
 
     const keyExtractor = useCallback(

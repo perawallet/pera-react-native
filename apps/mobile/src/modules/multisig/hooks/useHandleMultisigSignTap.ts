@@ -12,18 +12,19 @@
 
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
+import { chainIdOfMultisigSignRequest } from '../utils/chainIdOfJointAccount'
 import { getInFlightCosignAddresses } from '../utils/getInFlightCosignAddresses'
 import { getLocalUnsignedSigners } from '../utils/getLocalUnsignedSigners'
 import { selectCosignDispatchAddresses } from '../utils/selectCosignDispatchAddresses'
@@ -51,7 +52,7 @@ export type UseHandleMultisigSignTapResult = (
  * prompt.
  */
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const fallbackChainId = useCapableChainId('multisig')
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const accounts = useAllAccounts()
     const { addSignRequest, pendingSignRequests } = useSigningRequest()
@@ -60,14 +61,14 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
 
     return useCallback(
         (signRequest: MultisigSignRequest) => {
+            const chainId =
+                chainIdOfMultisigSignRequest(signRequest, accounts) ??
+                fallbackChainId
+            const scope = getSelectedScope(chainId)
             if (ACTIONABLE_SIGN_REQUEST_STATUSES.has(signRequest.status)) {
                 const { localKey, hardware } = splitLocalUnsignedSigners(
-                    getLocalUnsignedSigners(
-                        signRequest,
-                        accounts,
-                        scope.chainId,
-                    ),
-                    scope.chainId,
+                    getLocalUnsignedSigners(signRequest, accounts, chainId),
+                    chainId,
                 )
                 if (localKey.length > 0 && hardware.size === 0) {
                     const toDispatch = selectCosignDispatchAddresses({
@@ -78,7 +79,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                         ),
                         threshold: signRequest.multisigAccount.threshold,
                         signedCount: getSignedResponseCount(signRequest),
-                        chainId: scope.chainId,
+                        chainId,
                     })
                     for (const address of toDispatch) {
                         try {
@@ -111,7 +112,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                     return
                 }
             }
-            openSheet(signRequest.id)
+            openSheet(signRequest.id, chainId)
         },
         [
             openSheet,
@@ -120,7 +121,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
             pendingSignRequests,
             errorToast,
             t,
-            scope,
+            fallbackChainId,
         ],
     )
 }

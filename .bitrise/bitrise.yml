@@ -110,13 +110,11 @@ workflows:
               echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
               exit 1
             fi
-            # Pin to the repo's packageManager version — an unpinned
-            # `npm i -g pnpm` floats to latest and a pnpm major release
-            # would change lockfile/hoisting behavior under the release
-            # builds without any repo change. split('+') strips a Corepack
-            # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
-            PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-            npm install -g "pnpm@${PNPM_VERSION}"
+            # Corepack installs the exact pnpm in package.json's
+            # packageManager and checks its sha512, so neither a pnpm
+            # release nor a tampered download can reach the release builds.
+            corepack enable pnpm
+            corepack install
     - script@1:
         title: Install dependencies
         inputs:
@@ -346,13 +344,11 @@ workflows:
               echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
               exit 1
             fi
-            # Pin to the repo's packageManager version — an unpinned
-            # `npm i -g pnpm` floats to latest and a pnpm major release
-            # would change lockfile/hoisting behavior under the release
-            # builds without any repo change. split('+') strips a Corepack
-            # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
-            PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-            npm install -g "pnpm@${PNPM_VERSION}"
+            # Corepack installs the exact pnpm in package.json's
+            # packageManager and checks its sha512, so neither a pnpm
+            # release nor a tampered download can reach the release builds.
+            corepack enable pnpm
+            corepack install
     - script@1:
         title: Install dependencies
         inputs:
@@ -681,13 +677,11 @@ workflows:
               echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
               exit 1
             fi
-            # Pin to the repo's packageManager version — an unpinned
-            # `npm i -g pnpm` floats to latest and a pnpm major release
-            # would change lockfile/hoisting behavior under the release
-            # builds without any repo change. split('+') strips a Corepack
-            # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
-            PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-            npm install -g "pnpm@${PNPM_VERSION}"
+            # Corepack installs the exact pnpm in package.json's
+            # packageManager and checks its sha512, so neither a pnpm
+            # release nor a tampered download can reach the release builds.
+            corepack enable pnpm
+            corepack install
     - script@1:
         title: Install dependencies
         inputs:
@@ -1052,13 +1046,11 @@ workflows:
               echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
               exit 1
             fi
-            # Pin to the repo's packageManager version — an unpinned
-            # `npm i -g pnpm` floats to latest and a pnpm major release
-            # would change lockfile/hoisting behavior under the release
-            # builds without any repo change. split('+') strips a Corepack
-            # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
-            PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-            npm install -g "pnpm@${PNPM_VERSION}"
+            # Corepack installs the exact pnpm in package.json's
+            # packageManager and checks its sha512, so neither a pnpm
+            # release nor a tampered download can reach the release builds.
+            corepack enable pnpm
+            corepack install
     - script@1:
         title: Install dependencies
         inputs:

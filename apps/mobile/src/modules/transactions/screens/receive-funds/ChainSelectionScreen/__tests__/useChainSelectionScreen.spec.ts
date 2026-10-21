@@ -21,13 +21,20 @@ const mocks = vi.hoisted(() => ({
     showError: vi.fn(),
     setSelectedAccount: vi.fn(),
     setChainId: vi.fn(),
-    options: [] as { chainId: string; isEnabled: boolean }[],
+    options: [] as {
+        chainId: string
+        isEnabled: boolean
+        address?: string
+    }[],
 }))
 
 const account = {
     id: 'hd',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    chains: { ethereum: { address: '0xabc', keyPairId: 'k' } },
+    chains: {
+        algorand: { address: 'ALGOADDR', keyPairId: 'a' },
+        ethereum: { address: '0xabc', keyPairId: 'k' },
+    },
 }
 
 vi.mock('@react-navigation/native', () => ({
@@ -39,9 +46,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useEnableChain: () => mocks.enableChain,
 }))
 
+vi.mock('@perawallet/wallet-core-chain-contract', () => ({
+    addressCodecs: {
+        get: (chainId: string) => ({
+            truncate: (address: string) => `${chainId}:${address}`,
+        }),
+    },
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     chainDisplayNameOf: (chainId: string) =>
-        ({ ethereum: 'Ethereum', base: 'Base' })[chainId],
+        ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[chainId],
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -66,18 +81,42 @@ describe('useChainSelectionScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.options = [
-            { chainId: 'ethereum', isEnabled: true },
-            { chainId: 'base', isEnabled: false },
+            { chainId: 'algorand', isEnabled: true, address: 'ALGOADDR' },
+            { chainId: 'ethereum', isEnabled: true, address: '0xabc' },
+            { chainId: 'base', isEnabled: false, address: '0xabc' },
         ]
     })
 
-    it('lists the chains in the order the account offers them, with their names', () => {
+    it('lists the chains in the order the account offers them, with their names and truncated addresses', () => {
         const { result } = renderHook(() => useChainSelectionScreen())
 
         expect(result.current.rows).toEqual([
-            { chainId: 'ethereum', isEnabled: true, displayName: 'Ethereum' },
-            { chainId: 'base', isEnabled: false, displayName: 'Base' },
+            {
+                chainId: 'algorand',
+                isEnabled: true,
+                displayName: 'Algorand',
+                address: 'algorand:ALGOADDR',
+            },
+            {
+                chainId: 'ethereum',
+                isEnabled: true,
+                displayName: 'Ethereum',
+                address: 'ethereum:0xabc',
+            },
+            {
+                chainId: 'base',
+                isEnabled: false,
+                displayName: 'Base',
+                address: 'base:0xabc',
+            },
         ])
+    })
+
+    it('leaves the address unset when the account holds none in the family', () => {
+        mocks.options = [{ chainId: 'base', isEnabled: false }]
+        const { result } = renderHook(() => useChainSelectionScreen())
+
+        expect(result.current.rows[0]?.address).toBeUndefined()
     })
 
     it('opens the QR for an enabled chain without enabling anything', () => {
@@ -90,7 +129,16 @@ describe('useChainSelectionScreen', () => {
         expect(mocks.navigate).toHaveBeenCalledWith('QRView')
     })
 
-    it('enables an eligible chain for the account, then opens its QR', async () => {
+    it('does not open the QR for a chain that still has to be added', () => {
+        const { result } = renderHook(() => useChainSelectionScreen())
+
+        act(() => result.current.handleSelectChain('base' as ChainId))
+
+        expect(mocks.setChainId).not.toHaveBeenCalled()
+        expect(mocks.navigate).not.toHaveBeenCalled()
+    })
+
+    it('adds an eligible chain to the account and stays on the list', async () => {
         const enabled = {
             ...account,
             chains: { ...account.chains, base: { address: '0xabc' } },
@@ -98,29 +146,31 @@ describe('useChainSelectionScreen', () => {
         mocks.enableChain.mockResolvedValue(enabled)
         const { result } = renderHook(() => useChainSelectionScreen())
 
-        act(() => result.current.handleSelectChain('base' as ChainId))
+        act(() => result.current.handleAddChain('base' as ChainId))
 
         expect(result.current.enablingChainId).toBe('base')
         await waitFor(() =>
-            expect(mocks.navigate).toHaveBeenCalledWith('QRView'),
+            expect(mocks.setSelectedAccount).toHaveBeenCalledWith(enabled),
         )
         expect(mocks.enableChain).toHaveBeenCalledExactlyOnceWith(
             'hd',
             'base',
             'user',
         )
-        expect(mocks.setSelectedAccount).toHaveBeenCalledWith(enabled)
-        expect(mocks.setChainId).toHaveBeenCalledWith('base')
-        expect(result.current.enablingChainId).toBeUndefined()
+        expect(mocks.setChainId).not.toHaveBeenCalled()
+        expect(mocks.navigate).not.toHaveBeenCalled()
+        await waitFor(() =>
+            expect(result.current.enablingChainId).toBeUndefined(),
+        )
     })
 
-    it('enables once when the chain is tapped twice', async () => {
+    it('enables once when Add is tapped twice', async () => {
         mocks.enableChain.mockResolvedValue(account)
         const { result } = renderHook(() => useChainSelectionScreen())
 
         act(() => {
-            result.current.handleSelectChain('base' as ChainId)
-            result.current.handleSelectChain('base' as ChainId)
+            result.current.handleAddChain('base' as ChainId)
+            result.current.handleAddChain('base' as ChainId)
         })
 
         await waitFor(() =>
@@ -134,7 +184,7 @@ describe('useChainSelectionScreen', () => {
         mocks.enableChain.mockRejectedValue(failure)
         const { result } = renderHook(() => useChainSelectionScreen())
 
-        act(() => result.current.handleSelectChain('base' as ChainId))
+        act(() => result.current.handleAddChain('base' as ChainId))
 
         await waitFor(() =>
             expect(mocks.showError).toHaveBeenCalledWith(

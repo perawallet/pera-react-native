@@ -579,7 +579,7 @@ const enqueueSendTransactionRequest = (
                     type: 'transactions',
                     // Routes an external source to the chain's broadcaster, which
                     // answers through `approve` once the transaction is submitted.
-                    transport: 'algod',
+                    transport: 'network',
                     sourceType: message.sourceType,
                     transportId: message.connectionId,
                     sourceMetadata: message.peer,

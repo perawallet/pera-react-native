@@ -18,7 +18,6 @@ import {
     findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
@@ -51,9 +50,9 @@ export const useImportSharedAccountScreen =
         const navigation = useAppNavigation()
         const route =
             useRoute<RouteProp<MultisigStackParamList, 'ImportSharedAccount'>>()
-        const { address } = route.params
+        const { address, chainId } = route.params
 
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(chainId)
         const accounts = useAllAccounts()
         const { exitAccountFlow } = useExitAccountFlow()
         const deviceId = useScopedDeviceID(scope) ?? ''
@@ -75,10 +74,10 @@ export const useImportSharedAccountScreen =
         const isUserIncluded = useMemo(() => {
             const participantSet = new Set(participantAddresses)
             return accounts.some(a => {
-                const held = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+                const held = chainAccountOf(a, chainId)?.address
                 return held !== undefined && participantSet.has(held)
             })
-        }, [accounts, participantAddresses])
+        }, [accounts, participantAddresses, chainId])
 
         // Stricter than `isUserIncluded`: a watch-only participant is included
         // but can't co-sign, so the screen warns when this is false.
@@ -87,20 +86,20 @@ export const useImportSharedAccountScreen =
                 participantAddresses.some(participantAddress => {
                     const participant = findAccountByAddressOn(
                         accounts,
-                        LEGACY_CHAIN_ID,
+                        chainId,
                         participantAddress,
                     )
                     return (
                         !!participant &&
-                        canSignAsParticipant(participant, LEGACY_CHAIN_ID)
+                        canSignAsParticipant(participant, chainId)
                     )
                 }),
-            [accounts, participantAddresses],
+            [accounts, participantAddresses, chainId],
         )
 
         const isAlreadyImported = useMemo(
-            () => !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address),
-            [accounts, address],
+            () => !!findAccountByAddressOn(accounts, chainId, address),
+            [accounts, chainId, address],
         )
 
         const isAddDisabled = isLoading || isError || isAlreadyImported || !data
@@ -113,12 +112,22 @@ export const useImportSharedAccountScreen =
                 deleteImportInboxMutation.mutate({ multisigAddress: address })
             }
             navigation.push('NameMultisig', {
-                address: data.address,
-                threshold: data.threshold,
-                addresses: data.participantAddresses,
-                version: data.version,
+                chainId,
+                imported: {
+                    address: data.address,
+                    threshold: data.threshold,
+                    addresses: data.participantAddresses,
+                    version: data.version,
+                },
             })
-        }, [navigation, data, deviceId, deleteImportInboxMutation, address])
+        }, [
+            navigation,
+            data,
+            deviceId,
+            deleteImportInboxMutation,
+            address,
+            chainId,
+        ])
 
         const handleRetry = useCallback(() => {
             void refetch()

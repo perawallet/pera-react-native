@@ -12,7 +12,10 @@
 
 import { useCallback } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getSelectedScope,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -100,7 +103,11 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             // 2. Confirm the opt-in (shows the asset and fee being signed).
             const confirmation = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
-                { assetId, accountAddress: sender, chainId },
+                {
+                    assetId,
+                    accountAddress: sender,
+                    scope: getSelectedScope(chainId),
+                },
                 SHEET_OPTIONS,
             )
             if (confirmation !== 'confirm') return

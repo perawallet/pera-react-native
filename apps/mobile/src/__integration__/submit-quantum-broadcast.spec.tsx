@@ -150,7 +150,7 @@ describe('submit from quantum account over algod transport', () => {
         const { request, error: errorSpy } = buildTransactionSignRequest({
             sourceType: 'local',
             txs: [payment],
-            overrides: { transport: 'algod' },
+            overrides: { transport: 'network' },
         })
 
         const sendSpy = vi.fn(() =>

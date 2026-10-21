@@ -11,13 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useAllAccounts,
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -29,6 +29,7 @@ import {
     useMultisigCreationStore,
     type Participant,
 } from '../../hooks/useMultisigCreation'
+import type { MultisigStackParamList } from '../../routes/types'
 
 const MAX_PARTICIPANTS = 16
 
@@ -45,6 +46,8 @@ type UseCreateMultisigScreenResult = {
 
 export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     const navigation = useAppNavigation()
+    const { chainId } =
+        useRoute<RouteProp<MultisigStackParamList, 'CreateMultisig'>>().params
     const { request: requestBottomSheet } = useBottomSheet()
     const accounts = useAllAccounts()
     const { addContact, contacts } = useContacts()
@@ -60,8 +63,8 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const isParticipantInWallet = useCallback(
         (address: string) =>
-            !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, address),
-        [accounts],
+            !!findAccountByAddressOn(accounts, chainId, address),
+        [accounts, chainId],
     )
 
     const handleAddAddress = useCallback(
@@ -82,7 +85,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
             // addresses that are already contacts.
             const isWalletAccount = !!findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                chainId,
                 address,
             )
             const isExistingContact = contacts.some(
@@ -98,14 +101,14 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
                 ...(nfdName ? { nfd: nfdName } : {}),
             })
         },
-        [accounts, contacts, addContact, addParticipant, participants],
+        [accounts, chainId, contacts, addContact, addParticipant, participants],
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
         trackEvent(MultisigEvent.AddAccount)
 
         const result = await requestBottomSheet<AddParticipantResult>({
-            contents: <AddParticipantContent />,
+            contents: <AddParticipantContent chainId={chainId} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
@@ -114,7 +117,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         })
         if (!result) return
         handleAddAddress(result.address, result.nfdName)
-    }, [requestBottomSheet, handleAddAddress])
+    }, [requestBottomSheet, handleAddAddress, chainId])
 
     const handleEditParticipant = useCallback(
         (index: number) => {
@@ -139,8 +142,8 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const handleContinue = useCallback(() => {
         trackEvent(MultisigEvent.AddAccountContinue)
-        navigation.push('SetThreshold')
-    }, [navigation])
+        navigation.push('SetThreshold', { chainId })
+    }, [navigation, chainId])
 
     return {
         participants,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -19,7 +19,12 @@ import {
 } from '@test-utils/chain-fixtures'
 import { useNoteSchema } from '../useNoteSchema'
 
-const LIMIT_MESSAGE = 'Notes may not exceed 1kb in length'
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { maxBytes?: number }) =>
+            `${key}:${options?.maxBytes}`,
+    }),
+}))
 
 describe('useNoteSchema', () => {
     it('accepts a note of exactly the descriptor limit, counted in UTF-8 bytes', () => {
@@ -31,13 +36,15 @@ describe('useNoteSchema', () => {
         ).toBe(true)
     })
 
-    it('rejects a note one byte over the limit with the limit message', () => {
+    it('rejects a note one byte over the limit with the chain limit in the message', () => {
         const { result } = renderHook(() => useNoteSchema(LEGACY_CHAIN_ID))
 
         const parsed = result.current.safeParse({ note: 'a'.repeat(1025) })
 
         expect(parsed.success).toBe(false)
-        expect(parsed.error?.issues[0]?.message).toBe(LIMIT_MESSAGE)
+        expect(parsed.error?.issues[0]?.message).toBe(
+            'send_funds.add_note.too_long:1024',
+        )
     })
 
     it('treats the note as optional', () => {

@@ -141,6 +141,7 @@ export const useOnrampConfirm = ({
                             <OptInConfirmationContent
                                 assetId={assetId}
                                 accountAddress={currentAddress}
+                                scope={scope}
                                 fee={isSponsored ? ZERO_DECIMAL : undefined}
                             />
                         ),

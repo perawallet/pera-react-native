@@ -109,7 +109,7 @@ describe('useTransactionProcessingScreen', () => {
         destination: undefined,
         note: undefined,
         sendMode: 'normal' as const,
-        arc59Summary: undefined,
+        assetInboxQuote: undefined,
         isCloseAccount: false,
         onFinished: vi.fn(),
         canSelectAsset: true,
@@ -119,7 +119,7 @@ describe('useTransactionProcessingScreen', () => {
         setDestination: vi.fn(),
         setOnFinished: vi.fn(),
         setSendMode: vi.fn(),
-        setArc59Summary: vi.fn(),
+        setAssetInboxQuote: vi.fn(),
         reset: vi.fn(),
     }
 
@@ -164,7 +164,7 @@ describe('useTransactionProcessingScreen', () => {
                 amount: new Decimal(5),
                 note: 'Test note',
                 isCloseAccount: false,
-                arc59Summary: undefined,
+                assetInboxQuote: undefined,
             }),
         })
     })
@@ -278,16 +278,8 @@ describe('useTransactionProcessingScreen', () => {
         )
     })
 
-    it('should include arc59Summary when sendMode is sendArc59', async () => {
-        const arc59Summary = {
-            is_arc59_opted_in: true,
-            minimum_balance_requirement: 100_000,
-            inner_tx_count: 2,
-            total_protocol_and_mbr_fee: 200_000,
-            inbox_address: 'INBOX_ADDR',
-            algo_fund_amount: 0,
-            warning_message: null,
-        }
+    it('carries the inbox quote into an asset inbox send', async () => {
+        const assetInboxQuote = { opaque: true }
 
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
@@ -295,8 +287,8 @@ describe('useTransactionProcessingScreen', () => {
             selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
-            sendMode: 'sendArc59',
-            arc59Summary,
+            sendMode: 'sendAssetInbox',
+            assetInboxQuote,
         })
 
         await act(async () => {
@@ -305,8 +297,8 @@ describe('useTransactionProcessingScreen', () => {
 
         expect(mockExecute).toHaveBeenCalledWith({
             params: expect.objectContaining({
-                sendMode: 'sendArc59',
-                arc59Summary,
+                sendMode: 'sendAssetInbox',
+                assetInboxQuote,
             }),
         })
     })

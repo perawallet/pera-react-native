@@ -16,8 +16,7 @@ import {
     isWatchAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     ParticipantIsMultisigError,
     ParticipantSchemeUnsupportedError,
@@ -48,9 +47,14 @@ export type UseAddParticipantContentResult = {
     dismiss: () => void
 }
 
-export const useAddParticipantContent = (): UseAddParticipantContentResult => {
+export type UseAddParticipantContentParams = {
+    scope: ChainScope
+}
+
+export const useAddParticipantContent = ({
+    scope,
+}: UseAddParticipantContentParams): UseAddParticipantContentResult => {
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
     const [selectedAddress, setSelectedAddress] = useState('')
@@ -59,12 +63,8 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
 
     const isLocalAccount = useMemo(
         () =>
-            !!findAccountByAddressOn(
-                accounts,
-                LEGACY_CHAIN_ID,
-                selectedAddress,
-            ),
-        [accounts, selectedAddress],
+            !!findAccountByAddressOn(accounts, scope.chainId, selectedAddress),
+        [accounts, scope.chainId, selectedAddress],
     )
 
     const multisigCheck = useIsMultisigAddressQuery({
@@ -149,7 +149,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         (address: string, nfdName?: string) => {
             const localAccount = findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                scope.chainId,
                 address,
             )
             if (localAccount) {
@@ -157,9 +157,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (
-                    !signsWithParticipantScheme(localAccount, LEGACY_CHAIN_ID)
-                ) {
+                if (!signsWithParticipantScheme(localAccount, scope.chainId)) {
                     showValidationError(new ParticipantSchemeUnsupportedError())
                     return
                 }
@@ -172,7 +170,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
             setSelectedAddress(address)
             setSelectedNfdName(nfdName)
         },
-        [accounts, resolve, showValidationError],
+        [accounts, scope.chainId, resolve, showValidationError],
     )
 
     return { handleSelected, dismiss }
