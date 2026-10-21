@@ -56,7 +56,16 @@ Open Opt In Sheet
     # The row sits under the search sheet's layer and a tap there can be dropped; repeat while the
     # confirmation has not appeared.
     FOR    ${i}    IN RANGE    3
-        Tap    ${result}
+        # The results come from a remote lookup and re-render, so the row can be gone by the
+        # time the tap lands. Tap's own retry only waits 5s for it; search again instead of
+        # failing on a row that the next response will bring straight back.
+        ${there}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${result}
+        IF    not ${there}
+            Search Assets For USDC    ${result}
+            Dismiss Keyboard
+        END
+        Run Keyword And Ignore Error    Tap    ${result}
         ${open}=    Run Keyword And Return Status
         ...    Wait Until Page Contains Element    ${OPT_IN_CONFIRM}    timeout=5s
         IF    ${open}    BREAK

@@ -21,6 +21,7 @@ ${IMPORT_LINK}                          perawallet://app/shared-account-import/?
 
 ${ACCOUNT_SELECTION_BUTTON}             xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
 ${ACCOUNT_ROW_PREFIX}                   account_switcher_row_
+${PARTICIPANT_ROW_ANY}                  xpath=//*[starts-with(@resource-id,'participant_item_') or starts-with(@name,'participant_item_') or starts-with(@content-desc,'participant_item_')]
 ${ACCOUNT_MENU_ADD_BUTTON}              xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
 ${MORE_BUTTON}                          xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
 ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   xpath=//*[@resource-id='add_account_create_multisig_button' or @name='add_account_create_multisig_button' or @content-desc='add_account_create_multisig_button']
@@ -240,7 +241,8 @@ Wait Until Participant Sheet Closed
 Add Participants
     [Documentation]    Onto an empty Create Shared Account list.
     [Arguments]    @{addresses}
-    FOR    ${index}    ${address}    IN ENUMERATE    @{addresses}
+    FOR    ${address}    IN    @{addresses}
+        ${before}=    Participant Row Count
         IF    $address == $OWN
             Add Own Account As Participant
         ELSE
@@ -248,8 +250,12 @@ Add Participants
         END
         # The row is added only after the sheet has closed, and Continue stays disabled until the
         # second one is; a tap before then does nothing.
-        ${row}=    Test Id Starting With    participant_item_${index}_
-        Wait Until Page Contains Element    ${row}    timeout=10s
+        #
+        # Wait for the list to GROW, not for participant_item_<argument position>: the
+        # max-participants case calls this four times over, so on the second call the positions
+        # start at 0 again while the ids carry 4..7 - and a long list has scrolled the early
+        # rows out of the tree anyway. The own-account branch has no address to match on either.
+        Wait Until Keyword Succeeds    10s    0.5s    Participant Count Should Exceed    ${before}
     END
 
 Participant Should Be Listed
@@ -428,3 +434,16 @@ Start With Known Shared Account Imported
     ...    Expect Element    ${IMPORT_ADD_BUTTON}    enabled    timeout=2s    loglevel=NONE
     IF    ${new}    Add Imported Account    ${name}
     Go Home
+
+Participant Row Count
+    [Documentation]    How many participant rows the list is showing.
+    ${rows}=    Run Keyword And Return Status    Page Should Contain Element    ${PARTICIPANT_ROW_ANY}
+    IF    not ${rows}    RETURN    ${0}
+    @{found}=    Get WebElements    ${PARTICIPANT_ROW_ANY}
+    RETURN    ${{ len($found) }}
+
+Participant Count Should Exceed
+    [Arguments]    ${before}
+    ${now}=    Participant Row Count
+    Should Be True    ${now} > ${before}
+    ...    msg=The participant list still shows ${now} rows, so the one just added did not land.

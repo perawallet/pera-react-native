@@ -36,15 +36,18 @@ Staking Projects Should Be Listed
 
 Tap First Project
     [Documentation]    Returns whether the disclaimer showed rather than the project opening directly.
+    ...                Once the disclaimer has been accepted the tap goes straight to the project,
+    ...                which is a webview over the network and the slower of the two outcomes; 20s
+    ...                was not enough for it on a cold run.
     Tap    ${STAKING_FIRST_CARD}
-    FOR    ${i}    IN RANGE    40
+    FOR    ${i}    IN RANGE    90
         ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
         IF    ${disclaimer}    RETURN    ${True}
         ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
         IF    ${project}    RETURN    ${False}
         Sleep    0.5s
     END
-    Fail    Tapping a project opened neither the disclaimer nor the project page.
+    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s.
 
 Open Disclaimer
     [Documentation]    The disclaimer shows until accepted once per install, so a run after an
