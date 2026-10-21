@@ -38,11 +38,14 @@ export {
 export {
     canDerive,
     canImportRawKey,
+    defaultChains,
     eligibleChains,
     eligibleChainsInFamily,
     findAddressHolder,
     findPathHolder,
+    isEnabledByDefault,
     nextChainPosition,
+    preferDefaultChain,
     seedMintableScheme,
 } from './eligibility'
 export {

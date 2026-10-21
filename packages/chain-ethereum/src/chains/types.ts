@@ -43,6 +43,7 @@ export type EvmChainRow = {
     explorerBase: Readonly<Record<NetworkId, string>>
     fee: EvmFeeStrategy
     finality: ChainFinality
+    enabledByDefault: boolean
 }
 
 export type EvmChain = {

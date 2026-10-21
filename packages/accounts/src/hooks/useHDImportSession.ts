@@ -25,7 +25,7 @@ import {
     requirePublicKeyGetter,
 } from '../chain-adapter'
 import type { LocalAccount } from '../models/accounts'
-import { useAccountsStore } from '../store'
+import { useAccountsStore, withDefaultChains } from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
 import { hdIndexOf } from '../credentials'
 
@@ -130,18 +130,21 @@ export const useHDImportSession = (
                 throw e
             }
 
+            const committed = await Promise.all(
+                selectedAccounts.map(withDefaultChains),
+            )
             const existing = useAccountsStore.getState().accounts
-            const next = [...existing, ...selectedAccounts]
+            const next = [...existing, ...committed]
             setAccounts(next)
             // Not awaited: the other chains' probes shouldn't hold the import.
             const { discoverChains } = useAccountsStore.getState()
-            for (const account of selectedAccounts) {
+            for (const account of committed) {
                 void discoverChains(account.id)
             }
 
             useHDImportSessionStore.getState().resetState()
 
-            return selectedAccounts
+            return committed
         },
         [persistHDMasterKey, removeKeyAndChildren, scope, setAccounts],
     )

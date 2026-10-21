@@ -344,6 +344,47 @@ describe('transformAssetResponse', () => {
         expect(result.peraMetadata?.collectible?.media).toHaveLength(1)
     })
 
+    test.each([
+        ['pure (supply 1, no decimals)', '1', 0, true],
+        ['fractional (10^decimals units)', '100', 2, false],
+        ['multi-supply edition (indivisible, many copies)', '1000', 0, false],
+    ])(
+        'sets isUnique for a %s ASA',
+        (_label, total, fractionDecimals, isUnique) => {
+            const result = transformAssetResponse(
+                createAssetResponse({
+                    type: 'collectible',
+                    collectible: createCollectibleResponse(),
+                    total,
+                    fraction_decimals: fractionDecimals,
+                }),
+            )
+
+            expect(result.peraMetadata?.isUnique).toBe(isUnique)
+        },
+    )
+
+    test('sets isUnique from supply when the collectible block is null', () => {
+        const result = transformAssetResponse(
+            createAssetResponse({
+                type: 'collectible',
+                collectible: null,
+                total: '1',
+                fraction_decimals: 0,
+            }),
+        )
+
+        expect(result.peraMetadata?.isUnique).toBe(true)
+    })
+
+    test('leaves isUnique unset on a non-collectible', () => {
+        const result = transformAssetResponse(
+            createAssetResponse({ total: '1', fraction_decimals: 0 }),
+        )
+
+        expect(result.peraMetadata?.isUnique).toBeUndefined()
+    })
+
     test('leaves collectible undefined when API returns null', () => {
         const input = createAssetResponse({
             type: 'standard_asset',

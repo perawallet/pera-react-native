@@ -122,7 +122,11 @@ describe('useWatchAccountScreen', () => {
         const { chains } = getProvider()
         if (!chains.has(FIXTURE_CHAIN_ID)) {
             chains.register(
-                { ...fixtureEthereumDescriptor, id: FIXTURE_CHAIN_ID },
+                {
+                    ...fixtureEthereumDescriptor,
+                    id: FIXTURE_CHAIN_ID,
+                    enabledByDefault: false,
+                },
                 allCapabilities(true),
             )
         }
@@ -486,6 +490,46 @@ describe('useWatchAccountScreen', () => {
             })
 
             expect(result.current.isDuplicateAddress).toBe(true)
+        })
+
+        it('watches on the default chain when a non-default chain registered first accepts the address too', async () => {
+            const defaultChainId = 'fixturedefault' as ChainId
+            const { chains } = getProvider()
+            if (!chains.has(defaultChainId)) {
+                chains.register(
+                    {
+                        ...fixtureEthereumDescriptor,
+                        id: defaultChainId,
+                        enabledByDefault: true,
+                    },
+                    allCapabilities(true),
+                )
+            }
+            if (!addressCodecs.has(defaultChainId)) {
+                addressCodecs.register({
+                    ...fixtureCodec,
+                    chainId: defaultChainId,
+                })
+            }
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(FIXTURE_ADDRESS)
+            })
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            expect(mockImportWatchAccount).toHaveBeenCalledWith(
+                defaultChainId,
+                FIXTURE_ADDRESS,
+            )
+            await waitFor(() =>
+                expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                    account: watched(defaultChainId, FIXTURE_ADDRESS),
+                    chainId: defaultChainId,
+                }),
+            )
         })
     })
 })

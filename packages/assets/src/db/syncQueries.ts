@@ -23,6 +23,7 @@ import {
     type SQL,
 } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { Decimal } from 'decimal.js'
 import {
     toScopeKey,
     type ChainScope,
@@ -31,7 +32,6 @@ import {
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PeraAssetType } from '../models'
-import { hasNftShape } from '../utils'
 import {
     AssetsNodeSchema,
     AssetsPeraSchema,
@@ -111,6 +111,14 @@ export type UnclassifiedRecheck = {
     ttlMs: number
     /** How long it stays eligible, measured from `first_seen_at`. */
     windowMs: number
+    /**
+     * The chain's guess at whether an asset is shaped like a collectible. A
+     * false positive costs one request; a false negative waits out the long TTL.
+     */
+    hasCollectibleShape: (asset: {
+        totalSupply: Decimal
+        decimals: number
+    }) => boolean
 }
 
 /**
@@ -129,6 +137,7 @@ async function getUnclassifiedNftIds({
     scopeKey,
     ttlMs,
     windowMs,
+    hasCollectibleShape,
 }: {
     db: Database
     assetIds: string[]
@@ -168,7 +177,7 @@ async function getUnclassifiedNftIds({
 
     const candidates = new Set(assetIds)
     return rows
-        .filter(row => candidates.has(row.assetId) && hasNftShape(row))
+        .filter(row => candidates.has(row.assetId) && hasCollectibleShape(row))
         .map(row => row.assetId)
 }
 

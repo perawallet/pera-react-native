@@ -216,6 +216,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         Number(value) / Math.pow(10, asset.decimals),
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset.peraMetadata?.type === 'collectible',
+    isUniqueCollectible: (asset: {
+        peraMetadata?: { type?: string; isUnique?: boolean }
+    }) =>
+        asset.peraMetadata?.type === 'collectible' &&
+        asset.peraMetadata.isUnique === true,
     KNOWN_ASSET_IDS: {
         USDC: new Map([
             ['algorand/mainnet', '31566704'],
@@ -398,9 +403,25 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         }
         return scopes.get(chainId)!
     }
+    // One array per source set, so memoised consumers keep its identity.
+    const sourceSets = new Map<string, { address: string; scope: any }[]>()
+    const holdingSourcesOf = (account: any) => {
+        const sources = REGISTRY_ORDER.flatMap(chainId => {
+            const address = chainAccountOf(account, chainId)?.address
+            return address ? [{ address, scope: scopeOf(chainId) }] : []
+        })
+        const key = sources
+            .map(({ address, scope }) => `${scope.chainId}:${address}`)
+            .join('|')
+        if (!sourceSets.has(key)) sourceSets.set(key, sources)
+        return sourceSets.get(key)!
+    }
     return {
         accountChainIdOf: vi.fn(accountChainIdOf),
+        useAccountHoldingSources: vi.fn(holdingSourcesOf),
         useRegisteredChainIds: vi.fn(() => ['algorand']),
+        canImportRawKey: vi.fn(() => false),
+        preferDefaultChain: vi.fn((chainIds: string[]) => chainIds[0]),
         useAccountChainId: vi.fn((account: any) =>
             account ? accountChainIdOf(account) : 'algorand',
         ),

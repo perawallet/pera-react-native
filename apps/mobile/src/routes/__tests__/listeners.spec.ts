@@ -196,6 +196,19 @@ describe('screenListeners', () => {
             expect(trackScreen).toHaveBeenCalledWith(screen)
         })
 
+        it('tracks the collectible detail with its chain-keyed params', () => {
+            screenListeners({
+                route: createRoute('CollectibleDetails', undefined, {
+                    assetId: '1',
+                    chainId: 'algorand',
+                }) as any,
+            }).focus()
+
+            expect(trackScreen).toHaveBeenCalledWith(
+                AnalyticsScreenName.CollectibleList,
+            )
+        })
+
         it('does not track a catalog screen for an unmapped route', () => {
             screenListeners({ route: createRoute('SendAlgo') as any }).focus()
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
@@ -35,43 +35,24 @@ export const toDecimalUnits = (
     return displayUnitsToBaseUnits(value, asset.decimals)
 }
 
-/** Pure (non-fractional) NFT per ARC-3: 1 total supply, 0 decimals. */
-export const isPureNft = (
-    asset: Pick<PeraAsset, 'totalSupply' | 'decimals'>,
-): boolean => {
-    return asset.totalSupply.eq(1) && asset.decimals === 0
-}
-
-/**
- * Whether an asset is shaped like an NFT. Used only to decide whether
- * re-asking the backend about an unclassified asset is worthwhile — never as a
- * classification, since `isCollectible` is the only answer that counts. A
- * false positive costs one request; a false negative falls back to the long
- * cache TTL.
- *
- * NFTs are indivisible, whether one-of-one or an edition of many. The lone
- * exception is ARC-3's fractional NFT, which holds exactly 10^decimals units.
- */
-export const hasNftShape = (
-    asset: Pick<PeraAsset, 'totalSupply' | 'decimals'>,
-): boolean =>
-    asset.decimals === 0 ||
-    asset.totalSupply.eq(Decimal.pow(10, asset.decimals))
-
 /** Backend-driven classification, via the `type` field in Pera metadata. */
 export const isCollectible = (asset: PeraAsset): boolean => {
     return asset.peraMetadata?.type === PeraAssetType.collectible
 }
 
+/** A collectible whose chain says a holding can only ever be 1. */
+export const isUniqueCollectible = (asset: PeraAsset): boolean =>
+    isCollectible(asset) && asset.peraMetadata?.isUnique === true
+
 /**
- * Pure NFTs format to an empty string — their quantity is implicit.
- * Fractional NFTs get an "x" prefix, e.g. "x0.5".
+ * Unique collectibles format to an empty string — their quantity is implicit.
+ * Others get an "x" prefix, e.g. "x0.5".
  */
 export const formatCollectibleAmount = (
     amount: Decimal,
     asset: PeraAsset,
 ): string => {
-    if (isPureNft(asset)) {
+    if (isUniqueCollectible(asset)) {
         return ''
     }
     return `x${amount.toString()}`

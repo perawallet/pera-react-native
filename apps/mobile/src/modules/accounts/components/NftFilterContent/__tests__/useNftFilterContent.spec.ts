@@ -12,7 +12,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@test-utils/render'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useNftFilterContent } from '../useNftFilterContent'
+
+const ALGORAND_ACCOUNT = {
+    id: 'algo',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'ALGO' } },
+}
 
 const h = vi.hoisted(() => ({
     state: {
@@ -33,6 +42,22 @@ describe('useNftFilterContent', () => {
         vi.clearAllMocks()
         h.state.showOptedIn = false
         h.state.showWatchAccounts = true
+        useRemoteConfigStore.getState().resetState()
+        vi.mocked(useSelectedAccount).mockReturnValue(ALGORAND_ACCOUNT as never)
+    })
+
+    it('offers the opted-in toggle on a gallery chain with opt-in', () => {
+        const { result } = renderHook(() => useNftFilterContent())
+
+        expect(result.current.canShowOptedIn).toBe(true)
+    })
+
+    it('hides the opted-in toggle when no gallery chain manages assets', () => {
+        act(() => setCapabilityOverrides({ manageAssets: false }))
+
+        const { result } = renderHook(() => useNftFilterContent())
+
+        expect(result.current.canShowOptedIn).toBe(false)
     })
 
     it('initialises the draft from the stored preferences', () => {

@@ -11,6 +11,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import {
+    getChainDescriptor,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -25,8 +29,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
-    useAccountScope,
-    useRegisteredChainIds,
     useCanSignWith,
     useAccountAssetBalanceQuery,
     type AssetWithAccountBalance,
@@ -38,7 +40,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
-import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -86,13 +91,15 @@ type UseCollectibleDetailResult = {
     handleFullScreenPress: (index: number) => void
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
+    scope: ChainScope
 }
 
 export const useCollectibleDetail = (
     assetId: string,
+    chainId: ChainId,
 ): UseCollectibleDetailResult => {
     const account = useSelectedAccount()
-    const scope = useAccountScope(account, useRegisteredChainIds()[0])
+    const scope = useSelectedScope(chainId)
     const { data: asset, isPending } = useSingleAssetDetailsQuery(
         assetId,
         scope,
@@ -318,8 +325,10 @@ export const useCollectibleDetail = (
     }, [assetId, saveableMediaUrl, saveableMedia, showToast, t])
 
     const handleSharePressed = useCallback(() => {
-        const { explorerUrl } = getAlgorandChainConfig(scope)
-        const url = explorerUrl ? `${explorerUrl}/asset/${assetId}` : undefined
+        const url = getChainDescriptor(scope.chainId).explorer.collectibleUrl(
+            scope.networkId,
+            assetId,
+        )
 
         void shareText({
             message: t('asset_details.collectible.share_message'),
@@ -449,5 +458,6 @@ export const useCollectibleDetail = (
         handleFullScreenPress,
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
+        scope,
     }
 }

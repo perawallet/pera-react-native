@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { isPureNft } from '@perawallet/wallet-core-assets'
+import { isUniqueCollectible } from '@perawallet/wallet-core-assets'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
@@ -36,7 +36,7 @@ export const useCollectibleItem = ({
     const { asset, amount, collectible } = item
 
     const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
-    const showAmount = !isPureNft(asset) && !amount.isZero()
+    const showAmount = !isUniqueCollectible(asset) && !amount.isZero()
     const hasBalance = amount.greaterThan(0)
     const collectionName = collectible?.collection?.name
     const collectionLabel = collectionName ?? asset.unitName

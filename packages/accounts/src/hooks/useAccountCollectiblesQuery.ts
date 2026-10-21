@@ -12,12 +12,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    queryKeyReferencesScope,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
+    type AccountHoldingSource,
     type CollectibleSqlSortMode,
 } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
@@ -43,8 +40,16 @@ export type UseAccountCollectiblesQueryResult = {
     isPaused: boolean
 }
 
+const sourcesSignature = (sources: readonly unknown[]): string =>
+    JSON.stringify(sources)
+
+// The source elements sit between the two-element prefix and the params
+// element; see `getAccountCollectiblesQueryKey`.
+const sourcesOfKey = (queryKey: readonly unknown[]): unknown[] =>
+    queryKey.slice(2, -1)
+
 /**
- * An account's collectibles, filtered/searched/sorted **in SQL**, read in one
+ * An account's collectibles over one or more sources, filtered/searched/sorted **in SQL**, read in one
  * pass and returned as lite rows that defer `PeraAsset` materialization to the
  * rows actually on screen.
  *
@@ -55,8 +60,7 @@ export type UseAccountCollectiblesQueryResult = {
  * shape as {@link useAccountAssetsQuery}, which fixed the fungible list.
  */
 export const useAccountCollectiblesQuery = (
-    address: string | undefined,
-    scope: ChainScope,
+    sources: readonly AccountHoldingSource[],
     {
         sortMode,
         search,
@@ -64,30 +68,28 @@ export const useAccountCollectiblesQuery = (
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
+    const queryKey = getAccountCollectiblesQueryKey(sources, {
+        sortMode,
+        search,
+        includeZeroBalance,
+    })
+    const signature = sourcesSignature(sourcesOfKey(queryKey))
+
     const query = useQuery({
-        queryKey: getAccountCollectiblesQueryKey(address ?? '', scope, {
-            sortMode,
-            search,
-            includeZeroBalance,
-        }),
-        enabled: !!address && enabled,
+        queryKey,
+        enabled: sources.length > 0 && enabled,
         staleTime: Infinity,
         gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Sort mode and search term are part of the key, so changing either
         // starts a cold query that would blank the gallery until SQL answers —
         // on a large, freshly imported account that read as "sorting does
-        // nothing". Hold the rows already on screen instead.
-        // Scoped to the same account and network: only those rows are stale
-        // rather than someone else's.
-        placeholderData: (previousRows, previousQuery) => {
-            const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string }
-                | undefined
-            return previousParams?.address === address &&
-                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
+        // nothing". Hold the rows already on screen instead, but never across
+        // accounts, networks or a different set of chains.
+        placeholderData: (previousRows, previousQuery) =>
+            previousQuery &&
+            sourcesSignature(sourcesOfKey(previousQuery.queryKey)) === signature
                 ? previousRows
-                : undefined
-        },
+                : undefined,
         // SQLite is the source of truth; run the queryFn even while offline
         // instead of pausing it (TanStack's default networkMode: 'online'),
         // which would strand consumers in `pending`.
@@ -95,10 +97,13 @@ export const useAccountCollectiblesQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, scope)
+            await Promise.all(
+                sources.map(({ address, scope }) =>
+                    ensureAccountFetched(address, scope),
+                ),
+            )
             return getAccountCollectiblesLite({
-                accountAddress: address as string,
-                scope,
+                sources,
                 sortMode,
                 search,
                 includeZeroBalance,

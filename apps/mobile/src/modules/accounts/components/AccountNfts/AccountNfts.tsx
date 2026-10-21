@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWFlatList,
@@ -42,7 +41,8 @@ const ListSeparator = () => {
     return <PWView style={styles.listSeparator} />
 }
 
-const keyExtractor = (item: AccountCollectibleLiteRow) => item.assetId
+const keyExtractor = (item: AccountCollectibleLiteRow) =>
+    `${item.scope.chainId}:${item.assetId}`
 
 type GalleryCellProps = {
     item: AccountCollectibleLiteRow
@@ -67,7 +67,7 @@ const GalleryCellView = ({
     // Metadata is parsed here rather than in the query so a 15k-collectible
     // account only pays for the cells on screen.
     const displayItem = useMemo(() => {
-        const asset = assetFromHoldingLiteRow(item, LEGACY_CHAIN_ID)
+        const asset = assetFromHoldingLiteRow(item, item.scope.chainId)
         if (!asset) return null
         return {
             assetId: item.assetId,

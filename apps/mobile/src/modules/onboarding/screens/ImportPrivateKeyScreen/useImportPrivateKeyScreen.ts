@@ -26,7 +26,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
-import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import type { ImportFlowParamList } from '@modules/onboarding/routes/types'
 
 export type UseImportPrivateKeyScreenResult = {
     chainName: string
@@ -45,7 +45,7 @@ export const useImportPrivateKeyScreen =
         const { t } = useLanguage()
         const { showError } = useErrorToast()
         const { chainId } =
-            useRoute<RouteProp<AddAccountStackParamList, 'ImportPrivateKey'>>()
+            useRoute<RouteProp<ImportFlowParamList, 'ImportPrivateKey'>>()
                 .params
         const { chains } = getProvider()
         const chainName = chains.has(chainId)

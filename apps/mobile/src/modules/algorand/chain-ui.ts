@@ -12,7 +12,11 @@
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
-import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
+import type {
+    AssetAboutParams,
+    AssetAboutDisplay,
+    CollectibleDetailsDisplay,
+} from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandCustomNodeForm } from './components/AlgorandCustomNodeForm'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
@@ -47,6 +51,13 @@ export const resolveAlgorandAssetAbout = ({
     }
 }
 
+export const algorandCollectibleDetailsDisplay: CollectibleDetailsDisplay = {
+    identityLabelKey: i18nKey('asset_details.collectible.asset_id'),
+    creatorLabelKey: i18nKey('asset_details.collectible.creator'),
+    hasTotalSupply: true,
+    explorerLabelKey: i18nKey('asset_details.collectible.explorer'),
+}
+
 export const algorandChainUi: ChainUi = {
     transactionDetails: {
         ReviewBody: AlgorandTransactionReviewBody,
@@ -61,6 +72,7 @@ export const algorandChainUi: ChainUi = {
         IssuerControlsSection: AssetSecurityTags,
         resolveAbout: resolveAlgorandAssetAbout,
     },
+    collectibleDetails: algorandCollectibleDetailsDisplay,
     sendConfirmation: {
         TrailingSection: AlgorandSendNoteSection,
     },

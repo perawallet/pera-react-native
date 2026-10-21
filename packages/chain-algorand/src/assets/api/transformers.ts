@@ -13,6 +13,7 @@
 import { Decimal } from 'decimal.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { isAlgorandNativeAssetId } from '../../descriptor'
+import { isUniqueAlgorandCollectible } from '../collectible'
 import type {
     PeraAssetType,
     PeraAssetVerificationTier,
@@ -71,6 +72,7 @@ export const transformCollectibleResponse = (
 }
 
 export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
+    const totalSupply = new Decimal(data.total ?? '0')
     return {
         assetId: `${data.asset_id}`,
         name: data.name,
@@ -84,6 +86,13 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
             collectible: data.collectible
                 ? transformCollectibleResponse(data.collectible)
                 : undefined,
+            isUnique:
+                data.type === 'collectible'
+                    ? isUniqueAlgorandCollectible({
+                          totalSupply,
+                          decimals: data.fraction_decimals,
+                      })
+                    : undefined,
             type: data.type as PeraAssetType,
             labels: data.labels ?? undefined,
             logo: data.logo,
@@ -98,7 +107,7 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
         },
         unitName: data.unit_name,
         decimals: data.fraction_decimals,
-        totalSupply: new Decimal(data.total ?? '0'),
+        totalSupply,
         creator: data.creator,
         url: data.url ?? undefined,
     }

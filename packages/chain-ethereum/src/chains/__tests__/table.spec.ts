@@ -100,6 +100,14 @@ describe('the EVM chain table', () => {
         )
     })
 
+    it('enables Ethereum alone by default', () => {
+        const defaults = EVM_CHAINS.filter(
+            ({ descriptor }) => descriptor.enabledByDefault,
+        ).map(({ row }) => row.id)
+
+        expect(defaults).toEqual([ETHEREUM_CHAIN_ID])
+    })
+
     it('derives every chain on the Ethereum BIP-44 path', () => {
         for (const { descriptor } of EVM_CHAINS) {
             expect(descriptor.signing.derivationPaths.secp256k1?.(0, 1)).toBe(

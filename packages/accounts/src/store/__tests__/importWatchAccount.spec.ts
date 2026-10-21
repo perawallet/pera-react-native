@@ -61,6 +61,18 @@ describe('importWatchAccount', () => {
         expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
     })
 
+    test('leaves the chain it was added on off when only another chain accepting the address has activity', async () => {
+        families.active.add(POLYGON)
+
+        const account = await state().importWatchAccount(
+            ETHEREUM,
+            EVM_KEY_ADDRESS,
+        )
+
+        expect(Object.keys(account.chains)).toEqual([POLYGON])
+        expect(account.chains[POLYGON]?.enabledBy).toBe('discovery')
+    })
+
     test('keeps only the chain it was added on, as created, when nothing has activity', async () => {
         const account = await state().importWatchAccount(
             ETHEREUM,

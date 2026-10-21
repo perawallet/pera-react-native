@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-search'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
 
@@ -227,6 +228,10 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         [navigation, setSelectedContact],
     )
 
+    const hasNfts = useCapability({
+        chain: { chainId: scope.chainId, capability: 'nft' },
+    })
+
     const onAssetPress = useCallback(
         async (asset: PeraAsset) => {
             // Asset results span every account, but both detail screens read
@@ -243,18 +248,22 @@ export const useSearchScreen = (): UseSearchScreenResult => {
 
             navigation.navigate('TabBar', {
                 screen: 'Home',
-                params: isCollectible(asset)
-                    ? {
-                          screen: 'CollectibleDetails',
-                          params: { assetId: asset.assetId },
-                      }
-                    : {
-                          screen: 'AssetDetails',
-                          params: {
-                              assetId: asset.assetId,
-                              chainId: scope.chainId,
+                params:
+                    hasNfts && isCollectible(asset)
+                        ? {
+                              screen: 'CollectibleDetails',
+                              params: {
+                                  assetId: asset.assetId,
+                                  chainId: scope.chainId,
+                              },
+                          }
+                        : {
+                              screen: 'AssetDetails',
+                              params: {
+                                  assetId: asset.assetId,
+                                  chainId: scope.chainId,
+                              },
                           },
-                      },
             })
         },
         [
@@ -263,6 +272,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             resolveAssetHolderAddress,
             setSelectedAccountId,
             scope.chainId,
+            hasNfts,
         ],
     )
 

@@ -83,9 +83,12 @@ const descriptor: ChainDescriptor = {
             explorerUrl(networkId, `tx/${txId}`),
         assetUrl: (networkId, assetId) =>
             explorerUrl(networkId, `asset/${assetId}`),
+        collectibleUrl: (networkId, assetId) =>
+            explorerUrl(networkId, `asset/${assetId}`),
     },
     finality: { kind: 'instant' },
     uriSchemes: ['algorand'],
+    enabledByDefault: true,
 }
 
 const build = {

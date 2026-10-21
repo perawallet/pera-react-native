@@ -38,6 +38,7 @@ import {
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import { isAlgorandNativeAssetId } from '../../descriptor'
+import { hasAlgorandNftShape } from '../collectible'
 import { algorandNetworkOf, algorandScope } from '../../network-id'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 
@@ -174,6 +175,7 @@ export async function fetchAndPersistAssets(
         recheckUnclassified: {
             ttlMs: ASSET_RECLASSIFY_TTL_MS,
             windowMs: ASSET_NEWLY_SEEN_WINDOW_MS,
+            hasCollectibleShape: hasAlgorandNftShape,
         },
         recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
     })

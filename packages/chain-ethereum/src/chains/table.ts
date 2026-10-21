@@ -37,6 +37,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         },
         fee: { kind: 'eip1559' },
         finality: { kind: 'confirmations', recommended: 12 },
+        enabledByDefault: true,
     },
     {
         id: 'base',
@@ -51,6 +52,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             gasPriceOracleAddress: OP_STACK_GAS_PRICE_ORACLE,
         },
         finality: { kind: 'confirmations', recommended: 10 },
+        enabledByDefault: false,
     },
     {
         id: 'bsc',
@@ -67,6 +69,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         },
         fee: { kind: 'eip1559' },
         finality: { kind: 'confirmations', recommended: 15 },
+        enabledByDefault: false,
     },
     {
         id: 'arbitrum',
@@ -79,6 +82,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         // Arbitrum's estimateGas already prices the L1 calldata into gas.
         fee: { kind: 'eip1559' },
         finality: { kind: 'confirmations', recommended: 20 },
+        enabledByDefault: false,
     },
     {
         id: 'avalanche',
@@ -95,6 +99,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         },
         fee: { kind: 'eip1559' },
         finality: { kind: 'instant' },
+        enabledByDefault: false,
     },
     {
         id: 'polygon',
@@ -114,6 +119,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             minPriorityFeePerGas: { mainnet: 25n * GWEI, amoy: 25n * GWEI },
         },
         finality: { kind: 'confirmations', recommended: 32 },
+        enabledByDefault: false,
     },
 ]
 

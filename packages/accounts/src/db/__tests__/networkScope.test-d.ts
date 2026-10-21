@@ -84,7 +84,9 @@ describe('accounts repositories take a ChainScope', () => {
             >[0]['sources'][number]['scope']
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
-            ScopeOf<typeof getAccountCollectiblesLite>
+            Parameters<
+                typeof getAccountCollectiblesLite
+            >[0]['sources'][number]['scope']
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
             ScopeOf<typeof getAccountPortfolioTotals>

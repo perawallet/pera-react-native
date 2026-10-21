@@ -18,7 +18,10 @@ import type {
     ChainId,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type { AssetDetailsDisplay } from '@modules/assets'
+import type {
+    AssetDetailsDisplay,
+    CollectibleDetailsDisplay,
+} from '@modules/assets'
 import type { CustomNodeDisplay } from '@modules/settings'
 import type { TransactionDisplay } from '@modules/signing'
 import type { SendConfirmationDisplay } from '@modules/transactions'
@@ -27,6 +30,7 @@ import type { SendConfirmationDisplay } from '@modules/transactions'
 export type ChainUi = {
     transactionDetails?: TransactionDisplay
     assetDetails?: AssetDetailsDisplay
+    collectibleDetails?: CollectibleDetailsDisplay
     sendConfirmation?: SendConfirmationDisplay
     customNode?: CustomNodeDisplay
     /** The family's name where one address serves every chain in it, as on a contact. */

@@ -135,6 +135,7 @@ const makeRow = (assetId: string, title: string) => ({
     peraMetadataJson: null,
     title,
     collectionName: null,
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
 })
 
 const createDeferred = () => {
@@ -196,8 +197,12 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                ACCOUNT_ADDRESS,
-                expect.objectContaining({ chainId: 'algorand' }),
+                [
+                    {
+                        address: ACCOUNT_ADDRESS,
+                        scope: expect.objectContaining({ chainId: 'algorand' }),
+                    },
+                ],
                 expect.objectContaining({
                     sortMode: 'titleAsc',
                     includeZeroBalance: false,
@@ -210,8 +215,12 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                ACCOUNT_ADDRESS,
-                expect.objectContaining({ chainId: 'algorand' }),
+                [
+                    {
+                        address: ACCOUNT_ADDRESS,
+                        scope: expect.objectContaining({ chainId: 'algorand' }),
+                    },
+                ],
                 expect.objectContaining({ includeZeroBalance: true }),
             )
         })
@@ -224,8 +233,12 @@ describe('useAccountNfts', () => {
             })
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenLastCalledWith(
-                ACCOUNT_ADDRESS,
-                expect.objectContaining({ chainId: 'algorand' }),
+                [
+                    {
+                        address: ACCOUNT_ADDRESS,
+                        scope: expect.objectContaining({ chainId: 'algorand' }),
+                    },
+                ],
                 expect.objectContaining({ search: 'cool' }),
             )
         })
@@ -236,8 +249,12 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                ACCOUNT_ADDRESS,
-                expect.objectContaining({ chainId: 'algorand' }),
+                [
+                    {
+                        address: ACCOUNT_ADDRESS,
+                        scope: expect.objectContaining({ chainId: 'algorand' }),
+                    },
+                ],
                 expect.objectContaining({ sortMode: undefined }),
             )
         })
@@ -289,6 +306,38 @@ describe('useAccountNfts', () => {
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '200',
+                '100',
+            ])
+        })
+
+        it("applies the own chain's acquisition order only to that chain's rows", () => {
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map([
+                    ['100', 10],
+                    ['200', 99],
+                    ['300', 50],
+                ]),
+                isPending: false,
+            })
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [
+                    makeRow('100', 'Cool NFT'),
+                    makeRow('200', 'Zed'),
+                    {
+                        ...makeRow('300', 'Other chain'),
+                        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    },
+                ],
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            // '300' sits on another chain, so the own chain's map says nothing
+            // about it and it floats with the unknowns.
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '300',
                 '200',
                 '100',
             ])
@@ -602,7 +651,19 @@ describe('useAccountNfts', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('CollectibleDetails', {
             assetId: '100',
+            chainId: 'algorand',
         })
+    })
+
+    it('reads nothing when nft is overridden off on the account chain', () => {
+        act(() => setCapabilityOverrides({ nft: false }))
+
+        renderHook(() => useAccountNfts())
+
+        expect(mockUseAccountCollectiblesQuery).toHaveBeenLastCalledWith(
+            [],
+            expect.anything(),
+        )
     })
 
     describe('pull to refresh', () => {

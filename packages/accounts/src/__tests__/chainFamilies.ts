@@ -38,6 +38,7 @@ export const EVM_CHAINS = [
     'polygon',
 ] as ChainId[]
 export const [ETHEREUM, BASE, , , , POLYGON] = EVM_CHAINS
+const DEFAULT_CHAINS: readonly ChainId[] = [ALGORAND, ETHEREUM]
 
 export const EVM_KEY_ID = 'raw-evm-key'
 export const EVM_KEY_PUBLIC = new Uint8Array(20).fill(0xe0)
@@ -61,6 +62,7 @@ const descriptorFor = (id: ChainId, family: string): ChainDescriptor =>
         id,
         family,
         displayName: id,
+        enabledByDefault: DEFAULT_CHAINS.includes(id),
         networks: [
             {
                 id: 'mainnet',

@@ -20,8 +20,7 @@ import {
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    isCollectible,
-    isPureNft,
+    isUniqueCollectible,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -101,13 +100,12 @@ export const useSendFundsContent = (
         // ✕ close, so the sheet is never stranded).
         if (!isFetched) return
 
-        // Pure collectibles have a fixed quantity of 1, so prefill
+        // Unique collectibles have a fixed quantity of 1, so prefill
         // the amount and skip the input screen entirely.
         if (
             prefilledAssetIdRef.current !== assetId &&
             asset &&
-            isCollectible(asset) &&
-            isPureNft(asset)
+            isUniqueCollectible(asset)
         ) {
             setAmount(new Decimal(1))
             prefilledAssetIdRef.current = assetId

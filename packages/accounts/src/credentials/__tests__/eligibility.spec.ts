@@ -41,12 +41,15 @@ import {
 } from '../../__tests__/chainFamilies'
 import {
     canDerive,
+    defaultChains,
     eligibleChains,
     eligibleChainsInFamily,
     canImportRawKey,
     findAddressHolder,
     findPathHolder,
+    isEnabledByDefault,
     nextChainPosition,
+    preferDefaultChain,
     seedMintableScheme,
 } from '../eligibility'
 
@@ -493,5 +496,58 @@ describe('eligibleChainsInFamily', () => {
         })
 
         expect(eligibleChainsInFamily(hd)).toEqual(['algorand'])
+    })
+})
+
+describe('default chains', () => {
+    const ALGORAND = 'algorand' as ChainId
+
+    beforeEach(() => {
+        registerChainFamilies()
+    })
+
+    test('an HD account defaults to every eligible chain flagged as default', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(defaultChains(hd)).toEqual([ALGORAND, ETHEREUM])
+    })
+
+    test('a standalone key defaults to the default chains of its own family', () => {
+        const key = buildTestAccount(TEST_CUSTODY.local, {
+            [POLYGON]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(defaultChains(key)).toEqual([ETHEREUM])
+    })
+
+    test('defaults to Algorand alone when no other chain is registered', () => {
+        registerChainFamilies([ALGORAND])
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS, keyPairId: 'k' },
+        })
+
+        expect(defaultChains(hd)).toEqual([ALGORAND])
+    })
+
+    test('reads the flag only for registered chains', () => {
+        registerChainFamilies([ALGORAND])
+
+        expect(isEnabledByDefault(ALGORAND)).toBe(true)
+        expect(isEnabledByDefault(ETHEREUM)).toBe(false)
+        expect(isEnabledByDefault(BASE)).toBe(false)
+    })
+
+    test('prefers a default chain even when a non-default one comes first', () => {
+        expect(preferDefaultChain([BASE, ETHEREUM, POLYGON])).toBe(ETHEREUM)
+    })
+
+    test('falls back to the first candidate when none is a default chain', () => {
+        expect(preferDefaultChain([POLYGON, BASE])).toBe(POLYGON)
+    })
+
+    test('prefers nothing from no candidates', () => {
+        expect(preferDefaultChain([])).toBeUndefined()
     })
 })

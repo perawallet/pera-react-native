@@ -28,6 +28,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    isCollectible,
     useAssetGroupsQuery,
     type AssetGroup,
 } from '@perawallet/wallet-core-assets'
@@ -302,6 +303,53 @@ describe('useAccountAssetList', () => {
         expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
             assetId: '0xabc',
             chainId: 'ethereum',
+        })
+    })
+
+    describe('collectible routing', () => {
+        const collectibleHolding = (scope = ALGORAND_MAINNET) => ({
+            ...makeHolding('77', scope),
+            decimals: 0,
+            totalSupply: '1',
+        })
+
+        beforeEach(() => {
+            vi.mocked(isCollectible).mockReturnValue(true)
+        })
+
+        afterEach(() => {
+            vi.mocked(isCollectible).mockReturnValue(false)
+        })
+
+        it('opens a collectible on an nft chain in the collectible detail, with its chain', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            act(() => result.current.goToAssetScreen(collectibleHolding()))
+
+            expect(mockNavigate).toHaveBeenCalledWith('CollectibleDetails', {
+                assetId: '77',
+                chainId: 'algorand',
+            })
+        })
+
+        it('opens a collectible in the asset detail while nft is off on its chain', () => {
+            act(() => setCapabilityOverrides({ nft: false }))
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            act(() => result.current.goToAssetScreen(collectibleHolding()))
+
+            expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+                assetId: '77',
+                chainId: 'algorand',
+            })
+            expect(mockNavigate).not.toHaveBeenCalledWith(
+                'CollectibleDetails',
+                expect.anything(),
+            )
         })
     })
 
