@@ -129,7 +129,7 @@ describe('useSendDestinationRouter', () => {
 
         act(() => result.current.resolveDestination(RECEIVER))
 
-        expect(mocks.navigate).toHaveBeenCalledWith('ARC59SendSummary')
+        expect(mocks.navigate).toHaveBeenCalledWith('AssetInboxSendSummary')
         expect(mocks.showToast).not.toHaveBeenCalled()
     })
 

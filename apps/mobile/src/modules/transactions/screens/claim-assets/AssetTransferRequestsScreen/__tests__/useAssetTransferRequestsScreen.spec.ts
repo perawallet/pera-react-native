@@ -16,6 +16,14 @@ import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScree
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
+
+const ALGORAND_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
+const { routeParams } = vi.hoisted(() => ({
+    routeParams: {
+        current: {} as Record<string, unknown>,
+    },
+}))
 
 const mockPush = vi.fn()
 const mockSetAccountAddress = vi.fn()
@@ -38,9 +46,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@react-navigation/native', () => ({
-    useRoute: () => ({
-        params: { item: { address: 'ACCOUNT_ADDR' } },
-    }),
+    useRoute: () => ({ params: routeParams.current }),
 }))
 
 const mockAssetRequests = (
@@ -64,6 +70,10 @@ const mockAssetRequests = (
 describe('useAssetTransferRequestsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        routeParams.current = {
+            item: { address: 'ACCOUNT_ADDR' },
+            scope: ALGORAND_SCOPE,
+        }
         mockAssetRequests([])
     })
 
@@ -75,14 +85,25 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(result.current.assetRequests).toEqual([])
     })
 
-    it("reads the selected account's requests on the legacy chain's scope", () => {
-        renderHook(() => useAssetTransferRequestsScreen())
+    it.each([
+        ['Algorand', ALGORAND_SCOPE],
+        ['Ethereum', { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }],
+    ])(
+        "reads the account's requests on the %s scope it was opened for",
+        (_, scope) => {
+            routeParams.current = { item: { address: 'ACCOUNT_ADDR' }, scope }
 
-        expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
-            expect.objectContaining({ chainId: LEGACY_CHAIN_ID }),
-            'ACCOUNT_ADDR',
-        )
-    })
+            const { result } = renderHook(() =>
+                useAssetTransferRequestsScreen(),
+            )
+
+            expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
+                scope,
+                'ACCOUNT_ADDR',
+            )
+            expect(result.current.scope).toBe(scope)
+        },
+    )
 
     it('forwards isUnavailableOnNetwork from the asset requests query', () => {
         mockAssetRequests([], { isUnavailableOnNetwork: true })
@@ -131,7 +152,7 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(mockSetAssetRequests).toHaveBeenCalledWith(requests)
         expect(mockPush).toHaveBeenCalledWith('Messages', {
             screen: 'AssetClaimDetail',
-            params: { assetIndex: 1 },
+            params: { assetIndex: 1, scope: ALGORAND_SCOPE },
         })
     })
 })

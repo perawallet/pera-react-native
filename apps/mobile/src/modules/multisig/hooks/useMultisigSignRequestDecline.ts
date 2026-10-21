@@ -24,13 +24,11 @@ import {
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import {
+    chainIdOfSignRequest,
     useSigningRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useToast } from '@hooks/useToast'
 import { getSignedResponseCount } from '../utils/signRequestStatus'
 
@@ -43,6 +41,8 @@ export type UseMultisigSignRequestDeclineParams =
     | {
           mode: 'cancel'
           signRequest: MultisigSignRequest | null
+          /** The backend request names no chain, so the sheet showing it passes the one it resolved. */
+          chainId: ChainId
       }
 
 export type UseMultisigSignRequestDeclineResult = {
@@ -81,7 +81,11 @@ const CANCEL_ERROR_KEYS = {
 export const useMultisigSignRequestDecline = (
     params: UseMultisigSignRequestDeclineParams,
 ): UseMultisigSignRequestDeclineResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(
+        params.mode === 'decline'
+            ? chainIdOfSignRequest(params.request)
+            : params.chainId,
+    )
     const deviceId = useScopedDeviceID(scope) ?? ''
     const { errorToast } = useToast()
     const { rejectRequest } = useSigningRequest()
@@ -111,12 +115,12 @@ export const useMultisigSignRequestDecline = (
         const proposer = signRequest.proposerAddress
         const isLocalAccount = !!findAccountByAddressOn(
             accounts,
-            LEGACY_CHAIN_ID,
+            scope.chainId,
             proposer,
         )
         if (!isLocalAccount) return null
         return proposer
-    }, [params, accounts])
+    }, [params, accounts, scope.chainId])
 
     const targetAddress =
         params.mode === 'decline' ? params.signerAddress : localProposerAddress

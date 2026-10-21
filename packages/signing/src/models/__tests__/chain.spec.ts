@@ -15,7 +15,7 @@ import { makeUnsignedTransaction } from '../../__tests__/transactions'
 import { chainIdOfSignRequest } from '../chain'
 import type { SignRequest } from '../index'
 
-const base = { id: 'req-1', transport: 'algod' as const }
+const base = { id: 'req-1', transport: 'network' as const }
 
 describe('chainIdOfSignRequest', () => {
     it.each([

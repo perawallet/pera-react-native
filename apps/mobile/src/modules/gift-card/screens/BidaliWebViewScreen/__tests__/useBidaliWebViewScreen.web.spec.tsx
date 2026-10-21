@@ -122,6 +122,23 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 vi.mock('@hooks/useLanguage')
 
+const { mockCapability } = vi.hoisted(() => ({
+    mockCapability: vi.fn((_requirement: unknown) => true),
+}))
+
+vi.mock('@hooks/useCapability', () => ({
+    useCapability: (requirement: unknown) => mockCapability(requirement),
+}))
+
+// The account's own chain, as useAccountScope resolves it.
+vi.mock('../../../hooks/useGiftCardScope', () => ({
+    useGiftCardScope: (account?: { chains: Record<string, unknown> }) => ({
+        chainId:
+            account && 'ethereum' in account.chains ? 'ethereum' : 'algorand',
+        networkId: 'mainnet',
+    }),
+}))
+
 // The web platform's balance-stamping builder, standing in for the
 // extensionless './bidali-url' the hook actually imports — see the file
 // banner above.

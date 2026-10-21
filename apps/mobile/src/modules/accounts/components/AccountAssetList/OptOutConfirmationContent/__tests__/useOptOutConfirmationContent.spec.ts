@@ -13,47 +13,83 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 import { useOptOutConfirmationContent } from '../useOptOutConfirmationContent'
 
 const mockUseFeeConfig = vi.fn()
+const mockUseMinFeeForSender = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useFeeConfig: (chainId: string) => mockUseFeeConfig(chainId),
+    useMinFeeForSender: (address: string, chainId: string) =>
+        mockUseMinFeeForSender(address, chainId),
 }))
 
-const NATIVE_ASSET = vi.hoisted(() => ({
-    assetId: '0',
-    name: 'Algo',
-    unitName: 'ALGO',
-    decimals: 6,
+const NATIVE_ASSETS = vi.hoisted(() => ({
+    algorand: { assetId: '0', name: 'Algo', unitName: 'ALGO', decimals: 6 },
+    ethereum: { assetId: 'eth', name: 'Ether', unitName: 'ETH', decimals: 18 },
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useNativeAsset: () => NATIVE_ASSET,
+    useNativeAsset: (scope: { chainId: keyof typeof NATIVE_ASSETS }) =>
+        NATIVE_ASSETS[scope.chainId],
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         new Decimal(value.toString()).div(new Decimal(10).pow(asset.decimals)),
 }))
 
+const ALGORAND_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: ETHEREUM_CHAIN_ID,
+    networkId: 'mainnet',
+}
+
 describe('useOptOutConfirmationContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-    })
-
-    it('reads the legacy chain fee config', () => {
         mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
-        renderHook(() => useOptOutConfirmationContent())
-        expect(mockUseFeeConfig).toHaveBeenCalledWith('algorand')
+        mockUseMinFeeForSender.mockReturnValue({
+            minFee: undefined,
+            isPending: true,
+        })
     })
 
-    it('derives the fee from the remote-config minimum fee', () => {
+    it('falls back to the remote-config minimum while params load', () => {
         mockUseFeeConfig.mockReturnValue({ minTxnFee: 2000n })
-        const { result } = renderHook(() => useOptOutConfirmationContent())
+        const { result } = renderHook(() =>
+            useOptOutConfirmationContent('SENDER', ALGORAND_SCOPE),
+        )
+        expect(mockUseFeeConfig).toHaveBeenCalledWith('algorand')
         expect(result.current.fee.toString()).toBe('0.002')
     })
 
-    it('uses the default minimum fee when config is unchanged', () => {
-        mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
-        const { result } = renderHook(() => useOptOutConfirmationContent())
-        expect(result.current.fee.toString()).toBe('0.001')
+    // The opt-out mutation assigns sender-aware fees, so a quantum sender's
+    // quote has to carry the PQ multiple too.
+    it('quotes the sender-resolved fee once it is available', () => {
+        mockUseMinFeeForSender.mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
+        const { result } = renderHook(() =>
+            useOptOutConfirmationContent('QUANTUM_SENDER', ALGORAND_SCOPE),
+        )
+        expect(mockUseMinFeeForSender).toHaveBeenCalledWith(
+            'QUANTUM_SENDER',
+            'algorand',
+        )
+        expect(result.current.fee.toString()).toBe('0.003')
+    })
+
+    it('reads fees on the scope chain and quotes them in its native asset', () => {
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 21_000_000_000_000n })
+        const { result } = renderHook(() =>
+            useOptOutConfirmationContent('0xSENDER', ETHEREUM_SCOPE),
+        )
+        expect(mockUseFeeConfig).toHaveBeenCalledWith(ETHEREUM_CHAIN_ID)
+        expect(mockUseMinFeeForSender).toHaveBeenCalledWith(
+            '0xSENDER',
+            ETHEREUM_CHAIN_ID,
+        )
+        expect(result.current.fee.toString()).toBe('0.000021')
     })
 })

@@ -92,11 +92,15 @@ const registerEthereumEndpoints = (endpoints: Record<string, string>) =>
 const DEFAULT_LABEL = 'settings.developer.node_settings.default_network_label'
 const CUSTOM_LABEL = 'settings.developer.node_settings.custom_label'
 
+// The fixture copies Algorand's family; Ethereum's UI is what the custom row reads.
 const registerEthereum = (customNetworks = false) =>
-    getProvider().chains.register(fixtureEthereumDescriptor, {
-        ...allCapabilities(false),
-        customNetworks,
-    })
+    getProvider().chains.register(
+        { ...fixtureEthereumDescriptor, family: 'evm' },
+        {
+            ...allCapabilities(false),
+            customNetworks,
+        },
+    )
 
 const renderScreenHook = () =>
     renderHook(() => useSettingsDeveloperNodeSettingsScreen())
@@ -186,7 +190,7 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             ])
         })
 
-        it('lists only Ethereum active test networks, with no Custom row even when it supports custom networks', () => {
+        it('lists only Ethereum active test networks, with no Custom row when its UI has no custom node form', () => {
             registerEthereum(true)
             const { result } = renderScreenHook()
 
@@ -244,10 +248,27 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             })
 
             expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
+            const [request] = mocks.requestBottomSheet.mock.calls[0]
+            expect(request.contents.props).toEqual({ chainId: 'algorand' })
             expect(useNetworkStore.getState().selectedNetworkByChain).toEqual(
                 {},
             )
             expect(mocks.restart).not.toHaveBeenCalled()
+        })
+
+        it('opens nothing for a chain whose UI has no custom node form', async () => {
+            registerEthereum(true)
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+
+            await act(async () => {
+                await result.current.selectNetwork(ETHEREUM_CHAIN_ID, 'custom')
+            })
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
+            expect(useNetworkStore.getState().selectedNetworkByChain).toEqual(
+                {},
+            )
         })
     })
 

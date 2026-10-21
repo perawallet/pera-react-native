@@ -19,7 +19,10 @@ import type { TabBarStackParamList } from '@routes/tabbar'
 import type { SettingsStackParamsList } from '@modules/settings'
 import type { ContactsStackParamsList } from '@modules/contacts'
 import type { AccountStackParamsList } from '@modules/accounts'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
@@ -68,6 +71,7 @@ export type RootStackParamList = {
         groupId: string
     }
     TransactionDetails: {
+        scope: ChainScope
         transactionId?: string
         transaction?: TransactionNative
         /**

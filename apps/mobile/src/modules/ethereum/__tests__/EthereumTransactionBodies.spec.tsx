@@ -240,6 +240,7 @@ describe('Ethereum transaction bodies', () => {
             fireEvent.click(screen.getByTestId('ethereum_view_details'))
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                scope: expect.objectContaining({ chainId: 'ethereum' }),
                 transaction: natives.transfer,
             })
         })

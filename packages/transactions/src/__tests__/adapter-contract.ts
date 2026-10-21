@@ -21,18 +21,20 @@ import type {
     AssetOptOutTxsParams,
     ExpressTransferTxsParams,
     InboxClaimTxsParams,
+    AssetInboxQuote,
     InboxRejectTxsParams,
     InboxSendTxsParams,
     RekeyTxParams,
     SendFlowChainAdapter,
     TransferTxsParams,
 } from '../chain-adapter'
+import { toAssetInboxQuote } from '../chain-adapter'
 
 export interface SendFlowContractFixtures {
     /** Required when the adapter has an asset inbox. */
     inboxSend?: InboxSendTxsParams
-    /** A summary the inbox accepts, for `inboxSend`'s build. */
-    inboxSendQuote?: unknown
+    /** A quote the inbox accepts, for `inboxSend`'s build. */
+    inboxSendQuote?: AssetInboxQuote
     inboxClaim?: InboxClaimTxsParams
     inboxReject?: InboxRejectTxsParams
     transfer?: TransferTxsParams
@@ -95,12 +97,12 @@ export const sendFlowContractTests = (
             'an inbox send',
             fixtures.inboxSend?.scope,
             fixtures.inboxSend &&
-                fixtures.inboxSendQuote !== undefined &&
+                fixtures.inboxSendQuote &&
                 adapter.assetInbox &&
                 (a =>
                     a.assetInbox!.buildSendTxs({
                         ...fixtures.inboxSend!,
-                        summary: fixtures.inboxSendQuote,
+                        quote: fixtures.inboxSendQuote!,
                     })),
         ],
         [
@@ -165,13 +167,13 @@ export const sendFlowContractTests = (
         const send = fixtures.inboxSend
         if (!send) return
 
-        // The summary crosses the send flow opaquely and decides a headlessly
+        // The quote crosses the send flow opaquely and decides a headlessly
         // signed payment, so a malformed one must never reach the builder.
         it('rejects a malformed inbox quote before building', async () => {
             await expect(
                 makeAdapter().assetInbox!.buildSendTxs({
                     ...send,
-                    summary: { unexpected: true },
+                    quote: toAssetInboxQuote({ unexpected: true }),
                 }),
             ).rejects.toBeDefined()
         })

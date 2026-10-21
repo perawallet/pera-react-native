@@ -124,7 +124,7 @@ vi.mock('@modules/transactions/hooks', () => ({
         destination: 'dest-address',
         note: sendFundsState.note,
         sendMode: 'normal' as const,
-        arc59Summary: undefined,
+        assetInboxQuote: undefined,
         isCloseAccount: sendFundsState.isCloseAccount,
         onFinished: mockOnFinished,
     }),

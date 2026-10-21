@@ -14,11 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
     CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    getChainDescriptor,
     nodeEndpointAdapters,
     selectChainNetworkId,
     selectEndpointOverride,
@@ -28,7 +28,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { CustomNetworkSheet } from './CustomNetworkSheet'
+import { chainUiFor } from '@modules/chain-ui'
 import { EndpointOverrideSheet } from './EndpointOverrideSheet'
 import { endpointHostOf } from './endpointHostOf'
 import { isCustomNetworkOffered } from './isCustomNetworkOffered'
@@ -145,11 +145,10 @@ export const useSettingsDeveloperNodeSettingsScreen =
                         isSelected: network.id === selectedId,
                         ...endpointFieldsOf(network.id),
                     }))
-                // ponytail: the sheet configures the legacy chain's single custom slot; give it a chainId when a second chain adds custom networks.
                 if (
-                    descriptor.id === LEGACY_CHAIN_ID &&
                     hasCustomNetworks &&
                     chains.capabilities(descriptor.id).customNetworks &&
+                    chainUiFor(descriptor.family).customNode &&
                     isCustomNetworkOffered()
                 ) {
                     networks.push({
@@ -189,13 +188,21 @@ export const useSettingsDeveloperNodeSettingsScreen =
 
         const selectNetwork = useCallback(
             async (chainId: ChainId, networkId: NetworkId) => {
-                // Custom has no baked endpoints: the sheet is the only path
-                // that commits it (see useCustomNetworkSheet's handleSave).
+                // Custom has no baked endpoints: the chain's form is the only
+                // path that commits it.
                 if (networkId === CUSTOM_NETWORK_ID) {
-                    await request({
-                        contents: <CustomNetworkSheet />,
-                        options: { size: 'modal', autoCreateContainer: false },
-                    })
+                    const CustomNodeForm = chainUiFor(
+                        getChainDescriptor(chainId).family,
+                    ).customNode?.Form
+                    if (CustomNodeForm) {
+                        await request({
+                            contents: <CustomNodeForm chainId={chainId} />,
+                            options: {
+                                size: 'modal',
+                                autoCreateContainer: false,
+                            },
+                        })
+                    }
                     return
                 }
 

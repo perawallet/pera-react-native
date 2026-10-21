@@ -44,7 +44,7 @@ vi.mock('@react-navigation/native', async () => {
         ...actual,
         useNavigation: () => mockNavigation,
         // Creation flow renders NameMultisig with no route params.
-        useRoute: () => ({ params: undefined }),
+        useRoute: () => ({ params: { chainId: 'algorand' } }),
     }
 })
 
@@ -205,7 +205,9 @@ describe('multisig creation flow', () => {
         act(() => {
             createHook.result.current.handleContinue()
         })
-        expect(mockPush).toHaveBeenCalledWith('SetThreshold')
+        expect(mockPush).toHaveBeenCalledWith('SetThreshold', {
+            chainId: 'algorand',
+        })
 
         const thresholdHook = renderHook(() => useSetThresholdScreen())
 
@@ -217,7 +219,9 @@ describe('multisig creation flow', () => {
         await act(async () => {
             await thresholdHook.result.current.handleContinue()
         })
-        expect(mockPush).toHaveBeenCalledWith('NameMultisig')
+        expect(mockPush).toHaveBeenCalledWith('NameMultisig', {
+            chainId: 'algorand',
+        })
 
         const nameHook = renderHook(() => useNameMultisigScreen())
         expect(nameHook.result.current.accountName).toBe('Shared Account #1')

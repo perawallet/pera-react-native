@@ -70,6 +70,7 @@ describe('Flow: Create a multisig account from scratch', () => {
         seedParticipants([ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS])
 
         renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
             additionalScreens: [
                 { name: 'SetThreshold', component: SetThresholdScreen },
                 { name: 'NameMultisig', component: NameMultisigScreen },
@@ -132,23 +133,20 @@ describe('Flow: Create a multisig account from scratch', () => {
             }),
         )
 
-        // The production create flow pushes `NameMultisig` with no params,
-        // so the screen sources the composition from the creation store. The
-        // integration test navigator coerces an absent params object to `{}`
-        // (truthy), which steers `useNameMultisigScreen` into its
-        // imported-account branch and reads `addresses` off the params —
-        // unreachable for the store path through navigation. We therefore
-        // enter `NameMultisig` directly with params mirroring exactly what
+        // Enters `NameMultisig` with an import payload mirroring exactly what
         // the user built (the seeded participants + chosen threshold +
-        // version 1). `handleFinish`'s persist logic is identical either
-        // way, so this faithfully exercises derivation, the create mutation,
-        // and the account write.
+        // version 1). `handleFinish`'s persist logic is identical for both
+        // branches, so this exercises derivation, the create mutation, and
+        // the account write.
         renderWithNavigation(NameMultisigScreen, 'NameMultisig', {
             initialParams: {
-                address: expectedAddress,
-                threshold,
-                addresses,
-                version: VERSION,
+                chainId: 'algorand',
+                imported: {
+                    address: expectedAddress,
+                    threshold,
+                    addresses,
+                    version: VERSION,
+                },
             },
             additionalScreens: [
                 // exitAccountFlow resets to 'TabBar' after finishing — a
@@ -206,7 +204,9 @@ describe('Flow: Create a multisig account from scratch', () => {
             REKEY_TARGET_ADDRESS,
         ])
 
-        renderWithNavigation(SetThresholdScreen, 'SetThreshold')
+        renderWithNavigation(SetThresholdScreen, 'SetThreshold', {
+            initialParams: { chainId: 'algorand' },
+        })
 
         await waitFor(() => screen.getByTestId('set_threshold_continue_button'))
         // The store seeds threshold at 2 by default.
@@ -242,6 +242,7 @@ describe('Flow: Create a multisig account from scratch', () => {
         seedParticipants([ALGO25_TEST_ADDRESS])
 
         renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
             additionalScreens: [
                 {
                     name: 'SetThreshold',

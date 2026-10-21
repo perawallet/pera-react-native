@@ -12,30 +12,11 @@
 
 import { useMemo } from 'react'
 import { useTransactionDetailQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
-    LEGACY_CHAIN_ID,
-    type TransactionNative,
-} from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    mapHistoryItemToTransactionNative,
-    type TransactionHistoryItem,
-} from '@perawallet/wallet-core-transactions'
-
-type UseAlgorandTransactionDetailParams = {
-    transactionId: string
-    historyTransaction?: TransactionHistoryItem
-    isEnabled: boolean
-}
-
-type UseAlgorandTransactionDetailResult = {
-    transaction: Nullable<TransactionNative>
-    isPaused: boolean
-    isError: boolean
-    isLoading: boolean
-    error: Nullable<Error>
-    refetch: () => unknown
-}
+import { mapHistoryItemToTransactionNative } from '@perawallet/wallet-core-transactions'
+import type {
+    UseTransactionDetailParams,
+    UseTransactionDetailResult,
+} from '@modules/signing'
 
 /**
  * The indexer fetch enriches the history row (note, inner txns), so it wins
@@ -43,10 +24,11 @@ type UseAlgorandTransactionDetailResult = {
  * offline.
  */
 export const useAlgorandTransactionDetail = ({
+    scope,
     transactionId,
     historyTransaction,
     isEnabled,
-}: UseAlgorandTransactionDetailParams): UseAlgorandTransactionDetailResult => {
+}: UseTransactionDetailParams): UseTransactionDetailResult => {
     const detailQuery = useTransactionDetailQuery({ transactionId, isEnabled })
 
     const localTransaction = useMemo(
@@ -54,10 +36,10 @@ export const useAlgorandTransactionDetail = ({
             historyTransaction
                 ? mapHistoryItemToTransactionNative(
                       historyTransaction,
-                      LEGACY_CHAIN_ID,
+                      scope.chainId,
                   )
                 : null,
-        [historyTransaction],
+        [historyTransaction, scope.chainId],
     )
     const transaction = detailQuery.data ?? localTransaction
 

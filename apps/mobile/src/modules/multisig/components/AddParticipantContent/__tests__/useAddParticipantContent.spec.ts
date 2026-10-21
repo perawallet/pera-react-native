@@ -16,7 +16,15 @@ import {
     registerAlgorandAccountsAdapter,
     registerAlgorandMultisigAdapter,
 } from '@test-utils/algorandAccountsAdapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 import { useAddParticipantContent } from '../useAddParticipantContent'
+
+const ALGORAND_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: ETHEREUM_CHAIN_ID,
+    networkId: 'sepolia',
+}
 
 const LOCAL_ALGO_ADDR = 'A'.repeat(58)
 const LOCAL_WATCH_ADDR = 'W'.repeat(58)
@@ -28,6 +36,9 @@ const MULTISIG_ADDR = 'M'.repeat(58)
 const { mockErrorToast } = vi.hoisted(() => ({ mockErrorToast: vi.fn() }))
 const { mockResolve } = vi.hoisted(() => ({ mockResolve: vi.fn() }))
 const { mockDismiss } = vi.hoisted(() => ({ mockDismiss: vi.fn() }))
+const { mockMultisigQuery } = vi.hoisted(() => ({
+    mockMultisigQuery: vi.fn(),
+}))
 
 const multisigCheckState: {
     data: { isMultisig: boolean } | undefined
@@ -93,7 +104,10 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
     >('@perawallet/wallet-core-multisig')
     return {
         ...actual,
-        useIsMultisigAddressQuery: () => multisigCheckState,
+        useIsMultisigAddressQuery: (params: unknown) => {
+            mockMultisigQuery(params)
+            return multisigCheckState
+        },
         useParticipantVerdictQuery: () => verdictCheckState,
     }
 })
@@ -110,7 +124,9 @@ describe('useAddParticipantContent', () => {
     })
 
     it('resolves immediately with the address when the user picks a local non-watch account', () => {
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(LOCAL_ALGO_ADDR, 'alice.algo')
@@ -124,7 +140,9 @@ describe('useAddParticipantContent', () => {
     })
 
     it('shows a watch-account error toast and does not resolve when the user picks a local watch account', () => {
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(LOCAL_WATCH_ADDR)
@@ -138,7 +156,9 @@ describe('useAddParticipantContent', () => {
     })
 
     it('shows a quantum-account error toast and does not resolve when the user picks a local quantum account', () => {
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(LOCAL_QUANTUM_ADDR)
@@ -153,7 +173,9 @@ describe('useAddParticipantContent', () => {
 
     it('validates a contact address like any external one before resolving', async () => {
         multisigCheckState.data = { isMultisig: false }
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(CONTACT_ADDR)
@@ -171,7 +193,9 @@ describe('useAddParticipantContent', () => {
     it('shows a quantum-account error toast and does not resolve when the contact address signs with a post-quantum key', async () => {
         multisigCheckState.data = { isMultisig: false }
         verdictCheckState.verdict = 'incompatible-scheme'
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(CONTACT_ADDR)
@@ -189,7 +213,9 @@ describe('useAddParticipantContent', () => {
     it('shows a quantum-account error toast and does not resolve when the external (QR-scanned) address signs with a post-quantum key', async () => {
         multisigCheckState.data = { isMultisig: false }
         verdictCheckState.verdict = 'incompatible-scheme'
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(EXTERNAL_ADDR)
@@ -207,7 +233,9 @@ describe('useAddParticipantContent', () => {
     it("waits for the chain's participant check before resolving an external address", async () => {
         multisigCheckState.data = { isMultisig: false }
         verdictCheckState.isFetching = true
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(EXTERNAL_ADDR)
@@ -219,7 +247,9 @@ describe('useAddParticipantContent', () => {
 
     it('resolves with an external address once the multisig check confirms it is not a shared account', async () => {
         multisigCheckState.data = { isMultisig: false }
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(EXTERNAL_ADDR)
@@ -236,7 +266,9 @@ describe('useAddParticipantContent', () => {
 
     it('shows a multisig-account error toast and does not resolve when the external address is a shared account', async () => {
         multisigCheckState.data = { isMultisig: true }
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.handleSelected(MULTISIG_ADDR)
@@ -251,8 +283,34 @@ describe('useAddParticipantContent', () => {
         expect(mockResolve).not.toHaveBeenCalled()
     })
 
+    it('treats an address held only on Algorand as external on an Ethereum scope', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ETHEREUM_SCOPE }),
+        )
+
+        act(() => {
+            result.current.handleSelected(LOCAL_WATCH_ADDR)
+        })
+
+        expect(mockMultisigQuery).toHaveBeenCalledWith({
+            scope: ETHEREUM_SCOPE,
+            address: LOCAL_WATCH_ADDR,
+            enabled: true,
+        })
+        await waitFor(() =>
+            expect(mockResolve).toHaveBeenCalledWith({
+                address: LOCAL_WATCH_ADDR,
+                nfdName: undefined,
+            }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
     it('exposes dismiss for the toolbar close button', () => {
-        const { result } = renderHook(() => useAddParticipantContent())
+        const { result } = renderHook(() =>
+            useAddParticipantContent({ scope: ALGORAND_SCOPE }),
+        )
 
         act(() => {
             result.current.dismiss()

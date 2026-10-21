@@ -17,6 +17,10 @@ export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export type {
     DetailBodyProps,
     PreviewRowProps,
+    RelatedTransactionsProps,
     ReviewBodyProps,
+    TotalFeeProps,
     TransactionDisplay,
+    UseTransactionDetailParams,
+    UseTransactionDetailResult,
 } from './transactions/types'

@@ -26,6 +26,7 @@ export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        scope,
         assetRequests,
         isPending,
         isUnavailableOnNetwork,
@@ -36,11 +37,11 @@ export const AssetTransferRequestsScreen = () => {
     useNavigationHeader({
         right: (
             <InfoButton
-                title={t('arc59.requests.info_title')}
+                title={t('asset_inbox.requests.info_title')}
                 size='md'
                 variant='primary'
             >
-                <PWText>{t('arc59.requests.info_body')}</PWText>
+                <PWText>{t('asset_inbox.requests.info_body')}</PWText>
             </InfoButton>
         ),
     })
@@ -49,10 +50,11 @@ export const AssetTransferRequestsScreen = () => {
         ({ item, index }: { item: AssetInboxRequest; index: number }) => (
             <AssetTransferRequestItem
                 item={item}
+                scope={scope}
                 onPress={() => handleItemPress(index)}
             />
         ),
-        [handleItemPress],
+        [handleItemPress, scope],
     )
 
     const renderSeparator = useCallback(
@@ -88,8 +90,8 @@ export const AssetTransferRequestsScreen = () => {
                             loadingStyle={styles.loadingView}
                             style={styles.emptyView}
                             icon='inbox'
-                            title={t('arc59.requests.empty_title')}
-                            body={t('arc59.requests.empty_body')}
+                            title={t('asset_inbox.requests.empty_title')}
+                            body={t('asset_inbox.requests.empty_body')}
                         />
                     </OfflineTolerantView>
                 }

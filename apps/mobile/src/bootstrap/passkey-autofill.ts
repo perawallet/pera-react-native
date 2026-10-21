@@ -22,7 +22,6 @@ import {
     getProvider,
     reconcileKeystore,
 } from '@perawallet/wallet-extension-provider'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 
@@ -45,7 +44,10 @@ const getService = (): PasskeyAutofillService | undefined => {
  */
 export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
     // Read at call time: this runs outside React, on cold start and on every refresh.
-    if (!getProvider().chains.capabilities(LEGACY_CHAIN_ID).liquidAuth) return
+    const { chains } = getProvider()
+    if (!chains.list().some(({ id }) => chains.capabilities(id).liquidAuth)) {
+        return
+    }
     const service = getService()
     if (!service) {
         logger.warn(

@@ -79,7 +79,7 @@ describe('useAssetOptInDeeplink', () => {
             {
                 assetId: ASSET_ID,
                 accountAddress: LINK_ADDRESS,
-                chainId: 'algorand',
+                scope: expect.objectContaining({ chainId: 'algorand' }),
             },
             expect.anything(),
         )

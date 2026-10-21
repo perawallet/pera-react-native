@@ -44,7 +44,7 @@ export const EthereumTransactionReviewBody = ({
     const { view, amount, maxFee, signingAccount, scope } = presentation
 
     const handleViewDetails = () => {
-        navigation.navigate('TransactionDetails', { transaction })
+        navigation.navigate('TransactionDetails', { scope, transaction })
     }
 
     let details = null

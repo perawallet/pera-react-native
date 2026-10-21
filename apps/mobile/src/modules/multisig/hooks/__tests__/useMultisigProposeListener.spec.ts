@@ -75,8 +75,8 @@ import { useMultisigProposeListener } from '../useMultisigProposeListener'
 
 const SIGN_REQUEST_ID = 'sr-1'
 
-const fakeRequest = (id: string = SIGN_REQUEST_ID) =>
-    ({ id, type: 'transactions' }) as never
+const fakeRequest = (id: string = SIGN_REQUEST_ID, chainId = 'algorand') =>
+    ({ id, type: 'transactions', txs: [], chainId }) as never
 
 const proposedResult = (
     overrides: Partial<Extract<TransportResult, { type: 'proposed' }>> = {},
@@ -102,10 +102,11 @@ const signaturesAddedResult = (
 const publishTransportResult = (
     result: TransportResult,
     requestId: string = SIGN_REQUEST_ID,
+    chainId = 'algorand',
 ) => {
     signingEventBus.publish({
         type: 'transport-result',
-        request: fakeRequest(requestId),
+        request: fakeRequest(requestId, chainId),
         result,
     })
 }
@@ -126,8 +127,16 @@ describe('useMultisigProposeListener', () => {
         publishTransportResult(proposedResult())
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
-        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID, 'algorand')
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens the sheet on the chain of an Ethereum request', () => {
+        renderHook(() => useMultisigProposeListener())
+
+        publishTransportResult(proposedResult(), SIGN_REQUEST_ID, 'ethereum')
+
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID, 'ethereum')
     })
 
     it('opens the sheet and invalidates inbox on `signatures-added` non-confirmed result', () => {
@@ -136,7 +145,7 @@ describe('useMultisigProposeListener', () => {
         publishTransportResult(signaturesAddedResult())
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
-        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID, 'algorand')
         expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
     })
 
@@ -186,8 +195,12 @@ describe('useMultisigProposeListener', () => {
         )
 
         expect(openSheetMock).toHaveBeenCalledTimes(2)
-        expect(openSheetMock).toHaveBeenNthCalledWith(1, SIGN_REQUEST_ID)
-        expect(openSheetMock).toHaveBeenNthCalledWith(2, 'sr-2')
+        expect(openSheetMock).toHaveBeenNthCalledWith(
+            1,
+            SIGN_REQUEST_ID,
+            'algorand',
+        )
+        expect(openSheetMock).toHaveBeenNthCalledWith(2, 'sr-2', 'algorand')
     })
 
     it('does not replay events published before mount (no replay option)', () => {
@@ -237,7 +250,7 @@ describe('useMultisigProposeListener', () => {
         publishTransportResult(signaturesAddedResult(), 'cosign-1')
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
-        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID, 'algorand')
     })
 
     it('opens the sheet when the queued cosign targets a different sign request', () => {
@@ -255,7 +268,7 @@ describe('useMultisigProposeListener', () => {
         publishTransportResult(signaturesAddedResult(), 'cosign-1')
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
-        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID, 'algorand')
     })
 
     it('opens the sheet at the result signRequestId (draft reconciliation is owned by usePendingSignaturesSheet)', () => {
@@ -267,7 +280,7 @@ describe('useMultisigProposeListener', () => {
             signaturesAddedResult({ signRequestId: 'sr-real' }),
         )
 
-        expect(openSheetMock).toHaveBeenCalledWith('sr-real')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-real', 'algorand')
         expect(deleteDraftMock).toHaveBeenCalledWith('draft-abc')
     })
 })

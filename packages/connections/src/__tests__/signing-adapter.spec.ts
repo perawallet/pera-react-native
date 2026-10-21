@@ -1761,7 +1761,7 @@ describe('useConnectionSigningAdapter', () => {
             expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
             expect(addedRequest()).toMatchObject({
                 type: 'transactions',
-                transport: 'algod',
+                transport: 'network',
                 sourceType: 'walletconnect',
                 transportId: 'c1',
                 sourceMetadata: PEER,

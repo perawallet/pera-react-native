@@ -11,7 +11,9 @@
  */
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWView } from '@components/core'
+import { PWButton, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
 import { PWWebView } from '@modules/webview/browser'
 import { useBidaliWebViewScreen } from './useBidaliWebViewScreen'
 import { useStyles } from './styles'
@@ -19,7 +21,9 @@ import { useStyles } from './styles'
 export const BidaliWebViewScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
+    const { t } = useLanguage()
     const {
+        isAvailable,
         url,
         bidaliProviderJS,
         onClose,
@@ -27,6 +31,24 @@ export const BidaliWebViewScreen = () => {
         onShouldStartLoadWithRequest,
         webviewRef,
     } = useBidaliWebViewScreen()
+
+    if (!isAvailable) {
+        return (
+            <PWView style={styles.container}>
+                <EmptyView
+                    title={t('giftCard.unavailable.title')}
+                    body={t('giftCard.unavailable.body')}
+                    button={
+                        <PWButton
+                            variant='primary'
+                            title={t('common.close.label')}
+                            onPress={onClose}
+                        />
+                    }
+                />
+            </PWView>
+        )
+    }
 
     return (
         <PWView style={styles.container}>

@@ -52,6 +52,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
             return
         }
         navigation.navigate('TransactionDetails', {
+            scope,
             transaction: toAlgorandNative(transaction),
         })
     }

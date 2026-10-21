@@ -24,7 +24,9 @@ const localUnsignedSignersMock = vi.fn<() => WalletAccount[]>(() => [])
 const buildCosignArgsMock = vi.fn()
 const cosignRequestStub = { id: 'cosign-stub' }
 const errorToastMock = vi.fn()
-const allAccountsStub = vi.hoisted(() => [{ address: 'LOCAL' }])
+const accountsMock = vi.hoisted(() => ({
+    current: [] as WalletAccount[],
+}))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast: errorToastMock }),
@@ -43,7 +45,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAllAccounts: () => allAccountsStub,
+        useAllAccounts: () => accountsMock.current,
     }
 })
 
@@ -143,6 +145,7 @@ describe('useHandleMultisigSignTap', () => {
         addSignRequestMock.mockClear()
         buildCosignArgsMock.mockClear()
         errorToastMock.mockClear()
+        accountsMock.current = [buildAccount('LOCAL')]
         localUnsignedSignersMock.mockReset()
         localUnsignedSignersMock.mockReturnValue([])
         pendingSignRequestsMock.mockReturnValue([])
@@ -162,7 +165,7 @@ describe('useHandleMultisigSignTap', () => {
                 signRequest,
                 signerAddress: 'A',
                 scope: expect.objectContaining({ chainId: 'algorand' }),
-                localAccounts: allAccountsStub,
+                localAccounts: accountsMock.current,
             })
             expect(addSignRequestMock).toHaveBeenCalledTimes(1)
             expect(addSignRequestMock).toHaveBeenCalledWith(cosignRequestStub)
@@ -220,7 +223,7 @@ describe('useHandleMultisigSignTap', () => {
         result.current(buildSignRequest({ id: 'sr-42', status: 'pending' }))
 
         expect(openSheetMock).toHaveBeenCalledTimes(1)
-        expect(openSheetMock).toHaveBeenCalledWith('sr-42')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-42', 'algorand')
         expect(addSignRequestMock).not.toHaveBeenCalled()
         expect(buildCosignArgsMock).not.toHaveBeenCalled()
     })
@@ -239,7 +242,10 @@ describe('useHandleMultisigSignTap', () => {
             const { result } = renderHook(() => useHandleMultisigSignTap())
             result.current(buildSignRequest({ id: `sr-${status}`, status }))
 
-            expect(openSheetMock).toHaveBeenCalledWith(`sr-${status}`)
+            expect(openSheetMock).toHaveBeenCalledWith(
+                `sr-${status}`,
+                'algorand',
+            )
             expect(addSignRequestMock).not.toHaveBeenCalled()
             expect(buildCosignArgsMock).not.toHaveBeenCalled()
             expect(localUnsignedSignersMock).not.toHaveBeenCalled()
@@ -258,7 +264,7 @@ describe('useHandleMultisigSignTap', () => {
             }),
         )
 
-        expect(openSheetMock).toHaveBeenCalledWith('sr-empty')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-empty', 'algorand')
         expect(addSignRequestMock).not.toHaveBeenCalled()
     })
 
@@ -277,7 +283,7 @@ describe('useHandleMultisigSignTap', () => {
 
         expect(addSignRequestMock).not.toHaveBeenCalled()
         expect(buildCosignArgsMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('sr-mixed')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-mixed', 'algorand')
     })
 
     it('caps the shortcut dispatch at the signatures still needed', () => {
@@ -326,6 +332,35 @@ describe('useHandleMultisigSignTap', () => {
 
         expect(addSignRequestMock).not.toHaveBeenCalled()
         expect(buildCosignArgsMock).not.toHaveBeenCalled()
-        expect(openSheetMock).toHaveBeenCalledWith('sr-hw-only')
+        expect(openSheetMock).toHaveBeenCalledWith('sr-hw-only', 'algorand')
+    })
+    it('resolves the chain from a participant held on Ethereum', () => {
+        accountsMock.current = [
+            {
+                id: 'eth-A',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: 'A', keyPairId: 'kp-A' } },
+            },
+        ]
+        localUnsignedSignersMock.mockReturnValue([])
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+
+        result.current(buildSignRequest({ id: 'sr-eth' }))
+
+        expect(localUnsignedSignersMock).toHaveBeenCalledWith(
+            expect.anything(),
+            accountsMock.current,
+            'ethereum',
+        )
+        expect(openSheetMock).toHaveBeenCalledWith('sr-eth', 'ethereum')
+    })
+
+    it('resolves the chain from a participant held on Algorand', () => {
+        accountsMock.current = [buildAccount('B')]
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+
+        result.current(buildSignRequest({ id: 'sr-algo' }))
+
+        expect(openSheetMock).toHaveBeenCalledWith('sr-algo', 'algorand')
     })
 })

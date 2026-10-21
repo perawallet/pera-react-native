@@ -17,8 +17,9 @@ import type {
     FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
+import type { AssetInboxQuote } from '@perawallet/wallet-core-transactions'
 
-type SendMode = 'normal' | 'express' | 'sendArc59'
+type SendMode = 'normal' | 'express' | 'sendAssetInbox'
 
 type SendFundsState = {
     /** The asset sent; its chain is the chain the whole send runs on. */
@@ -37,7 +38,7 @@ type SendFundsState = {
     destination?: string
     onFinished?: () => void
     sendMode: SendMode
-    arc59Summary?: unknown
+    assetInboxQuote?: AssetInboxQuote
     isCloseAccount: boolean
     /**
      * Set when a browser tab reopens a send the extension popup couldn't sign.
@@ -57,7 +58,7 @@ type SendFundsActions = {
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
-    setArc59Summary: (summary?: unknown) => void
+    setAssetInboxQuote: (quote?: AssetInboxQuote) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
@@ -76,7 +77,7 @@ const initialState: SendFundsState = {
     destination: undefined,
     onFinished: undefined,
     sendMode: 'normal',
-    arc59Summary: undefined,
+    assetInboxQuote: undefined,
     isCloseAccount: false,
     shouldContinueToConfirm: false,
     feePreset: 'normal',
@@ -92,7 +93,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setDestination: address => set({ destination: address }),
     setOnFinished: fn => set({ onFinished: fn }),
     setSendMode: mode => set({ sendMode: mode }),
-    setArc59Summary: summary => set({ arc59Summary: summary }),
+    setAssetInboxQuote: quote => set({ assetInboxQuote: quote }),
     setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
     setShouldContinueToConfirm: shouldContinue =>
         set({ shouldContinueToConfirm: shouldContinue }),
@@ -120,7 +121,7 @@ type UseSendFundsResult = {
     destination?: string
     onFinished?: () => void
     sendMode: SendMode
-    arc59Summary?: unknown
+    assetInboxQuote?: AssetInboxQuote
     isCloseAccount: boolean
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
@@ -132,7 +133,7 @@ type UseSendFundsResult = {
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
-    setArc59Summary: (summary?: unknown) => void
+    setAssetInboxQuote: (quote?: AssetInboxQuote) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
@@ -150,7 +151,7 @@ export const useSendFunds = (): UseSendFundsResult => {
     const destination = useSendFundsStore(state => state.destination)
     const onFinished = useSendFundsStore(state => state.onFinished)
     const sendMode = useSendFundsStore(state => state.sendMode)
-    const arc59Summary = useSendFundsStore(state => state.arc59Summary)
+    const assetInboxQuote = useSendFundsStore(state => state.assetInboxQuote)
     const setSelectedAsset = useSendFundsStore(state => state.setSelectedAsset)
     const setCanSelectAsset = useSendFundsStore(
         state => state.setCanSelectAsset,
@@ -163,7 +164,9 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setDestination = useSendFundsStore(state => state.setDestination)
     const setOnFinished = useSendFundsStore(state => state.setOnFinished)
     const setSendMode = useSendFundsStore(state => state.setSendMode)
-    const setArc59Summary = useSendFundsStore(state => state.setArc59Summary)
+    const setAssetInboxQuote = useSendFundsStore(
+        state => state.setAssetInboxQuote,
+    )
     const isCloseAccount = useSendFundsStore(state => state.isCloseAccount)
     const setIsCloseAccount = useSendFundsStore(
         state => state.setIsCloseAccount,
@@ -188,7 +191,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         destination,
         onFinished,
         sendMode,
-        arc59Summary,
+        assetInboxQuote,
         isCloseAccount,
         shouldContinueToConfirm,
         feePreset,
@@ -200,7 +203,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setDestination,
         setOnFinished,
         setSendMode,
-        setArc59Summary,
+        setAssetInboxQuote,
         setIsCloseAccount,
         setShouldContinueToConfirm,
         setFeePreset,

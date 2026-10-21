@@ -14,7 +14,7 @@ import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
     CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     clearCustomNetworkCache,
@@ -24,13 +24,13 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 import { useQueryClient } from '@tanstack/react-query'
-import { isValidEndpoint } from './isValidEndpoint'
+import { isValidEndpoint } from '@modules/settings'
 
 /** Every field as a plain string, including the optional token fields —
  * `PWInput` needs a controlled `string` value, never `undefined`. */
 export type CustomNetworkDraft = Record<keyof CustomNetworkConfig, string>
 
-export type CustomNetworkSheetErrors = {
+export type AlgorandCustomNodeFormErrors = {
     algodUrl?: boolean
     indexerUrl?: boolean
     genesisHash?: boolean
@@ -69,9 +69,9 @@ const toDraft = (
               genesisId: config.genesisId,
           }
 
-export type UseCustomNetworkSheetResult = {
+export type UseAlgorandCustomNodeFormResult = {
     draft: CustomNetworkDraft
-    errors: CustomNetworkSheetErrors
+    errors: AlgorandCustomNodeFormErrors
     isFetching: boolean
     handleFieldChange: (field: keyof CustomNetworkDraft, value: string) => void
     handleFetchGenesis: () => Promise<void>
@@ -97,12 +97,14 @@ export type UseCustomNetworkSheetResult = {
  * stops an in-flight chain-A query re-inserting rows after the sweep, and
  * persist-before-switch means `custom` is never ACTIVE while unconfigured.
  */
-export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
-    const customNode = useCustomNode(LEGACY_CHAIN_ID)
+export const useAlgorandCustomNodeForm = (
+    chainId: ChainId,
+): UseAlgorandCustomNodeFormResult => {
+    const customNode = useCustomNode(chainId)
     const [draft, setDraft] = useState<CustomNetworkDraft>(() =>
         toDraft(customNode?.read()),
     )
-    const [errors, setErrors] = useState<CustomNetworkSheetErrors>({})
+    const [errors, setErrors] = useState<AlgorandCustomNodeFormErrors>({})
     const [isFetching, setIsFetching] = useState(false)
     const selectNetwork = useNetworkStore(state => state.selectNetwork)
     const setMode = useNetworkStore(state => state.setMode)
@@ -164,7 +166,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             return false
         }
 
-        const validationErrors: CustomNetworkSheetErrors = {
+        const validationErrors: AlgorandCustomNodeFormErrors = {
             algodUrl: !isValidEndpoint(draft.algodUrl),
             indexerUrl: !isValidEndpoint(draft.indexerUrl),
             genesisHash: draft.genesisHash.length === 0,
@@ -205,7 +207,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         customNode.save(next)
 
         // The override first, so a live wallet changes network only once, on the mode flip.
-        selectNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
+        selectNetwork(chainId, CUSTOM_NETWORK_ID)
         setMode('developer')
         try {
             // Invalidation is owned by the shell's network effect
@@ -220,7 +222,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         }
 
         return true
-    }, [customNode, draft, queryClient, selectNetwork, setMode])
+    }, [chainId, customNode, draft, queryClient, selectNetwork, setMode])
 
     const handleReset = useCallback(() => {
         setDraft({ ...BLANK_DRAFT })

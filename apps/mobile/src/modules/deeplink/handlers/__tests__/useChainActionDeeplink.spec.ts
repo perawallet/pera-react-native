@@ -312,7 +312,7 @@ describe('useChainActionDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     type: 'transactions',
-                    transport: 'algod',
+                    transport: 'network',
                     // 'local' is headless and would silently auto-sign; only
                     // 'deeplink' gets the review sheet.
                     sourceType: 'deeplink',

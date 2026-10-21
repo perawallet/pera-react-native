@@ -49,6 +49,7 @@ import {
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
@@ -160,8 +161,8 @@ const buildAssetRequest = (
     totalAmount: new Decimal(250),
     asset: CLAIMED_ASSET,
     usdValue: new Decimal('1.5'),
-    microAlgoGainOnClaim: new Decimal(0),
-    microAlgoGainOnReject: new Decimal(100_000),
+    nativeGainOnClaim: new Decimal(0),
+    nativeGainOnReject: new Decimal(100_000),
     senders: {
         count: 1,
         results: [
@@ -171,8 +172,8 @@ const buildAssetRequest = (
             },
         ],
     },
-    insufficientAlgoForClaiming: false,
-    insufficientAlgoForRejecting: false,
+    insufficientNativeForClaiming: false,
+    insufficientNativeForRejecting: false,
     shouldUseFundsBeforeClaiming: false,
     shouldUseFundsBeforeRejecting: false,
     ...overrides,
@@ -246,6 +247,7 @@ const MessagesDispatcher = () => {
 const renderClaimFlow = (
     initialRoute: 'AssetTransferRequests' | 'AssetClaimDetail',
 ) => {
+    const scope = getSelectedScope('algorand')
     const claimScreens = [
         {
             name: 'AssetTransferRequests',
@@ -253,12 +255,12 @@ const renderClaimFlow = (
             // The list is scoped to the *claimer* (receiver) account — the one
             // whose key we hold and whose inbox the ARC-59 requests endpoint is
             // keyed by. Senders live inside each request's `senders` list.
-            params: { item: { address: ALGO25_TEST_ADDRESS } },
+            params: { item: { address: ALGO25_TEST_ADDRESS }, scope },
         },
         {
             name: 'AssetClaimDetail',
             component: AssetClaimDetailScreen,
-            params: { assetIndex: 0 },
+            params: { assetIndex: 0, scope },
         },
         { name: 'ClaimProcessing', component: ClaimProcessingScreen },
         { name: 'ClaimSuccess', component: TransactionSuccessScreen },
@@ -365,13 +367,13 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         await waitFor(
             () => {
                 expect(
-                    screen.getByTestId('arc59_claim_confirm_slide'),
+                    screen.getByTestId('asset_inbox_claim_confirm_slide'),
                 ).toBeTruthy()
             },
             { timeout: 5000 },
         )
 
-        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+        fireEvent.click(screen.getByTestId('asset_inbox_claim_confirm_slide'))
 
         // ClaimProcessing kicks off the claim in a useEffect; success
         // renders once algod accepts the submission.
@@ -442,12 +444,12 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         await waitFor(
             () => {
                 expect(
-                    screen.getByTestId('arc59_claim_confirm_slide'),
+                    screen.getByTestId('asset_inbox_claim_confirm_slide'),
                 ).toBeTruthy()
             },
             { timeout: 5000 },
         )
-        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+        fireEvent.click(screen.getByTestId('asset_inbox_claim_confirm_slide'))
 
         await waitFor(
             () => {
@@ -481,15 +483,17 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         renderClaimFlow('AssetClaimDetail')
 
         // The detail screen's reject trigger (a link button). i18n returns
-        // raw keys in tests, so it renders as `arc59.claim.reject`; the
+        // raw keys in tests, so it renders as `asset_inbox.claim.reject`; the
         // sheet's confirm/cancel use the distinct `messages.claim.*` keys.
         await waitFor(
             () => {
-                expect(screen.getByText('arc59.claim.reject')).toBeTruthy()
+                expect(
+                    screen.getByText('asset_inbox.claim.reject'),
+                ).toBeTruthy()
             },
             { timeout: 5000 },
         )
-        fireEvent.click(screen.getByText('arc59.claim.reject'))
+        fireEvent.click(screen.getByText('asset_inbox.claim.reject'))
 
         // The reject confirmation sheet (ConfirmActionContent) renders via
         // the BottomSheetManager that renderWithNavigation mounts.
@@ -501,7 +505,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         )
         fireEvent.click(screen.getByText('messages.claim.reject'))
 
-        // Confirming pushes ClaimProcessing in rejectArc59 mode, which
+        // Confirming pushes ClaimProcessing in reject mode, which
         // builds + signs + submits the reject group and lands on success.
         await waitFor(
             () => {
@@ -547,7 +551,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         await waitFor(
             () => {
                 expect(
-                    screen.getByTestId('arc59_claim_asset_preview'),
+                    screen.getByTestId('asset_inbox_claim_asset_preview'),
                 ).toBeTruthy()
             },
             { timeout: 5000 },
@@ -555,19 +559,19 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
 
         // The collectible's primaryImage renders as an actual image
         // (expo-image's stub), not the initials fallback.
-        const preview = screen.getByTestId('arc59_claim_asset_preview')
+        const preview = screen.getByTestId('asset_inbox_claim_asset_preview')
         expect(within(preview).getByTestId('expo-image')).toBeTruthy()
     })
 
-    it('Given a request flagged insufficientAlgoForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod', async () => {
+    it('Given a request flagged insufficientNativeForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod', async () => {
         await seedClaimingAccount()
         useClaimAssetsStore.getState().setAccountAddress(ALGO25_TEST_ADDRESS)
-        // Blocked only when insufficientAlgoForClaiming AND NOT
+        // Blocked only when insufficientNativeForClaiming AND NOT
         // shouldUseFundsBeforeClaiming — the inbox's own funds would
         // otherwise cover the opt-in.
         useClaimAssetsStore.getState().setAssetRequests([
             buildAssetRequest({
-                insufficientAlgoForClaiming: true,
+                insufficientNativeForClaiming: true,
                 shouldUseFundsBeforeClaiming: false,
             }),
         ])
@@ -583,15 +587,17 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         await waitFor(
             () => {
                 expect(
-                    screen.getByTestId('arc59_claim_insufficient_algo'),
+                    screen.getByTestId('asset_inbox_claim_insufficient_funds'),
                 ).toBeTruthy()
             },
             { timeout: 5000 },
         )
 
-        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+        fireEvent.click(screen.getByTestId('asset_inbox_claim_confirm_slide'))
 
         expect(sendSpy).not.toHaveBeenCalled()
-        expect(screen.queryByTestId('arc59_claim_confirm_slide')).toBeTruthy()
+        expect(
+            screen.queryByTestId('asset_inbox_claim_confirm_slide'),
+        ).toBeTruthy()
     })
 })

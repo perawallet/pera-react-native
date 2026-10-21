@@ -195,12 +195,13 @@ export const useAssetTransactionList = ({
                 navigation.navigate('GroupTransactionList', { groupId })
             } else {
                 navigation.navigate('TransactionDetails', {
+                    scope,
                     transactionId: transaction.id,
                     historyTransaction: transaction,
                 })
             }
         },
-        [navigation, scope.chainId],
+        [navigation, scope],
     )
 
     const handleOpenFilter = useCallback(async () => {
