@@ -186,13 +186,21 @@ describe('asset sync queries', () => {
         // has fetched the asset's media, which lands seconds to hours after
         // the mint. These params are what stop that first "not a collectible"
         // answer from being cached for the full ttlMs.
-        const recheck = (ttlMs: number, windowMs = 60_000) => ({
+        // Stands in for the chain's shape check: indivisible means NFT-shaped.
+        const isIndivisible = ({ decimals }: { decimals: number }) =>
+            decimals === 0
+
+        const recheck = (
+            ttlMs: number,
+            windowMs = 60_000,
+            hasCollectibleShape = isIndivisible,
+        ) => ({
             ttlMs: 60_000,
-            recheckUnclassified: { ttlMs, windowMs },
+            recheckUnclassified: { ttlMs, windowMs, hasCollectibleShape },
         })
 
-        // Pure-NFT shape, since only NFT-shaped assets are worth re-asking
-        // about. makeAsset's default is a fungible token.
+        // NFT-shaped by `isIndivisible`, since only NFT-shaped assets are worth
+        // re-asking about. makeAsset's default is a fungible token.
         const seed = async (
             items: Array<{ assetId: string; type?: string }>,
             overrides: Partial<PeraAsset> = {
@@ -236,7 +244,7 @@ describe('asset sync queries', () => {
             expect(new Set(result)).toEqual(new Set(['1', '2']))
         })
 
-        it('leaves fungible tokens alone however recently they were seen', async () => {
+        it('leaves assets the chain does not see as collectible-shaped alone', async () => {
             // Without this filter a wallet of ~600 plain tokens re-asks about
             // every one of them for the whole window, on every sync tick and
             // account view.
@@ -255,26 +263,27 @@ describe('asset sync queries', () => {
             expect(result).toEqual([])
         })
 
-        it('rechecks editioned and fractional NFTs, not just one-of-ones', async () => {
-            // Editions (indivisible, many copies) are a quarter of the NFTs in
-            // a real wallet; fractional ARC-3 NFTs hold 10^decimals units.
+        it("hands the chain's shape check each candidate's supply and decimals", async () => {
             await seed([{ assetId: '1', type: 'standard_asset' }], {
-                decimals: 0,
-                totalSupply: new Decimal(1000),
-            })
-            await seed([{ assetId: '2', type: 'standard_asset' }], {
                 decimals: 2,
                 totalSupply: new Decimal(100),
             })
+            const hasCollectibleShape = vi.fn(() => true)
 
             const result = await getStaleOrMissingAssetIds({
                 db,
-                assetIds: ['1', '2'],
+                assetIds: ['1'],
                 scope: MAINNET_SCOPE,
-                ...recheck(-1),
+                ...recheck(-1, 60_000, hasCollectibleShape),
             })
 
-            expect(new Set(result)).toEqual(new Set(['1', '2']))
+            expect(result).toEqual(['1'])
+            expect(hasCollectibleShape).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    decimals: 2,
+                    totalSupply: new Decimal(100),
+                }),
+            )
         })
 
         it('waits out the recheck TTL between rechecks', async () => {

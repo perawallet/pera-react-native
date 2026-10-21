@@ -123,8 +123,7 @@ describe('account holdings queries', () => {
         it('returns only collectibles, never fungible holdings', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
             })
 
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2', '30'])
@@ -133,8 +132,7 @@ describe('account holdings queries', () => {
         it('excludes zero-balance collectibles when they are hidden', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 includeZeroBalance: false,
             })
 
@@ -144,8 +142,7 @@ describe('account holdings queries', () => {
         it('surfaces title and collection name without parsing in JS', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 sortMode: 'titleAsc',
             })
 
@@ -156,8 +153,7 @@ describe('account holdings queries', () => {
         it('sorts by title case-insensitively', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 sortMode: 'titleAsc',
             })
 
@@ -171,8 +167,7 @@ describe('account holdings queries', () => {
         it('reverses title order for titleDesc', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 sortMode: 'titleDesc',
             })
 
@@ -188,8 +183,7 @@ describe('account holdings queries', () => {
         it('orders newest-first numerically, not lexicographically', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 sortMode: 'newestFirst',
             })
 
@@ -224,8 +218,7 @@ describe('account holdings queries', () => {
 
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR2',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR2', scope: MAINNET_SCOPE }],
                 sortMode: 'oldestFirst',
             })
 
@@ -235,8 +228,7 @@ describe('account holdings queries', () => {
         it('orders oldest-first numerically', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 sortMode: 'oldestFirst',
             })
 
@@ -246,20 +238,17 @@ describe('account holdings queries', () => {
         it('searches title, collection name and asset name', async () => {
             const byTitle = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 search: 'cherry',
             })
             const byCollection = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 search: 'Stone',
             })
             const byName = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 search: 'Asset Banana',
             })
 
@@ -273,14 +262,12 @@ describe('account holdings queries', () => {
         it('searches by asset id', async () => {
             const byFullId = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 search: '30',
             })
             const byPartialId = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
                 search: '1',
             })
 
@@ -299,11 +286,46 @@ describe('account holdings queries', () => {
 
             const rows = await getAccountCollectiblesLite({
                 db,
-                accountAddress: 'ADDR1',
-                scope: MAINNET_SCOPE,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
             })
 
             expect(rows.map(r => r.assetId)).not.toContain('999')
+        })
+
+        it('reads every source in one pass and tags each row with its scope', async () => {
+            const testnet = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                scope: testnet,
+                holdings: [{ assetId: '10', amount: new Decimal(1) }],
+            })
+            await upsertAssets({
+                db,
+                scope: testnet,
+                items: [collectible('10', 'apple', 'Fruit Club')],
+            })
+
+            const rows = await getAccountCollectiblesLite({
+                db,
+                sources: [
+                    { address: 'ADDR1', scope: MAINNET_SCOPE },
+                    { address: 'ADDR2', scope: testnet },
+                ],
+            })
+
+            expect(
+                rows.map(r => `${r.scope.networkId}:${r.assetId}`).sort(),
+            ).toEqual(['mainnet:10', 'mainnet:2', 'mainnet:30', 'testnet:10'])
+        })
+
+        it('reads nothing for no sources', async () => {
+            expect(
+                await getAccountCollectiblesLite({ db, sources: [] }),
+            ).toEqual([])
         })
     })
 

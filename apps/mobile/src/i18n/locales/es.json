@@ -273,6 +273,8 @@
             "properties": "Propiedades",
             "creator": "Cuenta creadora",
             "asset_id": "ID del activo",
+            "token_id": "ID del token",
+            "contract": "Contrato",
             "total_supply": "Suministro total",
             "show_on": "Ver en",
             "explorer": "Pera Explorer",

@@ -28,6 +28,7 @@ export const NftFilterContent = () => {
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
+        canShowOptedIn,
         showOptedIn,
         showWatchAccounts,
         handleToggleOptedIn,
@@ -56,23 +57,27 @@ export const NftFilterContent = () => {
                 />
             }
         >
-            <PWView style={styles.filterRow}>
-                <PWView style={styles.filterTextContainer}>
-                    <PWText style={styles.filterLabel}>
-                        {t('account_details.nfts.filter_opted_in')}
-                    </PWText>
-                    <PWText
-                        variant='caption'
-                        style={styles.filterDescription}
-                    >
-                        {t('account_details.nfts.filter_opted_in_description')}
-                    </PWText>
+            {canShowOptedIn && (
+                <PWView style={styles.filterRow}>
+                    <PWView style={styles.filterTextContainer}>
+                        <PWText style={styles.filterLabel}>
+                            {t('account_details.nfts.filter_opted_in')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.filterDescription}
+                        >
+                            {t(
+                                'account_details.nfts.filter_opted_in_description',
+                            )}
+                        </PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={showOptedIn}
+                        onValueChange={handleToggleOptedIn}
+                    />
                 </PWView>
-                <PWSwitch
-                    value={showOptedIn}
-                    onValueChange={handleToggleOptedIn}
-                />
-            </PWView>
+            )}
 
             <PWView style={styles.filterRow}>
                 <PWView style={styles.filterTextContainer}>

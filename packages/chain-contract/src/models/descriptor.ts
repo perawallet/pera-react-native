@@ -68,6 +68,7 @@ export interface ExplorerUrlBuilders {
     accountUrl(networkId: NetworkId, address: string): string | undefined
     transactionUrl(networkId: NetworkId, txId: string): string | undefined
     assetUrl(networkId: NetworkId, assetId: string): string | undefined
+    collectibleUrl(networkId: NetworkId, assetId: string): string | undefined
 }
 
 export type ChainFinality =

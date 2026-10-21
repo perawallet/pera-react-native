@@ -57,19 +57,51 @@ vi.mock(
     }),
 )
 
-// Mutable for the same reason as `mockCapabilities`: `custom` has an empty
-// explorerUrl by design, and that case needs to be reachable per-test.
-const { mockNetworkConfig } = vi.hoisted(() => ({
-    mockNetworkConfig: { explorerUrl: 'https://explorer.perawallet.app' },
+// Mutable for the same reason as `mockCapabilities`: a network with no
+// explorer (a custom one) needs to be reachable per-test.
+const { mockExplorer, mockChainUi } = vi.hoisted(() => ({
+    mockExplorer: { base: 'https://explorer.perawallet.app' },
+    mockChainUi: { collectibleDetails: undefined as unknown },
 }))
 
-vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
+    const actual = (await importOriginal()) as Record<string, unknown>
+    const link = (path: string) => (_networkId: string, id: string) =>
+        mockExplorer.base ? `${mockExplorer.base}/${path}/${id}` : undefined
+    return {
+        ...actual,
+        getChainDescriptor: () => ({
+            family: 'algorand',
+            explorer: {
+                accountUrl: link('address'),
+                collectibleUrl: link('asset'),
+            },
+        }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => {
     const actual = (await importOriginal()) as Record<string, unknown>
     return {
         ...actual,
-        getAlgorandChainConfig: () => mockNetworkConfig,
+        addressCodecs: {
+            get: () => ({ truncate: (address: string) => `short:${address}` }),
+        },
     }
 })
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: () => mockChainUi,
+}))
+
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const ALGORAND_DISPLAY = {
+    identityLabelKey: 'asset_details.collectible.asset_id',
+    creatorLabelKey: 'asset_details.collectible.creator',
+    hasTotalSupply: true,
+    explorerLabelKey: 'asset_details.collectible.explorer',
+}
 
 const makeAsset = (): PeraAsset =>
     ({
@@ -89,27 +121,28 @@ describe('useCollectibleInfo', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
-        Object.assign(mockNetworkConfig, {
-            explorerUrl: 'https://explorer.perawallet.app',
-        })
+        mockExplorer.base = 'https://explorer.perawallet.app'
+        mockChainUi.collectibleDetails = ALGORAND_DISPLAY
     })
 
     describe('on a network with no explorer', () => {
         beforeEach(() => {
-            Object.assign(mockNetworkConfig, { explorerUrl: '' })
+            mockExplorer.base = ''
         })
 
         it('offers no creator or asset explorer action', () => {
-            // `custom` has explorerUrl: '' by design; interpolating it opens the
-            // schemeless relative paths '/address/…' and '/asset/…'.
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             expect(result.current.onCreatorPressed).toBeUndefined()
             expect(result.current.onOpenExplorer).toBeUndefined()
         })
 
         it('still navigates to AssetDetails, which does not need an explorer', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onAssetIdPressed()
 
@@ -119,7 +152,9 @@ describe('useCollectibleInfo', () => {
 
     describe('on native (inAppWebView on)', () => {
         it('pushes the creator address into the in-app webview', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onCreatorPressed?.()
 
@@ -130,7 +165,9 @@ describe('useCollectibleInfo', () => {
         })
 
         it('pushes the asset explorer URL into the in-app webview', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onOpenExplorer?.()
 
@@ -147,7 +184,9 @@ describe('useCollectibleInfo', () => {
         })
 
         it('opens the creator address in a real browser tab instead of the in-app webview', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onCreatorPressed?.()
 
@@ -158,7 +197,9 @@ describe('useCollectibleInfo', () => {
         })
 
         it('opens the asset explorer URL in a real browser tab instead of the in-app webview', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onOpenExplorer?.()
 
@@ -170,7 +211,9 @@ describe('useCollectibleInfo', () => {
     })
 
     it('navigates to AssetDetails when the asset id row is pressed', () => {
-        const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+        const { result } = renderHook(() =>
+            useCollectibleInfo(makeAsset(), SCOPE),
+        )
 
         result.current.onAssetIdPressed()
 
@@ -181,9 +224,69 @@ describe('useCollectibleInfo', () => {
         })
     })
 
+    describe('rows the chain supplies', () => {
+        it("takes Algorand's labels, supply row and explorer label from its display", () => {
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
+
+            expect(result.current).toMatchObject({
+                identityLabelKey: 'asset_details.collectible.asset_id',
+                creatorLabelKey: 'asset_details.collectible.creator',
+                hasTotalSupply: true,
+                explorerLabelKey: 'asset_details.collectible.explorer',
+            })
+        })
+
+        it('falls back to the neutral rows on a chain with no collectible display', () => {
+            mockChainUi.collectibleDetails = undefined
+
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
+
+            expect(result.current).toMatchObject({
+                identityLabelKey: 'asset_details.collectible.token_id',
+                creatorLabelKey: 'asset_details.collectible.contract',
+                hasTotalSupply: false,
+                explorerLabelKey: null,
+                explorerDomain: 'explorer.perawallet.app',
+            })
+        })
+
+        it("truncates the creator through the chain's address codec", () => {
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
+
+            expect(result.current.creatorDisplayAddress).toBe(
+                'short:CREATOR_ADDRESS',
+            )
+        })
+
+        it('navigates to AssetDetails on the scope chain', () => {
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), {
+                    chainId: 'ethereum',
+                    networkId: 'mainnet',
+                }),
+            )
+
+            result.current.onAssetIdPressed()
+
+            expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+                assetId: '12345',
+                chainId: 'ethereum',
+                isCollectible: true,
+            })
+        })
+    })
+
     describe('long-press copy', () => {
         it('copies the full (untruncated) creator address', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onCreatorLongPressed()
 
@@ -193,7 +296,9 @@ describe('useCollectibleInfo', () => {
         })
 
         it('copies the asset id without navigating', () => {
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onAssetIdLongPressed()
 
@@ -202,8 +307,10 @@ describe('useCollectibleInfo', () => {
         })
 
         it('still copies on a network with no explorer', () => {
-            Object.assign(mockNetworkConfig, { explorerUrl: '' })
-            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+            mockExplorer.base = ''
+            const { result } = renderHook(() =>
+                useCollectibleInfo(makeAsset(), SCOPE),
+            )
 
             result.current.onCreatorLongPressed()
 

@@ -23,6 +23,8 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { MediaPermissionDeniedError } from '@utils/mediaErrors'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import { shareText } from '@utils/shareText'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
@@ -250,7 +252,9 @@ describe('useCollectibleDetail', () => {
     })
 
     it('returns collectible data from asset', () => {
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.collectible?.title).toBe('Cool NFT #42')
         expect(result.current.collectible?.collection?.name).toBe(
@@ -259,7 +263,9 @@ describe('useCollectibleDetail', () => {
     })
 
     it('returns traits and media', () => {
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.traits).toHaveLength(2)
         expect(result.current.traits[0].displayName).toBe('Background')
@@ -273,14 +279,18 @@ describe('useCollectibleDetail', () => {
             isPending: true,
         })
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.isPending).toBe(true)
         expect(result.current.asset).toBeUndefined()
     })
 
     it('reports owned state when account has a positive balance', () => {
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.isOptedIn).toBe(true)
         expect(result.current.isOwned).toBe(true)
@@ -292,7 +302,9 @@ describe('useCollectibleDetail', () => {
             data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.isOptedIn).toBe(true)
         expect(result.current.isOwned).toBe(false)
@@ -302,7 +314,9 @@ describe('useCollectibleDetail', () => {
     it('reports not opted in when balance query returns null', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({ data: null })
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         expect(result.current.isOptedIn).toBe(false)
         expect(result.current.isOwned).toBe(false)
@@ -316,7 +330,9 @@ describe('useCollectibleDetail', () => {
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         await result.current.handleOptOutPressed()
 
@@ -339,7 +355,9 @@ describe('useCollectibleDetail', () => {
         const optOutError = new Error('signing rejected')
         mockOptOut.mockRejectedValueOnce(optOutError)
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         await result.current.handleOptOutPressed()
 
@@ -357,7 +375,9 @@ describe('useCollectibleDetail', () => {
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
 
-        const { result } = renderHook(() => useCollectibleDetail('12345'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('12345', 'algorand'),
+        )
 
         await result.current.handleOptOutPressed()
 
@@ -382,7 +402,9 @@ describe('useCollectibleDetail', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useCollectibleDetail('99999'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('99999', 'algorand'),
+        )
 
         expect(result.current.traits).toEqual([])
         expect(result.current.media).toEqual([])
@@ -402,7 +424,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasImage).toBe(true)
         })
@@ -421,7 +445,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasImage).toBe(true)
         })
@@ -434,7 +460,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasImage).toBe(false)
         })
@@ -445,7 +473,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasImage).toBe(false)
         })
@@ -464,7 +494,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasSaveableMedia).toBe(true)
         })
@@ -480,7 +512,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasSaveableMedia).toBe(true)
         })
@@ -499,7 +533,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasSaveableMedia).toBe(true)
         })
@@ -512,7 +548,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             expect(result.current.hasSaveableMedia).toBe(false)
         })
@@ -520,7 +558,9 @@ describe('useCollectibleDetail', () => {
 
     describe('handleCopyImage', () => {
         it('copies the image bytes to the clipboard when a URL is available', async () => {
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleCopyImage()
 
@@ -536,7 +576,9 @@ describe('useCollectibleDetail', () => {
         it('shows an error toast when fetching the image fails', async () => {
             mockGetImageBase64.mockRejectedValueOnce(new Error('network error'))
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleCopyImage()
 
@@ -548,7 +590,9 @@ describe('useCollectibleDetail', () => {
 
     describe('handleSaveImage', () => {
         it('saves the saveable media to the device when a URL is available', async () => {
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleSaveImage()
 
@@ -569,7 +613,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleSaveImage()
 
@@ -581,7 +627,9 @@ describe('useCollectibleDetail', () => {
                 new MediaPermissionDeniedError(),
             )
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleSaveImage()
 
@@ -596,7 +644,9 @@ describe('useCollectibleDetail', () => {
         it('shows a generic failure toast for any other save error', async () => {
             mockSaveImageToDevice.mockRejectedValueOnce(new Error('disk full'))
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             await result.current.handleSaveImage()
 
@@ -618,7 +668,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             act(() => {
                 result.current.handleModelPress()
@@ -641,7 +693,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             result.current.handleModelPress()
 
@@ -662,7 +716,7 @@ describe('useCollectibleDetail', () => {
                 })
 
                 const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
+                    useCollectibleDetail('12345', 'algorand'),
                 )
 
                 expect(result.current.media.some(m => m.type === 'model')).toBe(
@@ -683,7 +737,7 @@ describe('useCollectibleDetail', () => {
                 })
 
                 const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
+                    useCollectibleDetail('12345', 'algorand'),
                 )
 
                 expect(result.current.media.some(m => m.type === 'model')).toBe(
@@ -704,7 +758,7 @@ describe('useCollectibleDetail', () => {
                 })
 
                 const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
+                    useCollectibleDetail('12345', 'algorand'),
                 )
 
                 act(() => {
@@ -728,7 +782,7 @@ describe('useCollectibleDetail', () => {
                 })
 
                 const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
+                    useCollectibleDetail('12345', 'algorand'),
                 )
 
                 act(() => {
@@ -753,7 +807,7 @@ describe('useCollectibleDetail', () => {
                 })
 
                 const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
+                    useCollectibleDetail('12345', 'algorand'),
                 )
 
                 act(() => {
@@ -767,7 +821,9 @@ describe('useCollectibleDetail', () => {
 
     describe('handleSendPressed', () => {
         it('requests the send sheet under its stable id so a repeat tap is ignored', () => {
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             result.current.handleSendPressed()
 
@@ -790,7 +846,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             result.current.handleFullScreenPress(0)
 
@@ -809,7 +867,9 @@ describe('useCollectibleDetail', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCollectibleDetail('12345'))
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
 
             result.current.handleFullScreenPress(0)
 
@@ -818,11 +878,33 @@ describe('useCollectibleDetail', () => {
     })
 
     it('offers opting out only while the manageAssets capability is on', () => {
-        const { result } = renderHook(() => useCollectibleDetail('123'))
+        const { result } = renderHook(() =>
+            useCollectibleDetail('123', 'algorand'),
+        )
         expect(result.current.canManageAssets).toBe(true)
 
         act(() => setCapabilityOverrides({ manageAssets: false }))
 
         expect(result.current.canManageAssets).toBe(false)
+    })
+
+    describe('share', () => {
+        it("shares the chain descriptor's collectible URL for the scope", () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail('12345', 'algorand'),
+            )
+
+            act(() => result.current.handleSharePressed())
+
+            const { scope } = result.current
+            const expected = getChainDescriptor(
+                scope.chainId,
+            ).explorer.collectibleUrl(scope.networkId, '12345')
+            expect(scope.chainId).toBe('algorand')
+            expect(expected).toMatch(/\/asset\/12345$/)
+            expect(shareText).toHaveBeenCalledWith(
+                expect.objectContaining({ url: expected }),
+            )
+        })
     })
 })

@@ -85,6 +85,7 @@ export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
                 assetId === NATIVE_ASSET_ID
                     ? undefined
                     : tokenLink(networkId, assetId),
+            collectibleUrl: tokenLink,
         },
         finality: row.finality,
         // Every EVM chain shares EIP-681's scheme; one deeplink adapter claims it.

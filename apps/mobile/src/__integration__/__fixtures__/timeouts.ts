@@ -14,3 +14,8 @@
 // (Falcon keygen, BIP39 + xhd) need the whole per-test budget, which the
 // integration project sets as `testTimeout`. Cloud-backup Argon2 is stubbed.
 export const SLOW_WAIT_TIMEOUT_MS = 30_000
+
+// A flow that saves and then verifies a PIN runs the 600k-iteration PBKDF2
+// (twice per call, for the duress slot) on top of its other slow steps; on a
+// loaded CI runner the sum outruns one `SLOW_WAIT_TIMEOUT_MS` budget.
+export const PIN_FLOW_TEST_TIMEOUT_MS = 90_000

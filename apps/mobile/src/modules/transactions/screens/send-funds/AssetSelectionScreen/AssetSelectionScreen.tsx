@@ -16,7 +16,7 @@ import type {
     AssetWithAccountBalance,
     ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
-import { isCollectible, isPureNft } from '@perawallet/wallet-core-assets'
+import { isUniqueCollectible } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -40,13 +40,9 @@ export const AssetSelectionScreen = () => {
                 chainId: item.scope.chainId,
                 assetId: item.assetId,
             })
-            // Pure collectibles have a fixed quantity of 1, so prefill
+            // Unique collectibles have a fixed quantity of 1, so prefill
             // the amount and skip straight to picking a destination.
-            if (
-                item.asset &&
-                isCollectible(item.asset) &&
-                isPureNft(item.asset)
-            ) {
+            if (item.asset && isUniqueCollectible(item.asset)) {
                 setAmount(new Decimal(1))
                 navigation.navigate('SelectDestination')
                 return

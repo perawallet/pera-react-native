@@ -111,7 +111,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             new Decimal(10).pow(asset.decimals),
         ),
     isCollectible: () => false,
-    isPureNft: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

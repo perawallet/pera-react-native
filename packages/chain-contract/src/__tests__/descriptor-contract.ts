@@ -29,6 +29,7 @@ const EXPLORER_SAMPLES: Record<keyof ExplorerUrlBuilders, string> = {
     accountUrl: 'sample-address',
     transactionUrl: 'sample-tx-id',
     assetUrl: '1',
+    collectibleUrl: '1',
 }
 
 const isUrl = (value: string | undefined): boolean => {

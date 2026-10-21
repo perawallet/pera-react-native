@@ -11,9 +11,14 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
+import { useCapabilityCheck } from '@hooks/useCapability'
+import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 
 type UseNftFilterContentResult = {
+    /** Only a chain with opt-in has opted-in-but-not-held collectibles to show. */
+    canShowOptedIn: boolean
     showOptedIn: boolean
     showWatchAccounts: boolean
     handleToggleOptedIn: () => void
@@ -22,6 +27,11 @@ type UseNftFilterContentResult = {
 }
 
 export const useNftFilterContent = (): UseNftFilterContentResult => {
+    const sources = useNftHoldingSources(useSelectedAccount())
+    const checkCapability = useCapabilityCheck()
+    const canShowOptedIn = sources.some(({ scope: { chainId } }) =>
+        checkCapability({ chain: { chainId, capability: 'manageAssets' } }),
+    )
     const showOptedIn = useCollectiblePreferencesStore(
         state => state.showOptedIn,
     )
@@ -58,6 +68,7 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
     ])
 
     return {
+        canShowOptedIn,
         showOptedIn: draftShowOptedIn,
         showWatchAccounts: draftShowWatchAccounts,
         handleToggleOptedIn,

@@ -46,6 +46,7 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -60,6 +61,7 @@ import {
     type GroupedHoldingItem,
 } from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
+import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
 import {
@@ -138,8 +140,14 @@ export const useAccountAssetList = ({
             chain: { chainId: scope.chainId, capability: 'manageAssets' },
         }) && !isOwnChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
+    // Assets are added on the manageAssets chain, not necessarily the account's own.
+    const addAssetChainId = useCapableChainId('manageAssets')
 
     const sources = useAccountHoldingSources(account)
+    // A primitive, so the row press handler keeps its identity across renders.
+    const nftChainIds = useNftHoldingSources(account)
+        .map(({ scope: { chainId } }) => chainId)
+        .join()
     const isChainSwitchedOff = sources.length === 0
     const storedChainId = useAssetListViewStore(state => state.selectedChainId)
     const setSelectedChainId = useAssetListViewStore(
@@ -294,9 +302,14 @@ export const useAccountAssetList = ({
             headerState.open()
             const { chainId } = item.scope
             const assetInfo = assetFromHoldingLiteRow(item, chainId)
-            if (assetInfo && isCollectible(assetInfo)) {
+            if (
+                assetInfo &&
+                isCollectible(assetInfo) &&
+                nftChainIds.split(',').includes(chainId)
+            ) {
                 navigation.navigate('CollectibleDetails', {
                     assetId: item.assetId,
+                    chainId,
                 })
             } else {
                 navigation.navigate('AssetDetails', {
@@ -305,7 +318,7 @@ export const useAccountAssetList = ({
                 })
             }
         },
-        [headerState, navigation],
+        [headerState, navigation, nftChainIds],
     )
 
     const handleOptOut = useCallback(
@@ -359,14 +372,14 @@ export const useAccountAssetList = ({
     const handleOpenAddAsset = useCallback(() => {
         trackEvent(AssetDetailsEvent.AddAsset)
         void requestBottomSheet<void>({
-            contents: <AddAssetContent />,
+            contents: <AddAssetContent chainId={addAssetChainId} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet])
+    }, [requestBottomSheet, addAssetChainId])
 
     const handleOpenManage = useCallback(async () => {
         trackEvent(AssetDetailsEvent.ManageAsset)

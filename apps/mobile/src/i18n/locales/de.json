@@ -273,6 +273,8 @@
             "properties": "Eigenschaften",
             "creator": "Ersteller-Konto",
             "asset_id": "Asset-ID",
+            "token_id": "Token-ID",
+            "contract": "Smart Contract",
             "total_supply": "Gesamtangebot",
             "show_on": "Anzeigen auf",
             "explorer": "Pera Explorer",

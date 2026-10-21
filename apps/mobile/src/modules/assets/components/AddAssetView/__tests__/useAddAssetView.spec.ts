@@ -166,7 +166,9 @@ describe('useAddAssetView', () => {
         mockOptIn.mockRejectedValueOnce(new UserRejectedSigningError())
         mockRequestByType.mockResolvedValueOnce('confirm')
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         await act(async () => {
             await result.current.handleRequestAdd('999')
@@ -183,7 +185,9 @@ describe('useAddAssetView', () => {
         mockOptIn.mockRejectedValueOnce(optInError)
         mockRequestByType.mockResolvedValueOnce('confirm')
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         await act(async () => {
             await result.current.handleRequestAdd('999')
@@ -216,7 +220,9 @@ describe('useAddAssetView', () => {
                 },
             })
             mockRequestByType.mockResolvedValueOnce('confirm')
-            const { result } = renderHook(() => useAddAssetView())
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
 
             await act(async () => {
                 await result.current.handleRequestAdd('999')
@@ -244,7 +250,9 @@ describe('useAddAssetView', () => {
 
         it('adds nothing when the account cannot be on the chain', async () => {
             mockEligibleChains.mockReturnValue(['ethereum'])
-            const { result } = renderHook(() => useAddAssetView())
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
 
             await act(async () => {
                 await result.current.handleRequestAdd('999')
@@ -264,7 +272,9 @@ describe('useAddAssetView', () => {
                     accountIndex: 0,
                 },
             })
-            const { result } = renderHook(() => useAddAssetView())
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
 
             await act(async () => {
                 await result.current.handleRequestAdd('999')
@@ -278,7 +288,9 @@ describe('useAddAssetView', () => {
             mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
             const failure = new Error('derivation failed')
             mockEnableChain.mockRejectedValue(failure)
-            const { result } = renderHook(() => useAddAssetView())
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
 
             await act(async () => {
                 await result.current.handleRequestAdd('999')
@@ -295,7 +307,9 @@ describe('useAddAssetView', () => {
     it('does not call optIn when user dismisses the confirmation sheet', async () => {
         mockRequestByType.mockResolvedValueOnce(undefined)
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         await act(async () => {
             await result.current.handleRequestAdd('999')
@@ -304,10 +318,12 @@ describe('useAddAssetView', () => {
         expect(mockOptIn).not.toHaveBeenCalled()
     })
 
-    it('confirms the opt-in on the chain assets are managed on', async () => {
+    it('confirms the opt-in on the chain it was opened for', async () => {
         mockRequestByType.mockResolvedValueOnce(undefined)
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         await act(async () => {
             await result.current.handleRequestAdd('999')
@@ -327,7 +343,9 @@ describe('useAddAssetView', () => {
     it('surfaces the remote search error instead of hardcoding isError false', () => {
         mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isError).toBe(true)
     })
@@ -348,7 +366,9 @@ describe('useAddAssetView', () => {
                 : new Error('boom'),
         })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isIntegrityBlocked).toBe(isRefusal)
     })
@@ -356,7 +376,9 @@ describe('useAddAssetView', () => {
     it('is offline when the search query is paused (true-offline regime)', () => {
         mockGlobalSearch({ isRemoteError: false, isRemotePaused: true })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isOffline).toBe(true)
     })
@@ -364,7 +386,9 @@ describe('useAddAssetView', () => {
     it('is unavailable when the network has no Pera backend', () => {
         mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isUnavailable).toBe(true)
     })
@@ -372,7 +396,9 @@ describe('useAddAssetView', () => {
     it('does not report unavailable as an error or as offline', () => {
         mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isError).toBe(false)
         expect(result.current.isOffline).toBe(false)
@@ -382,7 +408,9 @@ describe('useAddAssetView', () => {
         setHasInternet(false)
         mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
 
-        const { result } = renderHook(() => useAddAssetView())
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
 
         expect(result.current.isOffline).toBe(true)
     })

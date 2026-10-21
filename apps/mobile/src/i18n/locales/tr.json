@@ -273,6 +273,8 @@
             "properties": "Özellikler",
             "creator": "Oluşturan hesap",
             "asset_id": "Varlık ID",
+            "token_id": "Token ID",
+            "contract": "Sözleşme",
             "total_supply": "Toplam arz",
             "show_on": "Şurada göster",
             "explorer": "Pera Explorer",

@@ -17,18 +17,23 @@ import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 
 type AddAssetScreenProps = {
     variant?: AddAssetContentVariant
+    chainId: ChainId
 }
 
 // AssetSearchItem draws its own full-width separator; render no list divider.
 const NoSeparator = () => null
 
-export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
+export const AddAssetView = ({
+    variant = 'asset',
+    chainId,
+}: AddAssetScreenProps) => {
     const styles = useStyles()
     const isCollectible = variant === 'collectible'
     const {
@@ -47,7 +52,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         optingInAssetIds,
         handleRequestAdd,
         t,
-    } = useAddAssetView({ variant })
+    } = useAddAssetView({ variant, chainId })
 
     const renderItem = useCallback(
         ({ item }: { item: DisplayableAsset }) => (

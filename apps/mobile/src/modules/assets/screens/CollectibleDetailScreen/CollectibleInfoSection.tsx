@@ -19,23 +19,29 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PeraAsset, PeraCollectible } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useCollectibleInfo } from './useCollectibleInfo'
 
 type CollectibleInfoSectionProps = {
     asset: PeraAsset
-    collectible?: PeraCollectible
+    scope: ChainScope
 }
 
 export const CollectibleInfoSection = ({
     asset,
-    collectible: _collectible,
+    scope,
 }: CollectibleInfoSectionProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        identityLabelKey,
+        creatorLabelKey,
+        creatorDisplayAddress,
+        explorerLabelKey,
+        explorerDomain,
+        hasTotalSupply,
         onCreatorPressed,
         onCreatorLongPressed,
         onAssetIdPressed,
@@ -43,7 +49,7 @@ export const CollectibleInfoSection = ({
         onOpenExplorer,
         totalSupplyAmount,
         totalSupplyUnit,
-    } = useCollectibleInfo(asset)
+    } = useCollectibleInfo(asset, scope)
 
     return (
         <PWView style={styles.infoSection}>
@@ -60,7 +66,7 @@ export const CollectibleInfoSection = ({
                             truncate
                             style={styles.infoLabel}
                         >
-                            {t('asset_details.collectible.creator')}
+                            {t(creatorLabelKey)}
                         </PWText>
                         <PWText
                             variant='body'
@@ -70,7 +76,7 @@ export const CollectibleInfoSection = ({
                                     : styles.infoValue
                             }
                         >
-                            {truncateAlgorandAddress(asset.creator.address)}
+                            {creatorDisplayAddress}
                         </PWText>
                     </PWTouchableOpacity>
                     <PWDivider style={styles.infoDivider} />
@@ -88,7 +94,7 @@ export const CollectibleInfoSection = ({
                     truncate
                     style={styles.infoLabel}
                 >
-                    {t('asset_details.collectible.asset_id')}
+                    {t(identityLabelKey)}
                 </PWText>
                 <PWText
                     variant='body'
@@ -97,24 +103,27 @@ export const CollectibleInfoSection = ({
                     {asset.assetId}
                 </PWText>
             </PWTouchableOpacity>
-            <PWDivider style={styles.infoDivider} />
-
-            <PWView style={styles.infoRow}>
-                <PWText
-                    variant='body'
-                    truncate
-                    style={styles.infoLabel}
-                >
-                    {t('asset_details.collectible.total_supply')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.infoValue}
-                >
-                    {totalSupplyAmount?.toString()}
-                    {totalSupplyUnit}
-                </PWText>
-            </PWView>
+            {hasTotalSupply && (
+                <>
+                    <PWDivider style={styles.infoDivider} />
+                    <PWView style={styles.infoRow}>
+                        <PWText
+                            variant='body'
+                            truncate
+                            style={styles.infoLabel}
+                        >
+                            {t('asset_details.collectible.total_supply')}
+                        </PWText>
+                        <PWText
+                            variant='body'
+                            style={styles.infoValue}
+                        >
+                            {totalSupplyAmount?.toString()}
+                            {totalSupplyUnit}
+                        </PWText>
+                    </PWView>
+                </>
+            )}
 
             {onOpenExplorer && (
                 <>
@@ -131,15 +140,19 @@ export const CollectibleInfoSection = ({
                             {t('asset_details.collectible.show_on')}
                         </PWText>
                         <PWView style={styles.explorerRow}>
-                            <PWIcon
-                                name='pera'
-                                size='md'
-                            />
+                            {explorerLabelKey && (
+                                <PWIcon
+                                    name='pera'
+                                    size='md'
+                                />
+                            )}
                             <PWText
                                 variant='body'
                                 style={styles.infoValueLink}
                             >
-                                {t('asset_details.collectible.explorer')}
+                                {explorerLabelKey
+                                    ? t(explorerLabelKey)
+                                    : explorerDomain}
                             </PWText>
                         </PWView>
                     </PWTouchableOpacity>

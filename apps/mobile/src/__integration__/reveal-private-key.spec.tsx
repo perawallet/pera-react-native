@@ -45,6 +45,10 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { useRevealPrivateKeyFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { useBottomSheetStore } from '@modules/bottom-sheet/store/bottomSheetStore'
+import {
+    PIN_FLOW_TEST_TIMEOUT_MS,
+    SLOW_WAIT_TIMEOUT_MS,
+} from './__fixtures__/timeouts'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =
@@ -113,74 +117,78 @@ const captureRevealedKeys = (): Uint8Array[] => {
 
 const VALUE_TEST_ID = 'reveal_private_key_bottom_sheet_value'
 
-describe('Flow: Reveal an imported private key', () => {
-    beforeAll(async () => {
-        await setupTestDatabase()
-    })
-    afterAll(async () => {
-        await teardownTestDatabase()
-    })
-
-    beforeEach(async () => {
-        await resetTestDatabase()
-        resetTestKeystore()
-        useAccountsStore.getState().setAccounts([])
-        vi.restoreAllMocks()
-    })
-
-    it('Given a PIN, when the user opens the reveal, then the key appears only after the PIN, and is zeroed once the sheet closes', async () => {
-        const account = await importTestAccount()
-        await savePin()
-        const revealed = captureRevealedKeys()
-        render(<RevealHost account={account} />)
-
-        fireEvent.click(screen.getByTestId('open_reveal_private_key'))
-        await waitFor(() => screen.getByTestId('numpad_key_1'))
-        expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull()
-        expect(revealed).toHaveLength(0)
-
-        for (const digit of TEST_PIN) {
-            await act(async () => {
-                fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
-            })
-        }
-
-        await waitFor(
-            () =>
-                expect(screen.getByTestId(VALUE_TEST_ID).textContent).toBe(
-                    `0x${TEST_PRIVATE_KEY}`,
-                ),
-            { timeout: 5000 },
-        )
-        expect(revealed).toHaveLength(1)
-        expect(revealed[0]!.some(byte => byte !== 0)).toBe(true)
-
-        act(() => {
-            useBottomSheetStore.getState().dismissAll()
+describe(
+    'Flow: Reveal an imported private key',
+    { timeout: PIN_FLOW_TEST_TIMEOUT_MS },
+    () => {
+        beforeAll(async () => {
+            await setupTestDatabase()
+        })
+        afterAll(async () => {
+            await teardownTestDatabase()
         })
 
-        await waitFor(() =>
-            expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull(),
-        )
-        await waitFor(() =>
-            expect(revealed[0]!.every(byte => byte === 0)).toBe(true),
-        )
-    })
+        beforeEach(async () => {
+            await resetTestDatabase()
+            resetTestKeystore()
+            useAccountsStore.getState().setAccounts([])
+            vi.restoreAllMocks()
+        })
 
-    it('Given a PIN, when the user closes the PIN sheet, then the key is never read or shown', async () => {
-        const account = await importTestAccount()
-        await savePin()
-        const revealed = captureRevealedKeys()
-        render(<RevealHost account={account} />)
+        it('Given a PIN, when the user opens the reveal, then the key appears only after the PIN, and is zeroed once the sheet closes', async () => {
+            const account = await importTestAccount()
+            await savePin()
+            const revealed = captureRevealedKeys()
+            render(<RevealHost account={account} />)
 
-        fireEvent.click(screen.getByTestId('open_reveal_private_key'))
-        await waitFor(() => screen.getByTestId('close-button'))
-        fireEvent.click(screen.getByTestId('close-button'))
+            fireEvent.click(screen.getByTestId('open_reveal_private_key'))
+            await waitFor(() => screen.getByTestId('numpad_key_1'))
+            expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull()
+            expect(revealed).toHaveLength(0)
 
-        await waitFor(() =>
-            expect(screen.queryByTestId('numpad_key_1')).toBeNull(),
-        )
-        expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull()
-        expect(revealed).toHaveLength(0)
-    })
-})
+            for (const digit of TEST_PIN) {
+                await act(async () => {
+                    fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
+                })
+            }
+
+            await waitFor(
+                () =>
+                    expect(screen.getByTestId(VALUE_TEST_ID).textContent).toBe(
+                        `0x${TEST_PRIVATE_KEY}`,
+                    ),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(revealed).toHaveLength(1)
+            expect(revealed[0]!.some(byte => byte !== 0)).toBe(true)
+
+            act(() => {
+                useBottomSheetStore.getState().dismissAll()
+            })
+
+            await waitFor(() =>
+                expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull(),
+            )
+            await waitFor(() =>
+                expect(revealed[0]!.every(byte => byte === 0)).toBe(true),
+            )
+        })
+
+        it('Given a PIN, when the user closes the PIN sheet, then the key is never read or shown', async () => {
+            const account = await importTestAccount()
+            await savePin()
+            const revealed = captureRevealedKeys()
+            render(<RevealHost account={account} />)
+
+            fireEvent.click(screen.getByTestId('open_reveal_private_key'))
+            await waitFor(() => screen.getByTestId('close-button'))
+            fireEvent.click(screen.getByTestId('close-button'))
+
+            await waitFor(() =>
+                expect(screen.queryByTestId('numpad_key_1')).toBeNull(),
+            )
+            expect(screen.queryByTestId(VALUE_TEST_ID)).toBeNull()
+            expect(revealed).toHaveLength(0)
+        })
+    },
+)

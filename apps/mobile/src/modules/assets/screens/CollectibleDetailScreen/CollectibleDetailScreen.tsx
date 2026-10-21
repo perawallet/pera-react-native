@@ -40,10 +40,19 @@ export type CollectibleDetailScreenProps = NativeStackScreenProps<
     'CollectibleDetails'
 >
 
+type CollectibleDetailContentProps = NonNullable<
+    CollectibleDetailScreenProps['route']['params']
+>
+
 export const CollectibleDetailScreen = ({
     route,
-}: CollectibleDetailScreenProps) => {
-    const assetId = route.params?.assetId ?? ''
+}: CollectibleDetailScreenProps) =>
+    route.params ? <CollectibleDetailContent {...route.params} /> : null
+
+const CollectibleDetailContent = ({
+    assetId,
+    chainId,
+}: CollectibleDetailContentProps) => {
     const { t } = useLanguage()
 
     const {
@@ -68,7 +77,8 @@ export const CollectibleDetailScreen = ({
         handleOptOutPressed,
         modelViewerModal,
         modelViewerUrl,
-    } = useCollectibleDetail(assetId)
+        scope,
+    } = useCollectibleDetail(assetId, chainId)
 
     const styles = useStyles()
 
@@ -224,7 +234,7 @@ export const CollectibleDetailScreen = ({
 
                     <CollectibleInfoSection
                         asset={asset}
-                        collectible={collectible}
+                        scope={scope}
                     />
                 </PWView>
             </PWScreen>

@@ -102,6 +102,13 @@ const RatingsGalleryContent = React.lazy(() =>
 const firstChainScope = () =>
     getSelectedScope(getProvider().chains.list()[0].id)
 
+const AddAssetPreview = () => (
+    <AddAssetContent
+        variant='asset'
+        chainId={useCapableChainId('manageAssets')}
+    />
+)
+
 const AddParticipantPreview = () => (
     <AddParticipantContent chainId={useCapableChainId('multisig')} />
 )
@@ -381,7 +388,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <AddAssetContent variant='asset' />
+                                <AddAssetPreview />
                             </GallerySheetBoundary>
                         ),
                         // Match the real invocation: autoCreateContainer:false

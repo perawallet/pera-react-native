@@ -25,7 +25,6 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -35,9 +34,11 @@ import {
     isIntegrityRequiredError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
+    chainId: ChainId
 }
 
 type UseAddAssetViewResult = {
@@ -59,10 +60,10 @@ type UseAddAssetViewResult = {
 }
 
 export const useAddAssetView = (
-    options?: UseAddAssetViewOptions,
+    options: UseAddAssetViewOptions,
 ): UseAddAssetViewResult => {
     const { t } = useLanguage()
-    const hasCollectible = options?.variant === 'collectible'
+    const hasCollectible = options.variant === 'collectible'
     const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
         new Set(),
     )
@@ -73,8 +74,8 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
-    // The chain assets are added on, not the account's: an account not on it yet is enabled there on add.
-    const scope = useSelectedScope(useCapableChainId('manageAssets'))
+    // An account not on the chain yet is enabled there on add.
+    const scope = useSelectedScope(options.chainId)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined

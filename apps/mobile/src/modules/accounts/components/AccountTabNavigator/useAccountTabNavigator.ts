@@ -25,6 +25,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { trackEvent, AccountDetailsEvent } from '@analytics'
 
 export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
@@ -52,7 +53,7 @@ export const useAccountTabNavigator = (
     const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
     // A switched-off chain has every capability off, so this also drops both
     // tabs, and their queries, while its kill switch is on.
-    const hasNfts = useChainCapability(chainId, 'nft')
+    const hasNfts = useNftHoldingSources(account).length > 0
     const hasHistory = useChainCapability(chainId, 'history')
     const offset = useSharedValue(0)
 

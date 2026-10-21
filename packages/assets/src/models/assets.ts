@@ -100,6 +100,11 @@ export type PeraAssetMetadata = {
     readonly isVerified?: boolean
     readonly explorerUrl?: string
     collectible?: PeraCollectible
+    /**
+     * Set by the chain on a collectible: true when a holding can only ever be 1.
+     * Kept off `collectible`, which the backend may omit while media resolves.
+     */
+    isUnique?: boolean
     type?: PeraAssetType
     readonly labels?: PeraAssetLabel[]
     projectUrl?: string

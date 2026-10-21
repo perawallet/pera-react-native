@@ -15,7 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { AccountDetailsEvent } from '@analytics'
-import { setChainEnabled } from '@test-utils/capability-overrides'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 import { useAccountTabNavigator } from '../useAccountTabNavigator'
@@ -107,6 +110,16 @@ describe('useAccountTabNavigator', () => {
         expect(mocks.trackEvent).toHaveBeenCalledWith(
             AccountDetailsEvent.History,
         )
+    })
+
+    it('leaves out the NFTs tab when nft is overridden off on Algorand', () => {
+        act(() => setCapabilityOverrides({ nft: false }))
+
+        const { result } = renderHook(() =>
+            useAccountTabNavigator(ALGORAND_ACCOUNT),
+        )
+
+        expect(keysOf(result.current.tabs)).toEqual(['Overview', 'History'])
     })
 
     it("keeps only Overview while the chain's kill switch is on", () => {

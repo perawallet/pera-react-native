@@ -14,8 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    isCollectible,
-    isPureNft,
+    isUniqueCollectible,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useSendFundsStore } from '@modules/transactions/hooks'
@@ -33,8 +32,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         data: new Map([['123', { assetId: '123', name: 'TestToken' }]]),
         isFetched: true,
     })),
-    isCollectible: vi.fn(() => false),
-    isPureNft: vi.fn(() => false),
+    isUniqueCollectible: vi.fn(() => false),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -105,8 +103,7 @@ describe('useSendFundsContent — deterministic initial route', () => {
             data: new Map([[ASA_ID, { assetId: ASA_ID, name: 'TestToken' }]]),
             isFetched: true,
         })
-        ;(isCollectible as Mock).mockReturnValue(false)
-        ;(isPureNft as Mock).mockReturnValue(false)
+        ;(isUniqueCollectible as Mock).mockReturnValue(false)
     })
 
     it('is ready immediately when opened without a preselected asset', () => {
@@ -141,9 +138,8 @@ describe('useSendFundsContent — deterministic initial route', () => {
         expect(result.current.isReady).toBe(true)
     })
 
-    it('prefills the amount to 1 for a pure NFT once the asset has settled', () => {
-        ;(isCollectible as Mock).mockReturnValue(true)
-        ;(isPureNft as Mock).mockReturnValue(true)
+    it('prefills the amount to 1 for a unique collectible once the asset has settled', () => {
+        ;(isUniqueCollectible as Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useSendFundsContent(ASA))
 

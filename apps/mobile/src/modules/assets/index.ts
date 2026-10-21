@@ -56,3 +56,4 @@ export type {
     AssetDetailsDisplay,
     AssetExplorerLink,
 } from './types/asset-details-display'
+export type { CollectibleDetailsDisplay } from './types/collectible-details-display'

@@ -20,8 +20,7 @@ import {
 import { useSendFundsContent } from '../useSendFundsContent'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    isCollectible,
-    isPureNft,
+    isUniqueCollectible,
     useAssetsQuery,
     DEFAULT_ASSET_VALUES,
     type PeraAsset,
@@ -44,8 +43,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useAssetsQuery: vi.fn(() => ({ data: new Map() })),
-        isCollectible: vi.fn(() => false),
-        isPureNft: vi.fn(() => false),
+        isUniqueCollectible: vi.fn(() => false),
     }
 })
 
@@ -137,8 +135,7 @@ describe('useSendFundsContent', () => {
     })
 
     it('prefills the NFT amount only once even when the effect re-runs', () => {
-        vi.mocked(isCollectible).mockReturnValue(true)
-        vi.mocked(isPureNft).mockReturnValue(true)
+        vi.mocked(isUniqueCollectible).mockReturnValue(true)
         // A fresh `asset` identity per render (as a refetch would produce) makes
         // the effect re-run; the prefill must still fire exactly once.
         vi.mocked(useAssetsQuery).mockImplementation(() => ({
@@ -164,9 +161,8 @@ describe('useSendFundsContent', () => {
         expect(mockSetAmount).toHaveBeenCalledTimes(1)
     })
 
-    it('prefills again after switching to a different pure NFT', () => {
-        vi.mocked(isCollectible).mockReturnValue(true)
-        vi.mocked(isPureNft).mockReturnValue(true)
+    it('prefills again after switching to a different unique collectible', () => {
+        vi.mocked(isUniqueCollectible).mockReturnValue(true)
         const assets = new Map<string, PeraAsset>([
             ['nft-1', { ...DEFAULT_ASSET_VALUES, assetId: 'nft-1' }],
             ['nft-2', { ...DEFAULT_ASSET_VALUES, assetId: 'nft-2' }],
@@ -189,9 +185,8 @@ describe('useSendFundsContent', () => {
         expect(mockSetAmount).toHaveBeenCalledTimes(2)
     })
 
-    it('re-prefills the same pure NFT after handleFinished clears the latch', () => {
-        vi.mocked(isCollectible).mockReturnValue(true)
-        vi.mocked(isPureNft).mockReturnValue(true)
+    it('re-prefills the same unique collectible after handleFinished clears the latch', () => {
+        vi.mocked(isUniqueCollectible).mockReturnValue(true)
         // New Map identity per render keeps the effect re-running, so the only
         // thing stopping a re-prefill is the latch — which handleFinished drops.
         vi.mocked(useAssetsQuery).mockImplementation(() => ({

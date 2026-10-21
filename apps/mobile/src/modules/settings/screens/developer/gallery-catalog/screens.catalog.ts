@@ -189,7 +189,10 @@ export const getScreenSections = (): GallerySection[] => [
                             screen: 'Home',
                             params: {
                                 screen: 'CollectibleDetails',
-                                params: { assetId: MOCK_ASSET_ID },
+                                params: {
+                                    assetId: MOCK_ASSET_ID,
+                                    chainId: LEGACY_CHAIN_ID,
+                                },
                             },
                         },
                     },

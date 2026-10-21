@@ -45,7 +45,10 @@ import { CloudBackupVerifyScreen } from '@modules/cloud-backup/screens/CloudBack
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 import { CloudBackupStoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupStoreEncryptionKeyScreen'
 import { isElementDisabled } from '@test-utils/rnw'
-import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import {
+    PIN_FLOW_TEST_TIMEOUT_MS,
+    SLOW_WAIT_TIMEOUT_MS,
+} from './__fixtures__/timeouts'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 
@@ -373,78 +376,86 @@ describe('cloud backup verification and enable', () => {
     })
 })
 
-describe('cloud backup enable with a PIN set', () => {
-    it('asks for the PIN before storing keys, and stores nothing when the PIN sheet is closed', async () => {
-        const registered = vi.fn()
-        server.use(buildRegisterHandler({ onRegister: registered }))
-        await seedPin()
-        seedDraft()
-        renderVerifyFlow()
+describe(
+    'cloud backup enable with a PIN set',
+    { timeout: PIN_FLOW_TEST_TIMEOUT_MS },
+    () => {
+        it('asks for the PIN before storing keys, and stores nothing when the PIN sheet is closed', async () => {
+            const registered = vi.fn()
+            server.use(buildRegisterHandler({ onRegister: registered }))
+            await seedPin()
+            seedDraft()
+            renderVerifyFlow()
 
-        await answerQuizCorrectly()
-        fireEvent.click(
-            screen.getByTestId('cloud_backup_verify_proceed_button'),
-        )
-        // Registration is not PIN-gated: it writes nothing locally.
-        await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
-            timeout: SLOW_WAIT_TIMEOUT_MS,
-        })
-        await enableFromStoreKeyScreen()
+            await answerQuizCorrectly()
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_verify_proceed_button'),
+            )
+            // Registration is not PIN-gated: it writes nothing locally.
+            await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+            await enableFromStoreKeyScreen()
 
-        await waitFor(() =>
-            expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
-        )
-        fireEvent.click(screen.getByTestId('close-button'))
-        await waitFor(() =>
-            expect(screen.queryByTestId('numpad_key_0')).toBeNull(),
-        )
+            await waitFor(() =>
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
+            )
+            fireEvent.click(screen.getByTestId('close-button'))
+            await waitFor(() =>
+                expect(screen.queryByTestId('numpad_key_0')).toBeNull(),
+            )
 
-        expect(await withBackupMnemonicIndices(i => Array.from(i))).toBeNull()
-        expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
-        expect(
-            screen.getByTestId(
-                'cloud_backup_store_encryption_key_enable_button',
-            ),
-        ).toBeTruthy()
-    })
-
-    it('configures the backup once the correct PIN is entered', async () => {
-        server.use(buildRegisterHandler())
-        await seedPin()
-        seedDraft()
-        renderVerifyFlow()
-
-        await answerQuizCorrectly()
-        fireEvent.click(
-            screen.getByTestId('cloud_backup_verify_proceed_button'),
-        )
-        await enableFromStoreKeyScreen()
-        await waitFor(() =>
-            expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
-        )
-
-        await enterPin(TEST_PIN)
-
-        await waitFor(
-            () =>
-                expect(useCloudBackupStore.getState().isConfigured()).toBe(
-                    true,
-                ),
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
-        await waitFor(() =>
             expect(
-                screen.getByTestId('cloud_backup_overview_screen'),
-            ).toBeTruthy(),
-        )
-        await expect(
-            waitFor(
+                await withBackupMnemonicIndices(i => Array.from(i)),
+            ).toBeNull()
+            expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+            expect(
+                screen.getByTestId(
+                    'cloud_backup_store_encryption_key_enable_button',
+                ),
+            ).toBeTruthy()
+        })
+
+        it('configures the backup once the correct PIN is entered', async () => {
+            server.use(buildRegisterHandler())
+            await seedPin()
+            seedDraft()
+            renderVerifyFlow()
+
+            await answerQuizCorrectly()
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_verify_proceed_button'),
+            )
+            await enableFromStoreKeyScreen()
+            await waitFor(() =>
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
+            )
+
+            await enterPin(TEST_PIN)
+
+            await waitFor(
                 () =>
-                    expect(
-                        screen.getByTestId('store_backup_credentials_sheet'),
-                    ).toBeTruthy(),
-                { timeout: 2000 },
-            ),
-        ).rejects.toThrow()
-    })
-})
+                    expect(useCloudBackupStore.getState().isConfigured()).toBe(
+                        true,
+                    ),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('cloud_backup_overview_screen'),
+                ).toBeTruthy(),
+            )
+            await expect(
+                waitFor(
+                    () =>
+                        expect(
+                            screen.getByTestId(
+                                'store_backup_credentials_sheet',
+                            ),
+                        ).toBeTruthy(),
+                    { timeout: 2000 },
+                ),
+            ).rejects.toThrow()
+        })
+    },
+)

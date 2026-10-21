@@ -23,7 +23,10 @@ import {
     useCanSignWith,
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
@@ -35,6 +38,7 @@ import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets'
+import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { NftFilterContent } from '../NftFilterContent'
 import { NftSortContent } from '../NftSortContent'
 import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
@@ -68,7 +72,9 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
+    // The account's own chain: opt-in and acquisition order act here.
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const sources = useNftHoldingSources(account)
     const address = account ? addressOn(account, scope) : undefined
     const canSign = useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
@@ -107,14 +113,19 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const openAddNftSheet = useCallback(() => {
         void requestBottomSheet<void>({
-            contents: <AddAssetContent variant='collectible' />,
+            contents: (
+                <AddAssetContent
+                    variant='collectible'
+                    chainId={scope.chainId}
+                />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet])
+    }, [requestBottomSheet, scope.chainId])
 
     const openFilterSheet = useCallback(() => {
         void requestBottomSheet<void>({
@@ -186,7 +197,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles: rows,
         isPending,
         isPlaceholderData,
-    } = useAccountCollectiblesQuery(address, scope, {
+    } = useAccountCollectiblesQuery(sources, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
         includeZeroBalance: showOptedIn,
@@ -200,21 +211,27 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         // the (lagging) map. Float those to the top so a fresh acquisition
         // lands first instantly. `sort` is stable, so ties keep
         // SQL's asset-id-descending order, which also covers the map's empty
-        // pre-load state.
+        // pre-load state. The map covers the account's own chain only.
+        const ownScopeKey = toScopeKey(scope)
+        const orderOf = (row: AccountCollectibleLiteRow) =>
+            toScopeKey(row.scope) === ownScopeKey
+                ? acquisitionOrder.get(row.assetId)
+                : undefined
         return [...rows].sort((a, b) => {
-            const aOrder = acquisitionOrder.get(a.assetId)
-            const bOrder = acquisitionOrder.get(b.assetId)
+            const aOrder = orderOf(a)
+            const bOrder = orderOf(b)
             if (aOrder === bOrder) return 0
             if (aOrder === undefined) return -1
             if (bOrder === undefined) return 1
             return bOrder - aOrder
         })
-    }, [rows, sortMode, acquisitionOrder])
+    }, [rows, sortMode, acquisitionOrder, scope])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
             navigation.navigate('CollectibleDetails', {
                 assetId: item.assetId,
+                chainId: item.scope.chainId,
             })
         },
         [navigation],
@@ -230,7 +247,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // skipped the reset exactly when it was needed, which is how sorting a
     // freshly imported account dropped the user mid-list.
     const viewRequestKey = [
-        address ?? '',
+        sources.map(source => source.address).join(','),
         sortMode,
         debouncedSearchFilter,
         showOptedIn,
