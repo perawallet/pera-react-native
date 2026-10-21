@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Mirrors bitrise.yml's web-production: the zip, then on a production release
-# tag its upload to the Chrome Web Store and Microsoft Edge Add-ons as drafts.
+# Mirrors bitrise.yml's web-production: the zip, its signed CRX when the key is
+# set, then on a production release tag the uploads to the Chrome Web Store and
+# Microsoft Edge Add-ons as drafts.
 
 source ci/jobs/lib/toolchain.sh
 use_pinned_node
@@ -47,11 +48,21 @@ NAME="pera-extension-web-${ENVIRONMENT}-${CI_TAG:-b$BUILD_NUMBER}-${SHA}.zip"
 (cd "$CI_ARTIFACT_DIR" && shasum -a 256 "$NAME" >"$NAME.sha256")
 cat "$CI_ARTIFACT_DIR/$NAME.sha256"
 
+# With the signing key, a production build also carries the signed CRX, which
+# is what gets uploaded: once Verified CRX Uploads is on, the store rejects the
+# zip. ${...:+set} keeps the key itself out of the set -x trace.
+PACKAGE="$CI_ARTIFACT_DIR/$NAME"
+if [ "$ENVIRONMENT" = "production" ] && [ -n "${CWS_CRX_SIGNING_KEY_BASE64:+set}" ]; then
+  node tools/release/sign-extension-crx.mjs "$PACKAGE"
+  PACKAGE="${PACKAGE%.zip}.crx"
+fi
+
 # Behind CI_UPLOADS_ENABLED like the mobile uploads: while Bitrise still
 # uploads the same tag, a second upload would replace its draft. Staging never
 # uploads; its zip talks to the staging backend.
 if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ]; then
-  pnpm run release:upload-chrome-web-store "$CI_ARTIFACT_DIR/$NAME"
+  pnpm run release:upload-chrome-web-store "$PACKAGE"
+  # Edge takes the zip; verified CRX uploads are a Chrome Web Store setting.
   pnpm run release:upload-edge-add-ons "$CI_ARTIFACT_DIR/$NAME"
 else
   echo "pera-ci: uploads disabled or not production; no store uploads"
