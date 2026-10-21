@@ -79,5 +79,6 @@ export const algorandChainUi: ChainUi = {
     customNode: {
         Form: AlgorandCustomNodeForm,
     },
+    familyLabel: i18nKey('chain_families.algorand'),
     icon: () => AlgoAssetIcon,
 }

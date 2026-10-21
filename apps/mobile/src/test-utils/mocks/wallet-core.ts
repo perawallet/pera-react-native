@@ -694,6 +694,14 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
         setSelectedContact: vi.fn(),
         resetState: vi.fn(),
     }
+    // Pure, so kept real: rows read a contact's addresses in family order.
+    const contactAddressEntries = (
+        addresses: Record<string, string | undefined>,
+    ) =>
+        ['algorand', 'evm'].flatMap(family => {
+            const address = addresses[family]
+            return address ? [{ family, address }] : []
+        })
     // Shaped like the zustand store, not just its hook call: the backup sync
     // manager reads it through `getState`/`subscribe`.
     const useContactsStore = Object.assign(
@@ -714,6 +722,12 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
         })),
         useContactsStore,
         ContactNotFoundError: class ContactNotFoundError extends Error {},
+        contactAddressEntries,
+        primaryContactAddress: ({
+            addresses,
+        }: {
+            addresses: Record<string, string | undefined>
+        }) => contactAddressEntries(addresses)[0]?.address ?? '',
     }
 })
 

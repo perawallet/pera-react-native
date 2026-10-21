@@ -10,22 +10,28 @@
  limitations under the License
  */
 
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-
 import { PWScreen, PWText, PWTouchableIcon, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ContactAddressRow } from '@modules/contacts/components/ContactAddressRow'
 import { useViewContactScreen } from './useViewContactScreen'
 import { useStyles } from './styles'
 
 export const ViewContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { selectedContact, address, nfdName, openQR, goToEdit, handleShare } =
-        useViewContactScreen()
+    const {
+        selectedContact,
+        addressRows,
+        nfdName,
+        openQR,
+        copyAddress,
+        sendTo,
+        goToEdit,
+        handleShare,
+    } = useViewContactScreen()
 
     useNavigationHeader({
         enabled: true,
@@ -71,12 +77,6 @@ export const ViewContactScreen = () => {
                     >
                         {selectedContact.name}
                     </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.shortAddress}
-                    >
-                        {truncateAlgorandAddress(address)}
-                    </PWText>
                 </PWView>
                 <PWView style={styles.divider} />
                 <PWView style={styles.addressSection}>
@@ -84,27 +84,51 @@ export const ViewContactScreen = () => {
                         variant='h4'
                         style={styles.addressLabel}
                     >
-                        {t('contacts.view_contact.account_address')}
+                        {t('contacts.edit_contact.addresses_label')}
                     </PWText>
-                    <PWView style={styles.addressRow}>
-                        <AddressDisplay
+                    {addressRows.map(({ family, address, canSend }) => (
+                        <ContactAddressRow
+                            key={family}
+                            family={family}
                             address={address}
-                            addressFormat='full'
-                            displayType='address-only'
-                            showCopy={false}
-                            textProps={{
-                                variant: 'body',
-                                style: styles.fullAddress,
-                            }}
-                            style={styles.addressTextWrapper}
+                            testID={`view_contact_address_row_${family}`}
+                            right={
+                                <PWView style={styles.rowActions}>
+                                    <PWTouchableIcon
+                                        name='copy'
+                                        variant='secondary'
+                                        onPress={() => copyAddress(address)}
+                                        accessibilityLabel={t(
+                                            'contacts.view_contact.copy',
+                                        )}
+                                        testID={`view_contact_copy_${family}`}
+                                    />
+                                    <PWTouchableIcon
+                                        name='qr'
+                                        variant='secondary'
+                                        onPress={() => openQR(family)}
+                                        accessibilityLabel={t(
+                                            'contacts.view_contact.show_qr',
+                                        )}
+                                        testID={`view_contact_qr_${family}`}
+                                    />
+                                    {canSend ? (
+                                        <PWTouchableIcon
+                                            name='arrow-up-right'
+                                            variant='secondary'
+                                            onPress={() =>
+                                                sendTo(family, address)
+                                            }
+                                            accessibilityLabel={t(
+                                                'contacts.view_contact.send',
+                                            )}
+                                            testID={`view_contact_send_${family}`}
+                                        />
+                                    ) : null}
+                                </PWView>
+                            }
                         />
-                        <PWTouchableIcon
-                            name='qr'
-                            variant='primary'
-                            onPress={openQR}
-                            testID='view_contact_qr_button'
-                        />
-                    </PWView>
+                    ))}
                 </PWView>
                 {nfdName && (
                     <PWView style={[styles.addressSection, styles.nfdSection]}>

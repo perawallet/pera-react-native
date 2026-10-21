@@ -15,7 +15,6 @@ const LEGACY_BRIDGE_BASELINE: readonly string[] = [
     'packages/assets/src/models/assets.ts',
     'packages/chain-shared/src/store/network-store.ts',
     'packages/chain-shared/src/utils/clearCustomNetworkCache.ts',
-    'packages/contacts/src/schema/index.ts',
 ]
 
 describe('pera/no-legacy-network-bridge', () => {

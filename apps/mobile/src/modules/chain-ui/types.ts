@@ -16,6 +16,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     ChainFamily,
     ChainId,
+    I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     AssetDetailsDisplay,
@@ -32,6 +33,8 @@ export type ChainUi = {
     collectibleDetails?: CollectibleDetailsDisplay
     sendConfirmation?: SendConfirmationDisplay
     customNode?: CustomNodeDisplay
+    /** The family's name where one address serves every chain in it, as on a contact. */
+    familyLabel?: I18nKey
     /** The chain's logo; a chain without one shows initials of its name. */
     icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }

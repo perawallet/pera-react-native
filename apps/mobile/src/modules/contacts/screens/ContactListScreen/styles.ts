@@ -18,5 +18,8 @@ export const useStyles = makeStyles(theme => {
             paddingTop: theme.spacing.sm,
             paddingBottom: theme.spacing.sm,
         },
+        rowSubtitle: {
+            color: theme.colors.textGray,
+        },
     }
 })

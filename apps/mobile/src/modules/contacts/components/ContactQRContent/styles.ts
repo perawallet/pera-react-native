@@ -34,6 +34,13 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         flex: 1,
         textAlign: 'center',
     },
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
+    },
     qrSection: {
         alignItems: 'center',
         gap: theme.spacing.md,

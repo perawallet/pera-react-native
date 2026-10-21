@@ -139,6 +139,38 @@ describe('ContactsStore', () => {
             ])
         })
 
+        test('lists a family the edit removed, and drops it from the list once it is added again', async () => {
+            const { useContactsStore } = await import('../index')
+
+            act(() => {
+                useContactsStore.getState().addContact({
+                    id: 'id-1',
+                    name: 'Alice',
+                    addresses: { algorand: 'ALICE123', evm: '0xA' },
+                })
+                useContactsStore.getState().editContact('id-1', {
+                    name: 'Alice',
+                    addresses: { algorand: 'ALICE123' },
+                })
+            })
+
+            expect(useContactsStore.getState().contacts[0]).toMatchObject({
+                addresses: { algorand: 'ALICE123' },
+                removedFamilies: ['evm'],
+            })
+
+            act(() => {
+                useContactsStore.getState().editContact('id-1', {
+                    name: 'Alice',
+                    addresses: { algorand: 'ALICE123', evm: '0xB' },
+                })
+            })
+
+            expect(useContactsStore.getState().contacts[0]).not.toHaveProperty(
+                'removedFamilies',
+            )
+        })
+
         test('only touches the named row when another contact shares its address', async () => {
             const { useContactsStore } = await import('../index')
 

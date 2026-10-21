@@ -1003,7 +1003,15 @@
             "remove_title": "Eliminar contacto",
             "remove_message": "¿Seguro que quieres eliminar este contacto?",
             "remove_confirm": "Sí, eliminar contacto",
-            "remove_cancel": "Conservarlo"
+            "remove_cancel": "Conservarlo",
+            "addresses_label": "Direcciones",
+            "add_address": "Añadir dirección",
+            "invalid_address": "No es una dirección válida en una red compatible",
+            "remove_address": "Eliminar dirección",
+            "replace_title": "¿Reemplazar la dirección de {{network}}?",
+            "replace_message": "Este contacto ya tiene una dirección en {{network}}. ¿Reemplazarla por la nueva?",
+            "replace_confirm": "Reemplazar",
+            "replace_cancel": "Mantener la actual"
         },
         "add_contact": {
             "duplicate_address_warning": "Ya existe un contacto para esta dirección."
@@ -1011,8 +1019,11 @@
         "view_contact": {
             "no_contact_title": "No se encontró el contacto",
             "no_contact_body": "Parece que algo salió mal. No se pudo encontrar el contacto indicado",
-            "account_address": "Dirección de la cuenta",
-            "nfd_label": "NFDomain"
+            "nfd_label": "NFDomain",
+            "send": "Enviar",
+            "copy": "Copiar dirección",
+            "show_qr": "Mostrar código QR",
+            "send_network_title": "Elegir red"
         },
         "list": {
             "no_contacts_title": "Todavía no has añadido ningún contacto",
@@ -1023,7 +1034,8 @@
             "no_matching_body": "No hay ningún contacto que coincida.",
             "qr_sheet_copy": "Copiar dirección",
             "qr_sheet_share": "Compartir dirección",
-            "qr_accessibility_label": "Código QR de {{name}}"
+            "qr_accessibility_label": "Código QR de {{name}}",
+            "networks_count": "{{count}} redes"
         }
     },
     "errors": {
@@ -4357,5 +4369,9 @@
             "decline": "No permitir"
         },
         "settings_label": "Compartir analíticas de uso"
+    },
+    "chain_families": {
+        "algorand": "Algorand",
+        "evm": "Ethereum y redes EVM"
     }
 }

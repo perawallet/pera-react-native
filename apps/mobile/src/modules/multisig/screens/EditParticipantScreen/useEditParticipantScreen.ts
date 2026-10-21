@@ -71,10 +71,10 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
 
     const onDone = useCallback(
         (data: ContactFormValues) => {
-            const contactData = contactFromFormValues(
-                { ...data, name: data.name.trim(), address },
-                existingContact,
-            )
+            const contactData = contactFromFormValues({
+                ...data,
+                name: data.name.trim(),
+            })
 
             try {
                 if (existingContact) {

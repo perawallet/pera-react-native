@@ -11,5 +11,15 @@
  */
 
 export { ChainIcon, type ChainIconProps } from './components/ChainIcon'
+export { ChainRow, type ChainRowProps } from './components/ChainRow'
+export {
+    ChainFamilyIcon,
+    type ChainFamilyIconProps,
+} from './components/ChainFamilyIcon'
+export {
+    chainFamilyDisplay,
+    useChainFamily,
+    type UseChainFamilyResult,
+} from './hooks/useChainFamily'
 export { chainUiFor } from './registry'
 export type { ChainUi } from './types'

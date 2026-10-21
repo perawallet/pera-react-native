@@ -19,7 +19,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/components/AddressListItem/AddressListItem.tsx',
     'apps/mobile/src/components/AssetIcon/AssetIcon.tsx',
     'apps/mobile/src/components/AssetSelector/AssetSelector.tsx',
-    'apps/mobile/src/components/ContactForm/ContactForm.tsx',
     'apps/mobile/src/components/CurrencyAmount/CurrencyAmount.tsx',
     'apps/mobile/src/components/PreferredAmount/PreferredAmount.tsx',
     'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',

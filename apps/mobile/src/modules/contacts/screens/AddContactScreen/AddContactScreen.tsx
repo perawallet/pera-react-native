@@ -13,6 +13,7 @@
 import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { useLanguage } from '@hooks/useLanguage'
+import { ContactAddressFields } from '@modules/contacts/components/ContactAddressFields'
 import { useAddContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
 
@@ -25,11 +26,18 @@ export const AddContactScreen = () => {
         handleSubmit,
         errors,
         isValid,
-        isDuplicateAddress,
+        addressRows,
+        isAddressInputVisible,
         rawAddressInput,
+        isAddressInputInvalid,
+        pendingReplacement,
         imageUri,
         nfd,
+        showAddressInput,
         onAddressInputChange,
+        confirmReplacement,
+        cancelReplacement,
+        removeAddress,
         onPickImage,
         save,
     } = useAddContactForm()
@@ -49,20 +57,23 @@ export const AddContactScreen = () => {
         >
             <ContactForm
                 control={control}
-                address={nfd.isNfdResolved ? nfd.resolvedAddress : ''}
                 nameLabel={t('contacts.edit_contact.name_label')}
-                addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
-                addressError={errors.address?.message}
-                addressWarning={
-                    isDuplicateAddress
-                        ? t('contacts.add_contact.duplicate_address_warning')
-                        : undefined
+                addressSection={
+                    <ContactAddressFields
+                        rows={addressRows}
+                        isInputVisible={isAddressInputVisible}
+                        rawInput={rawAddressInput}
+                        isInputInvalid={isAddressInputInvalid}
+                        isResolvingNfd={nfd.isNfdResolving}
+                        pendingReplacement={pendingReplacement}
+                        onShowInput={showAddressInput}
+                        onInputChange={onAddressInputChange}
+                        onConfirmReplacement={confirmReplacement}
+                        onCancelReplacement={cancelReplacement}
+                        onRemove={removeAddress}
+                    />
                 }
-                nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
-                isResolvingNfd={nfd.isNfdResolving}
-                onAddressInputChange={onAddressInputChange}
-                rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={() => void onPickImage()}
             />

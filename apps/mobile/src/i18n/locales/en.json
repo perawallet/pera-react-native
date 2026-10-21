@@ -1003,7 +1003,15 @@
             "remove_title": "Delete contact",
             "remove_message": "Are you sure you want to delete this contact?",
             "remove_confirm": "Yes, delete contact",
-            "remove_cancel": "Keep it"
+            "remove_cancel": "Keep it",
+            "addresses_label": "Addresses",
+            "add_address": "Add address",
+            "invalid_address": "This isn’t a valid address on a supported network",
+            "remove_address": "Remove address",
+            "replace_title": "Replace {{network}} address?",
+            "replace_message": "This contact already has an address on {{network}}. Replace it with the new one?",
+            "replace_confirm": "Replace",
+            "replace_cancel": "Keep current"
         },
         "add_contact": {
             "duplicate_address_warning": "Contact for this address already exists."
@@ -1011,8 +1019,11 @@
         "view_contact": {
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
-            "account_address": "Account Address",
-            "nfd_label": "NFDomain"
+            "nfd_label": "NFDomain",
+            "send": "Send",
+            "copy": "Copy address",
+            "show_qr": "Show QR code",
+            "send_network_title": "Choose Network"
         },
         "list": {
             "no_contacts_title": "You haven't added any contacts yet",
@@ -1023,7 +1034,8 @@
             "no_matching_body": "There aren't any matching contacts.",
             "qr_sheet_copy": "Copy Address",
             "qr_sheet_share": "Share Address",
-            "qr_accessibility_label": "QR code for {{name}}"
+            "qr_accessibility_label": "QR code for {{name}}",
+            "networks_count": "{{count}} networks"
         }
     },
     "errors": {
@@ -4357,5 +4369,9 @@
             "decline": "Don’t allow"
         },
         "settings_label": "Share usage analytics"
+    },
+    "chain_families": {
+        "algorand": "Algorand",
+        "evm": "Ethereum & EVM networks"
     }
 }

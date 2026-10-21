@@ -141,7 +141,7 @@ describe('useAddContactForm', () => {
         const { result } = renderHook(() => useAddContactForm())
 
         act(() => {
-            result.current.save({ name: '', address: '' })
+            result.current.save({ name: '', addresses: {} })
         })
 
         expect(addContactMock).not.toHaveBeenCalled()
@@ -149,18 +149,21 @@ describe('useAddContactForm', () => {
         expect(setErrorMock).not.toHaveBeenCalled()
     })
 
-    it('saves the form address as the Algorand entry and navigates back', () => {
+    it('saves every family the form holds and navigates back', () => {
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())
 
         act(() => {
-            result.current.save({ name: 'Bob', address: 'BOB999' })
+            result.current.save({
+                name: 'Bob',
+                addresses: { algorand: 'BOB999', evm: '0xB0B' },
+            })
         })
 
         expect(addContactMock).toHaveBeenCalledWith({
             name: 'Bob',
-            addresses: { algorand: 'BOB999' },
+            addresses: { algorand: 'BOB999', evm: '0xB0B' },
         })
         expect(setSelectedContactMock).toHaveBeenCalledWith(null)
         expect(goBackMock).toHaveBeenCalled()

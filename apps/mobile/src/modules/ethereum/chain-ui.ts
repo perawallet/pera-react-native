@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { ChainUi } from '@modules/chain-ui'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
@@ -19,6 +20,7 @@ import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
 // metro.config.js swaps this for the stub unless the baked CHAINS lists
 // ethereum, which keeps viem out of an Algorand-only bundle.
 export const ethereumChainUi: ChainUi | undefined = {
+    familyLabel: i18nKey('chain_families.evm'),
     transactionDetails: {
         ReviewBody: EthereumTransactionReviewBody,
         DetailBody: EthereumTransactionDetailBody,

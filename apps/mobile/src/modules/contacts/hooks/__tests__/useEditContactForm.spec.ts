@@ -12,11 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type {
-    Contact,
-    ContactAddresses,
-    NewContact,
-} from '@perawallet/wallet-core-contacts'
+import type { Contact, NewContact } from '@perawallet/wallet-core-contacts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
@@ -212,7 +208,10 @@ describe('useEditContactForm', () => {
             const { result } = renderHook(() => useEditContactForm())
 
             act(() => {
-                result.current.save({ name: 'Bobby', address: BOB })
+                result.current.save({
+                    name: 'Bobby',
+                    addresses: { algorand: BOB },
+                })
             })
 
             const updated: Contact = {
@@ -292,7 +291,10 @@ describe('useEditContactForm', () => {
         const { result } = renderHook(() => useEditContactForm())
 
         act(() => {
-            result.current.save({ name: 'Updated', address: ALICE })
+            result.current.save({
+                name: 'Updated',
+                addresses: { algorand: ALICE },
+            })
         })
 
         expect(editContactMock).not.toHaveBeenCalled()
@@ -305,23 +307,23 @@ describe('useEditContactForm', () => {
         const { result } = renderHook(() => useEditContactForm())
 
         act(() => {
-            result.current.save({ name: 'Alice', address: ALICE })
+            result.current.save({
+                name: 'Alice',
+                addresses: { algorand: ALICE },
+            })
         })
 
         expect(editContactMock).toHaveBeenCalledWith(ALICE_ID, selectedContact)
         expect(goBackMock).toHaveBeenCalled()
     })
 
-    it('keeps the address the contact holds in another family', () => {
+    it('saves only the families the form holds, so a removed one is dropped', () => {
         useContactsMock.mockReturnValue({
             editContact: editContactMock,
             deleteContact: deleteContactMock,
             selectedContact: {
                 ...selectedContact,
-                addresses: {
-                    algorand: ALICE,
-                    other: 'X',
-                } as ContactAddresses,
+                addresses: { algorand: ALICE, evm: '0xA11CE' },
             },
             setSelectedContact: setSelectedContactMock,
             contacts: [],
@@ -331,16 +333,16 @@ describe('useEditContactForm', () => {
         const { result } = renderHook(() => useEditContactForm())
 
         act(() => {
-            result.current.save({ name: 'Alice', address: 'ALICE_NEW' })
+            result.current.save({
+                name: 'Alice',
+                addresses: { algorand: ALICE },
+            })
         })
 
         expect(editContactMock).toHaveBeenCalledWith(ALICE_ID, {
             id: ALICE_ID,
             name: 'Alice',
-            addresses: {
-                algorand: 'ALICE_NEW',
-                other: 'X',
-            } as ContactAddresses,
+            addresses: { algorand: ALICE },
         })
     })
 

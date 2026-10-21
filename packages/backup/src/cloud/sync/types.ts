@@ -209,8 +209,11 @@ export type ContactImportSummary = {
 }
 
 /** One contact as a restore or sync hands it to the importer: every family
- *  this build reads. */
-export type PulledContact = Pick<Contact, 'id' | 'name' | 'addresses'>
+ *  this build reads, and the ones the record says were removed. */
+export type PulledContact = Pick<
+    Contact,
+    'id' | 'name' | 'addresses' | 'removedFamilies'
+>
 
 export type ContactImportFn = (
     contacts: PulledContact[],

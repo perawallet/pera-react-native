@@ -163,7 +163,14 @@ vi.mock('../../store', () => ({
 // Empty stubs keep the real store packages out of the module graph; the
 // manager reaches their state only through the injected sources.
 vi.mock('@perawallet/wallet-core-accounts', () => ({}))
-vi.mock('@perawallet/wallet-core-contacts', () => ({}))
+// The contact record builder lists a contact's addresses in family order.
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    contactAddressEntries: (addresses: Record<string, string | undefined>) =>
+        ['algorand', 'evm'].flatMap(family => {
+            const address = addresses[family]
+            return address ? [{ family, address }] : []
+        }),
+}))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },

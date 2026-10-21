@@ -10,101 +10,59 @@
  limitations under the License
  */
 
-import { type ReactNode, useCallback, useRef, useState } from 'react'
+import { type ReactNode } from 'react'
 import {
     type Control,
     Controller,
     type FieldPath,
     type FieldValues,
 } from 'react-hook-form'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import {
     PWIcon,
     PWInput,
-    type PWInputRef,
     PWText,
     PWTouchableOpacity,
     PWView,
-    PWLoadingIndicator,
 } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
-import { QRScannerView } from '@components/QRScannerView'
-import { useScannedAddress } from '@hooks/useScannedAddress'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 type ContactFormProps<T extends FieldValues> = {
     control: Control<T>
-    address: string
     nameLabel: string
-    addressLabel: string
     nameError?: string
-    addressError?: string
-    /** Shown under the address without blocking save. */
-    addressWarning?: string
-    nfdName?: string
-    isResolvingNfd?: boolean
-    onAddressInputChange?: (text: string) => void
-    rawAddressInput?: string
+    /** Edits the addresses; replaces the read-only `address` field. */
+    addressSection?: ReactNode
+    /** Shown read-only when there is no `addressSection`. */
+    address?: string
+    addressLabel?: string
     imageUri?: string
     onPickImage?: () => void
     children?: ReactNode
 }
 
-// A contact's address is pinned to the legacy chain below.
-const CONTACT_CHAIN_IDS: readonly ChainId[] = [LEGACY_CHAIN_ID]
-
 export const ContactForm = <T extends FieldValues>({
     control,
-    address,
     nameLabel,
-    addressLabel,
     nameError,
-    addressError,
-    addressWarning,
-    nfdName,
-    isResolvingNfd,
-    onAddressInputChange,
-    rawAddressInput,
+    addressSection,
+    address,
+    addressLabel,
     imageUri,
     onPickImage,
     children,
 }: ContactFormProps<T>) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const [scannerVisible, setScannerVisible] = useState(false)
-    const addressInputRef = useRef<PWInputRef>(null)
-    const resolveScannedAddress = useScannedAddress(CONTACT_CHAIN_IDS)
 
     const renderAvatar = () => (
         <ContactAvatar
             size='xxl'
-            contact={{
-                name: '',
-                addresses: { algorand: address },
-                image: imageUri,
-            }}
+            contact={{ name: '', addresses: {}, image: imageUri }}
         />
     )
-
-    const handleScan = useCallback(
-        (url: string) => {
-            setScannerVisible(false)
-            const scanned = resolveScannedAddress(url)
-            if (scanned) {
-                onAddressInputChange?.(scanned)
-            }
-        },
-        [onAddressInputChange, resolveScannedAddress],
-    )
-
-    const handleOpenScanner = useCallback(() => setScannerVisible(true), [])
-    const handleCloseScanner = useCallback(() => setScannerVisible(false), [])
 
     return (
         <>
@@ -148,87 +106,22 @@ export const ContactForm = <T extends FieldValues>({
                             errorMessage={nameError}
                             autoCapitalize='none'
                             autoCorrect={false}
-                            returnKeyType='next'
-                            blurOnSubmit={false}
-                            onSubmitEditing={() =>
-                                addressInputRef.current?.focus()
-                            }
+                            returnKeyType='done'
                             testID='contact_name_input'
                         />
                     )}
                 />
-                <Controller
-                    control={control}
-                    name={'address' as FieldPath<T>}
-                    render={({ field: { onBlur } }) => (
+                {addressSection ??
+                    (address !== undefined && (
                         <PWInput
-                            ref={addressInputRef}
                             label={addressLabel}
-                            value={rawAddressInput ?? address ?? ''}
-                            onChangeText={onAddressInputChange}
-                            onBlur={onBlur}
-                            errorMessage={addressError}
-                            editable={Boolean(onAddressInputChange)}
-                            autoCapitalize='none'
-                            autoCorrect={false}
+                            value={address}
+                            editable={false}
                             testID='contact_address_input'
-                            rightIcon={
-                                onAddressInputChange ? (
-                                    <PWView style={styles.scanIconWrapper}>
-                                        <PWIcon
-                                            name='camera'
-                                            onPress={handleOpenScanner}
-                                        />
-                                    </PWView>
-                                ) : undefined
-                            }
                         />
-                    )}
-                />
-                {!!addressWarning && (
-                    <PWText
-                        variant='caption'
-                        style={styles.addressWarning}
-                        testID='contact_address_warning'
-                    >
-                        {addressWarning}
-                    </PWText>
-                )}
-                {isResolvingNfd && (
-                    <PWView style={styles.nfdStatus}>
-                        <PWLoadingIndicator size='sm' />
-                        <PWText
-                            variant='caption'
-                            style={styles.nfdStatusText}
-                        >
-                            {t('address_entry.nfd_resolving')}
-                        </PWText>
-                    </PWView>
-                )}
-                {nfdName && (
-                    <PWView style={styles.nfdStatus}>
-                        <PWText
-                            variant='caption'
-                            style={styles.nfdStatusText}
-                        >
-                            {t('address_entry.nfd_resolved', {
-                                name: nfdName,
-                            })}
-                            {' — '}
-                            {truncateAlgorandAddress(address)}
-                        </PWText>
-                    </PWView>
-                )}
+                    ))}
                 {children}
             </PWView>
-            <QRScannerView
-                isVisible={scannerVisible}
-                onSuccess={handleScan}
-                onClose={handleCloseScanner}
-                animationType='slide'
-                title={t('address_entry.scan_qr')}
-                skipDeepLinkHandler
-            />
         </>
     )
 }

@@ -18,16 +18,4 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.lg,
         gap: theme.spacing.md,
     },
-    row: {
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.borderRadius.md,
-        padding: theme.spacing.lg,
-    },
-    title: {
-        color: theme.colors.textMain,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-    },
 }))

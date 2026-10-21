@@ -34,14 +34,20 @@ export const useCloudBackupContactImport =
                         // Last-write-wins already picked the incoming name, so
                         // it is authoritative. Neither shape carries `image` or
                         // `nfd`, and a legacy item carries a single address,
-                        // so the existing contact's are carried over.
+                        // so the existing contact's are carried over, except
+                        // for a family the record says was removed.
+                        const addresses = {
+                            ...existing.addresses,
+                            ...contact.addresses,
+                        }
+                        for (const family of contact.removedFamilies ?? []) {
+                            if (!contact.addresses[family])
+                                delete addresses[family]
+                        }
                         store.editContact(existing.id, {
                             ...existing,
                             name: contact.name,
-                            addresses: {
-                                ...existing.addresses,
-                                ...contact.addresses,
-                            },
+                            addresses,
                         })
                     } else {
                         store.addContact(contact)

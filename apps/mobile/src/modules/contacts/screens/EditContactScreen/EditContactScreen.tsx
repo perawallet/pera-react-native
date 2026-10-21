@@ -20,22 +20,29 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '@modules/cloud-backup'
+import { ContactAddressFields } from '@modules/contacts/components/ContactAddressFields'
 import { useEditContactForm } from '@modules/contacts/hooks'
 
 export const EditContactScreen = () => {
     const { t } = useLanguage()
     const {
-        contact,
         control,
         handleSubmit,
         errors,
         isValid,
-        isDuplicateAddress,
+        needsBackupChoice,
+        addressRows,
+        isAddressInputVisible,
         rawAddressInput,
+        isAddressInputInvalid,
+        pendingReplacement,
         imageUri,
         nfd,
-        needsBackupChoice,
+        showAddressInput,
         onAddressInputChange,
+        confirmReplacement,
+        cancelReplacement,
+        removeAddress,
         onPickImage,
         save,
         removeContact,
@@ -111,24 +118,23 @@ export const EditContactScreen = () => {
         >
             <ContactForm
                 control={control}
-                address={
-                    nfd.isNfdResolved
-                        ? nfd.resolvedAddress
-                        : (contact?.addresses.algorand ?? '')
-                }
                 nameLabel={t('contacts.edit_contact.name_label')}
-                addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
-                addressError={errors.address?.message}
-                addressWarning={
-                    isDuplicateAddress
-                        ? t('contacts.add_contact.duplicate_address_warning')
-                        : undefined
+                addressSection={
+                    <ContactAddressFields
+                        rows={addressRows}
+                        isInputVisible={isAddressInputVisible}
+                        rawInput={rawAddressInput}
+                        isInputInvalid={isAddressInputInvalid}
+                        isResolvingNfd={nfd.isNfdResolving}
+                        pendingReplacement={pendingReplacement}
+                        onShowInput={showAddressInput}
+                        onInputChange={onAddressInputChange}
+                        onConfirmReplacement={confirmReplacement}
+                        onCancelReplacement={cancelReplacement}
+                        onRemove={removeAddress}
+                    />
                 }
-                nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
-                isResolvingNfd={nfd.isNfdResolving}
-                onAddressInputChange={onAddressInputChange}
-                rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={() => void onPickImage()}
             />
