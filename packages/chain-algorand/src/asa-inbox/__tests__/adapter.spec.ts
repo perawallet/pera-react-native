@@ -15,6 +15,7 @@ import { ZodError } from 'zod'
 import { algorandAssetInbox } from '../adapter'
 import { payloadTransactionOf } from '../../signing/__tests__/transactions'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { toAssetInboxQuote } from '@perawallet/wallet-core-transactions'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
@@ -108,7 +109,7 @@ describe('algorandAssetInbox', () => {
             receiver: 'RECEIVER',
             assetId: 7n,
             amount: 10n,
-            summary,
+            quote: toAssetInboxQuote(summary),
             senderMinFee: 1000n,
         })
 
@@ -131,7 +132,7 @@ describe('algorandAssetInbox', () => {
         )
     })
 
-    it('refuses to build from a summary that fails the ARC-59 schema', async () => {
+    it('refuses to build from a quote that fails the ARC-59 schema', async () => {
         await expect(
             inbox.buildSendTxs({
                 scope: {
@@ -142,7 +143,10 @@ describe('algorandAssetInbox', () => {
                 receiver: 'RECEIVER',
                 assetId: 7n,
                 amount: 10n,
-                summary: { ...summary, algo_fund_amount: 50_000_000 },
+                quote: toAssetInboxQuote({
+                    ...summary,
+                    algo_fund_amount: 50_000_000,
+                }),
                 senderMinFee: 1000n,
             }),
         ).rejects.toBeInstanceOf(ZodError)

@@ -25,7 +25,7 @@ import {
 } from '../guards'
 import type { SignRequest, TransactionSignRequest } from '../index'
 
-const base = { id: 'req-1', transport: 'algod' as const }
+const base = { id: 'req-1', transport: 'network' as const }
 
 const transactionRequest = {
     ...base,

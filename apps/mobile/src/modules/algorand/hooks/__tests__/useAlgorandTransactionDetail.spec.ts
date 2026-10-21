@@ -19,6 +19,7 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAlgorandTransactionDetail } from '../useAlgorandTransactionDetail'
 
 const mockUseTransactionDetailQuery = vi.fn()
@@ -49,6 +50,8 @@ const historyItem: TransactionHistoryItem = {
     asset: null,
     balanceImpacts: [],
 }
+
+const algorandScope: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const refetch = vi.fn()
 
@@ -81,6 +84,7 @@ describe('useAlgorandTransactionDetail', () => {
 
         const { result } = renderHook(() =>
             useAlgorandTransactionDetail({
+                scope: algorandScope,
                 transactionId: 'TX123',
                 historyTransaction: historyItem,
                 isEnabled: true,
@@ -100,6 +104,7 @@ describe('useAlgorandTransactionDetail', () => {
 
         const { result } = renderHook(() =>
             useAlgorandTransactionDetail({
+                scope: algorandScope,
                 transactionId: 'TX123',
                 historyTransaction: historyItem,
                 isEnabled: true,
@@ -116,6 +121,7 @@ describe('useAlgorandTransactionDetail', () => {
     it('has no transaction when neither source has one', () => {
         const { result } = renderHook(() =>
             useAlgorandTransactionDetail({
+                scope: algorandScope,
                 transactionId: 'TX_UNKNOWN',
                 isEnabled: true,
             }),
@@ -132,6 +138,7 @@ describe('useAlgorandTransactionDetail', () => {
 
         const { result } = renderHook(() =>
             useAlgorandTransactionDetail({
+                scope: algorandScope,
                 transactionId: 'TX7',
                 isEnabled: false,
             }),

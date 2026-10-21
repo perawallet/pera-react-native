@@ -763,6 +763,7 @@ describe('useAccountHistory', () => {
             })
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                scope: expect.objectContaining({ chainId: 'algorand' }),
                 transactionId: transaction.id,
                 historyTransaction: transaction,
             })
@@ -775,6 +776,7 @@ describe('useAccountHistory', () => {
             })
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                scope: expect.objectContaining({ chainId: 'algorand' }),
                 transactionId: transaction.id,
                 historyTransaction: transaction,
             })
@@ -784,6 +786,7 @@ describe('useAccountHistory', () => {
             const transaction = press(null)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                scope: expect.objectContaining({ chainId: 'algorand' }),
                 transactionId: transaction.id,
                 historyTransaction: transaction,
             })

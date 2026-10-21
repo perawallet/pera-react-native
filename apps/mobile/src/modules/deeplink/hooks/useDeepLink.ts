@@ -596,6 +596,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                                 inboxAddress: parsedData.address,
                                 requestCount: 1,
                             },
+                            scope: getSelectedScope(parsedData.target.chainId),
                         },
                     })
                     break
@@ -706,7 +707,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
-                        params: { address: parsedData.address },
+                        params: {
+                            address: parsedData.address,
+                            chainId: parsedData.target.chainId,
+                        },
                     })
                     break
                 }

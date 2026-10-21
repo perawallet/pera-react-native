@@ -24,6 +24,17 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
+/**
+ * A chain's quote for one inbox send. Only the adapter that minted it in
+ * `fetchSendSummary` reads it; it re-validates before building because the
+ * quote decides a headlessly signed payment.
+ */
+export type AssetInboxQuote = { readonly __assetInboxQuote: true }
+
+/** Mints an {@link AssetInboxQuote}; called only by a chain's inbox adapter. */
+export const toAssetInboxQuote = (quote: object): AssetInboxQuote =>
+    quote as AssetInboxQuote
+
 export type InboxSendTxsParams = {
     scope: ChainScope
     sender: string
@@ -31,11 +42,8 @@ export type InboxSendTxsParams = {
     assetId: bigint
     /** Base units. */
     amount: bigint
-    /**
-     * The chain's quote for this inbox send, exactly as the app fetched it.
-     * Opaque here; the adapter validates it before building.
-     */
-    summary: unknown
+    /** The quote the send was confirmed against, exactly as fetched. */
+    quote: AssetInboxQuote
     /**
      * Base units of the native asset: the PQ-aware minimum fee for the
      * sender's own transactions.
@@ -58,11 +66,7 @@ export type InboxRejectTxsParams = InboxClaimTxsParams & {
     assetCreator: string
 }
 
-/**
- * An asset waiting for the receiver in the chain's inbox. The `microAlgo` and
- * `Algo` field names are the native asset's, kept so existing fixtures keep
- * compiling.
- */
+/** An asset waiting for the receiver in the chain's inbox. */
 export interface AssetInboxRequest {
     id?: string
     /** The receiver's inbox account address, or null if none exists yet. */
@@ -72,9 +76,9 @@ export interface AssetInboxRequest {
     asset: PeraAsset
     usdValue: Nullable<Decimal>
     /** Native asset gain on claim, in base units */
-    microAlgoGainOnClaim: Decimal
+    nativeGainOnClaim: Decimal
     /** Native asset gain on reject, in base units */
-    microAlgoGainOnReject: Decimal
+    nativeGainOnReject: Decimal
     senders: {
         count: number
         results: Array<{
@@ -83,15 +87,15 @@ export interface AssetInboxRequest {
             amount: Decimal
         }>
     }
-    insufficientAlgoForClaiming: boolean
-    insufficientAlgoForRejecting: boolean
+    insufficientNativeForClaiming: boolean
+    insufficientNativeForRejecting: boolean
     shouldUseFundsBeforeClaiming: boolean
     shouldUseFundsBeforeRejecting: boolean
 }
 
 export type AssetInboxSendSummary = {
-    /** Goes back unchanged as {@link InboxSendTxsParams.summary}. */
-    quote: unknown
+    /** Goes back unchanged as {@link InboxSendTxsParams.quote}. */
+    quote: AssetInboxQuote
     /** What the signed funding payment carries, in native base units. */
     fundingAmount: bigint
 }

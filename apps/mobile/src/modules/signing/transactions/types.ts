@@ -11,8 +11,13 @@
  */
 
 import type { ComponentType } from 'react'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 export type ReviewBodyProps = {
     transaction: TransactionNative
@@ -34,8 +39,43 @@ export type PreviewRowProps = {
     onPress?: () => void
 }
 
+export type RelatedTransactionsProps = {
+    groupId?: string
+    currentTransaction: TransactionNative
+    onRelatedTransactionPress: (transaction: TransactionNative) => void
+}
+
+export type TotalFeeProps = {
+    label: string
+}
+
+export type UseTransactionDetailParams = {
+    scope: ChainScope
+    transactionId: string
+    /** The local history row, rendered until (or instead of) the fetched transaction. */
+    historyTransaction?: TransactionHistoryItem
+    isEnabled: boolean
+}
+
+export type UseTransactionDetailResult = {
+    transaction: Nullable<TransactionNative>
+    isPaused: boolean
+    isError: boolean
+    isLoading: boolean
+    error: Nullable<Error>
+    refetch: () => unknown
+}
+
 export type TransactionDisplay = {
     ReviewBody: ComponentType<ReviewBodyProps>
     DetailBody: ComponentType<DetailBodyProps>
     PreviewRow: ComponentType<PreviewRowProps>
+    /** Called on every render of a screen whose scope never changes, so it must stay one hook. */
+    useTransactionDetail?: (
+        params: UseTransactionDetailParams,
+    ) => UseTransactionDetailResult
+    /** Transactions shown below the detail body, such as the rest of an atomic group. */
+    RelatedTransactions?: ComponentType<RelatedTransactionsProps>
+    /** The request's total fee under a transaction list; a chain without one shows none. */
+    TotalFee?: ComponentType<TotalFeeProps>
 }

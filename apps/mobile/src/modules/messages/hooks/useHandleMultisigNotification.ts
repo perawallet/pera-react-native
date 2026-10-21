@@ -96,10 +96,9 @@ export const findInboxItemForNotification = (
  */
 export const useHandleMultisigNotification =
     (): UseHandleMultisigNotificationResult => {
-        const { refetch: refetchInbox } = useInboxQuery(
-            useSelectedScope(LEGACY_CHAIN_ID),
-        )
-        const handleInboxItemPress = useHandleInboxItemPress()
+        const inboxScope = useSelectedScope(LEGACY_CHAIN_ID)
+        const { refetch: refetchInbox } = useInboxQuery(inboxScope)
+        const handleInboxItemPress = useHandleInboxItemPress(inboxScope)
         const canUseMultisig = useCapability({ anyChain: 'multisig' })
 
         const handleMultisigNotification = useCallback(

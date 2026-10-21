@@ -94,7 +94,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             // error UI, so skip it for hardware signers.
             if (pipeline.resolved?.signerType === 'hardware') return
 
-            if (pipeline.resolved?.transport.kind === 'algod') {
+            if (pipeline.resolved?.transport.kind === 'network') {
                 // Recognized node rejections (overspend, stale-rekey "should
                 // have been authorized by"…) get their localized copy from
                 // the toast; unrecognized ones keep the caller's title.

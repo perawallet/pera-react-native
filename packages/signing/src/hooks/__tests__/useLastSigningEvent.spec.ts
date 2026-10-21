@@ -50,7 +50,7 @@ describe('useLastSigningEvent', () => {
         signingEventBus.publish({
             type: 'completed',
             request: req('r1'),
-            result: { type: 'algod', txIds: [] } as never,
+            result: { type: 'network', txIds: [] } as never,
         })
         signingEventBus.publish(second)
 
@@ -69,7 +69,7 @@ describe('useLastSigningEvent', () => {
         const completed = {
             type: 'completed',
             request: req('r1'),
-            result: { type: 'algod', txIds: [] } as never,
+            result: { type: 'network', txIds: [] } as never,
         } as CompletedEvent
         act(() => signingEventBus.publish(completed))
 

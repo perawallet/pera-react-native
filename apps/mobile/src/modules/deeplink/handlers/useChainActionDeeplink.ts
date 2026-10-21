@@ -194,7 +194,7 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    transport: 'algod',
+                    transport: 'network',
                     sourceType: 'deeplink',
                     txs: transactions,
                     chainData: plannerChainAdapters

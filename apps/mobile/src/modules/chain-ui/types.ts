@@ -18,6 +18,7 @@ import type {
     ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AssetDetailsDisplay } from '@modules/assets'
+import type { CustomNodeDisplay } from '@modules/settings'
 import type { TransactionDisplay } from '@modules/signing'
 import type { SendConfirmationDisplay } from '@modules/transactions'
 
@@ -26,6 +27,7 @@ export type ChainUi = {
     transactionDetails?: TransactionDisplay
     assetDetails?: AssetDetailsDisplay
     sendConfirmation?: SendConfirmationDisplay
+    customNode?: CustomNodeDisplay
     /** The chain's logo; a chain without one shows initials of its name. */
     icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }

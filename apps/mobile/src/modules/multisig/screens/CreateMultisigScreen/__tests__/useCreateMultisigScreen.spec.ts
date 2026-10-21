@@ -16,10 +16,21 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useCreateMultisigScreen } from '../useCreateMultisigScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
+import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
+
+const mockRoute = vi.hoisted(() => ({ chainId: 'algorand' }))
+
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return {
+        ...actual,
+        useRoute: () => ({ params: { chainId: mockRoute.chainId } }),
+    }
+})
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
@@ -35,7 +46,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const mockAccounts = vi.fn<
-    () => { chains: { algorand: { address: string } } }[]
+    () => { chains: Record<string, { address: string }> }[]
 >(() => [])
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -76,6 +87,7 @@ describe('useCreateMultisigScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRoute.chainId = 'algorand'
         mockAccounts.mockReturnValue([])
         mockContacts.mockReturnValue([])
         mockAddContact.mockReset()
@@ -239,7 +251,41 @@ describe('useCreateMultisigScreen', () => {
             result.current.handleContinue()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('SetThreshold')
+        expect(mockPush).toHaveBeenCalledWith('SetThreshold', {
+            chainId: 'algorand',
+        })
+    })
+
+    it('carries an Ethereum route chain to SetThreshold and the add sheet', async () => {
+        mockRoute.chainId = ETHEREUM_CHAIN_ID
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        await act(async () => {
+            await result.current.handleOpenAddParticipant()
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(
+            mockRequestBottomSheet.mock.calls[0]?.[0].contents.props.chainId,
+        ).toBe(ETHEREUM_CHAIN_ID)
+        expect(mockPush).toHaveBeenCalledWith('SetThreshold', {
+            chainId: ETHEREUM_CHAIN_ID,
+        })
+    })
+
+    it('matches wallet accounts on the Ethereum route chain only', () => {
+        mockRoute.chainId = ETHEREUM_CHAIN_ID
+        mockAccounts.mockReturnValue([
+            { chains: { algorand: { address: 'ADDR1' } } },
+            { chains: { [ETHEREUM_CHAIN_ID]: { address: 'ADDR2' } } },
+        ])
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        expect(result.current.isParticipantInWallet('ADDR1')).toBe(false)
+        expect(result.current.isParticipantInWallet('ADDR2')).toBe(true)
     })
 
     it('isParticipantInWallet is true only for addresses that are wallet accounts', () => {

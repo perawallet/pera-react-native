@@ -26,14 +26,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainMode,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useSelectedChainMode,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import {
@@ -47,6 +43,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
 import { sendBidaliEvent } from './bidali-events'
+import { useGiftCardScope } from './useGiftCardScope'
 
 // The one copy: web stamps it onto the iframe URL for the browser's content script.
 export const BIDALI_PAYMENT_CURRENCIES: readonly string[] = [
@@ -194,7 +191,7 @@ export const useBidaliTransport = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useGiftCardScope(account)
     const chainMode = useSelectedChainMode(scope.chainId)
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
@@ -288,7 +285,7 @@ export const useBidaliTransport = (
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    transport: 'algod',
+                    transport: 'network',
                     sourceType: 'gift-card',
                     txs,
                     sourceMetadata: {

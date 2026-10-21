@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { toAssetInboxQuote } from '@perawallet/wallet-core-transactions'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
 
 // Builders stubbed to succeed with a real mainnet transaction, so a rejection
@@ -65,10 +66,10 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         receiver: 'RECEIVER',
         assetId: 31566704n,
         amount: 1n,
-        summary: {},
+        quote: toAssetInboxQuote({}),
         senderMinFee: 1000n,
     },
-    inboxSendQuote: {
+    inboxSendQuote: toAssetInboxQuote({
         is_arc59_opted_in: true,
         minimum_balance_requirement: 100000,
         inner_tx_count: 2,
@@ -76,7 +77,7 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         inbox_address: null,
         algo_fund_amount: 0,
         warning_message: null,
-    },
+    }),
     inboxClaim: claim,
     inboxReject: { ...claim, assetCreator: 'CREATOR' },
     transfer: {

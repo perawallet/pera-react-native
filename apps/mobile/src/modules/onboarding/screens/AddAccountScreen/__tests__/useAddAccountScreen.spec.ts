@@ -463,6 +463,7 @@ describe('useAddAccountScreen', () => {
         expect(mockResetMultisigCreation).toHaveBeenCalledTimes(1)
         expect(mockNavigate).toHaveBeenCalledWith('Multisig', {
             screen: 'CreateMultisig',
+            params: { chainId: 'algorand' },
         })
     })
 

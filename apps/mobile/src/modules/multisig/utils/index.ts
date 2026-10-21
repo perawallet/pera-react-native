@@ -11,6 +11,10 @@
  */
 
 export { buildMultisigCosignRequest } from './buildMultisigCosignRequest'
+export {
+    chainIdOfJointAccount,
+    chainIdOfMultisigSignRequest,
+} from './chainIdOfJointAccount'
 export { buildSignerRows, type SignerRow } from './buildSignerRows'
 export { getInFlightCosignAddresses } from './getInFlightCosignAddresses'
 export { getLocalUnsignedSigners } from './getLocalUnsignedSigners'

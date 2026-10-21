@@ -55,15 +55,15 @@ export type SignRequestSource = {
 }
 
 /**
- * `'algod'` submits through the chain's broadcaster; `'callback'` hands the
+ * `'network'` submits through the chain's broadcaster; `'callback'` hands the
  * signed bytes back to `approve`; `'submit-and-answer'` submits through the
  * broadcaster and then answers `approve` with the submitted ids.
  */
-export type SignRequestTransport = 'algod' | 'callback' | 'submit-and-answer'
+export type SignRequestTransport = 'network' | 'callback' | 'submit-and-answer'
 
 /** A request whose caller holds in-memory callbacks, which can't be persisted and must hear a rejection. */
 export const answersCaller = (transport: SignRequestTransport): boolean =>
-    transport !== 'algod'
+    transport !== 'network'
 
 type BaseSignRequest = {
     id: string

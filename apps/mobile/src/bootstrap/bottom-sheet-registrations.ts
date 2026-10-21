@@ -30,7 +30,11 @@
  * fire.
  */
 
-import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetRef,
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { AccountActionsContent } from '@modules/accounts'
 import {
     OptInAccountSelectionContent,
@@ -72,7 +76,7 @@ declare module '@modules/bottom-sheet' {
         'asset-opt-in': {
             assetId: string
             accountAddress: string
-            chainId?: ChainId
+            scope: ChainScope
         }
         'asset-opt-in-account-selection': {
             highlightedAddress?: string

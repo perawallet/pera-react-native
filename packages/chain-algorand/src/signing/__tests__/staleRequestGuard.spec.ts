@@ -153,7 +153,7 @@ describe('findStaleGroupReason', () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',
-            transport: 'algod',
+            transport: 'network',
             txs: [makeUnsignedAlgorandTransaction()],
         } as SignRequest
 

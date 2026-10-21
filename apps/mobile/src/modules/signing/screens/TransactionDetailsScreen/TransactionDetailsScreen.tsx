@@ -19,8 +19,8 @@ import { ChainNotice } from '@components/ChainNotice'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { GroupTransactionsPanel } from '@modules/algorand'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
+import { RelatedTransactions } from '@modules/signing/transactions/RelatedTransactions'
 import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
@@ -58,10 +58,10 @@ export const TransactionDetailsScreen = () => {
                     onRelatedTransactionPress={handleRelatedTransactionPress}
                 />
                 {isExternal && <ExternalTransactionCallout />}
-                <GroupTransactionsPanel
+                <RelatedTransactions
                     groupId={groupId}
                     currentTransaction={renderState.transaction}
-                    onGroupTransactionPress={handleRelatedTransactionPress}
+                    onRelatedTransactionPress={handleRelatedTransactionPress}
                 />
             </PWScreen>
         )

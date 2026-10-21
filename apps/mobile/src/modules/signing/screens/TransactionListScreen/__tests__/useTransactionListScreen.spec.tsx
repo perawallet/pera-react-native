@@ -34,7 +34,11 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(() => ({
-        currentRequest: { id: 'req-1', type: 'transactions' },
+        currentRequest: {
+            id: 'req-1',
+            type: 'transactions',
+            txs: [{ scope: { chainId: 'algorand', networkId: 'testnet' } }],
+        },
         listItems: [
             {
                 type: 'transaction',
@@ -97,6 +101,7 @@ describe('useTransactionListScreen', () => {
         result.current.handleTransactionPress(mockItem)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             transaction: native,
             isExternal: false,
         })

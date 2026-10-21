@@ -31,8 +31,6 @@ import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -43,9 +41,8 @@ export const useClaimProcessingScreen = () => {
     const appNavigation = useAppNavigation()
     const route =
         useRoute<RouteProp<MessagesStackParamList, 'ClaimProcessing'>>()
-    const { mode, assetIndex, shouldClaimAlgo } = route.params
+    const { mode, assetIndex, shouldClaimAlgo, scope } = route.params
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
 
@@ -73,7 +70,7 @@ export const useClaimProcessingScreen = () => {
         }
 
         const sendParams: SendClaimParams = {
-            sendMode: mode,
+            sendMode: mode === 'claim' ? 'claimAssetInbox' : 'rejectAssetInbox',
             sender: account,
             asset: asset.asset,
             shouldClaimAlgo,
@@ -99,7 +96,7 @@ export const useClaimProcessingScreen = () => {
                 })
                 navigation.replace('ClaimSuccess', {
                     transactionId: txId,
-                    variant: mode === 'claimArc59' ? 'claim' : 'reject',
+                    variant: mode,
                 })
             })
             .catch(error => {

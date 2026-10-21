@@ -15,6 +15,8 @@ import { describe, it, expect, vi } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
 import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 /**
  * Guards the invariant that this hook works with **no navigation context**.
  *
@@ -92,7 +94,9 @@ const asInboxItem = (item: unknown): InboxItem => item as InboxItem
 
 describe('useHandleInboxItemPress outside a navigator', () => {
     it('renders without a NavigationContainer', () => {
-        expect(() => renderHook(() => useHandleInboxItemPress())).not.toThrow()
+        expect(() =>
+            renderHook(() => useHandleInboxItemPress(SCOPE)),
+        ).not.toThrow()
     })
 
     it('handles an inbox item without a NavigationContainer', () => {
@@ -102,7 +106,7 @@ describe('useHandleInboxItemPress outside a navigator', () => {
             createdAt: new Date(0),
         }
 
-        const { result } = renderHook(() => useHandleInboxItemPress())
+        const { result } = renderHook(() => useHandleInboxItemPress(SCOPE))
 
         // navigationRef.isReady() is false with no container mounted, so the
         // push is a no-op rather than a crash — the point is that resolving

@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountBalancesQuery: () => ({ accountBalances: new Map() }),
+    useAccountBalancesQuery: (...args: unknown[]) => mockBalancesQuery(...args),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
@@ -100,6 +100,26 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 vi.mock('@hooks/useLanguage')
 
+const { mockCapability, mockBalancesQuery } = vi.hoisted(() => ({
+    mockCapability: vi.fn((_requirement: unknown) => true),
+    mockBalancesQuery: vi.fn((..._args: unknown[]) => ({
+        accountBalances: new Map(),
+    })),
+}))
+
+vi.mock('@hooks/useCapability', () => ({
+    useCapability: (requirement: unknown) => mockCapability(requirement),
+}))
+
+// The account's own chain, as useAccountScope resolves it.
+vi.mock('../../../hooks/useGiftCardScope', () => ({
+    useGiftCardScope: (account?: { chains: Record<string, unknown> }) => ({
+        chainId:
+            account && 'ethereum' in account.chains ? 'ethereum' : 'algorand',
+        networkId: 'mainnet',
+    }),
+}))
+
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -128,6 +148,7 @@ afterEach(() => {
 describe('useBidaliWebViewScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockCapability.mockReturnValue(true)
         const { result } = renderHook(() => useBidali())
         act(() => result.current.reset())
     })
@@ -203,6 +224,48 @@ describe('useBidaliWebViewScreen', () => {
             const { result } = renderHook(() => useBidaliWebViewScreen())
             expect(result.current.handleMessage).toBeTypeOf('function')
             expect(result.current.webviewRef).toBeDefined()
+        })
+    })
+    describe('chain scope and gate', () => {
+        it("scopes balances and the gate to an Algorand account's chain", () => {
+            const { result: store } = renderHook(() => useBidali())
+            act(() => store.current.setSelectedAccount(mockAccount))
+
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(result.current.isAvailable).toBe(true)
+            expect(mockCapability).toHaveBeenCalledWith({
+                chain: { chainId: 'algorand', capability: 'giftCards' },
+            })
+            expect(mockBalancesQuery).toHaveBeenCalledWith(
+                [mockAccount],
+                { chainId: 'algorand', networkId: 'mainnet' },
+                true,
+            )
+        })
+
+        it("scopes balances and the gate to an Ethereum account's chain", () => {
+            const ethereumAccount: WalletAccount = {
+                id: 'bidali-ethereum-account',
+                chains: { ethereum: { address: '0xA', keyPairId: 'kp' } },
+                name: 'Eth',
+                custody: { kind: 'local', seed: null },
+            }
+            mockCapability.mockReturnValue(false)
+            const { result: store } = renderHook(() => useBidali())
+            act(() => store.current.setSelectedAccount(ethereumAccount))
+
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(mockCapability).toHaveBeenCalledWith({
+                chain: { chainId: 'ethereum', capability: 'giftCards' },
+            })
+            expect(result.current.isAvailable).toBe(false)
+            expect(mockBalancesQuery).toHaveBeenCalledWith(
+                [ethereumAccount],
+                { chainId: 'ethereum', networkId: 'mainnet' },
+                false,
+            )
         })
     })
 })

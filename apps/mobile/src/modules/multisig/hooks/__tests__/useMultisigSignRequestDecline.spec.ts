@@ -19,6 +19,9 @@ import type {
 } from '@perawallet/wallet-core-multisig'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+
+const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
 
 const useAllAccountsMock = vi.fn<() => WalletAccount[]>()
 vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
@@ -44,20 +47,25 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useScopedDeviceID: () => 'device-123',
 }))
 
+const declineMutationParamsMock = vi.fn()
 const declineMutateAsyncMock = vi.fn()
 const declineIsPendingMock = vi.fn(() => false)
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     ACTIONABLE_SIGN_REQUEST_STATUSES: new Set(['pending', 'ready']),
-    useDeclineSignRequestMutation: () => ({
-        mutateAsync: declineMutateAsyncMock,
-        get isPending() {
-            return declineIsPendingMock()
-        },
-    }),
+    useDeclineSignRequestMutation: (params: unknown) => {
+        declineMutationParamsMock(params)
+        return {
+            mutateAsync: declineMutateAsyncMock,
+            get isPending() {
+                return declineIsPendingMock()
+            },
+        }
+    },
 }))
 
 const rejectRequestMock = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    chainIdOfSignRequest: (request: { chainId: string }) => request.chainId,
     useSigningRequest: () => ({
         rejectRequest: rejectRequestMock,
     }),
@@ -79,10 +87,13 @@ const PROPOSER = 'PROPOSER_ADDRESS'
 const OTHER = 'OTHER_ADDRESS'
 const SIGNER = 'SIGNER_ADDRESS'
 
-const buildAccount = (address: string): WalletAccount => ({
+const buildAccount = (
+    address: string,
+    chainId: ChainId = 'algorand',
+): WalletAccount => ({
     id: `algo25-${address}`,
     custody: { kind: 'local', seed: null },
-    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
+    chains: { [chainId]: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildMultisigSignRequest = (
@@ -118,17 +129,20 @@ const buildMultisigSignRequest = (
 
 const buildSignRequest = (
     signRequestId: Optional<string> = 'sr-1',
+    chainId: ChainId = 'algorand',
 ): SignRequest =>
     ({
         id: 'local-req-1',
+        chainId,
         type: 'transactions',
-        transport: 'algod',
+        transport: 'network',
         signRequestId,
         txs: [],
     }) as unknown as SignRequest
 
 describe('useMultisigSignRequestDecline', () => {
     beforeEach(() => {
+        declineMutationParamsMock.mockReset()
         declineMutateAsyncMock.mockReset().mockResolvedValue(undefined)
         declineIsPendingMock.mockReset().mockReturnValue(false)
         errorToastMock.mockReset()
@@ -142,6 +156,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: null,
                 }),
             )
@@ -155,6 +170,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest({
                         status: 'confirmed',
                     }),
@@ -170,6 +186,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -183,6 +200,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest({
                         transactionLists: [
                             {
@@ -211,6 +229,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -224,6 +243,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -241,6 +261,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -261,6 +282,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -278,6 +300,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -295,6 +318,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -317,6 +341,7 @@ describe('useMultisigSignRequestDecline', () => {
             const { result } = renderHook(() =>
                 useMultisigSignRequestDecline({
                     mode: 'cancel',
+                    chainId: 'algorand',
                     signRequest: buildMultisigSignRequest(),
                 }),
             )
@@ -419,7 +444,7 @@ describe('useMultisigSignRequestDecline', () => {
             const requestWithoutId = {
                 id: 'local-req-1',
                 type: 'transactions',
-                transport: 'algod',
+                transport: 'network',
                 txs: [],
             } as unknown as SignRequest
 
@@ -483,6 +508,71 @@ describe('useMultisigSignRequestDecline', () => {
             )
             expect(rejectRequestMock).not.toHaveBeenCalled()
             expect(invalidateInboxMock).not.toHaveBeenCalled()
+        })
+    })
+    describe('chain resolution', () => {
+        it('declines on the sign request chain, Algorand', () => {
+            renderHook(() =>
+                useMultisigSignRequestDecline({
+                    mode: 'decline',
+                    request: buildSignRequest('sr-1'),
+                    signerAddress: SIGNER,
+                }),
+            )
+
+            expect(declineMutationParamsMock).toHaveBeenCalledWith({
+                scope: expect.objectContaining({ chainId: 'algorand' }),
+                signRequestId: 'sr-1',
+            })
+        })
+
+        it('declines on the sign request chain, Ethereum', () => {
+            renderHook(() =>
+                useMultisigSignRequestDecline({
+                    mode: 'decline',
+                    request: buildSignRequest('sr-1', ETHEREUM_CHAIN_ID),
+                    signerAddress: SIGNER,
+                }),
+            )
+
+            expect(declineMutationParamsMock).toHaveBeenCalledWith({
+                scope: expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+                signRequestId: 'sr-1',
+            })
+        })
+
+        it('cancels on the passed chain and finds the proposer there only', () => {
+            useAllAccountsMock.mockReturnValue([buildAccount(PROPOSER)])
+
+            const { result: onEthereum } = renderHook(() =>
+                useMultisigSignRequestDecline({
+                    mode: 'cancel',
+                    chainId: ETHEREUM_CHAIN_ID,
+                    signRequest: buildMultisigSignRequest(),
+                }),
+            )
+
+            expect(declineMutationParamsMock).toHaveBeenCalledWith({
+                scope: expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+                signRequestId: 'sr-1',
+            })
+            expect(onEthereum.current.canPerform).toBe(false)
+        })
+
+        it('lets an Ethereum proposer cancel on Ethereum', () => {
+            useAllAccountsMock.mockReturnValue([
+                buildAccount(PROPOSER, ETHEREUM_CHAIN_ID),
+            ])
+
+            const { result } = renderHook(() =>
+                useMultisigSignRequestDecline({
+                    mode: 'cancel',
+                    chainId: ETHEREUM_CHAIN_ID,
+                    signRequest: buildMultisigSignRequest(),
+                }),
+            )
+
+            expect(result.current.canPerform).toBe(true)
         })
     })
 })

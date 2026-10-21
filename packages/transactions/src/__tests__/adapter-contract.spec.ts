@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import type { SendFlowChainAdapter } from '../chain-adapter'
+import { toAssetInboxQuote, type SendFlowChainAdapter } from '../chain-adapter'
 import { sendFlowContractTests } from './adapter-contract'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const isQuote = (summary: unknown): boolean =>
-    typeof summary === 'object' && summary !== null && 'fee' in summary
+const isQuote = (quote: object): boolean => 'fee' in quote
 
 const adapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: async () => [],
     transactionFee: vi.fn(),
     assetInbox: {
-        buildSendTxs: async ({ summary }) => {
-            if (!isQuote(summary)) throw new Error('malformed quote')
+        buildSendTxs: async ({ quote }) => {
+            if (!isQuote(quote)) throw new Error('malformed quote')
             return []
         },
         buildClaimTxs: async () => [],
@@ -38,7 +37,7 @@ sendFlowContractTests(() => adapter, {
         receiver: 'RECEIVER',
         assetId: 1n,
         amount: 1n,
-        summary: { fee: 1 },
+        quote: toAssetInboxQuote({ fee: 1 }),
         senderMinFee: 1000n,
     },
 })

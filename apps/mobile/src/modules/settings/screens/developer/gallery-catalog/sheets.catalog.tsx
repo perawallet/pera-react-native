@@ -20,6 +20,8 @@ import {
 } from '@perawallet/wallet-core-dev-fixtures'
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { AccountMenuContent } from '@modules/accounts/components/AccountMenuContent'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -40,7 +42,7 @@ import { RenameAccountContent } from '@modules/accounts/components/AccountOption
 import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
-import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
+import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
 import { ViewTextDetailsContent } from '@modules/algorand/components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
@@ -57,6 +59,7 @@ import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccou
 import { LedgerConnectingContent } from '@modules/ledger/components/LedgerConnectingContent'
 import { LedgerHowItWorksContent } from '@modules/ledger/components/LedgerHowItWorksContent'
 import { AddParticipantContent } from '@modules/multisig/components/AddParticipantContent'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { MultisigInvitationDetailContent } from '@modules/messages/components/MultisigInvitationDetailContent'
@@ -95,6 +98,14 @@ const RatingsGalleryContent = React.lazy(() =>
     })),
 )
 
+// The mock asset and accounts are on the first registered chain.
+const firstChainScope = () =>
+    getSelectedScope(getProvider().chains.list()[0].id)
+
+const AddParticipantPreview = () => (
+    <AddParticipantContent chainId={useCapableChainId('multisig')} />
+)
+
 export const getSheetSections = (): GallerySection[] => [
     {
         title: 'Registered',
@@ -115,7 +126,11 @@ export const getSheetSections = (): GallerySection[] => [
                 launch: {
                     kind: 'sheetByType',
                     type: 'asset-opt-in',
-                    props: { assetId: MOCK_ASSET_ID, accountAddress: A },
+                    props: {
+                        assetId: MOCK_ASSET_ID,
+                        accountAddress: A,
+                        scope: firstChainScope(),
+                    },
                     options: { enablePanDownToClose: true },
                 },
             },
@@ -345,6 +360,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <OptOutConfirmationContent
                                     assetId={MOCK_ASSET_ID}
                                     accountAddress={A}
+                                    scope={firstChainScope()}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -412,6 +428,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <OptInConfirmationContent
                                     assetId={MOCK_ASSET_ID}
                                     accountAddress={A}
+                                    scope={firstChainScope()}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -842,7 +859,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <AddParticipantContent />
+                                <AddParticipantPreview />
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -1210,14 +1227,14 @@ export const getSheetSections = (): GallerySection[] => [
         title: 'Misc',
         items: [
             {
-                id: 'sheet-arc59-warning',
-                label: 'ARC-59 warning',
+                id: 'sheet-asset-inbox-warning',
+                label: 'Asset inbox warning',
                 launch: {
                     kind: 'sheet',
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ARC59WarningContent />
+                                <AssetInboxWarningContent />
                             </GallerySheetBoundary>
                         ),
                         options: {
