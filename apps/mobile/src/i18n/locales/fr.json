@@ -376,8 +376,6 @@
         "copy_address": "Copier l’adresse",
         "shared_account_detail": "Détail du compte partagé ({{count}})",
         "show_address": "Afficher l’adresse",
-        "view_passphrase_hd": "Voir la passphrase de récupération du wallet racine",
-        "view_passphrase_algo25": "Voir la passphrase de récupération",
         "undo_rekey": "Annuler le rekey",
         "rekeyed_to": "Rekey vers",
         "rekey_account": "Rekey du compte",
@@ -412,7 +410,13 @@
         "backup_warning_cancel": "Non, conserver le compte",
         "remove_rekey_error_title": "Suppression impossible",
         "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)",
-        "view_private_key": "Voir la clé privée"
+        "view_private_key": "Voir la clé privée",
+        "networks_title": "Réseaux",
+        "add_network": "Ajouter",
+        "add_network_error": "Impossible d’ajouter ce réseau",
+        "see_all_networks": "Voir tous les réseaux",
+        "view_passphrase": "Voir la passphrase",
+        "network_options": "Plus d’options"
     },
     "account_info": {
         "min_balance": "Solde min.",
@@ -436,8 +440,7 @@
         "rekey_signer_shared": "un compte partagé",
         "rekey_signer_quantum": "un compte quantique",
         "type_no_auth": "Sans auth",
-        "type_unknown": "Compte inconnu",
-        "networks": "Réseaux"
+        "type_unknown": "Compte inconnu"
     },
     "account_type_info": {
         "standard_title": "Compte Algo25",

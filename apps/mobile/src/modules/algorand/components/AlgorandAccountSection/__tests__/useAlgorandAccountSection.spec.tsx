@@ -44,6 +44,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics/events/contexts')),
+    ...(await vi.importActual<object>('@analytics/events/metadata-keys')),
     trackEvent: vi.fn(),
 }))
 

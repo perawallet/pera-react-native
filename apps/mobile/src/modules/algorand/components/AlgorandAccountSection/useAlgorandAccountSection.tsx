@@ -36,6 +36,7 @@ import {
     trackEvent,
     AccountDetailsEvent,
     AccountOptionsEvent,
+    AnalyticsMetadataKey,
 } from '@analytics'
 import {
     RekeyOptionsContent,
@@ -83,7 +84,9 @@ export const useAlgorandAccountSection = ({
         (target: AuthorityTargetCategory) => {
             switch (target) {
                 case AuthorityTargetCategories.hardware: {
-                    trackEvent(AccountOptionsEvent.RekeyToLedger)
+                    trackEvent(AccountOptionsEvent.RekeyToLedger, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToLedger', {
                         screen: 'RekeyToLedgerIntro',
                         params: { sourceAddress: address },
@@ -91,7 +94,9 @@ export const useAlgorandAccountSection = ({
                     return
                 }
                 case AuthorityTargetCategories.standard: {
-                    trackEvent(AccountOptionsEvent.RekeyToStandard)
+                    trackEvent(AccountOptionsEvent.RekeyToStandard, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToStandard', {
                         screen: 'RekeyToStandardIntro',
                         params: { sourceAddress: address },
@@ -99,7 +104,9 @@ export const useAlgorandAccountSection = ({
                     return
                 }
                 case AuthorityTargetCategories.postQuantum: {
-                    trackEvent(AccountOptionsEvent.RekeyToQuantum)
+                    trackEvent(AccountOptionsEvent.RekeyToQuantum, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToQuantum', {
                         screen: 'RekeyToQuantumIntro',
                         params: { sourceAddress: address },
@@ -107,7 +114,9 @@ export const useAlgorandAccountSection = ({
                     return
                 }
                 case AuthorityTargetCategories.shared: {
-                    trackEvent(AccountDetailsEvent.JointAccountRekey)
+                    trackEvent(AccountDetailsEvent.JointAccountRekey, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    })
                     navigation.navigate('RekeyToShared', {
                         screen: 'RekeyToSharedIntro',
                         params: { sourceAddress: address },
@@ -115,7 +124,7 @@ export const useAlgorandAccountSection = ({
                 }
             }
         },
-        [navigation, address],
+        [navigation, address, scope.chainId],
     )
 
     const handleRekeyAccount = useCallback(async () => {
@@ -139,13 +148,15 @@ export const useAlgorandAccountSection = ({
     }, [onClose, isSharedAccount, requestBottomSheet, navigateToRekeyFlow])
 
     const handleScanRekeyed = useCallback(() => {
-        trackEvent(AccountOptionsEvent.ScanRekeyed)
+        trackEvent(AccountOptionsEvent.ScanRekeyed, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         onClose()
         navigation.navigate('RescanRekeyed', {
             screen: 'RescanRekeyedSelect',
             params: { sourceAddress: address },
         })
-    }, [onClose, navigation, address])
+    }, [onClose, navigation, address, scope.chainId])
 
     const options = useMemo(() => {
         const items: SheetOption[] = []
