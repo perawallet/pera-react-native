@@ -659,26 +659,33 @@ const probeChainEntries = async (
 
 /**
  * `draft` with every active eligible chain enabled as `'discovery'`, the
- * chain it was imported on included. Skipped when that chain is the only
- * eligible one, so a single-chain build makes no extra network call. A chain
- * whose address another account already holds is left off.
+ * chain it was imported on included. That chain stays only when it is active
+ * or nothing else is. Skipped when that chain is the only eligible one, so a
+ * single-chain build makes no extra network call. A chain whose address
+ * another account already holds is left off.
  */
 const withDiscoveredChains = async (
     draft: WalletAccount,
     accounts: readonly WalletAccount[],
+    importChainId: ChainId,
 ): Promise<{ account: WalletAccount; unusedKeys: string[] }> => {
     const eligible = eligibleChainsInFamily(draft)
     if (eligible.length < 2) return { account: draft, unusedKeys: [] }
     const { active, unusedKeys } = await probeChainEntries(draft, eligible)
     const enabledAt = Date.now()
     const chains: AccountChains = { ...draft.chains }
+    let hasDiscoveredOtherChain = false
     for (const [chainId, entry] of active) {
         const own = chainAccountOf(draft, chainId)
         if (own) {
             chains[chainId] = { ...own, enabledAt, enabledBy: 'discovery' }
         } else if (!holdsAddressOn(accounts, entry.address, chainId)) {
             chains[chainId] = withEnablement(entry, 'discovery', enabledAt)
+            hasDiscoveredOtherChain = true
         }
+    }
+    if (hasDiscoveredOtherChain && !active.has(importChainId)) {
+        delete chains[importChainId]
     }
     return { account: { ...draft, chains }, unusedKeys }
 }
@@ -913,7 +920,11 @@ export const useAccountsStore: UseBoundStore<
                             enabledBy: enabledBy ?? 'created',
                         })
                         const { account, unusedKeys } = shouldDiscover
-                            ? await withDiscoveredChains(draft, accounts)
+                            ? await withDiscoveredChains(
+                                  draft,
+                                  accounts,
+                                  chainId,
+                              )
                             : { account: draft, unusedKeys: [] }
                         get().addAccount(account)
                         await removeUnreferencedKeys(get().accounts, unusedKeys)
@@ -958,7 +969,11 @@ export const useAccountsStore: UseBoundStore<
                     chainId,
                     chains: { [chainId]: { address: normalized } },
                 })
-                const { account } = await withDiscoveredChains(draft, accounts)
+                const { account } = await withDiscoveredChains(
+                    draft,
+                    accounts,
+                    chainId,
+                )
                 get().addAccount(account)
                 return account
             },
