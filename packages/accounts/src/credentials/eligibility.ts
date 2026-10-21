@@ -169,6 +169,23 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
     )
 }
 
+/** Whether the chain is registered and flagged to be enabled on a new account unasked. */
+export const isEnabledByDefault = (chainId: ChainId): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(chainId) && chains.get(chainId).descriptor.enabledByDefault
+    )
+}
+
+/** The eligible chains a new account starts enabled on, in registry order. */
+export const defaultChains = (account: WalletAccount): ChainId[] =>
+    eligibleChains(account).filter(isEnabledByDefault)
+
+/** The first default chain among `chainIds`, else the first of them. */
+export const preferDefaultChain = (
+    chainIds: readonly ChainId[],
+): ChainId | undefined => chainIds.find(isEnabledByDefault) ?? chainIds[0]
+
 /** Whether the chain imports an account from raw private-key bytes. */
 export const canImportRawKey = (chainId: ChainId): boolean => {
     const { chains } = getProvider()

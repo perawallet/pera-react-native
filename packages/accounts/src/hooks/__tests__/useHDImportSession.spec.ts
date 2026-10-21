@@ -28,6 +28,14 @@ const kmsMock = vi.hoisted(() => ({
     removeKeyAndChildren: vi.fn().mockResolvedValue(undefined),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
+const withDefaultChainsMock = vi.hoisted(() =>
+    vi.fn(async <A>(draft: A): Promise<A> => draft),
+)
+
+vi.mock('../../store', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../store')>()),
+    withDefaultChains: withDefaultChainsMock,
+}))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
@@ -158,6 +166,46 @@ describe('useHDImportSession', () => {
         })
 
         expect(discoverChains).toHaveBeenCalledExactlyOnceWith(selected[0].id)
+    })
+
+    test('commitImport persists and returns each account with its default chains, then looks for activity', async () => {
+        const order: string[] = []
+        withDefaultChainsMock.mockImplementationOnce(async draft => {
+            order.push('defaults')
+            return {
+                ...draft,
+                chains: {
+                    ...draft.chains,
+                    second: { address: 'SECOND', keyPairId: 'second-key' },
+                },
+            }
+        })
+        vi.spyOn(
+            useAccountsStore.getState(),
+            'discoverChains',
+        ).mockImplementation(async () => {
+            order.push('discover')
+            return []
+        })
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+
+        let saved: LocalAccount[] = []
+        await act(async () => {
+            saved = await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        expect(Object.keys(saved[0].chains)).toEqual([
+            TESTNET_SCOPE.chainId,
+            'second',
+        ])
+        expect(useAccountsStore.getState().accounts).toEqual(saved)
+        expect(order).toEqual(['defaults', 'discover'])
     })
 
     test('commitImport removes the persisted seed and keeps the session when a child derive rejects', async () => {

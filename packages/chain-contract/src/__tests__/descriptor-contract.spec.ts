@@ -92,6 +92,7 @@ const fixture: ChainDescriptor = {
     },
     finality: { kind: 'instant' },
     uriSchemes: ['algorand'],
+    enabledByDefault: true,
 }
 
 const defaults = Object.fromEntries(

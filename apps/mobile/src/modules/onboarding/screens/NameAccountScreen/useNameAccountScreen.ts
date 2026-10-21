@@ -17,6 +17,7 @@ import {
     chainAccountOf,
     findAccountByAddressOn,
     getAccountDisplayName,
+    preferDefaultChain,
     hdIndexOf,
     isHardwareWalletAccount,
     isWatchAccount,
@@ -24,6 +25,7 @@ import {
     useAccountsStore,
     useAllAccounts,
     useCreateAccount,
+    useRegisteredChainIds,
     useSelectedAccountId,
     useUpdateAccount,
     type WalletAccount,
@@ -39,7 +41,10 @@ import {
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
@@ -62,9 +67,30 @@ export const useNameAccountScreen = () => {
     const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
-    const chainId = route.params?.chainId ?? LEGACY_CHAIN_ID
+    const requestedChainId = route.params?.chainId ?? LEGACY_CHAIN_ID
+    // Discovery can leave the chain an import was made on off the account.
+    const chainId =
+        routeAccount && !chainAccountOf(routeAccount, requestedChainId)
+            ? (preferDefaultChain(
+                  Object.keys(routeAccount.chains) as ChainId[],
+              ) ?? requestedChainId)
+            : requestedChainId
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
+    const registeredChainIds = useRegisteredChainIds()
+
+    // The stored record, once there is one: discovery can add chains to it
+    // after the route param was made.
+    const storedAccount = account
+        ? accounts.find(a => a.id === account.id)
+        : undefined
+    const enabledChainIds = useMemo((): ChainId[] => {
+        const shown = storedAccount ?? account
+        if (!shown || registeredChainIds.length < 2) return []
+        return registeredChainIds.filter(chainId =>
+            chainAccountOf(shown, chainId),
+        )
+    }, [storedAccount, account, registeredChainIds])
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
@@ -122,27 +148,28 @@ export const useNameAccountScreen = () => {
                 account ||
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            const namedAccount = { ...targetAccount, name: walletDisplay }
             const storedAccounts = useAccountsStore.getState().accounts
             const targetAddress = chainAccountOf(
                 targetAccount,
                 chainId,
             )?.address
             // Watched, derived and imported accounts are persisted before
-            // naming, so naming updates them rather than adding a duplicate.
-            const isAlreadyInStore =
-                storedAccounts.some(a => a.id === targetAccount.id) ||
-                (targetAddress !== undefined &&
-                    !!findAccountByAddressOn(
-                        storedAccounts,
-                        chainId,
-                        targetAddress,
-                    ))
+            // naming, so naming renames the stored record: the route copy can
+            // lack chains enabled since it was made.
+            const stored =
+                storedAccounts.find(a => a.id === targetAccount.id) ??
+                (targetAddress !== undefined
+                    ? findAccountByAddressOn(
+                          storedAccounts,
+                          chainId,
+                          targetAddress,
+                      )
+                    : undefined)
 
-            if (isAlreadyInStore) {
-                updateAccount(namedAccount)
+            if (stored) {
+                updateAccount({ ...stored, name: walletDisplay })
             } else {
-                await saveAccount(namedAccount)
+                await saveAccount({ ...targetAccount, name: walletDisplay })
             }
 
             trackEvent(OnboardingEvent.RegisterAccount, {
@@ -156,7 +183,7 @@ export const useNameAccountScreen = () => {
 
             // Explicitly select the new account to ensure it's ready for AccountScreen
             // This triggers navigation via useShowOnboarding(), which waits for selection
-            setSelectedAccountId(targetAccount.id)
+            setSelectedAccountId(stored?.id ?? targetAccount.id)
 
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)
@@ -179,5 +206,7 @@ export const useNameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        chainId,
+        enabledChainIds,
     }
 }

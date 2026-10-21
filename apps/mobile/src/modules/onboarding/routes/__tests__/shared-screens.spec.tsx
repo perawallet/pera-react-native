@@ -127,6 +127,21 @@ describe('renderImportFlowScreens', () => {
         expect(names).toContain('CloudBackupRestoreScan')
     })
 
+    it('registers the private-key import only while some chain allows private keys', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+        const namesWith = (
+            isAllowed: Parameters<typeof renderImportFlowScreens>[1],
+        ) =>
+            collectScreenChildren(
+                renderImportFlowScreens(Stack, isAllowed, 'algorand'),
+            ).map(child => child.props.name)
+
+        expect(namesWith(allowAll)).toContain('ImportPrivateKey')
+        expect(
+            namesWith(({ anyChain }) => anyChain !== 'privateKeys'),
+        ).not.toContain('ImportPrivateKey')
+    })
+
     it('leaves out the rekeyed-address import while rekey is off', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 

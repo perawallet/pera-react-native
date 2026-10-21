@@ -2186,6 +2186,8 @@
             "recover_wallet_description": "Je souhaite récupérer un wallet Algorand",
             "recover_qr_title": "Récupérer un compte avec un QR code",
             "recover_qr_description": "Je souhaite récupérer un compte Algorand à l’aide d’un QR code",
+            "private_key_title": "Importer une clé privée",
+            "private_key_description": "Ajoutez un compte à partir de sa clé privée",
             "pair_ledger_title": "Associer un Ledger via Bluetooth",
             "pair_ledger_description": "Je souhaite récupérer un compte Algorand sécurisé par mon hardware wallet Ledger via Bluetooth",
             "pair_ledger_usb_title": "Associer un Ledger via USB",

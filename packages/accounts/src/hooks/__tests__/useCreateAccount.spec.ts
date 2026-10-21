@@ -35,6 +35,15 @@ import { addressOn, signingKeyOn } from '../../credentials'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
+const withDefaultChainsMock = vi.hoisted(() =>
+    vi.fn(async <A>(draft: A): Promise<A> => draft),
+)
+
+vi.mock('../../store', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../store')>()),
+    withDefaultChains: withDefaultChainsMock,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 const deriveAccount = () =>
@@ -251,6 +260,51 @@ describe('useCreateAccount', () => {
                 }),
             ).rejects.toThrow('Failed to generate master key')
         })
+    })
+
+    test('gives a new HD account its default chains before handing it out', async () => {
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET1')
+            .mockImplementationOnce(() => 'ACC1')
+        withDefaultChainsMock.mockImplementationOnce(async draft => ({
+            ...draft,
+            chains: {
+                ...draft.chains,
+                second: { address: 'SECOND', keyPairId: 'second-key' },
+            },
+        }))
+
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
+
+        let built: any
+        await act(async () => {
+            built = await result.current.buildHdWalletAccount({
+                account: 0,
+                keyIndex: 0,
+            })
+        })
+
+        expect(withDefaultChainsMock).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'ACC1' }),
+        )
+        expect(Object.keys(built.chains)).toEqual([FAKE_CHAIN_ID, 'second'])
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
+
+    test('keeps an account built for a known seed on its own chain', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount(MAINNET_SCOPE))
+
+        await act(async () => {
+            await result.current.createHdWalletAccountForSeed({
+                seedKeyId: 'IMPORTED_SEED',
+                account: 0,
+                keyIndex: 0,
+            })
+        })
+
+        expect(withDefaultChainsMock).not.toHaveBeenCalled()
     })
 
     test('createHdWalletAccountForSeed derives directly from seedKeyId without consulting getKey or createHDWalletKey (regression: stale useMemo)', async () => {

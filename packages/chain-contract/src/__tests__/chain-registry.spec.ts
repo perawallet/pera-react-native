@@ -86,6 +86,7 @@ const descriptor: ChainDescriptor = {
     },
     finality: { kind: 'instant' },
     uriSchemes: ['algorand'],
+    enabledByDefault: true,
 }
 
 const build = {

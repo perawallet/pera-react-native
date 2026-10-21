@@ -295,6 +295,21 @@ describe('importAccountFromPrivateKey across the chains of a family', () => {
         expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
     })
 
+    test('leaves the chain it was imported on off when only another chain of its family has activity', async () => {
+        families.active.add(POLYGON)
+
+        const account = await importOn(ETHEREUM)
+
+        expect(Object.keys(account.chains)).toEqual([POLYGON])
+        expect(account.chains[POLYGON]).toMatchObject({
+            keyPairId: EVM_KEY_ID,
+            enabledBy: 'discovery',
+        })
+        expect(getProvider().key.store.remove).not.toHaveBeenCalledWith(
+            EVM_KEY_ID,
+        )
+    })
+
     test('keeps only the chain it was imported on, as created, when nothing has activity', async () => {
         const account = await importOn(ETHEREUM)
 

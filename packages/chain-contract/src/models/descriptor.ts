@@ -90,4 +90,9 @@ export interface ChainDescriptor {
     finality: ChainFinality
     /** Schemes, without the `:`, that the chain's payment and deep links use. */
     uriSchemes: readonly string[]
+    /**
+     * A new account is enabled on this chain without being asked: on create,
+     * and as its family's fallback when an import or watch finds no activity.
+     */
+    enabledByDefault: boolean
 }

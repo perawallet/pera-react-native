@@ -13,7 +13,7 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { useAccountsStore } from '../store'
+import { useAccountsStore, withDefaultChains } from '../store'
 import type { WalletAccount } from '../models'
 import { NoHdSeedError } from '../errors'
 import { buildAccount } from '../credentials'
@@ -99,11 +99,13 @@ export const useCreateAccount = (scope: ChainScope) => {
 
             if (!seedKeyId) throw new NoHdSeedError(rootWalletId)
 
-            const newAccount = await buildHdWalletAccountForSeed({
-                seedKeyId,
-                account,
-                keyIndex,
-            })
+            const newAccount = await withDefaultChains(
+                await buildHdWalletAccountForSeed({
+                    seedKeyId,
+                    account,
+                    keyIndex,
+                }),
+            )
 
             if (createdNewSeed) {
                 setPendingAccountRollback(() =>
