@@ -125,8 +125,8 @@ const errorMessage = text => {
     }
 }
 
-// Messages name the step, never the URL or response: both carry the publisher
-// and item ids, which are CI secrets.
+// Messages name the step and Google's error text, never the URL: it carries
+// the publisher and item ids, which are CI secrets.
 const call = async (token, step, method, url, body, headers = {}) => {
     const response = await fetch(url, {
         method,
