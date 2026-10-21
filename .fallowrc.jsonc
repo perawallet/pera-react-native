@@ -14,7 +14,10 @@
     "apps/browser/web-shims/**",
     // EVM config key naming: generate-config.sh runs it with node, and the
     // browser build loads it through createRequire.
-    "tools/dev/evm-config-keys.cjs"
+    "tools/dev/evm-config-keys.cjs",
+    // Release scripts Bitrise runs with node by path (.bitrise/bitrise.yml);
+    // the shell tests under tools/__tests__ are their only other callers.
+    "tools/release/*.mjs"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.
