@@ -20,7 +20,9 @@ Denied Camera Shows The Scanner's Permission State
     Wait Until Page Contains Element    ${CAMERA_DENIED_TITLE}    timeout=15s
     Tap    ${CAMERA_DENIED_CLOSE}
     Wait Until Page Does Not Contain Element    ${CAMERA_DENIED_TITLE}    timeout=10s
-    Page Should Contain Element    ${MENU_TAB}
+    # The tab bar is re-rendering as the sheet leaves, so an immediate check can read the frame
+    # before it is back; the assertion is that we returned to Home, not how fast.
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=15s
     [Teardown]    Restore Camera Permission
 
 Passphrase Screen Is Capture Protected

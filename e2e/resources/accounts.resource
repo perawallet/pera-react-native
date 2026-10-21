@@ -225,3 +225,20 @@ Passphrase Ack Row
     ...                concatenated into an xpath, so the index is applied here instead.
     [Arguments]    ${index}
     RETURN    xpath=//*[@resource-id='${PASSPHRASE_ACK_ROW_ID}${index}' or @name='${PASSPHRASE_ACK_ROW_ID}${index}' or @content-desc='${PASSPHRASE_ACK_ROW_ID}${index}']
+
+Confirm Removal Until The Sheet Goes
+    [Documentation]    Taps Remove until the confirmation sheet leaves.
+    ...
+    ...                A single tap was swallowed on a run where the screenshot showed the sheet
+    ...                still open with both buttons on it, so the tap never reached the button
+    ...                rather than removal being slow. Cancel is never tapped, so a retry cannot
+    ...                undo a removal that did start.
+    FOR    ${attempt}    IN RANGE    4
+        Run Keyword And Ignore Error    Tap    ${REMOVE_CONFIRM_BUTTON}
+        ${gone}=    Run Keyword And Return Status
+        ...    Wait Until Page Does Not Contain Element    ${REMOVE_CONFIRM_BUTTON}    timeout=10s
+        IF    ${gone}    RETURN
+    END
+    ${cancel}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${REMOVE_CANCEL_BUTTON}
+    Fail    The remove-account sheet is still up after four taps on Remove (its Cancel is ${cancel} present), so the taps are not reaching the button.

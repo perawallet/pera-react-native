@@ -114,9 +114,8 @@ Confirmed Removal Drops The Account
     Add Account To Wallet
     ${before}=    Count Accounts
     Start Account Removal
-    Tap    ${REMOVE_CONFIRM_BUTTON}
     # Home stays in the tree under the sheet; the sheet leaving is what proves removal finished.
-    Wait Until Page Does Not Contain Element    ${REMOVE_CONFIRM_BUTTON}    timeout=30s
+    Confirm Removal Until The Sheet Goes
     ${after}=    Count Accounts
     Should Be Equal As Integers    ${after}    ${before - 1}
 
