@@ -10,9 +10,8 @@
  limitations under the License
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useWatchAccountCopy } from '../useWatchAccountCopy'
+import { watchAccountCopyFor } from '../watchAccountCopyFor'
 
 const ALGORAND_COPY = {
     optionDescriptionKey: 'algorand.option',
@@ -35,7 +34,7 @@ vi.mock('@modules/chain-ui', () => ({
 
 const chains = (...ids: string[]) => ids as ChainId[]
 
-describe('useWatchAccountCopy', () => {
+describe('watchAccountCopyFor', () => {
     beforeEach(() => {
         mocks.chains = [
             { id: 'algorand', family: 'algorand' },
@@ -45,19 +44,15 @@ describe('useWatchAccountCopy', () => {
     })
 
     it("uses Algorand's own copy while only Algorand can watch accounts", () => {
-        const { result } = renderHook(() =>
-            useWatchAccountCopy(chains('algorand')),
-        )
+        const copy = watchAccountCopyFor(chains('algorand'))
 
-        expect(result.current).toEqual(ALGORAND_COPY)
+        expect(copy).toEqual(ALGORAND_COPY)
     })
 
     it('names no chain while chains of several families can watch accounts', () => {
-        const { result } = renderHook(() =>
-            useWatchAccountCopy(chains('algorand', 'ethereum')),
-        )
+        const copy = watchAccountCopyFor(chains('algorand', 'ethereum'))
 
-        expect(result.current).toEqual({
+        expect(copy).toEqual({
             optionDescriptionKey:
                 'onboarding.add_account.watch_address_option_description_generic',
             descriptionKey: 'onboarding.watch_account.description_generic',
@@ -67,19 +62,17 @@ describe('useWatchAccountCopy', () => {
     })
 
     it('names no chain while only a family without its own copy can watch accounts', () => {
-        const { result } = renderHook(() =>
-            useWatchAccountCopy(chains('ethereum', 'base')),
-        )
+        const copy = watchAccountCopyFor(chains('ethereum', 'base'))
 
-        expect(result.current.descriptionKey).toBe(
+        expect(copy.descriptionKey).toBe(
             'onboarding.watch_account.description_generic',
         )
     })
 
     it('names no chain when no chain can watch accounts', () => {
-        const { result } = renderHook(() => useWatchAccountCopy(chains()))
+        const copy = watchAccountCopyFor(chains())
 
-        expect(result.current.descriptionKey).toBe(
+        expect(copy.descriptionKey).toBe(
             'onboarding.watch_account.description_generic',
         )
     })

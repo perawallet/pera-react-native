@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import {
     accountPresentationChainAdapters,
@@ -21,6 +21,10 @@ import {
 import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -161,31 +165,12 @@ vi.mock('@hooks/useCapability', async () =>
     (await import('@test-utils/capability-mock')).capabilityHookMock(),
 )
 
-const mockWatchCapableChainIds = vi.hoisted(() => ['algorand', 'ethereum'])
-vi.mock('@hooks/useCapableChainIds', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@hooks/useCapableChainIds')>()
-    return {
-        ...actual,
-        useCapableChainIds: (
-            capability: Parameters<typeof actual.useCapableChainIds>[0],
-        ) =>
-            capability === 'watchAccounts'
-                ? mockWatchCapableChainIds
-                : actual.useCapableChainIds(capability),
-    }
-})
-
-const mockUseWatchAccountCopy = vi.hoisted(() =>
-    vi.fn((_chainIds: readonly string[]) => ({
-        optionDescriptionKey: 'watch.option',
-        descriptionKey: 'watch.description',
-        invalidAddressKey: 'watch.invalid',
-    })),
-)
-vi.mock('@modules/onboarding/hooks/useWatchAccountCopy', () => ({
-    useWatchAccountCopy: (chainIds: readonly string[]) =>
-        mockUseWatchAccountCopy(chainIds),
+const mockWatchableChainIds = vi.hoisted(() => ({
+    chainIds: ['algorand'] as string[],
+}))
+vi.mock('@modules/onboarding/hooks', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/onboarding/hooks')>()),
+    useWatchableChainIds: () => mockWatchableChainIds.chainIds,
 }))
 
 const setQuantumEnabled = (isEnabled: boolean): void => {
@@ -675,18 +660,36 @@ describe('useAddAccountScreen', () => {
         ).toBe(false)
     })
 
-    it('describes the watch option with the copy for the chains that can watch accounts', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
+    describe('watch option copy', () => {
+        const watchOptionDescription = (
+            options: { testID: string; descriptionKey: string }[],
+        ) =>
+            options.find(o => o.testID === 'add_account_watch_button')
+                ?.descriptionKey
 
-        expect(mockUseWatchAccountCopy).toHaveBeenCalledWith([
-            'algorand',
-            'ethereum',
-        ])
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_watch_button',
-            )?.descriptionKey,
-        ).toBe('watch.option')
+        afterEach(() => {
+            mockWatchableChainIds.chainIds = ['algorand']
+            restoreAlgorandOnlyChains()
+        })
+
+        it('names Algorand while only Algorand can watch accounts', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            expect(watchOptionDescription(result.current.otherOptions)).toBe(
+                'onboarding.add_account.watch_address_option_description',
+            )
+        })
+
+        it('names no chain once Ethereum can watch accounts too', () => {
+            registerEthereumChain()
+            mockWatchableChainIds.chainIds = ['algorand', 'ethereum']
+
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            expect(watchOptionDescription(result.current.otherOptions)).toBe(
+                'onboarding.add_account.watch_address_option_description_generic',
+            )
+        })
     })
 
     it('mainOptions excludes quantum option when the flag is disabled', () => {

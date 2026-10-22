@@ -29,7 +29,7 @@ const GENERIC_WATCH_ACCOUNT_COPY: WatchAccountCopy = {
 }
 
 /** The family's own copy while every chain in `chainIds` belongs to it, else copy that names no chain. */
-export const useWatchAccountCopy = (
+export const watchAccountCopyFor = (
     chainIds: readonly ChainId[],
 ): WatchAccountCopy => {
     const families = new Set<ChainFamily>(

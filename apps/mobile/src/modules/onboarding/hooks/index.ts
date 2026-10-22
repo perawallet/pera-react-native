@@ -17,6 +17,7 @@ export {
 } from './useOnboardingStore'
 export { useExitAccountFlow } from './useExitAccountFlow'
 export { usePrivateKeyImportChainId } from './usePrivateKeyImportChainId'
+export { useWatchableChainIds } from './useWatchableChainIds'
 export { useAsbImportFlowStore } from './asbImportFlowStore'
 export { usePeraWebImportFlowStore } from './peraWebImportFlowStore'
 export { useMnemonicWordEntry } from './useMnemonicWordEntry'

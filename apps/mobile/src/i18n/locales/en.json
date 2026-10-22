@@ -2172,7 +2172,7 @@
             "qr_scan_invalid_mnemonic_body": "The scanned QR code contains a passphrase with an unexpected number of words",
             "watch_address_option_title": "Watch an Address",
             "watch_address_option_description": "Monitor an Algorand address by providing its address",
-            "watch_address_option_description_generic": "Monitor any account by providing its address",
+            "watch_address_option_description_generic": "Monitor an account by providing its address",
             "create_universal_wallet_option_title": "Create a Universal Wallet",
             "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24-word passphrase",
             "create_algo25_option_title": "Create an Algo25 Account",

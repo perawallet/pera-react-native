@@ -30,10 +30,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
-import {
-    useCapableChainId,
-    useCapableChainIds,
-} from '@hooks/useCapableChainIds'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useModalState } from '@hooks/useModalState'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,7 +41,8 @@ import { useCardSession } from '@perawallet/wallet-core-card'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig'
-import { useWatchAccountCopy } from '@modules/onboarding/hooks/useWatchAccountCopy'
+import { useWatchableChainIds } from '@modules/onboarding/hooks'
+import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AccountOption } from '@modules/onboarding/types'
 import { trackChainOnboardingEvent } from '../../utils'
 
@@ -78,9 +76,7 @@ export const useAddAccountScreen = () => {
         anyChain: 'multisig',
     })
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
-    const watchAccountCopy = useWatchAccountCopy(
-        useCapableChainIds('watchAccounts'),
-    )
+    const watchAccountCopy = watchAccountCopyFor(useWatchableChainIds())
     const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',

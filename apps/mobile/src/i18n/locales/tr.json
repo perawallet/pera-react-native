@@ -2172,7 +2172,7 @@
             "qr_scan_invalid_mnemonic_body": "Taranan QR kodundaki passphrase beklenmeyen sayıda kelime içeriyor",
             "watch_address_option_title": "Adres izle",
             "watch_address_option_description": "Adresini girerek bir Algorand adresini takip et",
-            "watch_address_option_description_generic": "Adresini girerek herhangi bir hesabı takip et",
+            "watch_address_option_description_generic": "Adresini girerek bir hesabı takip et",
             "create_universal_wallet_option_title": "Universal Wallet oluştur",
             "create_universal_wallet_option_description": "Aynı 24 kelimelik passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
             "create_algo25_option_title": "Algo25 hesabı oluştur",
