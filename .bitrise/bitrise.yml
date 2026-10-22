@@ -1172,7 +1172,7 @@ workflows:
               done
             fi
             envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
-  _smoke-ios:
+  _strip-signing-files:
     steps:
     - script@1:
         title: Remove signing files
@@ -1187,6 +1187,10 @@ workflows:
               apps/mobile/config/release.keystore \
               apps/mobile/config/firebase-service-account.json \
               apps/mobile/config/api-key.json
+  _smoke-ios:
+    before_run:
+    - _strip-signing-files
+    steps:
     - script@1:
         title: Patch IPA for BrowserStack
         inputs:
@@ -1243,20 +1247,9 @@ workflows:
             IOS_SMOKE_STATUS
             IOS_SMOKE_URL
   _smoke-android:
+    before_run:
+    - _strip-signing-files
     steps:
-    - script@1:
-        title: Remove signing files
-        inputs:
-        - content: |
-            #!/usr/bin/env bash
-            set -ex
-            # The smoke harness is another repo's code at its branch tip, so
-            # nothing it runs may find the release keystore or store/upload
-            # credentials the build steps decoded onto disk.
-            rm -f apps/mobile/api_key.p8 \
-              apps/mobile/config/release.keystore \
-              apps/mobile/config/firebase-service-account.json \
-              apps/mobile/config/api-key.json
     - script@1:
         title: Run smoke gate
         timeout: 1800
