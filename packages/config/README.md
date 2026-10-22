@@ -74,7 +74,8 @@ is refused. A build whose `CHAINS` lists an EVM chain fails in `tools/dev/genera
 every one of its networks' RPC URLs is set and baked, so a `CONFIG_ALLOWLIST` that keeps `chainIds`
 must keep them too. Each Bitrise channel workflow in `.bitrise/bitrise.yml` sets `CHAINS`
 itself: staging ships Algorand and Ethereum, production pins Algorand, and
-`tools/__tests__/bitrise-chains.test.sh` fails if either drifts.
+`tools/__tests__/bitrise-chains.test.sh` fails if either drifts. Staging also lists the Pera
+services the staging backend serves for each Ethereum network, which the same test pins.
 
 Betanet carries chain endpoints only. It has no Pera backend, so its Pera service traffic fails typed
 through `createPeraClient`; see [Architecture](../../docs/ARCHITECTURE.md).
