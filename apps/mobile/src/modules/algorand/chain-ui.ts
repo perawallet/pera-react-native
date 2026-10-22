@@ -88,5 +88,12 @@ export const algorandChainUi: ChainUi = {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
     },
+    watchAccountCopy: {
+        optionDescriptionKey: i18nKey(
+            'onboarding.add_account.watch_address_option_description',
+        ),
+        descriptionKey: i18nKey('onboarding.watch_account.description'),
+        invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
+    },
     icon: () => AlgoAssetIcon,
 }

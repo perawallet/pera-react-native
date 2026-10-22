@@ -161,6 +161,33 @@ vi.mock('@hooks/useCapability', async () =>
     (await import('@test-utils/capability-mock')).capabilityHookMock(),
 )
 
+const mockWatchCapableChainIds = vi.hoisted(() => ['algorand', 'ethereum'])
+vi.mock('@hooks/useCapableChainIds', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@hooks/useCapableChainIds')>()
+    return {
+        ...actual,
+        useCapableChainIds: (
+            capability: Parameters<typeof actual.useCapableChainIds>[0],
+        ) =>
+            capability === 'watchAccounts'
+                ? mockWatchCapableChainIds
+                : actual.useCapableChainIds(capability),
+    }
+})
+
+const mockUseWatchAccountCopy = vi.hoisted(() =>
+    vi.fn((_chainIds: readonly string[]) => ({
+        optionDescriptionKey: 'watch.option',
+        descriptionKey: 'watch.description',
+        invalidAddressKey: 'watch.invalid',
+    })),
+)
+vi.mock('@modules/onboarding/hooks/useWatchAccountCopy', () => ({
+    useWatchAccountCopy: (chainIds: readonly string[]) =>
+        mockUseWatchAccountCopy(chainIds),
+}))
+
 const setQuantumEnabled = (isEnabled: boolean): void => {
     capabilityState.reset()
     if (!isEnabled) {
@@ -646,6 +673,20 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_watch_button',
             ),
         ).toBe(false)
+    })
+
+    it('describes the watch option with the copy for the chains that can watch accounts', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(mockUseWatchAccountCopy).toHaveBeenCalledWith([
+            'algorand',
+            'ethereum',
+        ])
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_watch_button',
+            )?.descriptionKey,
+        ).toBe('watch.option')
     })
 
     it('mainOptions excludes quantum option when the flag is disabled', () => {

@@ -2172,6 +2172,7 @@
             "qr_scan_invalid_mnemonic_body": "El código QR escaneado contiene una passphrase con un número de palabras inesperado",
             "watch_address_option_title": "Observar una dirección",
             "watch_address_option_description": "Sigue la actividad de una dirección de Algorand introduciéndola",
+            "watch_address_option_description_generic": "Sigue la actividad de cualquier cuenta introduciendo su dirección",
             "create_universal_wallet_option_title": "Crear una Universal Wallet",
             "create_universal_wallet_option_description": "Wallet que te permite derivar cuentas nuevas, todas con la misma passphrase de 24 palabras",
             "create_algo25_option_title": "Crear una cuenta Algo25",
@@ -2356,9 +2357,11 @@
             "info_button": "Crear una cuenta de observación",
             "title": "Crear una cuenta\nde observación",
             "description": "Estás creando una vista de solo lectura de una cuenta de Algorand.",
+            "description_generic": "Estás creando una vista de solo lectura de una cuenta.",
             "address_placeholder": "Dirección de la cuenta o nombre corto",
             "watch_button": "Crear una cuenta de observación",
             "invalid_address": "Introduce una dirección de Algorand válida",
+            "invalid_address_generic": "Introduce una dirección válida",
             "duplicate_address": "Esta dirección ya se añadió a tu wallet"
         }
     },

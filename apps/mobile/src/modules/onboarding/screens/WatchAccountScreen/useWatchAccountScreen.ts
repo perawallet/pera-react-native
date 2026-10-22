@@ -22,6 +22,7 @@ import {
 import {
     addressCodecs,
     type ChainId,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -31,6 +32,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useWatchAccountCopy } from '@modules/onboarding/hooks/useWatchAccountCopy'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
 type UseWatchAccountScreenResult = {
@@ -38,6 +40,8 @@ type UseWatchAccountScreenResult = {
     /** The chains an address can be watched on, for the field's scanner. */
     watchableChainIds: readonly ChainId[]
     resolvedAddress: string
+    descriptionKey: I18nKey
+    invalidAddressKey: I18nKey
     isValidAddress: boolean
     isDuplicateAddress: boolean
     isNfdResolved: boolean
@@ -85,6 +89,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         ),
     )
 
+    const { descriptionKey, invalidAddressKey } =
+        useWatchAccountCopy(watchableChainIds)
     const isValidAddress = watchChainId !== undefined
     const isDuplicateAddress =
         watchChainId !== undefined &&
@@ -138,6 +144,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         address,
         watchableChainIds,
         resolvedAddress,
+        descriptionKey,
+        invalidAddressKey,
         isValidAddress,
         isDuplicateAddress,
         isNfdResolved,

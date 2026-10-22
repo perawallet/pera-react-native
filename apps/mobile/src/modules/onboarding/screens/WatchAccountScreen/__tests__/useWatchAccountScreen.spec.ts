@@ -105,6 +105,18 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const watchAccountsOff = vi.hoisted(() => new Set<string>())
 
+const mockUseWatchAccountCopy = vi.hoisted(() =>
+    vi.fn((_chainIds: readonly string[]) => ({
+        optionDescriptionKey: 'watch.option',
+        descriptionKey: 'watch.description',
+        invalidAddressKey: 'watch.invalid',
+    })),
+)
+vi.mock('@modules/onboarding/hooks/useWatchAccountCopy', () => ({
+    useWatchAccountCopy: (chainIds: readonly string[]) =>
+        mockUseWatchAccountCopy(chainIds),
+}))
+
 vi.mock('@hooks/useCapability', () => ({
     useCapabilityCheck:
         () =>
@@ -498,6 +510,16 @@ describe('useWatchAccountScreen', () => {
             expect(result.current.watchableChainIds).not.toContain(
                 FIXTURE_CHAIN_ID,
             )
+        })
+
+        it('takes its copy for the chains it can watch on', () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(mockUseWatchAccountCopy).toHaveBeenLastCalledWith(
+                result.current.watchableChainIds,
+            )
+            expect(result.current.descriptionKey).toBe('watch.description')
+            expect(result.current.invalidAddressKey).toBe('watch.invalid')
         })
 
         it('ignores a codec whose chain is not registered', () => {
