@@ -1599,7 +1599,9 @@ describe('useBiometrics', () => {
             kmsMocks.withSecret.mockImplementation(
                 async (id: string, handler: (b: Uint8Array) => unknown) =>
                     id === PIN_RECORD_KEY_ID
-                        ? handler(lockedRecord(lockoutEndTime, monotonicLockout))
+                        ? handler(
+                              lockedRecord(lockoutEndTime, monotonicLockout),
+                          )
                         : handler(framed('ct')),
             )
             const session = unlockSession(new Promise(() => undefined))

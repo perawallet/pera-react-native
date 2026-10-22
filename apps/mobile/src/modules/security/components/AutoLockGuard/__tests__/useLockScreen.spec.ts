@@ -576,7 +576,9 @@ describe('useLockScreen', () => {
                     kind: 'ok',
                 })
 
-                ;(usePinCode as Mock).mockReturnValue(pinCodeState(Date.now() + 60_000))
+                ;(usePinCode as Mock).mockReturnValue(
+                    pinCodeState(Date.now() + 60_000),
+                )
 
                 const { rerender } = renderHook(
                     ({ isLocked }: { isLocked: boolean }) =>
@@ -697,7 +699,9 @@ describe('useLockScreen', () => {
 
                 // Failed PIN attempts on the pad trip the lockout while the
                 // prompt is still waiting for activation.
-                ;(usePinCode as Mock).mockReturnValue(pinCodeState(Date.now() + 60_000))
+                ;(usePinCode as Mock).mockReturnValue(
+                    pinCodeState(Date.now() + 60_000),
+                )
                 rerender({ isLocked: true })
 
                 setAppState('active')

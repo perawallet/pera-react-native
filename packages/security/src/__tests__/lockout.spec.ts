@@ -106,10 +106,7 @@ describe('resolveLockout', () => {
     })
 
     test('clears the lockout once both deadlines have passed', () => {
-        const resolution = resolveLockout(
-            LIVE,
-            clocksAt(WALL + 31_000, 32_000),
-        )
+        const resolution = resolveLockout(LIVE, clocksAt(WALL + 31_000, 32_000))
 
         expect(resolution).toEqual({ remainingMs: 0, update: CLEARED_LOCKOUT })
     })
@@ -203,7 +200,11 @@ describe('getLockoutRemainingMs', () => {
         }
 
         expect(
-            getLockoutRemainingMs(lockout, 5, clocksAt(WALL + 3_600_000, 21_000)),
+            getLockoutRemainingMs(
+                lockout,
+                5,
+                clocksAt(WALL + 3_600_000, 21_000),
+            ),
         ).toBe(10_000)
     })
 })

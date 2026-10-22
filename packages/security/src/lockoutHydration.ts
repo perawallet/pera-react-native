@@ -19,11 +19,7 @@ import {
     resolveLockout,
     type LockoutDeadline,
 } from './lockout'
-import {
-    parsePinRecord,
-    serializePinRecord,
-    type PinRecord,
-} from './pinRecord'
+import { parsePinRecord, serializePinRecord, type PinRecord } from './pinRecord'
 import { migratePinRecordToV3 } from './pinRecordMigration'
 import { withPinRecordLock } from './pinRecordLock'
 

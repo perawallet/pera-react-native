@@ -1032,8 +1032,9 @@ describe('usePinCode', () => {
             hook: { current: ReturnType<typeof usePinCode> },
             pin: string,
         ) => {
-            let outcome: Awaited<ReturnType<typeof hook.current.verifyPin>> =
-                { kind: 'fail' }
+            let outcome: Awaited<ReturnType<typeof hook.current.verifyPin>> = {
+                kind: 'fail',
+            }
             await act(async () => {
                 outcome = await hook.current.verifyPin(pin)
             })

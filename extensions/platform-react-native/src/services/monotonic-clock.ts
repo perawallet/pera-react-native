@@ -40,9 +40,10 @@ export class RNMonotonicClockService implements MonotonicClockService {
     private hasWarnedMissing = false
 
     now(): MonotonicReading | null {
-        const module = requireOptionalNativeModule<NativePeraMonotonicClock>(
-            'PeraMonotonicClock',
-        )
+        const module =
+            requireOptionalNativeModule<NativePeraMonotonicClock>(
+                'PeraMonotonicClock',
+            )
         if (!module) {
             if (!this.hasWarnedMissing) {
                 this.hasWarnedMissing = true

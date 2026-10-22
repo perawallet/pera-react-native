@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { MonotonicClockService, MonotonicReading } from '../monotonic-clock'
+import type {
+    MonotonicClockService,
+    MonotonicReading,
+} from '../monotonic-clock'
 
 /** In-memory monotonic clock a test drives with `advance` and `reboot`. */
 export class MemoryMonotonicClockService implements MonotonicClockService {

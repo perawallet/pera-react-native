@@ -22,10 +22,10 @@ The lockout relies on two properties. Changing either breaks it silently:
 
 ## Sources
 
-| Platform | `elapsedMs`                                      | `bootId`                                    |
-| -------- | ------------------------------------------------ | ------------------------------------------- |
-| Android  | `SystemClock.elapsedRealtime()`                  | `Settings.Global.BOOT_COUNT`                |
-| iOS      | `mach_continuous_time()` × `mach_timebase_info` | `sysctlbyname("kern.bootsessionuuid")`      |
+| Platform | `elapsedMs`                                     | `bootId`                               |
+| -------- | ----------------------------------------------- | -------------------------------------- |
+| Android  | `SystemClock.elapsedRealtime()`                 | `Settings.Global.BOOT_COUNT`           |
+| iOS      | `mach_continuous_time()` × `mach_timebase_info` | `sysctlbyname("kern.bootsessionuuid")` |
 
 When the boot id is unreadable, both fall back to the boot time derived from the
 wall clock (`boottime:<seconds>`), read once per process. That value shifts when

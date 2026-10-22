@@ -185,7 +185,8 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
 
     it('Given the PIN is locked out, when the device clock is moved past the deadline, then the correct PIN stays refused until the lockout has actually elapsed', async () => {
         vi.useFakeTimers({ toFake: ['Date'] })
-        const clock = getProvider().monotonicClock as MemoryMonotonicClockService
+        const clock = getProvider()
+            .monotonicClock as MemoryMonotonicClockService
         const { result: pinHook } = renderHook(() => usePinCode())
         try {
             await pinHook.current.savePin(TEST_PIN)

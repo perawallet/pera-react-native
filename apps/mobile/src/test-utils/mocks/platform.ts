@@ -30,12 +30,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
                 setUserProperty: vi.fn(),
             },
             ageGate: {
-                requestAgeRange: vi
-                    .fn()
-                    .mockResolvedValue({
-                        status: 'unknown',
-                        source: 'platform',
-                    }),
+                requestAgeRange: vi.fn().mockResolvedValue({
+                    status: 'unknown',
+                    source: 'platform',
+                }),
                 getDeviceCapability: vi.fn().mockResolvedValue('manual'),
             },
             biometrics: {
@@ -46,12 +44,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
                 checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
                 clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
                 armBiometricBinding: vi.fn().mockResolvedValue(null),
-                unwrapBiometricToken: vi
-                    .fn()
-                    .mockResolvedValue({
-                        success: false,
-                        reason: 'unavailable',
-                    }),
+                unwrapBiometricToken: vi.fn().mockResolvedValue({
+                    success: false,
+                    reason: 'unavailable',
+                }),
                 beginBiometricUnwrap: vi.fn(() => ({
                     authenticated: Promise.resolve({
                         success: false,
