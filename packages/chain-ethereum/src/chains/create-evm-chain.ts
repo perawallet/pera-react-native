@@ -85,7 +85,8 @@ export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
                 assetId === NATIVE_ASSET_ID
                     ? undefined
                     : tokenLink(networkId, assetId),
-            collectibleUrl: tokenLink,
+            // NFT ids are `{contract}/{token id}`: the explorer's own NFT path.
+            collectibleUrl: explorerLink('nft'),
         },
         finality: row.finality,
         // Every EVM chain shares EIP-681's scheme; one deeplink adapter claims it.

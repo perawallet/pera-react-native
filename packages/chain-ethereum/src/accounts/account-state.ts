@@ -21,10 +21,19 @@ import type {
     AccountsChainAdapter,
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
-import { isPeraNetworkError } from '@perawallet/wallet-core-shared'
+import { upsertAssets } from '@perawallet/wallet-core-assets'
+import {
+    isPeraNetworkError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
-import { ASSETS_SERVICE, fetchWhitelist } from '../assets/api/endpoints'
+import {
+    ASSETS_SERVICE,
+    fetchWhitelist,
+    NFTS_SERVICE,
+} from '../assets/api/endpoints'
+import { isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances, type HolderBalances } from '../blockchain/utils/erc20'
 import {
@@ -32,6 +41,7 @@ import {
     fetchShouldRefresh,
     type ShouldRefreshResponse,
 } from './endpoints'
+import { readNftHoldings, type NftHoldingsRead } from './nft-holdings'
 
 export type EthereumAccountStateOps = Required<
     Pick<
@@ -116,12 +126,16 @@ type PendingRead = {
     reject: (error: unknown) => void
 }
 
+// Undefined when the scope has no NFT service: nothing to read or keep.
+type NftRead = Optional<PromiseSettledResult<NftHoldingsRead>>
+
 const toSnapshot = (
     nativeAssetId: string,
     { wei, tokens }: HolderBalances,
     latest: number,
     pending: number,
     blockNumber: bigint,
+    nfts: NftRead,
 ): AccountStateSnapshot => {
     const baseUnits = new Decimal(wei.toString())
     const tokenHoldings = [...tokens]
@@ -136,8 +150,40 @@ const toSnapshot = (
         holdings: [
             { assetId: nativeAssetId, amount: baseUnits },
             ...tokenHoldings,
+            ...(nfts?.status === 'fulfilled' ? nfts.value.holdings : []),
         ],
         observedRound: Number(blockNumber),
+        // A failed NFT read keeps the stored NFTs rather than emptying the
+        // gallery; ERC-20 rows still follow this read.
+        ...(nfts?.status === 'rejected' && {
+            unrefreshedHoldings: {
+                includes: isEvmNftAssetId,
+                error: nfts.reason,
+            },
+        }),
+    }
+}
+
+// The holdings point at these rows, so they're written first; a failed write
+// fails every read it carried, as the gallery can't show a holding without
+// its metadata.
+const persistNftReads = async (
+    scope: ChainScope,
+    reads: NftRead[],
+): Promise<NftRead[]> => {
+    const assets = reads.flatMap(read =>
+        read?.status === 'fulfilled' ? read.value.assets : [],
+    )
+    if (assets.length === 0) return reads
+    try {
+        await upsertAssets({ items: assets, scope })
+        return reads
+    } catch (reason) {
+        return reads.map(read =>
+            read?.status === 'fulfilled'
+                ? { status: 'rejected', reason }
+                : read,
+        )
     }
 }
 
@@ -155,7 +201,17 @@ const readBatch = async (
     reads: PendingRead[],
 ): Promise<void> => {
     const client = createEvmClient(scope, ctx, chain)
-    const hasWhitelist = ctx.getPeraBackend(scope).services.has(ASSETS_SERVICE)
+    const services = ctx.getPeraBackend(scope).services
+    const hasWhitelist = services.has(ASSETS_SERVICE)
+    // Settled per address, so one account's NFT outage never fails another's
+    // read, nor its own balances.
+    const nftReads: Promise<NftRead[]> = services.has(NFTS_SERVICE)
+        ? Promise.allSettled(
+              reads.map(({ address }) =>
+                  readNftHoldings(scope, chain, address),
+              ),
+          ).then(settled => persistNftReads(scope, settled))
+        : Promise.resolve(reads.map(() => undefined))
     const [blockNumber, tokenIds] = await Promise.all([
         client.getBlockNumber(),
         hasWhitelist ? listedTokenIds(scope) : [],
@@ -163,7 +219,7 @@ const readBatch = async (
     // Issued together, so the batching transport sends the aggregates and
     // every nonce read as one request. Pinning to one block keeps balances,
     // nonces and observedRound from straddling a block boundary.
-    const [balances, nonces] = await Promise.all([
+    const [balances, nonces, nfts] = await Promise.all([
         readBalances(
             client,
             reads.map(read => read.address),
@@ -184,6 +240,7 @@ const readBatch = async (
                 ]),
             ),
         ),
+        nftReads,
     ])
     reads.forEach((read, index) => {
         const nonce = nonces[index]!
@@ -199,6 +256,7 @@ const readBatch = async (
                 latest,
                 pending,
                 blockNumber,
+                nfts[index],
             ),
         )
     })
