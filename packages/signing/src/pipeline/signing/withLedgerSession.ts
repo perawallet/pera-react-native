@@ -33,6 +33,7 @@ import {
     CannotSignError,
     HardwareSigningAbortedError,
     HardwareWalletError,
+    InvalidSignableDataError,
     SigningError,
 } from '../errors'
 import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
@@ -161,6 +162,7 @@ const connectAndVerify = async (
 const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
+        error instanceof InvalidSignableDataError ||
         error instanceof HardwareSigningAbortedError ||
         error instanceof HardwareWalletError ||
         isLedgerError(error)

@@ -256,8 +256,39 @@ describe('ethereumMessageSignerAdapter.plan', () => {
 })
 
 describe('ethereumMessageSignerAdapter.plan device payload', () => {
+    const ledger: WalletAccount = {
+        id: 'ledger',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'd1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        },
+        chains: { ethereum: { address: SENDER } },
+    }
+    const ledgerContext = { account: ledger, accounts: [ledger] }
+
+    it.each([
+        ['personal_sign', personal(toHex('hello world'))],
+        [
+            'typed data',
+            typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+        ],
+    ])('gives a local-key plan of %s no device payload', (_name, request) => {
+        const [item] = adapter.plan(request, context)
+
+        expect(item.devicePayload).toBeUndefined()
+    })
+
     it('plans personal_sign with the raw message as its device payload', () => {
-        const [item] = adapter.plan(personal(toHex('hello world')), context)
+        const [item] = adapter.plan(
+            personal(toHex('hello world')),
+            ledgerContext,
+        )
 
         expect(decodeEthereumLedgerMessage(item.devicePayload!)).toEqual({
             kind: 'personal',
@@ -273,7 +304,7 @@ describe('ethereumMessageSignerAdapter.plan device payload', () => {
             MAIL_TYPED_DATA,
         )
 
-        const [item] = adapter.plan(request, context)
+        const [item] = adapter.plan(request, ledgerContext)
         const device = decodeEthereumLedgerMessage(item.devicePayload!)
 
         if (device.kind !== 'typedData') throw new Error('not typed data')

@@ -61,30 +61,26 @@ describe('createHardwareStrategy', () => {
         ).toBe(false)
     })
 
-    it('refuses transactions, which sign through their planner', async () => {
-        const group = groupOf({
-            type: 'transactions',
-            transactions: [
-                asUnsignedAlgorandTransaction({
-                    sender: { toString: () => SIGNER_ADDRESS },
-                } as never),
-            ],
-            chainData: { algorand: { indicesToSign: [0] } },
-        })
-
-        await expect(strategy.sign(group, ledger)).rejects.toMatchObject(
-            notRetryable,
-        )
-    })
-
     it.each([
+        [
+            'transactions',
+            groupOf({
+                type: 'transactions',
+                transactions: [
+                    asUnsignedAlgorandTransaction({
+                        sender: { toString: () => SIGNER_ADDRESS },
+                    } as never),
+                ],
+                chainData: { algorand: { indicesToSign: [0] } },
+            }),
+        ],
         ['auth data', AUTH_DATA_GROUP],
         ['a message', groupOf({ type: 'message', request: {} } as never)],
     ])(
-        "refuses %s, which signs through its chain's message signer",
+        "refuses %s, which sign through their chain's planner or message signer",
         async (_name, group) => {
             await expect(strategy.sign(group, ledger)).rejects.toThrow(
-                "Hardware wallets sign messages through their chain's message signer",
+                "Hardware wallets sign through their chain's planner or message signer",
             )
             await expect(strategy.sign(group, ledger)).rejects.toMatchObject(
                 notRetryable,

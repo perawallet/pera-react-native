@@ -17,6 +17,7 @@ import type {
     LedgerAppErrorClassifier,
     LedgerAppTransport,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import {
     classifyLedgerAppError,
     classifyLedgerError,
@@ -59,19 +60,6 @@ export const createAlgorandLedgerTransport = (
             return { major, minor, patch }
         } catch (error) {
             throw classifyError(error)
-        }
-    }
-
-    // The early gate; the device's own error is the fallback.
-    const assertCanSignData = async () => {
-        const version = await getAppVersion()
-        if (
-            !isAppVersionAtLeast(version, ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION)
-        ) {
-            throw new LedgerAppOutdatedError({
-                appName: ALGORAND_LEDGER_APP.appName,
-                requiredVersion: ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
-            })
         }
     }
 
@@ -125,18 +113,33 @@ export const createAlgorandLedgerTransport = (
 
         getAppVersion,
 
+        // The early gate; the device's own error is the fallback.
+        async assertCanSignMessage() {
+            const version = await getAppVersion()
+            if (
+                !isAppVersionAtLeast(
+                    version,
+                    ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+                )
+            ) {
+                throw new LedgerAppOutdatedError({
+                    appName: ALGORAND_LEDGER_APP.appName,
+                    requiredVersion: ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+                })
+            }
+        },
+
         async signMessage(accountIndex, payload) {
-            await assertCanSignData()
+            let message
             try {
-                let message
-                try {
-                    message = decodeAlgorandLedgerMessage(payload)
-                } catch (error) {
-                    throw new LedgerSigningError(
-                        'Not an Algorand Ledger message',
-                        error instanceof Error ? error : undefined,
-                    )
-                }
+                message = decodeAlgorandLedgerMessage(payload)
+            } catch {
+                // A host bug, not a device failure, so no retry can fix it.
+                throw new InvalidSignableDataError(
+                    'Not an Algorand Ledger message',
+                )
+            }
+            try {
                 const result = await algorandApp.signData(
                     {
                         data: message.data,

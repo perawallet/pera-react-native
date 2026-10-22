@@ -31,6 +31,7 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
     },
 }))
 
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import {
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
@@ -273,7 +274,7 @@ describe('algorandLedgerAppDriver', () => {
             expect(Array.from(sig)).toEqual([9, 8, 7])
         })
 
-        test('refuses an app older than 2.0.0 before signing', async () => {
+        test('assertCanSignMessage refuses an app older than 2.0.0', async () => {
             algorandGetVersionMock.mockResolvedValue({
                 major: 1,
                 minor: 9,
@@ -281,7 +282,7 @@ describe('algorandLedgerAppDriver', () => {
             })
 
             const error = await open()
-                .signMessage(0, payload)
+                .assertCanSignMessage?.()
                 .catch((e: unknown) => e)
 
             expect(error).toBeInstanceOf(LedgerAppOutdatedError)
@@ -293,13 +294,18 @@ describe('algorandLedgerAppDriver', () => {
             expect(algorandSignDataMock).not.toHaveBeenCalled()
         })
 
-        test('classifies a failed version read', async () => {
+        test('assertCanSignMessage accepts 2.0.0', async () => {
+            await expect(open().assertCanSignMessage?.()).resolves.toBe(
+                undefined,
+            )
+        })
+
+        test('assertCanSignMessage classifies a failed version read', async () => {
             algorandGetVersionMock.mockRejectedValue({ returnCode: 0x6e00 })
 
-            await expect(open().signMessage(0, payload)).rejects.toBeInstanceOf(
-                LedgerAppNotOpenError,
-            )
-            expect(algorandSignDataMock).not.toHaveBeenCalled()
+            await expect(
+                open().assertCanSignMessage?.(),
+            ).rejects.toBeInstanceOf(LedgerAppNotOpenError)
         })
 
         test("classifies the app's reject code as a user rejection", async () => {
@@ -320,10 +326,16 @@ describe('algorandLedgerAppDriver', () => {
             )
         })
 
-        test('refuses a payload that is not an Algorand Ledger message without touching signData', async () => {
-            await expect(
-                open().signMessage(0, new Uint8Array([1, 2, 3])),
-            ).rejects.toBeInstanceOf(LedgerSigningError)
+        test('refuses a payload that is not an Algorand Ledger message, without retry and without touching the device', async () => {
+            const error = await open()
+                .signMessage(0, new Uint8Array([1, 2, 3]))
+                .catch((e: unknown) => e)
+
+            expect(error).toBeInstanceOf(InvalidSignableDataError)
+            expect((error as InvalidSignableDataError).metadata.retryable).toBe(
+                false,
+            )
+            expect(algorandGetVersionMock).not.toHaveBeenCalled()
             expect(algorandSignDataMock).not.toHaveBeenCalled()
         })
     })

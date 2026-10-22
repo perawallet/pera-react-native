@@ -21,7 +21,7 @@ import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '../types'
-import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
+import { CannotSignError, SigningError } from '../errors'
 
 export type HardwareStrategyOptions = {
     /** The chain the device signs for; the account's address there is the one verified. */
@@ -57,29 +57,13 @@ export const createHardwareStrategy = ({
         account: WalletAccount,
     ): Promise<SigningResult> => {
         assertHardwareSigner(account, chainId)
-
-        if (group.data.type === 'arbitrary-data') {
-            throw new SigningError(
-                'Hardware wallet signing of arbitrary data is not supported',
-                undefined,
-                // Retrying can never succeed — suppress the Retry affordance.
-                { retryable: false },
-            )
-        }
-        if (group.data.type === 'transactions') {
-            throw new SigningError(
-                'Hardware wallets sign transactions through their planner',
-                undefined,
-                { retryable: false },
-            )
-        }
-        if (group.data.type === 'auth-data' || group.data.type === 'message') {
-            throw new SigningError(
-                "Hardware wallets sign messages through their chain's message signer",
-                undefined,
-                { retryable: false },
-            )
-        }
-        throw new HardwareWalletError('unsupported_data_type')
+        throw new SigningError(
+            group.data.type === 'arbitrary-data'
+                ? 'Hardware wallet signing of arbitrary data is not supported'
+                : "Hardware wallets sign through their chain's planner or message signer",
+            undefined,
+            // Retrying can never succeed — suppress the Retry affordance.
+            { retryable: false },
+        )
     },
 })

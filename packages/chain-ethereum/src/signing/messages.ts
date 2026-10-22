@@ -295,10 +295,17 @@ const describeWith =
         throw new Error(`Unsupported message method ${request.method}`)
     }
 
+type PlannedMessage = {
+    digest: TaggedDigest
+    /** Only for a Ledger, which takes the message rather than its digest. */
+    device?: EthereumLedgerMessageBody
+}
+
 const planTypedData = (
     request: MessageRequest,
     chain: EvmChain,
-): { digest: TaggedDigest; device: EthereumLedgerMessageBody } => {
+    forDevice: boolean,
+): PlannedMessage => {
     const typedData = readTypedData(request.payload)
     const domainChainId = typedData.domain?.chainId
     // A signature over another chain's domain would be valid there.
@@ -313,7 +320,7 @@ const planTypedData = (
     try {
         return {
             digest: typedDataDigest(typedData),
-            device: typedDataLedgerMessage(typedData),
+            ...(forDevice && { device: typedDataLedgerMessage(typedData) }),
         }
     } catch (error) {
         throw new Error(MALFORMED_TYPED_DATA, { cause: error })
@@ -323,14 +330,15 @@ const planTypedData = (
 const planMessage = (
     request: MessageRequest,
     chain: EvmChain,
-): { digest: TaggedDigest; device: EthereumLedgerMessageBody } => {
+    forDevice: boolean,
+): PlannedMessage => {
     if (request.method !== PERSONAL_SIGN) {
-        return planTypedData(request, chain)
+        return planTypedData(request, chain, forDevice)
     }
     const { message } = readPersonalSign(request.payload)
     return {
         digest: personalMessageDigest({ raw: message }),
-        device: { kind: 'personal', message },
+        ...(forDevice && { device: { kind: 'personal', message } }),
     }
 }
 
@@ -357,16 +365,22 @@ const planWith =
         if (!areEvmAddressesEqual(request.signer, ownAddress)) {
             throw refuse(`the request names ${request.signer} as its signer`)
         }
-        const { digest, device } = planMessage(request, chain)
+        const { digest, device } = planMessage(
+            request,
+            chain,
+            isHardwareWalletAccount(account),
+        )
         return [
             {
                 requestIndex: 0,
                 signer: ownAddress,
                 scheme: 'secp256k1',
                 payload: digest.digest,
-                devicePayload: encodeEthereumLedgerMessage({
-                    ...device,
-                    signer: getAddress(ownAddress),
+                ...(device && {
+                    devicePayload: encodeEthereumLedgerMessage({
+                        ...device,
+                        signer: getAddress(ownAddress),
+                    }),
                 }),
             },
         ]

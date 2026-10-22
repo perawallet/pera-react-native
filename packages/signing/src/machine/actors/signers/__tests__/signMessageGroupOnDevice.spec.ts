@@ -23,6 +23,16 @@ import {
     type HardwareWalletTransport,
     type HardwareWalletTransportProvider,
 } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    LEDGER_CONNECTION_TIMEOUT_MS,
+    LedgerAppOutdatedError,
+    LedgerTimeoutError,
+} from '@perawallet/wallet-core-ledger'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 import { registerFakeMessageSignerAdapter } from '../../../../__tests__/fakeMessageSignerAdapter'
 import { TEST_CHAIN_ID, ledgerAccount } from '../../../../__tests__/accounts'
 import {
@@ -232,6 +242,85 @@ describe('signMessageGroupOnDevice', () => {
             new InvalidSignableDataError('the typed data is for another chain'),
         )
         expect(provider.connect).not.toHaveBeenCalled()
+    })
+
+    it('refuses an app that cannot sign messages before any signing callback or prompt', async () => {
+        registerFakeMessageSignerAdapter({ plan: vi.fn(() => planned()) })
+        const transport = makeTransport({
+            assertCanSignMessage: vi
+                .fn()
+                .mockRejectedValue(new LedgerAppOutdatedError()),
+        })
+        const { registry } = setup(transport)
+        const onSigningStart = vi.fn()
+        const onProgress = vi.fn()
+
+        await expect(
+            signMessageGroupOnDevice({
+                group: groupOf({ type: 'message', request }),
+                account,
+                allAccounts: [account],
+                scope: SCOPE,
+                registry,
+                callbacks: { onSigningStart, onProgress },
+            }),
+        ).rejects.toBeInstanceOf(LedgerAppOutdatedError)
+        expect(onSigningStart).not.toHaveBeenCalled()
+        expect(onProgress).not.toHaveBeenCalled()
+        expect(transport.signMessage).not.toHaveBeenCalled()
+        expect(transport.disconnect).toHaveBeenCalled()
+    })
+
+    it('times out a stalled app check on the connection ceiling, not the confirmation one', async () => {
+        vi.useFakeTimers()
+        try {
+            registerFakeMessageSignerAdapter({ plan: vi.fn(() => planned()) })
+            const transport = makeTransport({
+                assertCanSignMessage: vi.fn(() => new Promise<void>(() => {})),
+            })
+            const { registry } = setup(transport)
+
+            const result = sign(
+                groupOf({ type: 'message', request }),
+                registry,
+            ).catch((e: unknown) => e)
+            await vi.advanceTimersByTimeAsync(LEDGER_CONNECTION_TIMEOUT_MS)
+
+            expect(await result).toBeInstanceOf(LedgerTimeoutError)
+            expect(transport.signMessage).not.toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it("keeps a chain's typed refusal as it is", async () => {
+        const refusal = new AppError('ARC-60 signer is invalid', {
+            severity: ErrorSeverity.MEDIUM,
+            category: ErrorCategory.VALIDATION,
+        })
+        registerFakeMessageSignerAdapter({
+            plan: vi.fn(() => {
+                throw refusal
+            }),
+        })
+        const { provider, registry } = setup()
+
+        await expect(
+            sign(groupOf({ type: 'message', request }), registry),
+        ).rejects.toBe(refusal)
+        expect(provider.connect).not.toHaveBeenCalled()
+    })
+
+    it("keeps a device payload the transport can't decode as a refusal no retry fixes", async () => {
+        registerFakeMessageSignerAdapter({ plan: vi.fn(() => planned()) })
+        const refusal = new InvalidSignableDataError('Not a Ledger message')
+        const { registry } = setup(
+            makeTransport({ signMessage: vi.fn().mockRejectedValue(refusal) }),
+        )
+
+        await expect(
+            sign(groupOf({ type: 'message', request }), registry),
+        ).rejects.toBe(refusal)
     })
 
     it('refuses a method the chain does not sign without connecting', async () => {

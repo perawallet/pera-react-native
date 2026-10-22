@@ -21,6 +21,7 @@ import {
     recoverAddress,
 } from 'viem'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import type {
     HardwareWalletTransport,
     LedgerAppErrorClassifier,
@@ -103,14 +104,12 @@ const toMessageSignatureBytes = ({
     return hexToBytes(`0x${r}${s}0${v - 27}`)
 }
 
+// A host bug, not a device failure, so no retry can fix it.
 const decodeMessage = (payload: Uint8Array): EthereumLedgerMessage => {
     try {
         return decodeEthereumLedgerMessage(payload)
-    } catch (error) {
-        throw new LedgerSigningError(
-            'Not an Ethereum Ledger message',
-            error instanceof Error ? error : undefined,
-        )
+    } catch {
+        throw new InvalidSignableDataError('Not an Ethereum Ledger message')
     }
 }
 

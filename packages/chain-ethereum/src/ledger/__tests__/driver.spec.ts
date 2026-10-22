@@ -30,6 +30,7 @@ import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     constructed: vi.fn(),
@@ -61,6 +62,7 @@ vi.mock('@ledgerhq/hw-app-eth', () => ({
 import {
     LedgerAppNotOpenError,
     LedgerBlindSigningRequiredError,
+    LedgerConnectionError,
     LedgerDeviceBusyError,
     LedgerSigningError,
     LedgerUserRejectedError,
@@ -499,6 +501,21 @@ describe('ethereumLedgerAppDriver', () => {
             expect(mocks.signEIP712HashedMessage).not.toHaveBeenCalled()
         })
 
+        // Full mode can fail host-side, before any APDU (an unencodable type);
+        // a hashed retry would then be a second prompt for the same request.
+        it('does not fall back when full mode fails without a status word', async () => {
+            mocks.signEIP712Message.mockRejectedValue(
+                new Error('Type "uint7" is not supported'),
+            )
+
+            await expect(
+                signThroughDriver(
+                    typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+                ),
+            ).rejects.toBeInstanceOf(LedgerConnectionError)
+            expect(mocks.signEIP712HashedMessage).not.toHaveBeenCalled()
+        })
+
         it('reports blind signing required when hashed mode needs it', async () => {
             mocks.signEIP712Message.mockRejectedValue(unsupported)
             mocks.signEIP712HashedMessage.mockRejectedValue({
@@ -537,10 +554,15 @@ describe('ethereumLedgerAppDriver', () => {
             ).rejects.toBeInstanceOf(LedgerSigningError)
         })
 
-        it('refuses a payload that is not an Ethereum Ledger message without touching the app', async () => {
-            await expect(
-                open().signMessage(0, new Uint8Array([1, 2, 3])),
-            ).rejects.toBeInstanceOf(LedgerSigningError)
+        it('refuses a payload that is not an Ethereum Ledger message, without retry and without touching the app', async () => {
+            const error = await open()
+                .signMessage(0, new Uint8Array([1, 2, 3]))
+                .catch((e: unknown) => e)
+
+            expect(error).toBeInstanceOf(InvalidSignableDataError)
+            expect((error as InvalidSignableDataError).metadata.retryable).toBe(
+                false,
+            )
             expect(mocks.signPersonalMessage).not.toHaveBeenCalled()
             expect(mocks.signEIP712Message).not.toHaveBeenCalled()
         })

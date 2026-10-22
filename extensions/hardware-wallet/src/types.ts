@@ -96,6 +96,13 @@ export type HardwareWalletTransport = {
         payload: Uint8Array,
     ) => Promise<Uint8Array>
 
+    /**
+     * Rejects when the installed app can't run `signMessage`, so the caller
+     * refuses before prompting. Absent when the device's own error is the
+     * only gate.
+     */
+    assertCanSignMessage?: () => Promise<void>
+
     getAppVersion: () => Promise<HardwareWalletAppVersion>
 
     /**

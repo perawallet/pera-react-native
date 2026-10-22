@@ -23,8 +23,11 @@ import type {
     SignedMessage,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
-import { LEDGER_CONFIRMATION_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
-import { withTimeout } from '@perawallet/wallet-core-shared'
+import {
+    LEDGER_CONFIRMATION_TIMEOUT_MS,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+} from '@perawallet/wallet-core-ledger'
+import { AppError, withTimeout } from '@perawallet/wallet-core-shared'
 import {
     authDataMessageRequest,
     messageSignerFor,
@@ -33,7 +36,6 @@ import {
 import {
     CannotSignError,
     InvalidSignableDataError,
-    PipelineError,
 } from '../../../pipeline/errors'
 import {
     ledgerTimeoutReason,
@@ -76,8 +78,9 @@ const messageRequestOf = (
 }
 
 // The chain's refusal is a fact about the payload, so a retry can't change it.
+// A typed one (ARC-60's spec errors) keeps its own class and metadata.
 const asRefusal = (error: unknown): Error =>
-    error instanceof PipelineError
+    error instanceof AppError
         ? error
         : new InvalidSignableDataError(
               error instanceof Error ? error.message : String(error),
@@ -152,6 +155,15 @@ export const signMessageGroupOnDevice = async ({
         async ({ transport, guard }) => {
             const { accountIndex } = account.custody
             const signed: Signature[] = []
+
+            if (transport.assertCanSignMessage) {
+                await withTimeout(
+                    guard.race(transport.assertCanSignMessage()),
+                    LEDGER_CONNECTION_TIMEOUT_MS,
+                    'Read Ledger app version',
+                    ledgerTimeoutReason('Read Ledger app version'),
+                )
+            }
 
             callbacks?.onSigningStart?.()
             callbacks?.onProgress?.(1, 1)

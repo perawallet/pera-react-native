@@ -11,7 +11,6 @@
  */
 
 import {
-    Address,
     aggregateTransactionWarnings,
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
@@ -220,6 +219,5 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
         isAuthDataWirePayload: isArc60WirePayload,
         parseAuthDataWireRequest: parseArc60WireRequest,
         buildSiwxAuthData,
-        signerPublicKey: address => Address.fromString(address).publicKey,
     },
 }
