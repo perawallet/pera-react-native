@@ -127,3 +127,8 @@ Funded Account Shows Portfolio And ALGO Holding
     Wait Until Page Contains Element    ${ACCOUNT_PORTFOLIO}    timeout=40s
     # A zero-balance account shows the deposit empty state instead of an ALGO row.
     Wait Until Page Contains Element    ${ALGO_HOLDING_ROW}    timeout=30s
+    # This account is funded, so the header has a number to show. A portfolio that renders
+    # 0.00 for a funded account passes every check that only asks whether it rendered.
+    ${total}=    Displayed Number Should Be At Least    portfolio_primary_value
+    Should Be True    ${total} > 0
+    ...    msg=The funded account's portfolio reads ${total}; a funded account should not show nothing.
