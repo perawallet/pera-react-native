@@ -27,44 +27,34 @@ export const calculateTotalFee = (
         new Decimal(0),
     )
 
-// Per-transaction fee allowances (µAlgo) for the high-fee sanity check.
-// keyreg gets generous headroom: incentive-eligibility online keyreg
-// legitimately pays 2 ALGO. Everything else is min-fee territory, but fee
-// pooling lets one tx in a group cover the others, so the budget scales per tx
-// rather than capping each tx individually.
+// Fee allowances (µAlgo) for the high-fee sanity check. keyreg gets generous
+// headroom: incentive-eligibility online keyreg legitimately pays 2 ALGO.
 const KEYREG_FEE_ALLOWANCE_MICRO_ALGO = 5_000_000n // 5 ALGO
 const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
 
 /**
- * Type-aware upper bound (µAlgo) on what a group of transactions should
- * reasonably cost in fees. The budget is the sum of each transaction's
- * per-type allowance, so it scales with both the kind of transactions and the
- * group size — a 16-tx ordinary group allows 8 ALGO, a single keyreg 5 ALGO.
+ * Upper bound (µAlgo) on what the user should reasonably pay in fees for one
+ * request: a flat 0.5 ALGO, or 5 ALGO when the user signs a keyreg.
  *
- * The keyreg allowance only counts when the keyreg's sender is one the user
- * signs for: a third party's keyreg has no business raising the budget for
- * fees the USER pays, and otherwise a request padded with zero-fee foreign
- * keyregs could buy a huge unflagged budget (15 of them ≈ 75 ALGO).
+ * The bound is per group, never per transaction, because the requester
+ * controls the group size: zero-fee padding, even from the user's own
+ * address, would otherwise buy an unflagged budget. Flat is still safe for fee
+ * pooling, since even 16 txns plus 256 inner txns at min fee is ~0.27 ALGO.
  */
 export const maxReasonableGroupFee = (
     transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
 ): bigint =>
-    transactions.reduce(
-        (sum, tx) =>
-            sum +
-            (tx.txType === 'keyreg' && signableAddresses.has(tx.sender)
-                ? KEYREG_FEE_ALLOWANCE_MICRO_ALGO
-                : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO),
-        0n,
+    transactions.some(
+        tx => tx.txType === 'keyreg' && signableAddresses.has(tx.sender),
     )
+        ? KEYREG_FEE_ALLOWANCE_MICRO_ALGO
+        : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO
 
 /**
  * Flags a request whose total fee across the user's signable transactions
- * exceeds the type-aware budget from {@link maxReasonableGroupFee}. The budget
- * is computed over the WHOLE group so legitimate fee-pooling (one signed tx
- * paying the group's fees) is not flagged. Returns a single group-level
- * warning, or null when the fee is within budget.
+ * exceeds the budget from {@link maxReasonableGroupFee}. Returns a single
+ * group-level warning, or null when the fee is within budget.
  */
 export const detectHighGroupFee = (
     transactions: AlgorandTransactionView[],
