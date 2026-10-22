@@ -83,6 +83,31 @@ describe('addHardwareChainAccount', () => {
         expect(Object.keys(result.chains)).toEqual([ETHEREUM])
     })
 
+    test('keeps a USB import apart: its id names a model, not a device', () => {
+        state().setAccounts([
+            buildTestAccount(
+                {
+                    ...TEST_CUSTODY.hardware,
+                    device: {
+                        ...TEST_CUSTODY.hardware.device,
+                        transportType: 'usb',
+                    },
+                },
+                { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+                { id: 'usb-ledger' },
+            ),
+        ])
+
+        const result = state().addHardwareChainAccount(
+            { ...DEVICE, transportType: 'usb' },
+            ETHEREUM,
+            EVM_KEY_ADDRESS,
+        )
+
+        expect(state().accounts).toHaveLength(2)
+        expect(result.id).not.toBe('usb-ledger')
+    })
+
     test('keeps another account index of the same device apart', () => {
         state().setAccounts([ledgerOnAlgorand()])
 
@@ -273,6 +298,36 @@ describe('a device position stays one account', () => {
         expect(state().accounts[0].chains[ETHEREUM]?.address).toBe(
             EVM_KEY_ADDRESS,
         )
+    })
+
+    test('upgrades in place at a USB position instead of joining its account', () => {
+        const usbDevice = {
+            ...TEST_CUSTODY.hardware.device,
+            transportType: 'usb' as const,
+        }
+        const usbLedger = buildTestAccount(
+            { ...TEST_CUSTODY.hardware, device: usbDevice },
+            { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+            { id: 'usb-ledger' },
+        )
+        const watch = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
+            { id: 'watch' },
+        )
+        state().setAccounts([usbLedger, watch])
+
+        state().upgradeWatchAccountToHardware(
+            'watch',
+            { ...usbDevice, accountIndex: 0 },
+            ETHEREUM,
+        )
+
+        expect(state().accounts).toHaveLength(2)
+        expect(state().accounts[1]).toMatchObject({
+            id: 'watch',
+            custody: { kind: 'hardware' },
+        })
     })
 
     test('refuses to bind on a chain the account holds no entry on', () => {

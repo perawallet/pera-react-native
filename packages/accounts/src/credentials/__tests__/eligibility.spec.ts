@@ -420,12 +420,28 @@ describe('findHardwareHolder', () => {
         ).toBe('index-1')
     })
 
+    test('finds no holder at a USB position, whose id names a model', () => {
+        const usb = { ...device, transportType: 'usb' as const }
+        const accounts = [
+            buildTestAccount(
+                { kind: 'hardware', device: usb, accountIndex: 0 },
+                { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
+                { id: 'usb' },
+            ),
+        ]
+
+        expect(
+            findHardwareHolder(accounts, { ...usb, accountIndex: 0 }),
+        ).toBeUndefined()
+    })
+
     test('ignores another manufacturer at the same id and index', () => {
         expect(
             findHardwareHolder([ledger('ledger', 0)], {
                 manufacturer: 'other' as 'ledger',
                 deviceId: device.deviceId,
                 accountIndex: 0,
+                transportType: 'ble',
             }),
         ).toBeUndefined()
     })

@@ -167,8 +167,9 @@ export type AccountsState = BaseStoreState & {
     /**
      * Adds `chainId`'s entry for the hardware account at `details`' device and
      * account index, or creates that account (named `name`) when the wallet
-     * has none. An account at that position holding another address on
-     * `chainId` is another seed and is not joined. Returns the holder
+     * has none. Only a Bluetooth position is joined (a USB id names a model),
+     * and an account there holding another address on `chainId` is another
+     * seed and is not joined either. Returns the holder
      * untouched when it already holds `address` there. Throws
      * `InvalidChainAddressError` for an address not on the chain's selected
      * network, and `DuplicateAccountError` naming the holder when another

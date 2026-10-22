@@ -117,10 +117,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
                 manufacturer: string
                 deviceId: string
                 accountIndex: number
+                transportType: string
             },
         ) =>
             accounts.find(
                 account =>
+                    position.transportType === 'ble' &&
                     account.custody.kind === 'hardware' &&
                     account.custody.accountIndex === position.accountIndex &&
                     account.custody.device.deviceId === position.deviceId &&
@@ -1813,6 +1815,34 @@ describe('useCloudBackupImport hardware on several chains', () => {
         expect(storeState.accounts[0].chains).toEqual({
             ethereum: { address: '0xother' },
         })
+    })
+
+    test('restores a USB entry as its own account, whose id names a model', async () => {
+        storeState.accounts = [
+            {
+                id: 'existing',
+                custody: {
+                    kind: 'hardware',
+                    device: { ...LEDGER_DEVICE, transportType: 'usb' },
+                    accountIndex: 0,
+                },
+                chains: { algorand: { address: 'LEDGER_ALGO' } },
+            },
+        ]
+        const entry = hardwareEntry('0xledger', 'ethereum')
+        const { current } = renderImport()
+
+        await current.importAccounts([
+            {
+                ...entry,
+                addressPayload: {
+                    ...entry.addressPayload,
+                    transportType: 'usb',
+                } as typeof entry.addressPayload,
+            },
+        ])
+
+        expect(storeState.accounts).toHaveLength(2)
     })
 
     test('keeps another account index of the device as its own account', async () => {

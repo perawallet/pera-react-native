@@ -776,10 +776,11 @@ export const withDefaultChains = async <A extends WalletAccount>(
 
 /**
  * Binds `current` to the device at `details`. When another hardware account
- * already sits at that device position holding the same addresses, `current`'s
- * entries join it and `current` goes, so one device position stays one
- * account. One holding another address on a shared chain is another seed (a
- * USB id names a model, not a device), so `current` rebinds in place instead.
+ * already sits at that Bluetooth device position holding the same addresses,
+ * `current`'s entries join it and `current` goes, so one device position stays
+ * one account. One holding another address on a shared chain is another seed
+ * (a passphrase identity shares the device id), so `current` rebinds in place
+ * instead, as it does over USB.
  */
 const moveToHardware = (
     get: StoreApi<AccountsState>['getState'],
