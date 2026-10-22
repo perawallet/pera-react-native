@@ -351,7 +351,7 @@ export const useImportAccountOptionsScreen =
                               'onboarding.import_account_options.pair_ledger_unsupported_description',
                           ),
                     leftIcon: 'wallet' as IconName,
-                    onPress: handlePairLedgerBle,
+                    onPress: () => void handlePairLedgerBle(),
                     isDisabled: !isLedgerBleAvailable,
                 })
             }
@@ -370,7 +370,7 @@ export const useImportAccountOptionsScreen =
                               'onboarding.import_account_options.pair_ledger_unsupported_description',
                           ),
                     leftIcon: 'wallet' as IconName,
-                    onPress: handlePairLedgerUsb,
+                    onPress: () => void handlePairLedgerUsb(),
                     isDisabled: !isLedgerUsbAvailable,
                 })
             }
