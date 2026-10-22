@@ -218,7 +218,7 @@ patchedDependencies:
   # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
   # keep a key out of StrongBox.
   "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
-  # Four unrelated reasons, none configurable through plugin options:
+  # Five unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
   #   the upgrade.
@@ -233,6 +233,10 @@ patchedDependencies:
   #   credential chooser lists plaintext `k/` metadata without decrypting
   #   anything, and one credential's sealed `m/` material is opened only after
   #   the user selects it. Upstream lists flat records by opening each one.
+  # - Android assertion keys open only under a Keystore-enforced proof that the
+  #   user authenticated: a biometric-wrapped key is never re-derived, and
+  #   re-deriving a key or reading the PRF parent secret needs a biometric
+  #   cipher the user unlocked. Upstream re-derives any key it cannot open.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
