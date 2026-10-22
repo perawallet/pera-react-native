@@ -57,7 +57,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const routeChain = vi.hoisted(() => ({ chainId: undefined as string | undefined }))
+const routeChain = vi.hoisted(() => ({
+    chainId: undefined as string | undefined,
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({

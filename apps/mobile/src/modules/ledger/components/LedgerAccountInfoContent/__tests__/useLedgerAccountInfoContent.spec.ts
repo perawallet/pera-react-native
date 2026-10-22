@@ -212,7 +212,12 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 7, 'algorand', 'Rekeyed account'),
+            useLedgerAccountInfoContent(
+                'ADDR',
+                7,
+                'algorand',
+                'Rekeyed account',
+            ),
         )
 
         expect(result.current.title).toBe('Rekeyed account')

@@ -164,7 +164,9 @@ describe('Flow: import a Ledger account on Ethereum', () => {
         )!
         vi.spyOn(ble, 'isSupported').mockResolvedValue(true)
         renderWithNavigation(ImportAccountOptionsScreen, 'ImportOptions', {
-            additionalScreens: [{ name: 'LedgerPair', component: LedgerPairProbe }],
+            additionalScreens: [
+                { name: 'LedgerPair', component: LedgerPairProbe },
+            ],
         })
 
         fireEvent.click(
@@ -173,9 +175,12 @@ describe('Flow: import a Ledger account on Ethereum', () => {
             ),
         )
         fireEvent.click(
-            await waitFor(() => screen.getByTestId('chain_selection_ethereum'), {
-                timeout: 5000,
-            }),
+            await waitFor(
+                () => screen.getByTestId('chain_selection_ethereum'),
+                {
+                    timeout: 5000,
+                },
+            ),
         )
 
         await waitFor(() => expect(pairParams).toEqual({ chainId: 'ethereum' }))

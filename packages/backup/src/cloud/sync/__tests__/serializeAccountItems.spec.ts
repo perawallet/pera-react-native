@@ -212,7 +212,7 @@ describe('buildAccountRecord', () => {
         ])
     })
 
-    it("carries the device on every chain of a hardware account, including one with no backup adapter", () => {
+    it('carries the device on every chain of a hardware account, including one with no backup adapter', () => {
         const account = buildAccount({
             id: 'ledger',
             custody: {

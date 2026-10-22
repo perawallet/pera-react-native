@@ -25,10 +25,7 @@ import {
     ALGORAND_MAX_CONCURRENT_STATE_READS,
 } from './constants'
 import { hdDerivedKeyId } from './hd-derivation'
-import {
-    checkAlgorandActivity,
-    createXHDGetPublicKey,
-} from './discovery'
+import { checkAlgorandActivity, createXHDGetPublicKey } from './discovery'
 import { fetchAssetOptInRounds } from './information'
 import { describeAlgorandHolding } from './holdings'
 import {

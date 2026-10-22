@@ -322,7 +322,11 @@ describe('chain accounts through serialize and restore', () => {
         )
         const summary = await result.current.importAccounts(pulled)
 
-        expect(summary).toEqual({ imported: 1, skippedDuplicate: 0, failed: [] })
+        expect(summary).toEqual({
+            imported: 1,
+            skippedDuplicate: 0,
+            failed: [],
+        })
         expect(store().accounts).toHaveLength(1)
         expect(store().accounts[0]).toMatchObject({
             name: 'Ledger 1',

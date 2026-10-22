@@ -33,7 +33,9 @@ export const ChainSelectionContent = ({
     return (
         <PWSheetLayout
             header={
-                <SheetHeader title={title ?? t('deeplink.select_chain.title')} />
+                <SheetHeader
+                    title={title ?? t('deeplink.select_chain.title')}
+                />
             }
         >
             {chainIds.map(chainId => (

@@ -157,8 +157,7 @@ export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
 }
 
 /** The `&chain=` the popup passed with the consumed flow; not validated here. */
-export const getConsumedExpandedChainId = (): string | null =>
-    consumedChainId
+export const getConsumedExpandedChainId = (): string | null => consumedChainId
 
 /**
  * The flow this tab was opened for, once `consumeInitialExpandedFlow` has

@@ -1745,7 +1745,10 @@ describe('useCloudBackupImport hardware on several chains', () => {
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
-            { ...hardwareEntry('LEDGER_ALGO', 'algorand'), group: 'LEDGER_ALGO' },
+            {
+                ...hardwareEntry('LEDGER_ALGO', 'algorand'),
+                group: 'LEDGER_ALGO',
+            },
             { ...hardwareEntry('0xledger', 'ethereum'), group: 'LEDGER_ALGO' },
         ])
 

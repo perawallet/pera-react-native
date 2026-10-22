@@ -629,7 +629,14 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.hardware: {
-            if (attachHardwareChain(context, groupHolder, chainId, addressPayload))
+            if (
+                attachHardwareChain(
+                    context,
+                    groupHolder,
+                    chainId,
+                    addressPayload,
+                )
+            )
                 return 0
             context.appendAccount(buildHardwareAccount(chainId, addressPayload))
             return 1

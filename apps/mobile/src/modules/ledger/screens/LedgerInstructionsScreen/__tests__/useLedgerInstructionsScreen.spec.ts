@@ -55,7 +55,10 @@ vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
         chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
-const setTransport = (transportType?: 'ble' | 'usb', chainId?: string): void => {
+const setTransport = (
+    transportType?: 'ble' | 'usb',
+    chainId?: string,
+): void => {
     const params = {
         ...(transportType ? { transportType } : {}),
         ...(chainId ? { chainId } : {}),
@@ -100,7 +103,7 @@ describe('useLedgerInstructionsScreen', () => {
         })
     })
 
-    it('names the first Ledger chain\'s app when the route names none', () => {
+    it("names the first Ledger chain's app when the route names none", () => {
         const { result } = renderHook(() => useLedgerInstructionsScreen())
 
         expect(result.current.appName).toBe('Algorand')

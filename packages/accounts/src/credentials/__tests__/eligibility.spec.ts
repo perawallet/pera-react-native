@@ -396,7 +396,11 @@ describe('wallet eligibility and holder lookups', () => {
 
 describe('findHardwareHolder', () => {
     const device = TEST_CUSTODY.hardware.device
-    const ledger = (id: string, accountIndex: number, deviceId = device.deviceId) =>
+    const ledger = (
+        id: string,
+        accountIndex: number,
+        deviceId = device.deviceId,
+    ) =>
         buildTestAccount(
             { kind: 'hardware', device: { ...device, deviceId }, accountIndex },
             { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },

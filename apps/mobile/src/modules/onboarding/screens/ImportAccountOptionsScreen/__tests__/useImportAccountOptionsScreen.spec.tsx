@@ -387,9 +387,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         it('asks for the chain and pairs on the one picked', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce('ethereum')
-            const { result } = renderHook(() =>
-                useImportAccountOptionsScreen(),
-            )
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
             const ledgerOption = result.current.options.find(
                 o => o.testID === 'import_account_options_pair_ledger_button',
             )!
@@ -406,9 +404,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         it('stays put when the chain sheet is dismissed', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-            const { result } = renderHook(() =>
-                useImportAccountOptionsScreen(),
-            )
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
             const ledgerOption = result.current.options.find(
                 o => o.testID === 'import_account_options_pair_ledger_button',
             )!

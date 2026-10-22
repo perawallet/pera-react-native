@@ -243,7 +243,9 @@ describe('Flow: send ether from a Ledger account', () => {
             () => screen.getByTestId('send_confirm_button'),
             { timeout: 5000 },
         )
-        await waitFor(() => expect(isElementDisabled(confirmButton)).toBe(false))
+        await waitFor(() =>
+            expect(isElementDisabled(confirmButton)).toBe(false),
+        )
         fireEvent.click(confirmButton)
 
         await waitFor(

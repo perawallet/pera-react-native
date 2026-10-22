@@ -41,7 +41,11 @@ const APP = 'Algorand'
 
 describe('getLedgerErrorPreset', () => {
     it('maps LedgerUserRejectedError to user_rejected preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerUserRejectedError(), t, APP)
+        const preset = getLedgerErrorPreset(
+            new LedgerUserRejectedError(),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('user_rejected')
         expect(preset.title).toBe('ledger.errors.user_rejected_title')
         expect(preset.body).toBe('ledger.errors.user_rejected')
@@ -115,7 +119,11 @@ describe('getLedgerErrorPreset', () => {
     })
 
     it('maps LedgerDisconnectedError to connection_lost preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerDisconnectedError(), t, APP)
+        const preset = getLedgerErrorPreset(
+            new LedgerDisconnectedError(),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('connection_lost')
     })
 
@@ -168,13 +176,21 @@ describe('LedgerErrorPreset flags', () => {
     const t: Translate = key => key
 
     it('returns isTroubleshootable=true for connection_failed', () => {
-        const preset = getLedgerErrorPreset(new LedgerConnectionError('x'), t, APP)
+        const preset = getLedgerErrorPreset(
+            new LedgerConnectionError('x'),
+            t,
+            APP,
+        )
         expect(preset.isTroubleshootable).toBe(true)
         expect(preset.isRetryable).toBe(true)
     })
 
     it('returns isTroubleshootable=false for user_rejected', () => {
-        const preset = getLedgerErrorPreset(new LedgerUserRejectedError(), t, APP)
+        const preset = getLedgerErrorPreset(
+            new LedgerUserRejectedError(),
+            t,
+            APP,
+        )
         expect(preset.isTroubleshootable).toBe(false)
         expect(preset.isRetryable).toBe(true) // can retry by re-initiating
     })
@@ -262,7 +278,11 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
         // LedgerScanTimeoutError does NOT extend LedgerTimeoutError, but
         // classifyLedgerErrorKind must check scan_timeout before timeout
         // so that future subclass relationships do not silently reclassify it.
-        const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t, APP)
+        const preset = getLedgerErrorPreset(
+            new LedgerScanTimeoutError('x'),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('scan_timeout')
     })
 

@@ -98,7 +98,6 @@ vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
         chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
-
 import { useLedgerFetchAccountsScreen } from '../useLedgerFetchAccountsScreen'
 
 const account = (accountIndex: number, address: string) => ({

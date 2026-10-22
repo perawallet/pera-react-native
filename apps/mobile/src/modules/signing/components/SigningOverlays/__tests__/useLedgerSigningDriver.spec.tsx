@@ -44,7 +44,6 @@ vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
         chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
-
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
