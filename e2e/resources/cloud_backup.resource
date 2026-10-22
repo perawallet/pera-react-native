@@ -262,12 +262,16 @@ Quiz Option Words
     [Documentation]    The words item ${index} is offering, read off the options themselves.
     [Arguments]    ${index}
     ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
+    # The option is a touchable whose word sits in a child text node, so reading the option
+    # itself gives back an empty string on Android - which then went on as the "wrong word".
     @{elements}=    Get WebElements
-    ...    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')]
+    ...    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')]//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
     @{words}=    Create List
     FOR    ${element}    IN    @{elements}
         ${text}=    Get Text    ${element}
-        Append To List    ${words}    ${{ $text.strip() }}
+        ${word}=    Set Variable    ${{ $text.strip() }}
+        ${known}=    Evaluate    $word in $words
+        IF    $word and not ${known}    Append To List    ${words}    ${word}
     END
     RETURN    @{words}
 
