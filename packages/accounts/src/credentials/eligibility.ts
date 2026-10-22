@@ -28,7 +28,12 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
-import type { HdIndex, WalletAccount } from '../models'
+import type {
+    HardwareWalletAccount,
+    HardwareWalletDetails,
+    HdIndex,
+    WalletAccount,
+} from '../models'
 import { findAccountByAddressOn } from '../utils'
 import { chainAccountOf, hasCustody, hdIndexOf, seedOf } from './accessors'
 import type { KeystoreSnapshot } from './credentialScheme'
@@ -212,6 +217,26 @@ export const findPathHolder = (
             seedOf(account, keys) === walletId
         )
     })
+
+/**
+ * The hardware account at this device position, whatever chains it spans.
+ * Keyed on the stored device id, so a re-paired device that rotated its id
+ * reads as another device until a re-import rebinds it.
+ */
+export const findHardwareHolder = (
+    accounts: readonly WalletAccount[],
+    details: Pick<
+        HardwareWalletDetails,
+        'manufacturer' | 'deviceId' | 'accountIndex'
+    >,
+): HardwareWalletAccount | undefined =>
+    accounts.find(
+        (account): account is HardwareWalletAccount =>
+            hasCustody(account, 'hardware') &&
+            account.custody.accountIndex === details.accountIndex &&
+            account.custody.device.deviceId === details.deviceId &&
+            account.custody.device.manufacturer === details.manufacturer,
+    )
 
 /**
  * The lowest position of wallet `walletId` (by account, then keyIndex) with no

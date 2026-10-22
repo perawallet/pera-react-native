@@ -164,6 +164,23 @@ export type AccountsState = BaseStoreState & {
         expectedAddress?: string,
         enabledBy?: ChainEnabledBy,
     ) => Promise<WalletAccount>
+    /**
+     * Adds `chainId`'s entry for the hardware account at `details`' device and
+     * account index, or creates that account (named `name`) when the wallet
+     * has none. Returns the holder untouched when it already holds `address`
+     * there. Throws `InvalidChainAddressError` for an address not on the
+     * chain's selected network, and `DuplicateAccountError` naming the holder
+     * when another account holds the address, or the device's account already
+     * holds a different one there. The new entry is stamped `enabledBy`
+     * (default `'created'`).
+     */
+    addHardwareChainAccount: (
+        details: HardwareWalletDetails,
+        chainId: ChainId,
+        address: string,
+        name?: string,
+        enabledBy?: ChainEnabledBy,
+    ) => WalletAccount
     setSelectedAccountId: (id: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**
@@ -193,22 +210,29 @@ export type AccountsState = BaseStoreState & {
     ) => number
     /**
      * Replace the watch account `id` with a hardware account bound to
-     * `hardwareDetails`, preserving its id, name and chain addresses. Returns
+     * `hardwareDetails`, preserving its id, name and chain addresses;
+     * `chainId` is the chain the device proved the address on. When another
+     * hardware account already sits at that device position, the watch
+     * account's entries join it instead and the watch account goes. Returns
      * whether an upgrade happened; refuses (false) when the account is missing
      * or not a watch account. Callers own the user confirmation.
      */
     upgradeWatchAccountToHardware: (
         id: string,
         hardwareDetails: HardwareWalletDetails,
+        chainId: ChainId,
     ) => boolean
     /**
      * Re-bind the hardware account `id` to `hardwareDetails` (e.g. after an
-     * OS forget/re-pair rotated the BLE device id — an address match proves it
-     * is the same key). Returns whether anything changed; refuses (false) for
+     * OS forget/re-pair rotated the BLE device id — an address match on
+     * `chainId` proves it is the same key). When another hardware account
+     * already sits at the new device position, `id`'s entries join it and
+     * `id` goes. Returns whether anything changed; refuses (false) for
      * non-hardware accounts.
      */
     updateHardwareDetails: (
         id: string,
         hardwareDetails: HardwareWalletDetails,
+        chainId: ChainId,
     ) => boolean
 }

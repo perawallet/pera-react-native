@@ -63,6 +63,7 @@ import {
     eligibleChains,
     eligibleChainsInFamily,
     findAddressHolder,
+    findHardwareHolder,
     findPathHolder,
     isKeyReferenced,
     seedMintableScheme,
@@ -447,26 +448,45 @@ const withoutLocalKey = ({
     ...(enabledBy !== undefined ? { enabledAt, enabledBy } : {}),
 })
 
-/** The account rebound to the hardware wallet, keeping its id, name and chain entries. */
+const withoutLocalKeys = (chains: AccountChains): AccountChains =>
+    Object.fromEntries(
+        Object.entries(chains).map(([id, entry]) => [
+            id,
+            entry ? withoutLocalKey(entry) : entry,
+        ]),
+    )
+
+/**
+ * The account rebound to the hardware wallet, keeping its id, name and chain
+ * entries; `chainId` is the chain the device proved its address on.
+ */
 const rebindToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
+    chainId: ChainId,
 ): WalletAccount | undefined => {
-    const chainId = CHAIN_IDS.find(id => chainAccountOf(current, id))
-    if (!chainId) return undefined
+    if (!chainAccountOf(current, chainId)) return undefined
     const { accountIndex, ...device } = details
     return buildAccount({
         id: current.id,
         name: current.name,
         custody: { kind: 'hardware', device, accountIndex },
         chainId,
-        chains: Object.fromEntries(
-            Object.entries(current.chains).map(([id, entry]) => [
-                id,
-                entry ? withoutLocalKey(entry) : entry,
-            ]),
-        ),
+        chains: withoutLocalKeys(current.chains),
     })
+}
+
+/** `holder` with `source`'s entries, keyless, on the chains it has none of. */
+const withEntriesOf = (
+    holder: WalletAccount,
+    source: WalletAccount,
+): WalletAccount => {
+    const chains: AccountChains = { ...holder.chains }
+    for (const [id, entry] of Object.entries(withoutLocalKeys(source.chains))) {
+        const chainId = id as ChainId
+        if (entry && !chains[chainId]) chains[chainId] = entry
+    }
+    return { ...holder, chains }
 }
 
 /** Removes a KMS entry no account references; a failure is logged so the caller's own error is the one thrown. */
@@ -746,6 +766,45 @@ const accountQueues = new Map<string, Promise<unknown>>()
  * derived for inactive chains; run beside an enable that derives the same
  * key, it could drop that key before the enable's entry references it.
  */
+/**
+ * Binds `current` to the device at `details`. When another hardware account
+ * already sits at that device position, `current`'s entries join it and
+ * `current` goes, so one device position stays one account.
+ */
+const moveToHardware = (
+    get: StoreApi<AccountsState>['getState'],
+    set: StoreApi<AccountsState>['setState'],
+    current: WalletAccount,
+    details: HardwareWalletDetails,
+    chainId: ChainId,
+): boolean => {
+    if (!chainAccountOf(current, chainId)) return false
+    const { accounts, selectedAccountId } = get()
+    const holder = findHardwareHolder(accounts, details)
+    if (holder && holder.id !== current.id) {
+        const merged = withEntriesOf(holder, current)
+        get().setAccounts(
+            accounts.flatMap(account =>
+                account.id === current.id
+                    ? []
+                    : [account.id === holder.id ? merged : account],
+            ),
+        )
+        if (selectedAccountId === current.id) {
+            set({ selectedAccountId: holder.id })
+        }
+        return true
+    }
+    const rebound = rebindToHardware(current, details, chainId)
+    if (!rebound) return false
+    set({
+        accounts: accounts.map(account =>
+            account.id === current.id ? rebound : account,
+        ),
+    })
+    return true
+}
+
 const queuedFor = <T>(accountId: string, run: () => Promise<T>): Promise<T> => {
     const queued = (accountQueues.get(accountId) ?? Promise.resolve())
         .catch(() => undefined)
@@ -1153,6 +1212,57 @@ export const useAccountsStore: UseBoundStore<
                 )
                 return updated
             },
+            addHardwareChainAccount: (
+                details,
+                chainId,
+                address,
+                name,
+                enabledBy = 'created',
+            ) => {
+                const scope = scopeOn(chainId)
+                const codec = addressCodecs.get(chainId)
+                if (!codec.isValid(address, scope.networkId)) {
+                    throw new InvalidChainAddressError(chainId)
+                }
+                const normalized = codec.normalize(address)
+                const { accounts } = get()
+                const holder = findHardwareHolder(accounts, details)
+                const existing = holder && chainAccountOf(holder, chainId)
+                if (holder && existing) {
+                    if (isSameAddress(chainId, existing.address, normalized)) {
+                        return holder
+                    }
+                    throw new DuplicateAccountError(existing.address, holder)
+                }
+                const addressHolder = findAddressHolder(
+                    accounts,
+                    scope,
+                    normalized,
+                )
+                if (addressHolder) {
+                    throw new DuplicateAccountError(normalized, addressHolder)
+                }
+                const entry = withEnablement({ address: normalized }, enabledBy)
+                if (!holder) {
+                    const { accountIndex, ...device } = details
+                    const account = buildAccount({
+                        name,
+                        custody: { kind: 'hardware', device, accountIndex },
+                        chainId,
+                        chains: { [chainId]: entry },
+                    })
+                    get().addAccount(account)
+                    return account
+                }
+                const updated = {
+                    ...holder,
+                    chains: { ...holder.chains, [chainId]: entry },
+                }
+                get().setAccounts(
+                    accounts.map(a => (a.id === holder.id ? updated : a)),
+                )
+                return updated
+            },
             setSelectedAccountId: (id: Nullable<string>) => {
                 const accounts = get().accounts
                 if (id && !accounts.some(a => a.id === id)) {
@@ -1270,29 +1380,25 @@ export const useAccountsStore: UseBoundStore<
             upgradeWatchAccountToHardware: (
                 id: string,
                 hardwareDetails: HardwareWalletDetails,
+                chainId: ChainId,
             ) => {
-                const accounts = get().accounts
-                const idx = accounts.findIndex(a => a.id === id)
-                if (idx === -1) return false
-                const current = accounts[idx]
-                if (!isWatchAccount(current)) return false
-
-                const upgraded = rebindToHardware(current, hardwareDetails)
-                if (!upgraded) return false
-                const next = [...accounts]
-                next[idx] = upgraded
-                set({ accounts: next })
-                return true
+                const current = get().accounts.find(a => a.id === id)
+                if (!current || !isWatchAccount(current)) return false
+                return moveToHardware(
+                    get,
+                    set,
+                    current,
+                    hardwareDetails,
+                    chainId,
+                )
             },
             updateHardwareDetails: (
                 id: string,
                 hardwareDetails: HardwareWalletDetails,
+                chainId: ChainId,
             ) => {
-                const accounts = get().accounts
-                const idx = accounts.findIndex(a => a.id === id)
-                if (idx === -1) return false
-                const current = accounts[idx]
-                if (!isHardwareWalletAccount(current)) return false
+                const current = get().accounts.find(a => a.id === id)
+                if (!current || !isHardwareWalletAccount(current)) return false
 
                 const { accountIndex, ...device } = hardwareDetails
                 const unchanged =
@@ -1300,12 +1406,13 @@ export const useAccountsStore: UseBoundStore<
                     sameDevice(current.custody.device, device)
                 if (unchanged) return false
 
-                const rebound = rebindToHardware(current, hardwareDetails)
-                if (!rebound) return false
-                const next = [...accounts]
-                next[idx] = rebound
-                set({ accounts: next })
-                return true
+                return moveToHardware(
+                    get,
+                    set,
+                    current,
+                    hardwareDetails,
+                    chainId,
+                )
             },
             resetState: () => set(initialState),
         }),
