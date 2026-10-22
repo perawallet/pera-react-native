@@ -55,6 +55,9 @@ ${SWITCHER_ROWS}                    xpath=//*[starts-with(@content-desc, 'accoun
 ${WATCH_INFO_CREATE_BUTTON}         xpath=//*[@text='Create a Watch Account' or @label='Create a Watch Account']
 
 
+${OPTION_ALGORAND_EXPAND}           xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
+
+
 *** Keywords ***
 Open Account Switcher
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
@@ -141,6 +144,15 @@ Tap More Until Options Open
 Open Account Option
     [Arguments]    ${option}
     Open Account Options
+    Scroll Until Tappable    ${option}
+    Tap    ${option}
+
+Open Algorand Account Option
+    [Documentation]    Rekey and rekeyed-account scan sit in the Algorand network row, behind its chevron.
+    [Arguments]    ${option}
+    Open Account Options
+    Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
+    Tap    ${OPTION_ALGORAND_EXPAND}
     Scroll Until Tappable    ${option}
     Tap    ${option}
 
