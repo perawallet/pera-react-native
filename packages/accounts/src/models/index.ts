@@ -215,9 +215,9 @@ export type AccountsState = BaseStoreState & {
      * `chainId` is the chain the device proved the address on. When another
      * hardware account holding the same addresses already sits at that device
      * position, the watch account's entries join it instead and the watch
-     * account goes. Returns
-     * whether an upgrade happened; refuses (false) when the account is missing
-     * or not a watch account. Callers own the user confirmation.
+     * account goes. Returns whether an upgrade happened; refuses (false) when
+     * the account is missing or not a watch account. Callers own the user
+     * confirmation.
      */
     upgradeWatchAccountToHardware: (
         id: string,
@@ -229,8 +229,8 @@ export type AccountsState = BaseStoreState & {
      * OS forget/re-pair rotated the BLE device id — an address match on
      * `chainId` proves it is the same key). When another hardware account
      * holding the same addresses already sits at the new device position,
-     * `id`'s entries join it and `id` goes. Returns whether anything changed; refuses (false) for
-     * non-hardware accounts.
+     * `id`'s entries join it and `id` goes. Returns whether anything changed;
+     * refuses (false) for non-hardware accounts.
      */
     updateHardwareDetails: (
         id: string,
