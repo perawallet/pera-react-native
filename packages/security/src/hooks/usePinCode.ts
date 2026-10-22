@@ -100,15 +100,19 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const { disableBiometrics, completePendingBiometricRearm } = useBiometrics()
 
+    // Short-circuits before the clock read: every render of every consumer
+    // calls this, and the native read is a synchronous bridge call.
     const getRemainingLockoutSeconds = useCallback(
         () =>
-            Math.ceil(
-                getLockoutRemainingMs(
-                    lockout,
-                    failedAttempts,
-                    readLockoutClocks(),
-                ) / 1000,
-            ),
+            lockout
+                ? Math.ceil(
+                      getLockoutRemainingMs(
+                          lockout,
+                          failedAttempts,
+                          readLockoutClocks(),
+                      ) / 1000,
+                  )
+                : 0,
         [lockout, failedAttempts],
     )
 

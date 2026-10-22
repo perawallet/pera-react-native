@@ -39,7 +39,7 @@ public class PeraMonotonicClockModule: Module {
   public func definition() -> ModuleDefinition {
     Name("PeraMonotonicClock")
 
-    Function("now") { () -> [String: Any] in
+    Function("now") { () throws -> [String: Any] in
       // A constant stand-in would let a deadline from before a reboot be
       // trusted after it; failing hands the JS side its wall-clock fallback.
       guard let bootId = Self.bootId else {
@@ -77,7 +77,7 @@ public class PeraMonotonicClockModule: Module {
   }
 }
 
-internal final class BootIdUnavailableException: Exception {
+internal final class BootIdUnavailableException: Exception, @unchecked Sendable {
   override var reason: String {
     "Neither kern.bootsessionuuid nor kern.boottime is readable"
   }

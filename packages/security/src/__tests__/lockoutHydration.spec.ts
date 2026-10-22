@@ -13,6 +13,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { MemoryMonotonicClockService } from '@test-utils/monotonic-clock'
 import { hydrateLockoutState } from '../lockoutHydration'
+import { withPinRecordLock } from '../pinRecordLock'
 import {
     PIN_RECORD_VERSION,
     parsePinRecord,
@@ -161,5 +162,31 @@ describe('hydrateLockoutState', () => {
             },
         })
         expect(kms.stored()).toEqual(baseRecord)
+    })
+
+    test('a PIN attempt arriving while the re-anchor is written keeps its charge', async () => {
+        const kms = makeKms(baseRecord)
+        clock.reboot()
+        let attempt: Promise<void> = Promise.resolve()
+        // The second read is the re-anchor's own; a PIN attempt shows up then.
+        kms.read.mockImplementation(() => {
+            if (kms.read.mock.calls.length !== 2) return
+            attempt = withPinRecordLock(async () => {
+                const current = kms.stored()!
+                await kms.commitSecret({
+                    id: 'pera.pinCode',
+                    bytes: serializePinRecord({
+                        ...current,
+                        failedAttempts: current.failedAttempts + 1,
+                    }),
+                })
+            })
+        })
+
+        await hydrateLockoutState(kms)
+        await attempt
+
+        expect(kms.stored()?.failedAttempts).toBe(6)
+        expect(kms.stored()?.monotonicLockout?.bootId).toBe('boot-2')
     })
 })

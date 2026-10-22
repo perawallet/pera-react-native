@@ -169,7 +169,7 @@ export const migratePinRecordToV3 = (
     kms: KmsAccess,
 ): Promise<PinRecordMigrationResult> => {
     if (!inflight) {
-        // Locked: a v2 rewrite racing a PIN attempt would drop its charge.
+        // Locked: a v2 rewrite racing another record write would overwrite it.
         inflight = withPinRecordLock(() => runMigration(kms)).finally(() => {
             inflight = null
         })

@@ -158,6 +158,15 @@ describe('resolveLockout', () => {
 
         expect(resolution).toEqual({ remainingMs: 20_000, update: null })
     })
+
+    test('clears an expired deadline without a monotonic reading', () => {
+        const resolution = resolveLockout(LIVE, {
+            wallNowMs: WALL + 30_000,
+            monotonic: null,
+        })
+
+        expect(resolution).toEqual({ remainingMs: 0, update: CLEARED_LOCKOUT })
+    })
 })
 
 describe('getLiveLockout', () => {

@@ -93,9 +93,12 @@ export const resolveLockout = (
     if (state.lockoutEndTime === null) return { remainingMs: 0, update: null }
     const wallRemaining = Math.max(0, state.lockoutEndTime - clocks.wallNowMs)
     const { monotonic } = clocks
-    // No native source: the wall clock is all there is, as before the
-    // monotonic deadline existed.
-    if (!monotonic) return { remainingMs: wallRemaining, update: null }
+    // No native source: the wall clock is all there is.
+    if (!monotonic) {
+        return wallRemaining > 0
+            ? { remainingMs: wallRemaining, update: null }
+            : { remainingMs: 0, update: CLEARED_LOCKOUT }
+    }
 
     const stored = state.monotonicLockout
     // Written by a build (or the legacy-app migration) that had no monotonic

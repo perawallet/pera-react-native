@@ -45,7 +45,7 @@ describe('useLockScreen', () => {
     const mockVerifyPin = vi.fn()
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockout = vi.fn()
-    const mockRefreshLockout = vi.fn()
+    const mockRefreshLockout = vi.fn().mockResolvedValue(undefined)
 
     // The countdown reads the hook's resolver; a fake on `Date.now()` stands
     // in for the monotonic clock behind it.
@@ -401,6 +401,20 @@ describe('useLockScreen', () => {
             })
 
             expect(result.current.remainingSeconds).toBe(59)
+        })
+
+        it('reads the expiry back when a render sees it before a tick does', () => {
+            ;(usePinCode as Mock).mockReturnValue({
+                ...pinCodeState(Date.now() - 1000),
+                isLockedOut: false,
+            })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+
+            expect(mockRefreshLockout).toHaveBeenCalledTimes(1)
+            expect(mockSetLockout).not.toHaveBeenCalled()
         })
 
         it('counts down on the hook resolver, not the wall clock', () => {
