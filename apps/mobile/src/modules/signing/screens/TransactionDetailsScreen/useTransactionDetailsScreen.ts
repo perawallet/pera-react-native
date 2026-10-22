@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 import {
     useNavigation,
@@ -34,6 +34,11 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { summarizeHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { chainUiFor } from '@modules/chain-ui'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
@@ -79,6 +84,16 @@ export const useTransactionDetailsScreen =
             isExternal,
             historyTransaction,
         } = route.params
+
+        // Tracked in-screen rather than via the navigator's screenListeners: this
+        // screen is also mounted inside the signing flow's own NavigationContainer
+        // (SignRequestView), which has no screenListeners, so a centralized listener
+        // would miss that path.
+        useEffect(() => {
+            trackScreen(AnalyticsScreenName.TransactionDetail, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+            })
+        }, [scope.chainId])
 
         // A route's scope never changes, so this resolves to the same hook on every render.
         const chainUseTransactionDetail = chainUiFor(

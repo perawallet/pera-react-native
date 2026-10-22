@@ -15,6 +15,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
+import { AnalyticsMetadataKey, SettingsEvent } from '@analytics'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission'
 
@@ -22,6 +23,12 @@ const mocks = vi.hoisted(() => ({
     toggleAccountNotification: vi.fn(),
     isTogglePending: vi.fn(() => false),
     showToast: vi.fn(),
+    trackEvent: vi.fn(),
+}))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mocks.trackEvent,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -143,6 +150,32 @@ describe('useSettingsNotificationsScreen', () => {
         expect(mocks.toggleAccountNotification).toHaveBeenCalledWith(
             'ADDR1',
             true,
+        )
+    })
+
+    it('tracks the filter change on the Algorand chain', async () => {
+        mocks.toggleAccountNotification.mockResolvedValue(true)
+        const mockAccount = {
+            id: '1',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
+
+        const { result } = renderHook(() => useSettingsNotificationsScreen())
+
+        await act(async () => {
+            result.current.handleAccountNotificationToggle(
+                mockAccount as any,
+                false,
+            )
+        })
+
+        expect(mocks.trackEvent).toHaveBeenCalledWith(
+            SettingsEvent.ChangeNotificationFilter,
+            {
+                [AnalyticsMetadataKey.AccountAddress]: 'ADDR1',
+                [AnalyticsMetadataKey.AllowNotifications]: false,
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            },
         )
     })
 

@@ -27,6 +27,11 @@ import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 const PRIMARY_ACCOUNT: WalletAccount = {
     id: 'primary-1',
@@ -48,6 +53,14 @@ const SECONDARY_ACCOUNT: WalletAccount = {
 }
 
 describe('Flow: Receive funds', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -77,6 +90,7 @@ describe('Flow: Receive funds', () => {
         )
         expect(screen.getByTestId('receive_copy_address_button')).toBeTruthy()
         expect(screen.getByTestId('receive_share_address_button')).toBeTruthy()
+        expectFlowEvents(analytics, 'receive', 'algorand')
     })
 
     it('Given the QR view, when the user taps "Copy address", then the address is written to the clipboard', () => {

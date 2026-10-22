@@ -120,9 +120,10 @@ export const useAssetDetailsScreen = ({
         if (assetId && !isCollectible) {
             trackEvent(AssetDetailsEvent.Show, {
                 [AnalyticsMetadataKey.AssetId]: assetId,
+                [AnalyticsMetadataKey.ChainId]: chainId,
             })
         }
-    }, [assetId, isCollectible])
+    }, [assetId, chainId, isCollectible])
 
     // Dedupe compares rendered strings, so both sides must share the same
     // ('short') truncation — a 'long'-format secondary would never match and

@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** WalletConnect session and transaction events. */
 export enum WalletConnectEvent {
@@ -32,7 +33,7 @@ export type WalletConnectVersion = '1' | '2'
  * it.
  */
 export interface WalletConnectRequiredPayloads {
-    [WalletConnectEvent.SessionApproved]: {
+    [WalletConnectEvent.SessionApproved]: ChainPayload & {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion
@@ -40,26 +41,26 @@ export interface WalletConnectRequiredPayloads {
         [Key.AccountAddress]?: string
         [Key.TotalAccount]?: number
     }
-    [WalletConnectEvent.SessionRejected]: {
+    [WalletConnectEvent.SessionRejected]: ChainPayload & {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion
         [Key.WcSessionTopic]?: string
     }
-    [WalletConnectEvent.SessionDisconnected]: {
+    [WalletConnectEvent.SessionDisconnected]: ChainPayload & {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion
         [Key.AccountAddress]?: string
     }
-    [WalletConnectEvent.TransactionConfirmed]: {
+    [WalletConnectEvent.TransactionConfirmed]: ChainPayload & {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion
         [Key.TransactionCount]?: number
         [Key.AccountAddress]?: string
     }
-    [WalletConnectEvent.TransactionDeclined]: {
+    [WalletConnectEvent.TransactionDeclined]: ChainPayload & {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion

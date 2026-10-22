@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Onboarding and account lifecycle (create / import / register / rekey). */
 export enum OnboardingEvent {
@@ -39,7 +40,13 @@ export type RegistrationType =
     | 'watch'
 
 export interface OnboardingRequiredPayloads {
-    [OnboardingEvent.RegisterAccount]: {
+    [OnboardingEvent.NameAccount]: ChainPayload
+    [OnboardingEvent.RegisterAccount]: ChainPayload & {
         [Key.AccountCreationType]: RegistrationType
     }
+    [OnboardingEvent.WatchAccountComplete]: ChainPayload
+    [OnboardingEvent.RecoverAlgo25]: ChainPayload
+    [OnboardingEvent.RecoverOneKey]: ChainPayload
+    [OnboardingEvent.CreateAccountQuantum]: ChainPayload
+    [OnboardingEvent.RekeyAccount]: ChainPayload
 }

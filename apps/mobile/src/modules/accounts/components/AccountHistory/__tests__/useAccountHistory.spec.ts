@@ -42,6 +42,13 @@ import {
     isPeraServiceUnavailableError,
     type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
+import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
+
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -404,6 +411,10 @@ describe('useAccountHistory', () => {
             expect(result.current.activeFilter).toBe(
                 TransactionFilter.Yesterday,
             )
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                AccountDetailsEvent.TransactionFilter,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+            )
         })
 
         it('handles custom range filter', async () => {
@@ -426,6 +437,36 @@ describe('useAccountHistory', () => {
             )
             expect(result.current.customRange).toEqual(customRange)
         })
+    })
+
+    it("tracks filtering and downloading on an Ethereum account's chain", async () => {
+        registerEthereumChain()
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            filter: TransactionFilter.Today,
+        })
+        const { result } = renderHook(() => useAccountHistory())
+
+        await act(async () => {
+            await result.current.handleOpenFilter()
+        })
+        act(() => {
+            result.current.handleExportCsv()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.TransactionFilter,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.TransactionDownload,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
     })
 
     describe('pagination', () => {
@@ -527,6 +568,10 @@ describe('useAccountHistory', () => {
             expect(mockExportCsv).toHaveBeenCalledWith({
                 accountAddress: ACCOUNT_ADDRESS,
             })
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                AccountDetailsEvent.TransactionDownload,
+                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+            )
         })
 
         it('does not call exportCsv if no account is selected', () => {

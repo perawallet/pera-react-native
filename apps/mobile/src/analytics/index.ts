@@ -29,6 +29,7 @@ export type {
     OptionalPayloadEvent,
     NoPayloadEvent,
 } from './events/payloads'
+export type { ChainPayload, ChainScopedEvent } from './events/chain-payload'
 
 // Type-safe tracking API.
 export {

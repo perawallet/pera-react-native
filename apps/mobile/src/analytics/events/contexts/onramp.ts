@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /**
  * Native onramp (Buy) flow. Event names mirror the legacy onramp-mobile-web
@@ -34,5 +33,5 @@ export enum OnrampEvent {
 
 /** Every onramp event names the chain Fund is buying onto. */
 export type OnrampRequiredPayloads = {
-    [E in OnrampEvent]: { [Key.ChainId]: ChainId }
+    [E in OnrampEvent]: ChainPayload
 }

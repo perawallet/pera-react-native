@@ -11,14 +11,26 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@test-utils/render'
+import { act, renderHook } from '@test-utils/render'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { AnalyticsMetadataKey, HomeEvent } from '@analytics'
 import { useButtonPanel } from '../useButtonPanel'
 
 const overview = vi.hoisted(() => ({ account: null as unknown }))
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+const mockReplace = vi.hoisted(() => vi.fn())
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ replace: mockReplace }),
+}))
 
 vi.mock('../../AccountOverview/AccountOverviewModalContext', () => ({
     useAccountOverviewModal: () => ({
@@ -55,6 +67,7 @@ const onEthereumOnly: WalletAccount = {
 
 describe('useButtonPanel', () => {
     beforeEach(() => {
+        vi.clearAllMocks()
         useRemoteConfigStore.getState().resetState()
         overview.account = onAlgorand
     })
@@ -98,5 +111,33 @@ describe('useButtonPanel', () => {
         expect(result.current.canSwap).toBe(false)
         expect(result.current.canSend).toBe(true)
         expect(result.current.canReceive).toBe(true)
+    })
+
+    it('tracks swapping on algorand and opens the Swap tab', () => {
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Swap, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
+        expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
+    })
+
+    it('tracks swapping on ethereum for an Ethereum account', () => {
+        registerEthereumChain()
+        overview.account = onEthereumOnly
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Swap, {
+            [AnalyticsMetadataKey.ChainId]: 'ethereum',
+        })
     })
 })

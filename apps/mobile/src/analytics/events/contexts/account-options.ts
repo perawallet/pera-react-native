@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ChainPayload } from '../chain-payload'
+
 /**
  * Account options menu actions. RN-specific events (no iOS equivalent) — the RN
  * per-account menu is richer than iOS, which only had a generic `rekey`.
@@ -25,4 +27,8 @@ export enum AccountOptionsEvent {
     CopyAddress = 'accountscr_copy_address_tap', // Copied the account address
     DeleteFromCloudBackup = 'accountscr_deleteAccount_cloudDelete', // Removed a backed-up account and its backup copy
     KeepInCloudBackup = 'accountscr_deleteAccount_cloudCancel', // Removed a backed-up account but kept its backup copy
+}
+
+export type AccountOptionsRequiredPayloads = {
+    [E in AccountOptionsEvent]: ChainPayload
 }

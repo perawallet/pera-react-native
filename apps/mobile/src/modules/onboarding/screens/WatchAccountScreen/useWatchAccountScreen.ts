@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
@@ -109,7 +109,9 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
                     watchChainId,
                     resolvedAddress,
                 )
-                trackEvent(OnboardingEvent.WatchAccountComplete)
+                trackEvent(OnboardingEvent.WatchAccountComplete, {
+                    [AnalyticsMetadataKey.ChainId]: watchChainId,
+                })
                 if (!isMounted()) return
                 navigation.push('NameAccount', {
                     account,

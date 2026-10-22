@@ -13,6 +13,7 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { useNameAccountScreen } from '../useNameAccountScreen'
 
 const mockBuildHdWalletAccount = vi.fn()
@@ -22,6 +23,7 @@ const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
 const mockUpdateAccount = vi.fn()
+const mockTrackEvent = vi.hoisted(() => vi.fn())
 
 let mockRouteParams: Optional<{
     account?: unknown
@@ -46,6 +48,11 @@ vi.mock('@react-navigation/native', async () => {
         useRoute: () => ({ params: mockRouteParams }),
     }
 })
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -341,6 +348,46 @@ describe('useNameAccountScreen', () => {
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.NameAccount,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.RegisterAccount,
+            {
+                [AnalyticsMetadataKey.AccountCreationType]: 'create',
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            },
+        )
+    })
+
+    it('handleFinish tracks naming and registering an Ethereum watch account on ethereum', async () => {
+        mockRouteParams = {
+            account: {
+                id: 'eth-watch',
+                chains: { ethereum: { address: '0xabc' } },
+                custody: { kind: 'watch' },
+                name: 'Watched',
+            },
+            chainId: 'ethereum',
+        }
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.NameAccount,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.RegisterAccount,
+            {
+                [AnalyticsMetadataKey.AccountCreationType]: 'watch',
+                [AnalyticsMetadataKey.ChainId]: 'ethereum',
+            },
+        )
     })
 
     it('handleFinish forwards a returnTo target to the exit flow', async () => {

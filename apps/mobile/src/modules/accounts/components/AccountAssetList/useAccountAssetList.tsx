@@ -36,7 +36,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { trackEvent, AssetDetailsEvent } from '@analytics'
+import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -370,7 +370,9 @@ export const useAccountAssetList = ({
     )
 
     const handleOpenAddAsset = useCallback(() => {
-        trackEvent(AssetDetailsEvent.AddAsset)
+        trackEvent(AssetDetailsEvent.AddAsset, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet<void>({
             contents: <AddAssetContent chainId={addAssetChainId} />,
             options: {
@@ -379,10 +381,12 @@ export const useAccountAssetList = ({
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, addAssetChainId])
+    }, [requestBottomSheet, addAssetChainId, scope.chainId])
 
     const handleOpenManage = useCallback(async () => {
-        trackEvent(AssetDetailsEvent.ManageAsset)
+        trackEvent(AssetDetailsEvent.ManageAsset, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         const action = await requestBottomSheet<ManageAssetsAction>({
             contents: <ManageAssetsContent isReadOnly={isReadOnly} />,
             options: {
@@ -413,7 +417,7 @@ export const useAccountAssetList = ({
         } else if (action === 'remove') {
             navigation.navigate('RemoveAssets')
         }
-    }, [requestBottomSheet, isReadOnly, navigation])
+    }, [requestBottomSheet, isReadOnly, navigation, scope.chainId])
 
     const hasActiveFilter =
         hideZeroBalance || !displayNfts || !effectiveDisplayOptedInNfts

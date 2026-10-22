@@ -12,6 +12,7 @@
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { ParamListBase, RouteProp } from '@react-navigation/native'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     trackScreen,
@@ -19,6 +20,7 @@ import {
     AnalyticsScreenName,
     AnalyticsMetadataKey,
     NavigationEvent,
+    type ChainPayload,
 } from '@analytics'
 
 const NAVIGATION_STACK_NAMES = new Set([
@@ -40,7 +42,8 @@ const NAVIGATION_STACK_NAMES = new Set([
  * Not every tracked screen can live here:
  * - `TransactionDetails` is also mounted in the signing flow's own
  *   `NavigationContainer` (no `screenListeners`), so it keeps an in-screen call.
- * - `ShowQr` is a bottom sheet (not a navigation route).
+ * - `ShowQr` is a view inside the receive bottom sheet (not a navigation
+ *   route), tracked by the QR view once it knows the chain.
  */
 const ROUTE_TO_SCREEN: Record<string, AnalyticsScreenName> = {
     AccountDetails: AnalyticsScreenName.AccountList,
@@ -55,18 +58,29 @@ const ROUTE_TO_SCREEN: Record<string, AnalyticsScreenName> = {
  * view is reported as `screen_asset_detail` (mirrors the previous in-screen
  * guard `assetId && !isCollectible`).
  */
+type TrackedScreen = {
+    name: AnalyticsScreenName
+    metadata?: ChainPayload
+}
+
 const resolveTrackedScreen = (
     route: RouteProp<ParamListBase>,
-): Nullable<AnalyticsScreenName> => {
+): Nullable<TrackedScreen> => {
+    const params = route.params as
+        | { assetId?: string; chainId?: ChainId; isCollectible?: boolean }
+        | undefined
+    // Asset and collectible routes name the chain they show.
+    const metadata = params?.chainId
+        ? { [AnalyticsMetadataKey.ChainId]: params.chainId }
+        : undefined
     if (route.name === 'AssetDetails') {
-        const params = route.params as
-            | { assetId?: string; isCollectible?: boolean }
-            | undefined
         return params?.assetId && !params.isCollectible
-            ? AnalyticsScreenName.AssetDetail
+            ? { name: AnalyticsScreenName.AssetDetail, metadata }
             : null
     }
-    return ROUTE_TO_SCREEN[route.name] ?? null
+    const name = ROUTE_TO_SCREEN[route.name]
+    if (!name) return null
+    return route.name === 'CollectibleDetails' ? { name, metadata } : { name }
 }
 
 // Fire each screen view once per route instance (keyed on `route.key`), matching
@@ -89,10 +103,10 @@ export const screenListeners = ({
     focus: () => {
         // 1) Typed, per-app catalog screen view (routed through `trackScreen`,
         //    so it gets the testnet prefix and the typed event keys).
-        const screen = resolveTrackedScreen(route)
-        if (screen && route.key && !trackedScreenKeys.has(route.key)) {
+        const tracked = resolveTrackedScreen(route)
+        if (tracked && route.key && !trackedScreenKeys.has(route.key)) {
             trackedScreenKeys.add(route.key)
-            trackScreen(screen)
+            trackScreen(tracked.name, tracked.metadata)
         }
 
         // 2) Generic auto screen-view event (unchanged).

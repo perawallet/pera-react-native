@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Settings screen actions. */
 export enum SettingsEvent {
@@ -24,7 +25,7 @@ export interface SettingsRequiredPayloads {
     [SettingsEvent.ChangeCurrency]: {
         [Key.Id]: string
     }
-    [SettingsEvent.ChangeNotificationFilter]: {
+    [SettingsEvent.ChangeNotificationFilter]: ChainPayload & {
         [Key.AccountAddress]: string
         [Key.AllowNotifications]: boolean
     }

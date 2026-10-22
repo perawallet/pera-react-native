@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 
 const mockAccount: WalletAccount = {
@@ -45,7 +46,15 @@ const mockAccount: WalletAccount = {
 
 const mockT = (key: string) => key
 
-const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+const { mockNavigate, mockTrackEvent } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockTrackEvent: vi.fn(),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mockNavigate }),
@@ -304,6 +313,52 @@ describe('useAccountAssetList', () => {
             assetId: '0xabc',
             chainId: 'ethereum',
         })
+    })
+
+    it('tracks opening add and manage assets on algorand', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+
+        act(() => {
+            result.current.handleOpenAddAsset()
+            result.current.handleOpenManage()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AssetDetailsEvent.AddAsset,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AssetDetailsEvent.ManageAsset,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+    })
+
+    it("tracks opening add and manage assets on an Ethereum account's chain", () => {
+        registerEthereum()
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: ethAccount, t: mockT }),
+        )
+
+        act(() => {
+            result.current.handleOpenAddAsset()
+            result.current.handleOpenManage()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AssetDetailsEvent.AddAsset,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AssetDetailsEvent.ManageAsset,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
     })
 
     describe('collectible routing', () => {

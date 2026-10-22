@@ -14,6 +14,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountOverview } from '../useAccountOverview'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+    HomeEvent,
+} from '@analytics'
 
 const {
     mockSetSelectedAccount,
@@ -24,6 +29,7 @@ const {
     mockRequestBottomSheet,
     mockRefreshAccounts,
     mockInvalidateQueries,
+    mockTrackEvent,
 } = vi.hoisted(() => ({
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
@@ -36,6 +42,12 @@ const {
     ),
     mockRefreshAccounts: vi.fn(() => Promise.resolve()),
     mockInvalidateQueries: vi.fn(),
+    mockTrackEvent: vi.fn(),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
 }))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
@@ -65,7 +77,10 @@ vi.mock('@modules/transactions/routes', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useAccountScope: (account: { chains: Record<string, unknown> }) => ({
+        chainId: Object.keys(account.chains)[0],
+        networkId: 'mainnet',
+    }),
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },
@@ -95,6 +110,12 @@ const mockAccount = {
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'test-address' } },
 } as WalletAccount
+
+const mockEthereumAccount = {
+    id: 'eth',
+    custody: { kind: 'watch' },
+    chains: { ethereum: { address: '0xabc' } },
+} as unknown as WalletAccount
 
 const createDeferred = () => {
     let resolve: () => void = () => {}
@@ -165,6 +186,9 @@ describe('useAccountOverview', () => {
             enableCloseOnBackdropPress: false,
             autoCreateContainer: false,
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Send, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
     })
 
     it('requests the receive funds bottom sheet and sets selected account when openReceiveFunds is called', () => {
@@ -185,6 +209,9 @@ describe('useAccountOverview', () => {
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Receive, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
     })
 
     it('requests the account options bottom sheet when openAccountOptions is called', () => {
@@ -201,6 +228,29 @@ describe('useAccountOverview', () => {
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(AccountDetailsEvent.More, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
+    })
+
+    it('tracks send, receive and more on ethereum for an Ethereum-only account', () => {
+        const { result } = renderHook(() =>
+            useAccountOverview({ account: mockEthereumAccount }),
+        )
+
+        act(() => {
+            result.current.openSendFunds()
+            result.current.openReceiveFunds()
+            result.current.openAccountOptions()
+        })
+
+        const ethereum = { [AnalyticsMetadataKey.ChainId]: 'ethereum' }
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Send, ethereum)
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Receive, ethereum)
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.More,
+            ethereum,
+        )
     })
 
     it('isLoading gates only on the balance summary (not the chart history) and is sticky', () => {

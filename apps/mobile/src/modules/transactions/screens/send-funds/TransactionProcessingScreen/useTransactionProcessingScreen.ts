@@ -176,6 +176,7 @@ export const useTransactionProcessingScreen =
                         [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
                         [AnalyticsMetadataKey.TransactionId]: txId,
                         [AnalyticsMetadataKey.AccountType]: accountKindId,
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
                     })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {

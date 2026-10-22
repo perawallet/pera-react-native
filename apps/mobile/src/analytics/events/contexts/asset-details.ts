@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Asset detail screen actions. */
 export enum AssetDetailsEvent {
@@ -22,8 +23,10 @@ export enum AssetDetailsEvent {
     SwapAlgo = 'algoasadetail_swap_click', // Tapped Swap on the ALGO asset detail
 }
 
-export interface AssetDetailsRequiredPayloads {
-    [AssetDetailsEvent.Show]: {
+export type AssetDetailsRequiredPayloads = {
+    [E in AssetDetailsEvent]: ChainPayload
+} & {
+    [AssetDetailsEvent.Show]: ChainPayload & {
         [Key.AssetId]: string
     }
 }

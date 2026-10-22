@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -105,7 +105,9 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
-        trackEvent(MultisigEvent.AddAccount)
+        trackEvent(MultisigEvent.AddAccount, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
 
         const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent chainId={chainId} />,
@@ -123,25 +125,31 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         (index: number) => {
             const participant = participants[index]
             if (!participant) return
-            trackEvent(MultisigEvent.EditAccount)
+            trackEvent(MultisigEvent.EditAccount, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
             navigation.push('EditParticipant', {
                 index,
                 address: participant.address,
             })
         },
-        [navigation, participants],
+        [chainId, navigation, participants],
     )
 
     const handleRemoveParticipant = useCallback(
         (index: number) => {
-            trackEvent(MultisigEvent.RemoveAddress)
+            trackEvent(MultisigEvent.RemoveAddress, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
             removeParticipant(index)
         },
-        [removeParticipant],
+        [chainId, removeParticipant],
     )
 
     const handleContinue = useCallback(() => {
-        trackEvent(MultisigEvent.AddAccountContinue)
+        trackEvent(MultisigEvent.AddAccountContinue, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         navigation.push('SetThreshold', { chainId })
     }, [navigation, chainId])
 

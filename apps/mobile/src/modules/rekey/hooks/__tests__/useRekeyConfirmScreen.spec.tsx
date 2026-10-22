@@ -19,9 +19,17 @@ import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { useRekeyConfirmScreen } from '../useRekeyConfirmScreen'
 
 const mockNavigate = vi.fn()
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate, goBack: vi.fn() }),
 }))
@@ -443,6 +451,10 @@ describe('useRekeyConfirmScreen - submit outcome', () => {
         await waitFor(() => {
             expect(config.onSubmitSuccess).toHaveBeenCalledWith('SRC')
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.RekeyAccount,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
     })
 
     it('shows an error and does not call onSubmitSuccess when the submit fails', async () => {

@@ -28,7 +28,12 @@ import {
     SEND_FUNDS_SHEET_ID,
 } from '@modules/transactions/routes'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
-import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
+import {
+    trackEvent,
+    HomeEvent,
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'
 import type { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
@@ -56,7 +61,9 @@ export const useAccountOverview = ({
     const { request: requestBottomSheet } = useBottomSheet()
 
     const openSendFunds = useCallback(() => {
-        trackEvent(HomeEvent.Send)
+        trackEvent(HomeEvent.Send, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet({
             id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent />,
@@ -67,10 +74,12 @@ export const useAccountOverview = ({
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet])
+    }, [requestBottomSheet, scope.chainId])
 
     const openReceiveFunds = useCallback(() => {
-        trackEvent(HomeEvent.Receive)
+        trackEvent(HomeEvent.Receive, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         if (selectedAccount) {
             setCanSelectAccount(false)
             setSelectedAccount(selectedAccount)
@@ -86,13 +95,16 @@ export const useAccountOverview = ({
     }, [
         account,
         requestBottomSheet,
+        scope.chainId,
         selectedAccount,
         setCanSelectAccount,
         setSelectedAccount,
     ])
 
     const openAccountOptions = useCallback(() => {
-        trackEvent(AccountDetailsEvent.More)
+        trackEvent(AccountDetailsEvent.More, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet({
             contents: (
                 <AccountOptionsContent
@@ -108,7 +120,7 @@ export const useAccountOverview = ({
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, account, openReceiveFunds])
+    }, [requestBottomSheet, account, openReceiveFunds, scope.chainId])
 
     // Reveal the header as soon as the (cheap, SQL-aggregate) balance summary
     // resolves. The chart history is a separate, slower network query that's

@@ -34,7 +34,11 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { shareFile } from '@utils/shareFile'
-import { trackEvent, AccountDetailsEvent } from '@analytics'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import {
@@ -125,7 +129,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const { request: requestBottomSheet } = useBottomSheet()
 
     const handleOpenFilter = useCallback(async () => {
-        trackEvent(AccountDetailsEvent.TransactionFilter)
+        trackEvent(AccountDetailsEvent.TransactionFilter, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         const result = await requestBottomSheet<TransactionsFilterResult>({
             contents: (
                 <TransactionsFilterContent
@@ -140,7 +146,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         if (result.customRange) {
             setCustomRange(result.customRange)
         }
-    }, [requestBottomSheet, activeFilter, customRange])
+    }, [requestBottomSheet, activeFilter, customRange, scope.chainId])
 
     const { afterTime, beforeTime } = useMemo(
         () => getFilterTimes(activeFilter, customRange),
@@ -209,7 +215,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     })
 
     const handleExportCsv = useCallback(() => {
-        trackEvent(AccountDetailsEvent.TransactionDownload)
+        trackEvent(AccountDetailsEvent.TransactionDownload, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         // Guarding the request would silence's central toast too, so
         // the reason has to be raised here or the button would do nothing.
         if (isUnavailableOnNetwork) {

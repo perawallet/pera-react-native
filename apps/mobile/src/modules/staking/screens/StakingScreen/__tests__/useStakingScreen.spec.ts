@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStatusStore } from '@modules/network'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useStakingProjectsQuery } from '@perawallet/wallet-core-staking'
+import { trackEvent } from '@analytics'
 import { useStakingScreen } from '../useStakingScreen'
 
 vi.mock('@analytics', () => ({
@@ -26,6 +27,7 @@ vi.mock('@analytics', () => ({
     AnalyticsMetadataKey: {
         Name: 'name',
         Url: 'url',
+        ChainId: 'chain_id',
     },
 }))
 
@@ -77,6 +79,16 @@ describe('useStakingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         setHasInternet(true)
+    })
+
+    it('tracks opening the staking page on the Algorand chain', () => {
+        mockStakingProjectsQuery({})
+
+        renderHook(() => useStakingScreen())
+
+        expect(trackEvent).toHaveBeenCalledWith('staking_open', {
+            chain_id: 'algorand',
+        })
     })
 
     afterEach(() => {

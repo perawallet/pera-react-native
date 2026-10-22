@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ChainPayload } from '../chain-payload'
+
 /**
  * Account actions on the home surface that aren't covered by `HomeEvent`: the
  * sub-tabs, history controls, the account options menu, and joint-account items.
@@ -28,4 +30,8 @@ export enum AccountDetailsEvent {
     JointAccountExport = 'accountscr_tapmenu_jntAccExport_tap', // Exported a joint account
     JointAccountCopyUrl = 'accountscr_tapmenu_jntAccExpCopy_tap', // Copied the joint-account export URL
     JointAccountShareUrl = 'accountscr_tapmenu_jntAccExpShare_tap', // Shared the joint-account export URL
+}
+
+export type AccountDetailsRequiredPayloads = {
+    [E in AccountDetailsEvent]: ChainPayload
 }

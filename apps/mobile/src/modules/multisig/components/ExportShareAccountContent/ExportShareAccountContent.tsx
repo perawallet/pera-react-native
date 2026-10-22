@@ -13,6 +13,7 @@
 import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,17 +22,19 @@ import { useStyles } from './styles'
 
 export type ExportShareAccountContentProps = {
     accountAddress: string
+    chainId: ChainId
 }
 
 export const ExportShareAccountContent = ({
     accountAddress,
+    chainId,
 }: ExportShareAccountContentProps) => {
     const { t } = useLanguage()
     const { width } = useWindowDimensions()
     const { theme } = useTheme()
     const styles = useStyles()
     const { exportUrl, handleCopyUrl, handleShareUrl } =
-        useExportShareAccountContent({ accountAddress })
+        useExportShareAccountContent({ accountAddress, chainId })
 
     return (
         <PWSheetLayout

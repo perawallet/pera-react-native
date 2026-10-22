@@ -34,12 +34,18 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes/add-account'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 
 import {
     HD_TEST_ADDRESS,
     HD_TEST_MNEMONIC_24_INDICES,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =
@@ -185,6 +191,14 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
 }
 
 describe('Flow: Add an Ethereum account', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     beforeEach(async () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -209,6 +223,26 @@ describe('Flow: Add an Ethereum account', () => {
         )
         expect(imported[0]?.custody).toEqual({ kind: 'local', seed: null })
         expect(useAccountsStore.getState().accounts).toHaveLength(2)
+        // No Algorand counterpart: the import reuses Name Account's events.
+        expect(
+            analytics.events([
+                OnboardingEvent.NameAccount,
+                OnboardingEvent.RegisterAccount,
+            ]),
+        ).toEqual([
+            {
+                name: OnboardingEvent.NameAccount,
+                payload: { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+            },
+            {
+                name: OnboardingEvent.RegisterAccount,
+                payload: {
+                    // The catalogue has no import type; Name Account reports any local key as 'create'.
+                    [AnalyticsMetadataKey.AccountCreationType]: 'create',
+                    [AnalyticsMetadataKey.ChainId]: 'ethereum',
+                },
+            },
+        ])
     })
 
     it('Given a key already held, when the user imports it again, then no second account is created', async () => {
@@ -256,6 +290,7 @@ describe('Flow: Add an Ethereum account', () => {
         expect(watched).toHaveLength(1)
         expect(watched[0]?.custody).toEqual({ kind: 'watch' })
         expect(ethereumAddressOf(watched[0])).toBe(WATCH_ADDRESS)
+        expectFlowEvents(analytics, 'addWatchAccount', 'ethereum')
     })
 
     it('Given private keys are on for Ethereum, then the add-account stack registers the private-key import', () => {
