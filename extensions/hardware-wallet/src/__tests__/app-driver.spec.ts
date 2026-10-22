@@ -20,6 +20,7 @@ import {
 
 const makeDriver = (chainId: string): LedgerAppDriver => ({
     chainId,
+    appName: chainId,
     open: () => {
         throw new Error('not openable in tests')
     },

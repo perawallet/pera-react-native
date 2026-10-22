@@ -33,6 +33,10 @@ export const ledgerAppDriverContractTests = (
             expect(makeDriver().chainId).toMatch(/\S/)
         })
 
+        it('names its device app', () => {
+            expect(makeDriver().appName).toMatch(/\S/)
+        })
+
         it('closes the device link on disconnect', async () => {
             const raw = rawTransport()
 

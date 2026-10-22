@@ -48,7 +48,11 @@ const openedTransport: HardwareWalletTransport = {
     disconnect: vi.fn(),
 }
 const driverOpenMock = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
-const fakeDriver: LedgerAppDriver = { chainId: 'test', open: driverOpenMock }
+const fakeDriver: LedgerAppDriver = {
+    chainId: 'test',
+    appName: 'Test',
+    open: driverOpenMock,
+}
 
 const NANO_X_DEVICE = { id: 'ble-device-1', name: 'Nano X ABCD' }
 const STAX_DEVICE = { id: 'ble-device-2', name: 'Stax 1234' }
@@ -265,7 +269,11 @@ describe('LedgerWebBleService', () => {
 
     test('opens only the driver of the chain it connects for', async () => {
         const otherOpen = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
-        ledgerAppDriverRegistry.register({ chainId: 'other', open: otherOpen })
+        ledgerAppDriverRegistry.register({
+            chainId: 'other',
+            appName: 'Other',
+            open: otherOpen,
+        })
 
         await scanAndConnect(undefined, 'other')
         expect(otherOpen).toHaveBeenCalledTimes(1)

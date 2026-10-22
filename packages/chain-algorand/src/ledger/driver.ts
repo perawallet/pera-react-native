@@ -13,12 +13,14 @@
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type { LedgerAppDriver } from '@perawallet/wallet-extension-hardware-wallet'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { ALGORAND_LEDGER_APP } from './app'
 import { createAlgorandLedgerTransport } from './transport'
 
 type AlgorandAppTransport = ConstructorParameters<typeof AlgorandApp>[0]
 
 export const algorandLedgerAppDriver: LedgerAppDriver = {
     chainId: ALGORAND_CHAIN_ID,
+    appName: ALGORAND_LEDGER_APP.appName,
     open: (transport, classifyError) =>
         createAlgorandLedgerTransport(
             transport,

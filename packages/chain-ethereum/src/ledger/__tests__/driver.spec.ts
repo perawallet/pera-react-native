@@ -150,6 +150,11 @@ describe('ethereumLedgerAppDriver', () => {
         expect(mocks.constructed).toHaveBeenCalledWith(raw)
     })
 
+    it('opens the Ethereum device app on every EVM chain', () => {
+        expect(ethereumLedgerAppDriver.appName).toBe('Ethereum')
+        expect(createEvmLedgerAppDriver(BASE).appName).toBe('Ethereum')
+    })
+
     describe('getAddress', () => {
         it('reads the Ledger Live path, checksums the address and returns the 65-byte key', async () => {
             const account = await open().getAddress(0)
