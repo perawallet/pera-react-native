@@ -87,7 +87,7 @@ vi.mock('../../../utils/braveBrowser', () => ({
 }))
 
 const routeParams = vi.hoisted(() => ({
-    current: {} as { transportType?: 'ble' | 'usb' },
+    current: {} as { transportType?: 'ble' | 'usb'; chainId?: string },
 }))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
@@ -138,9 +138,7 @@ vi.mock('../../../hooks', () => ({
         isPopupSurface: expandedTabHandoffState.isPopupSurface,
         openLedgerExpandedTab: mockOpenLedgerExpandedTab,
     }),
-    useLedgerFlowChainId: () =>
-        (routeParams.current as { chainId?: string } | undefined)?.chainId ??
-        'algorand',
+    useLedgerFlowChainId: () => routeParams.current?.chainId ?? 'algorand',
 }))
 
 vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
