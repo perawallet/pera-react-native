@@ -40,6 +40,8 @@ describe('useNftHoldingSources', () => {
     })
 
     it('keeps only the sources on chains with nft on', () => {
+        act(() => setCapabilityOverrides({ nft: false }, 'ethereum'))
+
         const { result } = renderHook(() =>
             useNftHoldingSources(TWO_CHAIN_ACCOUNT),
         )
@@ -48,8 +50,11 @@ describe('useNftHoldingSources', () => {
         expect(result.current[0]?.address).toBe('ALGO')
     })
 
-    it('is empty when nft is overridden off on Algorand', () => {
-        act(() => setCapabilityOverrides({ nft: false }))
+    it('is empty when nft is overridden off on every chain it holds on', () => {
+        act(() => {
+            setCapabilityOverrides({ nft: false })
+            setCapabilityOverrides({ nft: false }, 'ethereum')
+        })
 
         const { result } = renderHook(() =>
             useNftHoldingSources(TWO_CHAIN_ACCOUNT),
@@ -59,8 +64,6 @@ describe('useNftHoldingSources', () => {
     })
 
     it('lists every nft chain the account holds on', () => {
-        act(() => setCapabilityOverrides({ nft: true }, 'ethereum'))
-
         const { result } = renderHook(() =>
             useNftHoldingSources(TWO_CHAIN_ACCOUNT),
         )

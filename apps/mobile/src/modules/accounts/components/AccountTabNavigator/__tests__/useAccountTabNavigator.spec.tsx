@@ -101,6 +101,7 @@ describe('useAccountTabNavigator', () => {
 
     it('leaves out the NFTs tab on a chain without NFTs', () => {
         registerEthereumChain()
+        act(() => setCapabilityOverrides({ nft: false }, 'ethereum'))
 
         const { result } = renderHook(() =>
             useAccountTabNavigator(ETHEREUM_ACCOUNT),
@@ -136,6 +137,7 @@ describe('useAccountTabNavigator', () => {
 
     it('falls back to Overview when the open tab goes away', () => {
         registerEthereumChain()
+        act(() => setCapabilityOverrides({ nft: false }, 'ethereum'))
         const { result, rerender } = renderHook(
             ({ account }) => useAccountTabNavigator(account),
             { initialProps: { account: ALGORAND_ACCOUNT } },

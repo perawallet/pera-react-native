@@ -3261,6 +3261,7 @@
             "more_impacts": "{{count}} weitere anzeigen",
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
+            "nft_subtitle": "{{collection}} #{{tokenId}}",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen"
         },
         "contract_call": {
