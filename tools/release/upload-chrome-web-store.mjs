@@ -24,22 +24,41 @@
 //                               be added under Account in the Developer Dashboard
 //   CWS_PUBLISHER_ID, CWS_ITEM_ID
 //   DRY_RUN                     when "1": check inputs, print the target, upload nothing
-//   CWS_API_BASE, CWS_TOKEN_URL, CWS_POLL_INTERVAL_MS  test overrides only
+//   CWS_API_BASE, CWS_TOKEN_URL, CWS_POLL_INTERVAL_MS  test overrides only; the
+//                               two URLs must be loopback
 
 import { createSign } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 
-const SCOPE = 'https://www.googleapis.com/auth/chromewebstore'
-const API_BASE =
-    process.env.CWS_API_BASE ?? 'https://chromewebstore.googleapis.com'
-const POLL_INTERVAL_MS = Number(process.env.CWS_POLL_INTERVAL_MS ?? 5000)
-const POLL_ATTEMPTS = 60
-
 const fail = message => {
     console.error(`upload-chrome-web-store: ${message}`)
     process.exit(1)
 }
+
+// Test overrides: anything but a loopback address is refused, so a stray CI
+// variable cannot send the bearer token or the signed JWT elsewhere.
+const loopbackOverride = name => {
+    const value = process.env[name]
+    if (!value) return undefined
+    let hostname
+    try {
+        hostname = new URL(value).hostname
+    } catch {
+        fail(`${name} may only point at a loopback address`)
+    }
+    if (!['127.0.0.1', 'localhost', '[::1]'].includes(hostname)) {
+        fail(`${name} may only point at a loopback address`)
+    }
+    return value
+}
+
+const SCOPE = 'https://www.googleapis.com/auth/chromewebstore'
+const API_BASE =
+    loopbackOverride('CWS_API_BASE') ?? 'https://chromewebstore.googleapis.com'
+const TOKEN_URL_OVERRIDE = loopbackOverride('CWS_TOKEN_URL')
+const POLL_INTERVAL_MS = Number(process.env.CWS_POLL_INTERVAL_MS ?? 5000)
+const POLL_ATTEMPTS = 60
 
 const packagePath = process.argv[2]
 const {
@@ -86,7 +105,7 @@ const base64Url = value =>
 
 const accessToken = async () => {
     const tokenUrl =
-        process.env.CWS_TOKEN_URL ??
+        TOKEN_URL_OVERRIDE ??
         key.token_uri ??
         'https://oauth2.googleapis.com/token'
     const now = Math.floor(Date.now() / 1000)
@@ -157,6 +176,18 @@ const upload = await call(
     uploadHeaders,
 )
 
+// What the store says beside the state, without the item's resource name and
+// id, which are CI secrets.
+const detail = body =>
+    JSON.stringify(
+        Object.fromEntries(
+            Object.entries(body ?? {}).filter(
+                ([field]) => field !== 'name' && field !== 'itemId',
+            ),
+        ),
+    )
+
+let last = upload
 let state = upload.uploadState
 for (
     let attempt = 0;
@@ -170,11 +201,12 @@ for (
         'GET',
         `${API_BASE}/v2/${itemPath}:fetchStatus`,
     )
+    last = status
     state = status.lastAsyncUploadState
 }
 
 if (state !== 'SUCCEEDED') {
-    fail(`upload ended in state ${state ?? 'unknown'}`)
+    fail(`upload ended in state ${state ?? 'unknown'}: ${detail(last)}`)
 }
 console.log(
     `Uploaded ${upload.crxVersion ?? 'the package'} as a draft. Submit it for review in the Developer Dashboard.`,

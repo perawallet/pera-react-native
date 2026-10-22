@@ -103,6 +103,14 @@ run_case "fails on an HTTP error from the store" forbidden 1 "upload failed (403
 run_case "fails on a wrong API key" ok 1 "upload failed (401): invalid credentials" EDGE_API_KEY=wrong
 run_case "fails without a product id" ok 1 "EDGE_PRODUCT_ID is not set" EDGE_PRODUCT_ID=
 
+# The override exists for this stand-in; anywhere else it would send the API
+# key off Microsoft.
+run_case "refuses a non-loopback EDGE_API_BASE" ok 1 "EDGE_API_BASE may only point at a loopback address" EDGE_API_BASE=https://example.com
+if [ -s "$WORK/log" ]; then
+    echo "  FAIL  a refused EDGE_API_BASE still made requests: $(tr '\n' ' ' < "$WORK/log")"
+    failures=$((failures + 1))
+fi
+
 run_case "DRY_RUN uploads nothing" ok 0 "DRY_RUN: would upload" DRY_RUN=1
 if [ -s "$WORK/log" ]; then
     echo "  FAIL  DRY_RUN made requests: $(tr '\n' ' ' < "$WORK/log")"

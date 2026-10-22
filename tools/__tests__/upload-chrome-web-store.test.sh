@@ -61,11 +61,18 @@ createServer((request, response) => {
         if (request.headers.authorization !== 'Bearer stub-token') return send(401, {})
         if (request.url.endsWith(':upload')) {
             if (scenario === 'forbidden') return send(403, { error: { message: 'not a publisher member' } })
-            const state = { ok: 'SUCCEEDED', failed: 'FAILED', async: 'IN_PROGRESS' }[scenario]
-            return send(200, { uploadState: state, crxVersion: state === 'SUCCEEDED' ? '7.2.1.123' : undefined })
+            const state = { ok: 'SUCCEEDED', failed: 'FAILED', async: 'IN_PROGRESS', 'async-failed': 'IN_PROGRESS' }[scenario]
+            // A rejection carries its detail beside the item's resource name, which the log must not show.
+            const rejection = scenario === 'failed'
+                ? { name: 'publishers/pub/items/item', itemId: 'item', itemError: [{ error_detail: 'version must be higher' }] }
+                : {}
+            return send(200, { ...rejection, uploadState: state, crxVersion: state === 'SUCCEEDED' ? '7.2.1.123' : undefined })
         }
         if (request.url.endsWith(':fetchStatus')) {
             fetchCount += 1
+            if (scenario === 'async-failed') {
+                return send(200, { name: 'publishers/pub/items/item', itemId: 'item', lastAsyncUploadState: 'FAILED', itemError: [{ error_detail: 'pending review' }] })
+            }
             return send(200, { lastAsyncUploadState: fetchCount < 2 ? 'IN_PROGRESS' : 'SUCCEEDED' })
         }
         send(404, {})
@@ -124,10 +131,22 @@ PACKAGE="$WORK/ext.crx" run_case "uploads a crx" ok 0 "Uploaded 7.2.1.123 as a d
 check_upload_line "a crx goes up with the raw upload protocol, its file name and its exact bytes" \
     "protocol=raw name=ext.crx sha256=${CRX_SHA}"
 run_case "polls an async upload until it succeeds" async 0 "as a draft"
-run_case "fails when the store rejects the package" failed 1 "upload ended in state FAILED"
+run_case "fails with the store's detail when the package is rejected" failed 1 "upload ended in state FAILED"
+run_case "names why the store rejected the package" failed 1 "version must be higher"
+run_case "names why the store rejected an async upload" async-failed 1 "pending review"
 run_case "fails on an HTTP error from the store" forbidden 1 "upload failed (403): not a publisher member"
 run_case "fails without an item id" ok 1 "CWS_ITEM_ID is not set" CWS_ITEM_ID=
 run_case "fails on a key that is not base64 JSON" ok 1 "not a base64-encoded JSON key" CWS_SERVICE_ACCOUNT_BASE64=not-json
+
+# The overrides exist for this stand-in; anywhere else they would send the
+# bearer token or the signed JWT off Google.
+for override in CWS_API_BASE CWS_TOKEN_URL; do
+    run_case "refuses a non-loopback ${override}" ok 1 "${override} may only point at a loopback address" "${override}=https://example.com"
+    if [ -s "$WORK/log" ]; then
+        echo "  FAIL  a refused ${override} still made requests: $(tr '\n' ' ' < "$WORK/log")"
+        failures=$((failures + 1))
+    fi
+done
 
 run_case "DRY_RUN uploads nothing" ok 0 "DRY_RUN: would upload" DRY_RUN=1
 if [ -s "$WORK/log" ]; then

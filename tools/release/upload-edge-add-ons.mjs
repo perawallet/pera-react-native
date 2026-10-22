@@ -21,20 +21,38 @@
 //                                 the API key expires, and its date is shown there
 //   EDGE_PRODUCT_ID               the extension's product id
 //   DRY_RUN                       when "1": check inputs, print the target, upload nothing
-//   EDGE_API_BASE, EDGE_POLL_INTERVAL_MS  test overrides only
+//   EDGE_API_BASE, EDGE_POLL_INTERVAL_MS  test overrides only; the URL must be
+//                                         loopback
 
 import { readFile } from 'node:fs/promises'
-
-const API_BASE =
-    process.env.EDGE_API_BASE ??
-    'https://api.addons.microsoftedge.microsoft.com'
-const POLL_INTERVAL_MS = Number(process.env.EDGE_POLL_INTERVAL_MS ?? 5000)
-const POLL_ATTEMPTS = 60
 
 const fail = message => {
     console.error(`upload-edge-add-ons: ${message}`)
     process.exit(1)
 }
+
+// Test overrides: anything but a loopback address is refused, so a stray CI
+// variable cannot send the API key elsewhere.
+const loopbackOverride = name => {
+    const value = process.env[name]
+    if (!value) return undefined
+    let hostname
+    try {
+        hostname = new URL(value).hostname
+    } catch {
+        fail(`${name} may only point at a loopback address`)
+    }
+    if (!['127.0.0.1', 'localhost', '[::1]'].includes(hostname)) {
+        fail(`${name} may only point at a loopback address`)
+    }
+    return value
+}
+
+const API_BASE =
+    loopbackOverride('EDGE_API_BASE') ??
+    'https://api.addons.microsoftedge.microsoft.com'
+const POLL_INTERVAL_MS = Number(process.env.EDGE_POLL_INTERVAL_MS ?? 5000)
+const POLL_ATTEMPTS = 60
 
 const zipPath = process.argv[2]
 const {
