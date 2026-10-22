@@ -161,6 +161,44 @@ describe('parseSiwa — size limits (ARC-60 DoS hardening)', () => {
     })
 })
 
+describe('parseSiwa — display-safe text', () => {
+    test.each([
+        ['a line feed', 'Sign in\nto Arc60'],
+        ['a CRLF', 'Sign in\r\nto Arc60'],
+        ['a line separator', 'Sign in\u2028to Arc60'],
+        ['a tab', 'Sign in\tto Arc60'],
+        ['a right-to-left override', 'Sign in \u202Eto Arc60'],
+        ['a zero-width space', 'Sign in\u200Bto Arc60'],
+        ['a C0 control', 'Sign in\u0007to Arc60'],
+    ])('rejects a statement with %s', (_label, statement) => {
+        const canonical = canonify({ ...baseSiwa, statement })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('accepts a single-line statement with non-ASCII letters', () => {
+        const statement = 'Iniciar sesión en Arc60, ¿de acuerdo?'
+        const canonical = canonify({ ...baseSiwa, statement })!
+        expect(parseSiwa(canonical).statement).toBe(statement)
+    })
+
+    test.each([
+        ['a right-to-left override', 'arc60\u202E.io'],
+        ['a space', 'arc60 .io'],
+        ['a line feed', 'arc60.io\nWallet'],
+    ])('rejects a domain with %s', (_label, domain) => {
+        const canonical = canonify({ ...baseSiwa, domain })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test.each(['example.com', 'localhost:3000'])(
+        'accepts the domain %s',
+        domain => {
+            const canonical = canonify({ ...baseSiwa, domain })!
+            expect(parseSiwa(canonical).domain).toBe(domain)
+        },
+    )
+})
+
 describe('parseSiwa — timestamp format validation', () => {
     test('rejects expiration-time: "never"', () => {
         const canonical = canonify({
