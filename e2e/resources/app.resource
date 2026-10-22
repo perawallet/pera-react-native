@@ -289,3 +289,32 @@ Scroll Until Tappable
         Swipe By Percent    50    75    50    35    duration=600ms
     END
     Fail    ${locator} never scrolled into view.
+
+Displayed Value
+    [Documentation]    Text of an element whose testID came from getTestProps. On iOS that helper sets
+    ...                the accessibility label to the testID, which hides the rendered value; fail on
+    ...                that rather than assert against the id.
+    [Arguments]    ${test_id}
+    ${text}=    Get Text    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']
+    Skip If    $text.strip() == $test_id
+    ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
+    RETURN    ${text}
+
+Number In
+    [Documentation]    The first number a displayed value contains, as a float.
+    [Arguments]    ${text}
+    ${match}=    Evaluate    re.search(r'[-+]?[0-9][0-9,]*(?:[.][0-9]+)?', $text)    modules=re
+    Should Not Be Equal    ${{ None }}    ${match}
+    ...    msg=No number in "${text}", so there is nothing to check.
+    RETURN    ${{ float($match.group(0).replace(',', '')) }}
+
+Displayed Number Should Be At Least
+    [Documentation]    Reads a value off the screen and checks it, rather than checking that a
+    ...                field exists. A field that renders but shows the wrong number passes every
+    ...                presence check there is.
+    [Arguments]    ${test_id}    ${minimum}=${0}
+    ${text}=    Displayed Value    ${test_id}
+    ${value}=    Number In    ${text}
+    Should Be True    ${value} >= ${minimum}
+    ...    msg=${test_id} shows ${value} ("${text}"), which is below ${minimum}.
+    RETURN    ${value}

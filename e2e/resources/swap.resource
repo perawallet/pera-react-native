@@ -148,16 +148,6 @@ Extract Number
     ...    (lambda m: float(m.group(0).replace(',', '')) if m else None)(re.search(r'[0-9][0-9,]*(?:[.][0-9]+)?', $raw))
     RETURN    ${num}
 
-Displayed Value
-    [Documentation]    Text of an element whose testID came from getTestProps. On iOS that helper sets
-    ...                the accessibility label to the testID, which hides the rendered value; fail on
-    ...                that rather than assert against the id.
-    [Arguments]    ${test_id}
-    ${text}=    Get Text    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']
-    Skip If    $text.strip() == $test_id
-    ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
-    RETURN    ${text}
-
 Top Pair Row With Volume
     [Documentation]    Joined text of the first top pair row once it shows a volume, which renders
     ...                after the pair label, when the currency rates have loaded.

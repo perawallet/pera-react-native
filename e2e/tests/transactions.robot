@@ -49,7 +49,9 @@ Transaction Detail Shows Fee And Explorer Link
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
     Open First Transaction
-    Page Should Contain Element    ${TX_DETAIL_FEE}
+    # A fee row that renders with the wrong number passes any presence check, so read it.
+    # Every Algorand transaction pays at least the 0.001 ALGO minimum.
+    Displayed Number Should Be At Least    transaction_detail_fee    ${0.001}
     Scroll Until Present    ${TX_DETAIL_EXPLORER}
 
 Funded Notifications Center Lists Rows
