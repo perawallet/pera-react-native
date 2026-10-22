@@ -42,7 +42,7 @@ describe('services/security/store', () => {
         const { result } = renderHook(() => useSecurityStore())
 
         expect(result.current.failedAttempts).toBe(0)
-        expect(result.current.lockoutEndTime).toBeNull()
+        expect(result.current.lockout).toBeNull()
         expect(result.current.autoLockStartedAt).toBeNull()
     })
 
@@ -147,26 +147,29 @@ describe('services/security/store', () => {
         expect(result.current.failedAttempts).toBe(0)
     })
 
-    test('setLockoutEndTime updates lockout end time', async () => {
+    test('setLockout updates the lockout deadline', async () => {
         const { useSecurityStore } = await import('../store')
 
         useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
-        const lockoutTime = Date.now() + 30000
+        const lockout = {
+            lockoutEndTime: Date.now() + 30000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+        }
 
         act(() => {
-            result.current.setLockoutEndTime(lockoutTime)
+            result.current.setLockout(lockout)
         })
 
-        expect(result.current.lockoutEndTime).toBe(lockoutTime)
+        expect(result.current.lockout).toEqual(lockout)
 
         act(() => {
-            result.current.setLockoutEndTime(null)
+            result.current.setLockout(null)
         })
 
-        expect(result.current.lockoutEndTime).toBeNull()
+        expect(result.current.lockout).toBeNull()
     })
 
     test('reset restores initial state', async () => {
@@ -178,7 +181,10 @@ describe('services/security/store', () => {
 
         act(() => {
             result.current.incrementFailedAttempts()
-            result.current.setLockoutEndTime(Date.now())
+            result.current.setLockout({
+                lockoutEndTime: Date.now(),
+                monotonicLockout: null,
+            })
             result.current.setAutoLockStartedAt(Date.now())
         })
 
@@ -189,7 +195,7 @@ describe('services/security/store', () => {
         })
 
         expect(result.current.failedAttempts).toBe(0)
-        expect(result.current.lockoutEndTime).toBeNull()
+        expect(result.current.lockout).toBeNull()
         expect(result.current.autoLockStartedAt).toBeNull()
     })
 

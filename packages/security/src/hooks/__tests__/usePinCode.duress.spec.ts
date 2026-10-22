@@ -16,6 +16,12 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 // deniability property is "the PBKDF2 work per attempt never depends on
 // whether a duress PIN is configured", and each of these runs exactly one
 // PBKDF2 (the duress one unconditionally; see pinRecord.ts).
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        monotonicClock: { now: () => ({ bootId: 'boot-1', elapsedMs: 1000 }) },
+    }),
+}))
+
 vi.mock('../../pinRecord', async importOriginal => {
     const actual = await importOriginal<typeof import('../../pinRecord')>()
     return {
@@ -135,7 +141,7 @@ const currentPinRecord = () => parsePinRecord(kmsMocks.pinBytes!)
 describe('usePinCode — duress slot', () => {
     const mockSetFailedAttempts = vi.fn()
     const mockResetFailedAttempts = vi.fn()
-    const mockSetLockoutEndTime = vi.fn()
+    const mockSetLockout = vi.fn()
     const mockSetAutoLockStartedAt = vi.fn()
 
     beforeEach(() => {
@@ -151,11 +157,11 @@ describe('usePinCode — duress slot', () => {
             (selector: (state: Record<string, unknown>) => unknown) =>
                 selector({
                     failedAttempts: 0,
-                    lockoutEndTime: null,
+                    lockout: null,
                     autoLockStartedAt: null,
                     setFailedAttempts: mockSetFailedAttempts,
                     resetFailedAttempts: mockResetFailedAttempts,
-                    setLockoutEndTime: mockSetLockoutEndTime,
+                    setLockout: mockSetLockout,
                     setAutoLockStartedAt: mockSetAutoLockStartedAt,
                 }),
         )
@@ -333,11 +339,14 @@ describe('usePinCode — duress slot', () => {
             (selector: (state: Record<string, unknown>) => unknown) =>
                 selector({
                     failedAttempts: 5,
-                    lockoutEndTime: Date.now() + 60_000,
+                    lockout: {
+                        lockoutEndTime: Date.now() + 60_000,
+                        monotonicLockout: null,
+                    },
                     autoLockStartedAt: null,
                     setFailedAttempts: mockSetFailedAttempts,
                     resetFailedAttempts: mockResetFailedAttempts,
-                    setLockoutEndTime: mockSetLockoutEndTime,
+                    setLockout: mockSetLockout,
                     setAutoLockStartedAt: mockSetAutoLockStartedAt,
                 }),
         )
@@ -389,10 +398,11 @@ describe('usePinCode — duress slot', () => {
             ...currentPinRecord()!,
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
             lockoutEndTime: Date.now() + 60_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 61_000 },
         }
         kmsMocks.pinBytes = serializePinRecord(locked)
         mockSetFailedAttempts.mockClear()
-        mockSetLockoutEndTime.mockClear()
+        mockSetLockout.mockClear()
 
         let duressOutcome
         await act(async () => {
@@ -402,7 +412,7 @@ describe('usePinCode — duress slot', () => {
         expect(duressOutcome).toEqual({ kind: 'duress' })
         expect(currentPinRecord()).toEqual(locked)
         expect(mockSetFailedAttempts).not.toHaveBeenCalled()
-        expect(mockSetLockoutEndTime).not.toHaveBeenCalled()
+        expect(mockSetLockout).not.toHaveBeenCalled()
 
         let regularOutcome
         await act(async () => {

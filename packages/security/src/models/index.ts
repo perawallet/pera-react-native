@@ -11,6 +11,7 @@
  */
 
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type { LockoutDeadline } from '../lockout'
 
 /**
  * Why biometric unlock stopped working without the user asking for it.
@@ -38,7 +39,8 @@ export type BiometricsDisabledReason =
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number
-    lockoutEndTime: Nullable<number>
+    /** In memory only; the PIN record is the authority it is hydrated from. */
+    lockout: Nullable<LockoutDeadline>
     autoLockStartedAt: Nullable<number>
     /**
      * Monotonic counter that AutoLockGuard subscribes to. Any call to
@@ -107,7 +109,7 @@ export type SecurityState = BaseStoreState & {
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
     resetFailedAttempts: () => void
-    setLockoutEndTime: (time: Nullable<number>) => void
+    setLockout: (lockout: Nullable<LockoutDeadline>) => void
     setAutoLockStartedAt: (time: Nullable<number>) => void
     requestLock: () => void
     setAppLockActive: (active: boolean) => void

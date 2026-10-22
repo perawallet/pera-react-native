@@ -27,6 +27,7 @@ export {
     parsePinRecord,
     serializePinRecord,
 } from './pinRecord'
+export type { LockoutDeadline, MonotonicLockout } from './lockout'
 export * from './pinRecordMigration'
 export * from './biometricBlob'
 export * from './store'
