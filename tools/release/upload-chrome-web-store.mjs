@@ -24,8 +24,8 @@
 //                               be added under Account in the Developer Dashboard
 //   CWS_PUBLISHER_ID, CWS_ITEM_ID
 //   DRY_RUN                     when "1": check inputs, print the target, upload nothing
-//   CWS_API_BASE, CWS_TOKEN_URL, CWS_POLL_INTERVAL_MS  test overrides only; the
-//                               two URLs must be loopback
+//   CWS_API_BASE, CWS_TOKEN_URL, CWS_POLL_INTERVAL_MS, CWS_POLL_ATTEMPTS  test
+//                               overrides only; the two URLs must be loopback
 
 import { createSign } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -58,7 +58,7 @@ const API_BASE =
     loopbackOverride('CWS_API_BASE') ?? 'https://chromewebstore.googleapis.com'
 const TOKEN_URL_OVERRIDE = loopbackOverride('CWS_TOKEN_URL')
 const POLL_INTERVAL_MS = Number(process.env.CWS_POLL_INTERVAL_MS ?? 5000)
-const POLL_ATTEMPTS = 60
+const POLL_ATTEMPTS = Number(process.env.CWS_POLL_ATTEMPTS ?? 60)
 
 const packagePath = process.argv[2]
 const {
@@ -85,6 +85,13 @@ try {
 if (!key.client_email || !key.private_key) {
     fail('the service-account key has no client_email or private_key')
 }
+
+// Store and token errors can name the item or the account; neither reaches the log.
+const scrub = text =>
+    [publisherId, itemId, key.client_email].reduce(
+        (out, secret) => out.replaceAll(secret, '<redacted>'),
+        String(text).replace(/publishers\/[^/\s"]+\/items\/[^/\s"]+/g, '<item>'),
+    )
 
 const packageBytes = await readFile(packagePath).catch(() =>
     fail(`cannot read ${packagePath}`),
@@ -130,7 +137,7 @@ const accessToken = async () => {
     const body = await response.json().catch(() => ({}))
     if (!response.ok || !body.access_token) {
         fail(
-            `token exchange failed (${response.status}): ${body.error_description ?? body.error ?? 'no detail'}`,
+            `token exchange failed (${response.status}): ${scrub(body.error_description ?? body.error ?? 'no detail')}`,
         )
     }
     return body.access_token
@@ -154,7 +161,7 @@ const call = async (token, step, method, url, body, headers = {}) => {
     })
     const text = await response.text()
     if (!response.ok)
-        fail(`${step} failed (${response.status}): ${errorMessage(text)}`)
+        fail(`${step} failed (${response.status}): ${scrub(errorMessage(text))}`)
     return JSON.parse(text)
 }
 
@@ -176,22 +183,32 @@ const upload = await call(
     uploadHeaders,
 )
 
-// What the store says beside the state, without the item's resource name and
-// id, which are CI secrets.
+// What the store says beside the state, without the item's resource name, id
+// and public key.
 const detail = body =>
-    JSON.stringify(
-        Object.fromEntries(
-            Object.entries(body ?? {}).filter(
-                ([field]) => field !== 'name' && field !== 'itemId',
+    scrub(
+        JSON.stringify(
+            Object.fromEntries(
+                Object.entries(body ?? {}).filter(
+                    ([field]) => !['name', 'itemId', 'publicKey'].includes(field),
+                ),
             ),
         ),
     )
 
+// fetchStatus can answer before the async upload is on record, with NOT_FOUND
+// or no state at all; both mean wait, as IN_PROGRESS does.
+const isPending = (value, polled) =>
+    value === 'IN_PROGRESS' ||
+    value === 'UPLOAD_IN_PROGRESS' ||
+    (polled && (value === undefined || value === 'NOT_FOUND'))
+
 let last = upload
 let state = upload.uploadState
+let polled = false
 for (
     let attempt = 0;
-    state === 'IN_PROGRESS' && attempt < POLL_ATTEMPTS;
+    isPending(state, polled) && attempt < POLL_ATTEMPTS;
     attempt++
 ) {
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
@@ -203,8 +220,14 @@ for (
     )
     last = status
     state = status.lastAsyncUploadState
+    polled = true
 }
 
+if (isPending(state, polled)) {
+    fail(
+        `upload still processing after ${POLL_ATTEMPTS} checks; the store may yet finish it, so check the Developer Dashboard before uploading by hand`,
+    )
+}
 if (state !== 'SUCCEEDED') {
     fail(`upload ended in state ${state ?? 'unknown'}: ${detail(last)}`)
 }

@@ -30,7 +30,7 @@ import { readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 
 const [publicKeyPath, scenarioPath, logPath, portPath] = process.argv.slice(2)
 const publicKey = readFileSync(publicKeyPath, 'utf8')
-let fetchCount = 0
+const polls = {}
 
 createServer((request, response) => {
     const chunks = []
@@ -61,19 +61,28 @@ createServer((request, response) => {
         if (request.headers.authorization !== 'Bearer stub-token') return send(401, {})
         if (request.url.endsWith(':upload')) {
             if (scenario === 'forbidden') return send(403, { error: { message: 'not a publisher member' } })
-            const state = { ok: 'SUCCEEDED', failed: 'FAILED', async: 'IN_PROGRESS', 'async-failed': 'IN_PROGRESS' }[scenario]
+            if (scenario === 'leaky') {
+                return send(404, { error: { message: 'Item publishers/pub-7f3c/items/cdpitemidfortests not found for ci@peraci.iam.gserviceaccount.com' } })
+            }
+            const state = { ok: 'SUCCEEDED', failed: 'FAILED', async: 'IN_PROGRESS', 'async-failed': 'IN_PROGRESS', 'async-late': 'IN_PROGRESS', stuck: 'IN_PROGRESS' }[scenario]
             // A rejection carries its detail beside the item's resource name, which the log must not show.
             const rejection = scenario === 'failed'
-                ? { name: 'publishers/pub/items/item', itemId: 'item', itemError: [{ error_detail: 'version must be higher' }] }
+                ? { name: 'publishers/pub-7f3c/items/cdpitemidfortests', itemId: 'cdpitemidfortests', itemError: [{ error_detail: 'version must be higher' }] }
                 : {}
             return send(200, { ...rejection, uploadState: state, crxVersion: state === 'SUCCEEDED' ? '7.2.1.123' : undefined })
         }
         if (request.url.endsWith(':fetchStatus')) {
-            fetchCount += 1
+            polls[scenario] = (polls[scenario] ?? 0) + 1
+            const poll = polls[scenario]
             if (scenario === 'async-failed') {
-                return send(200, { name: 'publishers/pub/items/item', itemId: 'item', lastAsyncUploadState: 'FAILED', itemError: [{ error_detail: 'pending review' }] })
+                return send(200, { name: 'publishers/pub-7f3c/items/cdpitemidfortests', itemId: 'cdpitemidfortests', lastAsyncUploadState: 'FAILED', itemError: [{ error_detail: 'pending review' }] })
             }
-            return send(200, { lastAsyncUploadState: fetchCount < 2 ? 'IN_PROGRESS' : 'SUCCEEDED' })
+            // fetchStatus can answer before the async upload is on record.
+            if (scenario === 'async-late') {
+                return send(200, poll === 1 ? {} : { lastAsyncUploadState: poll === 2 ? 'NOT_FOUND' : 'SUCCEEDED' })
+            }
+            if (scenario === 'stuck') return send(200, { lastAsyncUploadState: 'IN_PROGRESS' })
+            return send(200, { lastAsyncUploadState: poll < 2 ? 'IN_PROGRESS' : 'SUCCEEDED' })
         }
         send(404, {})
     })
@@ -100,7 +109,7 @@ run_case() {
     printf '%s' "$scenario" > "$WORK/scenario"
     : > "$WORK/log"
     local output status
-    output=$(env CWS_SERVICE_ACCOUNT_BASE64="$KEY_B64" CWS_PUBLISHER_ID=pub CWS_ITEM_ID=item \
+    output=$(env CWS_SERVICE_ACCOUNT_BASE64="$KEY_B64" CWS_PUBLISHER_ID=pub-7f3c CWS_ITEM_ID=cdpitemidfortests \
         CWS_API_BASE="$BASE" CWS_TOKEN_URL="$BASE/token" CWS_POLL_INTERVAL_MS=1 "$@" \
         node "$SCRIPT" "${PACKAGE:-$WORK/ext.zip}" 2>&1)
     status=$?
@@ -132,8 +141,13 @@ check_upload_line "a crx goes up with the raw upload protocol, its file name and
     "protocol=raw name=ext.crx sha256=${CRX_SHA}"
 run_case "polls an async upload until it succeeds" async 0 "as a draft"
 run_case "fails with the store's detail when the package is rejected" failed 1 "upload ended in state FAILED"
-run_case "names why the store rejected the package" failed 1 "version must be higher"
-run_case "names why the store rejected an async upload" async-failed 1 "pending review"
+run_case "prints what the store returned with a rejection" failed 1 "version must be higher"
+run_case "prints what the store returned with an async rejection" async-failed 1 "pending review"
+run_case "keeps polling while the upload is not on record yet" async-late 0 "as a draft"
+run_case "gives up after the poll limit and says the store may still finish" stuck 1 \
+    "still processing after 3 checks" CWS_POLL_ATTEMPTS=3
+run_case "keeps the item and the account out of a store error" leaky 1 \
+    "upload failed (404): Item <item> not found for <redacted>"
 run_case "fails on an HTTP error from the store" forbidden 1 "upload failed (403): not a publisher member"
 run_case "fails without an item id" ok 1 "CWS_ITEM_ID is not set" CWS_ITEM_ID=
 run_case "fails on a key that is not base64 JSON" ok 1 "not a base64-encoded JSON key" CWS_SERVICE_ACCOUNT_BASE64=not-json
@@ -155,8 +169,8 @@ if [ -s "$WORK/log" ]; then
 fi
 
 # The publisher and item ids and the account email are CI secrets.
-if grep -qE "publishers/|items/|ci@peraci" "$WORK/all.out"; then
-    echo "  FAIL  output carried a secret value: $(grep -E "publishers/|items/|ci@peraci" "$WORK/all.out" | head -1)"
+if grep -qE "publishers/|items/|ci@peraci|pub-7f3c|cdpitemidfortests" "$WORK/all.out"; then
+    echo "  FAIL  output carried a secret value: $(grep -E "publishers/|items/|ci@peraci|pub-7f3c|cdpitemidfortests" "$WORK/all.out" | head -1)"
     failures=$((failures + 1))
 fi
 

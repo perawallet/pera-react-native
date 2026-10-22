@@ -21,8 +21,8 @@
 //                                 the API key expires, and its date is shown there
 //   EDGE_PRODUCT_ID               the extension's product id
 //   DRY_RUN                       when "1": check inputs, print the target, upload nothing
-//   EDGE_API_BASE, EDGE_POLL_INTERVAL_MS  test overrides only; the URL must be
-//                                         loopback
+//   EDGE_API_BASE, EDGE_POLL_INTERVAL_MS, EDGE_POLL_ATTEMPTS  test overrides
+//                                         only; the URL must be loopback
 
 import { readFile } from 'node:fs/promises'
 
@@ -52,7 +52,7 @@ const API_BASE =
     loopbackOverride('EDGE_API_BASE') ??
     'https://api.addons.microsoftedge.microsoft.com'
 const POLL_INTERVAL_MS = Number(process.env.EDGE_POLL_INTERVAL_MS ?? 5000)
-const POLL_ATTEMPTS = 60
+const POLL_ATTEMPTS = Number(process.env.EDGE_POLL_ATTEMPTS ?? 60)
 
 const zipPath = process.argv[2]
 const {
@@ -69,6 +69,13 @@ for (const [name, value] of Object.entries({
 })) {
     if (!value) fail(`${name} is not set`)
 }
+
+// Store errors can name the product or the client; neither reaches the log.
+const scrub = text =>
+    [productId, clientId, apiKey].reduce(
+        (out, secret) => out.replaceAll(secret, '<redacted>'),
+        String(text),
+    )
 
 const zip = await readFile(zipPath).catch(() => fail(`cannot read ${zipPath}`))
 
@@ -100,7 +107,7 @@ const upload = await fetch(draftPackage, {
 })
 if (upload.status !== 202) {
     fail(
-        `upload failed (${upload.status}): ${errorMessage(await upload.text())}`,
+        `upload failed (${upload.status}): ${scrub(errorMessage(await upload.text()))}`,
     )
 }
 // The docs give the header as the bare operation id; take the last segment in
@@ -120,17 +127,27 @@ for (
     })
     const text = await response.text()
     if (!response.ok) {
-        fail(`status check failed (${response.status}): ${errorMessage(text)}`)
+        fail(
+            `status check failed (${response.status}): ${scrub(errorMessage(text))}`,
+        )
     }
     operation = JSON.parse(text)
 }
 
+if (operation.status === 'InProgress') {
+    fail(
+        `upload still processing after ${POLL_ATTEMPTS} checks; the store may yet finish it, so check Partner Center before uploading by hand`,
+    )
+}
 if (operation.status !== 'Succeeded') {
     const errors = (operation.errors ?? [])
         .map(error => (typeof error === 'string' ? error : error?.message))
         .filter(Boolean)
+    const code = operation.errorCode ? ` (${operation.errorCode})` : ''
+    const reasons =
+        [operation.message, ...errors].filter(Boolean).join('; ') || 'no detail'
     fail(
-        `upload ended in state ${operation.status ?? 'unknown'}: ${[operation.message, ...errors].filter(Boolean).join('; ') || 'no detail'}`,
+        `upload ended in state ${operation.status ?? 'unknown'}${code}: ${scrub(reasons)}`,
     )
 }
 console.log(
