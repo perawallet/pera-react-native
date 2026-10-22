@@ -28,6 +28,7 @@ export {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDeviceBusyError,

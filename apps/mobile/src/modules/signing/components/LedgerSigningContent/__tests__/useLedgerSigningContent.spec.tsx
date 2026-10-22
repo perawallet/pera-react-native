@@ -19,6 +19,7 @@ import {
     type HardwareChildSnapshot,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
+import { LedgerBlindSigningRequiredError } from '@perawallet/wallet-core-ledger'
 import { useLedgerSigningContent } from '../useLedgerSigningContent'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
@@ -38,6 +39,7 @@ type ChildSnapshotOverrides = {
     totalTxs?: number | null
     operation?: 'transaction' | 'data'
     errorKind?: LedgerErrorPresetKind | null
+    errorCause?: unknown
     retryCount?: number
 }
 
@@ -64,7 +66,7 @@ const buildChildSnapshot = (
             totalTxs: overrides.totalTxs ?? null,
             operation: overrides.operation ?? 'transaction',
             error: overrides.errorKind
-                ? { kind: overrides.errorKind, cause: undefined }
+                ? { kind: overrides.errorKind, cause: overrides.errorCause }
                 : null,
             retryCount: overrides.retryCount ?? 0,
         },
@@ -174,6 +176,38 @@ describe('useLedgerSigningContent', () => {
         expect(result.current.error?.isRetryable).toBe(true)
         expect(result.current.error?.isTroubleshootable).toBe(false)
     })
+
+    it.each([
+        [
+            'names the app',
+            new LedgerBlindSigningRequiredError({ appName: 'Ethereum' }),
+            'ledger.errors.blind_signing_required',
+        ],
+        [
+            'falls back to unnamed copy',
+            new LedgerBlindSigningRequiredError(),
+            'ledger.errors.blind_signing_required_unnamed',
+        ],
+    ])(
+        "%s from the error's cause for a blind-signing refusal",
+        (_name, cause, body) => {
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'blind_signing_required',
+                    errorCause: cause,
+                }),
+            })
+
+            const { result } = renderHook(() => useLedgerSigningContent())
+
+            expect(result.current.error).toMatchObject({
+                kind: 'blind_signing_required',
+                body,
+                isRetryable: true,
+            })
+        },
+    )
 
     it('onCancel sends ACKNOWLEDGE_HARDWARE_ERROR when the child is in error', () => {
         const acknowledgeHardwareError = vi.fn()

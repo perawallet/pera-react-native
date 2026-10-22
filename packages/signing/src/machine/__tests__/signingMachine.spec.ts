@@ -794,7 +794,6 @@ describe('signingMachine', () => {
                 request: hwRequest,
                 allAccounts: [hwAccount],
                 hardwareWalletRegistry: {} as never,
-                encodeTransaction: vi.fn() as never,
             })
 
         // A controllable stand-in for hardwareSigningMachine that mirrors the

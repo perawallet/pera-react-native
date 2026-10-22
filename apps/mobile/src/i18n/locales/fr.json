@@ -3889,8 +3889,13 @@
             }
         },
         "errors": {
-            "app_not_open": "Ouvrez l’application Algorand sur votre Ledger. Revenez ensuite dans Pera pour continuer.",
-            "app_not_open_title": "Ouvrez l’application Algorand",
+            "app_not_open": "Ouvrez l’application {{appName}} sur votre Ledger. Revenez ensuite dans Pera pour continuer.",
+            "app_not_open_title": "Ouvrez l’application {{appName}}",
+            "app_not_open_unnamed": "Ouvrez l’application de ce compte sur votre Ledger. Revenez ensuite dans Pera pour continuer.",
+            "app_not_open_unnamed_title": "Ouvrez l’application sur votre Ledger",
+            "blind_signing_required": "L’application {{appName}} de votre Ledger requiert la signature à l’aveugle (blind signing) pour cette transaction. Activez Blind signing dans les paramètres de l’application sur votre Ledger, puis réessayez.",
+            "blind_signing_required_unnamed": "L’application de votre Ledger requiert la signature à l’aveugle (blind signing) pour cette transaction. Activez Blind signing dans les paramètres de l’application sur votre Ledger, puis réessayez.",
+            "blind_signing_required_title": "Activez la signature à l’aveugle",
             "connection_lost": "Connexion perdue. Reconnectez votre Ledger et réessayez.",
             "connection_lost_title": "Connexion perdue",
             "user_rejected": "Demande annulée. L’opération a été annulée sur votre appareil Ledger.",

@@ -41,7 +41,6 @@ const makeDeps = (): SigningMachineDeps =>
         signAuthData: vi.fn(),
         createTransport: vi.fn(),
         scope: { chainId: 'algorand', networkId: 'mainnet' },
-        encodeTransaction: vi.fn(),
     }) as never
 
 describe('createSigningMachine', () => {
@@ -66,7 +65,6 @@ describe('createSigningMachine', () => {
         expect(ctx.deps.signArbitraryData).toBe(deps.signArbitraryData)
         expect(ctx.deps.signAuthData).toBe(deps.signAuthData)
         expect(ctx.deps.createTransport).toBe(deps.createTransport)
-        expect(ctx.deps.encodeTransaction).toBe(deps.encodeTransaction)
         expect(ctx.deps.scope).toBe(deps.scope)
         actor.stop()
     })

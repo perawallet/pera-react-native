@@ -121,7 +121,6 @@ export const fakePlannerAdapter = (
     useFetchSuggestedMinFee: vi.fn(() => fetchZeroMinFee),
     useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
     useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
-    encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
     unsignedTransactionBytesOf: vi.fn(() => new Uint8Array()),
     reviewGroupFees: vi.fn(() => ({
         totalFee: new Decimal(0),

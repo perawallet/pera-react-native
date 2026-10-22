@@ -15,6 +15,7 @@ import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDeviceBusyError,
@@ -42,6 +43,7 @@ import { SigningError } from '../../pipeline/errors'
 import {
     classifyLedgerErrorKind,
     isLedgerError,
+    ledgerAppNameOf,
 } from '../classifyLedgerErrorKind'
 
 describe('classifyLedgerErrorKind', () => {
@@ -54,6 +56,7 @@ describe('classifyLedgerErrorKind', () => {
         [new LedgerDeviceBusyError(), 'device_busy'],
         [new LedgerUserRejectedError(), 'user_rejected'],
         [new LedgerAppNotOpenError(), 'app_not_open'],
+        [new LedgerBlindSigningRequiredError(), 'blind_signing_required'],
         [new LedgerAddressMismatchError('A', 'B'), 'address_mismatch'],
         [
             new LedgerSigningError('Empty signature returned by Ledger device'),
@@ -136,5 +139,28 @@ describe('isLedgerError', () => {
         expect(isLedgerError('string')).toBe(false)
         expect(isLedgerError(null)).toBe(false)
         expect(isLedgerError(undefined)).toBe(false)
+    })
+})
+
+describe('ledgerAppNameOf', () => {
+    it.each([
+        [
+            'an app that is not open',
+            new LedgerAppNotOpenError({ appName: 'Ethereum' }),
+        ],
+        [
+            'a blind-signing refusal',
+            new LedgerBlindSigningRequiredError({ appName: 'Ethereum' }),
+        ],
+    ])('names the app of %s', (_name, error) => {
+        expect(ledgerAppNameOf(error)).toBe('Ethereum')
+    })
+
+    it.each([
+        ['an app error that carries no name', new LedgerAppNotOpenError()],
+        ['an error about no app', new LedgerDisconnectedError()],
+        ['anything else', 'boom'],
+    ])('names none for %s', (_name, error) => {
+        expect(ledgerAppNameOf(error)).toBeUndefined()
     })
 })

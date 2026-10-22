@@ -329,6 +329,30 @@ describe('algorandTransactionPlanner', () => {
         )
     })
 
+    it("gives a device the transaction without the signing-domain prefix, as each request's own copy", () => {
+        const addresses = [ALICE, BOB].map(addressOf)
+        const transaction = payment(generateMultisigAddress(1, 2, addresses))
+
+        const requests = algorandTransactionPlanner.plan(
+            unsigned({
+                transaction,
+                multisig: { version: 1, threshold: 2, addresses },
+            }),
+        )
+
+        for (const request of requests) {
+            expect(request.devicePayload).toEqual(
+                encodeTransactionRaw(transaction),
+            )
+            expect(
+                new TextDecoder().decode(request.devicePayload?.slice(0, 2)),
+            ).not.toBe('TX')
+        }
+        expect(requests[0].devicePayload?.buffer).not.toBe(
+            requests[1].devicePayload?.buffer,
+        )
+    })
+
     it("refuses a multisig that doesn't derive to the address that signs", () => {
         const transaction = payment(addressOf(ALICE))
 

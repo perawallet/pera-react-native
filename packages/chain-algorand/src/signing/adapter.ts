@@ -13,7 +13,6 @@
 import {
     Address,
     aggregateTransactionWarnings,
-    encodeTransactionRaw,
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
     toAlgorandNative,
@@ -147,8 +146,6 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     useFetchSuggestedMinFee,
     useMinFeeForSender,
     useAssignFeeToGroup,
-    encodeUnsignedTransaction: transaction =>
-        encodeTransactionRaw(algorandTransactionsOf([transaction])[0]),
     unsignedTransactionBytesOf: unsignedAlgorandTransactionBytesOf,
     reviewGroupFees: (transactions, signableAddresses) => {
         const views = transactions.map(algorandViewOf)

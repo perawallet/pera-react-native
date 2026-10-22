@@ -66,6 +66,17 @@ export const transactionPlannerContractTests = (
             expect(requests.filter(r => r.payload.length === 0)).toEqual([])
         })
 
+        it('gives every request the bytes a device signs, as its own copy', () => {
+            const requests = makePlanner().plan(transaction)
+
+            for (const request of requests) {
+                expect(request.devicePayload?.length).toBeGreaterThan(0)
+                expect(request.devicePayload?.buffer).not.toBe(
+                    request.payload.buffer,
+                )
+            }
+        })
+
         it('plans different bytes for a different transaction', () => {
             const planner = makePlanner()
             const payloads = (tx: UnsignedTransaction) =>

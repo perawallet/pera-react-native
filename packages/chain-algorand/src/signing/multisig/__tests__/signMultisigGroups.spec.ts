@@ -160,7 +160,6 @@ const buildInput = (
         ]),
     signArbitraryData: vi.fn(),
     signAuthData: vi.fn(),
-    encodeTransaction: vi.fn(),
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     ...overrides,
 })
@@ -321,9 +320,6 @@ describe('signMultisigGroups', () => {
 
         const transport = makeMockTransport(PARTICIPANT_B)
         const hardwareWalletRegistry = makeMockRegistry(transport)
-        const encodeTransaction = vi
-            .fn()
-            .mockReturnValue(new Uint8Array([0x01]))
         const signTransactions = vi
             .fn()
             .mockResolvedValue([
@@ -340,7 +336,6 @@ describe('signMultisigGroups', () => {
                 ledgerParticipant,
             ],
             signTransactions,
-            encodeTransaction,
             hardwareWalletRegistry,
         })
 
@@ -376,9 +371,6 @@ describe('signMultisigGroups', () => {
 
         const transport = makeMockTransport(PARTICIPANT_A)
         const hardwareWalletRegistry = makeMockRegistry(transport)
-        const encodeTransaction = vi
-            .fn()
-            .mockReturnValue(new Uint8Array([0x01]))
         const signTransactions = vi.fn()
 
         const hardwareReadyGroup = mockGroup()
@@ -387,7 +379,6 @@ describe('signMultisigGroups', () => {
             groups: [hardwareReadyGroup],
             allAccounts: [makeMultisigAccount(), ledgerParticipant],
             signTransactions,
-            encodeTransaction,
             hardwareWalletRegistry,
         })
 

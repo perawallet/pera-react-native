@@ -15,7 +15,6 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AnalyzedSignableGroup, SigningResult } from '../../pipeline/types'
-import type { EncodeTransactionFunction } from '../../pipeline/signing/createHardwareStrategy'
 import type { LedgerErrorPresetKind } from '../../types/ledgerErrorPresetKind'
 
 export type HardwareErrorPayload = {
@@ -37,7 +36,6 @@ export type HardwareSigningInput = {
     /** The request's scope; each group's signer is looked up by its address there. */
     scope: ChainScope
     hardwareWalletRegistry: HardwareWalletRegistry
-    encodeTransaction: EncodeTransactionFunction
     /** Total transactions across all groups — set by parent for initial currentTx/totalTxs. */
     totalTxs: number
     /** Device name resolved at parent build-time so the overlay can render immediately. */

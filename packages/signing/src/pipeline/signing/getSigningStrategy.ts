@@ -26,10 +26,7 @@ import {
     type LocalArbitrarySigningFunction,
     type LocalAuthDataSigningFunction,
 } from '../../chain-adapter'
-import {
-    createHardwareStrategy,
-    type EncodeTransactionFunction,
-} from './createHardwareStrategy'
+import { createHardwareStrategy } from './createHardwareStrategy'
 import {
     resolveSignerCredential,
     type SignerCustody,
@@ -56,9 +53,6 @@ export interface GetSigningStrategyOptions {
 
     /** Get all user accounts */
     getAllAccounts: () => WalletAccount[]
-
-    /** Transaction encoder for hardware wallet signing */
-    encodeTransaction: EncodeTransactionFunction
 
     /** Hardware wallet registry from platform extension (optional) */
     hardwareWalletRegistry?: HardwareWalletRegistry
@@ -87,7 +81,6 @@ export const createSigningStrategySelector = (
     })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
-        encodeTransaction: options.encodeTransaction,
         getAllAccounts: options.getAllAccounts,
         chainId: options.scope.chainId,
     })

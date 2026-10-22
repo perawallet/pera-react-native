@@ -55,7 +55,11 @@ import type {
     SignRequest,
     TransactionSignRequest,
 } from '../../models'
-import { algo25Account, ledgerAccount } from '../../__tests__/accounts'
+import {
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+} from '../../__tests__/accounts'
 import {
     CannotSignError,
     HardwareWalletError,
@@ -94,7 +98,6 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         signAuthData: vi.fn(),
         createTransport: vi.fn(),
         scope: { chainId: 'algorand', networkId: 'mainnet' },
-        encodeTransaction: vi.fn(),
     }) as unknown as SigningMachineInput
 
 beforeEach(() => {
@@ -545,7 +548,6 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
             scope: { chainId: 'algorand', networkId: 'mainnet' },
-            encodeTransaction: vi.fn(),
             hardwareWalletRegistry: opts.hardwareWalletRegistry,
         }) as unknown as SigningMachineInput
 
@@ -1085,7 +1087,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         ])
     })
 
-    it("signs a request whose signers sign in different ways through the chain's own signers", () => {
+    it('plans a request signed by a local key and a Ledger, so neither goes to the chain signer', () => {
         const { neutral } = bothShapes(fullGroup())
 
         const context = resolveInitialContext(
@@ -1106,7 +1108,6 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
                         },
                     },
                 },
-                shouldUseChainSigner: true,
             }),
             expect.objectContaining({
                 signerAddress: authAddr.toString(),
@@ -1121,9 +1122,11 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
                         },
                     },
                 },
-                shouldUseChainSigner: true,
             }),
         ])
+        expect(
+            context.signableGroups?.some(group => group.shouldUseChainSigner),
+        ).toBe(false)
         expect(context.groupSigners).toEqual(
             new Map([
                 [USER_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
@@ -1133,6 +1136,21 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
                 ],
             ]),
         )
+    })
+
+    it("signs a request whose signers sign in different ways through the chain's own signers", () => {
+        const { neutral } = bothShapes(fullGroup())
+
+        const context = resolveInitialContext(
+            withAccounts(
+                neutral,
+                multisigAccount(authAddr.toString(), undefined, { id: 'auth' }),
+            ),
+        )
+
+        expect(
+            context.signableGroups?.map(group => group.shouldUseChainSigner),
+        ).toEqual([true, true])
     })
 
     it('refuses a full group whose transactions no longer hash to their group id', () => {

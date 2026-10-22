@@ -3889,8 +3889,13 @@
             }
         },
         "errors": {
-            "app_not_open": "Ledger cihazında Algorand uygulamasını aç. Ardından Pera’ya dönüp devam et.",
-            "app_not_open_title": "Algorand uygulamasını aç",
+            "app_not_open": "Ledger cihazında {{appName}} uygulamasını aç. Ardından Pera’ya dönüp devam et.",
+            "app_not_open_title": "{{appName}} uygulamasını aç",
+            "app_not_open_unnamed": "Ledger cihazında bu hesabın uygulamasını aç. Ardından Pera’ya dönüp devam et.",
+            "app_not_open_unnamed_title": "Ledger cihazında uygulamayı aç",
+            "blind_signing_required": "Ledger cihazındaki {{appName}} uygulaması bu işlem için kör imzalamaya (blind signing) ihtiyaç duyuyor. Ledger cihazında uygulamanın ayarlarından Blind signing seçeneğini aç ve tekrar dene.",
+            "blind_signing_required_unnamed": "Ledger cihazındaki uygulama bu işlem için kör imzalamaya (blind signing) ihtiyaç duyuyor. Ledger cihazında uygulamanın ayarlarından Blind signing seçeneğini aç ve tekrar dene.",
+            "blind_signing_required_title": "Kör imzalamayı aç",
             "connection_lost": "Bağlantı koptu. Ledger cihazını yeniden bağla ve tekrar dene.",
             "connection_lost_title": "Bağlantı koptu",
             "user_rejected": "İstek iptal edildi. İşlem Ledger cihazında iptal edildi.",

@@ -107,7 +107,6 @@ describe('signing an Ethereum transaction through the machine', () => {
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            encodeTransaction: vi.fn(),
             scope: MAINNET,
             keyStore: kms,
         } as unknown as SigningMachineInput
@@ -162,7 +161,6 @@ describe('signing an Ethereum transaction through the machine', () => {
             signArbitraryData: vi.fn(),
             signAuthData: vi.fn(),
             createTransport: vi.fn((): DataTransport => ({ send })),
-            encodeTransaction: vi.fn(),
             scope: MAINNET,
             keyStore: kms,
         } as unknown as SigningMachineInput

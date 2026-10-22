@@ -79,7 +79,6 @@ const makeSelector = () =>
         signAuthData: vi.fn(),
         getLocalParticipants: vi.fn(() => []),
         getAllAccounts: vi.fn(() => []),
-        encodeTransaction: vi.fn(),
     })
 
 beforeEach(() => {
@@ -203,7 +202,6 @@ describe('createSigningStrategySelector', () => {
                 signAuthData: vi.fn(),
                 getLocalParticipants: vi.fn(() => participants),
                 getAllAccounts: vi.fn(() => participants),
-                encodeTransaction: vi.fn(),
             })
             return { select, signTransactions }
         }
