@@ -19,22 +19,17 @@ import {
     PWView,
 } from '@components/core'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '@components/AccountIcon'
-import { AssetAmount } from '@components/AssetAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
-import { InfoButton, useInfoButton } from '@components/InfoButton'
+import { useInfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import { RekeyedToRow } from './RekeyedToRow'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
-import { ChainIcon } from '@modules/chain-ui'
 
 export type AccountInfoCardProps = {
     account: WalletAccount
@@ -58,18 +53,12 @@ export const AccountInfoCard = ({
     onClose,
     rekeyedTo,
 }: AccountInfoCardProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        enabledChains,
         isExpanded,
         handleToggleExpanded,
         accountType,
-        minBalanceAlgos,
-        isMinBalanceLoading,
-        showMinBalance,
         showStructure,
         structureLabel,
         structureIcon,
@@ -142,62 +131,6 @@ export const AccountInfoCard = ({
                     )}
                 </PWView>
             </PWTouchableOpacity>
-
-            {/* Min balance row */}
-            {showMinBalance && (
-                <PWView style={styles.infoRow}>
-                    <PWText
-                        variant='footnoteMedium'
-                        style={styles.labelText}
-                        truncate
-                    >
-                        {t('account_info.min_balance')}
-                    </PWText>
-                    <InfoButton
-                        title={t('min_balance_info.title')}
-                        trigger={
-                            <AssetAmount
-                                asset={nativeAsset}
-                                value={minBalanceAlgos}
-                                showSymbol
-                                symbolPosition='start'
-                                isLoading={isMinBalanceLoading}
-                                variant='bodyLarge'
-                                weight={500}
-                            />
-                        }
-                    >
-                        <PWText style={styles.minBalanceDescription}>
-                            {t('min_balance_info.description')}
-                        </PWText>
-                    </InfoButton>
-                </PWView>
-            )}
-
-            <PWView style={styles.infoRow}>
-                <PWText
-                    variant='footnoteMedium'
-                    style={styles.labelText}
-                    truncate
-                >
-                    {t('account_info.networks')}
-                </PWText>
-                <PWView style={styles.networkList}>
-                    {enabledChains.map(({ chainId, displayName }) => (
-                        <PWView
-                            key={chainId}
-                            style={styles.networkItem}
-                            testID={`account_network_${chainId}`}
-                        >
-                            <ChainIcon
-                                chainId={chainId}
-                                size={20}
-                            />
-                            <PWText variant='body'>{displayName}</PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </PWView>
 
             {rekeyedTo && (
                 <>

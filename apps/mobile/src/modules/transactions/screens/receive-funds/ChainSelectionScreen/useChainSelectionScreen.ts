@@ -10,31 +10,28 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
     useAccountChainOptionsResolver,
-    useEnableChain,
     type AccountChainOption,
 } from '@perawallet/wallet-core-accounts'
-import {
-    addressCodecs,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { bottomSheetNotifier } from '@components/core'
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useIsMounted } from '@hooks/useIsMounted'
+import { useEnableChainAction } from '@hooks/useEnableChainAction'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    displayChainOption,
+    type DisplayedChainOption,
+} from '@utils/chainOptionDisplay'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 /** `address` is truncated by the chain's codec for display. */
-export type ReceiveChainRow = AccountChainOption & { displayName: string }
+export type ReceiveChainRow = DisplayedChainOption<AccountChainOption>
 
 export type UseChainSelectionScreenResult = {
     rows: ReceiveChainRow[]
@@ -50,27 +47,15 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
     const navigation =
         useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
     const optionsOf = useAccountChainOptionsResolver('receive')
-    const enableChain = useEnableChain()
-    const { showError } = useErrorToast()
     const { t } = useLanguage()
-    const isMounted = useIsMounted()
-    const [enablingChainId, setEnablingChainId] = useState<Optional<ChainId>>()
-    // State lags a second tap that lands before the re-render.
-    const isEnablingRef = useRef(false)
+    const { enablingChainId, enableChain } = useEnableChainAction(
+        t('errors.general.title'),
+    )
 
     const rows = useMemo(
         (): ReceiveChainRow[] =>
             selectedAccount
-                ? optionsOf(selectedAccount).map(option => ({
-                      ...option,
-                      displayName:
-                          chainDisplayNameOf(option.chainId) ?? option.chainId,
-                      address:
-                          option.address &&
-                          addressCodecs
-                              .get(option.chainId)
-                              .truncate(option.address),
-                  }))
+                ? optionsOf(selectedAccount).map(displayChainOption)
                 : [],
         [selectedAccount, optionsOf],
     )
@@ -92,37 +77,9 @@ export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
         (chainId: ChainId) => {
             const row = rowByChain.get(chainId)
             if (!selectedAccount || !row || row.isEnabled) return
-            if (isEnablingRef.current) return
-            isEnablingRef.current = true
-            setEnablingChainId(chainId)
-            void (async () => {
-                try {
-                    const account = await enableChain(
-                        selectedAccount.id,
-                        chainId,
-                        'user',
-                    )
-                    if (isMounted()) setSelectedAccount(account)
-                } catch (error) {
-                    if (!isMounted()) return
-                    showError(error, t('errors.general.title'), {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    })
-                } finally {
-                    isEnablingRef.current = false
-                    if (isMounted()) setEnablingChainId(undefined)
-                }
-            })()
+            enableChain(selectedAccount.id, chainId, setSelectedAccount)
         },
-        [
-            rowByChain,
-            selectedAccount,
-            setSelectedAccount,
-            enableChain,
-            isMounted,
-            showError,
-            t,
-        ],
+        [rowByChain, selectedAccount, setSelectedAccount, enableChain],
     )
 
     return { rows, enablingChainId, handleSelectChain, handleAddChain }

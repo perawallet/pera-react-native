@@ -23,6 +23,7 @@ import {
 const {
     mockSetSelectedAccount,
     mockSetCanSelectAccount,
+    mockSetChainId,
     mockBalancesPending,
     mockBalancesPaused,
     mockHistoryPending,
@@ -33,6 +34,7 @@ const {
 } = vi.hoisted(() => ({
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
+    mockSetChainId: vi.fn(),
     mockBalancesPending: { value: false },
     mockBalancesPaused: { value: false },
     mockHistoryPending: { value: false },
@@ -102,6 +104,7 @@ vi.mock('@modules/transactions', () => ({
     useReceiveFunds: vi.fn(() => ({
         setSelectedAccount: mockSetSelectedAccount,
         setCanSelectAccount: mockSetCanSelectAccount,
+        setChainId: mockSetChainId,
     })),
 }))
 
@@ -211,6 +214,31 @@ describe('useAccountOverview', () => {
         })
         expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Receive, {
             [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
+    })
+
+    it('pins the account it is given, not the one the screen opened with, and the chain before opening receive', () => {
+        const current = {
+            ...mockAccount,
+            chains: {
+                ...mockAccount.chains,
+                ethereum: { address: '0xabc' },
+            },
+        } as WalletAccount
+        const { result } = renderUseAccountOverview()
+
+        act(() => {
+            result.current.openReceiveFundsOn(current, 'ethereum')
+        })
+
+        expect(mockSetCanSelectAccount).toHaveBeenCalledWith(false)
+        expect(mockSetSelectedAccount).toHaveBeenCalledWith(current)
+        expect(mockSetChainId).toHaveBeenCalledWith('ethereum')
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
+        expect(arg?.contents.props).toEqual({
+            account: current,
+            chainId: 'ethereum',
         })
     })
 

@@ -13,7 +13,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountInfoCard } from '../useAccountInfoCard'
-import { Decimal } from 'decimal.js'
 import {
     useAccountChainStateStore,
     useAccountsStore,
@@ -45,12 +44,10 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const mockUseAccountStateQuery = vi.fn()
 const mockUseHdSeedGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
-const mockRegisteredChainIds = vi.fn(() => ['algorand'])
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -59,13 +56,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountStateQuery: (...args: unknown[]) =>
-            mockUseAccountStateQuery(...args),
         useHdSeedGroups: () => mockUseHdSeedGroups(),
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
         useDelegatedTransition: () => mockUseDelegatedTransition(),
-        useRegisteredChainIds: () => mockRegisteredChainIds(),
     }
 })
 
@@ -133,29 +127,10 @@ const quantumAccount: WalletAccount = {
 
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
-        mockRegisteredChainIds.mockReturnValue(['algorand'])
         registerAlgorandAccountsAdapter()
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         useAccountsStore.setState({ accounts: [] })
-        mockUseAccountStateQuery.mockReturnValue({
-            data: {
-                address: 'ANY',
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
-                nativeBalance: new Decimal(1),
-                reserveBalance: new Decimal(100_000),
-                heldTokenCount: 0,
-                chainState: {
-                    family: 'algorand',
-                    minBalance: new Decimal(100_000),
-                    status: 'Offline',
-                    totalAssetsOptedIn: 0,
-                    totalCreatedAssets: 0,
-                    totalAppsOptedIn: 0,
-                },
-            },
-            isLoading: false,
-        })
         mockUseHdSeedGroups.mockReturnValue({
             hdSeedGroups: [
                 {
@@ -243,25 +218,6 @@ describe('useAccountInfoCard', () => {
             ledgerAccount,
             subLedgerAccount,
         ])
-    })
-
-    test("reads the min balance from the chain's reserve, in display units", () => {
-        const { result } = renderHook(() =>
-            useAccountInfoCard({ account: hdAccount, onClose: vi.fn() }),
-        )
-        expect(result.current.minBalanceAlgos?.toString()).toBe('0.1')
-    })
-
-    test('reads no min balance until the state loads', () => {
-        mockUseAccountStateQuery.mockReturnValue({
-            data: undefined,
-            isLoading: true,
-        })
-        const { result } = renderHook(() =>
-            useAccountInfoCard({ account: hdAccount, onClose: vi.fn() }),
-        )
-        expect(result.current.minBalanceAlgos).toBeNull()
-        expect(result.current.isMinBalanceLoading).toBe(true)
     })
 
     test('Watch account: showStructure false', () => {
@@ -386,25 +342,5 @@ describe('useAccountInfoCard', () => {
             result.current.handleToggleExpanded()
         })
         expect(result.current.isExpanded).toBe(true)
-    })
-
-    test('lists the chains the account is enabled on, in registry order, leaving out one this build lacks', () => {
-        mockRegisteredChainIds.mockReturnValue(['algorand', 'ethereum', 'base'])
-        const account: WalletAccount = {
-            ...hdAccount,
-            chains: {
-                base: { address: '0xabc', keyPairId: 'k' },
-                polygon: { address: '0xabc', keyPairId: 'k' },
-                algorand: { address: 'HD_ADDR', keyPairId: 'key-1' },
-            },
-        }
-
-        const { result } = renderHook(() =>
-            useAccountInfoCard({ account, onClose: vi.fn() }),
-        )
-
-        expect(
-            result.current.enabledChains.map(({ chainId }) => chainId),
-        ).toEqual(['algorand', 'base'])
     })
 })

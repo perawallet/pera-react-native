@@ -30,9 +30,11 @@ import {
 } from '@test-utils/algorandAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
+    registerLegacyAddressCodec,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 
@@ -53,6 +55,9 @@ const { mockAllAccounts } = vi.hoisted(() => ({
 }))
 const { mockUpdateAccount } = vi.hoisted(() => ({
     mockUpdateAccount: vi.fn(),
+}))
+const { mockEnableChain } = vi.hoisted(() => ({
+    mockEnableChain: vi.fn(),
 }))
 const { mockUseCanSignWith } = vi.hoisted(() => ({
     mockUseCanSignWith: vi.fn<(account?: WalletAccount | null) => boolean>(
@@ -184,11 +189,19 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useCanSignWith: (account?: WalletAccount | null) =>
             mockUseCanSignWith(account),
         useMultisigDetailsBackfill: () => ({ isBackfilling: false }),
+        useEnableChain: () => mockEnableChain,
     }
 })
 
 const addressOf = (account: WalletAccount): string | undefined =>
     account.chains.algorand?.address
+
+afterEach(() => addressCodecs.reset())
+
+const sheetOptionsOf = (result: ReturnType<typeof useAccountOptions>) => [
+    ...result.topActions,
+    ...result.sharedAccountOptions,
+]
 
 describe('useAccountOptions', () => {
     const mockOnClose = vi.fn()
@@ -260,6 +273,7 @@ describe('useAccountOptions', () => {
     }
 
     beforeEach(() => {
+        registerLegacyAddressCodec(() => true)
         registerAlgorandAccountsAdapter()
         registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
@@ -302,16 +316,12 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
+            const optionIds = sheetOptionsOf(result.current).map(o => o.id)
             expect(optionIds).toEqual([
-                'copy-address',
-                'show-address',
-                'view-passphrase',
-                'rekey-account',
-                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
+                'view-passphrase',
             ])
         })
 
@@ -324,12 +334,12 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const passphraseOption = result.current.options.find(
+            const passphraseOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'view-passphrase',
             )
             expect(passphraseOption).toBeDefined()
             expect(passphraseOption?.title).toBe(
-                'account_options.view_passphrase_algo25',
+                'account_options.view_passphrase',
             )
         })
 
@@ -342,17 +352,15 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
+            const optionIds = sheetOptionsOf(result.current).map(o => o.id)
             expect(optionIds).toEqual([
-                'copy-address',
-                'show-address',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
             ])
         })
 
-        it('shows all options including rekey for a rekeyed account', () => {
+        it('hides the passphrase of a rekeyed account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: rekeyedAccount,
@@ -361,19 +369,15 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
+            const optionIds = sheetOptionsOf(result.current).map(o => o.id)
             expect(optionIds).toEqual([
-                'copy-address',
-                'show-address',
-                'rekey-account',
-                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
             ])
         })
 
-        it('shows rekey options but hides passphrase for a hardware account', () => {
+        it('hides the passphrase for a hardware account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: hardwareAccount,
@@ -382,19 +386,15 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
+            const optionIds = sheetOptionsOf(result.current).map(o => o.id)
             expect(optionIds).toEqual([
-                'copy-address',
-                'show-address',
-                'rekey-account',
-                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
             ])
         })
 
-        it('shows the rekey and export options for a shared account', () => {
+        it('lists the shared-account rows after the top actions for a shared account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,
@@ -403,17 +403,13 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
+            const optionIds = sheetOptionsOf(result.current).map(o => o.id)
             expect(optionIds).toEqual([
-                'shared-account-detail',
-                'copy-address',
-                'show-address',
-                'rekey-account',
-                'export-share-account',
-                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
+                'shared-account-detail',
+                'export-share-account',
             ])
         })
     })
@@ -422,7 +418,10 @@ describe('useAccountOptions', () => {
         const privateKeyAccount: WalletAccount = {
             id: 'acc-pk',
             chains: {
-                [ETHEREUM_CHAIN_ID]: { address: '0xabc', keyPairId: 'key-pk' },
+                [ETHEREUM_CHAIN_ID]: {
+                    address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
+                    keyPairId: 'key-pk',
+                },
             },
             custody: { kind: 'local', seed: null },
         }
@@ -435,7 +434,7 @@ describe('useAccountOptions', () => {
                     onShowAddress: mockOnShowAddress,
                 }),
             )
-            return result.current.options.map(o => o.id)
+            return sheetOptionsOf(result.current).map(o => o.id)
         }
 
         beforeEach(registerEthereumChain)
@@ -455,14 +454,12 @@ describe('useAccountOptions', () => {
             )
 
             await act(async () => {
-                await result.current.options
+                await sheetOptionsOf(result.current)
                     .find(o => o.id === 'rename-account')
                     ?.onPress()
             })
             act(() => {
-                result.current.options
-                    .find(o => o.id === 'copy-address')
-                    ?.onPress()
+                result.current.networks.handleCopyAddress(ETHEREUM_CHAIN_ID)
             })
 
             expect(trackEvent).toHaveBeenCalledWith(
@@ -506,7 +503,7 @@ describe('useAccountOptions', () => {
             )
 
             act(() => {
-                result.current.options
+                sheetOptionsOf(result.current)
                     .find(o => o.id === 'view-private-key')
                     ?.onPress()
             })
@@ -519,6 +516,108 @@ describe('useAccountOptions', () => {
         })
     })
 
+    describe('network rows', () => {
+        const hdAccount: WalletAccount = {
+            id: 'acc-hd',
+            chains: { algorand: { address: 'HDADDRESS', keyPairId: 'k' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        }
+
+        const render = (account: WalletAccount) =>
+            renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+        const chainIdsOf = (result: ReturnType<typeof useAccountOptions>) =>
+            result.networks.visibleRows.map(row => row.chainId)
+
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('shows an Algorand-only account as one enabled Algorand row with QR', () => {
+            const { result } = render(algo25Account)
+
+            expect(result.current.networks.visibleRows).toEqual([
+                expect.objectContaining({
+                    chainId: 'algorand',
+                    isEnabled: true,
+                    canShowQr: true,
+                }),
+            ])
+        })
+
+        it('copies the Algorand address, as its codec normalizes it, and closes the sheet', () => {
+            const { result } = render(algo25Account)
+
+            act(() => {
+                result.current.networks.handleCopyAddress('algorand')
+            })
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith(
+                addressCodecs.get('algorand').normalize('ALGO25ADDRESS'),
+            )
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it("opens the row's chain receive from its QR", () => {
+            const { result } = render(algo25Account)
+
+            act(() => {
+                result.current.networks.handleShowQr('algorand')
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockOnShowAddress).toHaveBeenCalledWith(
+                algo25Account,
+                'algorand',
+            )
+        })
+
+        it('offers an HD account Ethereum to add, and adds it for the user', () => {
+            registerEthereumChain()
+            mockEnableChain.mockReturnValue(new Promise(() => {}))
+            const { result } = render(hdAccount)
+
+            expect(result.current.networks.visibleRows[1]).toMatchObject({
+                chainId: ETHEREUM_CHAIN_ID,
+                isEnabled: false,
+            })
+
+            act(() => {
+                result.current.networks.handleAddNetwork(ETHEREUM_CHAIN_ID)
+            })
+
+            expect(mockEnableChain).toHaveBeenCalledWith(
+                'acc-hd',
+                ETHEREUM_CHAIN_ID,
+                'user',
+            )
+        })
+
+        it('offers a watch account no chain its codec rejects the address on', () => {
+            registerEthereumChain()
+
+            const { result } = render(watchAccount)
+
+            expect(chainIdsOf(result.current)).toEqual(['algorand'])
+        })
+
+        it('offers a hardware account only the chains it is on', () => {
+            registerEthereumChain()
+
+            const { result } = render(hardwareAccount)
+
+            expect(chainIdsOf(result.current)).toEqual(['algorand'])
+        })
+    })
+
     describe('capability gating', () => {
         const idsFor = (account: WalletAccount): string[] => {
             const { result } = renderHook(() =>
@@ -528,18 +627,8 @@ describe('useAccountOptions', () => {
                     onShowAddress: mockOnShowAddress,
                 }),
             )
-            return result.current.options.map(o => o.id)
+            return sheetOptionsOf(result.current).map(o => o.id)
         }
-
-        it('hides the rekey rows when rekey is off', () => {
-            setCapabilityOverrides({ rekey: false })
-
-            const ids = idsFor(algo25Account)
-
-            expect(ids).not.toContain('rekey-account')
-            expect(ids).not.toContain('scan-rekeyed')
-            expect(ids).toContain('rename-account')
-        })
 
         it('keeps a rekeyed account recognised and signable, with only its undo entry hidden', () => {
             setCapabilityOverrides({ rekey: false })
@@ -558,15 +647,14 @@ describe('useAccountOptions', () => {
             expect(mockUseCanSignWith).toHaveReturnedWith(true)
         })
 
-        it('hides the shared-account rows and the shared rekey when multisig is off', () => {
+        it('hides the shared-account rows when multisig is off', () => {
             setCapabilityOverrides({ multisig: false })
 
             const ids = idsFor(multisigAccount)
 
             expect(ids).not.toContain('shared-account-detail')
             expect(ids).not.toContain('export-share-account')
-            expect(ids).not.toContain('rekey-account')
-            expect(ids).toContain('scan-rekeyed')
+            expect(ids).toContain('rename-account')
         })
 
         it('hides view-passphrase for every passphrase-backed account when mnemonic backup is off', () => {
@@ -593,7 +681,7 @@ describe('useAccountOptions', () => {
 
             expect(result.current.isCloudBackupAvailable).toBe(false)
             await act(async () => {
-                await result.current.options
+                await sheetOptionsOf(result.current)
                     .find(o => o.id === 'remove-account')
                     ?.onPress()
             })
@@ -625,7 +713,7 @@ describe('useAccountOptions', () => {
         const driveFullRemoval = async (result: {
             current: ReturnType<typeof useAccountOptions>
         }): Promise<void> => {
-            const removeOption = result.current.options.find(
+            const removeOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'remove-account',
             )
             await act(async () => {
@@ -639,48 +727,6 @@ describe('useAccountOptions', () => {
             })
         }
 
-        it('copies address and closes when copy address is pressed', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const copyOption = result.current.options.find(
-                o => o.id === 'copy-address',
-            )
-
-            act(() => {
-                copyOption?.onPress()
-            })
-
-            expect(mockCopyToClipboard).toHaveBeenCalledWith('ALGO25ADDRESS')
-            expect(mockOnClose).toHaveBeenCalled()
-            expect(trackEvent).toHaveBeenCalledWith(
-                AccountOptionsEvent.CopyAddress,
-                { [AnalyticsMetadataKey.ChainId]: 'algorand' },
-            )
-        })
-
-        it('includes truncated address as subtitle on copy-address option', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const copyOption = result.current.options.find(
-                o => o.id === 'copy-address',
-            )
-
-            expect(copyOption?.subtitle).toBeDefined()
-            expect(copyOption?.subtitle).toBe('ALGO25ADDRESS')
-        })
-
         it('toggles notifications from enabled to disabled', async () => {
             mockIsAccountEnabled.mockReturnValue(true)
 
@@ -692,7 +738,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 
@@ -723,7 +769,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 
@@ -752,7 +798,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const renameOption = result.current.options.find(
+            const renameOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'rename-account',
             )
 
@@ -780,7 +826,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const renameOption = result.current.options.find(
+            const renameOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'rename-account',
             )
 
@@ -811,7 +857,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const renameOption = result.current.options.find(
+            const renameOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'rename-account',
             )
 
@@ -831,7 +877,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
+            const removeOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'remove-account',
             )
 
@@ -853,7 +899,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
+            const removeOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'remove-account',
             )
 
@@ -874,7 +920,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
+            const removeOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'remove-account',
             )
 
@@ -898,7 +944,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
+            const removeOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'remove-account',
             )
 
@@ -1154,7 +1200,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 
@@ -1175,7 +1221,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 
@@ -1183,27 +1229,6 @@ describe('useAccountOptions', () => {
                 'account_options.unmute_notifications',
             )
             expect(notifOption?.icon).toBe('bell')
-        })
-
-        it('calls onShowAddress when show-address option is pressed', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const showOption = result.current.options.find(
-                o => o.id === 'show-address',
-            )
-
-            act(() => {
-                showOption?.onPress()
-            })
-
-            expect(mockOnClose).toHaveBeenCalled()
-            expect(mockOnShowAddress).toHaveBeenCalled()
         })
 
         it('dismisses the parent sheet and opens the view-passphrase flow when view-passphrase is pressed', () => {
@@ -1215,7 +1240,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const passphraseOption = result.current.options.find(
+            const passphraseOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'view-passphrase',
             )
 
@@ -1231,101 +1256,6 @@ describe('useAccountOptions', () => {
             )
         })
 
-        const pressRekey = async (
-            account: WalletAccount,
-        ): Promise<ReturnType<typeof renderHook>> => {
-            const rendered = renderHook(() =>
-                useAccountOptions({
-                    account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-            const rekeyOption = rendered.result.current.options.find(
-                o => o.id === 'rekey-account',
-            )
-            await act(async () => {
-                rekeyOption?.onPress()
-            })
-            return rendered
-        }
-
-        it('navigates to RekeyToLedger intro when the sheet resolves to hardware', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('hardware')
-
-            await pressRekey(algo25Account)
-
-            expect(mockOnClose).toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledWith('RekeyToLedger', {
-                screen: 'RekeyToLedgerIntro',
-                params: { sourceAddress: addressOf(algo25Account) },
-            })
-        })
-
-        it('navigates to RekeyToStandard intro when the sheet resolves to standard', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('standard')
-
-            await pressRekey(algo25Account)
-
-            expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
-                screen: 'RekeyToStandardIntro',
-                params: { sourceAddress: addressOf(algo25Account) },
-            })
-        })
-
-        it('navigates to RekeyToQuantum intro when the sheet resolves to post-quantum', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce('postQuantum')
-
-            await pressRekey(algo25Account)
-
-            expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
-                screen: 'RekeyToQuantumIntro',
-                params: { sourceAddress: addressOf(algo25Account) },
-            })
-        })
-
-        it('does not navigate when the type sheet is dismissed', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-
-            await pressRekey(algo25Account)
-
-            expect(mockNavigate).not.toHaveBeenCalled()
-        })
-
-        it('skips the type sheet for a shared account, which has one destination', async () => {
-            await pressRekey(multisigAccount)
-
-            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
-                screen: 'RekeyToSharedIntro',
-                params: { sourceAddress: addressOf(multisigAccount) },
-            })
-        })
-
-        it('navigates to RescanRekeyed select for scan-rekeyed', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-            const scanOption = result.current.options.find(
-                o => o.id === 'scan-rekeyed',
-            )
-
-            act(() => {
-                scanOption?.onPress()
-            })
-
-            expect(mockOnClose).toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledWith('RescanRekeyed', {
-                screen: 'RescanRekeyedSelect',
-                params: { sourceAddress: addressOf(algo25Account) },
-            })
-        })
-
         it('closes the options sheet and requests shared account details when shared-account-detail is pressed', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() =>
@@ -1336,7 +1266,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const detailOption = result.current.options.find(
+            const detailOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'shared-account-detail',
             )
 
@@ -1364,7 +1294,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const exportOption = result.current.options.find(
+            const exportOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'export-share-account',
             )
 
@@ -1590,7 +1520,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 
@@ -1609,7 +1539,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const notifOption = result.current.options.find(
+            const notifOption = sheetOptionsOf(result.current).find(
                 o => o.id === 'toggle-notifications',
             )
 

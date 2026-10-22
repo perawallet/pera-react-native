@@ -376,8 +376,6 @@
         "copy_address": "Adresse kopieren",
         "shared_account_detail": "Gemeinschaftskonto-Details ({{count}})",
         "show_address": "Adresse anzeigen",
-        "view_passphrase_hd": "Wiederherstellungsphrase anzeigen",
-        "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
@@ -412,7 +410,13 @@
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
-        "view_private_key": "Privaten Schlüssel anzeigen"
+        "view_private_key": "Privaten Schlüssel anzeigen",
+        "networks_title": "Netzwerke",
+        "add_network": "Hinzufügen",
+        "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
+        "see_all_networks": "Alle Netzwerke anzeigen",
+        "view_passphrase": "Wiederherstellungsphrase anzeigen",
+        "network_options": "Weitere Optionen"
     },
     "account_info": {
         "min_balance": "Mindestguthaben",
@@ -436,8 +440,7 @@
         "rekey_signer_shared": "einem Gemeinschaftskonto",
         "rekey_signer_quantum": "einem Quantum-Konto",
         "type_no_auth": "Keine Auth",
-        "type_unknown": "Unbekanntes Konto",
-        "networks": "Netzwerke"
+        "type_unknown": "Unbekanntes Konto"
     },
     "account_type_info": {
         "standard_title": "Algo25-Konto",

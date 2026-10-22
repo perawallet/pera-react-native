@@ -40,6 +40,35 @@ describe('RoundButton', () => {
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 
+    it('lets the title wrap to the given number of lines', () => {
+        render(
+            <RoundButton
+                icon='edit-pen'
+                title='Rename Account'
+                titleNumberOfLines={2}
+            />,
+        )
+
+        expect(
+            screen.getByText('Rename Account').getAttribute('numberoflines'),
+        ).toBe('2')
+    })
+
+    it('calls onPress for the destructive variant', () => {
+        const onPress = vi.fn()
+        render(
+            <RoundButton
+                icon='unlink'
+                variant='destructive'
+                onPress={onPress}
+                testID='remove-button'
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('remove-button'))
+        expect(onPress).toHaveBeenCalledTimes(1)
+    })
+
     it('does not call onPress when disabled', () => {
         const onPress = vi.fn()
         render(
