@@ -60,6 +60,20 @@ describe('setReleaseSigningConfig', () => {
         )
     })
 
+    it('fails a CI build that runs a release task without the keystore secret instead of debug-signing it', () => {
+        const result = setReleaseSigningConfig(TEMPLATE)
+        const releaseBlock = result.slice(
+            result.indexOf('release {', result.indexOf('buildTypes')),
+        )
+
+        expect(releaseBlock).toMatch(
+            /if \(System\.getenv\('CI'\)\?\.toBoolean\(\) && !System\.getenv\('ANDROID_KEYSTORE_PASSWORD'\)\) \{\s*\n\s*gradle\.taskGraph\.whenReady \{ graph ->\s*\n\s*if \(graph\.allTasks\.any \{ it\.name\.contains\('Release'\) \}\) \{\s*\n\s*throw new GradleException\(/,
+        )
+        expect(releaseBlock.indexOf('throw new GradleException')).toBeLessThan(
+            releaseBlock.indexOf('signingConfig System.getenv'),
+        )
+    })
+
     it('leaves the debug buildType signing untouched', () => {
         const result = setReleaseSigningConfig(TEMPLATE)
 

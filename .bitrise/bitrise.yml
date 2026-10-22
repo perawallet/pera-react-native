@@ -4,6 +4,10 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 project_type: react-native
 app:
   envs:
+  # Every `bundle install` resolves strictly from Gemfile.lock (and its
+  # CHECKSUMS) rather than re-resolving, so a lockfile/Gemfile drift fails the
+  # build instead of pulling unreviewed gems onto the signing machine.
+  - BUNDLE_FROZEN: 'true'
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
 pipelines:
@@ -1174,7 +1178,24 @@ workflows:
               done
             fi
             envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
+  _strip-signing-files:
+    steps:
+    - script@1:
+        title: Remove signing files
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # The smoke harness is another repo's code at its branch tip, so
+            # nothing it runs may find the release keystore or store/upload
+            # credentials the build steps decoded onto disk.
+            rm -f apps/mobile/api_key.p8 \
+              apps/mobile/config/release.keystore \
+              apps/mobile/config/firebase-service-account.json \
+              apps/mobile/config/api-key.json
   _smoke-ios:
+    before_run:
+    - _strip-signing-files
     steps:
     - script@1:
         title: Patch IPA for BrowserStack
@@ -1232,6 +1253,8 @@ workflows:
             IOS_SMOKE_STATUS
             IOS_SMOKE_URL
   _smoke-android:
+    before_run:
+    - _strip-signing-files
     steps:
     - script@1:
         title: Run smoke gate
