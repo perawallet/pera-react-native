@@ -47,7 +47,7 @@ echo "pera-ci: decoding IOS_GOOGLE_SERVICE_INFO_BASE64"
 printf '%s' "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
 set -x
 
-(cd apps/mobile && bundle install)
+(cd apps/mobile && BUNDLE_FROZEN=true bundle install)
 
 # The expo:prebuild script without its Android half. Pods go through bundler
 # so the Gemfile's CocoaPods pin applies rather than whatever `pod` is on PATH.

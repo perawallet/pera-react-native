@@ -257,6 +257,10 @@ updates:
       time: "09:00"
       timezone: Europe/London
     open-pull-requests-limit: 5
+    # Same 7-day window as the npm entry, so a freshly published (possibly
+    # hijacked) gem waits out the usual yank period before it is proposed.
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
       - ci

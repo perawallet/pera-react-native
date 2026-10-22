@@ -153,6 +153,6 @@ fi
 # installed here rather than unconditionally near the top of the job.
 # Only this upload path runs fastlane, so only it needs the pinned Ruby.
 use_pinned_ruby
-(cd apps/mobile && bundle install)
+(cd apps/mobile && BUNDLE_FROZEN=true bundle install)
 (cd apps/mobile && bundle exec fastlane android "deploy_${DISTRIBUTION}" "flavor:$ENVIRONMENT")
 collect_artifacts
