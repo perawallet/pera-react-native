@@ -25,3 +25,4 @@ export {
     setActiveWalletConnectV1Delivery,
 } from './utils/activeV1Delivery'
 export { getPreferredDappIcon } from './utils/dapp-icon'
+export { uniqueChainIds } from './utils/uniqueChainIds'

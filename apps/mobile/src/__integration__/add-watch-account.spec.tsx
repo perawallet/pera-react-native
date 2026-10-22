@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
@@ -25,6 +25,11 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 // Use the existing pinned algo25 address as the watch target. It's a
 // real, valid Algorand address: the Algorand address codec enforces
@@ -32,6 +37,14 @@ import { addressOf } from './__fixtures__/accounts'
 const WATCH_TARGET_ADDRESS = ALGO25_TEST_ADDRESS
 
 describe('Flow: Add Account → Watch address', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -99,6 +112,7 @@ describe('Flow: Add Account → Watch address', () => {
         expect(
             addressOf(useAccountsStore.getState().getSelectedAccount()!),
         ).toBe(WATCH_TARGET_ADDRESS)
+        expectFlowEvents(analytics, 'addWatchAccount', 'algorand')
     })
 
     it('Given an account with the same address already exists, when the user enters that address, then the submit button stays disabled', async () => {

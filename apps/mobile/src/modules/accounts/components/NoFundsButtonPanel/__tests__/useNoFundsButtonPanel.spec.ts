@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@test-utils/render'
+import { act, renderHook } from '@test-utils/render'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
@@ -19,7 +19,18 @@ import {
     algorandAccountAt,
     registerAlgorandRampAdapter,
 } from '@test-utils/rampChainAdapter'
+import { AnalyticsMetadataKey, HomeEvent } from '@analytics'
 import { useNoFundsButtonPanel } from '../useNoFundsButtonPanel'
+
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mockTrackEvent,
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ navigate: vi.fn() }),
+}))
 
 vi.mock('../../AccountOverview/AccountOverviewModalContext', () => ({
     useAccountOverviewModal: () => ({
@@ -35,6 +46,16 @@ describe('useNoFundsButtonPanel', () => {
         vi.mocked(useSelectedAccount).mockReturnValue(
             algorandAccountAt('ALGORAND_ADDRESS'),
         )
+    })
+
+    it("tracks buying on the selected account's chain", () => {
+        const { result } = renderHook(() => useNoFundsButtonPanel())
+
+        act(() => result.current.handleBuy())
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Fund, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+        })
     })
 
     it('offers buying at the Algorand defaults', () => {

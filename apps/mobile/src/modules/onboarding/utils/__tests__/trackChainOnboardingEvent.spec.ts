@@ -15,7 +15,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { offeredLocalKeyKinds } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { OnboardingEvent } from '@analytics'
+import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { trackChainOnboardingEvent } from '../trackChainOnboardingEvent'
 
@@ -34,18 +34,34 @@ describe('trackChainOnboardingEvent', () => {
         mockTrackEvent.mockClear()
     })
 
-    it('tracks an onboarding event the catalog sends without a payload', () => {
-        trackChainOnboardingEvent(OnboardingEvent.CreateAccountQuantum)
+    it('tracks a key-kind onboarding event with the chain it ran on', () => {
+        trackChainOnboardingEvent(
+            OnboardingEvent.CreateAccountQuantum,
+            LEGACY_CHAIN_ID,
+        )
 
         expect(mockTrackEvent).toHaveBeenCalledWith(
             OnboardingEvent.CreateAccountQuantum,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
     })
 
-    it('ignores an event that needs a payload, an unknown name, or none', () => {
-        trackChainOnboardingEvent(OnboardingEvent.RegisterAccount)
-        trackChainOnboardingEvent('not_an_onboarding_event')
-        trackChainOnboardingEvent(undefined)
+    it('carries the chain it is given', () => {
+        trackChainOnboardingEvent(OnboardingEvent.RecoverOneKey, 'ethereum')
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.RecoverOneKey,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
+    })
+
+    it('ignores an event that needs more than the chain, an unknown name, or none', () => {
+        trackChainOnboardingEvent(
+            OnboardingEvent.RegisterAccount,
+            LEGACY_CHAIN_ID,
+        )
+        trackChainOnboardingEvent('not_an_onboarding_event', LEGACY_CHAIN_ID)
+        trackChainOnboardingEvent(undefined, LEGACY_CHAIN_ID)
 
         expect(mockTrackEvent).not.toHaveBeenCalled()
     })
@@ -54,7 +70,7 @@ describe('trackChainOnboardingEvent', () => {
 describe('the registered chain key-kind options', () => {
     // A chain names its events as strings, and the tracker silently drops a
     // name the catalog lacks, so a renamed or new event must land here first.
-    it('log only events the onboarding catalog sends without a payload', () => {
+    it('log only events the onboarding catalog lists for key kinds', () => {
         registerAlgorandAccountsAdapter()
         const events = offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
             ({ options }) =>
@@ -68,8 +84,10 @@ describe('the registered chain key-kind options', () => {
         for (const event of events) {
             expect(Object.values(OnboardingEvent)).toContain(event)
             mockTrackEvent.mockClear()
-            trackChainOnboardingEvent(event)
-            expect(mockTrackEvent).toHaveBeenCalledWith(event)
+            trackChainOnboardingEvent(event, LEGACY_CHAIN_ID)
+            expect(mockTrackEvent).toHaveBeenCalledWith(event, {
+                [AnalyticsMetadataKey.ChainId]: LEGACY_CHAIN_ID,
+            })
         }
     })
 })

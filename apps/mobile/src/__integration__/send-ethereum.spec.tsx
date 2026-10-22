@@ -57,6 +57,11 @@ import { TransactionProcessingScreen } from '@modules/transactions/screens/send-
 import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    recordAnalyticsEvents,
+    type AnalyticsRecorder,
+} from '@test-utils/analytics-recorder'
+import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 const RPC_URL = 'https://mainnet.rpc.test/'
 
@@ -199,6 +204,14 @@ const confirmSend = async () => {
 }
 
 describe('Flow: send from an Ethereum account', () => {
+    let analytics: AnalyticsRecorder
+    beforeEach(() => {
+        analytics = recordAnalyticsEvents()
+    })
+    afterEach(() => {
+        analytics.restore()
+    })
+
     const sentRawTransactions: string[] = []
 
     beforeAll(async () => {
@@ -262,6 +275,7 @@ describe('Flow: send from an Ethereum account', () => {
                 value: new Decimal('500000000000000000'),
             },
         })
+        expectFlowEvents(analytics, 'send', 'ethereum')
     })
 
     it("Given an account on Algorand and Ethereum, when it sends ether, then the send runs on the asset's chain", async () => {

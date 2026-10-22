@@ -288,7 +288,7 @@ patchedDependencies:
     hash: a25c522682a79ce6208debc149d7912d30e21225b1f23500e7d788b24ab95fe0
     path: patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29':
-    hash: b00eaebc83dbac8bb87266e97a84e7a05ed6c171e8a267e866054952949e566f
+    hash: 5d4ae493d748a862542456f5b7b3c2e6bf49c86382a6fc73c5788a960dd629ad
     path: patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
   expo-modules-jsi@57.0.4:
     hash: 9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1
@@ -502,7 +502,7 @@ importers:
     dependencies:
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.29(patch_hash=b00eaebc83dbac8bb87266e97a84e7a05ed6c171e8a267e866054952949e566f)(1c538277941b19bf553140687d2d9501)
+        version: 1.0.0-canary.29(patch_hash=5d4ae493d748a862542456f5b7b3c2e6bf49c86382a6fc73c5788a960dd629ad)(1c538277941b19bf553140687d2d9501)
       '@craftzdog/react-native-buffer':
         specifier: ^6.1.1
         version: 6.1.2(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
@@ -1412,7 +1412,7 @@ importers:
         version: 1.0.0-canary.5(patch_hash=481882bbbc92c47b9f665d6a44053ac13e468eee42b0539136adfdb20f87f092)(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.2)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.29(patch_hash=b00eaebc83dbac8bb87266e97a84e7a05ed6c171e8a267e866054952949e566f)(1c538277941b19bf553140687d2d9501)
+        version: 1.0.0-canary.29(patch_hash=5d4ae493d748a862542456f5b7b3c2e6bf49c86382a6fc73c5788a960dd629ad)(1c538277941b19bf553140687d2d9501)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -12059,7 +12059,7 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29(patch_hash=b00eaebc83dbac8bb87266e97a84e7a05ed6c171e8a267e866054952949e566f)(1c538277941b19bf553140687d2d9501)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29(patch_hash=5d4ae493d748a862542456f5b7b3c2e6bf49c86382a6fc73c5788a960dd629ad)(1c538277941b19bf553140687d2d9501)':
     dependencies:
       '@algorandfoundation/react-native-keystore': 1.0.0-canary.21(patch_hash=a25c522682a79ce6208debc149d7912d30e21225b1f23500e7d788b24ab95fe0)(1c538277941b19bf553140687d2d9501)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@7.0.2)

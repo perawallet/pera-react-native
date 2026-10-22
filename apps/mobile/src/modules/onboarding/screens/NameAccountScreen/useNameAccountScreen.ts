@@ -136,7 +136,9 @@ export const useNameAccountScreen = () => {
     const handleFinish = async () => {
         if (isCreating) return
 
-        trackEvent(OnboardingEvent.NameAccount)
+        trackEvent(OnboardingEvent.NameAccount, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         try {
             setIsCreating(true)
 
@@ -178,6 +180,7 @@ export const useNameAccountScreen = () => {
                         : isWatchAccount(targetAccount)
                           ? 'watch'
                           : 'create',
+                [AnalyticsMetadataKey.ChainId]: chainId,
             })
 
             // Explicitly select the new account to ensure it's ready for AccountScreen

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 import {
     addressOn,
@@ -20,6 +20,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    trackScreen,
+    AnalyticsScreenName,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
@@ -89,6 +94,16 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         }
     }, [selectedAccount, scope])
     const canReceive = paymentUri !== ''
+
+    // Tracked here, not when the receive sheet opens: the sheet starts on
+    // Choose Network, and only this view knows the chain the QR is for.
+    const shownChainId = scope?.chainId
+    useEffect(() => {
+        if (shownChainId === undefined) return
+        trackScreen(AnalyticsScreenName.ShowQr, {
+            [AnalyticsMetadataKey.ChainId]: shownChainId,
+        })
+    }, [shownChainId])
 
     const handleCopyAddress = useCallback(() => {
         if (!canReceive) {

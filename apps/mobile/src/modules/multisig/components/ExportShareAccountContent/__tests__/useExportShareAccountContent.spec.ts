@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useExportShareAccountContent } from '../useExportShareAccountContent'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
@@ -19,6 +20,12 @@ const { mockCopyToClipboard } = vi.hoisted(() => ({
 }))
 const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
 const { mockShareText } = vi.hoisted(() => ({ mockShareText: vi.fn() }))
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mockTrackEvent,
+}))
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
@@ -53,7 +60,10 @@ describe('useExportShareAccountContent', () => {
 
     it('builds the export URL from the account address', () => {
         const { result } = renderHook(() =>
-            useExportShareAccountContent({ accountAddress: TEST_ADDRESS }),
+            useExportShareAccountContent({
+                accountAddress: TEST_ADDRESS,
+                chainId: 'algorand',
+            }),
         )
 
         expect(result.current.exportUrl).toBe(
@@ -63,7 +73,10 @@ describe('useExportShareAccountContent', () => {
 
     it('copies the export URL to clipboard on handleCopyUrl', () => {
         const { result } = renderHook(() =>
-            useExportShareAccountContent({ accountAddress: TEST_ADDRESS }),
+            useExportShareAccountContent({
+                accountAddress: TEST_ADDRESS,
+                chainId: 'algorand',
+            }),
         )
 
         act(() => {
@@ -73,11 +86,18 @@ describe('useExportShareAccountContent', () => {
         expect(mockCopyToClipboard).toHaveBeenCalledWith(
             result.current.exportUrl,
         )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.JointAccountCopyUrl,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
     })
 
     it('shares the export URL on handleShareUrl', async () => {
         const { result } = renderHook(() =>
-            useExportShareAccountContent({ accountAddress: TEST_ADDRESS }),
+            useExportShareAccountContent({
+                accountAddress: TEST_ADDRESS,
+                chainId: 'algorand',
+            }),
         )
 
         await act(async () => {
@@ -88,13 +108,20 @@ describe('useExportShareAccountContent', () => {
             title: 'multisig.export.title',
             message: result.current.exportUrl,
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            AccountDetailsEvent.JointAccountShareUrl,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
     })
 
     it('shows an error toast when shareText throws', async () => {
         mockShareText.mockRejectedValue(new Error('cancelled'))
 
         const { result } = renderHook(() =>
-            useExportShareAccountContent({ accountAddress: TEST_ADDRESS }),
+            useExportShareAccountContent({
+                accountAddress: TEST_ADDRESS,
+                chainId: 'algorand',
+            }),
         )
 
         await act(async () => {

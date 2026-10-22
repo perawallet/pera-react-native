@@ -19,7 +19,10 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions'
 import {
@@ -28,7 +31,12 @@ import {
     SEND_FUNDS_SHEET_ID,
 } from '@modules/transactions/routes'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
-import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
+import {
+    trackEvent,
+    HomeEvent,
+    AccountDetailsEvent,
+    AnalyticsMetadataKey,
+} from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'
 import type { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
@@ -39,6 +47,8 @@ export type UseAccountOverviewParams = {
 export type UseAccountOverviewResult = {
     openSendFunds: () => void
     openReceiveFunds: () => void
+    /** Opens receive straight on the chain's QR for `account`, which must already hold the chain. */
+    openReceiveFundsOn: (account: WalletAccount, chainId: ChainId) => void
     openAccountOptions: () => void
     isLoading: boolean
     isRefreshing: boolean
@@ -52,11 +62,14 @@ export const useAccountOverview = ({
     const selectedAccount = useSelectedAccount()
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const address = addressOn(account, scope)
-    const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
+    const { setSelectedAccount, setCanSelectAccount, setChainId } =
+        useReceiveFunds()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const openSendFunds = useCallback(() => {
-        trackEvent(HomeEvent.Send)
+        trackEvent(HomeEvent.Send, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet({
             id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent />,
@@ -67,37 +80,73 @@ export const useAccountOverview = ({
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet])
+    }, [requestBottomSheet, scope.chainId])
+
+    const requestReceiveSheet = useCallback(
+        (sheetAccount: WalletAccount, chainId?: ChainId) => {
+            void requestBottomSheet({
+                contents: (
+                    <ReceiveFundsContent
+                        account={sheetAccount}
+                        chainId={chainId}
+                    />
+                ),
+                options: {
+                    size: 'modal',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
+        },
+        [requestBottomSheet],
+    )
 
     const openReceiveFunds = useCallback(() => {
-        trackEvent(HomeEvent.Receive)
+        trackEvent(HomeEvent.Receive, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         if (selectedAccount) {
             setCanSelectAccount(false)
             setSelectedAccount(selectedAccount)
         }
-        void requestBottomSheet({
-            contents: <ReceiveFundsContent account={account} />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
+        requestReceiveSheet(account)
     }, [
         account,
-        requestBottomSheet,
+        requestReceiveSheet,
+        scope.chainId,
         selectedAccount,
         setCanSelectAccount,
         setSelectedAccount,
     ])
 
+    const openReceiveFundsOn = useCallback(
+        (current: WalletAccount, chainId: ChainId) => {
+            trackEvent(HomeEvent.Receive, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+            })
+            // The sheet picks its first screen on its first render, before its own effects can write the store.
+            setCanSelectAccount(false)
+            setSelectedAccount(current)
+            setChainId(chainId)
+            requestReceiveSheet(current, chainId)
+        },
+        [
+            requestReceiveSheet,
+            setCanSelectAccount,
+            setSelectedAccount,
+            setChainId,
+        ],
+    )
+
     const openAccountOptions = useCallback(() => {
-        trackEvent(AccountDetailsEvent.More)
+        trackEvent(AccountDetailsEvent.More, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         void requestBottomSheet({
             contents: (
                 <AccountOptionsContent
                     account={account}
-                    onShowAddress={openReceiveFunds}
+                    onShowAddress={openReceiveFundsOn}
                 />
             ),
             options: {
@@ -108,7 +157,7 @@ export const useAccountOverview = ({
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, account, openReceiveFunds])
+    }, [requestBottomSheet, account, openReceiveFundsOn, scope.chainId])
 
     // Reveal the header as soon as the (cheap, SQL-aggregate) balance summary
     // resolves. The chart history is a separate, slower network query that's
@@ -154,6 +203,7 @@ export const useAccountOverview = ({
     return {
         openSendFunds,
         openReceiveFunds,
+        openReceiveFundsOn,
         openAccountOptions,
         isLoading,
         isRefreshing,

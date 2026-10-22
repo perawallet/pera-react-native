@@ -37,6 +37,7 @@ vi.mock('@analytics', () => ({
         DappName: 'dapp_name',
         DappUrl: 'dapp_url',
         TransactionCount: 'transaction_count',
+        ChainId: 'chain_id',
     },
 }))
 
@@ -54,7 +55,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     ),
     resolveAllSignerAddresses: vi.fn(() => ['QUANTUMADDRESS']),
     chainIdOfSignRequest: vi.fn(
-        (request: { chainId?: string }) => request.chainId ?? 'algorand:test',
+        (request: { chainId?: string }) => request.chainId ?? 'algorand',
     ),
 }))
 
@@ -383,11 +384,13 @@ describe('useSigningActionButtons', () => {
             id: 'wc1',
             sourceType: 'walletconnect',
             sourceMetadata: { name: 'Tinyman', url: 'https://tinyman.org' },
+            chainId: 'algorand',
         }
         const wcPayload = {
             dapp_name: 'Tinyman',
             dapp_url: 'https://tinyman.org',
             transaction_count: 2,
+            chain_id: 'algorand',
         }
 
         const useWalletConnectRequest = () => {
@@ -412,6 +415,24 @@ describe('useSigningActionButtons', () => {
                 wcPayload,
             )
             expect(mockNext).toHaveBeenCalledTimes(1)
+        })
+
+        it("tracks a request with the chain it's for", async () => {
+            useWalletConnectRequest()
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: { ...wcRequest, chainId: 'ethereum' },
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            await act(async () => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(
+                'wc_transaction_confirmed',
+                { ...wcPayload, chain_id: 'ethereum' },
+            )
         })
 
         it('tracks TransactionDeclined when rejecting a WC request', () => {
@@ -621,6 +642,7 @@ describe('useSigningActionButtons', () => {
                 dapp_name: '',
                 dapp_url: '',
                 transaction_count: 0,
+                chain_id: 'algorand',
             })
         })
 

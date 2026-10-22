@@ -77,6 +77,39 @@ describe('accountChainOptions', () => {
         ).not.toContain(BASE)
     })
 
+    test('with every family in reach, offers a chain in a new family without an address', () => {
+        const hd = buildTestAccount(TEST_CUSTODY.hd, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS, keyPairId: 'k' },
+        })
+
+        const options = accountChainOptions(hd, everyChain, 'all')
+
+        expect(options[0]).toEqual({
+            chainId: ALGORAND,
+            isEnabled: true,
+            address: ALGORAND_ADDRESS,
+        })
+        expect(options).toContainEqual({
+            chainId: ETHEREUM,
+            isEnabled: false,
+            address: undefined,
+        })
+        expect(
+            accountChainOptions(hd, everyChain).map(option => option.chainId),
+        ).toEqual([ALGORAND])
+    })
+
+    test('with every family in reach, still offers a hardware account only its enabled chains', () => {
+        ledgerApps.add(ETHEREUM)
+        const ledger = buildTestAccount(TEST_CUSTODY.hardware, {
+            [ALGORAND]: { address: ALGORAND_ADDRESS },
+        })
+
+        expect(accountChainOptions(ledger, everyChain, 'all')).toEqual([
+            { chainId: ALGORAND, isEnabled: true, address: ALGORAND_ADDRESS },
+        ])
+    })
+
     test('offers a hardware account only the chains it is enabled on', () => {
         ledgerApps.add(ETHEREUM)
         const ledger = buildTestAccount(TEST_CUSTODY.hardware, {

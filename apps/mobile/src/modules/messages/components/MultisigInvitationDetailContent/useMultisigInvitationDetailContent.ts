@@ -21,7 +21,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import type { MultisigInvitationParam } from '../../routes/types'
 
 type UseMultisigInvitationDetailContentParams = {
@@ -69,13 +69,17 @@ export const useMultisigInvitationDetailContent = ({
     }, [accounts, renderedInvitation])
 
     const handleAccept = useCallback(() => {
-        trackEvent(MultisigEvent.InviteAddPressed)
+        trackEvent(MultisigEvent.InviteAddPressed, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         onAccepted()
-    }, [onAccepted])
+    }, [onAccepted, scope.chainId])
 
     const handleIgnore = useCallback(async () => {
         if (isIgnoring) return
-        trackEvent(MultisigEvent.InviteIgnorePressed)
+        trackEvent(MultisigEvent.InviteIgnorePressed, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         if (!deviceId) {
             errorToast(
                 t('multisig.invitation.title'),
@@ -106,6 +110,7 @@ export const useMultisigInvitationDetailContent = ({
         onIgnored,
         errorToast,
         t,
+        scope.chainId,
     ])
 
     return {

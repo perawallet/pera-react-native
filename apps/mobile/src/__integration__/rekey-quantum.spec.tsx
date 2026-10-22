@@ -316,6 +316,9 @@ describe('rekey quantum account', () => {
         )
 
         fireEvent.click(
+            await screen.findByTestId('account_network_algorand_expand'),
+        )
+        fireEvent.click(
             await screen.findByTestId('account_option_rekey-account'),
         )
         fireEvent.click(await screen.findByTestId('rekey_option_quantum'))

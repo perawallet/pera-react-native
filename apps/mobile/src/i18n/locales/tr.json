@@ -376,8 +376,6 @@
         "copy_address": "Adresi kopyala",
         "shared_account_detail": "Paylaşılan hesap detayı ({{count}})",
         "show_address": "Adresi göster",
-        "view_passphrase_hd": "Ana cüzdan kurtarma passphrase’ini görüntüle",
-        "view_passphrase_algo25": "Kurtarma passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
@@ -412,7 +410,13 @@
         "backup_warning_cancel": "Hayır, hesabı koru",
         "remove_rekey_error_title": "Hesap kaldırılamıyor",
         "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
-        "view_private_key": "Özel anahtarı görüntüle"
+        "view_private_key": "Özel anahtarı görüntüle",
+        "networks_title": "Ağlar",
+        "add_network": "Ekle",
+        "add_network_error": "Bu ağ eklenemedi",
+        "see_all_networks": "Tüm ağları gör",
+        "view_passphrase": "Passphrase’i görüntüle",
+        "network_options": "Diğer seçenekler"
     },
     "account_info": {
         "min_balance": "Min. bakiye",
@@ -436,8 +440,7 @@
         "rekey_signer_shared": "Paylaşılan hesap",
         "rekey_signer_quantum": "Quantum hesabı",
         "type_no_auth": "Yetki yok",
-        "type_unknown": "Bilinmeyen hesap",
-        "networks": "Ağlar"
+        "type_unknown": "Bilinmeyen hesap"
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",

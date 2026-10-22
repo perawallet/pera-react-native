@@ -29,7 +29,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
@@ -162,7 +162,9 @@ export const useRekeyConfirmScreen = ({
             // A multisig propose already handed off via the 'proposed' event;
             // don't also show the success screen.
             if (hasHandedOff()) return
-            trackEvent(OnboardingEvent.RekeyAccount)
+            trackEvent(OnboardingEvent.RekeyAccount, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
+            })
             onSubmitSuccess(sourceAddress)
         } catch (error) {
             // After a propose handoff the signing Promise eventually rejects on
@@ -183,6 +185,7 @@ export const useRekeyConfirmScreen = ({
         onSubmitSuccess,
         markSubmitted,
         hasHandedOff,
+        scope.chainId,
     ])
 
     const handleLearnMore = useCallback(() => {

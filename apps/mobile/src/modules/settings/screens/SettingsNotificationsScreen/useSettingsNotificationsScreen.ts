@@ -75,6 +75,7 @@ export const useSettingsNotificationsScreen =
                 trackEvent(SettingsEvent.ChangeNotificationFilter, {
                     [AnalyticsMetadataKey.AccountAddress]: address,
                     [AnalyticsMetadataKey.AllowNotifications]: enabled,
+                    [AnalyticsMetadataKey.ChainId]: scope.chainId,
                 })
                 void toggleAccountNotification(address, enabled)
             },

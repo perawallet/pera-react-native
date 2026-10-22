@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useScopedDeviceID } from '@perawallet/wallet-core-device'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -104,7 +104,9 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const handleFinish = useCallback(async () => {
         if (isCreating) return
 
-        trackEvent(MultisigEvent.NameAccount)
+        trackEvent(MultisigEvent.NameAccount, {
+            [AnalyticsMetadataKey.ChainId]: chainId,
+        })
         try {
             setIsCreating(true)
 

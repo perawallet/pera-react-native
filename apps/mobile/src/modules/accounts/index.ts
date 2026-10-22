@@ -40,3 +40,7 @@ export {
 } from './components/TransactionsFilterContent'
 export { isLegacyQuantumChild } from './utils/legacyQuantum'
 export type { AccountStackParamsList } from './routes/types'
+export type {
+    AccountChainSectionProps,
+    AccountOptionsDisplay,
+} from './types/account-options-display'

@@ -67,14 +67,17 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
     useEffect(() => {
-        trackEvent(StakingEvent.Open)
-    }, [])
+        trackEvent(StakingEvent.Open, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
+    }, [scope.chainId])
 
     const openProject = useCallback(
         (project: StakingProject) => {
             trackEvent(StakingEvent.SelectProject, {
                 [AnalyticsMetadataKey.Name]: project.title,
                 [AnalyticsMetadataKey.Url]: project.link,
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
             })
 
             pushWebView({
@@ -82,7 +85,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
                 enablePeraConnect: true,
             })
         },
-        [pushWebView],
+        [pushWebView, scope.chainId],
     )
 
     const handleProjectPress = useCallback(

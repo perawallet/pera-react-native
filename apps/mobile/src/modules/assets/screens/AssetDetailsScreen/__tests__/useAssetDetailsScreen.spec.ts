@@ -215,6 +215,7 @@ describe('useAssetDetailsScreen', () => {
         expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
         expect(mocks.trackEvent).toHaveBeenCalledWith(AssetDetailsEvent.Show, {
             [AnalyticsMetadataKey.AssetId]: ERC20_ID,
+            [AnalyticsMetadataKey.ChainId]: 'ethereum',
         })
 
         mocks.trackEvent.mockClear()

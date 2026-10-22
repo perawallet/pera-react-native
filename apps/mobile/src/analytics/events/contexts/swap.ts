@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Swap flow. */
 export enum SwapEvent {
@@ -56,50 +56,45 @@ type SwapStatusPayload = {
     [Key.SwapAddress]: string
 }
 
-/** Every swap event names the chain it ran on. */
-type SwapChainPayload = {
-    [Key.ChainId]: ChainId
-}
-
-type SwapPairingPayload = SwapChainPayload & {
+type SwapPairingPayload = ChainPayload & {
     [Key.SwapPairing]?: string
 }
 
-type SwapRouterPayload = SwapChainPayload & {
+type SwapRouterPayload = ChainPayload & {
     [Key.RouterName]?: string
 }
 
 export interface SwapRequiredPayloads {
-    [SwapEvent.SelectTopAsset]: SwapChainPayload & {
+    [SwapEvent.SelectTopAsset]: ChainPayload & {
         [Key.AssetName]: string
     }
-    [SwapEvent.SelectBottomAsset]: SwapChainPayload & {
+    [SwapEvent.SelectBottomAsset]: ChainPayload & {
         [Key.AssetName]: string
     }
-    [SwapEvent.SelectFromToken]: SwapChainPayload & {
+    [SwapEvent.SelectFromToken]: ChainPayload & {
         [Key.AssetId]: string
     }
-    [SwapEvent.SelectToToken]: SwapChainPayload & {
+    [SwapEvent.SelectToToken]: ChainPayload & {
         [Key.AssetId]: string
     }
-    [SwapEvent.Completed]: SwapChainPayload &
+    [SwapEvent.Completed]: ChainPayload &
         SwapStatusPayload & {
             [Key.PeraFeeAsAlgo]?: number
             [Key.PeraFeeAsUsd]?: number
             [Key.ExchangeFeeAsAlgo]?: number
             [Key.NetworkFeeAsAlgo]?: number
         }
-    [SwapEvent.Failed]: SwapChainPayload & SwapStatusPayload
+    [SwapEvent.Failed]: ChainPayload & SwapStatusPayload
     [SwapEvent.SelectTopPair]: SwapPairingPayload
     [SwapEvent.HistorySeeAll]: SwapPairingPayload
     [SwapEvent.SelectHistory]: SwapPairingPayload
     [SwapEvent.SelectHistoryInSeeAll]: SwapPairingPayload
     [SwapEvent.SelectProviderOpen]: SwapRouterPayload
     [SwapEvent.SelectProviderRouter]: SwapRouterPayload
-    [SwapEvent.SettingsApply]: SwapChainPayload
-    [SwapEvent.SettingsLocalCurrencyOn]: SwapChainPayload
-    [SwapEvent.SettingsLocalCurrencyOff]: SwapChainPayload
-    [SwapEvent.Confirm]: SwapChainPayload
-    [SwapEvent.ConfirmSwapButton]: SwapChainPayload
-    [SwapEvent.EnterNumbers]: SwapChainPayload
+    [SwapEvent.SettingsApply]: ChainPayload
+    [SwapEvent.SettingsLocalCurrencyOn]: ChainPayload
+    [SwapEvent.SettingsLocalCurrencyOff]: ChainPayload
+    [SwapEvent.Confirm]: ChainPayload
+    [SwapEvent.ConfirmSwapButton]: ChainPayload
+    [SwapEvent.EnterNumbers]: ChainPayload
 }

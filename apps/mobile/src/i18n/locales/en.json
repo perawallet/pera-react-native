@@ -376,8 +376,6 @@
         "copy_address": "Copy Address",
         "shared_account_detail": "Shared Account Detail ({{count}})",
         "show_address": "Show Address",
-        "view_passphrase_hd": "View root wallet recovery passphrase",
-        "view_passphrase_algo25": "View recovery passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
@@ -412,7 +410,13 @@
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
-        "view_private_key": "View private key"
+        "view_private_key": "View private key",
+        "networks_title": "Networks",
+        "add_network": "Add",
+        "add_network_error": "Couldn't add this network",
+        "see_all_networks": "See all networks",
+        "view_passphrase": "View passphrase",
+        "network_options": "More options"
     },
     "account_info": {
         "min_balance": "Min Balance",
@@ -436,8 +440,7 @@
         "rekey_signer_shared": "a shared account",
         "rekey_signer_quantum": "a Quantum account",
         "type_no_auth": "No Auth",
-        "type_unknown": "Unknown Account",
-        "networks": "Networks"
+        "type_unknown": "Unknown Account"
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",

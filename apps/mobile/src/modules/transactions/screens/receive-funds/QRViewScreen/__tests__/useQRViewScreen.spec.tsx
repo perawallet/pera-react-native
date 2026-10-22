@@ -30,6 +30,7 @@ import {
     type AddressCodec,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { AnalyticsMetadataKey, AnalyticsScreenName } from '@analytics'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
@@ -42,6 +43,13 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAccountCapabilityScope: vi.fn(),
+}))
+
+const { mockTrackScreen } = vi.hoisted(() => ({ mockTrackScreen: vi.fn() }))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackScreen: mockTrackScreen,
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -313,6 +321,36 @@ describe('useQRViewScreen', () => {
         })
 
         expect(shareText).not.toHaveBeenCalled()
+    })
+
+    it('tracks the QR screen once with the Algorand chain', () => {
+        const { rerender } = renderHook(() => useQRViewScreen())
+        rerender()
+
+        expect(mockTrackScreen).toHaveBeenCalledOnce()
+        expect(mockTrackScreen).toHaveBeenCalledWith(
+            AnalyticsScreenName.ShowQr,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+    })
+
+    it('tracks the QR screen with the Ethereum chain', () => {
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
+
+        renderHook(() => useQRViewScreen())
+
+        expect(mockTrackScreen).toHaveBeenCalledWith(
+            AnalyticsScreenName.ShowQr,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
+    })
+
+    it('does not track the QR screen when there is no account', () => {
+        givenAccount(undefined, null)
+
+        renderHook(() => useQRViewScreen())
+
+        expect(mockTrackScreen).not.toHaveBeenCalled()
     })
 
     it('shows toast on share error', async () => {

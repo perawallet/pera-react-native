@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { AnalyticsMetadataKey, AnalyticsScreenName } from '@analytics'
 import {
     allCapabilities,
     ETHEREUM_CHAIN_ID,
@@ -43,6 +44,13 @@ vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ push: mockPush }),
     useRoute: () => ({ params: routeParams.current }),
+}))
+
+const { mockTrackScreen } = vi.hoisted(() => ({ mockTrackScreen: vi.fn() }))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackScreen: mockTrackScreen,
 }))
 
 const mockUseTransactionDetailQuery = vi.fn()
@@ -377,6 +385,39 @@ describe('useTransactionDetailsScreen', () => {
             kind: 'content',
             transaction: native,
         })
+    })
+
+    it('tracks the detail screen with the Algorand chain', () => {
+        routeParams.current = {
+            scope: ALGORAND_SCOPE,
+            transactionId: 'TX123',
+        }
+
+        renderHook(() => useTransactionDetailsScreen())
+
+        expect(mockTrackScreen).toHaveBeenCalledOnce()
+        expect(mockTrackScreen).toHaveBeenCalledWith(
+            AnalyticsScreenName.TransactionDetail,
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+        )
+    })
+
+    it('tracks the detail screen with the Ethereum chain', () => {
+        getProvider().chains.register(
+            { ...fixtureEthereumDescriptor, family: 'evm' },
+            allCapabilities(false),
+        )
+        routeParams.current = {
+            scope: ETHEREUM_SCOPE,
+            transactionId: '0xabc',
+        }
+
+        renderHook(() => useTransactionDetailsScreen())
+
+        expect(mockTrackScreen).toHaveBeenCalledWith(
+            AnalyticsScreenName.TransactionDetail,
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+        )
     })
 
     describe('status notice', () => {

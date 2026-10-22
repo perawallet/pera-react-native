@@ -11,6 +11,7 @@
  */
 
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainPayload } from '../chain-payload'
 
 /** Completed on-chain transactions. */
 export enum TransactionsEvent {
@@ -18,7 +19,7 @@ export enum TransactionsEvent {
 }
 
 export interface TransactionsRequiredPayloads {
-    [TransactionsEvent.Complete]: {
+    [TransactionsEvent.Complete]: ChainPayload & {
         [Key.AssetId]: string
         [Key.Amount]: number
         [Key.TransactionId]: string

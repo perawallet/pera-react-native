@@ -376,8 +376,6 @@
         "copy_address": "Copiar endereço",
         "shared_account_detail": "Detalhes da conta compartilhada ({{count}})",
         "show_address": "Ver endereço",
-        "view_passphrase_hd": "Ver passphrase de recuperação",
-        "view_passphrase_algo25": "Ver passphrase de recuperação",
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
         "rekey_account": "Fazer rekey da conta",
@@ -412,7 +410,13 @@
         "backup_warning_cancel": "Não, manter conta",
         "remove_rekey_error_title": "Não é possível remover a conta",
         "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
-        "view_private_key": "Ver chave privada"
+        "view_private_key": "Ver chave privada",
+        "networks_title": "Redes",
+        "add_network": "Adicionar",
+        "add_network_error": "Não foi possível adicionar esta rede",
+        "see_all_networks": "Ver todas as redes",
+        "view_passphrase": "Ver passphrase",
+        "network_options": "Mais opções"
     },
     "account_info": {
         "min_balance": "Saldo mín.",
@@ -436,8 +440,7 @@
         "rekey_signer_shared": "uma conta compartilhada",
         "rekey_signer_quantum": "uma conta Quantum",
         "type_no_auth": "Sem autorização",
-        "type_unknown": "Conta desconhecida",
-        "networks": "Redes"
+        "type_unknown": "Conta desconhecida"
     },
     "account_type_info": {
         "standard_title": "Conta Algo25",

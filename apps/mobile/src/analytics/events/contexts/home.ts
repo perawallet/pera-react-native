@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ChainPayload } from '../chain-payload'
+
 /** Home screen actions. */
 export enum HomeEvent {
     AccountAdd = 'homescr_account_add', // Started adding an account from the account picker
@@ -23,4 +25,12 @@ export enum HomeEvent {
     Swap = 'homescr_swap_click', // Tapped Swap on the home button panel
     Notification = 'homescr_notification_tap', // Opened the inbox from the home notifications icon
     Chart = 'homescr_chart_tap', // Toggled the portfolio chart on the home overview
+}
+
+/** Send, Receive, Swap and Fund act on the account's chain; the rest are chain-agnostic. */
+export type HomeRequiredPayloads = {
+    [HomeEvent.Send]: ChainPayload
+    [HomeEvent.Receive]: ChainPayload
+    [HomeEvent.Swap]: ChainPayload
+    [HomeEvent.Fund]: ChainPayload
 }

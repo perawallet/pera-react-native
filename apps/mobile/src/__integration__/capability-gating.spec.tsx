@@ -34,7 +34,7 @@ import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen/A
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { ButtonPanel } from '@modules/accounts/components/ButtonPanel'
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
-import { RekeyOptionsContent } from '@modules/accounts/components/AccountOptionsContent/RekeyOptionsContent'
+import { RekeyOptionsContent } from '@modules/algorand/components/RekeyOptionsContent'
 
 const ACCOUNT = {
     id: 'a1',
