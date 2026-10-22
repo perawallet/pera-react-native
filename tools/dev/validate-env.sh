@@ -140,8 +140,8 @@ case "$PROFILE" in
     )
     ;;
   web)
-    # Zip-only build (no store/CWS upload yet), so no signing/upload
-    # credentials are required — just the same backend wiring as ios/android.
+    # The Chrome Web Store upload checks its own credentials, and only on an
+    # rc tag, so this needs just the same backend wiring as ios/android.
     required_global+=(
       "SLACK_WEBHOOK_URL"
     )
