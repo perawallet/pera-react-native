@@ -13,6 +13,7 @@ ${CONTACTS_EMPTY_ADD_BUTTON}        xpath=//*[@resource-id='contacts_empty_add_b
 ${ADD_CONTACT_BUTTON}               xpath=//*[@resource-id='add_contact_button' or @name='add_contact_button' or @content-desc='add_contact_button']
 ${CONTACT_NAME_INPUT}               xpath=//*[@resource-id='contact_name_input' or @name='contact_name_input' or @content-desc='contact_name_input']
 ${CONTACT_ADDRESS_INPUT}            xpath=//*[@resource-id='contact_address_input' or @name='contact_address_input' or @content-desc='contact_address_input']
+${CONTACT_ADD_ADDRESS_BUTTON}       xpath=//*[@resource-id='contact_add_address_button' or @name='contact_add_address_button' or @content-desc='contact_add_address_button']
 ${VIEW_CONTACT_SHARE_BUTTON}        xpath=//*[@resource-id='view_contact_share_button' or @name='view_contact_share_button' or @content-desc='view_contact_share_button']
 ${VIEW_CONTACT_EDIT_BUTTON}         xpath=//*[@resource-id='view_contact_edit_button' or @name='view_contact_edit_button' or @content-desc='view_contact_edit_button']
 ${VIEW_CONTACT_QR_BUTTON}           xpath=//*[@resource-id='view_contact_qr_algorand' or @name='view_contact_qr_algorand' or @content-desc='view_contact_qr_algorand']
@@ -56,6 +57,16 @@ Fill Contact Form
     [Arguments]    ${name}    ${address}
     Clear Text    ${CONTACT_NAME_INPUT}
     Input Text    ${CONTACT_NAME_INPUT}    ${name}
+    # A contact holds an address per chain family now, so the form opens with no address field
+    # at all: Add address reveals one. Without this the fill went straight at an input that is
+    # not on screen yet.
+    ${field}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${CONTACT_ADDRESS_INPUT}
+    IF    not ${field}
+        Wait Until Settled    ${CONTACT_ADD_ADDRESS_BUTTON}
+        Tap    ${CONTACT_ADD_ADDRESS_BUTTON}
+        Wait Until Page Contains Element    ${CONTACT_ADDRESS_INPUT}    timeout=15s
+    END
     Clear Text    ${CONTACT_ADDRESS_INPUT}
     Input Text    ${CONTACT_ADDRESS_INPUT}    ${address}
     # An open keyboard takes the next header tap to close itself.

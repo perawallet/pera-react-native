@@ -28,7 +28,7 @@ ${WATCH_ADDRESS_INPUT}              xpath=//*[@resource-id='watch_account_addres
 ${WATCH_SUBMIT_BUTTON}              xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
 
 ${ACCOUNT_TYPE_INFO_BUTTON}         xpath=//*[@resource-id='account-type-info-button' or @name='account-type-info-button' or @content-desc='account-type-info-button']
-${OPTION_COPY_ADDRESS}              xpath=//*[@resource-id='account_option_copy-address' or @name='account_option_copy-address' or @content-desc='account_option_copy-address']
+${OPTION_COPY_ADDRESS}              xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
 ${OPTION_RENAME}                    xpath=//*[@resource-id='account_option_rename-account' or @name='account_option_rename-account' or @content-desc='account_option_rename-account']
 ${OPTION_REMOVE}                    xpath=//*[@resource-id='account_option_remove-account' or @name='account_option_remove-account' or @content-desc='account_option_remove-account']
 ${OPTION_VIEW_PASSPHRASE}           xpath=//*[@resource-id='account_option_view-passphrase' or @name='account_option_view-passphrase' or @content-desc='account_option_view-passphrase']
