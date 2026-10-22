@@ -22,7 +22,7 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.10.0
+  "@ledgerhq/hw-app-eth": 7.11.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
@@ -46,7 +46,7 @@ catalog:
   # already resolves. 2.4.0 pins hashes 2.4.0, which moves jsdom's optional
   # peer, renames vitest's store path and flips which @types/react copy the
   # mobile typecheck picks for jsx-runtime.
-  "@scure/bip32": 2.3.0
+  "@scure/bip32": 2.4.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
@@ -62,10 +62,10 @@ catalog:
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
-  "@walletconnect/core": 2.25.0
+  "@walletconnect/core": 2.26.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
-  "@walletconnect/react-native-compat": 2.25.0
+  "@walletconnect/react-native-compat": 2.26.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
@@ -98,7 +98,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.14.0
   msw: ^2.14.6
-  oxfmt: ^0.72.0
+  oxfmt: ^0.73.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
@@ -113,8 +113,8 @@ catalog:
   uuid: 14.0.3
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
-  viem: 2.57.3
-  vite: ~8.2.4
+  viem: 2.57.7
+  vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
   zod: ^4.4.3
