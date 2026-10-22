@@ -212,6 +212,77 @@ describe('buildAccountRecord', () => {
         ])
     })
 
+    it("carries the device on every chain of a hardware account, including one with no backup adapter", () => {
+        const account = buildAccount({
+            id: 'ledger',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'ble-1',
+                    deviceName: 'Nano',
+                    transportType: 'ble',
+                },
+                accountIndex: 2,
+            },
+            chainId: 'algorand',
+            chains: {
+                algorand: { address: 'L', ...CREATED },
+                ethereum: { address: '0xledger', ...CREATED },
+            },
+        })
+        const device = {
+            type: 'hardware',
+            deviceId: 'ble-1',
+            deviceName: 'Nano',
+            accountIndex: 2,
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            ...CREATED,
+        }
+
+        expect(
+            buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
+        ).toEqual([
+            { chain: 'algorand', address: 'L', ...device },
+            { chain: 'ethereum', address: '0xledger', ...device },
+        ])
+    })
+
+    it('backs up a hardware account held only on a chain with no backup adapter', () => {
+        const account = buildAccount({
+            id: 'ledger',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'ble-1',
+                    deviceName: 'Nano',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+            chainId: 'ethereum',
+            chains: { ethereum: { address: '0xledger', ...CREATED } },
+        })
+
+        expect(
+            buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
+        ).toEqual([
+            {
+                chain: 'ethereum',
+                type: 'hardware',
+                address: '0xledger',
+                deviceId: 'ble-1',
+                deviceName: 'Nano',
+                accountIndex: 0,
+                manufacturer: 'ledger',
+                transportType: 'ble',
+                ...CREATED,
+            },
+        ])
+    })
+
     it('leaves out a chain this build cannot back up', () => {
         getProvider().chains.reset()
         getProvider().chains.register(
