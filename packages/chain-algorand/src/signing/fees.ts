@@ -34,22 +34,33 @@ const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
 
 /**
  * Upper bound (µAlgo) on what the user should reasonably pay in fees for one
- * request: a flat 0.5 ALGO, or 5 ALGO when the user signs a keyreg.
+ * request: a flat 0.5 ALGO, plus the fees the user's own keyregs carry, up to
+ * 5 ALGO.
  *
  * The bound is per group, never per transaction, because the requester
  * controls the group size: zero-fee padding, even from the user's own
  * address, would otherwise buy an unflagged budget. Flat is still safe for fee
  * pooling, since even 16 txns plus 256 inner txns at min fee is ~0.27 ALGO.
+ * The keyreg headroom follows the keyreg's own fee, so a zero-fee keyreg can't
+ * lift the budget for a fee charged elsewhere in the group.
  */
 export const maxReasonableGroupFee = (
     transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
-): bigint =>
-    transactions.some(
-        tx => tx.txType === 'keyreg' && signableAddresses.has(tx.sender),
+): bigint => {
+    const keyregFee = transactions.reduce(
+        (sum, tx) =>
+            tx.txType === 'keyreg' && signableAddresses.has(tx.sender)
+                ? sum + (tx.fee ?? 0n)
+                : sum,
+        0n,
     )
-        ? KEYREG_FEE_ALLOWANCE_MICRO_ALGO
-        : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO
+    const keyregAllowance =
+        keyregFee < KEYREG_FEE_ALLOWANCE_MICRO_ALGO
+            ? keyregFee
+            : KEYREG_FEE_ALLOWANCE_MICRO_ALGO
+    return DEFAULT_FEE_ALLOWANCE_MICRO_ALGO + keyregAllowance
+}
 
 /**
  * Flags a request whose total fee across the user's signable transactions

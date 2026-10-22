@@ -77,15 +77,21 @@ describe('maxReasonableGroupFee', () => {
         ).toBe(500_000n)
     })
 
-    test('allows 5 ALGO when the user signs a keyreg', () => {
-        expect(maxReasonableGroupFee([makeTx(1000n, 'keyreg')], signable)).toBe(
-            5_000_000n,
+    test('adds the fees on the user’s keyregs to the base allowance', () => {
+        expect(
+            maxReasonableGroupFee([makeTx(2_000_000n, 'keyreg')], signable),
+        ).toBe(2_500_000n)
+    })
+
+    test('a zero-fee keyreg adds nothing', () => {
+        expect(maxReasonableGroupFee([makeTx(0n, 'keyreg')], signable)).toBe(
+            500_000n,
         )
     })
 
-    test('counts the keyreg allowance once however many keyregs there are', () => {
-        const txs = [makeTx(1000n, 'keyreg'), ...padding(15, 'keyreg', 'ADDR1')]
-        expect(maxReasonableGroupFee(txs, signable)).toBe(5_000_000n)
+    test('caps the keyreg allowance at 5 ALGO however many keyregs there are', () => {
+        const txs = [makeTx(3_000_000n, 'keyreg'), makeTx(3_000_000n, 'keyreg')]
+        expect(maxReasonableGroupFee(txs, signable)).toBe(5_500_000n)
     })
 
     test('a foreign keyreg earns no keyreg allowance', () => {
@@ -106,6 +112,29 @@ describe('detectHighGroupFee', () => {
     test('flags a single payment with a drain-level fee', () => {
         const warning = detectHighGroupFee([makeTx(10_000_000n)], signable)
         expect(warning).toEqual({ type: 'high-fee', totalFee: 10_000_000n })
+    })
+
+    test.each([
+        [500_000n, null],
+        [500_001n, { type: 'high-fee', totalFee: 500_001n }],
+    ])(
+        'a %s µAlgo fee against the 0.5 ALGO allowance → %o',
+        (fee, expected) => {
+            expect(detectHighGroupFee([makeTx(fee)], signable)).toEqual(
+                expected,
+            )
+        },
+    )
+
+    test('a zero-fee keyreg of the user’s own does not cover a high fee elsewhere', () => {
+        const txs = [
+            makeTx(4_900_000n, 'pay', 'ADDR1'),
+            makeTx(0n, 'keyreg', 'ADDR1'),
+        ]
+        expect(detectHighGroupFee(txs, signable)).toEqual({
+            type: 'high-fee',
+            totalFee: 4_900_000n,
+        })
     })
 
     test('only counts fees on the user’s signable transactions', () => {
