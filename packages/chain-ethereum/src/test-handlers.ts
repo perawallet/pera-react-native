@@ -35,6 +35,7 @@ export {
 } from './assets/api/msw-handlers'
 export {
     evmHistoryItem,
+    evmNftTransferLeg,
     type PeraEvmHistoryFixtures,
 } from './history/api/msw-handlers'
 export type { EvmHistoryItemResponse } from './history/api/schema'
