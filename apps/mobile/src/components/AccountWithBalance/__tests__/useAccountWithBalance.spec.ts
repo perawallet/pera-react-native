@@ -120,7 +120,7 @@ describe('useAccountWithBalance', () => {
         })
     })
 
-    it("shows every chain the account holds, in registry order, when no chain is given", () => {
+    it('shows every chain the account holds, in registry order, when no chain is given', () => {
         const { result } = renderHook(() =>
             useAccountWithBalance({
                 ...BOTH_CHAINS,
