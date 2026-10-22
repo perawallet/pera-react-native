@@ -104,6 +104,7 @@ describe('migratePinRecordToV3', () => {
         expect(migrated!.duressEnabled).toBe(1)
         expect(migrated!.failedAttempts).toBe(3)
         expect(migrated!.lockoutEndTime).toBe(42)
+        expect(migrated!.monotonicLockout).toBeNull()
         await expect(verifyPinAgainstRecord('123456', migrated!)).resolves.toBe(
             true,
         )
@@ -135,6 +136,7 @@ describe('migratePinRecordToV3', () => {
             ...v3,
             failedAttempts: 5,
             lockoutEndTime: 42,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 9000 },
         })
         store.set(PIN_RECORD_KEY_ID, bytes)
         store.set(
@@ -146,7 +148,11 @@ describe('migratePinRecordToV3', () => {
 
         expect(result).toEqual({
             migrated: false,
-            lockout: { failedAttempts: 5, lockoutEndTime: 42 },
+            lockout: {
+                failedAttempts: 5,
+                lockoutEndTime: 42,
+                monotonicLockout: { bootId: 'boot-1', endElapsedMs: 9000 },
+            },
         })
         expect(commitSecret).not.toHaveBeenCalled()
         expect(store.get(PIN_RECORD_KEY_ID)).toEqual(bytes)

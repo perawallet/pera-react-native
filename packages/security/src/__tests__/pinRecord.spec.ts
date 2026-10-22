@@ -221,6 +221,47 @@ describe('pinRecord', () => {
         expect(parsePinRecord(bytesWith({ lockoutEndTime: 1.5 }))).toBeNull()
     }, 30_000)
 
+    test('serializePinRecord/parsePinRecord round-trip the monotonic deadline', async () => {
+        const record = {
+            ...(await createPinRecord('000000')),
+            failedAttempts: 5,
+            lockoutEndTime: 1234567890,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+        }
+
+        expect(parsePinRecord(serializePinRecord(record))).toEqual(record)
+    }, 30_000)
+
+    test('parsePinRecord reads a record without the monotonic deadline as null', async () => {
+        const { monotonicLockout: _omitted, ...withoutField } =
+            await createPinRecord('000000')
+        const bytes = new TextEncoder().encode(JSON.stringify(withoutField))
+
+        expect(parsePinRecord(bytes)?.monotonicLockout).toBeNull()
+    }, 30_000)
+
+    test('parsePinRecord rejects a malformed monotonic deadline', async () => {
+        const base = await createPinRecord('000000')
+        const encoder = new TextEncoder()
+        const bytesWith = (monotonicLockout: unknown) =>
+            encoder.encode(JSON.stringify({ ...base, monotonicLockout }))
+
+        expect(
+            parsePinRecord(bytesWith({ bootId: '', endElapsedMs: 1 })),
+        ).toBeNull()
+        expect(
+            parsePinRecord(bytesWith({ bootId: 'boot-1', endElapsedMs: -1 })),
+        ).toBeNull()
+        expect(
+            parsePinRecord(bytesWith({ bootId: 'boot-1', endElapsedMs: '5' })),
+        ).toBeNull()
+        expect(parsePinRecord(bytesWith('boot-1'))).toBeNull()
+        // JSON has no NaN; `null` in its place must not pass as a number.
+        expect(
+            parsePinRecord(bytesWith({ bootId: 'boot-1', endElapsedMs: null })),
+        ).toBeNull()
+    }, 30_000)
+
     test('parsePinRecord rejects malformed or wrong-length salt/hash in either slot', async () => {
         const base = await createPinRecord('000000')
         const encoder = new TextEncoder()

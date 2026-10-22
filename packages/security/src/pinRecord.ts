@@ -13,6 +13,7 @@
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
 import { pbkdf2, randomBytes } from 'crypto'
+import type { MonotonicLockout } from './lockout'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
 // replaced before any production rollout. v1 records are treated as invalid.
@@ -43,6 +44,7 @@ export type PinRecord = {
     duressEnabled: 0 | 1
     failedAttempts: number
     lockoutEndTime: number | null
+    monotonicLockout: MonotonicLockout | null
 }
 
 const encoder = new TextEncoder()
@@ -111,6 +113,7 @@ export const createPinRecord = async (pin: string): Promise<PinRecord> => {
             ...createEmptyDuressSlot(),
             failedAttempts: 0,
             lockoutEndTime: null,
+            monotonicLockout: null,
         }
     } finally {
         // Hex copies are now in the record; the raw buffers can go.
@@ -235,13 +238,28 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
         }
     }
 
+    // Absent on records written before the monotonic deadline existed.
+    if (r.monotonicLockout !== undefined && r.monotonicLockout !== null) {
+        if (typeof r.monotonicLockout !== 'object') return false
+        const m = r.monotonicLockout as Record<string, unknown>
+        if (typeof m.bootId !== 'string' || m.bootId.length === 0) return false
+        if (
+            typeof m.endElapsedMs !== 'number' ||
+            !Number.isFinite(m.endElapsedMs) ||
+            m.endElapsedMs < 0
+        ) {
+            return false
+        }
+    }
+
     return true
 }
 
 export const parsePinRecord = (data: Uint8Array): PinRecord | null => {
     try {
         const parsed: unknown = JSON.parse(decoder.decode(data))
-        return isValidPinRecord(parsed) ? parsed : null
+        if (!isValidPinRecord(parsed)) return null
+        return { ...parsed, monotonicLockout: parsed.monotonicLockout ?? null }
     } catch {
         return null
     }

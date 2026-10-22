@@ -37,7 +37,10 @@ export type PinRecordMigrationResult = {
      * The counters of a record that was already v3, so hydration needs no
      * second read. Only the counters leave the read, never the hashes.
      */
-    lockout?: Pick<PinRecord, 'failedAttempts' | 'lockoutEndTime'>
+    lockout?: Pick<
+        PinRecord,
+        'failedAttempts' | 'lockoutEndTime' | 'monotonicLockout'
+    >
 }
 
 type LegacyV2Record = {
@@ -102,6 +105,7 @@ const runMigration = async (
                 lockout: {
                     failedAttempts: record.failedAttempts,
                     lockoutEndTime: record.lockoutEndTime,
+                    monotonicLockout: record.monotonicLockout,
                 },
             }
         }
@@ -136,6 +140,7 @@ const runMigration = async (
             : createEmptyDuressSlot()),
         failedAttempts: current.v2.failedAttempts,
         lockoutEndTime: current.v2.lockoutEndTime,
+        monotonicLockout: null,
     }
 
     const bytes = serializePinRecord(record)
