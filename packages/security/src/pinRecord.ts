@@ -226,8 +226,8 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
     }
 
     // lockoutEndTime: null, or a finite, non-negative integer timestamp. A
-    // NaN/Infinity/negative value would otherwise defeat the
-    // `Date.now() < lockoutEndTime` lock comparison (fail open).
+    // NaN/Infinity/negative value would otherwise defeat the lockout
+    // comparison (fail open).
     if (r.lockoutEndTime !== null) {
         if (
             typeof r.lockoutEndTime !== 'number' ||

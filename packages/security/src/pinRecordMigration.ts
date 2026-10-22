@@ -20,6 +20,7 @@ import {
     serializePinRecord,
     type PinRecord,
 } from './pinRecord'
+import { withPinRecordLock } from './pinRecordLock'
 
 type KmsAccess = {
     withSecret: <T>(
@@ -168,7 +169,8 @@ export const migratePinRecordToV3 = (
     kms: KmsAccess,
 ): Promise<PinRecordMigrationResult> => {
     if (!inflight) {
-        inflight = runMigration(kms).finally(() => {
+        // Locked: a v2 rewrite racing a PIN attempt would drop its charge.
+        inflight = withPinRecordLock(() => runMigration(kms)).finally(() => {
             inflight = null
         })
     }
