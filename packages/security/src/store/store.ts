@@ -12,6 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { BiometricsDisabledReason, SecurityState } from '../models'
+import type { LockoutDeadline } from '../lockout'
 import {
     guardedPersist,
     registerStore,
@@ -24,7 +25,7 @@ const STORE_NAME = 'security-store'
 
 const initialState = {
     failedAttempts: 0,
-    lockoutEndTime: null,
+    lockout: null,
     autoLockStartedAt: null,
     lockRequestVersion: 0,
     isAppLockActive: false,
@@ -95,8 +96,8 @@ export const useSecurityStore: UseBoundStore<
             setFailedAttempts: (count: number) =>
                 set({ failedAttempts: count }),
             resetFailedAttempts: () => set({ failedAttempts: 0 }),
-            setLockoutEndTime: (time: Nullable<number>) =>
-                set({ lockoutEndTime: time }),
+            setLockout: (lockout: Nullable<LockoutDeadline>) =>
+                set({ lockout }),
             setAutoLockStartedAt: (date: Nullable<number>) =>
                 set({ autoLockStartedAt: date }),
             requestLock: () =>

@@ -15,7 +15,13 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { usePinCode } from '@perawallet/wallet-core-security'
+import {
+    INITIAL_LOCKOUT_SECONDS,
+    MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+    usePinCode,
+} from '@perawallet/wallet-core-security'
+import type { MemoryMonotonicClockService } from '@perawallet/wallet-extension-platform/test-utils'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SettingsSecurityScreen } from '@modules/security/routes'
 import { getSwitchControl } from '@test-utils/rnw'
 
@@ -176,4 +182,40 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             kind: 'fail',
         })
     })
+
+    it('Given the PIN is locked out, when the device clock is moved past the deadline, then the correct PIN stays refused until the lockout has actually elapsed', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        const clock = getProvider()
+            .monotonicClock as MemoryMonotonicClockService
+        const { result: pinHook } = renderHook(() => usePinCode())
+        try {
+            await pinHook.current.savePin(TEST_PIN)
+            for (let i = 0; i < MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT; i += 1) {
+                expect(await pinHook.current.verifyPin('000000')).toEqual({
+                    kind: 'fail',
+                })
+            }
+            await waitFor(() => {
+                expect(pinHook.current.isLockedOut).toBe(true)
+            })
+
+            vi.setSystemTime(Date.now() + 3_600_000)
+
+            expect(pinHook.current.getRemainingLockoutSeconds()).toBe(
+                INITIAL_LOCKOUT_SECONDS,
+            )
+            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                kind: 'fail',
+            })
+
+            clock.advance(INITIAL_LOCKOUT_SECONDS * 1000)
+
+            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                kind: 'ok',
+            })
+        } finally {
+            await pinHook.current.savePin(null)
+            vi.useRealTimers()
+        }
+    }, 60_000)
 })

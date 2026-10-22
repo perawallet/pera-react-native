@@ -21,6 +21,7 @@ import {
     RNFirebaseService,
     RNBiometricsService,
     RNMigrationService,
+    RNMonotonicClockService,
     RNDeviceInfoStorageService,
     RNWalletProvisioningService,
 } from './services'
@@ -50,6 +51,7 @@ export const platformServices: PlatformServices = {
     migration: new RNMigrationService(keyValueStorage),
     walletProvisioning: new RNWalletProvisioningService(),
     cloudFileStorage: new RNCloudFileStorageService(),
+    monotonicClock: new RNMonotonicClockService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices

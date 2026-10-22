@@ -22,6 +22,7 @@ import {
     ChromeDatabaseService,
     ChromeDeviceInfoService,
     ChromeMigrationService,
+    ChromeMonotonicClockService,
     ChromePushNotificationService,
     ChromeRemoteConfigService,
     ChromeWalletProvisioningService,
@@ -45,6 +46,7 @@ export const platformServices: PlatformServices = {
     migration: new ChromeMigrationService(),
     walletProvisioning: new ChromeWalletProvisioningService(),
     cloudFileStorage: new ChromeCloudFileStorageService(),
+    monotonicClock: new ChromeMonotonicClockService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices

@@ -41,6 +41,16 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
+const clockMock = vi.hoisted(() => ({
+    current: null as { now: () => unknown } | null,
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        monotonicClock: { now: () => clockMock.current?.now() ?? null },
+    }),
+}))
+
 vi.mock('../../pinRecord', async importOriginal => {
     const actual = await importOriginal<typeof import('../../pinRecord')>()
     return {
@@ -50,6 +60,7 @@ vi.mock('../../pinRecord', async importOriginal => {
     }
 })
 
+import { MemoryMonotonicClockService } from '@test-utils/monotonic-clock'
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
@@ -70,6 +81,7 @@ import {
     verifyPinAgainstRecord,
     type PinRecord,
 } from '../../pinRecord'
+import type { MonotonicLockout } from '../../lockout'
 
 vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
@@ -147,11 +159,17 @@ describe('usePinCode', () => {
     const mockIncrementFailedAttempts = vi.fn()
     const mockSetFailedAttempts = vi.fn()
     const mockResetFailedAttempts = vi.fn()
-    const mockSetLockoutEndTime = vi.fn()
+    const mockSetLockout = vi.fn()
+    let clock: MemoryMonotonicClockService
     const mockSetAutoLockStartedAt = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
+        clock = new MemoryMonotonicClockService({
+            bootId: 'boot-1',
+            elapsedMs: 1000,
+        })
+        clockMock.current = clock
         kmsMocks.pinBytes = null
         kmsMocks.legacyDuressBytes = null
         kmsMocks.biometricBytes = null
@@ -165,18 +183,26 @@ describe('usePinCode', () => {
     const setupMock = (state: {
         failedAttempts: number
         lockoutEndTime: Nullable<number>
+        monotonicLockout?: Nullable<MonotonicLockout>
         autoLockStartedAt?: Nullable<number>
     }) => {
         vi.mocked(useSecurityStore).mockImplementation(
             (selector: (state: unknown) => unknown) => {
                 const fullState = {
                     failedAttempts: state.failedAttempts,
-                    lockoutEndTime: state.lockoutEndTime,
+                    lockout:
+                        state.lockoutEndTime === null
+                            ? null
+                            : {
+                                  lockoutEndTime: state.lockoutEndTime,
+                                  monotonicLockout:
+                                      state.monotonicLockout ?? null,
+                              },
                     autoLockStartedAt: state.autoLockStartedAt ?? null,
                     incrementFailedAttempts: mockIncrementFailedAttempts,
                     setFailedAttempts: mockSetFailedAttempts,
                     resetFailedAttempts: mockResetFailedAttempts,
-                    setLockoutEndTime: mockSetLockoutEndTime,
+                    setLockout: mockSetLockout,
                     setAutoLockStartedAt: mockSetAutoLockStartedAt,
                     reset: vi.fn(),
                 }
@@ -216,19 +242,36 @@ describe('usePinCode', () => {
         expect(result.current.isLockedOut).toBe(false)
     })
 
-    test('remainingLockoutSeconds calculates correctly', () => {
+    test('getRemainingLockoutSeconds calculates correctly', () => {
         vi.useFakeTimers()
         const futureTime = Date.now() + 45000
         setupMock({ failedAttempts: 5, lockoutEndTime: futureTime })
 
         const { result } = renderHook(() => usePinCode())
-        expect(result.current.remainingLockoutSeconds).toBe(45)
+        expect(result.current.getRemainingLockoutSeconds()).toBe(45)
     })
 
-    test('remainingLockoutSeconds is 0 when not locked out', () => {
+    test('getRemainingLockoutSeconds is 0 when not locked out', () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
         const { result } = renderHook(() => usePinCode())
-        expect(result.current.remainingLockoutSeconds).toBe(0)
+        expect(result.current.getRemainingLockoutSeconds()).toBe(0)
+    })
+
+    test('stays locked out on the monotonic deadline after the wall clock jumps past it', () => {
+        vi.useFakeTimers()
+        const now = Date.now()
+        setupMock({
+            failedAttempts: 5,
+            lockoutEndTime: now + 30_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+        })
+        vi.setSystemTime(now + 3_600_000)
+        clock.advance(10_000)
+
+        const { result } = renderHook(() => usePinCode())
+
+        expect(result.current.isLockedOut).toBe(true)
+        expect(result.current.getRemainingLockoutSeconds()).toBe(20)
     })
 
     test('savePin stores a hashed PinRecord, not the raw PIN', async () => {
@@ -257,7 +300,7 @@ describe('usePinCode', () => {
         // The raw PIN must never appear in the serialized bytes.
         expect(new TextDecoder().decode(persisted)).not.toContain('123456')
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(0)
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
+        expect(mockSetLockout).toHaveBeenCalledWith(null)
     }, 30_000)
 
     test('leaves biometrics untouched when the PIN changes', async () => {
@@ -458,18 +501,21 @@ describe('usePinCode', () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const baseRecord = await createPinRecord('123456')
-        const stored = {
-            ...baseRecord,
-            failedAttempts: 3,
-            lockoutEndTime: 987654321,
+        const lockout = {
+            lockoutEndTime: Date.now() + 60_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 61_000 },
         }
-        kmsMocks.pinBytes = serializePinRecord(stored)
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: 5,
+            ...lockout,
+        })
 
         renderHook(() => usePinCode())
 
         await waitFor(() => {
-            expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-            expect(mockSetLockoutEndTime).toHaveBeenCalledWith(987654321)
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(5)
+            expect(mockSetLockout).toHaveBeenCalledWith(lockout)
         })
         // The migration's version check carries the counters out; a second
         // read would queue ahead of the biometric prompt's own reads.
@@ -480,23 +526,30 @@ describe('usePinCode', () => {
     }, 30_000)
 
     test('hydrates the counters of a v2 record from the migrated record', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
         const base = await createPinRecord('123456')
+        const lockoutEndTime = Date.now() + 60_000
         kmsMocks.pinBytes = new TextEncoder().encode(
             JSON.stringify({
                 version: 2,
                 salt: base.salt,
                 hash: base.hash,
-                failedAttempts: 3,
-                lockoutEndTime: 987_654_321,
+                failedAttempts: 5,
+                lockoutEndTime,
             }),
         )
 
         renderHook(() => usePinCode())
 
+        // A v2 record predates the monotonic deadline: its wall-clock one is
+        // honoured and anchored on the monotonic clock.
         await waitFor(() => {
-            expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-            expect(mockSetLockoutEndTime).toHaveBeenCalledWith(987_654_321)
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(5)
+            expect(mockSetLockout).toHaveBeenCalledWith({
+                lockoutEndTime,
+                monotonicLockout: { bootId: 'boot-1', endElapsedMs: 61_000 },
+            })
         })
         expect(parsePinRecord(kmsMocks.pinBytes!)).not.toBeNull()
     }, 30_000)
@@ -534,16 +587,20 @@ describe('usePinCode', () => {
             expect(mockSetFailedAttempts).toHaveBeenCalledWith(1)
         })
 
+        const lockout = {
+            lockoutEndTime: Date.now() + 30_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+        }
         kmsMocks.pinBytes = serializePinRecord({
             ...base,
-            failedAttempts: 4,
-            lockoutEndTime: 123456789,
+            failedAttempts: 5,
+            ...lockout,
         })
         renderHook(() => usePinCode())
 
         await waitFor(() => {
-            expect(mockSetFailedAttempts).toHaveBeenLastCalledWith(4)
-            expect(mockSetLockoutEndTime).toHaveBeenLastCalledWith(123456789)
+            expect(mockSetFailedAttempts).toHaveBeenLastCalledWith(5)
+            expect(mockSetLockout).toHaveBeenLastCalledWith(lockout)
         })
     }, 30_000)
 
@@ -715,13 +772,16 @@ describe('usePinCode', () => {
             await result.current.verifyPin('654321')
         })
 
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
-            now + INITIAL_LOCKOUT_SECONDS * 1000,
-        )
+        const lockout = {
+            lockoutEndTime: now + INITIAL_LOCKOUT_SECONDS * 1000,
+            monotonicLockout: {
+                bootId: 'boot-1',
+                endElapsedMs: 1000 + INITIAL_LOCKOUT_SECONDS * 1000,
+            },
+        }
+        expect(mockSetLockout).toHaveBeenCalledWith(lockout)
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
-        expect(persisted?.lockoutEndTime).toBe(
-            now + INITIAL_LOCKOUT_SECONDS * 1000,
-        )
+        expect(persisted).toMatchObject(lockout)
     }, 30_000)
 
     test('a failed verify doubles the lockout duration on the second lockout', async () => {
@@ -747,9 +807,13 @@ describe('usePinCode', () => {
             await result.current.verifyPin('654321')
         })
 
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
-            now + INITIAL_LOCKOUT_SECONDS * 2 * 1000,
-        )
+        expect(mockSetLockout).toHaveBeenCalledWith({
+            lockoutEndTime: now + INITIAL_LOCKOUT_SECONDS * 2 * 1000,
+            monotonicLockout: {
+                bootId: 'boot-1',
+                endElapsedMs: 1000 + INITIAL_LOCKOUT_SECONDS * 2 * 1000,
+            },
+        })
     }, 30_000)
 
     test('never puts a lockout in the store for a correct PIN on a lockout boundary', async () => {
@@ -777,7 +841,7 @@ describe('usePinCode', () => {
             )
         })
         mockSetFailedAttempts.mockClear()
-        mockSetLockoutEndTime.mockClear()
+        mockSetLockout.mockClear()
 
         let outcome: Awaited<
             ReturnType<typeof result.current.verifyPin>
@@ -794,8 +858,8 @@ describe('usePinCode', () => {
         expect(mockSetFailedAttempts).not.toHaveBeenCalledWith(
             MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
         )
-        expect(mockSetLockoutEndTime).not.toHaveBeenCalledWith(
-            expect.any(Number),
+        expect(mockSetLockout).not.toHaveBeenCalledWith(
+            expect.objectContaining({ lockoutEndTime: expect.any(Number) }),
         )
     }, 30_000)
 
@@ -834,7 +898,8 @@ describe('usePinCode', () => {
         kmsMocks.pinBytes = serializePinRecord({
             ...baseRecord,
             failedAttempts: 5,
-            lockoutEndTime: 1111,
+            lockoutEndTime: Date.now() + 30_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
         })
 
         const { result } = renderHook(() => usePinCode())
@@ -844,10 +909,11 @@ describe('usePinCode', () => {
         })
 
         expect(mockResetFailedAttempts).toHaveBeenCalled()
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
+        expect(mockSetLockout).toHaveBeenCalledWith(null)
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(0)
         expect(persisted?.lockoutEndTime).toBeNull()
+        expect(persisted?.monotonicLockout).toBeNull()
     }, 30_000)
 
     test('checkAutoLock returns false when PIN is not enabled', async () => {
@@ -958,4 +1024,204 @@ describe('usePinCode', () => {
         })
         expect(shouldLock).toBe(true)
     }, 30_000)
+
+    describe('lockout clock and attempt accounting', () => {
+        const stored = () => parsePinRecord(kmsMocks.pinBytes!)
+
+        const verify = async (
+            hook: { current: ReturnType<typeof usePinCode> },
+            pin: string,
+        ) => {
+            let outcome: Awaited<ReturnType<typeof hook.current.verifyPin>> = {
+                kind: 'fail',
+            }
+            await act(async () => {
+                outcome = await hook.current.verifyPin(pin)
+            })
+            return outcome
+        }
+
+        const lockedRecord = async (pin = '123456') => ({
+            ...(await createPinRecord(pin)),
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+            lockoutEndTime: Date.now() + 30_000,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+        })
+
+        test('the lockout-triggering charge lands with both deadlines before the PIN is hashed', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+                lockoutEndTime: null,
+            })
+            kmsMocks.pinBytes = serializePinRecord({
+                ...(await createPinRecord('123456')),
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            })
+            vi.mocked(verifyPinAgainstRecord).mockRejectedValueOnce(
+                new Error('process killed'),
+            )
+            const { result } = renderHook(() => usePinCode())
+
+            await act(async () => {
+                await expect(
+                    result.current.verifyPin('123456'),
+                ).rejects.toThrow('process killed')
+            })
+
+            expect(stored()).toMatchObject({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+                lockoutEndTime: Date.now() + INITIAL_LOCKOUT_SECONDS * 1000,
+                monotonicLockout: {
+                    bootId: 'boot-1',
+                    endElapsedMs: 1000 + INITIAL_LOCKOUT_SECONDS * 1000,
+                },
+            })
+        }, 30_000)
+
+        test('moving the wall clock past the deadline does not let the correct PIN through', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            kmsMocks.pinBytes = serializePinRecord(await lockedRecord())
+            vi.setSystemTime(Date.now() + 3_600_000)
+            const { result } = renderHook(() => usePinCode())
+
+            const outcome = await verify(result, '123456')
+
+            expect(outcome).toEqual({ kind: 'fail' })
+            expect(verifyPinAgainstRecord).not.toHaveBeenCalled()
+            expect(verifyPinAgainstDuressSlot).toHaveBeenCalledTimes(1)
+        }, 30_000)
+
+        test('after a reboot the correct PIN is refused and the full window restarts', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            kmsMocks.pinBytes = serializePinRecord(await lockedRecord())
+            clock.reboot()
+            clock.advance(200)
+            vi.setSystemTime(Date.now() + 3_600_000)
+            const { result } = renderHook(() => usePinCode())
+
+            const outcome = await verify(result, '123456')
+
+            expect(outcome).toEqual({ kind: 'fail' })
+            expect(stored()).toMatchObject({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT + 1,
+                lockoutEndTime: Date.now() + INITIAL_LOCKOUT_SECONDS * 1000,
+                monotonicLockout: {
+                    bootId: 'boot-2',
+                    endElapsedMs: 200 + INITIAL_LOCKOUT_SECONDS * 1000,
+                },
+            })
+        }, 30_000)
+
+        test('once the monotonic deadline passes the correct PIN unlocks and clears both deadlines', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            kmsMocks.pinBytes = serializePinRecord(await lockedRecord())
+            clock.advance(30_000)
+            vi.setSystemTime(Date.now() + 30_000)
+            const { result } = renderHook(() => usePinCode())
+
+            const outcome = await verify(result, '123456')
+
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(stored()).toMatchObject({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                monotonicLockout: null,
+            })
+        }, 30_000)
+
+        test('the duress PIN mid-lockout reverts to the pre-attempt counter and keeps a re-anchored deadline', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            const record = {
+                ...(await applyDuressPin(await lockedRecord(), '111111')),
+            }
+            kmsMocks.pinBytes = serializePinRecord(record)
+            clock.reboot()
+            const { result } = renderHook(() => usePinCode())
+
+            const outcome = await verify(result, '111111')
+
+            expect(outcome).toEqual({ kind: 'duress' })
+            expect(stored()).toMatchObject({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+                lockoutEndTime: Date.now() + INITIAL_LOCKOUT_SECONDS * 1000,
+                monotonicLockout: {
+                    bootId: 'boot-2',
+                    endElapsedMs: INITIAL_LOCKOUT_SECONDS * 1000,
+                },
+            })
+        }, 30_000)
+
+        test('two concurrent wrong PINs from separate hooks are both charged', async () => {
+            setupMock({ failedAttempts: 1, lockoutEndTime: null })
+            kmsMocks.pinBytes = serializePinRecord({
+                ...(await createPinRecord('123456')),
+                failedAttempts: 1,
+            })
+            const lockScreen = renderHook(() => usePinCode()).result
+            const settingsPrompt = renderHook(() => usePinCode()).result
+
+            await act(async () => {
+                await Promise.all([
+                    lockScreen.current.verifyPin('000000'),
+                    settingsPrompt.current.verifyPin('999999'),
+                ])
+            })
+
+            expect(stored()?.failedAttempts).toBe(3)
+        }, 60_000)
+
+        test('an attempt racing the one that triggers the lockout is refused by it', async () => {
+            setupMock({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+                lockoutEndTime: null,
+            })
+            kmsMocks.pinBytes = serializePinRecord({
+                ...(await createPinRecord('123456')),
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            })
+            const lockScreen = renderHook(() => usePinCode()).result
+            const settingsPrompt = renderHook(() => usePinCode()).result
+
+            let outcomes: Array<{ kind: string }> = []
+            await act(async () => {
+                outcomes = await Promise.all([
+                    lockScreen.current.verifyPin('000000'),
+                    settingsPrompt.current.verifyPin('123456'),
+                ])
+            })
+
+            expect(outcomes).toEqual([{ kind: 'fail' }, { kind: 'fail' }])
+            expect(stored()).toMatchObject({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT + 1,
+                lockoutEndTime: expect.any(Number),
+            })
+        }, 60_000)
+
+        test('a PIN attempt racing saveDuressPin keeps both the charge and the duress slot', async () => {
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            kmsMocks.pinBytes = serializePinRecord(
+                await createPinRecord('123456'),
+            )
+            const { result } = renderHook(() => usePinCode())
+
+            await act(async () => {
+                await Promise.all([
+                    result.current.verifyPin('000000'),
+                    result.current.saveDuressPin('111111'),
+                ])
+            })
+
+            const record = stored()!
+            expect(record.failedAttempts).toBe(1)
+            expect(record.duressEnabled).toBe(1)
+            await expect(
+                verifyPinAgainstDuressSlot('111111', record),
+            ).resolves.toBe(true)
+        }, 60_000)
+    })
 })

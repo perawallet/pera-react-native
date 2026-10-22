@@ -30,6 +30,11 @@ import {
     MAX_BIOMETRIC_UNWRAP_FAILURES,
 } from '../constants'
 import { decodeBiometricBlob, encodeBiometricBlob } from '../biometricBlob'
+import {
+    getLockoutRemainingMs,
+    readLockoutClocks,
+    type LockoutDeadline,
+} from '../lockout'
 import { hydrateLockoutState } from '../lockoutHydration'
 import type { BiometricsDisabledReason } from '../models'
 import { constantTimeEqual } from '../pinRecord'
@@ -64,7 +69,7 @@ export type BiometricUnlockOptions = {
 
 export type BiometricUnlockOutcome =
     | { kind: 'ok' }
-    | { kind: 'locked'; lockoutEndTime: number }
+    | { kind: 'locked'; lockout: LockoutDeadline }
     | { kind: 'mismatch' }
     | { kind: 'failed'; reason: BiometricUnwrapFailureReason }
 
@@ -444,18 +449,17 @@ export const useBiometrics = (): UseBiometricsResult => {
         setDisabledReason(null)
     }, [disabledReason, setAcknowledgedReason, setDisabledReason])
 
-    const readLockoutEndTime = useCallback(async (): Promise<
-        Nullable<number>
+    const readLiveLockout = useCallback(async (): Promise<
+        Nullable<LockoutDeadline>
     > => {
         // Joins the lock screen's hydration instead of decrypting the record a
         // second time on a cold start.
-        const lockout = await hydrateLockoutState({
+        const state = await hydrateLockoutState({
             withSecret,
             commitSecret,
             removeSecret,
         })
-        const endTime = lockout?.lockoutEndTime
-        return endTime != null && endTime > Date.now() ? endTime : null
+        return state?.lockout ?? null
     }, [withSecret, commitSecret, removeSecret])
 
     // Only a pre-binding opt-in swept by the reconcile and never re-armed; a
@@ -477,9 +481,9 @@ export const useBiometrics = (): UseBiometricsResult => {
             prompt: BiometricsAuthenticatePrompt,
             options?: BiometricUnlockOptions,
         ): Promise<BiometricUnlockOutcome> => {
-            const lockoutEndTime = await readLockoutEndTime()
-            if (lockoutEndTime !== null) {
-                return { kind: 'locked', lockoutEndTime }
+            const lockout = await readLiveLockout()
+            if (lockout !== null) {
+                return { kind: 'locked', lockout }
             }
             if (
                 !(await biometricsService.checkBiometricsAvailable()) ||
@@ -523,7 +527,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             return { kind: 'ok' }
         },
         [
-            readLockoutEndTime,
+            readLiveLockout,
             biometricsService,
             writeBiometricBlob,
             setRearmPending,
@@ -604,7 +608,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                 // Wrapped so a failed keystore read (null) is distinguishable
                 // from bytes that came back but did not decode; only the latter
                 // says anything about the blob.
-                const lockoutRead = readLockoutEndTime()
+                const lockoutRead = readLiveLockout()
                 const blobRead = withSecret(BIOMETRIC_BLOB_KEY_ID, bytes => ({
                     decoded: decodeBiometricBlob(bytes),
                 }))
@@ -622,10 +626,8 @@ export const useBiometrics = (): UseBiometricsResult => {
                     // The store's lockout flag is not hydrated yet on a cold
                     // start; the record is the authority, and biometrics must
                     // not outrank a PIN lockout.
-                    const lockoutEndTime = await lockoutRead
-                    return lockoutEndTime === null
-                        ? null
-                        : { kind: 'locked', lockoutEndTime }
+                    const lockout = await lockoutRead
+                    return lockout === null ? null : { kind: 'locked', lockout }
                 })()
                 // Dismissed as soon as the answer is no, not after the user
                 // authenticates against a prompt that cannot unlock.
@@ -673,16 +675,17 @@ export const useBiometrics = (): UseBiometricsResult => {
 
                 // A wrong PIN entered during the ceremony writes its lockout
                 // after the record read; the store already has it.
-                const storeLockoutEndTime =
-                    useSecurityStore.getState().lockoutEndTime
+                const { lockout: storeLockout, failedAttempts } =
+                    useSecurityStore.getState()
                 if (
-                    storeLockoutEndTime !== null &&
-                    storeLockoutEndTime > Date.now()
+                    storeLockout !== null &&
+                    getLockoutRemainingMs(
+                        storeLockout,
+                        failedAttempts,
+                        readLockoutClocks(),
+                    ) > 0
                 ) {
-                    return {
-                        kind: 'locked',
-                        lockoutEndTime: storeLockoutEndTime,
-                    }
+                    return { kind: 'locked', lockout: storeLockout }
                 }
 
                 isFinishing = true
@@ -716,7 +719,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             reconcile,
             isPendingRearmRecoverable,
             recoverPendingRearm,
-            readLockoutEndTime,
+            readLiveLockout,
             hasSecret,
             getSecretMetadata,
             withSecret,

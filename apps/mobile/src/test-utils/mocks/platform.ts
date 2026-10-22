@@ -15,130 +15,140 @@ import { vi, afterEach } from 'vitest'
 const store = new Map<string, string>()
 
 // Mock platform driver to prevent "No platform driver configured" errors
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    WithPlatformExtension: () => ({
-        analytics: {
-            logEvent: vi.fn(),
-            setCollectionEnabled: vi.fn(),
-            setUserId: vi.fn(),
-            setUserProperty: vi.fn(),
-        },
-        ageGate: {
-            requestAgeRange: vi
-                .fn()
-                .mockResolvedValue({ status: 'unknown', source: 'platform' }),
-            getDeviceCapability: vi.fn().mockResolvedValue('manual'),
-        },
-        biometrics: {
-            getSupportedBiometricType: vi.fn().mockResolvedValue(null),
-            checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
-            getAvailability: vi.fn().mockResolvedValue('unknown'),
-            getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
-            clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
-            armBiometricBinding: vi.fn().mockResolvedValue(null),
-            unwrapBiometricToken: vi
-                .fn()
-                .mockResolvedValue({ success: false, reason: 'unavailable' }),
-            beginBiometricUnwrap: vi.fn(() => ({
-                authenticated: Promise.resolve({
+vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
+    const { MemoryMonotonicClockService } = await vi.importActual<
+        typeof import('@perawallet/wallet-extension-platform/test-utils')
+    >('@perawallet/wallet-extension-platform/test-utils')
+    // One clock per worker, so a flow spec can advance the one the app reads.
+    const monotonicClock = new MemoryMonotonicClockService()
+    return {
+        WithPlatformExtension: () => ({
+            analytics: {
+                logEvent: vi.fn(),
+                setCollectionEnabled: vi.fn(),
+                setUserId: vi.fn(),
+                setUserProperty: vi.fn(),
+            },
+            ageGate: {
+                requestAgeRange: vi.fn().mockResolvedValue({
+                    status: 'unknown',
+                    source: 'platform',
+                }),
+                getDeviceCapability: vi.fn().mockResolvedValue('manual'),
+            },
+            biometrics: {
+                getSupportedBiometricType: vi.fn().mockResolvedValue(null),
+                checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+                getAvailability: vi.fn().mockResolvedValue('unknown'),
+                getSecurityLevel: vi.fn().mockResolvedValue('none'),
+                checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
+                clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+                armBiometricBinding: vi.fn().mockResolvedValue(null),
+                unwrapBiometricToken: vi.fn().mockResolvedValue({
                     success: false,
                     reason: 'unavailable',
                 }),
-                finish: vi.fn().mockResolvedValue({
-                    success: false,
-                    reason: 'unavailable',
-                }),
-                cancel: vi.fn().mockResolvedValue(undefined),
-            })),
-        },
-        crashReporting: {
-            log: vi.fn(),
-            recordError: vi.fn(),
-        },
-        // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
-        // cloud save or read overrides these per case.
-        cloudFileStorage: {
-            getAvailableStores: vi
-                .fn()
-                .mockReturnValue(['icloud', 'googleDrive']),
-            save: vi.fn().mockResolvedValue('saved'),
-            read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
-        },
-        appLifecycle: {
-            getCurrentState: () => 'active',
-            addChangeListener: vi.fn(() => vi.fn()),
-        },
-        deviceInfo: {
-            getDevicePlatform: () => 'ios',
-            getDeviceModel: () => 'iPhone',
-            getDeviceId: () => 'test-device-id',
-            getVersion: () => '1.0.0',
-            // `getAppVersion` is the name on DeviceInfoService; `getVersion`
-            // above is not on the interface at all.
-            getAppVersion: () => '1.0.0',
-            getBuildNumber: () => '1',
-            getDeviceLocale: () => 'en-US',
-            getDeviceLocales: () => ['en-US'],
-            getDeviceLanguage: () => 'en',
-        },
-        firebase: {
-            getToken: vi.fn().mockResolvedValue('mock-token'),
-        },
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
+                beginBiometricUnwrap: vi.fn(() => ({
+                    authenticated: Promise.resolve({
+                        success: false,
+                        reason: 'unavailable',
+                    }),
+                    finish: vi.fn().mockResolvedValue({
+                        success: false,
+                        reason: 'unavailable',
+                    }),
+                    cancel: vi.fn().mockResolvedValue(undefined),
+                })),
             },
-        },
-        pushNotifications: {
-            requestPermission: vi.fn().mockResolvedValue(true),
-            getToken: vi.fn().mockResolvedValue('mock-token'),
-        },
-        remoteConfig: {
-            initializeRemoteConfig: vi.fn(),
-            getStringValue: vi
-                .fn()
-                .mockImplementation(
-                    (_key: string, fallback?: string) => fallback ?? '',
-                ),
-            getBooleanValue: vi
-                .fn()
-                .mockImplementation(
-                    (_key: string, fallback?: boolean) => fallback ?? false,
-                ),
-            getNumberValue: vi
-                .fn()
-                .mockImplementation(
-                    (_key: string, fallback?: number) => fallback ?? 0,
-                ),
-            // Firebase-style remnants retained for any callers that haven't
-            // migrated to the RemoteConfigService API.
-            fetchAndActivate: vi.fn().mockResolvedValue(true),
-            getValue: vi.fn().mockReturnValue({ asString: () => '' }),
-            getBoolean: vi.fn().mockReturnValue(false),
-            getString: vi.fn().mockReturnValue(''),
-        },
-        // Dormant defaults: card push provisioning reports unavailable, so
-        // suites exercise today's manual-instructions fallback.
-        walletProvisioning: {
-            checkWalletAvailability: vi.fn().mockResolvedValue(false),
-            getCardStatusBySuffix: vi.fn().mockResolvedValue('not found'),
-            addCardToAppleWallet: vi.fn().mockResolvedValue('canceled'),
-            addCardToGoogleWallet: vi.fn().mockResolvedValue('canceled'),
-        },
-    }),
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
+            crashReporting: {
+                log: vi.fn(),
+                recordError: vi.fn(),
             },
-        },
-    }),
-}))
+            // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
+            // cloud save or read overrides these per case.
+            cloudFileStorage: {
+                getAvailableStores: vi
+                    .fn()
+                    .mockReturnValue(['icloud', 'googleDrive']),
+                save: vi.fn().mockResolvedValue('saved'),
+                read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
+            },
+            appLifecycle: {
+                getCurrentState: () => 'active',
+                addChangeListener: vi.fn(() => vi.fn()),
+            },
+            monotonicClock,
+            deviceInfo: {
+                getDevicePlatform: () => 'ios',
+                getDeviceModel: () => 'iPhone',
+                getDeviceId: () => 'test-device-id',
+                getVersion: () => '1.0.0',
+                // `getAppVersion` is the name on DeviceInfoService; `getVersion`
+                // above is not on the interface at all.
+                getAppVersion: () => '1.0.0',
+                getBuildNumber: () => '1',
+                getDeviceLocale: () => 'en-US',
+                getDeviceLocales: () => ['en-US'],
+                getDeviceLanguage: () => 'en',
+            },
+            firebase: {
+                getToken: vi.fn().mockResolvedValue('mock-token'),
+            },
+            keyValueStorage: {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => store.set(key, value),
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
+            },
+            pushNotifications: {
+                requestPermission: vi.fn().mockResolvedValue(true),
+                getToken: vi.fn().mockResolvedValue('mock-token'),
+            },
+            remoteConfig: {
+                initializeRemoteConfig: vi.fn(),
+                getStringValue: vi
+                    .fn()
+                    .mockImplementation(
+                        (_key: string, fallback?: string) => fallback ?? '',
+                    ),
+                getBooleanValue: vi
+                    .fn()
+                    .mockImplementation(
+                        (_key: string, fallback?: boolean) => fallback ?? false,
+                    ),
+                getNumberValue: vi
+                    .fn()
+                    .mockImplementation(
+                        (_key: string, fallback?: number) => fallback ?? 0,
+                    ),
+                // Firebase-style remnants retained for any callers that haven't
+                // migrated to the RemoteConfigService API.
+                fetchAndActivate: vi.fn().mockResolvedValue(true),
+                getValue: vi.fn().mockReturnValue({ asString: () => '' }),
+                getBoolean: vi.fn().mockReturnValue(false),
+                getString: vi.fn().mockReturnValue(''),
+            },
+            // Dormant defaults: card push provisioning reports unavailable, so
+            // suites exercise today's manual-instructions fallback.
+            walletProvisioning: {
+                checkWalletAvailability: vi.fn().mockResolvedValue(false),
+                getCardStatusBySuffix: vi.fn().mockResolvedValue('not found'),
+                addCardToAppleWallet: vi.fn().mockResolvedValue('canceled'),
+                addCardToGoogleWallet: vi.fn().mockResolvedValue('canceled'),
+            },
+        }),
+        getPlatformServices: () => ({
+            keyValueStorage: {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => store.set(key, value),
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
+            },
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-extension-provider', async () => {
     const { createChainRegistry } = await vi.importActual<
@@ -213,6 +223,9 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
             getCurrentState: () => 'active',
             addChangeListener: vi.fn(() => vi.fn()),
         },
+        // No reading: the PIN lockout falls back to the wall clock, which
+        // fake timers drive.
+        monotonicClock: { now: () => null },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
