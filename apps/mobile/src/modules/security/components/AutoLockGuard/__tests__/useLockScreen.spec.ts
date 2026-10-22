@@ -44,7 +44,26 @@ vi.mock('@modules/security/hooks/useShakeToLockHandler', () => ({
 describe('useLockScreen', () => {
     const mockVerifyPin = vi.fn()
     const mockResetFailedAttempts = vi.fn()
-    const mockSetLockoutEndTime = vi.fn()
+    const mockSetLockout = vi.fn()
+    const mockRefreshLockout = vi.fn()
+
+    // The countdown reads the hook's resolver; a fake on `Date.now()` stands
+    // in for the monotonic clock behind it.
+    const pinCodeState = (lockoutEndTime: number | null) => ({
+        verifyPin: mockVerifyPin,
+        resetFailedAttempts: mockResetFailedAttempts,
+        isLockedOut: lockoutEndTime !== null && lockoutEndTime > Date.now(),
+        lockout:
+            lockoutEndTime === null
+                ? null
+                : { lockoutEndTime, monotonicLockout: null },
+        getRemainingLockoutSeconds: () =>
+            lockoutEndTime === null
+                ? 0
+                : Math.max(0, Math.ceil((lockoutEndTime - Date.now()) / 1000)),
+        refreshLockout: mockRefreshLockout,
+        setLockout: mockSetLockout,
+    })
     const mockUnlockWithBiometrics = vi.fn()
     const mockOnUnlock = vi.fn()
 
@@ -55,13 +74,7 @@ describe('useLockScreen', () => {
             kind: 'failed',
             reason: 'unavailable',
         })
-        ;(usePinCode as Mock).mockReturnValue({
-            verifyPin: mockVerifyPin,
-            resetFailedAttempts: mockResetFailedAttempts,
-            isLockedOut: false,
-            lockoutEndTime: null,
-            setLockoutEndTime: mockSetLockoutEndTime,
-        })
+        ;(usePinCode as Mock).mockReturnValue(pinCodeState(null))
         ;(useBiometrics as Mock).mockReturnValue({
             unlockWithBiometrics: mockUnlockWithBiometrics,
         })
@@ -97,7 +110,7 @@ describe('useLockScreen', () => {
 
         expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
         expect(mockOnUnlock).not.toHaveBeenCalled()
-        expect(mockSetLockoutEndTime).not.toHaveBeenCalled()
+        expect(mockSetLockout).not.toHaveBeenCalled()
     })
 
     it('does NOT attempt biometric auth when the user is locked out', async () => {
@@ -105,13 +118,7 @@ describe('useLockScreen', () => {
         // exponential backoff is meaningless if biometric auth still bypasses
         // it — so the effect must short-circuit on isLockedOut.
         const lockoutEndTime = Date.now() + 60_000
-        ;(usePinCode as Mock).mockReturnValue({
-            verifyPin: mockVerifyPin,
-            resetFailedAttempts: mockResetFailedAttempts,
-            isLockedOut: true,
-            lockoutEndTime,
-            setLockoutEndTime: mockSetLockoutEndTime,
-        })
+        ;(usePinCode as Mock).mockReturnValue(pinCodeState(lockoutEndTime))
         mockUnlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
 
         renderHook(() =>
@@ -176,7 +183,10 @@ describe('useLockScreen', () => {
         it('stays locked and does not retry when the record reports a lockout', async () => {
             mockUnlockWithBiometrics.mockResolvedValue({
                 kind: 'locked',
-                lockoutEndTime: Date.now() + 30_000,
+                lockout: {
+                    lockoutEndTime: Date.now() + 30_000,
+                    monotonicLockout: null,
+                },
             })
 
             renderHook(() =>
@@ -204,19 +214,20 @@ describe('useLockScreen', () => {
         })
 
         it('feeds the record lockout into the pad when the unwrap reports locked', async () => {
-            const lockoutEndTime = Date.now() + 30_000
+            const lockout = {
+                lockoutEndTime: Date.now() + 30_000,
+                monotonicLockout: { bootId: 'boot-1', endElapsedMs: 31_000 },
+            }
             mockUnlockWithBiometrics.mockResolvedValue({
                 kind: 'locked',
-                lockoutEndTime,
+                lockout,
             })
 
             renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
             )
             await vi.waitFor(() =>
-                expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
-                    lockoutEndTime,
-                ),
+                expect(mockSetLockout).toHaveBeenCalledWith(lockout),
             )
             expect(mockOnUnlock).not.toHaveBeenCalled()
         })
@@ -364,13 +375,7 @@ describe('useLockScreen', () => {
         it('should calculate remaining seconds when locked out', () => {
             const lockoutEndTime = Date.now() + 60_000
 
-            ;(usePinCode as Mock).mockReturnValue({
-                verifyPin: mockVerifyPin,
-                resetFailedAttempts: mockResetFailedAttempts,
-                isLockedOut: true,
-                lockoutEndTime,
-                setLockoutEndTime: mockSetLockoutEndTime,
-            })
+            ;(usePinCode as Mock).mockReturnValue(pinCodeState(lockoutEndTime))
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -383,13 +388,7 @@ describe('useLockScreen', () => {
         it('should update remaining seconds over time', () => {
             const lockoutEndTime = Date.now() + 60_000
 
-            ;(usePinCode as Mock).mockReturnValue({
-                verifyPin: mockVerifyPin,
-                resetFailedAttempts: mockResetFailedAttempts,
-                isLockedOut: true,
-                lockoutEndTime,
-                setLockoutEndTime: mockSetLockoutEndTime,
-            })
+            ;(usePinCode as Mock).mockReturnValue(pinCodeState(lockoutEndTime))
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -404,16 +403,27 @@ describe('useLockScreen', () => {
             expect(result.current.remainingSeconds).toBe(59)
         })
 
-        it('should call setLockoutEndTime when remaining reaches 0', () => {
+        it('counts down on the hook resolver, not the wall clock', () => {
+            ;(usePinCode as Mock).mockReturnValue({
+                ...pinCodeState(Date.now() + 1000),
+                getRemainingLockoutSeconds: () => 42,
+            })
+
+            const { result } = renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            act(() => {
+                vi.advanceTimersByTime(5000)
+            })
+
+            expect(result.current.remainingSeconds).toBe(42)
+            expect(mockRefreshLockout).not.toHaveBeenCalled()
+        })
+
+        it('reads the expiry back from the record once, never clearing the lockout itself', () => {
             const lockoutEndTime = Date.now() + 1000
 
-            ;(usePinCode as Mock).mockReturnValue({
-                verifyPin: mockVerifyPin,
-                resetFailedAttempts: mockResetFailedAttempts,
-                isLockedOut: true,
-                lockoutEndTime,
-                setLockoutEndTime: mockSetLockoutEndTime,
-            })
+            ;(usePinCode as Mock).mockReturnValue(pinCodeState(lockoutEndTime))
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -423,18 +433,17 @@ describe('useLockScreen', () => {
                 vi.advanceTimersByTime(1000)
             })
 
+            act(() => {
+                vi.advanceTimersByTime(3000)
+            })
+
             expect(result.current.remainingSeconds).toBe(0)
-            expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
+            expect(mockRefreshLockout).toHaveBeenCalledTimes(1)
+            expect(mockSetLockout).not.toHaveBeenCalled()
         })
 
         it('should reset remaining seconds when not locked out', () => {
-            ;(usePinCode as Mock).mockReturnValue({
-                verifyPin: mockVerifyPin,
-                resetFailedAttempts: mockResetFailedAttempts,
-                isLockedOut: false,
-                lockoutEndTime: null,
-                setLockoutEndTime: mockSetLockoutEndTime,
-            })
+            ;(usePinCode as Mock).mockReturnValue(pinCodeState(null))
 
             const { result } = renderHook(() =>
                 useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -567,13 +576,7 @@ describe('useLockScreen', () => {
                     kind: 'ok',
                 })
 
-                ;(usePinCode as Mock).mockReturnValue({
-                    verifyPin: mockVerifyPin,
-                    resetFailedAttempts: mockResetFailedAttempts,
-                    isLockedOut: true,
-                    lockoutEndTime: Date.now() + 60_000,
-                    setLockoutEndTime: mockSetLockoutEndTime,
-                })
+                ;(usePinCode as Mock).mockReturnValue(pinCodeState(Date.now() + 60_000))
 
                 const { rerender } = renderHook(
                     ({ isLocked }: { isLocked: boolean }) =>
@@ -694,13 +697,7 @@ describe('useLockScreen', () => {
 
                 // Failed PIN attempts on the pad trip the lockout while the
                 // prompt is still waiting for activation.
-                ;(usePinCode as Mock).mockReturnValue({
-                    verifyPin: mockVerifyPin,
-                    resetFailedAttempts: mockResetFailedAttempts,
-                    isLockedOut: true,
-                    lockoutEndTime: Date.now() + 60_000,
-                    setLockoutEndTime: mockSetLockoutEndTime,
-                })
+                ;(usePinCode as Mock).mockReturnValue(pinCodeState(Date.now() + 60_000))
                 rerender({ isLocked: true })
 
                 setAppState('active')
@@ -817,7 +814,10 @@ describe('useLockScreen', () => {
             it('never retries when the record reports a lockout', async () => {
                 mockUnlockWithBiometrics.mockResolvedValue({
                     kind: 'locked',
-                    lockoutEndTime: Date.now() + 30_000,
+                    lockout: {
+                        lockoutEndTime: Date.now() + 30_000,
+                        monotonicLockout: null,
+                    },
                 })
 
                 renderHook(() =>

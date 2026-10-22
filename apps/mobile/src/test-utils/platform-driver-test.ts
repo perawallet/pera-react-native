@@ -38,6 +38,7 @@ import {
 import {
     MemoryAppLifecycleService,
     MemoryKeyValueStorage,
+    MemoryMonotonicClockService,
 } from '@perawallet/wallet-extension-platform/test-utils'
 import { testDatabaseService } from './sqlite-database'
 
@@ -209,6 +210,7 @@ const buildServices = (): PlatformServices => {
         migration,
         walletProvisioning,
         cloudFileStorage,
+        monotonicClock: new MemoryMonotonicClockService(),
     }
 }
 

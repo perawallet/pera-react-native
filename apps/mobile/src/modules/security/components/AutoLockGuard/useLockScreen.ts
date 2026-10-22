@@ -43,8 +43,10 @@ export const useLockScreen = ({
         verifyPin,
         resetFailedAttempts,
         isLockedOut,
-        lockoutEndTime,
-        setLockoutEndTime,
+        lockout,
+        getRemainingLockoutSeconds,
+        refreshLockout,
+        setLockout,
     } = usePinCode()
     const { unlockWithBiometrics } = useBiometrics()
     const { performDuressWipe } = useDuressWipe()
@@ -56,20 +58,21 @@ export const useLockScreen = ({
         useState(false)
 
     useEffect(() => {
-        if (!isLockedOut || !lockoutEndTime) {
+        if (!isLockedOut || !lockout) {
             setRemainingSeconds(0)
             return
         }
 
+        // Expiry is read back from the PIN record rather than written from
+        // here: a timer that cleared the record would let a clock change end
+        // the lockout.
+        let hasRefreshed = false
         const updateRemaining = () => {
-            const now = Date.now()
-            const remaining = Math.max(
-                0,
-                Math.ceil((lockoutEndTime - now) / 1000),
-            )
+            const remaining = getRemainingLockoutSeconds()
             setRemainingSeconds(remaining)
-            if (remaining === 0) {
-                void setLockoutEndTime(null)
+            if (remaining === 0 && !hasRefreshed) {
+                hasRefreshed = true
+                void refreshLockout()
             }
         }
 
@@ -77,7 +80,7 @@ export const useLockScreen = ({
         const interval = setInterval(updateRemaining, 1000)
 
         return () => clearInterval(interval)
-    }, [lockoutEndTime, isLockedOut, setLockoutEndTime])
+    }, [lockout, isLockedOut, getRemainingLockoutSeconds, refreshLockout])
 
     // Biometrics must NOT bypass the PIN lockout: a lock activation mid-lockout
     // consumes its (skipped) prompt, and the user still enters their PIN
@@ -92,7 +95,7 @@ export const useLockScreen = ({
     const promptRef = useRef({
         unlockWithBiometrics,
         resetFailedAttempts,
-        setLockoutEndTime,
+        setLockout,
         onUnlock,
         t,
         isLockedOut,
@@ -100,7 +103,7 @@ export const useLockScreen = ({
     promptRef.current = {
         unlockWithBiometrics,
         resetFailedAttempts,
-        setLockoutEndTime,
+        setLockout,
         onUnlock,
         t,
         isLockedOut,
@@ -169,7 +172,7 @@ export const useLockScreen = ({
             // not hydrated yet on a cold start; feed it back so the pad counts
             // down instead of silently refusing input.
             if (outcome.kind === 'locked') {
-                void promptRef.current.setLockoutEndTime(outcome.lockoutEndTime)
+                promptRef.current.setLockout(outcome.lockout)
                 return
             }
             // A dead blob terminates here too: re-prompting would burn
