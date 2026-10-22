@@ -124,6 +124,14 @@ export const accountStateCases = (
         expect(activity.get(inactive)).toBe(false)
     })
 
+    it('rejects an existence check it could not make', async () => {
+        server.use(...fixtures.activityFailure)
+
+        await expect(
+            makeOps().accountExists(fixtures.activity.active, scope),
+        ).rejects.toThrow()
+    })
+
     it('reads a failed activity probe as inactive instead of rejecting', async () => {
         server.use(...fixtures.activityFailure)
         const { active, inactive } = fixtures.activity

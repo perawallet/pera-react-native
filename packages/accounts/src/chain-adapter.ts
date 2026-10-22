@@ -337,7 +337,10 @@ export interface AccountsChainAdapter {
      * concurrent reads.
      */
     readonly maxConcurrentStateReads?: number
-    /** Any on-chain footprint counts, not only a funded balance. */
+    /**
+     * Any on-chain footprint counts, not only a funded balance. Rejects when
+     * the probe can't be made, so "no footprint" and "unknown" stay apart.
+     */
     accountExists(address: string, scope: ChainScope): Promise<boolean>
     /**
      * Batch activity probe for HD discovery. Never rejects: a failed probe
@@ -498,6 +501,13 @@ export const fetchDelegatedAddresses = async (
     accountsChainAdapters
         .get(scope.chainId)
         .authority?.fetchDelegatedAddresses(authorityAddress, scope) ?? []
+
+/** Rejects when the chain's probe can't be made; see `AccountsChainAdapter.accountExists`. */
+export const fetchAccountExistsOn = (
+    address: string,
+    scope: ChainScope,
+): Promise<boolean> =>
+    accountsChainAdapters.get(scope.chainId).accountExists(address, scope)
 
 /** Empty, without a request, on a chain with no acquisition order. */
 export const fetchHoldingAcquisitionOrder = async (
