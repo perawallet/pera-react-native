@@ -520,7 +520,7 @@ export class LedgerOperationUnsupportedError extends LedgerError {
  * `statusCode` is also handled for compatibility. Prefer `statusCode` when
  * both are present.
  */
-const getStatusCode = (error: unknown): Nullable<number> => {
+export const getStatusCode = (error: unknown): Nullable<number> => {
     if (error === null || typeof error !== 'object') return null
     const record = error as { statusCode?: unknown; returnCode?: unknown }
     if (typeof record.statusCode === 'number') return record.statusCode

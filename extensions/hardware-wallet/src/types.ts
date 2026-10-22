@@ -45,28 +45,6 @@ export type HardwareWalletAppVersion = {
     patch: number
 }
 
-/**
- * Kept manufacturer- and standard-agnostic so this package doesn't depend on
- * the signing package's message types.
- */
-export type HardwareWalletArbitrarySignRequest = {
-    /** Authoritative for the key — the transport derives the device's derivation path from it. */
-    accountIndex: number
-    /** Encoded payload to sign. */
-    data: string
-    /** Informational to the device. */
-    signerPublicKey: Uint8Array
-    /** Origin requesting the signature. */
-    domain: string
-    /** First 32 bytes = sha256(domain). */
-    authenticatorData: Uint8Array
-    requestId?: string
-    /** App-defined scope from the chain's message signer. */
-    scope: number
-    /** Payload encoding; which values are accepted is up to the device app. */
-    encoding: string
-}
-
 export type HardwareWalletConnectionStatus =
     | 'disconnected'
     | 'scanning'
@@ -108,17 +86,17 @@ export type HardwareWalletTransport = {
     ) => Promise<Uint8Array>
 
     /**
-     * Blocks on physical confirmation; the device computes the signing
-     * payload itself from the request fields.
+     * Blocks on physical confirmation. `payload` is the chain's own encoding
+     * of the message, from its message signer's plan; the chain's driver
+     * decodes it. Resolves to signature bytes in the encoding the chain's
+     * message `assemble` takes.
      */
-    signData: (
-        request: HardwareWalletArbitrarySignRequest,
+    signMessage: (
+        accountIndex: number,
+        payload: Uint8Array,
     ) => Promise<Uint8Array>
 
     getAppVersion: () => Promise<HardwareWalletAppVersion>
-
-    /** Rejects with the app's outdated error when the installed app can't run `signData`. */
-    assertCanSignData: () => Promise<void>
 
     /**
      * Fires when the link drops from the device's side. A pending APDU promise

@@ -24,7 +24,7 @@ const driver: LedgerAppDriver = {
         ({
             getAddress: unused,
             signTransaction: unused,
-            signData: unused,
+            signMessage: unused,
             getAppVersion: async () => {
                 if (failure) throw classifyError(failure)
                 return { major: 1, minor: 0, patch: 0 }

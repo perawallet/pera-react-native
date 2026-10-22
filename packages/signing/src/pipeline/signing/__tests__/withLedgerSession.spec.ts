@@ -62,9 +62,8 @@ const makeTransport = (
         accountIndex: 3,
     }),
     signTransaction: vi.fn(),
-    signData: vi.fn(),
+    signMessage: vi.fn(),
     getAppVersion: vi.fn(),
-    assertCanSignData: vi.fn(),
     disconnect: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 })

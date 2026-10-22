@@ -11,7 +11,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bytesToHex, hashTypedData, toHex } from 'viem'
+import { bytesToHex, concat, hashTypedData, keccak256, toHex } from 'viem'
 import type { Hex } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -25,6 +25,7 @@ import {
     signMessages,
 } from '@perawallet/wallet-core-signing'
 import { UnknownEvmNetworkError } from '../../blockchain'
+import { decodeEthereumLedgerMessage } from '../../ledger/messagePayload'
 import {
     createEvmMessageSignerAdapter,
     personalSignMessageRequest,
@@ -254,6 +255,38 @@ describe('ethereumMessageSignerAdapter.plan', () => {
     })
 })
 
+describe('ethereumMessageSignerAdapter.plan device payload', () => {
+    it('plans personal_sign with the raw message as its device payload', () => {
+        const [item] = adapter.plan(personal(toHex('hello world')), context)
+
+        expect(decodeEthereumLedgerMessage(item.devicePayload!)).toEqual({
+            kind: 'personal',
+            message: toHex('hello world'),
+            signer: SENDER,
+        })
+    })
+
+    it('plans typed data with the document, domain separator and struct hash as its device payload', () => {
+        const request = typedDataMessageRequest(
+            MAINNET,
+            SENDER,
+            MAIL_TYPED_DATA,
+        )
+
+        const [item] = adapter.plan(request, context)
+        const device = decodeEthereumLedgerMessage(item.devicePayload!)
+
+        if (device.kind !== 'typedData') throw new Error('not typed data')
+        expect(device.typedData.message).toEqual(MAIL_TYPED_DATA.message)
+        expect(
+            keccak256(
+                concat(['0x1901', device.domainSeparator, device.structHash]),
+            ),
+        ).toBe(bytesToHex(item.payload))
+        expect(hashTypedData(device.typedData)).toBe(bytesToHex(item.payload))
+    })
+})
+
 describe('ethereumMessageSignerAdapter.plan with a declared EIP712Domain', () => {
     const declared = (chainIdType: string, chainId: unknown) => ({
         ...MAIL_TYPED_DATA,
@@ -478,23 +511,34 @@ describe('ethereumMessageSignerAdapter.canSign and signsVerifiably', () => {
         expect(adapter.canSign(watch, 'message')).toBe(false)
     })
 
-    it('cannot sign for a Ledger account, which holds no local key', () => {
-        const ledger: WalletAccount = {
-            id: 'ledger',
-            custody: {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd1',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 0,
+    const ledgerWith = (chains: WalletAccount['chains']): WalletAccount => ({
+        id: 'ledger',
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'd1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
             },
-            chains: { ethereum: { address: SENDER } },
-        }
+            accountIndex: 0,
+        },
+        chains,
+    })
 
-        expect(adapter.canSign(ledger, 'typedData')).toBe(false)
+    it.each(['message', 'typedData'] as const)(
+        'lets a Ledger account with an Ethereum address sign %s',
+        kind => {
+            const ledger = ledgerWith({ ethereum: { address: SENDER } })
+
+            expect(adapter.canSign(ledger, kind)).toBe(true)
+        },
+    )
+
+    it('refuses a Ledger account with no Ethereum address', () => {
+        const ledger = ledgerWith({ algorand: { address: 'ALGO' } })
+
+        expect(adapter.canSign(ledger, 'message')).toBe(false)
     })
 
     it('has no auth-data leg', () => {

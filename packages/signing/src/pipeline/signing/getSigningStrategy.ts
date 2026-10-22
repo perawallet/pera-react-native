@@ -80,8 +80,6 @@ export const createSigningStrategySelector = (
         scope: options.scope,
     })
     const hardwareStrategy = createHardwareStrategy({
-        hardwareWalletRegistry: options.hardwareWalletRegistry,
-        getAllAccounts: options.getAllAccounts,
         chainId: options.scope.chainId,
     })
 

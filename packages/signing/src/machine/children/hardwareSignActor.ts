@@ -19,6 +19,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
 import { isKeyedByPlanner, type SigningPhase } from '../../pipeline/types'
+import { signMessageGroupOnDevice } from '../actors/signers/signMessageGroupOnDevice'
 import { signPlannedGroupOnDevice } from '../actors/signers/signPlannedGroupOnDevice'
 import { resolveSigningAccount } from '../utils/resolveSigningAccount'
 import {
@@ -85,11 +86,7 @@ export const hardwareSignActor = fromCallback<
 >(({ input, sendBack }) => {
     const { groups, allAccounts, hardwareWalletRegistry, scope } = input
 
-    const strategy = createHardwareStrategy({
-        hardwareWalletRegistry,
-        getAllAccounts: () => allAccounts,
-        chainId: scope.chainId,
-    })
+    const strategy = createHardwareStrategy({ chainId: scope.chainId })
 
     let cancelled = false
     // Aborting on stop reaches the BLE layer: the strategy stops sending
@@ -162,8 +159,9 @@ export const hardwareSignActor = fromCallback<
                 if (!isHardwareWalletAccount(accountForSigning)) {
                     throw new HardwareWalletError('signer_not_found')
                 }
+                const { type } = group.data
                 const result =
-                    group.data.type === 'transactions'
+                    type === 'transactions'
                         ? await signPlannedGroupOnDevice({
                               group,
                               account: accountForSigning,
@@ -171,11 +169,20 @@ export const hardwareSignActor = fromCallback<
                               registry: hardwareWalletRegistry,
                               callbacks,
                           })
-                        : await strategy.sign(
-                              group,
-                              accountForSigning,
-                              callbacks,
-                          )
+                        : type === 'message' || type === 'auth-data'
+                          ? await signMessageGroupOnDevice({
+                                group,
+                                account: accountForSigning,
+                                allAccounts,
+                                scope,
+                                registry: hardwareWalletRegistry,
+                                callbacks,
+                            })
+                          : await strategy.sign(
+                                group,
+                                accountForSigning,
+                                callbacks,
+                            )
                 if (cancelled) return
                 sendBack({ type: 'GROUP_SIGNED', result })
                 // Mirrors the parent's totalTxs accounting: transaction

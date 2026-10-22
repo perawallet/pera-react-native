@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     createHardwareStrategy: vi.fn(),
     strategySign: vi.fn(),
     signPlannedGroupOnDevice: vi.fn(),
+    signMessageGroupOnDevice: vi.fn(),
 }))
 
 // Both legs answer through `mocks.sign`, so the callback translation is
@@ -46,6 +47,17 @@ vi.mock('../../actors/signers/signPlannedGroupOnDevice', () => ({
         callbacks: unknown
     }) => {
         mocks.signPlannedGroupOnDevice(input)
+        return mocks.sign(input.group, input.account, input.callbacks)
+    },
+}))
+
+vi.mock('../../actors/signers/signMessageGroupOnDevice', () => ({
+    signMessageGroupOnDevice: (input: {
+        group: unknown
+        account: unknown
+        callbacks: unknown
+    }) => {
+        mocks.signMessageGroupOnDevice(input)
         return mocks.sign(input.group, input.account, input.callbacks)
     },
 }))
@@ -167,6 +179,7 @@ beforeEach(() => {
     mocks.sign.mockReset()
     mocks.strategySign.mockReset()
     mocks.signPlannedGroupOnDevice.mockReset()
+    mocks.signMessageGroupOnDevice.mockReset()
 })
 
 describe('hardwareSignActor', () => {
@@ -406,7 +419,7 @@ describe('hardwareSignActor', () => {
         expect(events.some(e => e.type === 'ALL_DONE')).toBe(true)
     })
 
-    it('signs auth data through the strategy', async () => {
+    it('routes auth data to the device message leg', async () => {
         mocks.sign.mockResolvedValue(makeResult())
         const authData = {
             ...makeGroup(),
@@ -425,8 +438,36 @@ describe('hardwareSignActor', () => {
         const { stop } = await runActor(makeInput({ groups: [authData] }))
         stop()
 
-        expect(mocks.strategySign).toHaveBeenCalledTimes(1)
+        expect(mocks.signMessageGroupOnDevice).toHaveBeenCalledWith(
+            expect.objectContaining({
+                group: authData,
+                allAccounts: expect.any(Array),
+            }),
+        )
+        expect(mocks.strategySign).not.toHaveBeenCalled()
         expect(mocks.signPlannedGroupOnDevice).not.toHaveBeenCalled()
+    })
+
+    it('routes a chain-neutral message to the device message leg', async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const message = {
+            ...makeGroup(),
+            data: {
+                type: 'message',
+                request: {
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    method: 'personal_sign',
+                    signer: HARDWARE_ADDRESS,
+                    payload: {},
+                },
+            },
+        } as AnalyzedSignableGroup
+
+        const { stop } = await runActor(makeInput({ groups: [message] }))
+        stop()
+
+        expect(mocks.signMessageGroupOnDevice).toHaveBeenCalledTimes(1)
+        expect(mocks.strategySign).not.toHaveBeenCalled()
     })
 
     it("surfaces the device app's blind-signing refusal as its own retryable kind", async () => {

@@ -166,6 +166,10 @@ export {
     type PlannedDeviceSigningInput,
 } from './machine/actors/signers/signPlannedGroupOnDevice'
 export {
+    signMessageGroupOnDevice,
+    type DeviceMessageSigningInput,
+} from './machine/actors/signers/signMessageGroupOnDevice'
+export {
     arbitraryDataMessageRequest,
     authDataMessageRequest,
     buildSiwxAuthData,

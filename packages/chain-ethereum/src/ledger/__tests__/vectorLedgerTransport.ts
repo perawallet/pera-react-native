@@ -33,11 +33,10 @@ export const createVectorLedgerTransport = (
             signedPayloads.push(payload)
             return vectorSignature(keccak256(payload, 'bytes'))
         },
-        signData: async () => {
-            throw new Error('The Ethereum app signs no auth data')
+        signMessage: async () => {
+            throw new Error('The Ethereum app signs no messages here')
         },
         getAppVersion: async () => ({ major: 1, minor: 0, patch: 0 }),
-        assertCanSignData: async () => undefined,
         disconnect: async () => undefined,
     }
     return { transport, signedPayloads }

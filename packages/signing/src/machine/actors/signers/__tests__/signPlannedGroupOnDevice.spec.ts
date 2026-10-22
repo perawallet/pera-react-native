@@ -113,9 +113,8 @@ const makeTransport = (
         accountIndex: 0,
     }),
     signTransaction: vi.fn().mockResolvedValue(DEVICE_SIGNATURE),
-    signData: vi.fn(),
+    signMessage: vi.fn(),
     getAppVersion: vi.fn(),
-    assertCanSignData: vi.fn(),
     disconnect: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 })

@@ -17,7 +17,6 @@ export {
     createHardwareWalletRegistry,
     type HardwareWalletAdapterState,
     type HardwareWalletAppVersion,
-    type HardwareWalletArbitrarySignRequest,
     type HardwareWalletConnectionStatus,
     type HardwareWalletDerivedAccount,
     type HardwareWalletDevice,

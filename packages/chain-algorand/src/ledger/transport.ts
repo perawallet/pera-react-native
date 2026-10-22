@@ -13,7 +13,6 @@
 import { Buffer } from 'buffer'
 import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
-    HardwareWalletArbitrarySignRequest,
     HardwareWalletTransport,
     LedgerAppErrorClassifier,
     LedgerAppTransport,
@@ -29,6 +28,7 @@ import {
     ALGORAND_LEDGER_APP,
     ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
 } from './app'
+import { decodeAlgorandLedgerMessage } from './messagePayload'
 import { buildLedgerAccountPath } from './path'
 
 /**
@@ -59,6 +59,19 @@ export const createAlgorandLedgerTransport = (
             return { major, minor, patch }
         } catch (error) {
             throw classifyError(error)
+        }
+    }
+
+    // The early gate; the device's own error is the fallback.
+    const assertCanSignData = async () => {
+        const version = await getAppVersion()
+        if (
+            !isAppVersionAtLeast(version, ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION)
+        ) {
+            throw new LedgerAppOutdatedError({
+                appName: ALGORAND_LEDGER_APP.appName,
+                requiredVersion: ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
+            })
         }
     }
 
@@ -112,35 +125,28 @@ export const createAlgorandLedgerTransport = (
 
         getAppVersion,
 
-        async assertCanSignData() {
-            const version = await getAppVersion()
-            if (
-                !isAppVersionAtLeast(
-                    version,
-                    ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
-                )
-            ) {
-                throw new LedgerAppOutdatedError({
-                    appName: ALGORAND_LEDGER_APP.appName,
-                    requiredVersion: ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
-                })
-            }
-        },
-
-        async signData(
-            request: HardwareWalletArbitrarySignRequest,
-        ): Promise<Uint8Array> {
+        async signMessage(accountIndex, payload) {
+            await assertCanSignData()
             try {
+                let message
+                try {
+                    message = decodeAlgorandLedgerMessage(payload)
+                } catch (error) {
+                    throw new LedgerSigningError(
+                        'Not an Algorand Ledger message',
+                        error instanceof Error ? error : undefined,
+                    )
+                }
                 const result = await algorandApp.signData(
                     {
-                        data: request.data,
-                        signer: request.signerPublicKey,
-                        domain: request.domain,
-                        authenticationData: request.authenticatorData,
-                        requestId: request.requestId,
-                        hdPath: buildLedgerAccountPath(request.accountIndex),
+                        data: message.data,
+                        signer: message.signerPublicKey,
+                        domain: message.domain,
+                        authenticationData: message.authenticatorData,
+                        requestId: message.requestId,
+                        hdPath: buildLedgerAccountPath(accountIndex),
                     },
-                    { scope: request.scope, encoding: request.encoding },
+                    { scope: message.scope, encoding: message.encoding },
                 )
                 const signature = Uint8Array.from(result.signature)
                 if (signature.length === 0) {
