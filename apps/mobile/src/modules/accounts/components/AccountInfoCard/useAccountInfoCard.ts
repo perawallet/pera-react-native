@@ -14,32 +14,16 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
     addressOn,
-    chainAccountOf,
     hardwareDetailsOf,
     hdIndexOf,
     isLedgerAccount,
-    useAccountStateQuery,
-    useCanSignWith,
     useHdSeedGroups,
     useLedgerDeviceGroups,
-    useRegisteredChainIds,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import {
-    baseUnitsToDisplayUnits,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
-import type { Decimal } from 'decimal.js'
 import {
     useAccountTypeLabel,
     type AccountTypeLabel,
@@ -51,17 +35,10 @@ type UseAccountInfoCardParams = {
     onClose: () => void
 }
 
-export type EnabledChainRow = { chainId: ChainId; displayName: string }
-
 type UseAccountInfoCardResult = {
-    /** The chains the account is enabled on, in registry order. */
-    enabledChains: EnabledChainRow[]
     isExpanded: boolean
     handleToggleExpanded: () => void
     accountType: AccountTypeLabel
-    minBalanceAlgos: Nullable<Decimal>
-    isMinBalanceLoading: boolean
-    showMinBalance: boolean
     showStructure: boolean
     structureLabel: string
     structureIcon: IconName
@@ -78,8 +55,6 @@ export const useAccountInfoCard = ({
     const [isExpanded, setIsExpanded] = useState(false)
 
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { data: accountState, isLoading: isMinBalanceLoading } =
-        useAccountStateQuery(account, scope)
 
     const { hdSeedGroups } = useHdSeedGroups()
     const { ledgerDeviceGroups } = useLedgerDeviceGroups()
@@ -90,33 +65,11 @@ export const useAccountInfoCard = ({
         () => (isLedger ? hardwareDetailsOf(account) : undefined),
         [isLedger, account],
     )
-    const showMinBalance = useCanSignWith(account, scope.chainId)
     const accountType = useAccountTypeLabel(account)
-    const registeredChainIds = useRegisteredChainIds()
-    const enabledChains = useMemo(
-        (): EnabledChainRow[] =>
-            registeredChainIds
-                .filter(chainId => chainAccountOf(account, chainId))
-                .map(chainId => ({
-                    chainId,
-                    displayName: chainDisplayNameOf(chainId) ?? chainId,
-                })),
-        [registeredChainIds, account],
-    )
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
     }, [])
-
-    const { decimals: nativeDecimals } = useNativeAsset(scope)
-    const minBalanceBaseUnits = accountState?.reserveBalance
-    const minBalanceAlgos = useMemo(
-        () =>
-            minBalanceBaseUnits === undefined
-                ? null
-                : baseUnitsToDisplayUnits(minBalanceBaseUnits, nativeDecimals),
-        [minBalanceBaseUnits, nativeDecimals],
-    )
 
     const hdSeedGroupIndex = useMemo(() => {
         if (!isHDWallet) return -1
@@ -215,13 +168,9 @@ export const useAccountInfoCard = ({
     }, [account, isHDWallet, hardwareDetails, onClose])
 
     return {
-        enabledChains,
         isExpanded,
         handleToggleExpanded,
         accountType,
-        minBalanceAlgos,
-        isMinBalanceLoading,
-        showMinBalance,
         showStructure,
         structureLabel,
         structureIcon,

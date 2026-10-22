@@ -84,7 +84,7 @@ const clickRoundButtonByLabel = async (
 }
 
 const openMoreSheet = async (targetPage: Page): Promise<void> => {
-    const copyAddress = targetPage.getByText('Copy Address', { exact: true })
+    const copyAddress = targetPage.getByTestId('account_network_algorand_copy')
     for (let attempt = 0; attempt < 4; attempt++) {
         await dismissPinPromptIfPresent(targetPage)
         await targetPage.getByTestId('more_button').click()
@@ -215,7 +215,8 @@ test('the More sheet (PWSheetLayout) renders real content, not blank', async () 
         timeout: 20_000,
     })
     await openMoreSheet(page)
-    await expect(page.getByText('Show Address', { exact: true })).toBeVisible()
+    await expect(page.getByText('Networks', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('account_network_algorand_qr')).toBeVisible()
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
     await dismissSheet(page)
 })
@@ -227,7 +228,7 @@ test('copy address shows a toast that auto-dismisses', async () => {
         timeout: 20_000,
     })
     await openMoreSheet(page)
-    await page.getByText('Copy Address', { exact: true }).click()
+    await page.getByTestId('account_network_algorand_copy').click()
 
     // The toast animates via `translateY` and never unmounts, so toBeVisible()
     // stays true even off-screen. Poll the actual Y position instead.

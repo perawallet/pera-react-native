@@ -274,6 +274,7 @@ Signable Shared Account Rekeys Only To A Shared Account
     [Tags]    id:multisig.rekey.shared-only    p1
     Create Shared Account    ${NAME_SIGNABLE}    ${OWN}    ${PARTICIPANT_1}
     Open Account Options
+    Expand Algorand Network
     Tap Account Option    ${ACCOUNT_OPTION_REKEY}
     Wait Until Page Contains Element    ${REKEY_TO_SHARED_START}    timeout=20s
     Page Should Not Contain Element    ${REKEY_OPTION_STANDARD}

@@ -28,7 +28,8 @@ ${WATCH_ADDRESS_INPUT}              accessibility_id=watch_account_address_input
 ${WATCH_SUBMIT_BUTTON}              accessibility_id=watch_account_submit_button
 
 ${ACCOUNT_TYPE_INFO_BUTTON}         accessibility_id=account-type-info-button
-${OPTION_COPY_ADDRESS}              accessibility_id=account_option_copy-address
+${OPTION_COPY_ADDRESS}              accessibility_id=account_network_algorand_copy
+${OPTION_ALGORAND_EXPAND}           accessibility_id=account_network_algorand_expand
 ${OPTION_RENAME}                    accessibility_id=account_option_rename-account
 ${OPTION_REMOVE}                    accessibility_id=account_option_remove-account
 ${OPTION_VIEW_PASSPHRASE}           accessibility_id=account_option_view-passphrase
@@ -158,6 +159,15 @@ Scroll Until Tappable
 Open Account Option
     [Arguments]    ${option}
     Open Account Options
+    Scroll Until Tappable    ${option}
+    Tap    ${option}
+
+Open Algorand Account Option
+    [Documentation]    Rekey and rekeyed-account scan sit in the Algorand network row, behind its chevron.
+    [Arguments]    ${option}
+    Open Account Options
+    Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
+    Tap    ${OPTION_ALGORAND_EXPAND}
     Scroll Until Tappable    ${option}
     Tap    ${option}
 

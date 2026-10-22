@@ -64,18 +64,6 @@ export const useStyles = makeStyles(theme => ({
     labelText: {
         color: theme.colors.textGray,
     },
-    networkList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        gap: theme.spacing.md,
-        flexShrink: 1,
-    },
-    networkItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     toggleSection: {
         gap: theme.spacing.md,
         alignItems: 'center',
@@ -162,9 +150,6 @@ export const useStyles = makeStyles(theme => ({
     },
     scanButtonText: {
         color: theme.colors.buttonSquareIcon,
-    },
-    minBalanceDescription: {
-        color: theme.colors.textGray,
     },
     rekeyedSection: {
         gap: theme.spacing.sm,

@@ -40,7 +40,8 @@ ${THRESHOLD_INCREMENT_BUTTON}           accessibility_id=threshold_increment_but
 ${BEFORE_CREATE_PROCEED_BUTTON}         accessibility_id=before_create_proceed_button
 ${BEFORE_CREATE_GO_BACK_BUTTON}         accessibility_id=before_create_go_back_button
 
-${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_option_copy-address
+${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_network_algorand_copy
+${ACCOUNT_ALGORAND_EXPAND}              accessibility_id=account_network_algorand_expand
 ${ACCOUNT_OPTION_SHARED_DETAIL}         accessibility_id=account_option_shared-account-detail
 ${ACCOUNT_OPTION_EXPORT}                accessibility_id=account_option_export-share-account
 ${ACCOUNT_OPTION_REKEY}                 accessibility_id=account_option_rekey-account
@@ -328,6 +329,10 @@ Tap Account Option
     IF    not ${shown}    Swipe By Percent    50    80    50    40
     Wait Until Settled    ${option}
     Tap    ${option}
+
+Expand Algorand Network
+    [Documentation]    Rekey sits in the Algorand network row, behind its chevron.
+    Tap Account Option    ${ACCOUNT_ALGORAND_EXPAND}
 
 Open Shared Account Detail
     Open Account Options

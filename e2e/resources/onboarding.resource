@@ -15,7 +15,8 @@ ${WATCH_ADDRESS}                        UUZB34HTTJ6GM2XB44YSL333AWASFH7K3HSAK7R2
 ${IMPORT_ACCOUNT_BUTTON}                accessibility_id=onboarding_import_account_button
 ${ACCOUNT_SELECTION_BUTTON}             accessibility_id=account_selection_button
 ${ACCOUNT_MENU_ADD_BUTTON}              accessibility_id=account_menu_add_account_button
-${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_option_copy-address
+${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_network_algorand_copy
+${ACCOUNT_ALGORAND_EXPAND}              accessibility_id=account_network_algorand_expand
 # The switcher row and the header trigger take their testID as accessibility label, which on iOS
 # hides the account name inside them; only the options sheet's title shows it on both platforms.
 ${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
@@ -243,6 +244,8 @@ Open Account Options Sheet
 Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
     Tap    ${MORE_BUTTON}
+    Wait Until Settled    ${ACCOUNT_ALGORAND_EXPAND}
+    Tap    ${ACCOUNT_ALGORAND_EXPAND}
     Wait Until Settled    ${SCAN_REKEYED_OPTION}
     Tap    ${SCAN_REKEYED_OPTION}
 

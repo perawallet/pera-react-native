@@ -12,14 +12,11 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    type AuthorityTargetCategory,
     type WalletAccount,
-    AuthorityTargetCategories,
     addressOn,
     authorityOf,
     hasRecoverySeed,
     hasSigningKeys,
-    hdIndexOf,
     isMultisigAccount,
     isDelegatedAccount,
     multisigParametersOf,
@@ -37,13 +34,14 @@ import {
 import {
     LEGACY_CHAIN_ID,
     i18nKey,
+    type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
-import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useClipboard } from '@hooks/useClipboard'
+import { logger } from '@perawallet/wallet-core-shared'
+import type { SheetOption } from '@components/SheetOptionRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
@@ -63,7 +61,6 @@ import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
-import type { IconName } from '@components/core'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -72,24 +69,14 @@ import {
 } from '@analytics'
 import { RenameAccountContent } from './RenameAccountContent'
 import {
-    RekeyOptionsContent,
-    type RekeyTargetType,
-} from './RekeyOptionsContent'
-
-export type AccountOption = {
-    id: string
-    icon: IconName
-    title: string
-    subtitle?: string
-    onPress: () => void
-    variant?: 'default' | 'destructive'
-    disabled?: boolean
-}
+    useAccountNetworks,
+    type UseAccountNetworksResult,
+} from './useAccountNetworks'
 
 export type UseAccountOptionsParams = {
     account: WalletAccount
     onClose: () => void
-    onShowAddress: () => void
+    onShowAddress: (account: WalletAccount, chainId: ChainId) => void
 }
 
 export type RemoveConfirmView =
@@ -101,7 +88,10 @@ export type RemoveConfirmView =
 type BackupChoice = 'delete' | 'keep'
 
 export type UseAccountOptionsResult = {
-    options: AccountOption[]
+    /** Rename, notifications, remove, then the account's secret if it has one. */
+    topActions: SheetOption[]
+    sharedAccountOptions: SheetOption[]
+    networks: UseAccountNetworksResult
     isCloudBackupAvailable: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
@@ -125,7 +115,6 @@ export const useAccountOptions = ({
 }: UseAccountOptionsParams): UseAccountOptionsResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { copyToClipboard } = useClipboard()
     const { isAccountEnabled } = useNotificationPreferences()
     const { toggleAccountNotification, isTogglePending } =
         useAccountNotificationToggle()
@@ -160,7 +149,6 @@ export const useAccountOptions = ({
     const privateKeyScope = useAccountCapabilityScope(account, 'privateKeys')
     const showPrivateKey =
         privateKeyScope !== null && standaloneSecretOf(account) === 'privateKey'
-    const isHdWallet = hdIndexOf(account) !== undefined
     const isSharedAccount = isMultisigAccount(account)
     const multisigParameters = useMemo(
         () => multisigParametersOf(account, scope.chainId),
@@ -170,19 +158,6 @@ export const useAccountOptions = ({
 
     const authority = useAuthorityOf(account, scope)
     const authAccount = useFindAccountByAddress(authority ?? '', scope)
-
-    const handleCopyAddress = useCallback(() => {
-        trackEvent(AccountOptionsEvent.CopyAddress, {
-            [AnalyticsMetadataKey.ChainId]: accountChainId,
-        })
-        void copyToClipboard(address)
-        onClose()
-    }, [copyToClipboard, address, onClose, accountChainId])
-
-    const handleShowAddress = useCallback(() => {
-        onClose()
-        onShowAddress()
-    }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
         trackEvent(AccountOptionsEvent.ViewPassphrase, {
@@ -209,84 +184,6 @@ export const useAccountOptions = ({
             params: { sourceAddress: address },
         })
     }, [onClose, navigation, address])
-
-    const navigateToRekeyFlow = useCallback(
-        (target: AuthorityTargetCategory) => {
-            switch (target) {
-                case AuthorityTargetCategories.hardware: {
-                    trackEvent(AccountOptionsEvent.RekeyToLedger, {
-                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
-                    })
-                    navigation.navigate('RekeyToLedger', {
-                        screen: 'RekeyToLedgerIntro',
-                        params: { sourceAddress: address },
-                    })
-                    return
-                }
-                case AuthorityTargetCategories.standard: {
-                    trackEvent(AccountOptionsEvent.RekeyToStandard, {
-                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
-                    })
-                    navigation.navigate('RekeyToStandard', {
-                        screen: 'RekeyToStandardIntro',
-                        params: { sourceAddress: address },
-                    })
-                    return
-                }
-                case AuthorityTargetCategories.postQuantum: {
-                    trackEvent(AccountOptionsEvent.RekeyToQuantum, {
-                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
-                    })
-                    navigation.navigate('RekeyToQuantum', {
-                        screen: 'RekeyToQuantumIntro',
-                        params: { sourceAddress: address },
-                    })
-                    return
-                }
-                case AuthorityTargetCategories.shared: {
-                    trackEvent(AccountDetailsEvent.JointAccountRekey, {
-                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
-                    })
-                    navigation.navigate('RekeyToShared', {
-                        screen: 'RekeyToSharedIntro',
-                        params: { sourceAddress: address },
-                    })
-                }
-            }
-        },
-        [navigation, address, scope.chainId],
-    )
-
-    const handleRekeyAccount = useCallback(async () => {
-        onClose()
-        // A shared account can only be rekeyed to another shared account, so
-        // the type sheet would hold a single row — go straight to its intro.
-        if (isSharedAccount) {
-            navigateToRekeyFlow(AuthorityTargetCategories.shared)
-            return
-        }
-        const target = await requestBottomSheet<RekeyTargetType>({
-            contents: <RekeyOptionsContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-        if (!target) return
-        navigateToRekeyFlow(target)
-    }, [onClose, isSharedAccount, requestBottomSheet, navigateToRekeyFlow])
-
-    const handleScanRekeyed = useCallback(() => {
-        trackEvent(AccountOptionsEvent.ScanRekeyed, {
-            [AnalyticsMetadataKey.ChainId]: scope.chainId,
-        })
-        onClose()
-        navigation.navigate('RescanRekeyed', {
-            screen: 'RescanRekeyedSelect',
-            params: { sourceAddress: address },
-        })
-    }, [onClose, navigation, address, scope.chainId])
 
     const handleExportShareAccount = useCallback(async () => {
         trackEvent(AccountDetailsEvent.JointAccountExport, {
@@ -554,44 +451,39 @@ export const useAccountOptions = ({
     // `isTogglePending` in useAccountNotificationToggle.ts.
     const isNotificationTogglePending = isTogglePending(address)
 
-    const options = useMemo(() => {
-        const items: AccountOption[] = []
+    const networks = useAccountNetworks({ account, onClose, onShowAddress })
 
-        if (isSharedAccount && canUseMultisig) {
-            items.push({
-                id: 'shared-account-detail',
-                icon: 'people',
-                title: t('account_options.shared_account_detail', {
-                    count: participantCount,
-                }),
-                onPress: () => void handleOpenSharedAccountDetail(),
-            })
-        }
-
-        items.push({
-            id: 'copy-address',
-            icon: 'copy',
-            title: t('account_options.copy_address'),
-            subtitle: truncateAlgorandAddress(address),
-            onPress: handleCopyAddress,
-        })
-
-        items.push({
-            id: 'show-address',
-            icon: 'qr',
-            title: t('account_options.show_address'),
-            onPress: handleShowAddress,
-        })
+    const topActions = useMemo(() => {
+        const items: SheetOption[] = [
+            {
+                id: 'rename-account',
+                icon: 'edit-pen',
+                title: t('account_options.rename_account'),
+                onPress: () => void handleOpenRename(),
+            },
+            {
+                id: 'toggle-notifications',
+                icon: 'bell',
+                title: notificationsEnabled
+                    ? t('account_options.mute_notifications')
+                    : t('account_options.unmute_notifications'),
+                onPress: handleToggleNotifications,
+                disabled: isNotificationTogglePending,
+            },
+            {
+                id: 'remove-account',
+                icon: 'unlink',
+                title: t('account_options.remove_account'),
+                onPress: () => void handleOpenRemoveConfirm(),
+                variant: 'destructive',
+            },
+        ]
 
         if (showPassphrase) {
             items.push({
                 id: 'view-passphrase',
                 icon: 'key',
-                title: t(
-                    isHdWallet
-                        ? i18nKey('account_options.view_passphrase_hd')
-                        : i18nKey('account_options.view_passphrase_algo25'),
-                ),
+                title: t('account_options.view_passphrase'),
                 onPress: handleViewPassphrase,
             })
         }
@@ -605,98 +497,52 @@ export const useAccountOptions = ({
             })
         }
 
-        // Gated on the capability, not just on the account: every rekey target
-        // is a root stack that a platform may not register, and an
-        // unregistered route makes the row a silent no-op rather than an error.
-        // Rekeying also needs a signature from the source account, so only
-        // offer it when this wallet can actually sign. A shared account's only
-        // target is another shared account.
-        if (canRekey && canSign && (!isSharedAccount || canUseMultisig)) {
-            items.push({
-                id: 'rekey-account',
-                icon: 'rekey',
-                title: t('account_options.rekey_account'),
-                onPress: () => void handleRekeyAccount(),
-            })
-        }
-
-        if (isSharedAccount && canUseMultisig) {
-            // Export stays available regardless of `canSign` — it only reads
-            // metadata.
-            items.push({
-                id: 'export-share-account',
-                icon: 'share',
-                title: t('account_options.export_share_account'),
-                onPress: () => void handleExportShareAccount(),
-            })
-        }
-
-        // Post-import rekey discovery: find accounts whose on-chain auth-addr
-        // is this account's key. Signable types only — a watch account holds
-        // no key another account could be rekeyed to sign with.
-        if (canRekey && canSign) {
-            items.push({
-                id: 'scan-rekeyed',
-                icon: 'magnifying-glass',
-                title: t('account_options.scan_rekeyed'),
-                onPress: handleScanRekeyed,
-            })
-        }
-
-        items.push({
-            id: 'rename-account',
-            icon: 'edit-pen',
-            title: t('account_options.rename_account'),
-            onPress: () => void handleOpenRename(),
-        })
-
-        items.push({
-            id: 'toggle-notifications',
-            icon: 'bell',
-            title: notificationsEnabled
-                ? t('account_options.mute_notifications')
-                : t('account_options.unmute_notifications'),
-            onPress: handleToggleNotifications,
-            disabled: isNotificationTogglePending,
-        })
-
-        items.push({
-            id: 'remove-account',
-            icon: 'unlink',
-            title: t('account_options.remove_account'),
-            onPress: () => void handleOpenRemoveConfirm(),
-            variant: 'destructive',
-        })
-
         return items
     }, [
         t,
-        address,
-        participantCount,
         showPassphrase,
         showPrivateKey,
-        canSign,
-        canRekey,
-        canUseMultisig,
-        isSharedAccount,
         notificationsEnabled,
         isNotificationTogglePending,
-        handleCopyAddress,
-        handleShowAddress,
         handleViewPassphrase,
         handleViewPrivateKey,
-        isHdWallet,
-        handleRekeyAccount,
-        handleScanRekeyed,
-        handleExportShareAccount,
-        handleOpenSharedAccountDetail,
         handleOpenRename,
         handleToggleNotifications,
         handleOpenRemoveConfirm,
     ])
 
+    const sharedAccountOptions = useMemo((): SheetOption[] => {
+        if (!isSharedAccount || !canUseMultisig) return []
+        return [
+            {
+                id: 'shared-account-detail',
+                icon: 'people',
+                title: t('account_options.shared_account_detail', {
+                    count: participantCount,
+                }),
+                onPress: () => void handleOpenSharedAccountDetail(),
+            },
+            // Export stays available regardless of signing: it only reads metadata.
+            {
+                id: 'export-share-account',
+                icon: 'share',
+                title: t('account_options.export_share_account'),
+                onPress: () => void handleExportShareAccount(),
+            },
+        ]
+    }, [
+        t,
+        isSharedAccount,
+        canUseMultisig,
+        participantCount,
+        handleOpenSharedAccountDetail,
+        handleExportShareAccount,
+    ])
+
     return {
-        options,
+        topActions,
+        sharedAccountOptions,
+        networks,
         isCloudBackupAvailable,
         isRekeyed,
         canUndoRekey,

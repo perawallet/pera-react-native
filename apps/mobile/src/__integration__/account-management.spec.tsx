@@ -136,6 +136,11 @@ const tapButtonByLabel = (i18nKey: string) => {
     fireEvent.click(button)
 }
 
+// The top actions are round buttons whose label sits outside the pressable.
+const tapOption = (id: string) => {
+    fireEvent.click(screen.getByTestId(`account_option_${id}`))
+}
+
 // Notification preferences are persisted via a Zustand store inside
 // `@perawallet/wallet-core-messages`; the store itself isn't re-exported
 // from the package's public entry, so we drive resets through the hook.
@@ -258,7 +263,7 @@ describe('Flow: Account management', () => {
         // Open the destructive remove option in the management section.
         // Watch accounts skip the backup warning and go straight to the
         // confirmation sheet.
-        tapButtonByLabel('account_options.remove_account')
+        tapOption('remove-account')
 
         // Tap "Confirm remove" in the confirmation sheet.
         await waitFor(() => tapButtonByLabel('account_options.remove_confirm'))
@@ -307,7 +312,7 @@ describe('Flow: Account management', () => {
 
         // Hardware accounts hold no local key material, so the
         // backup-warning gate is skipped — straight to the confirm.
-        tapButtonByLabel('account_options.remove_account')
+        tapOption('remove-account')
 
         await waitFor(() => tapButtonByLabel('account_options.remove_confirm'))
 
@@ -366,7 +371,7 @@ describe('Flow: Account management', () => {
             'AccountOptionsHost',
         )
 
-        tapButtonByLabel('account_options.remove_account')
+        tapOption('remove-account')
 
         // Algo25 accounts have signing keys → the production flow
         // routes through `BackupWarningBottomSheet` first (so the
@@ -408,7 +413,7 @@ describe('Flow: Account management', () => {
             'AccountOptionsHost',
         )
 
-        tapButtonByLabel('account_options.remove_account')
+        tapOption('remove-account')
 
         await waitFor(() => {
             expect(
@@ -428,7 +433,7 @@ describe('Flow: Account management', () => {
             'AccountOptionsHost',
         )
 
-        tapButtonByLabel('account_options.remove_account')
+        tapOption('remove-account')
 
         await waitFor(() => {
             expect(
@@ -477,7 +482,7 @@ describe('Flow: Account management', () => {
         // currently enabled. After the tap, the production hook flips
         // the entry into `notificationDisabledAccounts` and the toast
         // is shown via Notifier.
-        tapButtonByLabel('account_options.mute_notifications')
+        tapOption('toggle-notifications')
 
         const { result: notifAfter } = renderHook(() =>
             useNotificationPreferences(),
@@ -525,7 +530,7 @@ describe('Flow: Account management', () => {
         )
     })
 
-    it('Given an account in the options sheet, when the user taps "Copy address", then the address is written to the clipboard', async () => {
+    it('Given an account in the options sheet, when the user taps copy on the Algorand row, then the address is written to the clipboard', async () => {
         useAccountsStore.getState().setAccounts([ACCOUNT_A])
         useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
 
@@ -534,10 +539,7 @@ describe('Flow: Account management', () => {
             'AccountOptionsHost',
         )
 
-        // The copy-address row is in the "general" section of the
-        // sheet (see AccountOptionsContent.tsx generalOptions
-        // filter). Title comes from `account_options.copy_address`.
-        tapButtonByLabel('account_options.copy_address')
+        fireEvent.click(screen.getByTestId('account_network_algorand_copy'))
 
         // useClipboard.copyToClipboard awaits Clipboard.setStringAsync
         // before the toast fires. Wait for the call rather than
@@ -558,7 +560,7 @@ describe('Flow: Account management', () => {
             'AccountOptionsHost',
         )
 
-        tapButtonByLabel('account_options.rename_account')
+        tapOption('rename-account')
 
         await waitFor(() => screen.getByTestId('rename_account_input'))
         fireEvent.change(screen.getByTestId('rename_account_input'), {

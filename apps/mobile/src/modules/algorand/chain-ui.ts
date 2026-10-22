@@ -18,6 +18,10 @@ import type {
     CollectibleDetailsDisplay,
 } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
+import {
+    AlgorandAccountSection,
+    useHasAlgorandAccountSection,
+} from './components/AlgorandAccountSection'
 import { AlgorandCustomNodeForm } from './components/AlgorandCustomNodeForm'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
 import { AlgorandTransactionPreviewRow } from './components/AlgorandTransactionPreviewRow'
@@ -80,5 +84,9 @@ export const algorandChainUi: ChainUi = {
         Form: AlgorandCustomNodeForm,
     },
     familyLabel: i18nKey('chain_families.algorand'),
+    accountOptions: {
+        ExpandedSection: AlgorandAccountSection,
+        useHasExpandedSection: useHasAlgorandAccountSection,
+    },
     icon: () => AlgoAssetIcon,
 }

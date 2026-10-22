@@ -12,73 +12,29 @@
 
 import {
     PWBottomSheetView,
-    PWDivider,
-    PWIcon,
     PWSheetLayout,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import {
     isWatchAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { DeleteFromBackupSheet } from '@modules/cloud-backup'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { SheetOptionRow } from '@components/SheetOptionRow'
 import { useStyles } from './styles'
-import { type AccountOption, useAccountOptions } from './useAccountOptions'
+import { useAccountOptions } from './useAccountOptions'
+import { AccountNetworkList } from './AccountNetworkList'
+import { AccountTopActions } from './AccountTopActions'
 import { AccountInfoCard } from '../AccountInfoCard'
 
 export type AccountOptionsContentProps = {
-    onShowAddress: () => void
+    onShowAddress: (account: WalletAccount, chainId: ChainId) => void
     account: WalletAccount
-}
-
-const OptionRow = ({
-    option,
-    styles,
-}: {
-    option: AccountOption
-    styles: ReturnType<typeof useStyles>
-}) => {
-    const isDestructive = option.variant === 'destructive'
-
-    return (
-        <PWTouchableOpacity
-            testID={`account_option_${option.id}`}
-            style={[
-                styles.optionRow,
-                option.disabled && styles.optionRowDisabled,
-            ]}
-            onPress={option.onPress}
-            disabled={option.disabled}
-        >
-            <PWIcon
-                name={option.icon}
-                variant={isDestructive ? 'error' : 'primary'}
-            />
-            <PWView style={styles.optionTextContainer}>
-                <PWText
-                    variant='h4'
-                    style={isDestructive ? styles.dangerText : undefined}
-                    truncate
-                >
-                    {option.title}
-                </PWText>
-                {option.subtitle ? (
-                    <PWText
-                        variant='body'
-                        style={styles.optionSubtitle}
-                        numberOfLines={1}
-                    >
-                        {option.subtitle}
-                    </PWText>
-                ) : null}
-            </PWView>
-        </PWTouchableOpacity>
-    )
 }
 
 export const AccountOptionsContent = ({
@@ -89,7 +45,9 @@ export const AccountOptionsContent = ({
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
-        options,
+        topActions,
+        sharedAccountOptions,
+        networks,
         isRekeyed,
         canUndoRekey,
         authAccount,
@@ -171,39 +129,16 @@ export const AccountOptionsContent = ({
         )
     }
 
-    const generalOptions = options.filter(
-        o =>
-            o.id === 'shared-account-detail' ||
-            o.id === 'copy-address' ||
-            o.id === 'show-address' ||
-            o.id === 'view-passphrase' ||
-            o.id === 'view-private-key' ||
-            o.id === 'auth-address',
-    )
-
-    const rekeyOptions = options.filter(
-        o =>
-            o.id === 'undo-rekey' ||
-            o.id === 'rekey-account' ||
-            o.id === 'export-share-account' ||
-            o.id === 'scan-rekeyed',
-    )
-
-    const managementOptions = options.filter(
-        o =>
-            o.id === 'rename-account' ||
-            o.id === 'toggle-notifications' ||
-            o.id === 'remove-account',
-    )
-
     return (
         <PWSheetLayout
             horizontalPadding='none'
             header={<SheetHeader title={account.name} />}
         >
+            <AccountTopActions actions={topActions} />
+
             <PWView style={styles.accountInfoContainer}>
                 <AccountInfoCard
-                    account={account}
+                    account={networks.account}
                     onClose={dismiss}
                     rekeyedTo={
                         isRekeyed && authAddress
@@ -219,41 +154,27 @@ export const AccountOptionsContent = ({
                 />
             </PWView>
 
-            <PWView>
-                {generalOptions.map(option => (
-                    <OptionRow
-                        key={option.id}
-                        option={option}
-                        styles={styles}
-                    />
-                ))}
-            </PWView>
+            <PWText
+                variant='h3'
+                style={styles.networksTitle}
+            >
+                {t('account_options.networks_title')}
+            </PWText>
+            <AccountNetworkList
+                networks={networks}
+                onClose={dismiss}
+            />
 
-            {rekeyOptions.length > 0 && (
-                <>
-                    <PWDivider style={styles.divider} />
-                    <PWView>
-                        {rekeyOptions.map(option => (
-                            <OptionRow
-                                key={option.id}
-                                option={option}
-                                styles={styles}
-                            />
-                        ))}
-                    </PWView>
-                </>
+            {sharedAccountOptions.length > 0 && (
+                <PWView style={styles.sharedAccountOptions}>
+                    {sharedAccountOptions.map(option => (
+                        <SheetOptionRow
+                            key={option.id}
+                            option={option}
+                        />
+                    ))}
+                </PWView>
             )}
-
-            <PWDivider style={styles.divider} />
-            <PWView>
-                {managementOptions.map(option => (
-                    <OptionRow
-                        key={option.id}
-                        option={option}
-                        styles={styles}
-                    />
-                ))}
-            </PWView>
         </PWSheetLayout>
     )
 }

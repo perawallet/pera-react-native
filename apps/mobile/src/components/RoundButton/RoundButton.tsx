@@ -25,8 +25,10 @@ import { getTestProps } from '@utils/test-id-helper'
 export type RoundButtonProps = {
     icon: IconName
     title?: string
+    /** Lines the title may wrap to before it truncates. */
+    titleNumberOfLines?: number
     size?: 'sm' | 'md' | 'lg' | 'xl'
-    variant?: 'primary' | 'secondary'
+    variant?: 'primary' | 'secondary' | 'destructive'
     badgeIcon?: IconName
     testID?: string
 } & PWTouchableOpacityProps
@@ -36,6 +38,7 @@ export const RoundButton = (props: RoundButtonProps) => {
     const {
         icon,
         title,
+        titleNumberOfLines,
         size = 'lg',
         variant = 'secondary',
         badgeIcon,
@@ -45,6 +48,7 @@ export const RoundButton = (props: RoundButtonProps) => {
     } = props
 
     const dimmed = rest.disabled ? styles.dimmed : undefined
+    const isDestructive = variant === 'destructive'
 
     return (
         <PWView style={[styles.container, propStyle]}>
@@ -57,7 +61,10 @@ export const RoundButton = (props: RoundButtonProps) => {
                     <PWRoundIcon
                         icon={icon}
                         size={size}
-                        variant={variant}
+                        variant={isDestructive ? 'error' : variant}
+                        style={
+                            isDestructive ? styles.destructiveIcon : undefined
+                        }
                     />
                 </PWTouchableOpacity>
                 {badgeIcon ? (
@@ -76,7 +83,12 @@ export const RoundButton = (props: RoundButtonProps) => {
                 <PWText
                     variant='footnoteMedium'
                     truncate
-                    style={[styles.titleStyle, dimmed]}
+                    numberOfLines={titleNumberOfLines}
+                    style={[
+                        styles.titleStyle,
+                        isDestructive && styles.destructiveTitle,
+                        dimmed,
+                    ]}
                 >
                     {title}
                 </PWText>
