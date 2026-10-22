@@ -341,6 +341,14 @@ export interface SigningRequest {
     scheme: SigningScheme
     /** Final bytes to sign: any hashing or domain prefix is already applied, and the key store adds none. */
     payload: Uint8Array
+    /**
+     * What a hardware signer takes when it hashes on-device: Algorand's
+     * prefix-free msgpack transaction, Ethereum's EIP-2718 unsigned
+     * serialization. Only devices read it; the key store signs `payload`.
+     * Every transaction planner sets it; a request without one can't be
+     * signed on a device.
+     */
+    devicePayload?: Uint8Array
 }
 
 export interface Signature {

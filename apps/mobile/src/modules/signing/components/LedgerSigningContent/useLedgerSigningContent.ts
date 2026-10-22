@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    ledgerAppNameOf,
     useHardwareSigningStore,
     useSigningPipeline,
     useSigningRequest,
@@ -123,7 +124,11 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
 
     const error = useMemo<LedgerErrorPreset | null>(() => {
         if (!errorPayload) return null
-        return getLedgerErrorPresetByKind(errorPayload.kind, t)
+        return getLedgerErrorPresetByKind(
+            errorPayload.kind,
+            t,
+            ledgerAppNameOf(errorPayload.cause),
+        )
     }, [errorPayload, t])
 
     const onCancel = useCallback(() => {

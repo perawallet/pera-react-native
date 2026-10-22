@@ -3860,8 +3860,13 @@
             }
         },
         "errors": {
-            "app_not_open": "Öffne die Algorand-App auf deinem Ledger. Kehre danach zu Pera zurück und fahre fort.",
-            "app_not_open_title": "Algorand-App öffnen",
+            "app_not_open": "Öffne die {{appName}}-App auf deinem Ledger. Kehre danach zu Pera zurück und fahre fort.",
+            "app_not_open_title": "{{appName}}-App öffnen",
+            "app_not_open_unnamed": "Öffne die App für dieses Konto auf deinem Ledger. Kehre danach zu Pera zurück und fahre fort.",
+            "app_not_open_unnamed_title": "App auf deinem Ledger öffnen",
+            "blind_signing_required": "Die {{appName}}-App auf deinem Ledger braucht Blind Signing für diese Transaktion. Aktiviere Blind Signing in den Einstellungen der App auf deinem Ledger und versuche es dann erneut.",
+            "blind_signing_required_unnamed": "Die App auf deinem Ledger braucht Blind Signing für diese Transaktion. Aktiviere Blind Signing in den Einstellungen der App auf deinem Ledger und versuche es dann erneut.",
+            "blind_signing_required_title": "Blind Signing aktivieren",
             "connection_lost": "Verbindung verloren. Verbinde deinen Ledger erneut und versuche es noch einmal.",
             "connection_lost_title": "Verbindung verloren",
             "user_rejected": "Anfrage abgebrochen. Der Vorgang wurde auf deinem Ledger-Gerät abgebrochen.",

@@ -28,6 +28,7 @@ export type LedgerErrorPresetKind =
     | 'transmission_error'
     | 'public_key_read_failed'
     | 'app_not_open'
+    | 'blind_signing_required'
     | 'address_mismatch'
     | 'network_error'
     | 'unsupported_device'
@@ -45,7 +46,7 @@ export type LedgerErrorPresetKind =
 
 /**
  * Connection-class failures, where the troubleshooting checklist (device on,
- * unlocked, nearby, Algorand app open, re-pair) is a useful supplement to the
+ * unlocked, nearby, the chain's app open, re-pair) is a useful supplement to the
  * error's own copy. The UI presets alias this set as `TROUBLESHOOTABLE_KINDS`
  * and render a link to the troubleshooting sheet for these kinds only.
  *

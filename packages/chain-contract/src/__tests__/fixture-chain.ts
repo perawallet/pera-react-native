@@ -170,6 +170,7 @@ export const fixturePlanner: TransactionPlanner = {
                 signer,
                 scheme: 'ed25519',
                 payload: new TextEncoder().encode(body),
+                devicePayload: new TextEncoder().encode(body),
             },
         ]
     },

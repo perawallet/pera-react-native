@@ -166,8 +166,7 @@ describe('algorandPlannerAdapter.assembleSignedTransaction', () => {
 
 describe('algorandPlannerAdapter.unsignedTransactionBytesOf', () => {
     test('is the unsigned encoding of the transaction an envelope carries, signed or not', () => {
-        const expected =
-            algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
+        const expected = encodeTransactionRaw(payment)
 
         expect(
             algorandPlannerAdapter.unsignedTransactionBytesOf(
@@ -261,15 +260,6 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
         expect(
             algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
         ).toBeUndefined()
-    })
-})
-
-describe('algorandPlannerAdapter.encodeUnsignedTransaction', () => {
-    test('is the wire encoding without the signing-domain prefix', () => {
-        const bytes = algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
-
-        expect(bytes).toEqual(encodeTransactionRaw(payment))
-        expect(new TextDecoder().decode(bytes.slice(0, 2))).not.toBe('TX')
     })
 })
 

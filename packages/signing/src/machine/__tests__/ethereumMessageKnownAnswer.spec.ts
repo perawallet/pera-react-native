@@ -67,7 +67,6 @@ const inputFor = (request: MessageSignRequest) => {
         signArbitraryData: vi.fn(),
         signAuthData: vi.fn(),
         createTransport: () => createCallbackTransport(),
-        encodeTransaction: vi.fn(),
         scope: MAINNET,
         keyStore: kms,
     } as unknown as SigningMachineInput

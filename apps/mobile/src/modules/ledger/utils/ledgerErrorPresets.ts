@@ -13,6 +13,7 @@
 import {
     BLE_CLASS_ERROR_KINDS,
     classifyLedgerErrorKind,
+    ledgerAppNameOf,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
@@ -85,6 +86,23 @@ const ACTION_BY_KIND: Partial<
 }
 
 /**
+ * Copy for an app-level error that names no app; with a name, the kind's own
+ * keys interpolate it as `{{appName}}`.
+ */
+const UNNAMED_APP_COPY: Partial<
+    Record<LedgerErrorPresetKind, { title: I18nKey; body: I18nKey }>
+> = {
+    app_not_open: {
+        title: i18nKey('ledger.errors.app_not_open_unnamed_title'),
+        body: i18nKey('ledger.errors.app_not_open_unnamed'),
+    },
+    blind_signing_required: {
+        title: i18nKey('ledger.errors.blind_signing_required_title'),
+        body: i18nKey('ledger.errors.blind_signing_required_unnamed'),
+    },
+}
+
+/**
  * Builds a preset directly from a `LedgerErrorPresetKind` without needing the
  * original Error instance. Used by overlay adapters whose state already holds
  * the classified kind (e.g. the hardware-signing store), so we don't have to
@@ -93,13 +111,16 @@ const ACTION_BY_KIND: Partial<
 export const getLedgerErrorPresetByKind = (
     kind: LedgerErrorPresetKind,
     t: Translate,
+    appName?: string,
 ): LedgerErrorPreset => {
     const action = ACTION_BY_KIND[kind]
+    const unnamed = appName ? undefined : UNNAMED_APP_COPY[kind]
+    const params = appName ? { appName } : undefined
 
     return {
         kind,
-        title: t(`ledger.errors.${kind}_title`),
-        body: t(`ledger.errors.${kind}`),
+        title: t(unnamed?.title ?? `ledger.errors.${kind}_title`, params),
+        body: t(unnamed?.body ?? `ledger.errors.${kind}`, params),
         isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
         isRetryable: !NON_RETRYABLE_KINDS.has(kind),
         action: action ? { kind: action.kind, label: t(action.key) } : null,
@@ -115,4 +136,8 @@ export const getLedgerErrorPreset = (
     error: unknown,
     t: Translate,
 ): LedgerErrorPreset =>
-    getLedgerErrorPresetByKind(classifyLedgerErrorKind(error), t)
+    getLedgerErrorPresetByKind(
+        classifyLedgerErrorKind(error),
+        t,
+        ledgerAppNameOf(error),
+    )

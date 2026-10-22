@@ -19,10 +19,10 @@ import type { SignableGroup } from '../../pipeline/types'
 import type { SignerCredential } from './resolveSignerCredential'
 
 /**
- * The planner signs a local key only in the scheme it plans and assembles only
- * a complete signature set, so a key in another scheme (an Algorand quantum
- * key), a multisig cosignature and every other custody stay with the chain's
- * own signer.
+ * The planner signs a local key or a device only in the scheme it plans and
+ * assembles only a complete signature set, so a key in another scheme (an
+ * Algorand quantum key), a multisig cosignature and multisig custody stay with
+ * the chain's own signer.
  */
 export const isPlannerSigned = (
     group: SignableGroup,
@@ -30,7 +30,8 @@ export const isPlannerSigned = (
     chainId: ChainId,
 ): boolean => {
     if (
-        credential?.custody !== 'local' ||
+        (credential?.custody !== 'local' &&
+            credential?.custody !== 'hardware') ||
         group.data.type !== 'transactions' ||
         group.shouldUseChainSigner ||
         group.source.type === 'multisig-cosign'

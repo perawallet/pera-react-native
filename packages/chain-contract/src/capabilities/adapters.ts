@@ -23,8 +23,9 @@ import type { ChainCapability } from '../models/capabilities'
  * or its feature has no registry yet (`staking`, …); add an entry whenever a
  * chain could enable it without an adapter it needs.
  *
- * Send and dApp signing go through the chain-neutral `transactionPlanner`;
- * Ledger and multisig still sign through signing's Algorand-only `planner`.
+ * Send, dApp and Ledger signing go through the chain-neutral
+ * `transactionPlanner`; multisig still signs through signing's Algorand-only
+ * `planner`.
  * Send lists no reviewer: signing takes a chain's `reviewer` or its
  * `transactionReviewer`, and refuses to sign with neither.
  */
@@ -44,7 +45,7 @@ export const CAPABILITY_ADAPTERS = {
         'broadcaster',
     ],
     watchAccounts: ['accounts', 'addressCodec'],
-    ledger: ['ledger app driver', 'planner', 'reviewer'],
+    ledger: ['ledger app driver', 'transactionPlanner', 'reviewer'],
     multisig: ['multisig', 'planner', 'reviewer'],
     swap: ['swap'],
     card: ['card'],

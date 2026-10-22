@@ -206,12 +206,15 @@ export const algorandTransactionPlanner: TransactionPlanner = {
         const { transaction, signer, multisig } =
             readAlgorandTransaction(unsigned)
         const payload = encodeTransaction(transaction)
+        // The Algorand Ledger app adds the signing-domain prefix itself.
+        const devicePayload = encodeTransactionRaw(transaction)
         return (multisig?.addresses ?? [signer]).map(
             (address, requestIndex) => ({
                 requestIndex,
                 signer: address,
                 scheme: 'ed25519',
                 payload: payload.slice(),
+                devicePayload: devicePayload.slice(),
             }),
         )
     },

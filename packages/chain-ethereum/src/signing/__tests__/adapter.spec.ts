@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { bytesToHex, keccak256 } from 'viem'
+import { bytesToHex, hexToBytes, keccak256, serializeTransaction } from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import {
     i18nKey,
@@ -85,6 +85,12 @@ describe('ethereumPlannerAdapter', () => {
                     signer: SENDER,
                     scheme: 'secp256k1',
                     payload: transactionDigest(transaction).digest,
+                    devicePayload: hexToBytes(
+                        serializeTransaction({
+                            ...transaction,
+                            type: 'eip1559',
+                        }),
+                    ),
                 },
             ])
             expect(bytesToHex(result.bytes)).toBe(expected)
@@ -92,6 +98,15 @@ describe('ethereumPlannerAdapter', () => {
             expect(result.scope).toEqual(input.scope)
         },
     )
+
+    it('gives a device the unsigned EIP-2718 serialization, which hashes to the digest the key signs', () => {
+        const [request] = plan(unsigned(TRANSFER))
+
+        expect(request.devicePayload?.[0]).toBe(0x02)
+        expect(
+            keccak256(request.devicePayload ?? new Uint8Array(), 'bytes'),
+        ).toEqual(request.payload)
+    })
 
     it('checksums a lowercase sender', () => {
         const input = unsigned(TRANSFER, {

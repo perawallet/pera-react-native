@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerConnectionError,
     LedgerDisconnectedError,
     LedgerTimeoutError,
@@ -48,6 +49,68 @@ describe('getLedgerErrorPreset', () => {
     it('maps LedgerAppNotOpenError to app_not_open preset', () => {
         const preset = getLedgerErrorPreset(new LedgerAppNotOpenError(), t)
         expect(preset.kind).toBe('app_not_open')
+    })
+
+    describe('copy that names the device app', () => {
+        // Echoes the key with its params, so a test sees what was interpolated.
+        const translate = (key: string, options?: Record<string, unknown>) =>
+            options ? `${key}(${JSON.stringify(options)})` : key
+
+        it('names the app an app-not-open error carries', () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerAppNotOpenError({ appName: 'Ethereum' }),
+                translate,
+            )
+
+            expect(preset.title).toBe(
+                'ledger.errors.app_not_open_title({"appName":"Ethereum"})',
+            )
+            expect(preset.body).toBe(
+                'ledger.errors.app_not_open({"appName":"Ethereum"})',
+            )
+        })
+
+        it('falls back to copy naming no app when the error carries none', () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerAppNotOpenError(),
+                translate,
+            )
+
+            expect(preset.title).toBe(
+                'ledger.errors.app_not_open_unnamed_title',
+            )
+            expect(preset.body).toBe('ledger.errors.app_not_open_unnamed')
+        })
+
+        it('asks for blind signing in the app the refusal names, with a retry', () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerBlindSigningRequiredError({ appName: 'Ethereum' }),
+                translate,
+            )
+
+            expect(preset).toEqual({
+                kind: 'blind_signing_required',
+                title: 'ledger.errors.blind_signing_required_title({"appName":"Ethereum"})',
+                body: 'ledger.errors.blind_signing_required({"appName":"Ethereum"})',
+                isTroubleshootable: false,
+                isRetryable: true,
+                action: null,
+            })
+        })
+
+        it('asks for blind signing without naming an app when the refusal names none', () => {
+            const preset = getLedgerErrorPresetByKind(
+                'blind_signing_required',
+                translate,
+            )
+
+            expect(preset.title).toBe(
+                'ledger.errors.blind_signing_required_title',
+            )
+            expect(preset.body).toBe(
+                'ledger.errors.blind_signing_required_unnamed',
+            )
+        })
     })
 
     it('maps LedgerDisconnectedError to connection_lost preset', () => {

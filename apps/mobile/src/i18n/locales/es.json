@@ -3868,8 +3868,13 @@
             }
         },
         "errors": {
-            "app_not_open": "Abre la app de Algorand en tu Ledger. Después vuelve a Pera y continúa.",
-            "app_not_open_title": "Abre la app de Algorand",
+            "app_not_open": "Abre la app de {{appName}} en tu Ledger. Después vuelve a Pera y continúa.",
+            "app_not_open_title": "Abre la app de {{appName}}",
+            "app_not_open_unnamed": "Abre la app de esta cuenta en tu Ledger. Después vuelve a Pera y continúa.",
+            "app_not_open_unnamed_title": "Abre la app en tu Ledger",
+            "blind_signing_required": "La app de {{appName}} en tu Ledger necesita la firma a ciegas (blind signing) para esta transacción. Activa Blind signing en los ajustes de la app en tu Ledger y vuelve a intentarlo.",
+            "blind_signing_required_unnamed": "La app de tu Ledger necesita la firma a ciegas (blind signing) para esta transacción. Activa Blind signing en los ajustes de la app en tu Ledger y vuelve a intentarlo.",
+            "blind_signing_required_title": "Activa la firma a ciegas",
             "connection_lost": "Conexión perdida. Vuelve a conectar tu Ledger e inténtalo de nuevo.",
             "connection_lost_title": "Conexión perdida",
             "user_rejected": "Solicitud cancelada. La operación se canceló en tu dispositivo Ledger.",
