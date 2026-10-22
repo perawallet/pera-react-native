@@ -18,6 +18,7 @@ import {
     type SigningRequest,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     CannotSignError,
     type ArbitraryDataMessagePayload,
@@ -28,7 +29,7 @@ import { algorandAddressOf, isQuantumAccount } from '../../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { decodeArbitraryDataForDisplay } from '../arbitraryDataDisplay'
 import { arbitraryDataPayloadFor } from './arbitraryDataPayload'
-import { arc60AuthPayloadFor } from './arc60AuthPayload'
+import { arc60AuthPayloadFor, arc60LedgerRequestFor } from './arc60AuthPayload'
 import { Arc60InvalidSignerError } from './arc60-errors'
 import { parseArc60ForDisplay } from './parseArc60ForDisplay'
 
@@ -134,15 +135,19 @@ export const describeAlgorandMessage = (
     throw new Error(`Unsupported message method ${request.method}`)
 }
 
+type PlannedPayload = Pick<SigningRequest, 'payload' | 'devicePayload'>
+
 const planPayload = (
     request: MessageRequest,
     { account, accounts }: MessagePlanContext,
-): Uint8Array => {
+): PlannedPayload => {
     if (request.method === ARBITRARY_DATA_METHOD) {
-        return arbitraryDataPayloadFor(
-            account,
-            readArbitraryData(request.payload).data,
-        )
+        return {
+            payload: arbitraryDataPayloadFor(
+                account,
+                readArbitraryData(request.payload).data,
+            ),
+        }
     }
     const { authData, metadata } = readAuthData(request.payload)
     if (authData.signer !== request.signer) {
@@ -151,7 +156,12 @@ const planPayload = (
             `the request names ${request.signer} as its signer`,
         )
     }
-    return arc60AuthPayloadFor(account, authData, metadata, accounts)
+    if (isHardwareWalletAccount(account)) {
+        return arc60LedgerRequestFor(account, authData, metadata, accounts)
+    }
+    return {
+        payload: arc60AuthPayloadFor(account, authData, metadata, accounts),
+    }
 }
 
 export const planAlgorandMessage = (
@@ -182,7 +192,7 @@ export const planAlgorandMessage = (
             requestIndex: 0,
             signer: address,
             scheme: isQuantumAccount(account) ? 'falcon-1024' : 'ed25519',
-            payload: planPayload(request, context),
+            ...planPayload(request, context),
         },
     ]
 }

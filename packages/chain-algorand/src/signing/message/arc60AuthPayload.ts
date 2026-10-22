@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Address } from 'algosdk'
 import {
     canSignArbitraryData,
     InvalidBip44PathError,
@@ -29,6 +30,7 @@ import {
     isQuantumAccount,
 } from '../../accounts/vocabulary'
 import { buildArc60AuthSigningPayload, validateArc60AuthRequest } from './arc60'
+import { encodeAlgorandLedgerMessage } from '../../ledger/messagePayload'
 import { Arc60FailedHdPathError, Arc60InvalidSignerError } from './arc60-errors'
 
 /**
@@ -37,8 +39,8 @@ import { Arc60FailedHdPathError, Arc60InvalidSignerError } from './arc60-errors'
  * Throws spec-aligned errors (`Arc60*Error`) for every rejection path so the
  * caller can surface a precise reason to the dApp.
  *
- * Local-key only (Algo25 / HDWallet / quantum). Ledger takes a separate route
- * through the hardware strategy.
+ * Local-key only (Algo25 / HDWallet / quantum); a Ledger account plans through
+ * {@link arc60LedgerRequestFor}.
  */
 export const arc60AuthPayloadFor = (
     account: WalletAccount,
@@ -111,4 +113,40 @@ export const arc60AuthPayloadFor = (
 
     // ARC-60 payload is signed as-is — no MX prefix.
     return payload
+}
+
+/**
+ * A Ledger account's ARC-60 request: the same host-side validation, with the
+ * request the Algorand app hashes on-device as `devicePayload`. `hdPath` is
+ * not checked, because the device derives its key from the account index.
+ */
+export const arc60LedgerRequestFor = (
+    account: WalletAccount,
+    authData: AuthData,
+    metadata: AuthDataMetadata,
+    accounts: WalletAccount[],
+): { payload: Uint8Array; devicePayload: Uint8Array } => {
+    const address = algorandAddressOf(account) ?? ''
+    const { decodedData } = validateArc60AuthRequest(
+        authData,
+        metadata,
+        accounts,
+    )
+    return {
+        payload: buildArc60AuthSigningPayload(
+            decodedData,
+            authData.authenticatorData,
+        ),
+        devicePayload: encodeAlgorandLedgerMessage({
+            data: authData.data,
+            signerPublicKey: Address.fromString(address).publicKey,
+            domain: authData.domain,
+            authenticatorData: authData.authenticatorData,
+            ...(authData.requestId !== undefined && {
+                requestId: authData.requestId,
+            }),
+            scope: metadata.scope,
+            encoding: metadata.encoding,
+        }),
+    }
 }

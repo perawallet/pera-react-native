@@ -44,10 +44,15 @@ import {
 import {
     messageAccount,
     messageAddress,
+    messageKeyPair,
     otherMessageAddress,
     siwaAuthPayload,
 } from './messageFixtures'
-import { watchAccount } from '../../../__tests__/algorandAccounts'
+import {
+    hardwareAccount,
+    watchAccount,
+} from '../../../__tests__/algorandAccounts'
+import { decodeAlgorandLedgerMessage } from '../../../ledger/messagePayload'
 
 const scope = getSelectedScope(ALGORAND_CHAIN_ID)
 const address = messageAddress
@@ -274,6 +279,64 @@ describe('algorand message signer', () => {
             expect(() => planAlgorandMessage(request, context)).toThrow(
                 Arc60BadJsonError,
             )
+        })
+
+        describe('on a Ledger account', () => {
+            const ledger = hardwareAccount(address)
+            const ledgerContext = { account: ledger, accounts: [ledger] }
+
+            it('plans auth-data with the ARC-60 request the app takes as its device payload', () => {
+                const { authData, metadata } = siwaAuthPayload(address)
+                const request = authDataMessageRequest(scope, address, {
+                    authData: { ...authData, requestId: 'request-1' },
+                    metadata,
+                })
+
+                const [item] = planAlgorandMessage(request, ledgerContext)
+
+                expect(item.scheme).toBe('ed25519')
+                expect(item.payload).toEqual(
+                    planAlgorandMessage(authRequest(), context)[0].payload,
+                )
+                expect(
+                    decodeAlgorandLedgerMessage(item.devicePayload!),
+                ).toEqual({
+                    data: authData.data,
+                    signerPublicKey: messageKeyPair.publicKey,
+                    domain: authData.domain,
+                    authenticatorData: authData.authenticatorData,
+                    requestId: 'request-1',
+                    scope: metadata.scope,
+                    encoding: metadata.encoding,
+                })
+            })
+
+            it('refuses auth-data that fails host validation, before any device payload is built', () => {
+                const payload = siwaAuthPayload(address)
+                const request = authDataMessageRequest(scope, address, {
+                    ...payload,
+                    authData: {
+                        ...payload.authData,
+                        data: b64('{"not":"siwa"}'),
+                    },
+                })
+
+                expect(() =>
+                    planAlgorandMessage(request, ledgerContext),
+                ).toThrow(Arc60BadJsonError)
+            })
+
+            it('still refuses arbitrary data', () => {
+                expect(() =>
+                    planAlgorandMessage(mxRequest(b64('hello')), ledgerContext),
+                ).toThrow(`Cannot sign arbitrary data for ${address}`)
+            })
+        })
+
+        it('gives a local-key plan no device payload', () => {
+            const [item] = planAlgorandMessage(authRequest(), context)
+
+            expect(item.devicePayload).toBeUndefined()
         })
 
         it('keeps the MX refusal for an account that cannot sign data', () => {

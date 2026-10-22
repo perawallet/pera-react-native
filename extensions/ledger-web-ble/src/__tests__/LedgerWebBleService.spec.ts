@@ -43,7 +43,7 @@ import { LedgerWebBleService } from '../LedgerWebBleService'
 const openedTransport: HardwareWalletTransport = {
     getAddress: vi.fn(),
     signTransaction: vi.fn(),
-    signData: vi.fn(),
+    signMessage: vi.fn(),
     getAppVersion: vi.fn(),
     disconnect: vi.fn(),
 }

@@ -22,7 +22,6 @@ import { CannotSignError } from '../pipeline/errors'
 import {
     arbitraryDataMessageRequest,
     authDataMessageRequest,
-    authDataSignerFor,
     buildSiwxAuthData,
     canSignMessage,
     isAuthDataWirePayload,
@@ -102,24 +101,6 @@ describe('a chain whose message signer signs no auth data', () => {
         expect(() => buildSiwxAuthData(CHAIN, siwxArgs)).toThrow(
             `chain ${CHAIN} has no auth-data signer`,
         )
-    })
-
-    it('refuses an auth-data signer with a CannotSignError', () => {
-        expect(() => authDataSignerFor(CHAIN, 'ADDR')).toThrow(CannotSignError)
-    })
-})
-
-describe('authDataSignerFor', () => {
-    it("returns the chain's auth-data leg", () => {
-        const adapter = registerFakeMessageSignerAdapter()
-
-        expect(authDataSignerFor(CHAIN, 'ADDR')).toBe(adapter.authData)
-    })
-
-    it('refuses with a CannotSignError when no signer is registered', () => {
-        messageSignerChainAdapters.reset()
-
-        expect(() => authDataSignerFor(CHAIN, 'ADDR')).toThrow(CannotSignError)
     })
 })
 

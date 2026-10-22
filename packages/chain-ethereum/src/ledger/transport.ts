@@ -11,8 +11,17 @@
  */
 
 import type Eth from '@ledgerhq/hw-app-eth'
-import { bytesToHex, hexToBytes } from 'viem'
+import {
+    bytesToHex,
+    concat,
+    hashMessage,
+    hexToBytes,
+    isAddressEqual,
+    keccak256,
+    recoverAddress,
+} from 'viem'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import type {
     HardwareWalletTransport,
     LedgerAppErrorClassifier,
@@ -21,13 +30,17 @@ import type {
 import {
     classifyLedgerAppError,
     classifyLedgerError,
+    getStatusCode,
     LedgerBlindSigningRequiredError,
-    LedgerOperationUnsupportedError,
     LedgerSigningError,
 } from '@perawallet/wallet-extension-ledger-shared'
 import { normalizeEvmAddress } from '../accounts/address-codec'
 import { ethereumHdPath } from '../accounts/hd-derivation'
 import { ETHEREUM_LEDGER_APP } from './app'
+import {
+    decodeEthereumLedgerMessage,
+    type EthereumLedgerMessage,
+} from './messagePayload'
 
 type SignResolution = Parameters<Eth['signTransaction']>[2]
 
@@ -66,6 +79,70 @@ const toEthereumSignatureBytes = ({
     return hexToBytes(`0x${r}${s}0${v.slice(-1)}`)
 }
 
+// INS not supported: a Nano S, or an app too old for full EIP-712.
+const EIP712_UNSUPPORTED_STATUS = 0x6d_00
+
+const MESSAGE_V = new Set([27, 28])
+
+// hw-app-eth returns a message's `v` as 27/28; `assemble` reads the recovery bit.
+const toMessageSignatureBytes = ({
+    v,
+    r,
+    s,
+}: {
+    v: number
+    r: string
+    s: string
+}): Uint8Array => {
+    if (
+        !MESSAGE_V.has(v) ||
+        r.length !== COMPONENT_HEX_LENGTH ||
+        s.length !== COMPONENT_HEX_LENGTH
+    ) {
+        throw new LedgerSigningError('Unexpected signature returned')
+    }
+    return hexToBytes(`0x${r}${s}0${v - 27}`)
+}
+
+// A host bug, not a device failure, so no retry can fix it.
+const decodeMessage = (payload: Uint8Array): EthereumLedgerMessage => {
+    try {
+        return decodeEthereumLedgerMessage(payload)
+    } catch {
+        throw new InvalidSignableDataError('Not an Ethereum Ledger message')
+    }
+}
+
+// The app hashes the message itself, so an encoding it disagrees on would
+// otherwise reach the dApp as a valid signature for some other address.
+const assertSignsPlannedDigest = async (
+    message: EthereumLedgerMessage,
+    signature: Uint8Array,
+): Promise<void> => {
+    const hash =
+        message.kind === 'personal'
+            ? hashMessage({ raw: message.message })
+            : keccak256(
+                  concat([
+                      '0x1901',
+                      message.domainSeparator,
+                      message.structHash,
+                  ]),
+              )
+    const recovered = await recoverAddress({
+        hash,
+        signature: bytesToHex(signature),
+    })
+    if (!isAddressEqual(recovered, message.signer)) {
+        throw new LedgerSigningError(
+            'The device signed something other than the reviewed message',
+        )
+    }
+}
+
+// hw-app-eth does `Buffer.from(hex, 'hex')`, which reads a `0x` prefix as an empty buffer.
+const unprefixed = (hex: string): string => hex.slice(2)
+
 export const createEthereumLedgerTransport = (
     transport: LedgerAppTransport,
     eth: Eth,
@@ -86,14 +163,6 @@ export const createEthereumLedgerTransport = (
                   ETHEREUM_LEDGER_APP,
                   classifyTransportError,
               )
-
-    const unsupported = () =>
-        Promise.reject(
-            new LedgerOperationUnsupportedError({
-                appName: ETHEREUM_LEDGER_APP.appName,
-                operation: 'signData',
-            }),
-        )
 
     return {
         async getAddress(accountIndex, verify = false) {
@@ -161,9 +230,43 @@ export const createEthereumLedgerTransport = (
             }
         },
 
-        assertCanSignData: unsupported,
-
-        signData: unsupported,
+        async signMessage(accountIndex, payload) {
+            try {
+                const message = decodeMessage(payload)
+                const path = ethereumHdPath(accountIndex, 0)
+                if (message.kind === 'personal') {
+                    const signature = toMessageSignatureBytes(
+                        await eth.signPersonalMessage(
+                            path,
+                            unprefixed(message.message),
+                        ),
+                    )
+                    await assertSignsPlannedDigest(message, signature)
+                    return signature
+                }
+                // Full mode fetches Ledger's clear-signing filters with no
+                // timeout of its own; the leg's confirmation ceiling bounds it.
+                const signature = await eth
+                    .signEIP712Message(path, message.typedData as never)
+                    .catch((error: unknown) => {
+                        if (
+                            getStatusCode(error) !== EIP712_UNSUPPORTED_STATUS
+                        ) {
+                            throw error
+                        }
+                        return eth.signEIP712HashedMessage(
+                            path,
+                            unprefixed(message.domainSeparator),
+                            unprefixed(message.structHash),
+                        )
+                    })
+                const bytes = toMessageSignatureBytes(signature)
+                await assertSignsPlannedDigest(message, bytes)
+                return bytes
+            } catch (error) {
+                throw classifyError(error)
+            }
+        },
 
         ...(transport.on
             ? {

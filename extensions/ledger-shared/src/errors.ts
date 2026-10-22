@@ -485,42 +485,12 @@ export class LedgerBlindSigningRequiredError extends LedgerError {
 }
 
 /**
- * The device app lacks the instruction by design, so no update fixes it
- * (unlike `LedgerAppOutdatedError`). Reaching it means a request was routed to
- * a transport that cannot serve it.
- */
-export class LedgerOperationUnsupportedError extends LedgerError {
-    readonly appName: string
-    readonly operation: string
-
-    constructor({
-        appName,
-        operation,
-        originalError,
-    }: {
-        appName: string
-        operation: string
-        originalError?: Error
-    }) {
-        super({
-            name: 'LedgerOperationUnsupportedError',
-            message: `The Ledger ${appName} app does not support ${operation}`,
-            severity: MEDIUM,
-            retryable: false,
-            originalError,
-        })
-        this.appName = appName
-        this.operation = operation
-    }
-}
-
-/**
  * Extract the APDU status code from a Ledger SDK error. App libraries built on
  * `@zondax/ledger-js` expose `returnCode` via its `ResponseError`; legacy
  * `statusCode` is also handled for compatibility. Prefer `statusCode` when
  * both are present.
  */
-const getStatusCode = (error: unknown): Nullable<number> => {
+export const getStatusCode = (error: unknown): Nullable<number> => {
     if (error === null || typeof error !== 'object') return null
     const record = error as { statusCode?: unknown; returnCode?: unknown }
     if (typeof record.statusCode === 'number') return record.statusCode

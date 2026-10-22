@@ -13,11 +13,11 @@
 import { Buffer } from 'buffer'
 import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
-    HardwareWalletArbitrarySignRequest,
     HardwareWalletTransport,
     LedgerAppErrorClassifier,
     LedgerAppTransport,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import {
     classifyLedgerAppError,
     classifyLedgerError,
@@ -29,6 +29,7 @@ import {
     ALGORAND_LEDGER_APP,
     ALGORAND_LEDGER_MIN_SIGN_DATA_VERSION,
 } from './app'
+import { decodeAlgorandLedgerMessage } from './messagePayload'
 import { buildLedgerAccountPath } from './path'
 
 /**
@@ -112,7 +113,8 @@ export const createAlgorandLedgerTransport = (
 
         getAppVersion,
 
-        async assertCanSignData() {
+        // The early gate; the device's own error is the fallback.
+        async assertCanSignMessage() {
             const version = await getAppVersion()
             if (
                 !isAppVersionAtLeast(
@@ -127,20 +129,27 @@ export const createAlgorandLedgerTransport = (
             }
         },
 
-        async signData(
-            request: HardwareWalletArbitrarySignRequest,
-        ): Promise<Uint8Array> {
+        async signMessage(accountIndex, payload) {
+            let message
+            try {
+                message = decodeAlgorandLedgerMessage(payload)
+            } catch {
+                // A host bug, not a device failure, so no retry can fix it.
+                throw new InvalidSignableDataError(
+                    'Not an Algorand Ledger message',
+                )
+            }
             try {
                 const result = await algorandApp.signData(
                     {
-                        data: request.data,
-                        signer: request.signerPublicKey,
-                        domain: request.domain,
-                        authenticationData: request.authenticatorData,
-                        requestId: request.requestId,
-                        hdPath: buildLedgerAccountPath(request.accountIndex),
+                        data: message.data,
+                        signer: message.signerPublicKey,
+                        domain: message.domain,
+                        authenticationData: message.authenticatorData,
+                        requestId: message.requestId,
+                        hdPath: buildLedgerAccountPath(accountIndex),
                     },
-                    { scope: request.scope, encoding: request.encoding },
+                    { scope: message.scope, encoding: message.encoding },
                 )
                 const signature = Uint8Array.from(result.signature)
                 if (signature.length === 0) {

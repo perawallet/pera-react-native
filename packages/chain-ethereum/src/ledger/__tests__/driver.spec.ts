@@ -13,14 +13,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     bytesToHex,
+    concat,
+    hashMessage,
+    hashTypedData,
     hexToBytes,
+    keccak256,
     recoverTransactionAddress,
     serializeTransaction,
+    toHex,
+    verifyMessage,
+    verifyTypedData,
 } from 'viem'
+import type { TypedDataDefinition } from 'viem'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     constructed: vi.fn(),
@@ -28,6 +38,9 @@ const mocks = vi.hoisted(() => ({
     signTransaction: vi.fn(),
     getAppConfiguration: vi.fn(),
     resolveTransaction: vi.fn(),
+    signPersonalMessage: vi.fn(),
+    signEIP712Message: vi.fn(),
+    signEIP712HashedMessage: vi.fn(),
 }))
 
 vi.mock('@ledgerhq/hw-app-eth', () => ({
@@ -40,21 +53,30 @@ vi.mock('@ledgerhq/hw-app-eth', () => ({
         getAddress = mocks.getAddress
         signTransaction = mocks.signTransaction
         getAppConfiguration = mocks.getAppConfiguration
+        signPersonalMessage = mocks.signPersonalMessage
+        signEIP712Message = mocks.signEIP712Message
+        signEIP712HashedMessage = mocks.signEIP712HashedMessage
     },
 }))
 
 import {
     LedgerAppNotOpenError,
     LedgerBlindSigningRequiredError,
+    LedgerConnectionError,
     LedgerDeviceBusyError,
-    LedgerOperationUnsupportedError,
     LedgerSigningError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-shared'
 import { createEvmPlannerAdapter } from '../../signing/adapter'
+import {
+    createEvmMessageSignerAdapter,
+    personalSignMessageRequest,
+    typedDataMessageRequest,
+} from '../../signing/messages'
 import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 import {
     ERC20_TRANSFER,
+    MAIL_TYPED_DATA,
     SENDER,
     TRANSFER,
     VIEM_ERC20_TRANSFER,
@@ -335,27 +357,214 @@ describe('ethereumLedgerAppDriver', () => {
         })
     })
 
-    describe('message signing', () => {
-        it('rejects signData and assertCanSignData as unsupported, without touching the app', async () => {
-            const transport = open()
+    describe('signMessage', () => {
+        const messages = createEvmMessageSignerAdapter(ETHEREUM)
+        const MAINNET = { chainId: 'ethereum', networkId: 'mainnet' }
+        const ledger = {
+            id: 'ledger',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'd1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 0,
+            },
+            chains: { ethereum: { address: SENDER } },
+        } as WalletAccount
+        const mail = MAIL_TYPED_DATA as unknown as TypedDataDefinition
+        const HELLO = toHex('hello world')
+
+        // What the app hands back for a message: `v` is 27 or 28.
+        const appSignature = (digest: Hex) => {
+            const hex = bytesToHex(vectorSignature(hexToBytes(digest))).slice(2)
+            return {
+                r: hex.slice(0, 64),
+                s: hex.slice(64, 128),
+                v: 27 + Number.parseInt(hex.slice(128), 16),
+            }
+        }
+
+        const signThroughDriver = async (
+            request: ReturnType<typeof personalSignMessageRequest>,
+        ) => {
+            const [item] = messages.plan(request, {
+                account: ledger,
+                accounts: [ledger],
+            })
+            const bytes = await open().signMessage(3, item.devicePayload!)
+            const signed = messages.assemble(request, [
+                {
+                    requestIndex: 0,
+                    signer: item.signer,
+                    scheme: item.scheme,
+                    bytes,
+                },
+            ])
+            return bytesToHex(signed.signature.bytes)
+        }
+
+        const unsupported = Object.assign(new Error('INS not supported'), {
+            statusCode: 0x6d00,
+        })
+
+        beforeEach(() => {
+            mocks.signPersonalMessage.mockResolvedValue(
+                appSignature(hashMessage({ raw: HELLO })),
+            )
+            mocks.signEIP712Message.mockResolvedValue(
+                appSignature(hashTypedData(mail)),
+            )
+            mocks.signEIP712HashedMessage.mockImplementation(
+                async (
+                    _path: string,
+                    domainSeparator: string,
+                    structHash: string,
+                ) =>
+                    appSignature(
+                        keccak256(
+                            concat([
+                                '0x1901',
+                                `0x${domainSeparator}`,
+                                `0x${structHash}`,
+                            ]),
+                        ),
+                    ),
+            )
+        })
+
+        it('signs personal_sign with signPersonalMessage and returns a signature viem verifies', async () => {
+            const signature = await signThroughDriver(
+                personalSignMessageRequest(MAINNET, SENDER, HELLO),
+            )
+
+            expect(mocks.signPersonalMessage).toHaveBeenCalledWith(
+                "m/44'/60'/3'/0/0",
+                HELLO.slice(2),
+            )
+            await expect(
+                verifyMessage({
+                    address: SENDER,
+                    message: 'hello world',
+                    signature,
+                }),
+            ).resolves.toBe(true)
+        })
+
+        it('signs typed data in full EIP-712 mode and returns a signature viem verifies', async () => {
+            const signature = await signThroughDriver(
+                typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+            )
+
+            expect(mocks.signEIP712Message).toHaveBeenCalledWith(
+                "m/44'/60'/3'/0/0",
+                expect.objectContaining({
+                    primaryType: 'Mail',
+                    types: expect.objectContaining({
+                        EIP712Domain: expect.any(Array),
+                    }),
+                }),
+            )
+            expect(mocks.signEIP712HashedMessage).not.toHaveBeenCalled()
+            await expect(
+                verifyTypedData({ address: SENDER, signature, ...mail }),
+            ).resolves.toBe(true)
+        })
+
+        it('falls back to hashed mode when the app reports no full EIP-712 support, and the result still verifies', async () => {
+            mocks.signEIP712Message.mockRejectedValue(unsupported)
+
+            const signature = await signThroughDriver(
+                typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+            )
+
+            expect(mocks.signEIP712HashedMessage).toHaveBeenCalledTimes(1)
+            const [, domainSeparator, structHash] =
+                mocks.signEIP712HashedMessage.mock.calls[0]
+            expect(domainSeparator).toMatch(/^[0-9a-f]{64}$/)
+            expect(structHash).toMatch(/^[0-9a-f]{64}$/)
+            await expect(
+                verifyTypedData({ address: SENDER, signature, ...mail }),
+            ).resolves.toBe(true)
+        })
+
+        it('does not fall back when the user rejects typed data on the device', async () => {
+            mocks.signEIP712Message.mockRejectedValue({ statusCode: 0x6985 })
 
             await expect(
-                transport.signData({
-                    accountIndex: 0,
-                    data: 'e30=',
-                    signerPublicKey: new Uint8Array(65),
-                    domain: 'example.com',
-                    authenticatorData: new Uint8Array(37),
-                    scope: 1,
-                    encoding: 'base64',
-                }),
-            ).rejects.toBeInstanceOf(LedgerOperationUnsupportedError)
-            await expect(transport.assertCanSignData()).rejects.toBeInstanceOf(
-                LedgerOperationUnsupportedError,
+                signThroughDriver(
+                    typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+                ),
+            ).rejects.toBeInstanceOf(LedgerUserRejectedError)
+            expect(mocks.signEIP712HashedMessage).not.toHaveBeenCalled()
+        })
+
+        // Full mode can fail host-side, before any APDU (an unencodable type);
+        // a hashed retry would then be a second prompt for the same request.
+        it('does not fall back when full mode fails without a status word', async () => {
+            mocks.signEIP712Message.mockRejectedValue(
+                new Error('Type "uint7" is not supported'),
             )
-            expect(mocks.getAddress).not.toHaveBeenCalled()
-            expect(mocks.signTransaction).not.toHaveBeenCalled()
-            expect(mocks.getAppConfiguration).not.toHaveBeenCalled()
+
+            await expect(
+                signThroughDriver(
+                    typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+                ),
+            ).rejects.toBeInstanceOf(LedgerConnectionError)
+            expect(mocks.signEIP712HashedMessage).not.toHaveBeenCalled()
+        })
+
+        it('reports blind signing required when hashed mode needs it', async () => {
+            mocks.signEIP712Message.mockRejectedValue(unsupported)
+            mocks.signEIP712HashedMessage.mockRejectedValue({
+                statusCode: 0x6a80,
+            })
+
+            await expect(
+                signThroughDriver(
+                    typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
+                ),
+            ).rejects.toBeInstanceOf(LedgerBlindSigningRequiredError)
+        })
+
+        it('refuses a v other than 27 or 28', async () => {
+            mocks.signPersonalMessage.mockResolvedValue({
+                ...appSignature(hashMessage({ raw: HELLO })),
+                v: 1,
+            })
+
+            await expect(
+                signThroughDriver(
+                    personalSignMessageRequest(MAINNET, SENDER, HELLO),
+                ),
+            ).rejects.toBeInstanceOf(LedgerSigningError)
+        })
+
+        it('refuses a signature that does not recover to the planned signer over the planned digest', async () => {
+            mocks.signPersonalMessage.mockResolvedValue(
+                appSignature(hashTypedData(mail)),
+            )
+
+            await expect(
+                signThroughDriver(
+                    personalSignMessageRequest(MAINNET, SENDER, HELLO),
+                ),
+            ).rejects.toBeInstanceOf(LedgerSigningError)
+        })
+
+        it('refuses a payload that is not an Ethereum Ledger message, without retry and without touching the app', async () => {
+            const error = await open()
+                .signMessage(0, new Uint8Array([1, 2, 3]))
+                .catch((e: unknown) => e)
+
+            expect(error).toBeInstanceOf(InvalidSignableDataError)
+            expect((error as InvalidSignableDataError).metadata.retryable).toBe(
+                false,
+            )
+            expect(mocks.signPersonalMessage).not.toHaveBeenCalled()
+            expect(mocks.signEIP712Message).not.toHaveBeenCalled()
         })
     })
 })

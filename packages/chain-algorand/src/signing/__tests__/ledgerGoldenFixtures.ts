@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { Buffer } from 'buffer'
 import nacl from 'tweetnacl'
 import { Address } from 'algosdk'
+import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletRegistry,
@@ -22,6 +24,7 @@ import type {
     SourceMetadata,
 } from '@perawallet/wallet-core-signing'
 import { groupTransactions } from '../../blockchain'
+import { createAlgorandLedgerTransport } from '../../ledger/transport'
 import { hardwareAccount } from '../../__tests__/algorandAccounts'
 import { generateMultisigAddress } from '../../multisig/address'
 import type { AlgorandTransactionPayload } from '../planner'
@@ -77,15 +80,48 @@ export const createFakeAlgorandLedger = () => {
             prefixed.set(payload, TX_PREFIX.length)
             return nacl.sign.detached(prefixed, LEDGER_KEYS.secretKey)
         },
-        signData: async () => new Uint8Array(64),
+        signMessage: async () => new Uint8Array(64),
         getAppVersion: async () => ({ major: 2, minor: 0, patch: 0 }),
-        assertCanSignData: async () => undefined,
         disconnect: async () => undefined,
     }
     const registry = {
         getProvider: () => ({ connect: async () => transport }),
     } as unknown as HardwareWalletRegistry
     return { registry, received }
+}
+
+type AppCall = { method: string; args: unknown[] }
+
+/**
+ * The Algorand app under the real Algorand Ledger transport, so what it
+ * records sits below the chain-neutral transport interface.
+ */
+export const createFakeAlgorandApp = (
+    version = { major: 2, minor: 0, patch: 0 },
+) => {
+    const calls: AppCall[] = []
+    const record = <T>(method: string, args: unknown[], result: T): T => {
+        calls.push({ method, args })
+        return result
+    }
+    const app = {
+        getVersion: async () => record('getVersion', [], version),
+        getAddressAndPubKey: async (...args: unknown[]) =>
+            record('getAddressAndPubKey', args, {
+                address: Buffer.from(LEDGER_ADDRESS),
+                publicKey: Buffer.from(LEDGER_KEYS.publicKey),
+            }),
+        signData: async (...args: unknown[]) =>
+            record('signData', args, { signature: Buffer.alloc(64, 1) }),
+    } as unknown as AlgorandApp
+    const transport = createAlgorandLedgerTransport(
+        { close: async () => undefined },
+        app,
+    )
+    const registry = {
+        getProvider: () => ({ connect: async () => transport }),
+    } as unknown as HardwareWalletRegistry
+    return { registry, calls }
 }
 
 const payment = (sender: Address | string, amount: bigint): PeraTransaction =>

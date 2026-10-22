@@ -12,6 +12,7 @@
 
 import {
     bytesToHex,
+    getAddress,
     getTypesForEIP712Domain,
     hexToBytes,
     isHex,
@@ -20,7 +21,11 @@ import {
     validateTypedData,
 } from 'viem'
 import type { Hex, TypedDataDefinition, TypedDataParameter } from 'viem'
-import { chainAccountOf, signingKeyOn } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    isHardwareWalletAccount,
+    signingKeyOn,
+} from '@perawallet/wallet-core-accounts'
 import {
     i18nKey,
     type ChainScope,
@@ -42,6 +47,11 @@ import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { ETHEREUM_WC_V2_METHOD } from '../connect/walletConnect'
+import {
+    encodeEthereumLedgerMessage,
+    typedDataLedgerMessage,
+    type EthereumLedgerMessageBody,
+} from '../ledger/messagePayload'
 import { isRecord } from './adapter'
 import {
     personalMessageDigest,
@@ -285,10 +295,17 @@ const describeWith =
         throw new Error(`Unsupported message method ${request.method}`)
     }
 
-const typedDataDigestFor = (
+type PlannedMessage = {
+    digest: TaggedDigest
+    /** Only for a Ledger, which takes the message rather than its digest. */
+    device?: EthereumLedgerMessageBody
+}
+
+const planTypedData = (
     request: MessageRequest,
     chain: EvmChain,
-): TaggedDigest => {
+    forDevice: boolean,
+): PlannedMessage => {
     const typedData = readTypedData(request.payload)
     const domainChainId = typedData.domain?.chainId
     // A signature over another chain's domain would be valid there.
@@ -301,9 +318,27 @@ const typedDataDigestFor = (
         )
     }
     try {
-        return typedDataDigest(typedData)
+        return {
+            digest: typedDataDigest(typedData),
+            ...(forDevice && { device: typedDataLedgerMessage(typedData) }),
+        }
     } catch (error) {
         throw new Error(MALFORMED_TYPED_DATA, { cause: error })
+    }
+}
+
+const planMessage = (
+    request: MessageRequest,
+    chain: EvmChain,
+    forDevice: boolean,
+): PlannedMessage => {
+    if (request.method !== PERSONAL_SIGN) {
+        return planTypedData(request, chain, forDevice)
+    }
+    const { message } = readPersonalSign(request.payload)
+    return {
+        digest: personalMessageDigest({ raw: message }),
+        ...(forDevice && { device: { kind: 'personal', message } }),
     }
 }
 
@@ -330,18 +365,23 @@ const planWith =
         if (!areEvmAddressesEqual(request.signer, ownAddress)) {
             throw refuse(`the request names ${request.signer} as its signer`)
         }
-        const digest =
-            request.method === PERSONAL_SIGN
-                ? personalMessageDigest({
-                      raw: readPersonalSign(request.payload).message,
-                  })
-                : typedDataDigestFor(request, chain)
+        const { digest, device } = planMessage(
+            request,
+            chain,
+            isHardwareWalletAccount(account),
+        )
         return [
             {
                 requestIndex: 0,
                 signer: ownAddress,
                 scheme: 'secp256k1',
                 payload: digest.digest,
+                ...(device && {
+                    devicePayload: encodeEthereumLedgerMessage({
+                        ...device,
+                        signer: getAddress(ownAddress),
+                    }),
+                }),
             },
         ]
     }
@@ -378,10 +418,12 @@ export const createEvmMessageSignerAdapter = (
     chain: EvmChain,
 ): MessageSignerChainAdapter => ({
     chainId: chain.row.id,
-    // Local keys only.
+    // A local key, or a Ledger that signs the plan's device payload.
     canSign: (account, kind) =>
         isSignableKind(kind) &&
-        signingKeyOn(account, chain.row.id) !== undefined,
+        (signingKeyOn(account, chain.row.id) !== undefined ||
+            (isHardwareWalletAccount(account) &&
+                chainAccountOf(account, chain.row.id) !== undefined)),
     // Every EVM verifier recovers a secp256k1 signature.
     signsVerifiably: (_account, kind) => isSignableKind(kind),
     supports,

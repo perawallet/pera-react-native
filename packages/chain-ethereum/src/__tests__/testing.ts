@@ -32,6 +32,7 @@ export const ethereumMessageSignerAdapter =
 
 export { ethereumLocalKeyKinds } from '../accounts/local-key-kinds'
 export { createVectorLedgerTransport } from '../ledger/__tests__/vectorLedgerTransport'
+export { createVectorEthereumLedger } from '../ledger/__tests__/vectorEthereumApp'
 export { type EthereumTransactionPayload } from '../signing/adapter'
 export { createEthereumReviewer } from '../signing/review'
 export { readEthereumNative } from '../signing/transaction-view'
