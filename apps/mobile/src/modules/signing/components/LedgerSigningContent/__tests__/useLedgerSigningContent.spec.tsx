@@ -32,6 +32,14 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
+
 type ChildSnapshotOverrides = {
     value?: 'error' | { active: 'searching' | 'awaiting_approval' | 'signing' }
     deviceName?: string | null
@@ -41,6 +49,7 @@ type ChildSnapshotOverrides = {
     errorKind?: LedgerErrorPresetKind | null
     errorCause?: unknown
     retryCount?: number
+    chainId?: string
 }
 
 // Lightweight stand-in for the real HardwareChildSnapshot — only the surface
@@ -61,6 +70,10 @@ const buildChildSnapshot = (
         value,
         matches,
         context: {
+            scope: {
+                chainId: overrides.chainId ?? 'algorand',
+                networkId: 'mainnet',
+            },
             deviceName: overrides.deviceName ?? 'Nano X',
             currentTx: overrides.currentTx ?? null,
             totalTxs: overrides.totalTxs ?? null,
@@ -184,9 +197,9 @@ describe('useLedgerSigningContent', () => {
             'ledger.errors.blind_signing_required',
         ],
         [
-            'falls back to unnamed copy',
+            "names the signing chain's app when the error names none",
             new LedgerBlindSigningRequiredError(),
-            'ledger.errors.blind_signing_required_unnamed',
+            'ledger.errors.blind_signing_required',
         ],
     ])(
         "%s from the error's cause for a blind-signing refusal",
@@ -208,6 +221,22 @@ describe('useLedgerSigningContent', () => {
             })
         },
     )
+
+    it("names the signing chain's device app", () => {
+        mockPipeline({ snapshot: buildChildSnapshot({ chainId: 'ethereum' }) })
+
+        const { result } = renderHook(() => useLedgerSigningContent())
+
+        expect(result.current.ledgerAppName).toBe('Ethereum')
+    })
+
+    it('names no app outside a hardware signing', () => {
+        mockPipeline({ snapshot: null })
+
+        const { result } = renderHook(() => useLedgerSigningContent())
+
+        expect(result.current.ledgerAppName).toBeNull()
+    })
 
     it('onCancel sends ACKNOWLEDGE_HARDWARE_ERROR when the child is in error', () => {
         const acknowledgeHardwareError = vi.fn()

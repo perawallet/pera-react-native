@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    ledgerAppNameFor,
+    type LedgerTransportType,
+} from '@perawallet/wallet-core-hardware-wallet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
-import { useBlePermissions } from '../../hooks'
+import { useBlePermissions, useLedgerFlowChainId } from '../../hooks'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 type LedgerInstructionsRouteParams = {
@@ -27,6 +30,8 @@ type LedgerInstructionsRouteParams = {
 type UseLedgerInstructionsScreenResult = {
     isChecking: boolean
     transportType: LedgerTransportType
+    /** The device app the steps tell the user to open. */
+    appName: string
     handleContinue: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -42,6 +47,8 @@ export const useLedgerInstructionsScreen =
             >()
         const transportType: LedgerTransportType =
             route.params?.transportType ?? 'ble'
+        const chainId = useLedgerFlowChainId()
+        const appName = useMemo(() => ledgerAppNameFor(chainId), [chainId])
 
         const { hasPermissions, isChecking, requestPermissions } =
             useBlePermissions()
@@ -49,13 +56,13 @@ export const useLedgerInstructionsScreen =
         const handleContinue = useCallback(async () => {
             // USB doesn't require BLE permissions; skip the BLE permission gate.
             if (transportType === 'usb' || hasPermissions) {
-                navigation.navigate('LedgerScan', { transportType })
+                navigation.navigate('LedgerScan', { transportType, chainId })
                 return
             }
 
             const granted = await requestPermissions()
             if (granted) {
-                navigation.navigate('LedgerScan', { transportType })
+                navigation.navigate('LedgerScan', { transportType, chainId })
             } else {
                 errorToast(
                     t('ledger.instructions.permission_required_title'),
@@ -64,6 +71,7 @@ export const useLedgerInstructionsScreen =
             }
         }, [
             transportType,
+            chainId,
             hasPermissions,
             requestPermissions,
             navigation,
@@ -74,6 +82,7 @@ export const useLedgerInstructionsScreen =
         return {
             isChecking,
             transportType,
+            appName,
             handleContinue: () => void handleContinue(),
             t,
         }

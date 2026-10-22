@@ -2207,9 +2207,9 @@
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
             "pair_ledger_title": "Ledger’ı Bluetooth ile eşleştir",
-            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını Bluetooth ile kurtarmak istiyorum",
+            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir hesabı Bluetooth ile kurtarmak istiyorum",
             "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
-            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını USB kablosu ile kurtarmak istiyorum",
+            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir hesabı USB kablosu ile kurtarmak istiyorum",
             "pair_ledger_unsupported_description": "Bu tarayıcı veya cihaz tarafından desteklenmiyor",
             "pera_web_title": "Pera Web’den içe aktar",
             "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
@@ -2808,8 +2808,8 @@
             "title": "İşlem gönderiliyor",
             "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
-            "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol.",
-            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol."
+            "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
+            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol."
         },
         "success": {
             "title": "İşlem gerçekleşti",
@@ -3770,8 +3770,8 @@
         "how_does_it_work": {
             "title": "Ledger ile eşleştir",
             "step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
-            "step_2": "Algorand uygulamasını (1.2.9 veya üzeri sürüm) Ledger’ına yükle.",
-            "step_3": "Ledger cihazında eşleştirmeyi onayladıktan sonra Algorand uygulamasını aç.",
+            "step_2": "{{appName}} uygulamasının en son sürümünü Ledger’ına yükle.",
+            "step_3": "Ledger cihazında eşleştirmeyi onayladıktan sonra {{appName}} uygulamasını aç.",
             "step_4": "Telefonunda Bluetooth’un etkin olduğundan emin ol."
         },
         "connecting": {
@@ -3783,7 +3783,7 @@
             "title": "Ledger cihazını eşleştir",
             "description": "Ledger cihazını bağlamak için şu adımları izle:",
             "step_1": "Ledger cihazını aç",
-            "step_2": "Ledger’ında Algorand uygulamasını aç",
+            "step_2": "Ledger’ında {{appName}} uygulamasını aç",
             "step_3": "Ledger cihazını yakınında tut",
             "continue": "Devam et",
             "permission_required_title": "Bluetooth izni gerekli",
@@ -3792,7 +3792,7 @@
                 "title": "Ledger’ı USB ile bağla",
                 "description": "Ledger cihazını USB ile bağlamak için şu adımları izle:",
                 "step_1": "Ledger cihazını USB kablosuyla telefonuna bağla",
-                "step_2": "Ledger’ının kilidini aç ve Algorand uygulamasını aç",
+                "step_2": "Ledger’ının kilidini aç ve {{appName}} uygulamasını aç",
                 "step_3": "Telefonun sorarsa USB erişimine izin ver, ardından devam et’e dokun"
             }
         },
@@ -3891,10 +3891,7 @@
         "errors": {
             "app_not_open": "Ledger cihazında {{appName}} uygulamasını aç. Ardından Pera’ya dönüp devam et.",
             "app_not_open_title": "{{appName}} uygulamasını aç",
-            "app_not_open_unnamed": "Ledger cihazında bu hesabın uygulamasını aç. Ardından Pera’ya dönüp devam et.",
-            "app_not_open_unnamed_title": "Ledger cihazında uygulamayı aç",
             "blind_signing_required": "Ledger cihazındaki {{appName}} uygulaması bu işlem için kör imzalamaya (blind signing) ihtiyaç duyuyor. Ledger cihazında uygulamanın ayarlarından Blind signing seçeneğini aç ve tekrar dene.",
-            "blind_signing_required_unnamed": "Ledger cihazındaki uygulama bu işlem için kör imzalamaya (blind signing) ihtiyaç duyuyor. Ledger cihazında uygulamanın ayarlarından Blind signing seçeneğini aç ve tekrar dene.",
             "blind_signing_required_title": "Kör imzalamayı aç",
             "connection_lost": "Bağlantı koptu. Ledger cihazını yeniden bağla ve tekrar dene.",
             "connection_lost_title": "Bağlantı koptu",
@@ -3905,8 +3902,8 @@
             "bluetooth_permission_title": "İzin gerekli",
             "bluetooth_permission": "Yakındaki Ledger cihazlarını aramak için Bluetooth tarama izninin verilmesi gerekir.",
             "scan_timeout_title": "Ledger bulunamadı",
-            "scan_timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, Algorand uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
-            "connection_failed": "Ledger cihazına bağlanılamadı. Bluetooth’un açık, Ledger cihazının kilidinin açık ve Algorand uygulamasının açık olduğunu kontrol et, sonra tekrar dene.",
+            "scan_timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, {{appName}} uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
+            "connection_failed": "Ledger cihazına bağlanılamadı. Bluetooth’un açık, Ledger cihazının kilidinin açık ve {{appName}} uygulamasının açık olduğunu kontrol et, sonra tekrar dene.",
             "connection_failed_title": "Bağlanılamadı",
             "signing_failed_title": "İmzalama başarısız",
             "signing_failed": "İşlem imzalanamadı. Lütfen tekrar dene.",
@@ -3919,8 +3916,8 @@
             "unsupported_device_title": "Desteklenmeyen cihaz",
             "unsupported_device": "Bu Ledger cihazı desteklenmiyor.",
             "app_outdated_title": "Güncelleme gerekli",
-            "app_outdated": "Güncelleme gerekli. Ledger donanım yazılımını ve Algorand uygulamasını en son sürüme güncelle.",
-            "timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, Algorand uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
+            "app_outdated": "Güncelleme gerekli. Ledger donanım yazılımını ve {{appName}} uygulamasını en son sürüme güncelle.",
+            "timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, {{appName}} uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
             "timeout_title": "Bağlantı zaman aşımına uğradı",
             "interrupted_title": "İmzalama kesintiye uğradı",
             "interrupted": "Uygulama imzalama sırasında arka plana geçti, bu yüzden oturum güvenlik için durduruldu. Ledger’ına yeniden bağlanıp tekrar imzalamak için yeniden dene.",
@@ -3957,8 +3954,8 @@
             "description": "Ledger cihazını eşleştirirken veya kullanırken sorun yaşıyorsan aşağıdaki adımları kontrol et.",
             "pairing_steps_title": "Eşleştirme adımları",
             "pairing_step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
-            "pairing_step_2": "Ledger’ında Algorand uygulamasını aç.",
-            "pairing_step_3": "Algorand uygulaması kurulu değilse Ledger Live’dan kur.",
+            "pairing_step_2": "Ledger’ında {{appName}} uygulamasını aç.",
+            "pairing_step_3": "{{appName}} uygulaması kurulu değilse Ledger Live’dan kur.",
             "common_issues_title": "Sık görülen sorunlar",
             "issue_unlocked": "Cihazın kilidinin açık olduğundan, yakında olduğundan ve Bluetooth’un etkin olduğundan emin ol. Sorun devam ederse cihazı telefonunun Bluetooth ayarlarından kaldır ve Pera Wallet talimatlarını izleyerek yeniden eşleştir.",
             "issue_bluetooth": "Yakındaki Ledger cihazlarını aramak için cihazında Bluetooth’un etkin olması gerekir.",
@@ -3968,7 +3965,7 @@
             "tip_unlocked": "Cihazın kilidinin açık olduğundan emin ol",
             "tip_nearby": "Cihazın yakında olduğundan emin ol",
             "tip_bluetooth": "Bluetooth’un etkin olduğundan emin ol",
-            "tip_app_open": "Ledger’ında Algorand uygulamasının açık olduğundan emin ol",
+            "tip_app_open": "Ledger’ında {{appName}} uygulamasının açık olduğundan emin ol",
             "tip_repair": "Sorun devam ederse cihazı Ayarlar’dan yeniden eşleştirmeyi dene"
         },
         "scan_header": {
@@ -3978,6 +3975,9 @@
         "handoff_added": {
             "title": "Ledger hesabı eklendi",
             "body": "Artık onu Pera uzantısında kullanabilirsin."
+        },
+        "select_chain": {
+            "title": "Ledger hesabın hangi blokzincirde?"
         }
     },
     "countries": {

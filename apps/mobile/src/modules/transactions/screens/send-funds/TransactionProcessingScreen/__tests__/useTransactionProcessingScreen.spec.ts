@@ -40,6 +40,13 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@react-navigation/stack', () => ({}))
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
 
 const {
     mockExecute,
@@ -344,6 +351,7 @@ describe('useTransactionProcessingScreen', () => {
 
         expect(result.current.isHardwareSender).toBe(true)
         expect(result.current.hardwareDeviceName).toBe('Nano X')
+        expect(result.current.ledgerAppName).toBe('Algorand')
     })
 
     it('keeps non-hardware copy for a plain local-key sender', () => {
@@ -359,5 +367,6 @@ describe('useTransactionProcessingScreen', () => {
 
         expect(result.current.isHardwareSender).toBe(false)
         expect(result.current.hardwareDeviceName).toBeNull()
+        expect(result.current.ledgerAppName).toBeNull()
     })
 })
