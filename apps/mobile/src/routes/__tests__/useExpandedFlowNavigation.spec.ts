@@ -18,10 +18,12 @@ import {
 } from '../useExpandedFlowNavigation.web'
 
 const consumeInitialExpandedFlowMock = vi.fn()
+const getConsumedExpandedChainIdMock = vi.fn((): string | null => null)
 const setIsOnboardingMock = vi.fn()
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     consumeInitialExpandedFlow: () => consumeInitialExpandedFlowMock(),
+    getConsumedExpandedChainId: () => getConsumedExpandedChainIdMock(),
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({
@@ -98,6 +100,34 @@ describe('useExpandedFlowNavigation', () => {
             params: { transportType: 'ble' },
         })
         expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('carries the chain the popup picked into LedgerScan', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-ble')
+        getConsumedExpandedChainIdMock.mockReturnValueOnce('ethereum')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'LedgerScan',
+            params: { transportType: 'ble', chainId: 'ethereum' },
+        })
+    })
+
+    it('drops a chain it does not know', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-ble')
+        getConsumedExpandedChainIdMock.mockReturnValueOnce('evil')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'LedgerScan',
+            params: { transportType: 'ble' },
+        })
     })
 
     it('does not navigate when there is no flow', () => {
@@ -208,6 +238,22 @@ describe('useOnboardingExpandedFlowNavigation', () => {
 
         expect(navigate).toHaveBeenCalledWith('LedgerScan', { transportType })
         expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('carries the chain the popup picked into LedgerScan', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-usb')
+        getConsumedExpandedChainIdMock.mockReturnValueOnce('ethereum')
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('LedgerScan', {
+            transportType: 'usb',
+            chainId: 'ethereum',
+        })
     })
 
     it('navigates to AsbImportBackup for asb-import', () => {

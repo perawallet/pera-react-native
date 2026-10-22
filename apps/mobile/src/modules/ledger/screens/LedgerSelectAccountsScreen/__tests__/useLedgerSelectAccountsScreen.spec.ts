@@ -57,9 +57,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+const routeChain = vi.hoisted(() => ({ chainId: undefined as string | undefined }))
+
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({
         params: {
+            ...(routeChain.chainId ? { chainId: routeChain.chainId } : {}),
             deviceId: 'device-1',
             deviceName: 'Fred Nano X',
             transportType: 'ble',
@@ -70,6 +73,18 @@ vi.mock('@react-navigation/native', () => ({
             ],
         },
     }),
+}))
+
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
 const {
@@ -85,7 +100,7 @@ const {
     const mockDelegatedScan = vi.fn()
     const mockAllAccounts = vi.fn<
         () => {
-            chains: { algorand: { address: string } }
+            chains: Record<string, { address: string }>
             custody: AccountCustody
         }[]
     >(() => [])
@@ -200,6 +215,69 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockDisconnectTransport.mockResolvedValue(undefined)
         mockGetProviderRegistry.mockReturnValue({ connect: mockConnect })
         mockDelegatedScan.mockReturnValue({ delegated: [], isScanning: false })
+        routeChain.chainId = undefined
+    })
+
+    describe("on the route's chain", () => {
+        beforeEach(() => {
+            routeChain.chainId = 'ethereum'
+        })
+
+        it('scans for delegated accounts on that chain only', () => {
+            const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+            expect(result.current.chainId).toBe('ethereum')
+            expect(mockDelegatedScan).toHaveBeenCalledWith(expect.any(Array), {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            })
+        })
+
+        it('marks an address imported only when it is held on that chain', () => {
+            mockAllAccounts.mockReturnValue([
+                {
+                    chains: { ethereum: { address: 'AAA111' } },
+                    custody: { kind: 'hardware' } as AccountCustody,
+                },
+                {
+                    chains: { algorand: { address: 'BBB222' } },
+                    custody: { kind: 'hardware' } as AccountCustody,
+                },
+            ])
+
+            const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+            expect(result.current.alreadyImportedAddresses).toEqual(
+                new Set(['AAA111']),
+            )
+        })
+
+        it('finds another account on that chain', async () => {
+            mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+            const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+            await act(async () => {
+                await result.current.handleFindAnother()
+            })
+
+            expect(mockConnect).toHaveBeenCalledWith('device-1', 'ethereum')
+        })
+
+        it('carries the chain to verification', () => {
+            const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+            act(() => {
+                result.current.toggleSelection('AAA111')
+            })
+            act(() => {
+                result.current.handleContinue()
+            })
+
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'LedgerVerify',
+                expect.objectContaining({ chainId: 'ethereum' }),
+            )
+        })
     })
 
     it('reflects the route accounts as derived selectables on initial render', () => {
@@ -553,6 +631,7 @@ describe('useLedgerSelectAccountsScreen', () => {
 
         expect(mockNavigate).toHaveBeenCalledTimes(1)
         expect(mockNavigate).toHaveBeenCalledWith('LedgerVerify', {
+            chainId: 'algorand',
             deviceId: 'device-1',
             deviceName: 'Fred Nano X',
             transportType: 'ble',

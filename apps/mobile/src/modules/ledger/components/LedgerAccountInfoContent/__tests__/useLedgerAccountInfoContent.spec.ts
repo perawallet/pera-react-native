@@ -66,6 +66,22 @@ beforeEach(() => {
 })
 
 describe('useLedgerAccountInfoContent', () => {
+    it("previews the address on its chain's scope", () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: undefined,
+            isLoading: true,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        renderHook(() => useLedgerAccountInfoContent('0xADDR', 0, 'ethereum'))
+
+        expect(mocks.useLedgerAccountPreview).toHaveBeenCalledWith(
+            '0xADDR',
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+    })
+
     it('builds the title from the ledger account index', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: undefined,
@@ -75,7 +91,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 0),
+            useLedgerAccountInfoContent('ADDR', 0, 'algorand'),
         )
 
         expect(result.current.title).toBe('ledger.account_info.default_title')
@@ -102,7 +118,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 3),
+            useLedgerAccountInfoContent('ADDR', 3, 'algorand'),
         )
 
         const kinds = result.current.items.map(i => i.kind)
@@ -134,7 +150,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 1),
+            useLedgerAccountInfoContent('ADDR', 1, 'algorand'),
         )
 
         const authorityItems = result.current.items.filter(
@@ -168,7 +184,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 1),
+            useLedgerAccountInfoContent('ADDR', 1, 'algorand'),
         )
 
         const authorityItems = result.current.items.filter(
@@ -196,13 +212,13 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 7, 'Rekeyed account'),
+            useLedgerAccountInfoContent('ADDR', 7, 'algorand', 'Rekeyed account'),
         )
 
         expect(result.current.title).toBe('Rekeyed account')
     })
 
-    it('carries Decimal instances for algoBalance and algoUsdPrice on the account item', () => {
+    it('carries Decimal instances for nativeBalance and nativeUsdPrice on the account item', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
@@ -217,16 +233,16 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 2),
+            useLedgerAccountInfoContent('ADDR', 2, 'algorand'),
         )
 
         const acct = result.current.items.find(i => i.kind === 'account')
         expect(acct?.kind).toBe('account')
         if (acct?.kind === 'account') {
-            expect(acct.algoBalance).toBeInstanceOf(Decimal)
-            expect(acct.algoBalance.toString()).toBe('408.2')
-            expect(acct.algoUsdPrice).toBeInstanceOf(Decimal)
-            expect(acct.algoUsdPrice.toString()).toBe('0.6')
+            expect(acct.nativeBalance).toBeInstanceOf(Decimal)
+            expect(acct.nativeBalance.toString()).toBe('408.2')
+            expect(acct.nativeUsdPrice).toBeInstanceOf(Decimal)
+            expect(acct.nativeUsdPrice.toString()).toBe('0.6')
         }
     })
 
@@ -245,7 +261,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('MYADDR', 2),
+            useLedgerAccountInfoContent('MYADDR', 2, 'algorand'),
         )
 
         const acct = result.current.items.find(i => i.kind === 'account')
@@ -279,7 +295,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('WATCH_ADDR', 0),
+            useLedgerAccountInfoContent('WATCH_ADDR', 0, 'algorand'),
         )
 
         const acct = result.current.items.find(i => i.kind === 'account')
@@ -305,7 +321,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 0),
+            useLedgerAccountInfoContent('ADDR', 0, 'algorand'),
         )
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
@@ -326,7 +342,7 @@ describe('useLedgerAccountInfoContent', () => {
         if (assetItems[1].kind === 'asset') {
             expect(assetItems[1].accountBalance.assetId).toBe('12345')
             expect(assetItems[1].usdPrice.toString()).toBe('1')
-            // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
+            // USDC holding value in ALGO = amount * usdPrice / nativeUsdPrice
             //                            = 100 * 1 / 2 = 50.
             expect(assetItems[1].accountBalance.nativeValue?.toString()).toBe(
                 '50',
@@ -356,7 +372,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 0),
+            useLedgerAccountInfoContent('ADDR', 0, 'algorand'),
         )
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
@@ -383,7 +399,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 0),
+            useLedgerAccountInfoContent('ADDR', 0, 'algorand'),
         )
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
@@ -407,7 +423,7 @@ describe('useLedgerAccountInfoContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useLedgerAccountInfoContent('ADDR', 0),
+            useLedgerAccountInfoContent('ADDR', 0, 'algorand'),
         )
 
         const kinds = result.current.items.map(i => i.kind)

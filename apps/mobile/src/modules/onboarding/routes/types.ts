@@ -99,27 +99,38 @@ export type ImportFlowParamList = {
     }
     ImportPrivateKey: { chainId: ChainId }
     SearchAccounts: SearchAccountsParams
-    LedgerPair: undefined
-    LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>
-    LedgerScan: Optional<{ transportType?: LedgerTransportType }>
+    // Each Ledger route runs on `chainId`; without one, the first chain with
+    // Ledger on (see `useLedgerFlowChainId`).
+    LedgerPair: Optional<{ chainId?: ChainId }>
+    LedgerInstructions: Optional<{
+        chainId?: ChainId
+        transportType?: LedgerTransportType
+    }>
+    LedgerScan: Optional<{
+        chainId?: ChainId
+        transportType?: LedgerTransportType
+    }>
     LedgerFetchAccounts: {
+        chainId?: ChainId
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
     }
     LedgerSelectAccounts: {
+        chainId?: ChainId
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
         accounts: SerializedLedgerAccount[]
     }
     LedgerVerify: {
+        chainId?: ChainId
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
         selectedAccounts: SerializedLedgerSelectableAccount[]
     }
-    LedgerTroubleshooting: undefined
+    LedgerTroubleshooting: Optional<{ chainId?: ChainId }>
     AsbImportInfo: undefined
     AsbImportBackup: undefined
     AsbImportKey: undefined

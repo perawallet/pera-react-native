@@ -19,7 +19,7 @@ import {
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
@@ -810,6 +810,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <LedgerAccountInfoContent
                                     address={A}
                                     accountIndex={0}
+                                    chainId={LEGACY_CHAIN_ID}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -843,7 +844,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <LedgerHowItWorksContent />
+                                <LedgerHowItWorksContent appName='Algorand' />
                             </GallerySheetBoundary>
                         ),
                         options: {

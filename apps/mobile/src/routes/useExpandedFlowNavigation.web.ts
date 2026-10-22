@@ -11,8 +11,19 @@
  */
 
 import { useCallback } from 'react'
-import { consumeInitialExpandedFlow } from '@perawallet/wallet-core-browser-runtime'
+import {
+    consumeInitialExpandedFlow,
+    getConsumedExpandedChainId,
+} from '@perawallet/wallet-core-browser-runtime'
+import { isChainId } from '@perawallet/wallet-core-chain-contract'
+import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import { useIsOnboarding } from '@modules/onboarding'
+
+/** The Ledger scan's params, with the chain the popup picked when it passed a known one. */
+const ledgerScanParams = (transportType: LedgerTransportType) => {
+    const chainId = getConsumedExpandedChainId()
+    return isChainId(chainId) ? { transportType, chainId } : { transportType }
+}
 
 export type ExpandedFlowScreen =
     | 'AddAccount'
@@ -56,12 +67,12 @@ export const useExpandedFlowNavigation = (
         } else if (flow === 'ledger-usb') {
             navigate('AddAccount', {
                 screen: 'LedgerScan',
-                params: { transportType: 'usb' },
+                params: ledgerScanParams('usb'),
             })
         } else if (flow === 'ledger-ble') {
             navigate('AddAccount', {
                 screen: 'LedgerScan',
-                params: { transportType: 'ble' },
+                params: ledgerScanParams('ble'),
             })
         } else if (flow === 'asb-import') {
             navigate('AddAccount', { screen: 'AsbImportBackup' })
@@ -131,9 +142,10 @@ export const useOnboardingExpandedFlowNavigation = (
         } else if (flow === 'recover-qr') {
             navigate('ImportAccountOptions', { isScannerOpen: true })
         } else {
-            navigate('LedgerScan', {
-                transportType: flow === 'ledger-usb' ? 'usb' : 'ble',
-            })
+            navigate(
+                'LedgerScan',
+                ledgerScanParams(flow === 'ledger-usb' ? 'usb' : 'ble'),
+            )
         }
     }, [navigate, setIsOnboarding])
 }

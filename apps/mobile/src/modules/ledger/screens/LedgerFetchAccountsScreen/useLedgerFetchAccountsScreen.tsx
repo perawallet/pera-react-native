@@ -23,14 +23,13 @@ import {
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import {
-    fetchAccountExists,
-    type AppError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+    ledgerAppNameFor,
+    type HardwareWalletTransport,
+} from '@perawallet/wallet-core-hardware-wallet'
+import { fetchAccountExistsOn } from '@perawallet/wallet-core-accounts'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { AddAccountStackParamList } from '@modules/onboarding'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -38,7 +37,10 @@ import {
     serializeLedgerAccount,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
-import { useLedgerExpandedTabHandoff } from '@modules/ledger/hooks'
+import {
+    useLedgerExpandedTabHandoff,
+    useLedgerFlowChainId,
+} from '@modules/ledger/hooks'
 import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
@@ -69,7 +71,8 @@ export const useLedgerFetchAccountsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const isMounted = useIsMounted()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const chainId = useLedgerFlowChainId()
+        const scope = useSelectedScope(chainId)
         const { request: requestBottomSheet, dismiss } = useBottomSheet()
         const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
 
@@ -107,7 +110,7 @@ export const useLedgerFetchAccountsScreen =
                 const result = await connectAndDiscoverAccounts({
                     provider,
                     deviceId,
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId,
                     onProgress: (index: number) => {
                         // First progress callback doubles as "connected":
                         // discovery only probes once the transport is open,
@@ -121,7 +124,7 @@ export const useLedgerFetchAccountsScreen =
                     // treats as "probe unavailable" and degrades to the
                     // shallow capped scan — offline import keeps working.
                     isAccountOnChain: address =>
-                        fetchAccountExists(address, scope),
+                        fetchAccountExistsOn(address, scope),
                 })
 
                 transportRef.current = result.transport
@@ -139,6 +142,7 @@ export const useLedgerFetchAccountsScreen =
                 }
 
                 navigation.replace('LedgerSelectAccounts', {
+                    chainId,
                     deviceId,
                     deviceName,
                     transportType,
@@ -151,7 +155,15 @@ export const useLedgerFetchAccountsScreen =
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)
             }
-        }, [deviceId, deviceName, transportType, scope, navigation, isMounted])
+        }, [
+            chainId,
+            deviceId,
+            deviceName,
+            transportType,
+            scope,
+            navigation,
+            isMounted,
+        ])
 
         useEffect(() => {
             if (hasStartedRef.current) return
@@ -169,12 +181,15 @@ export const useLedgerFetchAccountsScreen =
         }, [run])
 
         const handleTroubleshoot = useCallback(() => {
-            navigation.navigate('LedgerTroubleshooting')
-        }, [navigation])
+            navigation.navigate('LedgerTroubleshooting', { chainId })
+        }, [navigation, chainId])
 
         const errorPreset = useMemo(
-            () => (error ? getLedgerErrorPreset(error, t) : null),
-            [error, t],
+            () =>
+                error
+                    ? getLedgerErrorPreset(error, t, ledgerAppNameFor(chainId))
+                    : null,
+            [error, t, chainId],
         )
 
         const isLoading =

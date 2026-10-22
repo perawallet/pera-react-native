@@ -59,6 +59,7 @@ export const LedgerScanScreen = () => {
         handleOpenLocationSettings,
         handleTroubleshoot,
         handleUseUsb,
+        appName,
         t,
     } = useLedgerScanScreen()
 
@@ -95,7 +96,7 @@ export const LedgerScanScreen = () => {
                 <EmptyView
                     icon='warning'
                     title={t('ledger.errors.scan_timeout_title')}
-                    body={t('ledger.errors.scan_timeout')}
+                    body={t('ledger.errors.scan_timeout', { appName })}
                     button={
                         <PWButton
                             testID='ledger_scan_retry_button'

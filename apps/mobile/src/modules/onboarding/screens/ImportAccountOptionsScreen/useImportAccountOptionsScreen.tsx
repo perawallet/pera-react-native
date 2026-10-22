@@ -24,16 +24,22 @@ import {
     isPostQuantumScheme,
     LEGACY_CHAIN_ID,
     i18nKey,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useCapability } from '@hooks/useCapability'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDeepLink, DeeplinkType } from '@modules/deeplink'
+import {
+    ChainSelectionContent,
+    useDeepLink,
+    DeeplinkType,
+} from '@modules/deeplink'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRestoreBackupOptions } from '@modules/cloud-backup'
@@ -68,6 +74,7 @@ export const useImportAccountOptionsScreen =
             anyChain: 'quantumAccounts',
         })
         const canUseLedger = useCapability({ anyChain: 'ledger' })
+        const ledgerChainIds = useCapableChainIds('ledger')
         const canUseLedgerUsb = useCapability({
             platform: 'ledgerUsb',
             anyChain: 'ledger',
@@ -135,16 +142,41 @@ export const useImportAccountOptionsScreen =
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])
 
-        const handlePairLedgerBle = useCallback(
-            () => navigation.push('LedgerPair'),
-            [navigation],
-        )
+        // Asked here because the add-account flow has no chain step; with a
+        // single Ledger chain the flow starts on it without asking.
+        const chooseLedgerChain = useCallback(async (): Promise<
+            ChainId | undefined
+        > => {
+            if (ledgerChainIds.length <= 1) return ledgerChainIds[0]
+            return requestBottomSheet<ChainId>({
+                contents: (
+                    <ChainSelectionContent
+                        chainIds={ledgerChainIds}
+                        title={t('ledger.select_chain.title')}
+                    />
+                ),
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
+        }, [ledgerChainIds, requestBottomSheet, t])
 
-        const handlePairLedgerUsb = useCallback(
-            () =>
-                navigation.push('LedgerInstructions', { transportType: 'usb' }),
-            [navigation],
-        )
+        const handlePairLedgerBle = useCallback(async () => {
+            const chainId = await chooseLedgerChain()
+            if (chainId) navigation.push('LedgerPair', { chainId })
+        }, [chooseLedgerChain, navigation])
+
+        const handlePairLedgerUsb = useCallback(async () => {
+            const chainId = await chooseLedgerChain()
+            if (chainId) {
+                navigation.push('LedgerInstructions', {
+                    transportType: 'usb',
+                    chainId,
+                })
+            }
+        }, [chooseLedgerChain, navigation])
 
         const handleQRScannerSuccess = useCallback(
             (url: string, restartScanning?: () => void) => {

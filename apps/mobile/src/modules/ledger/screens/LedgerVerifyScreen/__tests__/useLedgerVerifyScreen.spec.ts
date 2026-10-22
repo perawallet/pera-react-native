@@ -66,6 +66,16 @@ vi.mock('@modules/ledger/hooks', async importOriginal => ({
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: vi.fn() }),
 }))
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         // Surfaces `number` interpolation so default-name assertions can pin
@@ -775,6 +785,115 @@ describe('useLedgerVerifyScreen', () => {
                 .getState()
                 .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
             expect(added?.name).toBe('ledger.default_account_name#2')
+        })
+    })
+
+    describe('on Ethereum', () => {
+        const ETH_LEDGER_0 = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+        const ETH_LEDGER_1 = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
+        const ledgerOnAlgorand = (accountIndex: number): WalletAccount =>
+            ({
+                id: `hw-${accountIndex}`,
+                name: 'ledger.default_account_name#1',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'dev',
+                        deviceName: 'Nano',
+                        transportType: 'ble',
+                    },
+                    accountIndex,
+                },
+                chains: { algorand: { address: 'LEDGER0' } },
+            }) as WalletAccount
+        const importOnEthereum = async (
+            ...accounts: ReturnType<typeof derived>[]
+        ) => {
+            routeParams.current = {
+                chainId: 'ethereum',
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: accounts.map(account => ({
+                    kind: 'derived',
+                    account,
+                })),
+            }
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await waitFor(() =>
+                expect(result.current.areAllVerified).toBe(true),
+            )
+            act(() => {
+                result.current.handleAdd()
+            })
+            return result
+        }
+
+        beforeEach(() => {
+            if (!addressCodecs.has('ethereum')) {
+                addressCodecs.register({
+                    chainId: 'ethereum',
+                    fromPublicKey: () => '',
+                    isValid: (address: string) =>
+                        /^0x[0-9a-fA-F]{40}$/.test(address),
+                    normalize: (address: string) => address.toLowerCase(),
+                    areEqual: (a: string, b: string) =>
+                        a.toLowerCase() === b.toLowerCase(),
+                    truncate: (address: string) => address,
+                    toPaymentUri: (address: string) => address,
+                    parsePaymentUri: () => undefined,
+                })
+            }
+        })
+
+        it('verifies on the Ethereum app and creates a hardware account holding the device address', async () => {
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            expect(mockConnect).toHaveBeenCalledWith('dev', 'ethereum')
+            const accounts = useAccountsStore.getState().accounts
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].custody).toMatchObject({
+                kind: 'hardware',
+                accountIndex: 0,
+            })
+            expect(accounts[0].chains.ethereum?.address).toBe(
+                ETH_LEDGER_0.toLowerCase(),
+            )
+            expect(accounts[0].chains.algorand).toBeUndefined()
+        })
+
+        it("attaches the entry to the device's account at that index instead of adding a second account", async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            const accounts = useAccountsStore.getState().accounts
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].id).toBe('hw-0')
+            expect(accounts[0].name).toBe('ledger.default_account_name#1')
+            expect(accounts[0].chains.algorand?.address).toBe('LEDGER0')
+            expect(accounts[0].chains.ethereum?.address).toBe(
+                ETH_LEDGER_0.toLowerCase(),
+            )
+            expect(mockSetConfetti).toHaveBeenCalledWith(true)
+        })
+
+        it('names only the accounts it creates', async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+
+            await importOnEthereum(
+                derived(ETH_LEDGER_0, 0),
+                derived(ETH_LEDGER_1, 1),
+            )
+
+            const created = useAccountsStore
+                .getState()
+                .accounts.find(a => a.id !== 'hw-0')
+            expect(created?.name).toBe('ledger.default_account_name#2')
+            expect(created?.chains.ethereum?.address).toBe(
+                ETH_LEDGER_1.toLowerCase(),
+            )
         })
     })
 })
