@@ -19,10 +19,7 @@ import {
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
 
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -89,6 +86,21 @@ import type { GallerySection } from './types'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 
 const A = MOCK_ADDRESS
+
+// The Ledger sheets preview on the first chain with Ledger on, as the flow does.
+const GalleryLedgerAccountInfo = () => (
+    <LedgerAccountInfoContent
+        address={A}
+        accountIndex={0}
+        chainId={useCapableChainId('ledger')}
+    />
+)
+
+const GalleryLedgerHowItWorks = () => (
+    <LedgerHowItWorksContent
+        appName={ledgerAppNameFor(useCapableChainId('ledger'))}
+    />
+)
 const A2 = MOCK_ADDRESS_2
 
 // Lazy: RatingsContent is the only entry in this catalog backed by a
@@ -811,11 +823,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <LedgerAccountInfoContent
-                                    address={A}
-                                    accountIndex={0}
-                                    chainId={LEGACY_CHAIN_ID}
-                                />
+                                <GalleryLedgerAccountInfo />
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -848,9 +856,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <LedgerHowItWorksContent
-                                    appName={ledgerAppNameFor(LEGACY_CHAIN_ID)}
-                                />
+                                <GalleryLedgerHowItWorks />
                             </GallerySheetBoundary>
                         ),
                         options: {
