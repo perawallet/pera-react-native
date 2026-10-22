@@ -8,6 +8,12 @@ set -uo pipefail
 BITRISE_YML="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.bitrise/bitrise.yml"
 
 failures=0
+
+# The Pera services the staging backend serves for each Ethereum network;
+# change them only with the backend.
+ETHEREUM_MAINNET_STAGING_SERVICES="prices,assets,history,blockFollowing"
+ETHEREUM_SEPOLIA_STAGING_SERVICES="prices,assets,history,blockFollowing"
+
 check() { # $1 label  $2 expected  $3 actual
     if [ "$2" = "$3" ]; then
         echo "  ok    $1"
@@ -44,12 +50,19 @@ for workflow in ios-staging android-staging web-staging; do
         check "${workflow} sets an https ${key}" "yes" \
             "$([[ "$url" == https://?* ]] && echo yes || echo "no (${url})")"
     done
+    check "${workflow} lists the Ethereum mainnet Pera services" \
+        "$ETHEREUM_MAINNET_STAGING_SERVICES" \
+        "$(workflow_env "$workflow" ETHEREUM_MAINNET_PERA_SERVICES)"
+    check "${workflow} lists the Ethereum Sepolia Pera services" \
+        "$ETHEREUM_SEPOLIA_STAGING_SERVICES" \
+        "$(workflow_env "$workflow" ETHEREUM_SEPOLIA_PERA_SERVICES)"
 done
 
 for workflow in ios-production android-production web-production; do
     check "${workflow} pins Algorand alone" \
         "algorand" "$(workflow_env "$workflow" CHAINS)"
-    for key in ETHEREUM_MAINNET_RPC_URL ETHEREUM_SEPOLIA_RPC_URL; do
+    for key in ETHEREUM_MAINNET_RPC_URL ETHEREUM_SEPOLIA_RPC_URL \
+        ETHEREUM_MAINNET_PERA_SERVICES ETHEREUM_SEPOLIA_PERA_SERVICES; do
         check "${workflow} sets no ${key}" "" "$(workflow_env "$workflow" "$key")"
     done
 done
