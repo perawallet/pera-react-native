@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -56,6 +57,8 @@ export type AccountDisplayProps = {
     showAccountType?: boolean
     /** The chain whose name and address to show; defaults to the legacy chain. */
     chainId?: ChainId
+    /** Rendered after the secondary line, and shrinks first so that line stays readable. */
+    secondaryAccessory?: ReactNode
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -69,6 +72,7 @@ export const AccountDisplay = ({
     compact = false,
     showAccountType = false,
     chainId,
+    secondaryAccessory,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -167,16 +171,26 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {renderSecondary && (
-                    <PWText
-                        style={styles.addressText}
-                        variant='body'
-                        weight={400}
-                        numberOfLines={1}
-                        ellipsizeMode={showTypeAsSecondary ? 'tail' : 'middle'}
-                    >
-                        {secondaryText}
-                    </PWText>
+                {(renderSecondary || !!secondaryAccessory) && (
+                    <PWView style={styles.secondaryRow}>
+                        {renderSecondary && (
+                            <PWText
+                                style={[
+                                    styles.addressText,
+                                    styles.secondaryText,
+                                ]}
+                                variant='body'
+                                weight={400}
+                                numberOfLines={1}
+                                ellipsizeMode={
+                                    showTypeAsSecondary ? 'tail' : 'middle'
+                                }
+                            >
+                                {secondaryText}
+                            </PWText>
+                        )}
+                        {secondaryAccessory}
+                    </PWView>
                 )}
             </PWView>
             {showChevron && (

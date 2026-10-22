@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -23,12 +24,17 @@ const mockHookResult = {
         | { isAvailable: false },
     nativeValue: undefined,
     isMultiChain: false,
+    shownChainIds: ['algorand', 'ethereum'],
     isTestTier: false,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
-const mockAccountDisplay = vi.fn((_props: unknown) => null)
+const mockAccountDisplay = vi.fn(
+    (props: { secondaryAccessory?: ReactNode }) =>
+        props.secondaryAccessory ?? null,
+)
 const mockPreferredAmount = vi.fn((_props: unknown) => null)
 const mockPWBadge = vi.fn((_props: unknown) => undefined)
+const mockNetworkIconStack = vi.fn((_props: unknown) => null)
 
 vi.mock('../useAccountWithBalance', () => ({
     useAccountWithBalance: (...args: unknown[]) =>
@@ -50,7 +56,12 @@ vi.mock('@components/core', async () => {
 })
 
 vi.mock('@components/AccountDisplay', () => ({
-    AccountDisplay: (props: unknown) => mockAccountDisplay(props),
+    AccountDisplay: (props: { secondaryAccessory?: ReactNode }) =>
+        mockAccountDisplay(props),
+}))
+
+vi.mock('@components/NetworkIconStack', () => ({
+    NetworkIconStack: (props: unknown) => mockNetworkIconStack(props),
 }))
 
 vi.mock('@components/AssetAmount', () => ({
@@ -70,6 +81,8 @@ const ACCOUNT: WalletAccount = {
 describe('AccountWithBalance', () => {
     beforeEach(() => {
         mockPWBadge.mockClear()
+        mockAccountDisplay.mockClear()
+        mockNetworkIconStack.mockClear()
         mockHookResult.isTestTier = false
         mockHookResult.isMultiChain = false
         mockHookResult.availability = {
@@ -92,37 +105,48 @@ describe('AccountWithBalance', () => {
         expect(screen.queryByText('common.network_label.testnet')).toBeNull()
     })
 
-    it('shows no chain badge while every account is on one chain', () => {
+    it('shows no chain icons while every account is on one chain', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
-        expect(screen.queryByText('Algorand')).toBeNull()
+        expect(mockNetworkIconStack).not.toHaveBeenCalled()
     })
 
-    it("shows the account's chain once the wallet spans chains", () => {
+    it("shows the account's chains as icons once the wallet spans chains", () => {
         mockHookResult.isMultiChain = true
 
         render(<AccountWithBalance account={ACCOUNT} />)
 
-        expect(screen.getByText('Algorand')).toBeTruthy()
+        expect(mockNetworkIconStack).toHaveBeenCalledWith(
+            expect.objectContaining({ chainIds: ['algorand', 'ethereum'] }),
+        )
     })
 
-    it('keeps the name beside both badges and cuts the badge labels to one line instead', () => {
+    it("puts the chain icons and the tier badge on the account's secondary line, the badge cut to one line", () => {
         mockHookResult.isMultiChain = true
         mockHookResult.isTestTier = true
 
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(mockAccountDisplay).toHaveBeenCalledWith(
-            expect.objectContaining({ account: ACCOUNT }),
+            expect.objectContaining({
+                secondaryAccessory: expect.anything(),
+            }),
         )
-        expect(mockPWBadge).toHaveBeenCalledTimes(2)
-        for (const [props] of mockPWBadge.mock.calls) {
-            expect(props).toEqual(
-                expect.objectContaining({
-                    textProps: expect.objectContaining({ numberOfLines: 1 }),
-                }),
-            )
-        }
+        expect(mockNetworkIconStack).toHaveBeenCalled()
+        expect(screen.getByText('common.network_label.testnet')).toBeTruthy()
+        expect(mockPWBadge).toHaveBeenCalledWith(
+            expect.objectContaining({
+                textProps: expect.objectContaining({ numberOfLines: 1 }),
+            }),
+        )
+    })
+
+    it('leaves the secondary line to the account display on a single-chain mainnet wallet', () => {
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ secondaryAccessory: undefined }),
+        )
     })
 
     it("replaces the balances with a notice when the chain's kill switch is off", () => {

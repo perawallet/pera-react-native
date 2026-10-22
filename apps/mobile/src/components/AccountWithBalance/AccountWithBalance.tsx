@@ -15,8 +15,8 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
-import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
+import { NetworkIconStack } from '@components/NetworkIconStack'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -45,8 +45,30 @@ export const AccountWithBalance = ({
         availability,
         nativeValue,
         isMultiChain,
+        shownChainIds,
         isTestTier,
     } = useAccountWithBalance(account, chainId)
+
+    const hasAccessory = isMultiChain || isTestTier
+    const accessory = hasAccessory ? (
+        <PWView style={styles.accessory}>
+            {isMultiChain && (
+                <NetworkIconStack
+                    chainIds={shownChainIds}
+                    testID='account_chain_icons'
+                />
+            )}
+            {isTestTier && (
+                <PWBadge
+                    variant='testnet'
+                    value={t('common.network_label.testnet')}
+                    containerStyle={styles.badgeContainer}
+                    badgeStyle={styles.badge}
+                    textProps={BADGE_TEXT_PROPS}
+                />
+            )}
+        </PWView>
+    ) : undefined
 
     return (
         <PWView
@@ -58,29 +80,9 @@ export const AccountWithBalance = ({
                 chainId={chainId}
                 showChevron={false}
                 showAccountType
+                secondaryAccessory={accessory}
                 style={styles.accountDisplay}
             />
-            {((isMultiChain && chainName) || isTestTier) && (
-                <PWView style={styles.badges}>
-                    {isMultiChain && chainName && (
-                        <ChainBadge
-                            name={chainName}
-                            containerStyle={styles.badgeContainer}
-                            badgeStyle={styles.badge}
-                            textProps={BADGE_TEXT_PROPS}
-                        />
-                    )}
-                    {isTestTier && (
-                        <PWBadge
-                            variant='testnet'
-                            value={t('common.network_label.testnet')}
-                            containerStyle={styles.badgeContainer}
-                            badgeStyle={styles.badge}
-                            textProps={BADGE_TEXT_PROPS}
-                        />
-                    )}
-                </PWView>
-            )}
             {!availability.isAvailable ? (
                 <ChainUnavailableNotice
                     chainName={chainName}

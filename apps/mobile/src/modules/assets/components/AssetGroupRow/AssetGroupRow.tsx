@@ -15,6 +15,7 @@ import type { StyleProp, ViewStyle } from 'react-native'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
+import { NetworkIconStack } from '@components/NetworkIconStack'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
 import type { AssetFiatConverter } from '../../hooks/useAssetListFiatConverter'
@@ -22,7 +23,6 @@ import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
-import { NetworkIconStack } from './NetworkIconStack'
 import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
@@ -83,7 +83,10 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                         size='xs'
                         style={isExpanded ? styles.chevronExpanded : undefined}
                     />
-                    <NetworkIconStack chainIds={chainIds} />
+                    <NetworkIconStack
+                        chainIds={chainIds}
+                        style={styles.networkStack}
+                    />
                 </PWView>
             </PWView>
             <PWView style={styles.amountContainer}>

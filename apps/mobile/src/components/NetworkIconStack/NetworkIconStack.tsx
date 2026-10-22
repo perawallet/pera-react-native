@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWText, PWView, type PWViewProps } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -19,15 +19,22 @@ import { useStyles } from './styles'
 
 export type NetworkIconStackProps = {
     chainIds: ChainId[]
-}
+} & PWViewProps
 
 // The app ships no chain logos, so each network shows its native asset's icon.
-export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
+export const NetworkIconStack = ({
+    chainIds,
+    style,
+    ...rest
+}: NetworkIconStackProps) => {
     const styles = useStyles()
     const { visibleChainIds, hiddenCount } = useNetworkIconStack(chainIds)
 
     return (
-        <PWView style={styles.networkStack}>
+        <PWView
+            {...rest}
+            style={[styles.networkStack, style]}
+        >
             {visibleChainIds.map((chainId, index) => (
                 <PWView
                     key={chainId}
@@ -43,7 +50,7 @@ export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
             {hiddenCount > 0 && (
                 <PWText
                     variant='caption'
-                    style={styles.subtitle}
+                    style={styles.more}
                     testID='network_icon_stack_more'
                 >
                     {`+${hiddenCount}`}

@@ -42,6 +42,16 @@ export const useStyles = makeStyles(
             text: {
                 color: theme.colors.textMain,
             },
+            secondaryRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.sm,
+                minWidth: 0,
+            },
+            secondaryText: {
+                flexShrink: 0,
+                maxWidth: '100%',
+            },
             // Card-art thumbnail shown in place of the account icon when the
             // `card` prop is set.
             cardThumb: {

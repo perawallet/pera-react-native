@@ -17,6 +17,7 @@ import {
     useAccountChainId,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    useRegisteredChainIds,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -45,6 +46,8 @@ export type UseAccountWithBalanceResult = {
     nativeValue: Maybe<Decimal>
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
+    /** `chainId` alone when given, else every registered chain the account holds, in registry order. */
+    shownChainIds: ChainId[]
     isTestTier: boolean
 }
 
@@ -68,6 +71,14 @@ export const useAccountWithBalance = (
         [account.chains],
     )
     const isTestTier = useIsOnTestTier(chainIds)
+    const registeredChainIds = useRegisteredChainIds()
+    const shownChainIds = useMemo(
+        () =>
+            chainOverride
+                ? [chainOverride]
+                : registeredChainIds.filter(id => chainIds.includes(id)),
+        [chainOverride, registeredChainIds, chainIds],
+    )
 
     const chainName = chainDisplayNameOf(chainId)
 
@@ -79,6 +90,7 @@ export const useAccountWithBalance = (
         availability,
         nativeValue: totals?.nativeValue,
         isMultiChain: basis === 'fiat',
+        shownChainIds,
         isTestTier,
     }
 }

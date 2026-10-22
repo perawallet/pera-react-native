@@ -46,6 +46,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountValueTotalsQuery: () => ({
             accountValueTotals: mockAccountValueTotals,
         }),
+        useRegisteredChainIds: () => ['algorand', 'ethereum'],
     }
 })
 
@@ -117,6 +118,28 @@ describe('useAccountWithBalance', () => {
             isAvailable: true,
             nativeAsset: { assetId: 'eth' },
         })
+    })
+
+    it("shows every chain the account holds, in registry order, when no chain is given", () => {
+        const { result } = renderHook(() =>
+            useAccountWithBalance({
+                ...BOTH_CHAINS,
+                chains: {
+                    ethereum: { address: ETH_ADDRESS },
+                    algorand: { address: ALGO_ADDRESS },
+                },
+            }),
+        )
+
+        expect(result.current.shownChainIds).toEqual(['algorand', 'ethereum'])
+    })
+
+    it('shows only the given chain on a row tied to one chain', () => {
+        const { result } = renderHook(() =>
+            useAccountWithBalance(BOTH_CHAINS, 'ethereum'),
+        )
+
+        expect(result.current.shownChainIds).toEqual(['ethereum'])
     })
 
     it('renders an Algorand-only wallet as a single-chain row', () => {

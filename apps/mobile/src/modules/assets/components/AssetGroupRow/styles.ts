@@ -35,13 +35,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     networkStack: {
-        flexDirection: 'row',
-        alignItems: 'center',
         marginLeft: theme.spacing.xs,
-    },
-    // Overlap the icons so the stack reads as one group of networks.
-    stackedNetworkIcon: {
-        marginLeft: -theme.spacing.xs,
     },
     networkLabel: {
         flexDirection: 'row',
