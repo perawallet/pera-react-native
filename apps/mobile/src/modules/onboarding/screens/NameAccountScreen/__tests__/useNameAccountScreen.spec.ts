@@ -32,11 +32,10 @@ const mockStoredAccounts = vi.hoisted(() => ({ accounts: [] as unknown[] }))
 const mockRegisteredChainIds = vi.hoisted(() => ({
     chainIds: ['algorand'] as string[],
 }))
+const nameOrDefault = (account: { name?: string }, _chainId: string) =>
+    account?.name ?? 'Account 1'
 const mockGetAccountDisplayName = vi.hoisted(() =>
-    vi.fn(
-        (account: { name?: string }, _chainId: string) =>
-            account?.name ?? 'Account 1',
-    ),
+    vi.fn<(account: object, chainId: string) => string>(),
 )
 
 vi.mock('@react-navigation/native', async () => {
@@ -137,6 +136,7 @@ vi.mock('react-i18next', async () => {
 describe('useNameAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockGetAccountDisplayName.mockImplementation(nameOrDefault)
         mockRouteParams = undefined
         mockStoredAccounts.accounts = []
         mockRegisteredChainIds.chainIds = ['algorand']
@@ -204,6 +204,29 @@ describe('useNameAccountScreen', () => {
         })
     })
 
+    it("labels a watched Ethereum account's card with its Ethereum address", () => {
+        mockGetAccountDisplayName.mockImplementation(
+            (
+                account: { chains?: Record<string, { address: string }> },
+                chainId,
+            ) => account.chains?.[chainId]?.address ?? 'No Address Found',
+        )
+        mockRegisteredChainIds.chainIds = ['algorand', 'ethereum']
+        mockRouteParams = {
+            account: {
+                id: 'watched',
+                chains: { ethereum: { address: '0xd8dA…6045' } },
+                custody: { kind: 'watch' },
+            },
+            chainId: 'ethereum',
+        }
+
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        expect(result.current.accountLabel).toBe('0xd8dA…6045')
+        expect(result.current.walletDisplay).toBe('0xd8dA…6045')
+    })
+
     it('lists no chains with a single chain registered', () => {
         mockRouteParams = {
             account: {
@@ -240,13 +263,12 @@ describe('useNameAccountScreen', () => {
         it("names the account from a chain it holds when the given chain isn't one of them", () => {
             mockRouteParams = { account, chainId: 'dropped-chain' }
 
-            const { result } = renderHook(() => useNameAccountScreen())
+            renderHook(() => useNameAccountScreen())
 
             expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
                 account,
                 CHAIN_ID,
             )
-            expect(result.current.chainId).toBe(CHAIN_ID)
         })
 
         it('updates an account already stored under its id instead of adding it again', async () => {

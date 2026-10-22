@@ -2169,6 +2169,7 @@
             "qr_scan_invalid_mnemonic_body": "Taranan QR kodundaki passphrase beklenmeyen sayıda kelime içeriyor",
             "watch_address_option_title": "Adres izle",
             "watch_address_option_description": "Adresini girerek bir Algorand adresini takip et",
+            "watch_address_option_description_generic": "Adresini girerek herhangi bir hesabı takip et",
             "create_universal_wallet_option_title": "Universal Wallet oluştur",
             "create_universal_wallet_option_description": "Aynı 24 kelimelik passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
             "create_algo25_option_title": "Algo25 hesabı oluştur",
@@ -2353,9 +2354,11 @@
             "info_button": "İzleme hesabı oluştur",
             "title": "İzleme hesabı\noluştur",
             "description": "Bir Algorand hesabının salt okunur bir görünümünü oluşturuyorsun.",
+            "description_generic": "Bir hesabın salt okunur bir görünümünü oluşturuyorsun.",
             "address_placeholder": "Hesap adresi veya kısa ad",
             "watch_button": "İzleme hesabı oluştur",
             "invalid_address": "Lütfen geçerli bir Algorand adresi gir",
+            "invalid_address_generic": "Lütfen geçerli bir adres gir",
             "duplicate_address": "Bu adres cüzdanına zaten eklenmiş"
         }
     },

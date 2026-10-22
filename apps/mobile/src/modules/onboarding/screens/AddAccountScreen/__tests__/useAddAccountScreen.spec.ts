@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import {
     accountPresentationChainAdapters,
@@ -160,6 +160,23 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
 vi.mock('@hooks/useCapability', async () =>
     (await import('@test-utils/capability-mock')).capabilityHookMock(),
 )
+
+const mockWatchCapableChainIds = vi.hoisted(() => ({
+    chainIds: ['algorand'] as string[],
+}))
+vi.mock('@hooks/useCapableChainIds', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@hooks/useCapableChainIds')>()
+    return {
+        ...actual,
+        useCapableChainIds: (
+            capability: Parameters<typeof actual.useCapableChainIds>[0],
+        ) =>
+            capability === 'watchAccounts'
+                ? mockWatchCapableChainIds.chainIds
+                : actual.useCapableChainIds(capability),
+    }
+})
 
 const setQuantumEnabled = (isEnabled: boolean): void => {
     capabilityState.reset()
@@ -646,6 +663,36 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_watch_button',
             ),
         ).toBe(false)
+    })
+
+    describe('watch option copy', () => {
+        const watchDescriptionKey = (
+            options: { testID?: string; descriptionKey?: string }[],
+        ) =>
+            options.find(o => o.testID === 'add_account_watch_button')
+                ?.descriptionKey
+
+        afterEach(() => {
+            mockWatchCapableChainIds.chainIds = ['algorand']
+        })
+
+        it('names Algorand while only Algorand can watch accounts', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            expect(watchDescriptionKey(result.current.otherOptions)).toBe(
+                'onboarding.add_account.watch_address_option_description',
+            )
+        })
+
+        it('names no chain once several chains can watch accounts', () => {
+            mockWatchCapableChainIds.chainIds = ['algorand', 'ethereum']
+
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            expect(watchDescriptionKey(result.current.otherOptions)).toBe(
+                'onboarding.add_account.watch_address_option_description_generic',
+            )
+        })
     })
 
     it('mainOptions excludes quantum option when the flag is disabled', () => {

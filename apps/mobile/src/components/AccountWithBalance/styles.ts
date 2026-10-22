@@ -12,6 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// The 40pt account icon, its gap and a few characters of name: below this the
+// badges give way, so the name never collapses to nothing beside them.
+const ACCOUNT_DISPLAY_MIN_WIDTH = 100
+
 type StyleProps = {
     isHighlighted?: boolean
 }
@@ -33,6 +37,21 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
     },
     accountDisplay: {
         flex: 1,
+        minWidth: ACCOUNT_DISPLAY_MIN_WIDTH,
+    },
+    badges: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        flexShrink: 1,
+        minWidth: 0,
+    },
+    badgeContainer: {
+        flexShrink: 1,
+        minWidth: 0,
+    },
+    badge: {
+        maxWidth: '100%',
     },
     balanceContainer: {
         alignItems: 'flex-end',

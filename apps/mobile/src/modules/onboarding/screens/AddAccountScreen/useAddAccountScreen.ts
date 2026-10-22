@@ -30,7 +30,10 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
+import {
+    useCapableChainId,
+    useCapableChainIds,
+} from '@hooks/useCapableChainIds'
 import { useModalState } from '@hooks/useModalState'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -74,6 +77,7 @@ export const useAddAccountScreen = () => {
         anyChain: 'multisig',
     })
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
+    const canWatchSeveralChains = useCapableChainIds('watchAccounts').length > 1
     const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',
@@ -348,9 +352,13 @@ export const useAddAccountScreen = () => {
                         titleKey: i18nKey(
                             'onboarding.add_account.watch_address_option_title',
                         ),
-                        descriptionKey: i18nKey(
-                            'onboarding.add_account.watch_address_option_description',
-                        ),
+                        descriptionKey: canWatchSeveralChains
+                            ? i18nKey(
+                                  'onboarding.add_account.watch_address_option_description_generic',
+                              )
+                            : i18nKey(
+                                  'onboarding.add_account.watch_address_option_description',
+                              ),
                         leftIcon: 'eye' as IconName,
                         onPress: handleWatchAddress,
                     },
@@ -372,6 +380,7 @@ export const useAddAccountScreen = () => {
         [
             hasHDWallet,
             canAddWatchAccount,
+            canWatchSeveralChains,
             handleWatchAddress,
             handleCreateUniversalWallet,
             createOptions,

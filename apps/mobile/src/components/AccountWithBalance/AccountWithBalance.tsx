@@ -22,6 +22,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountWithBalance } from './useAccountWithBalance'
 
+const BADGE_TEXT_PROPS = { numberOfLines: 1 } as const
+
 export type AccountWithBalanceProps = {
     account: WalletAccount
     isHighlighted?: boolean
@@ -58,12 +60,26 @@ export const AccountWithBalance = ({
                 showAccountType
                 style={styles.accountDisplay}
             />
-            {isMultiChain && chainName && <ChainBadge name={chainName} />}
-            {isTestTier && (
-                <PWBadge
-                    variant='testnet'
-                    value={t('common.network_label.testnet')}
-                />
+            {((isMultiChain && chainName) || isTestTier) && (
+                <PWView style={styles.badges}>
+                    {isMultiChain && chainName && (
+                        <ChainBadge
+                            name={chainName}
+                            containerStyle={styles.badgeContainer}
+                            badgeStyle={styles.badge}
+                            textProps={BADGE_TEXT_PROPS}
+                        />
+                    )}
+                    {isTestTier && (
+                        <PWBadge
+                            variant='testnet'
+                            value={t('common.network_label.testnet')}
+                            containerStyle={styles.badgeContainer}
+                            badgeStyle={styles.badge}
+                            textProps={BADGE_TEXT_PROPS}
+                        />
+                    )}
+                </PWView>
             )}
             {!availability.isAvailable ? (
                 <ChainUnavailableNotice

@@ -21,7 +21,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
+    i18nKey,
     type ChainId,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -38,6 +40,8 @@ type UseWatchAccountScreenResult = {
     /** The chains an address can be watched on, for the field's scanner. */
     watchableChainIds: readonly ChainId[]
     resolvedAddress: string
+    descriptionKey: I18nKey
+    invalidAddressKey: I18nKey
     isValidAddress: boolean
     isDuplicateAddress: boolean
     isNfdResolved: boolean
@@ -86,6 +90,13 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     )
 
     const isValidAddress = watchChainId !== undefined
+    const canWatchSeveralChains = watchableChainIds.length > 1
+    const descriptionKey = canWatchSeveralChains
+        ? i18nKey('onboarding.watch_account.description_generic')
+        : i18nKey('onboarding.watch_account.description')
+    const invalidAddressKey = canWatchSeveralChains
+        ? i18nKey('onboarding.watch_account.invalid_address_generic')
+        : i18nKey('onboarding.watch_account.invalid_address')
     const isDuplicateAddress =
         watchChainId !== undefined &&
         !!findAccountByAddressOn(accounts, watchChainId, resolvedAddress)
@@ -136,6 +147,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         address,
         watchableChainIds,
         resolvedAddress,
+        descriptionKey,
+        invalidAddressKey,
         isValidAddress,
         isDuplicateAddress,
         isNfdResolved,

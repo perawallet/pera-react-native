@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { PWBadge } from '@components/core'
+import { PWBadge, type PWBadgeProps } from '@components/core'
 
 export type ChainBadgeProps = {
     name: string
-}
+} & Omit<PWBadgeProps, 'value' | 'variant'>
 
-export const ChainBadge = ({ name }: ChainBadgeProps) => (
+export const ChainBadge = ({ name, ...rest }: ChainBadgeProps) => (
     <PWBadge
         variant='secondary'
         value={name}
+        {...rest}
     />
 )

@@ -28,11 +28,26 @@ const mockHookResult = {
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
 const mockPreferredAmount = vi.fn((_props: unknown) => null)
+const mockPWBadge = vi.fn((_props: unknown) => undefined)
 
 vi.mock('../useAccountWithBalance', () => ({
     useAccountWithBalance: (...args: unknown[]) =>
         (mockUseAccountWithBalance as (...a: unknown[]) => unknown)(...args),
 }))
+
+vi.mock('@components/core', async () => {
+    const actual =
+        await vi.importActual<typeof import('@components/core')>(
+            '@components/core',
+        )
+    return {
+        ...actual,
+        PWBadge: (props: Parameters<typeof actual.PWBadge>[0]) => {
+            mockPWBadge(props)
+            return actual.PWBadge(props)
+        },
+    }
+})
 
 vi.mock('@components/AccountDisplay', () => ({
     AccountDisplay: (props: unknown) => mockAccountDisplay(props),
@@ -54,6 +69,7 @@ const ACCOUNT: WalletAccount = {
 
 describe('AccountWithBalance', () => {
     beforeEach(() => {
+        mockPWBadge.mockClear()
         mockHookResult.isTestTier = false
         mockHookResult.isMultiChain = false
         mockHookResult.availability = {
@@ -88,6 +104,25 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(screen.getByText('Algorand')).toBeTruthy()
+    })
+
+    it('keeps the name beside both badges and cuts the badge labels to one line instead', () => {
+        mockHookResult.isMultiChain = true
+        mockHookResult.isTestTier = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ account: ACCOUNT }),
+        )
+        expect(mockPWBadge).toHaveBeenCalledTimes(2)
+        for (const [props] of mockPWBadge.mock.calls) {
+            expect(props).toEqual(
+                expect.objectContaining({
+                    textProps: expect.objectContaining({ numberOfLines: 1 }),
+                }),
+            )
+        }
     })
 
     it("replaces the balances with a notice when the chain's kill switch is off", () => {

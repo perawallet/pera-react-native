@@ -39,6 +39,8 @@ export const WatchAccountScreen = () => {
         nfdName,
         handleAddressChange,
         handleWatchAccount,
+        descriptionKey,
+        invalidAddressKey,
     } = useWatchAccountScreen()
 
     const showInvalidError =
@@ -51,7 +53,7 @@ export const WatchAccountScreen = () => {
         address.length > 0 && isDuplicateAddress
             ? t('onboarding.watch_account.duplicate_address')
             : showInvalidError
-              ? t('onboarding.watch_account.invalid_address')
+              ? t(invalidAddressKey)
               : undefined
 
     return (
@@ -68,7 +70,7 @@ export const WatchAccountScreen = () => {
         >
             <ScreenHeader
                 title={t('onboarding.watch_account.title')}
-                description={t('onboarding.watch_account.description')}
+                description={t(descriptionKey)}
             />
 
             <AddressEntryField

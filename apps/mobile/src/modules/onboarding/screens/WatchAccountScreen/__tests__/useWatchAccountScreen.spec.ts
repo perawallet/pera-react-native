@@ -452,6 +452,29 @@ describe('useWatchAccountScreen', () => {
             )
         })
 
+        it('names no chain in its copy while several chains can watch accounts', () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(result.current.descriptionKey).toBe(
+                'onboarding.watch_account.description_generic',
+            )
+            expect(result.current.invalidAddressKey).toBe(
+                'onboarding.watch_account.invalid_address_generic',
+            )
+        })
+
+        it('names Algorand in its copy once only Algorand can watch accounts', () => {
+            watchAccountsOff.add(FIXTURE_CHAIN_ID)
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(result.current.descriptionKey).toBe(
+                'onboarding.watch_account.description',
+            )
+            expect(result.current.invalidAddressKey).toBe(
+                'onboarding.watch_account.invalid_address',
+            )
+        })
+
         it('ignores a codec whose chain is not registered', () => {
             const unregisteredChainId = 'fixtureorphan' as ChainId
             const orphanAddress = `orphan-${'1'.repeat(8)}`

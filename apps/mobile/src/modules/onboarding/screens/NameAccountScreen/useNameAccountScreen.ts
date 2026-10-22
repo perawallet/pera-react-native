@@ -112,12 +112,11 @@ export const useNameAccountScreen = () => {
         return hdSeedIds.size + otherAccountsCount
     }, [accounts, seedIdOf, scope.chainId])
 
-    const initialWalletName = account
+    const accountLabel = account
         ? getAccountDisplayName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
 
-    const [walletDisplay, setWalletDisplay] =
-        useState<string>(initialWalletName)
+    const [walletDisplay, setWalletDisplay] = useState<string>(accountLabel)
     const [isCreating, setIsCreating] = useState(false)
 
     const handleNameChange = (value: string) => {
@@ -204,9 +203,8 @@ export const useNameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        numWallets,
         account,
-        chainId,
+        accountLabel,
         enabledChainIds,
     }
 }

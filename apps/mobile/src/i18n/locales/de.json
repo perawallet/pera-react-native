@@ -2161,6 +2161,7 @@
             "qr_scan_invalid_mnemonic_body": "Der gescannte QR-Code enthält eine Passphrase mit einer unerwarteten Anzahl von Wörtern",
             "watch_address_option_title": "Adresse beobachten",
             "watch_address_option_description": "Eine Algorand-Adresse durch Angabe ihrer Adresse überwachen",
+            "watch_address_option_description_generic": "Ein beliebiges Konto durch Angabe seiner Adresse überwachen",
             "create_universal_wallet_option_title": "Universal Wallet erstellen",
             "create_universal_wallet_option_description": "Wallet, mit dem du neue Konten ableiten kannst, die alle dieselbe 24-Wort-Passphrase verwenden",
             "create_algo25_option_title": "Algo25-Konto erstellen",
@@ -2345,9 +2346,11 @@
             "info_button": "Beobachtungskonto erstellen",
             "title": "Beobachtungskonto\nerstellen",
             "description": "Du erstellst eine schreibgeschützte Ansicht eines Algorand-Kontos.",
+            "description_generic": "Du erstellst eine schreibgeschützte Ansicht eines Kontos.",
             "address_placeholder": "Kontoadresse oder Kurzname",
             "watch_button": "Beobachtungskonto erstellen",
             "invalid_address": "Bitte gib eine gültige Algorand-Adresse ein",
+            "invalid_address_generic": "Bitte gib eine gültige Adresse ein",
             "duplicate_address": "Diese Adresse wurde bereits zu deinem Wallet hinzugefügt"
         }
     },
