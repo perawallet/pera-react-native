@@ -17,8 +17,11 @@ import {
     eip155ChainIdOfNetwork,
     fromCaip19,
     InvalidCaip19Error,
+    isEvmNftAssetId,
     networkIdOf,
+    parseEvmNftAssetId,
     toCaip19,
+    toEvmNftAssetId,
     UnknownEvmNetworkError,
 } from '../caip19'
 import {
@@ -33,6 +36,10 @@ const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SEPOLIA: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const USDC_CAIP19 = 'eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+const BAYC = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+// 2^256 - 1: far past 2^53, so it must survive as a string.
+const MAX_TOKEN_ID =
+    '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
 describe('eip155ChainIdOf', () => {
     it("reads the scope network's EIP-155 id from the descriptor", () => {
@@ -169,5 +176,70 @@ describe('native CAIP-19 ids per chain', () => {
             UnknownEvmNetworkError,
         )
         expect(eip155ChainIdOf(evmScopeOf(BASE, 'testnet'), BASE)).toBe(84_532)
+    })
+})
+
+describe('NFT asset ids', () => {
+    it('checksums the contract and normalises the token id', () => {
+        expect(toEvmNftAssetId(BAYC.toLowerCase(), '007')).toBe(`${BAYC}/7`)
+    })
+
+    it('keeps a token id past 2^53 exact', () => {
+        expect(toEvmNftAssetId(BAYC, MAX_TOKEN_ID)).toBe(
+            `${BAYC}/${MAX_TOKEN_ID}`,
+        )
+    })
+
+    it.each([
+        ['a negative id', '-1'],
+        ['a hex id', '0x1'],
+        ['an id past uint256', `${MAX_TOKEN_ID}0`],
+    ])('refuses %s', (_, tokenId) => {
+        expect(() => toEvmNftAssetId(BAYC, tokenId)).toThrow(RangeError)
+    })
+
+    it('parses its own ids and nothing else', () => {
+        expect(parseEvmNftAssetId(`${BAYC}/1234`)).toEqual({
+            contract: BAYC,
+            tokenId: '1234',
+        })
+        expect(isEvmNftAssetId(`${BAYC}/1234`)).toBe(true)
+        expect(isEvmNftAssetId(USDC)).toBe(false)
+        expect(isEvmNftAssetId('native')).toBe(false)
+        expect(isEvmNftAssetId(`${BAYC}/1/2`)).toBe(false)
+        expect(isEvmNftAssetId('0x1234/1')).toBe(false)
+    })
+})
+
+describe('NFT CAIP-19 ids', () => {
+    it.each(['erc721', 'erc1155'] as const)(
+        'round-trips an %s with a token id past 2^53',
+        standard => {
+            const assetId = `${BAYC}/${MAX_TOKEN_ID}`
+            const caip19 = toCaip19(assetId, MAINNET, ETHEREUM, standard)
+
+            expect(caip19).toBe(
+                `eip155:1/${standard}:${BAYC.toLowerCase()}/${MAX_TOKEN_ID}`,
+            )
+            expect(fromCaip19(caip19, MAINNET, ETHEREUM)).toBe(assetId)
+        },
+    )
+
+    it('needs the standard to write an NFT id', () => {
+        expect(() => toCaip19(`${BAYC}/1`, MAINNET, ETHEREUM)).toThrow(
+            InvalidCaip19Error,
+        )
+    })
+
+    it.each([
+        ['an erc20 with a token id', `${USDC_CAIP19}/1`],
+        ['an erc721 without a token id', `eip155:1/erc721:${BAYC}`],
+        ['a token id past uint256', `eip155:1/erc721:${BAYC}/${MAX_TOKEN_ID}0`],
+        ['another chain', `eip155:5/erc1155:${BAYC}/1`],
+        ['a malformed contract', 'eip155:1/erc721:0x1234/1'],
+    ])('rejects %s', (_, caip19) => {
+        expect(() => fromCaip19(caip19, MAINNET, ETHEREUM)).toThrow(
+            InvalidCaip19Error,
+        )
     })
 })
