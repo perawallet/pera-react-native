@@ -16,13 +16,18 @@ import {
     getConsumedExpandedChainId,
 } from '@perawallet/wallet-core-browser-runtime'
 import { isChainId } from '@perawallet/wallet-core-chain-contract'
-import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    hasLedgerAppDriver,
+    type LedgerTransportType,
+} from '@perawallet/wallet-core-hardware-wallet'
 import { useIsOnboarding } from '@modules/onboarding'
 
-/** The Ledger scan's params, with the chain the popup picked when it passed a known one. */
+/** The Ledger scan's params, with the chain the popup picked when this build has its Ledger app. */
 const ledgerScanParams = (transportType: LedgerTransportType) => {
     const chainId = getConsumedExpandedChainId()
-    return isChainId(chainId) ? { transportType, chainId } : { transportType }
+    return isChainId(chainId) && hasLedgerAppDriver(chainId)
+        ? { transportType, chainId }
+        : { transportType }
 }
 
 export type ExpandedFlowScreen =

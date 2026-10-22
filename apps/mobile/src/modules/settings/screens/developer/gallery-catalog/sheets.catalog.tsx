@@ -23,6 +23,7 @@ import {
     i18nKey,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
+import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
@@ -847,7 +848,9 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <LedgerHowItWorksContent appName='Algorand' />
+                                <LedgerHowItWorksContent
+                                    appName={ledgerAppNameFor(LEGACY_CHAIN_ID)}
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: {

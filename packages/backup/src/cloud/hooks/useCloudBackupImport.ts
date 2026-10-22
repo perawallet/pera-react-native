@@ -526,8 +526,9 @@ const attachWatchChain = (
 
 /** A hardware account on several chains comes as one entry per chain, and
  *  the wallet may already hold the device position from another record; the
- *  entry joins that account. False when there is none, or it already holds
- *  the chain. */
+ *  entry joins that account. False when there is none free on the chain: one
+ *  holding another address there is another seed, so the entry is its own
+ *  account. */
 const attachHardwareChain = (
     context: ImportContext,
     groupHolder: WalletAccount | undefined,
@@ -537,7 +538,15 @@ const attachHardwareChain = (
     const holder =
         groupHolder && hasCustody(groupHolder, 'hardware')
             ? groupHolder
-            : findHardwareHolder(useAccountsStore.getState().accounts, payload)
+            : findHardwareHolder(
+                  useAccountsStore
+                      .getState()
+                      .accounts.filter(
+                          account =>
+                              chainAccountOf(account, chainId) === undefined,
+                      ),
+                  payload,
+              )
     if (!holder || chainAccountOf(holder, chainId) !== undefined) return false
     assertValidAddress(chainId, payload.address)
     context.replaceAccount({

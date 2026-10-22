@@ -1793,6 +1793,28 @@ describe('useCloudBackupImport hardware on several chains', () => {
         expect(summary).toMatchObject({ imported: 0, failed: [] })
     })
 
+    test('restores another seed at a held position as its own account', async () => {
+        storeState.accounts = [
+            {
+                id: 'existing',
+                custody: {
+                    kind: 'hardware',
+                    device: LEDGER_DEVICE,
+                    accountIndex: 0,
+                },
+                chains: { ethereum: { address: '0xother' } },
+            },
+        ]
+        const { current } = renderImport()
+
+        await current.importAccounts([hardwareEntry('0xledger', 'ethereum')])
+
+        expect(storeState.accounts).toHaveLength(2)
+        expect(storeState.accounts[0].chains).toEqual({
+            ethereum: { address: '0xother' },
+        })
+    })
+
     test('keeps another account index of the device as its own account', async () => {
         storeState.accounts = [
             {

@@ -26,6 +26,11 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     getConsumedExpandedChainId: () => getConsumedExpandedChainIdMock(),
 }))
 
+vi.mock('@perawallet/wallet-core-hardware-wallet', () => ({
+    hasLedgerAppDriver: (chainId: string) =>
+        chainId === 'algorand' || chainId === 'ethereum',
+}))
+
 vi.mock('@modules/onboarding/hooks', () => ({
     useIsOnboarding: () => ({
         isOnboarding: false,
@@ -116,19 +121,24 @@ describe('useExpandedFlowNavigation', () => {
         })
     })
 
-    it('drops a chain it does not know', () => {
-        consumeInitialExpandedFlowMock.mockReturnValue('ledger-ble')
-        getConsumedExpandedChainIdMock.mockReturnValueOnce('evil')
-        const navigate = vi.fn()
-        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+    it.each(['evil', 'base'])(
+        'drops %s, a chain without a Ledger app here',
+        chainId => {
+            consumeInitialExpandedFlowMock.mockReturnValue('ledger-ble')
+            getConsumedExpandedChainIdMock.mockReturnValueOnce(chainId)
+            const navigate = vi.fn()
+            const { result } = renderHook(() =>
+                useExpandedFlowNavigation(navigate),
+            )
 
-        result.current()
+            result.current()
 
-        expect(navigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'LedgerScan',
-            params: { transportType: 'ble' },
-        })
-    })
+            expect(navigate).toHaveBeenCalledWith('AddAccount', {
+                screen: 'LedgerScan',
+                params: { transportType: 'ble' },
+            })
+        },
+    )
 
     it('does not navigate when there is no flow', () => {
         consumeInitialExpandedFlowMock.mockReturnValue(null)

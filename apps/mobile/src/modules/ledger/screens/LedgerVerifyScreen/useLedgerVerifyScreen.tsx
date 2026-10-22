@@ -16,9 +16,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     buildAccount,
     chainAccountOf,
-    DuplicateAccountError,
     findAccountByAddressOn,
-    findHardwareHolder,
     hardwareDetailsOf,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
@@ -44,11 +42,7 @@ import {
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import {
-    logger,
-    type AppError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -225,12 +219,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
-        const byAddress = new Map(
-            current.flatMap(account => {
-                const address = chainAccountOf(account, chainId)?.address
-                return address === undefined ? [] : [[address, account]]
-            }),
-        )
+        // Through the chain's codec: an EVM device reports a checksummed
+        // address the wallet may hold in another case.
+        const heldAt = (address: string) =>
+            findAccountByAddressOn(current, chainId, address)
         const added = new Set<string>()
         const hardwareEntries: Array<{
             address: string
@@ -269,7 +261,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const addHardware = (acc: HardwareWalletDerivedAccount) => {
             if (!addressCodecs.get(chainId).isValid(acc.address)) return
             if (added.has(acc.address)) return
-            const collision = byAddress.get(acc.address)
+            const collision = heldAt(acc.address)
             if (collision) {
                 if (isWatchAccount(collision)) {
                     if (!upgrades.some(u => u.address === acc.address)) {
@@ -313,7 +305,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // present-but-watch auth can no longer slip through into an
                 // unsignable pair.
                 const authorityAddress = sel.authAccount.address
-                const presentAuth = byAddress.get(authorityAddress)
+                const presentAuth = heldAt(authorityAddress)
                 const authPresent =
                     added.has(authorityAddress) ||
                     upgrades.some(u => u.address === authorityAddress) ||
@@ -321,7 +313,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 if (
                     authPresent &&
                     addressCodecs.get(chainId).isValid(sel.address) &&
-                    !byAddress.has(sel.address) &&
+                    !heldAt(sel.address) &&
                     !added.has(sel.address)
                 ) {
                     added.add(sel.address)
@@ -376,26 +368,19 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             store.updateHardwareDetails(rebind.id, rebind.details, chainId)
         }
         for (const { address, details } of hardwareEntries) {
-            // Only a new account takes a default name; an entry joining the
-            // device's account keeps that account's name and numbering.
-            const name = findHardwareHolder(
-                useAccountsStore.getState().accounts,
+            const before = useAccountsStore.getState().accounts.length
+            store.addHardwareChainAccount(
                 details,
+                chainId,
+                address,
+                t('ledger.default_account_name', {
+                    number: nextDefaultNameNumber,
+                }),
             )
-                ? undefined
-                : t('ledger.default_account_name', {
-                      number: nextDefaultNameNumber++,
-                  })
-            try {
-                store.addHardwareChainAccount(details, chainId, address, name)
-            } catch (error) {
-                // The device's account holds another address on this chain: a
-                // different seed at the same device id and index.
-                if (!(error instanceof DuplicateAccountError)) throw error
-                logger.warn('Ledger import skipped a held device position', {
-                    chainId,
-                    accountIndex: details.accountIndex,
-                })
+            // An entry joining the device's account keeps that account's
+            // name, so only a created account uses up a number.
+            if (useAccountsStore.getState().accounts.length > before) {
+                nextDefaultNameNumber++
             }
         }
         if (batch.length > 0) {

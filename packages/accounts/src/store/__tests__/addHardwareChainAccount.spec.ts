@@ -110,16 +110,37 @@ describe('addHardwareChainAccount', () => {
         expect(state().accounts).toEqual([before])
     })
 
-    test("refuses a different address on a chain the device's account already holds", () => {
+    test('creates an account for another seed at a position the wallet holds', () => {
         state().setAccounts([ledgerOnAlgorand()])
 
-        expect(() =>
-            state().addHardwareChainAccount(
-                DEVICE,
-                ALGORAND,
-                OTHER_ALGORAND_ADDRESS,
-            ),
-        ).toThrow(DuplicateAccountError)
+        const result = state().addHardwareChainAccount(
+            DEVICE,
+            ALGORAND,
+            OTHER_ALGORAND_ADDRESS,
+            'Ledger 2',
+        )
+
+        expect(state().accounts).toHaveLength(2)
+        expect(result.id).not.toBe('ledger')
+        expect(result.chains[ALGORAND]?.address).toBe(OTHER_ALGORAND_ADDRESS)
+    })
+
+    test("attaches to the position's account that agrees with the address, not another seed's", () => {
+        const otherSeed = buildTestAccount(
+            TEST_CUSTODY.hardware,
+            { [ALGORAND]: { address: OTHER_ALGORAND_ADDRESS } },
+            { id: 'other-seed' },
+        )
+        state().setAccounts([otherSeed, ledgerOnAlgorand()])
+
+        const result = state().addHardwareChainAccount(
+            DEVICE,
+            ALGORAND,
+            ALGORAND_ADDRESS,
+        )
+
+        expect(result.id).toBe('ledger')
+        expect(state().accounts).toHaveLength(2)
     })
 
     test('refuses an address another account holds on the chain', () => {
@@ -179,7 +200,7 @@ describe('a device position stays one account', () => {
         expect(state().manualAccountOrder).toEqual(['ledger'])
     })
 
-    test("keeps the device account's own entry where both hold the chain", () => {
+    test("upgrades in place when the position's account holds another address on the chain", () => {
         const watch = buildTestAccount(
             TEST_CUSTODY.watch,
             { [ALGORAND]: { address: OTHER_ALGORAND_ADDRESS } },
@@ -187,12 +208,42 @@ describe('a device position stays one account', () => {
         )
         state().setAccounts([ledgerOnAlgorand(), watch])
 
-        state().upgradeWatchAccountToHardware('watch', DEVICE, ALGORAND)
+        expect(
+            state().upgradeWatchAccountToHardware('watch', DEVICE, ALGORAND),
+        ).toBe(true)
 
-        expect(state().accounts).toHaveLength(1)
-        expect(state().accounts[0].chains[ALGORAND]?.address).toBe(
-            ALGORAND_ADDRESS,
+        const [ledger, upgraded] = state().accounts
+        expect(ledger.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
+        expect(upgraded.id).toBe('watch')
+        expect(upgraded.custody.kind).toBe('hardware')
+        expect(upgraded.chains[ALGORAND]?.address).toBe(OTHER_ALGORAND_ADDRESS)
+    })
+
+    test("rebinds in place, losing nothing, when the new position's account holds another address", () => {
+        const stale = buildTestAccount(
+            {
+                ...TEST_CUSTODY.hardware,
+                device: { ...TEST_CUSTODY.hardware.device, deviceId: 'old' },
+            },
+            { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+            { id: 'stale', name: 'Mine' },
         )
+        const otherSeed = buildTestAccount(
+            TEST_CUSTODY.hardware,
+            { [ALGORAND]: { address: OTHER_ALGORAND_ADDRESS } },
+            { id: 'other-seed' },
+        )
+        state().setAccounts([stale, otherSeed])
+
+        state().updateHardwareDetails('stale', DEVICE, ALGORAND)
+
+        const rebound = state().accounts.find(a => a.id === 'stale')
+        expect(state().accounts).toHaveLength(2)
+        expect(rebound?.name).toBe('Mine')
+        expect(rebound?.custody).toMatchObject({
+            device: { deviceId: TEST_CUSTODY.hardware.device.deviceId },
+        })
+        expect(rebound?.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
     })
 
     test("folds a rebound account into the account already at the device's new id", () => {

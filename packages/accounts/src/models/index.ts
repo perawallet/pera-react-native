@@ -167,11 +167,12 @@ export type AccountsState = BaseStoreState & {
     /**
      * Adds `chainId`'s entry for the hardware account at `details`' device and
      * account index, or creates that account (named `name`) when the wallet
-     * has none. Returns the holder untouched when it already holds `address`
-     * there. Throws `InvalidChainAddressError` for an address not on the
-     * chain's selected network, and `DuplicateAccountError` naming the holder
-     * when another account holds the address, or the device's account already
-     * holds a different one there. The new entry is stamped `enabledBy`
+     * has none. An account at that position holding another address on
+     * `chainId` is another seed and is not joined. Returns the holder
+     * untouched when it already holds `address` there. Throws
+     * `InvalidChainAddressError` for an address not on the chain's selected
+     * network, and `DuplicateAccountError` naming the holder when another
+     * account holds the address. The new entry is stamped `enabledBy`
      * (default `'created'`).
      */
     addHardwareChainAccount: (
@@ -212,8 +213,9 @@ export type AccountsState = BaseStoreState & {
      * Replace the watch account `id` with a hardware account bound to
      * `hardwareDetails`, preserving its id, name and chain addresses;
      * `chainId` is the chain the device proved the address on. When another
-     * hardware account already sits at that device position, the watch
-     * account's entries join it instead and the watch account goes. Returns
+     * hardware account holding the same addresses already sits at that device
+     * position, the watch account's entries join it instead and the watch
+     * account goes. Returns
      * whether an upgrade happened; refuses (false) when the account is missing
      * or not a watch account. Callers own the user confirmation.
      */
@@ -226,8 +228,8 @@ export type AccountsState = BaseStoreState & {
      * Re-bind the hardware account `id` to `hardwareDetails` (e.g. after an
      * OS forget/re-pair rotated the BLE device id — an address match on
      * `chainId` proves it is the same key). When another hardware account
-     * already sits at the new device position, `id`'s entries join it and
-     * `id` goes. Returns whether anything changed; refuses (false) for
+     * holding the same addresses already sits at the new device position,
+     * `id`'s entries join it and `id` goes. Returns whether anything changed; refuses (false) for
      * non-hardware accounts.
      */
     updateHardwareDetails: (

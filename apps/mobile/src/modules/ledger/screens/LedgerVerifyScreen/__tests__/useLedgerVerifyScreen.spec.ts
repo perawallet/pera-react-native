@@ -788,6 +788,48 @@ describe('useLedgerVerifyScreen', () => {
         })
     })
 
+    it('imports another seed at a device position the wallet holds as a new account', async () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'seed-a',
+                name: 'ledger.default_account_name#1',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'dev',
+                        deviceName: 'Nano',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+                chains: { algorand: { address: 'SEED_A' } },
+            } as WalletAccount,
+        ])
+        routeParams.current = {
+            deviceId: 'dev',
+            deviceName: 'Nano',
+            transportType: 'ble',
+            selectedAccounts: [
+                { kind: 'derived', account: derived('SEED_B', 0) },
+            ],
+        }
+
+        const { result } = renderHook(() => useLedgerVerifyScreen())
+        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+        act(() => {
+            result.current.handleAdd()
+        })
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(2)
+        expect(accounts[0].chains.algorand?.address).toBe('SEED_A')
+        expect(accounts[1]).toMatchObject({
+            name: 'ledger.default_account_name#2',
+            chains: { algorand: { address: 'SEED_B' } },
+        })
+    })
+
     describe('on Ethereum', () => {
         const ETH_LEDGER_0 = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
         const ETH_LEDGER_1 = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'

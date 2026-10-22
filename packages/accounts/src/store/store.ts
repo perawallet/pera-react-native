@@ -476,6 +476,21 @@ const rebindToHardware = (
     })
 }
 
+/** Whether `account` holds no address other than `chains`' on any chain both are on. */
+const holdsNoOtherAddress = (
+    account: WalletAccount,
+    chains: AccountChains,
+): boolean =>
+    Object.entries(chains).every(([id, entry]) => {
+        const chainId = id as ChainId
+        const held = chainAccountOf(account, chainId)
+        return (
+            !entry ||
+            !held ||
+            isSameAddress(chainId, held.address, entry.address)
+        )
+    })
+
 /** `holder` with `source`'s entries, keyless, on the chains it has none of. */
 const withEntriesOf = (
     holder: WalletAccount,
@@ -759,17 +774,12 @@ export const withDefaultChains = async <A extends WalletAccount>(
     return account
 }
 
-const accountQueues = new Map<string, Promise<unknown>>()
-
-/**
- * Runs one chain change at a time per account. A probe drops the keys it
- * derived for inactive chains; run beside an enable that derives the same
- * key, it could drop that key before the enable's entry references it.
- */
 /**
  * Binds `current` to the device at `details`. When another hardware account
- * already sits at that device position, `current`'s entries join it and
- * `current` goes, so one device position stays one account.
+ * already sits at that device position holding the same addresses, `current`'s
+ * entries join it and `current` goes, so one device position stays one
+ * account. One holding another address on a shared chain is another seed (a
+ * USB id names a model, not a device), so `current` rebinds in place instead.
  */
 const moveToHardware = (
     get: StoreApi<AccountsState>['getState'],
@@ -780,8 +790,15 @@ const moveToHardware = (
 ): boolean => {
     if (!chainAccountOf(current, chainId)) return false
     const { accounts, selectedAccountId } = get()
-    const holder = findHardwareHolder(accounts, details)
-    if (holder && holder.id !== current.id) {
+    const holder = findHardwareHolder(
+        accounts.filter(
+            account =>
+                account.id !== current.id &&
+                holdsNoOtherAddress(account, current.chains),
+        ),
+        details,
+    )
+    if (holder) {
         const merged = withEntriesOf(holder, current)
         get().setAccounts(
             accounts.flatMap(account =>
@@ -805,6 +822,13 @@ const moveToHardware = (
     return true
 }
 
+const accountQueues = new Map<string, Promise<unknown>>()
+
+/**
+ * Runs one chain change at a time per account. A probe drops the keys it
+ * derived for inactive chains; run beside an enable that derives the same
+ * key, it could drop that key before the enable's entry references it.
+ */
 const queuedFor = <T>(accountId: string, run: () => Promise<T>): Promise<T> => {
     const queued = (accountQueues.get(accountId) ?? Promise.resolve())
         .catch(() => undefined)
@@ -1226,14 +1250,17 @@ export const useAccountsStore: UseBoundStore<
                 }
                 const normalized = codec.normalize(address)
                 const { accounts } = get()
-                const holder = findHardwareHolder(accounts, details)
-                const existing = holder && chainAccountOf(holder, chainId)
-                if (holder && existing) {
-                    if (isSameAddress(chainId, existing.address, normalized)) {
-                        return holder
-                    }
-                    throw new DuplicateAccountError(existing.address, holder)
-                }
+                // An account at the position holding another address here is
+                // another seed at the same device id, so it isn't joined.
+                const holder = findHardwareHolder(
+                    accounts.filter(account =>
+                        holdsNoOtherAddress(account, {
+                            [chainId]: { address: normalized },
+                        }),
+                    ),
+                    details,
+                )
+                if (holder && chainAccountOf(holder, chainId)) return holder
                 const addressHolder = findAddressHolder(
                     accounts,
                     scope,
