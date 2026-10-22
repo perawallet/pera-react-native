@@ -59,3 +59,82 @@ export const assetsResponseSchema = z.object({
 export const whitelistResponseSchema = z.object({
     results: z.array(z.unknown()),
 })
+
+// A second gate behind the backend's: only https media reaches the app, so a
+// `data:` SVG or an `ipfs://` link clears its field instead of failing the item.
+const isHttpsUrl = (value: string): boolean => {
+    try {
+        return new URL(value).protocol === 'https:'
+    } catch {
+        return false
+    }
+}
+
+export const httpsUrlOrNull = z
+    .string()
+    .nullable()
+    .transform(value => (value !== null && isHttpsUrl(value) ? value : null))
+
+const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
+
+const nftMediaSchema = z.object({
+    type: z.enum(['image', 'video', 'audio', 'model', 'unknown']),
+    url: httpsUrlOrNull,
+    preview_url: httpsUrlOrNull,
+    mime_type: z.string().nullable(),
+})
+
+type NftMediaOutput = z.output<typeof nftMediaSchema> & { url: string }
+
+// One unreadable or unsafe media entry drops itself, not the token.
+const nftMediaListSchema = z.array(z.unknown()).transform(entries =>
+    entries.flatMap(entry => {
+        const parsed = nftMediaSchema.safeParse(entry)
+        return parsed.success && parsed.data.url !== null
+            ? [parsed.data as NftMediaOutput]
+            : []
+    }),
+)
+
+export const nftItemSchema = z.object({
+    /** CAIP-19: `eip155:{chain}/{erc721|erc1155}:{contract}/{token id}`. */
+    asset_id: z.string(),
+    standard: z.enum(['erc721', 'erc1155']),
+    /** Base units, decimal. Absent on the metadata endpoint. */
+    balance: z.string().regex(/^\d+$/).optional(),
+    name: z.string().nullable(),
+    description: z.string().nullable(),
+    collection: z.object({
+        address: evmAddress,
+        name: z.string().nullable(),
+        symbol: z.string().nullable(),
+        verification_tier: z.enum(['unverified', 'verified', 'suspicious']),
+    }),
+    primary_image: z
+        .object({ url: httpsUrlOrNull, preview_url: httpsUrlOrNull })
+        .nullable(),
+    media: nftMediaListSchema,
+    traits: z.array(
+        z.object({
+            name: z.string().nullable(),
+            value: z.union([z.string(), z.number()]).transform(String),
+        }),
+    ),
+    acquired_at: z.iso.datetime({ offset: true }).nullable().optional(),
+    explorer_url: httpsUrlOrNull,
+})
+
+export type NftItemSchemaOutput = z.output<typeof nftItemSchema>
+
+export type NftItemResponse = z.input<typeof nftItemSchema>
+
+// Rows are checked one by one, so one unreadable token drops itself rather
+// than the whole holdings read.
+export const nftHoldingsPageSchema = z.object({
+    results: z.array(z.unknown()),
+    next: z.string().nullable(),
+})
+
+export const nftsResponseSchema = z.object({
+    results: z.array(z.unknown()),
+})

@@ -28,8 +28,10 @@ export {
     type ShouldRefreshRequest,
 } from './accounts/msw-handlers'
 export {
+    evmNftItem,
     nativeWhitelistItem,
     unknownAssetItem,
+    type PeraEvmAssetFixtures,
 } from './assets/api/msw-handlers'
 export {
     evmHistoryItem,
@@ -38,5 +40,6 @@ export {
 export type { EvmHistoryItemResponse } from './history/api/schema'
 export type {
     AssetItemResponse,
+    NftItemResponse,
     WhitelistItemResponse,
 } from './assets/api/schema'
