@@ -32,6 +32,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { PWFlatList } from '@components/core'
+import { useFirstAccountRequest } from '@hooks/useAccountDrawerRequest'
 import type { AccountMenuProps } from './AccountMenu'
 
 export type AccountMenuListItem =
@@ -77,6 +78,12 @@ export const useAccountMenu = (
         filteredAccounts,
         accountValueTotals,
         scope.chainId,
+    )
+
+    // Only the global list: a controlled or filtered picker isn't the portfolio.
+    useFirstAccountRequest(
+        isControlled || props.accountFilter ? undefined : sortedAccounts[0]?.id,
+        setSelectedAccountId,
     )
 
     const flatListRef = useRef<ComponentRef<typeof PWFlatList>>(null)

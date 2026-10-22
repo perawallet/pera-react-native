@@ -25,6 +25,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountTabRequest } from '@hooks/useAccountTabRequest'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import {
     trackEvent,
@@ -137,6 +138,9 @@ export const useAccountTabNavigator = (
         },
         [chainId, markVisited, tabs],
     )
+
+    const tabKeys = useMemo(() => tabs.map(tab => tab.key), [tabs])
+    useAccountTabRequest(tabKeys, handleIndexChange)
 
     const isPageVisited = useCallback(
         (pageIndex: number) => {

@@ -24,7 +24,14 @@ export const useRequiresMnemonicBackup = (
     chainId: ChainId,
 ): boolean => {
     const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
+    return requiresMnemonicBackup(account, chainId, backedUpKeyIds)
+}
 
+export const requiresMnemonicBackup = (
+    account: WalletAccount | null | undefined,
+    chainId: ChainId,
+    backedUpKeyIds: Readonly<Record<string, boolean>>,
+): boolean => {
     if (!account) return false
 
     const keyId = getMnemonicBackupKeyId(account, chainId)

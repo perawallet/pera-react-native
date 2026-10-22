@@ -23,8 +23,9 @@ import type { AppDeeplink } from './types'
 /**
  * The app route a deeplink lands on, which must be on before it may navigate.
  * The chain capability half lives with the link types in
- * `DEEPLINK_CHAIN_CAPABILITY`. `useDeepLink` checks `CARDS` and `SELL` beside
- * both, since their flag hooks already fold in the capability.
+ * `DEEPLINK_CHAIN_CAPABILITY`. `useDeepLink` checks `CARDS`, `SELL` and
+ * `CLOUD_BACKUP` beside both, since their flag hooks already fold in the
+ * capability.
  */
 export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     DeeplinkType,
@@ -35,6 +36,7 @@ export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     [DeeplinkType.BUY]: 'fundTab',
     [DeeplinkType.DISCOVER_PATH]: 'discoverTab',
     [DeeplinkType.STAKING]: 'staking',
+    [DeeplinkType.SCAN]: 'qrScanner',
 
     [DeeplinkType.TRANSFER]: null,
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
@@ -59,6 +61,12 @@ export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     [DeeplinkType.INTERNAL_BROWSER]: null,
     [DeeplinkType.DISCOVER_BROWSER]: null,
     [DeeplinkType.HOME]: null,
+    [DeeplinkType.NFT_DETAIL]: null,
+    [DeeplinkType.CLOUD_BACKUP]: null,
+    [DeeplinkType.PASSPHRASE_BACKUP]: null,
+    [DeeplinkType.INBOX]: null,
+    [DeeplinkType.NOTIFICATIONS]: null,
+    [DeeplinkType.PORTFOLIO]: null,
 }
 
 /** The link's route and chain requirements together; null when it needs neither. */

@@ -36,3 +36,24 @@ export const useAccountsDelegatedTo = (
             : []
     }, [address, accounts, chainId, chainStates])
 }
+
+/** The addresses in `addresses` that some local account delegates its signing
+ *  to: `useAccountsDelegatedTo` for a whole list in one subscription. */
+export const useDelegationAuthorities = (
+    addresses: readonly string[],
+    chainId: ChainId,
+): ReadonlySet<string> => {
+    const accounts = useAccountsStore(state => state.accounts)
+    // Reads every legacy scope, so any slice write can change the result.
+    const chainStates = useAccountChainStateStore(state => state.states)
+    return useMemo(() => {
+        const authority = accountsChainAdapters.get(chainId).authority
+        if (!authority) return new Set<string>()
+        return new Set(
+            addresses.filter(
+                address =>
+                    authority.accountsDelegatedTo(address, accounts).length > 0,
+            ),
+        )
+    }, [addresses, accounts, chainId, chainStates])
+}

@@ -34,6 +34,7 @@ import {
     type RemoteConfigService,
     type WalletProvisioningService,
     type CloudFileStorageService,
+    type WidgetsService,
 } from '@perawallet/wallet-extension-platform'
 import {
     MemoryAppLifecycleService,
@@ -178,6 +179,14 @@ const buildServices = (): PlatformServices => {
         read: async () => ({ status: 'cancelled' }),
     }
 
+    const widgets: WidgetsService = {
+        writeSnapshot: async () => {},
+        clearSnapshot: async () => {},
+        syncImages: async () => [],
+        consumePendingScan: async () => false,
+        onScanRequested: () => () => {},
+    }
+
     const migration: MigrationService = {
         hasLegacyData: async () => false,
         getLegacyData: async () => {
@@ -209,6 +218,7 @@ const buildServices = (): PlatformServices => {
         migration,
         walletProvisioning,
         cloudFileStorage,
+        widgets,
     }
 }
 

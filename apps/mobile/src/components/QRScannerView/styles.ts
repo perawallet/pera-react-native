@@ -22,6 +22,15 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             margin: 0,
             padding: 0,
         },
+        // Hides the paused camera while the app lock decides whether to lock.
+        lockCover: {
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: theme.colors.background,
+        },
         camera: {
             flex: 1,
             position: 'absolute',

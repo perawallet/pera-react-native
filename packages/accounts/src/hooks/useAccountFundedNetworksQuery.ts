@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
@@ -25,20 +25,12 @@ export type UseAccountFundedNetworksResult = {
     isError: boolean
 }
 
-/**
- * Whether an account holds the native asset on *any* network the wallet has synced, for
- * decisions that outlive the network switcher — a key-loss warning, say.
- *
- * A single indexed SQL read on the holdings primary key, cheap enough for list
- * rows. Only the active network is force-fetched when missing; the rest are
- * whatever previous syncs left behind, since the background sync only ever
- * polls the network in use.
- */
-export const useAccountFundedNetworksQuery = (
+/** Shared with list callers that need several accounts at once (`useQueries`). */
+export const accountFundedNetworksQueryOptions = (
     address: string | undefined,
     scope: ChainScope,
-): UseAccountFundedNetworksResult => {
-    const query = useQuery({
+) =>
+    queryOptions({
         queryKey: getAccountFundedNetworksQueryKey(address ?? '', scope),
         enabled: !!address,
         staleTime: Infinity,
@@ -53,6 +45,21 @@ export const useAccountFundedNetworksQuery = (
             })
         },
     })
+
+/**
+ * Whether an account holds the native asset on *any* network the wallet has synced, for
+ * decisions that outlive the network switcher — a key-loss warning, say.
+ *
+ * A single indexed SQL read on the holdings primary key, cheap enough for list
+ * rows. Only the active network is force-fetched when missing; the rest are
+ * whatever previous syncs left behind, since the background sync only ever
+ * polls the network in use.
+ */
+export const useAccountFundedNetworksQuery = (
+    address: string | undefined,
+    scope: ChainScope,
+): UseAccountFundedNetworksResult => {
+    const query = useQuery(accountFundedNetworksQueryOptions(address, scope))
 
     const fundedNetworks = query.data ?? []
 

@@ -13,12 +13,9 @@
 import { useCallback, useEffect, useMemo } from 'react'
 
 import {
-    addressOn,
-    getAccountDisplayName,
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     trackScreen,
@@ -26,6 +23,7 @@ import {
     AnalyticsMetadataKey,
 } from '@analytics'
 import { shareText } from '@utils/shareText'
+import { receiveTargetOf, type ReceiveTarget } from '@utils/receiveTarget'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
@@ -50,12 +48,6 @@ type UseQRViewScreenResult = {
     handleShareAddress: () => Promise<void>
 }
 
-type ReceiveTarget = {
-    accountName: string
-    address: string
-    paymentUri: string
-}
-
 const NO_RECEIVE_TARGET: ReceiveTarget = {
     accountName: '',
     address: '',
@@ -74,25 +66,12 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         chainId,
     )
 
-    const { accountName, address, paymentUri } = useMemo((): ReceiveTarget => {
-        if (!selectedAccount || !scope || !addressCodecs.has(scope.chainId)) {
-            return NO_RECEIVE_TARGET
-        }
-        const codec = addressCodecs.get(scope.chainId)
-        const rawAddress = addressOn(selectedAccount, scope)
-        // normalize is only defined for input that passes isValid.
-        if (!rawAddress || !codec.isValid(rawAddress, scope.networkId)) {
-            return NO_RECEIVE_TARGET
-        }
-        const normalized = codec.normalize(rawAddress)
-        return {
-            accountName: getAccountDisplayName(selectedAccount, scope.chainId),
-            address: normalized,
-            paymentUri: codec.toPaymentUri(normalized, {
-                networkId: scope.networkId,
-            }),
-        }
-    }, [selectedAccount, scope])
+    const { accountName, address, paymentUri } = useMemo(
+        (): ReceiveTarget =>
+            (selectedAccount && receiveTargetOf(selectedAccount, scope)) ??
+            NO_RECEIVE_TARGET,
+        [selectedAccount, scope],
+    )
     const canReceive = paymentUri !== ''
 
     // Tracked here, not when the receive sheet opens: the sheet starts on

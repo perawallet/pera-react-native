@@ -24,3 +24,16 @@ export const LockOverlayProvider = LockOverlayContext.Provider
 
 export const useIsLockOverlayVisible = (): boolean =>
     useContext(LockOverlayContext)
+
+/**
+ * Why the guard is up. 'checking' is the brief decision after a return from the
+ * background (the app may not lock at all); 'locked' means the PIN screen shows.
+ */
+export type LockOverlayState = 'none' | 'checking' | 'locked'
+
+const LockOverlayStateContext = createContext<LockOverlayState>('none')
+
+export const LockOverlayStateProvider = LockOverlayStateContext.Provider
+
+export const useLockOverlayState = (): LockOverlayState =>
+    useContext(LockOverlayStateContext)

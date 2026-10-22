@@ -30,6 +30,13 @@ export const DeeplinkType = {
     WALLET_CONNECT: 'WALLET_CONNECT',
     ASSET_OPT_IN: 'ASSET_OPT_IN',
     ASSET_DETAIL: 'ASSET_DETAIL',
+    NFT_DETAIL: 'NFT_DETAIL',
+    SCAN: 'SCAN',
+    CLOUD_BACKUP: 'CLOUD_BACKUP',
+    PASSPHRASE_BACKUP: 'PASSPHRASE_BACKUP',
+    INBOX: 'INBOX',
+    NOTIFICATIONS: 'NOTIFICATIONS',
+    PORTFOLIO: 'PORTFOLIO',
     ASSET_TRANSACTIONS: 'ASSET_TRANSACTIONS',
     ASSET_INBOX: 'ASSET_INBOX',
     DISCOVER_BROWSER: 'DISCOVER_BROWSER',
@@ -143,6 +150,37 @@ export interface AssetDetailDeeplink extends ChainScopedDeeplink {
     assetRef: AssetRef
 }
 
+export interface NftDetailDeeplink extends ChainScopedDeeplink {
+    type: typeof DeeplinkType.NFT_DETAIL
+    assetRef: AssetRef
+}
+
+export interface ScanDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.SCAN
+}
+
+export interface CloudBackupDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.CLOUD_BACKUP
+}
+
+/** Carries no address: the app picks the first account that needs a backup. */
+export interface PassphraseBackupDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.PASSPHRASE_BACKUP
+}
+
+export interface InboxDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.INBOX
+}
+
+export interface NotificationsDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.NOTIFICATIONS
+}
+
+/** Home with the account drawer open on the portfolio. */
+export interface PortfolioDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.PORTFOLIO
+}
+
 export interface AssetTransactionsDeeplink extends ChainScopedDeeplink {
     type: typeof DeeplinkType.ASSET_TRANSACTIONS
     address: string
@@ -197,6 +235,8 @@ export interface SellDeeplink extends ChainScopedDeeplink {
 export interface AccountDetailDeeplink extends ChainScopedDeeplink {
     type: typeof DeeplinkType.ACCOUNT_DETAIL
     address: string
+    /** Open on this tab rather than the overview. */
+    tab?: 'history'
 }
 
 export interface InternalBrowserDeeplink extends ParsedDeeplink {
@@ -255,6 +295,13 @@ export type AnyParsedDeeplink =
     | WalletConnectDeeplink
     | AssetOptInDeeplink
     | AssetDetailDeeplink
+    | NftDetailDeeplink
+    | ScanDeeplink
+    | CloudBackupDeeplink
+    | PassphraseBackupDeeplink
+    | InboxDeeplink
+    | NotificationsDeeplink
+    | PortfolioDeeplink
     | AssetTransactionsDeeplink
     | AssetInboxDeeplink
     | DiscoverBrowserDeeplink

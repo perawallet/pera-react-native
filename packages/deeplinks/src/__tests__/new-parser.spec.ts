@@ -156,6 +156,77 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Scan', () => {
+        it('parses scan with no parameters', () => {
+            const result = parseDeeplink('perawallet://app/scan/')
+            expect(result?.type).toBe(DeeplinkType.SCAN)
+        })
+    })
+
+    describe('Backup', () => {
+        it('parses cloud-backup with no parameters', () => {
+            const result = parseDeeplink('perawallet://app/cloud-backup/')
+            expect(result?.type).toBe(DeeplinkType.CLOUD_BACKUP)
+        })
+
+        it('opens an account on its history tab only when asked', () => {
+            const history = parseDeeplink(
+                `perawallet://app/account-detail/?address=${TEST_ADDRESS}&tab=history`,
+            )
+            const plain = parseDeeplink(
+                `perawallet://app/account-detail/?address=${TEST_ADDRESS}&tab=other`,
+            )
+
+            expect(history?.type).toBe(DeeplinkType.ACCOUNT_DETAIL)
+            if (history?.type === DeeplinkType.ACCOUNT_DETAIL) {
+                expect(history.tab).toBe('history')
+            }
+            if (plain?.type === DeeplinkType.ACCOUNT_DETAIL) {
+                expect(plain.tab).toBeUndefined()
+            }
+        })
+
+        it('parses portfolio with no parameters', () => {
+            expect(parseDeeplink('perawallet://app/portfolio/')?.type).toBe(
+                DeeplinkType.PORTFOLIO,
+            )
+        })
+
+        it('parses inbox and notifications with no parameters', () => {
+            expect(parseDeeplink('perawallet://app/inbox/')?.type).toBe(
+                DeeplinkType.INBOX,
+            )
+            expect(parseDeeplink('perawallet://app/notifications/')?.type).toBe(
+                DeeplinkType.NOTIFICATIONS,
+            )
+        })
+
+        it('parses passphrase-backup with no parameters', () => {
+            const result = parseDeeplink('perawallet://app/passphrase-backup/')
+            expect(result?.type).toBe(DeeplinkType.PASSPHRASE_BACKUP)
+        })
+    })
+
+    describe('NFT detail', () => {
+        it('parses nft-detail without an address', () => {
+            const result = parseDeeplink(
+                'perawallet://app/nft-detail/?assetId=286018494',
+            )
+            expect(result?.type).toBe(DeeplinkType.NFT_DETAIL)
+            if (result?.type === DeeplinkType.NFT_DETAIL) {
+                expect(result.assetRef.assetId).toBe('286018494')
+            }
+        })
+
+        it('rejects nft-detail with a non-numeric asset id', () => {
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/nft-detail/?assetId=abc',
+                ),
+            ).toBeNull()
+        })
+    })
+
     describe('Non-numeric asset id (ARC-90: assetid = 1*DIGIT)', () => {
         // The app-scheme parser rejects at the boundary (returns null); the
         // orchestrator then falls through to the old parser's safe HOME

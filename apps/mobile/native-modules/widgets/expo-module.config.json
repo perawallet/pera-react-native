@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["PeraWidgetsModule"]
+  },
+  "android": {
+    "modules": ["com.algorand.perarn.perawidgets.PeraWidgetsModule"]
+  }
+}

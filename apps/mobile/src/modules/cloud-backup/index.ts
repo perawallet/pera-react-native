@@ -22,6 +22,7 @@ export {
     useCloudBackupInitialRoute,
     useCloudBackupIntroduction,
     useCloudBackupRestoreExit,
+    useCloudBackupSummary,
     useDisableCloudBackup,
     useEnableCloudBackup,
     useIsAccountBackedUp,
@@ -34,5 +35,8 @@ export {
     useStoreBackupCredentials,
     useSyncDevicesQr,
 } from './hooks'
-export type { UseCloudBackupInitialRouteResult } from './hooks'
+export type {
+    CloudBackupSummary,
+    UseCloudBackupInitialRouteResult,
+} from './hooks'
 export { DeleteFromBackupSheet } from './components'

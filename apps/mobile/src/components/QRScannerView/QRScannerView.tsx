@@ -17,8 +17,9 @@ import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
+import { useLockOverlayState } from '@hooks/useIsLockOverlayVisible'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
+import { useTrackOpenScanner } from '@hooks/useScannerRequest'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import {
@@ -119,8 +120,27 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     // `onClose` instead would be worse: it belongs to the parent screens and
     // several of them navigate, which must not happen under a locked app.
     // Leaving `props.isVisible` untouched brings the scanner back after the PIN.
-    const isLockOverlayVisible = useIsLockOverlayVisible()
-    const isScannerRequested = props.isVisible && !isLockOverlayVisible
+    //
+    // During the brief check after a return from the background, a scanner that
+    // was already open stays presented but covered with the camera paused:
+    // dismissing and re-presenting the Modal for it read as the scanner closing
+    // and reopening. One requested during the check waits, so a cold start
+    // doesn't flash a cover before the PIN screen.
+    const lockOverlayState = useLockOverlayState()
+    const [wasOpenBeforeLockCheck, setWasOpenBeforeLockCheck] = useState(false)
+    if (
+        lockOverlayState === 'none' &&
+        wasOpenBeforeLockCheck !== props.isVisible
+    ) {
+        setWasOpenBeforeLockCheck(props.isVisible)
+    }
+    const isCoveredForLockCheck =
+        lockOverlayState === 'checking' && wasOpenBeforeLockCheck
+    const isScannerRequested =
+        props.isVisible &&
+        (lockOverlayState === 'none' || isCoveredForLockCheck)
+    // Counted while requested, even when suspended behind the PIN: it's still open.
+    useTrackOpenScanner(props.isVisible)
 
     // A framed QR can itself be the secret (the Pera Web transfer code carries
     // the raw secretbox key). Gated rather than held from mount: this stays
@@ -217,7 +237,10 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                             <Suspense fallback={null}>
                                 <QRCameraScanner
                                     device={device}
-                                    isActive={scanningEnabled}
+                                    isActive={
+                                        scanningEnabled &&
+                                        !isCoveredForLockCheck
+                                    }
                                     style={styles.camera}
                                     onBarcodeScanned={onBarcodeScanned}
                                     onError={onError}
@@ -264,6 +287,12 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                     )}
                 </NotifierWrapper>
             ) : null}
+            {isCoveredForLockCheck && (
+                <PWView
+                    testID='qr-scanner-lock-cover'
+                    style={styles.lockCover}
+                />
+            )}
         </Modal>
     )
 }

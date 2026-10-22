@@ -24,6 +24,13 @@ import {
     type WalletConnectDeeplink,
     type AssetOptInDeeplink,
     type AssetDetailDeeplink,
+    type NftDetailDeeplink,
+    type ScanDeeplink,
+    type CloudBackupDeeplink,
+    type PassphraseBackupDeeplink,
+    type InboxDeeplink,
+    type NotificationsDeeplink,
+    type PortfolioDeeplink,
     type AssetInboxDeeplink,
     type DiscoverBrowserDeeplink,
     type DiscoverPathDeeplink,
@@ -253,6 +260,55 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         } as AssetDetailDeeplink
     }
 
+    if (cleanPath === 'scan') {
+        return { type: DeeplinkType.SCAN, sourceUrl: url } as ScanDeeplink
+    }
+
+    if (cleanPath === 'cloud-backup') {
+        return {
+            type: DeeplinkType.CLOUD_BACKUP,
+            sourceUrl: url,
+        } as CloudBackupDeeplink
+    }
+
+    if (cleanPath === 'passphrase-backup') {
+        return {
+            type: DeeplinkType.PASSPHRASE_BACKUP,
+            sourceUrl: url,
+        } as PassphraseBackupDeeplink
+    }
+
+    if (cleanPath === 'inbox') {
+        return { type: DeeplinkType.INBOX, sourceUrl: url } as InboxDeeplink
+    }
+
+    if (cleanPath === 'notifications') {
+        return {
+            type: DeeplinkType.NOTIFICATIONS,
+            sourceUrl: url,
+        } as NotificationsDeeplink
+    }
+
+    if (cleanPath === 'portfolio') {
+        return {
+            type: DeeplinkType.PORTFOLIO,
+            sourceUrl: url,
+        } as PortfolioDeeplink
+    }
+
+    if (cleanPath === 'nft-detail') {
+        const assetRef = params.assetId
+            ? toLinkAssetRef(target, params.assetId)
+            : undefined
+        if (!assetRef) return null
+        return {
+            type: DeeplinkType.NFT_DETAIL,
+            sourceUrl: url,
+            target,
+            assetRef,
+        } as NftDetailDeeplink
+    }
+
     if (cleanPath === 'asset-inbox') {
         if (!params.address) return null
         return {
@@ -337,6 +393,8 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
             sourceUrl: url,
             target,
             address: params.address,
+            // Anything else opens the overview, as the link did before `tab`.
+            ...(params.tab === 'history' ? { tab: 'history' } : {}),
         } as AccountDetailDeeplink
     }
 

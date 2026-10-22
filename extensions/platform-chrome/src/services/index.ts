@@ -21,6 +21,7 @@ export {
     ChromeCloudFileStorageService,
     ChromeMigrationService,
     ChromeWalletProvisioningService,
+    ChromeWidgetsService,
 } from './stubs'
 export { ChromePushNotificationService } from './push-notifications'
 export { ChromeRemoteConfigService } from './remote-config'

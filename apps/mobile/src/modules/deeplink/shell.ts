@@ -13,3 +13,5 @@
 // Mounted once by the app roots. It imports the messages barrel, which itself
 // uses useDeepLink, so it stays out of index.ts.
 export { useNotificationDeeplinkListener } from './hooks/useNotificationDeeplinkListener'
+export { useAppQuickActions } from './hooks/useAppQuickActions'
+export { usePendingScanRequest } from './hooks/usePendingScanRequest'

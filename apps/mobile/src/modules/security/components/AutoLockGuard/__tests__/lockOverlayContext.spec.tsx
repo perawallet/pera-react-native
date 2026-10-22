@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { render, screen } from '@test-utils/render'
 import { AutoLockGuard } from '../AutoLockGuard'
-import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
+import {
+    useIsLockOverlayVisible,
+    useLockOverlayState,
+} from '@hooks/useIsLockOverlayVisible'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { useLockScreen } from '../useLockScreen'
 import { PWText } from '@components/core'
@@ -25,6 +28,10 @@ vi.mock('../LockoutView', () => ({ LockoutView: () => null }))
 
 const LockOverlayVisibilityProbe = () => (
     <PWText testID='probe'>{String(useIsLockOverlayVisible())}</PWText>
+)
+
+const LockOverlayStateProbe = () => (
+    <PWText testID='state-probe'>{useLockOverlayState()}</PWText>
 )
 
 describe('AutoLockGuard lock-overlay context', () => {
@@ -52,6 +59,7 @@ describe('AutoLockGuard lock-overlay context', () => {
         render(
             <AutoLockGuard>
                 <LockOverlayVisibilityProbe />
+                <LockOverlayStateProbe />
             </AutoLockGuard>,
         )
     }
@@ -72,5 +80,31 @@ describe('AutoLockGuard lock-overlay context', () => {
         renderWithGuard({ isLocked: false, isChecking: true })
 
         expect(screen.getByText('true')).toBeTruthy()
+    })
+
+    // The QR scanner rides out 'checking' covered but dismisses for 'locked', so
+    // a PIN screen must never be reported as a check.
+    it('reports the PIN screen as locked', () => {
+        renderWithGuard({ isLocked: true, isChecking: false })
+
+        expect(screen.getByText('locked')).toBeTruthy()
+    })
+
+    it('reports the resume or startup decision as checking', () => {
+        renderWithGuard({ isLocked: false, isChecking: true })
+
+        expect(screen.getByText('checking')).toBeTruthy()
+    })
+
+    it('reports a locked app as locked even while a check runs', () => {
+        renderWithGuard({ isLocked: true, isChecking: true })
+
+        expect(screen.getByText('locked')).toBeTruthy()
+    })
+
+    it('reports none while the app is visible', () => {
+        renderWithGuard({ isLocked: false, isChecking: false })
+
+        expect(screen.getByText('none')).toBeTruthy()
     })
 })

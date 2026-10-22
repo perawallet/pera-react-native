@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { SharedValue } from 'react-native-reanimated'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useAccountDrawerRequest } from '@hooks/useAccountDrawerRequest'
 
 import { AccountDrawerContent } from './AccountDrawerContent'
 import type { AccountDrawerContextValue } from './AccountDrawerContext'
@@ -52,6 +53,14 @@ export const useAccountDrawerHost = (): UseAccountDrawerHostResult => {
     const publishPickerKind = useCallback(
         (kind: AccountPickerKind) => setPickerKind(kind),
         [],
+    )
+
+    // A Portfolio widget asks for the portfolio, whichever picker was last up.
+    useAccountDrawerRequest(
+        useCallback(() => {
+            setPickerKind('portfolio')
+            openDrawer()
+        }, [openDrawer]),
     )
 
     const controls = useMemo<AccountDrawerContextValue>(

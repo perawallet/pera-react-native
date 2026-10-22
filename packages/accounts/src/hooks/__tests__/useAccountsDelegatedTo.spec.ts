@@ -13,7 +13,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { authorityOf } from '../../credentials/accessors'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { useAccountsDelegatedTo } from '../useAccountsDelegatedTo'
+import {
+    useAccountsDelegatedTo,
+    useDelegationAuthorities,
+} from '../useAccountsDelegatedTo'
 import { useAccountChainStateStore, useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 import {
@@ -91,5 +94,56 @@ describe('useAccountsDelegatedTo', () => {
             useAccountsDelegatedTo('PQ', 'algorand'),
         )
         expect(result.current).toEqual([])
+    })
+})
+
+describe('useDelegationAuthorities', () => {
+    beforeEach(() => {
+        useAccountsStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
+        registerFakeAccountsChain()
+        vi.mocked(
+            fakeAccountsChain().adapter.authority!.accountsDelegatedTo,
+        ).mockImplementation((address, accounts) =>
+            accounts.filter(a => authorityOf(a, MAINNET_SCOPE) === address),
+        )
+    })
+
+    it('keeps only the addresses some account delegates to', () => {
+        seedAuthority('A', 'PQ')
+        setAccounts([held('A'), held('PQ'), held('XY')])
+        const addresses = ['A', 'PQ', 'XY']
+
+        const { result } = renderHook(() =>
+            useDelegationAuthorities(addresses, 'algorand'),
+        )
+
+        expect([...result.current]).toEqual(['PQ'])
+    })
+
+    it('picks up an authority recorded after mount', () => {
+        setAccounts([held('A'), held('PQ')])
+        const addresses = ['A', 'PQ']
+        const { result } = renderHook(() =>
+            useDelegationAuthorities(addresses, 'algorand'),
+        )
+        expect(result.current.size).toBe(0)
+
+        act(() => seedAuthority('A', 'PQ'))
+
+        expect([...result.current]).toEqual(['PQ'])
+    })
+
+    it('is empty on a chain without an authority', () => {
+        registerFakeAccountsChain({ authority: undefined })
+        seedAuthority('A', 'PQ')
+        setAccounts([held('A'), held('PQ')])
+        const addresses = ['PQ']
+
+        const { result } = renderHook(() =>
+            useDelegationAuthorities(addresses, 'algorand'),
+        )
+
+        expect(result.current.size).toBe(0)
     })
 })

@@ -29,6 +29,18 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<DeeplinkType, boolean> = {
     [DeeplinkType.HOME]: true,
     [DeeplinkType.ACCOUNT_DETAIL]: true,
     [DeeplinkType.ASSET_DETAIL]: true,
+    [DeeplinkType.NFT_DETAIL]: true,
+    // A push notification has no business opening the camera.
+    [DeeplinkType.SCAN]: false,
+    // A push that opens a backup flow is the shape of a phishing lure; only
+    // the user's own widget tap starts one.
+    [DeeplinkType.CLOUD_BACKUP]: false,
+    [DeeplinkType.PASSPHRASE_BACKUP]: false,
+    // Both only open a Messages tab, which a push already lands on.
+    [DeeplinkType.INBOX]: true,
+    [DeeplinkType.NOTIFICATIONS]: true,
+    // Home with a drawer open: nothing a push couldn't already reach.
+    [DeeplinkType.PORTFOLIO]: true,
     [DeeplinkType.ASSET_TRANSACTIONS]: true,
     [DeeplinkType.ASSET_INBOX]: true,
     // Fetched by id from the backend and reviewed in the sheet; the link

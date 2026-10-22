@@ -49,6 +49,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     passkeys: 'never',
     swaps: 'never',
     transactions: 'never',
+    // Keyed by the wallet's addresses, and rebuilt from SQLite on every launch.
+    widgets: 'never',
     // Everything else is derived from the chain or public catalogs, so a copy
     // on disk exposes nothing that isn't already public, and it is what lets
     // the app render before the first fetch lands.

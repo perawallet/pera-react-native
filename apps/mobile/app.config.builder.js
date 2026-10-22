@@ -605,6 +605,9 @@ function buildAppConfig(env) {
         { isProduction: variant === 'production' },
       ],
 
+      // Home-screen widget extension, built from targets/widget. See docs/WIDGETS.md.
+      '@bacons/apple-targets',
+
       // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
       './plugins/withAndroidBlePermissionScoping',
 

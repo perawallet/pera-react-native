@@ -34,6 +34,9 @@ import {
     deeplinkAdapters,
     type DeeplinkChainAdapter,
 } from '@perawallet/wallet-core-deeplinks'
+import { useScannerRequestStore } from '@hooks/useScannerRequest'
+import { useAccountDrawerRequestStore } from '@hooks/useAccountDrawerRequest'
+import { useAccountTabRequestStore } from '@hooks/useAccountTabRequest'
 import { Linking, Platform } from 'react-native'
 import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairingProgressStore'
 import {
@@ -190,6 +193,7 @@ const accountsState = vi.hoisted(() => ({
     accounts: [] as unknown[],
     selected: null as unknown,
     setSelectedAccountId: vi.fn(),
+    resolveAssetHolderAddress: vi.fn(),
 }))
 
 const { mockEnableChain } = vi.hoisted(() => ({ mockEnableChain: vi.fn() }))
@@ -238,6 +242,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
     hdIndexOf: () => undefined,
+    useResolveAssetHolderAddress: () => accountsState.resolveAssetHolderAddress,
     useAllAccounts: () => [
         {
             id: 'mock',
@@ -435,6 +440,21 @@ const { mockApplyE2eFixture } = vi.hoisted(() => ({
 
 vi.mock('../../handlers/useE2eFixtureDeeplink', () => ({
     useE2eFixtureDeeplink: () => mockApplyE2eFixture,
+}))
+
+const { mockOpenPassphraseBackup, mockIsCloudBackupAvailable } = vi.hoisted(
+    () => ({
+        mockOpenPassphraseBackup: vi.fn(),
+        mockIsCloudBackupAvailable: vi.fn(() => true),
+    }),
+)
+
+vi.mock('../../handlers/usePassphraseBackupDeeplink', () => ({
+    usePassphraseBackupDeeplink: () => mockOpenPassphraseBackup,
+}))
+
+vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
+    useIsCloudBackupAvailable: mockIsCloudBackupAvailable,
 }))
 
 vi.mock('@modules/locale-tour/registry', () => ({
@@ -1441,6 +1461,221 @@ describe('useDeepLink', () => {
         })
     })
 
+    // Widgets carry no addresses, so the link resolves the holder itself; the
+    // detail screen reads the selected account.
+    it('selects the NFT holder and opens the NFT detail', async () => {
+        accountsState.accounts = [
+            { id: 'holder', chains: { algorand: { address: 'HOLDER' } } },
+        ]
+        accountsState.resolveAssetHolderAddress.mockResolvedValue('HOLDER')
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.NFT_DETAIL,
+            target: { chainId: 'algorand' },
+            assetRef: { chainId: 'algorand', assetId: '286018494' },
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/nft-detail/?assetId=286018494',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(accountsState.resolveAssetHolderAddress).toHaveBeenCalledWith(
+            '286018494',
+        )
+        expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+            'holder',
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'CollectibleDetails',
+                params: { assetId: '286018494' },
+            },
+        })
+    })
+
+    it('opens the NFT detail without changing accounts when no account holds it', async () => {
+        accountsState.resolveAssetHolderAddress.mockResolvedValue(null)
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.NFT_DETAIL,
+            target: { chainId: 'algorand' },
+            assetRef: { chainId: 'algorand', assetId: '286018494' },
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/nft-detail/?assetId=286018494',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'CollectibleDetails',
+                params: { assetId: '286018494' },
+            },
+        })
+    })
+
+    // Control Center, the Action button and the app icon's quick action all
+    // land here; the home screen owns the scanner.
+    it('opens the home screen and asks it to open the scanner', async () => {
+        useScannerRequestStore.setState({
+            isRequested: false,
+            openScannerCount: 0,
+        })
+        ;(parseDeeplink as Mock).mockReturnValue({ type: DeeplinkType.SCAN })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/scan/',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
+        expect(useScannerRequestStore.getState().isRequested).toBe(true)
+    })
+
+    // Navigating home would dismiss the open scanner and a new one would open.
+    it('ignores a scan request while a scanner is already open', async () => {
+        useScannerRequestStore.setState({
+            isRequested: false,
+            openScannerCount: 1,
+        })
+        ;(parseDeeplink as Mock).mockReturnValue({ type: DeeplinkType.SCAN })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/scan/',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(useScannerRequestStore.getState().isRequested).toBe(false)
+        useScannerRequestStore.setState({ openScannerCount: 0 })
+    })
+
+    // The cloud backup stack picks intro, setup or overview itself.
+    it('opens cloud backup in settings', async () => {
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.CLOUD_BACKUP,
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/cloud-backup/',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('Settings', {
+            screen: 'CloudBackupSettings',
+        })
+    })
+
+    it('refuses cloud backup where it is not offered', async () => {
+        mockIsCloudBackupAvailable.mockReturnValue(false)
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.CLOUD_BACKUP,
+        })
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/cloud-backup/',
+                false,
+                'deeplink',
+                onError,
+            )
+        })
+
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(onError).toHaveBeenCalled()
+        mockIsCloudBackupAvailable.mockReturnValue(true)
+    })
+
+    // The Portfolio widgets land here when set to every account.
+    it('opens home and asks the account drawer to show the portfolio', async () => {
+        useAccountDrawerRequestStore.setState({ isRequested: false })
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.PORTFOLIO,
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/portfolio/',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
+        expect(useAccountDrawerRequestStore.getState().isRequested).toBe(true)
+    })
+
+    it.each([
+        [DeeplinkType.INBOX, 'Inbox'],
+        [DeeplinkType.NOTIFICATIONS, 'Notifications'],
+    ])('opens the matching Messages tab for %s', async (type, initialTab) => {
+        ;(parseDeeplink as Mock).mockReturnValue({ type })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/inbox/',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('Messages', {
+            screen: 'MessagesHome',
+            params: { initialTab },
+        })
+    })
+
+    it('hands the passphrase backup link to its handler', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.PASSPHRASE_BACKUP,
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/passphrase-backup/',
+                true,
+                'deeplink',
+            )
+        })
+
+        expect(mockOpenPassphraseBackup).toHaveBeenCalledWith(true)
+    })
+
     it('should handle INTERNAL_BROWSER deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.INTERNAL_BROWSER,
@@ -1887,6 +2122,30 @@ describe('useDeepLink', () => {
 
             expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
         })
+    })
+
+    // The Transactions widget opens one account straight on its history.
+    it('asks the account screen for its history tab when the link names it', async () => {
+        useAccountTabRequestStore.setState({ requestedTab: null })
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ACCOUNT_DETAIL,
+            target: { chainId: 'algorand' },
+            address: 'addr1',
+            tab: 'history',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/account-detail/?address=addr1&tab=history',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(useAccountTabRequestStore.getState().requestedTab).toBe(
+            'History',
+        )
     })
 
     it('should handle ACCOUNT_DETAIL deeplink', async () => {

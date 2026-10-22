@@ -33,6 +33,7 @@ const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
 const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
+const mockClearWidgetSnapshot = vi.fn().mockResolvedValue(undefined)
 const mockClearConnections = vi.fn().mockResolvedValue(undefined)
 
 const mockKeyValueStorage = { removeItem: mockRemoveItem }
@@ -43,6 +44,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         database: {},
         migration: { resetLegacyData: mockResetLegacyData },
         passkeyAutofill: { clearCredentials: mockClearPasskeyCredentials },
+        widgets: { clearSnapshot: mockClearWidgetSnapshot },
         connections: { store: { clear: mockClearConnections } },
     }),
     clearKeystore: (...args: unknown[]) => mockClearKeystore(...args),
@@ -268,6 +270,17 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    // Widget data lives in the App Group, outside every store the wipe clears.
+    it('clears the home-screen widget snapshot', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearWidgetSnapshot).toHaveBeenCalledTimes(1)
     })
 
     // The credential providers keep their own copy of the master key, parent

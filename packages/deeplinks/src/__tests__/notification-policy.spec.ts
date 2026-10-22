@@ -26,6 +26,10 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.ADD_WATCH_ACCOUNT,
         DeeplinkType.RECOVER_ADDRESS,
         DeeplinkType.PERA_WEB_IMPORT,
+        // A push notification has no business opening the camera.
+        DeeplinkType.SCAN,
+        DeeplinkType.CLOUD_BACKUP,
+        DeeplinkType.PASSPHRASE_BACKUP,
     ])('refuses %s', type => {
         expect(isNotificationAllowedDeeplinkType(type)).toBe(false)
     })
@@ -38,6 +42,9 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.SIGN_REQUEST,
         DeeplinkType.ASSET_OPT_IN,
         DeeplinkType.BUY,
+        DeeplinkType.INBOX,
+        DeeplinkType.NOTIFICATIONS,
+        DeeplinkType.PORTFOLIO,
     ])('admits %s', type => {
         expect(isNotificationAllowedDeeplinkType(type)).toBe(true)
     })

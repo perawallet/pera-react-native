@@ -51,6 +51,10 @@ export const DEEPLINK_CHAIN_CAPABILITY: Record<
     [DeeplinkType.WALLET_CONNECT]: { anyChain: 'dappConnect' },
     [DeeplinkType.LIQUID_AUTH]: { anyChain: 'liquidAuth' },
     [DeeplinkType.PERA_WEB_IMPORT]: { anyChain: 'peraWebImport' },
+    [DeeplinkType.PASSPHRASE_BACKUP]: { anyChain: 'mnemonicBackup' },
+    // The app gates its inbox and notifications on the same capability.
+    [DeeplinkType.INBOX]: { anyChain: 'notifications' },
+    [DeeplinkType.NOTIFICATIONS]: { anyChain: 'notifications' },
 
     // The action sheet filters its own actions by the address's chain.
     [DeeplinkType.ADDRESS_ACTIONS]: null,
@@ -66,6 +70,11 @@ export const DEEPLINK_CHAIN_CAPABILITY: Record<
     [DeeplinkType.INTERNAL_BROWSER]: null,
     [DeeplinkType.DISCOVER_BROWSER]: null,
     [DeeplinkType.HOME]: null,
+    [DeeplinkType.PORTFOLIO]: null,
+    [DeeplinkType.NFT_DETAIL]: null,
+    [DeeplinkType.SCAN]: null,
+    // Gated by the app's cloud backup flag hook, which folds in `cloudBackup`.
+    [DeeplinkType.CLOUD_BACKUP]: null,
 }
 
 export type DeeplinkChainRequirement = {

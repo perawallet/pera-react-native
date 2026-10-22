@@ -19,7 +19,10 @@ import {
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
 import { QRScannerView } from '../QRScannerView'
-import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
+import {
+    LockOverlayStateProvider,
+    type LockOverlayState,
+} from '@hooks/useIsLockOverlayVisible'
 
 // The camera module is lazily imported by QRScannerView; rejecting that import
 // exercises the error boundary + retry path. The throw lives in an
@@ -103,18 +106,19 @@ describe('QRScannerView', () => {
 
     describe('app lock', () => {
         const renderWithLockOverlay = (
-            isLockOverlayVisible: boolean,
+            lockState: LockOverlayState,
             onClose: () => void,
+            isVisible = true,
         ) => (
-            <LockOverlayProvider value={isLockOverlayVisible}>
+            <LockOverlayStateProvider value={lockState}>
                 <QRScannerView
-                    isVisible={true}
+                    isVisible={isVisible}
                     animationType='none'
                     title={CUSTOM_TITLE}
                     onClose={onClose}
                     onSuccess={vi.fn()}
                 />
-            </LockOverlayProvider>
+            </LockOverlayStateProvider>
         )
 
         beforeEach(() => {
@@ -126,10 +130,10 @@ describe('QRScannerView', () => {
 
         it('tears down the scanner while the lock overlay is up', async () => {
             const onClose = vi.fn()
-            const { rerender } = render(renderWithLockOverlay(false, onClose))
+            const { rerender } = render(renderWithLockOverlay('none', onClose))
             expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
 
-            rerender(renderWithLockOverlay(true, onClose))
+            rerender(renderWithLockOverlay('locked', onClose))
 
             expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
             // The parent owns onClose and some parents navigate on it — routing
@@ -139,10 +143,63 @@ describe('QRScannerView', () => {
 
         it('restores the scanner once the lock overlay clears', async () => {
             const onClose = vi.fn()
-            const { rerender } = render(renderWithLockOverlay(false, onClose))
-            rerender(renderWithLockOverlay(true, onClose))
+            const { rerender } = render(renderWithLockOverlay('none', onClose))
+            rerender(renderWithLockOverlay('locked', onClose))
 
-            rerender(renderWithLockOverlay(false, onClose))
+            rerender(renderWithLockOverlay('none', onClose))
+
+            expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
+        })
+
+        // Dismissing and re-presenting the Modal for the brief resume check read
+        // as the scanner closing and a new one opening.
+        it('keeps an open scanner up, covered, while the lock is only checking', async () => {
+            const onClose = vi.fn()
+            const { rerender } = render(renderWithLockOverlay('none', onClose))
+            expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
+
+            rerender(renderWithLockOverlay('checking', onClose))
+
+            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+            expect(screen.getByTestId('qr-scanner-lock-cover')).toBeTruthy()
+            expect(onClose).not.toHaveBeenCalled()
+        })
+
+        it('uncovers the scanner when the check ends without locking', async () => {
+            const onClose = vi.fn()
+            const { rerender } = render(renderWithLockOverlay('none', onClose))
+            await screen.findByText(CUSTOM_TITLE)
+            rerender(renderWithLockOverlay('checking', onClose))
+
+            rerender(renderWithLockOverlay('none', onClose))
+
+            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+            expect(screen.queryByTestId('qr-scanner-lock-cover')).toBeNull()
+        })
+
+        it('hides the scanner when the check ends in a lock', async () => {
+            const onClose = vi.fn()
+            const { rerender } = render(renderWithLockOverlay('none', onClose))
+            await screen.findByText(CUSTOM_TITLE)
+            rerender(renderWithLockOverlay('checking', onClose))
+
+            rerender(renderWithLockOverlay('locked', onClose))
+
+            expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+        })
+
+        // Cold start: presenting during the check would flash a cover and then
+        // dismiss for the PIN screen.
+        it('does not present a scanner requested during the check until it ends', async () => {
+            const onClose = vi.fn()
+            const { rerender } = render(
+                renderWithLockOverlay('checking', onClose, false),
+            )
+            rerender(renderWithLockOverlay('checking', onClose, true))
+
+            expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+
+            rerender(renderWithLockOverlay('none', onClose, true))
 
             expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
         })
@@ -188,19 +245,36 @@ describe('QRScannerView', () => {
 
         it('re-allows capture while the lock overlay is up', async () => {
             const { rerender } = render(
-                <LockOverlayProvider value={false}>
+                <LockOverlayStateProvider value='none'>
                     {renderScanner(true)}
-                </LockOverlayProvider>,
+                </LockOverlayStateProvider>,
             )
             await screen.findByText(CUSTOM_TITLE)
 
             rerender(
-                <LockOverlayProvider value={true}>
+                <LockOverlayStateProvider value='locked'>
                     {renderScanner(true)}
-                </LockOverlayProvider>,
+                </LockOverlayStateProvider>,
             )
 
             expect(allowScreenCaptureAsync).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps capture blocked while an open scanner rides out the lock check', async () => {
+            const { rerender } = render(
+                <LockOverlayStateProvider value='none'>
+                    {renderScanner(true)}
+                </LockOverlayStateProvider>,
+            )
+            await screen.findByText(CUSTOM_TITLE)
+
+            rerender(
+                <LockOverlayStateProvider value='checking'>
+                    {renderScanner(true)}
+                </LockOverlayStateProvider>,
+            )
+
+            expect(allowScreenCaptureAsync).not.toHaveBeenCalled()
         })
     })
 

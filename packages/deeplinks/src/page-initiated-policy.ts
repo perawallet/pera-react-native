@@ -66,6 +66,13 @@ export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
     // --- Switches the selected account ----------------------------------
     [DeeplinkType.ACCOUNT_DETAIL]: 'origin-gated',
     [DeeplinkType.ASSET_DETAIL]: 'origin-gated',
+    [DeeplinkType.NFT_DETAIL]: 'origin-gated',
+    [DeeplinkType.SCAN]: 'origin-gated',
+    [DeeplinkType.CLOUD_BACKUP]: 'origin-gated',
+    [DeeplinkType.PASSPHRASE_BACKUP]: 'origin-gated',
+    [DeeplinkType.INBOX]: 'origin-gated',
+    [DeeplinkType.NOTIFICATIONS]: 'origin-gated',
+    [DeeplinkType.PORTFOLIO]: 'origin-gated',
     [DeeplinkType.ASSET_TRANSACTIONS]: 'origin-gated',
     [DeeplinkType.SWAP]: 'origin-gated',
     [DeeplinkType.BUY]: 'origin-gated',

@@ -25,6 +25,7 @@ import {
     ChromePushNotificationService,
     ChromeRemoteConfigService,
     ChromeWalletProvisioningService,
+    ChromeWidgetsService,
 } from './services'
 import { keyValueStorage } from './key-value-singleton'
 
@@ -45,6 +46,7 @@ export const platformServices: PlatformServices = {
     migration: new ChromeMigrationService(),
     walletProvisioning: new ChromeWalletProvisioningService(),
     cloudFileStorage: new ChromeCloudFileStorageService(),
+    widgets: new ChromeWidgetsService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices

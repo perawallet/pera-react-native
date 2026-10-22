@@ -21,7 +21,7 @@ import {
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 
 // The single visibility rule for backup warnings (reminder banner, account
-// badge), so they can never disagree.
+// badge, home-screen widget), so they can never disagree.
 export const useShouldPromptMnemonicBackup = (
     account: WalletAccount | null | undefined,
     scope: ChainScope,
@@ -43,12 +43,26 @@ export const useShouldPromptMnemonicBackup = (
         'mnemonicBackup',
     )
 
+    return isMnemonicBackupPromptDue({
+        canBackUpMnemonic,
+        requiresBackup,
+        isFunded,
+        isDelegatedTo: delegatedToThisAccount.length > 0,
+    })
+}
+
+export const isMnemonicBackupPromptDue = ({
+    canBackUpMnemonic,
+    requiresBackup,
+    isFunded,
+    isDelegatedTo,
+}: {
+    canBackUpMnemonic: boolean
+    requiresBackup: boolean
+    isFunded: boolean
+    isDelegatedTo: boolean
+}): boolean =>
     // An unfunded account still holds the keys for anything that delegates its
     // signing to it, so losing its passphrase strands those accounts: funding
     // is not the only reason to prompt.
-    return (
-        canBackUpMnemonic &&
-        requiresBackup &&
-        (isFunded || delegatedToThisAccount.length > 0)
-    )
-}
+    canBackUpMnemonic && requiresBackup && (isFunded || isDelegatedTo)

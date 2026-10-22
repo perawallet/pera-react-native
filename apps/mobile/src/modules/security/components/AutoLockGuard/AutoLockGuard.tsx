@@ -16,7 +16,10 @@ import { useStyles } from './AutoLockGuard.style'
 import { PWView, PWLoadingOverlay } from '@components/core'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
-import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
+import {
+    LockOverlayProvider,
+    LockOverlayStateProvider,
+} from '@hooks/useIsLockOverlayVisible'
 import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -41,6 +44,13 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const showLoadingOverlay = isChecking
     const showLockOverlay = isLocked && !isChecking
     const isGuardActive = showLoadingOverlay || showLockOverlay
+    // From the lock itself, not the overlay shown: a locked app mid-check must
+    // still read as locked, or an open QR scanner would ride out the check.
+    const lockOverlayState = isLocked
+        ? 'locked'
+        : isChecking
+          ? 'checking'
+          : 'none'
 
     return (
         <>
@@ -62,7 +72,9 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                 pointerEvents={isGuardActive ? 'none' : 'auto'}
             >
                 <LockOverlayProvider value={isGuardActive}>
-                    {children}
+                    <LockOverlayStateProvider value={lockOverlayState}>
+                        {children}
+                    </LockOverlayStateProvider>
                 </LockOverlayProvider>
             </PWView>
             {showLoadingOverlay && (

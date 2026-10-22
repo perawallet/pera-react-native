@@ -133,6 +133,14 @@ vi.mock('../handlers/useE2eFixtureDeeplink', () => ({
     useE2eFixtureDeeplink: () => vi.fn(),
 }))
 
+vi.mock('../handlers/usePassphraseBackupDeeplink', () => ({
+    usePassphraseBackupDeeplink: () => vi.fn(),
+}))
+
+vi.mock('@hooks/useIsCloudBackupAvailable', () => ({
+    useIsCloudBackupAvailable: () => true,
+}))
+
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
         navigate: mockNavigate,
@@ -205,6 +213,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
+    useResolveAssetHolderAddress: () => vi.fn().mockResolvedValue(null),
     useAccountsStore: Object.assign(vi.fn(), {
         getState: () => ({ accounts: mockWalletAccounts }),
     }),

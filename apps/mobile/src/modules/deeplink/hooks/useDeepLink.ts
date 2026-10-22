@@ -42,10 +42,14 @@ import {
     hdIndexOf,
     useAccountsStore,
     useEnableChain,
+    useResolveAssetHolderAddress,
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
@@ -59,18 +63,24 @@ import {
 import {
     getChainDescriptor,
     getSelectedScope,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { useScannerRequestStore } from '@hooks/useScannerRequest'
+import { useAccountDrawerRequestStore } from '@hooks/useAccountDrawerRequest'
+import { useAccountTabRequestStore } from '@hooks/useAccountTabRequest'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
     useChainActionDeeplink,
     useDiscoverPathDeeplink,
+    usePassphraseBackupDeeplink,
     useE2eFixtureDeeplink,
     useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
@@ -144,6 +154,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (account) setSelectedAccountId(account.id)
     }
     const swapChainOf = useSwapChainResolver()
+    const resolveAssetHolderAddress = useResolveAssetHolderAddress(
+        useSelectedScope(LEGACY_CHAIN_ID),
+    )
     // Fund's provider redirects back with the address it delivered to, on
     // whichever chain the purchase was for.
     const selectAccountByAnyChainAddress = (address: string) => {
@@ -158,6 +171,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isAllowed = useCapabilityCheck()
     const { resolve: resolveSender, pick: pickSender } =
         useSendAccountResolver()
@@ -173,12 +187,16 @@ export const useDeepLink = (): UseDeepLinkResult => {
             chainId => getSelectedScope(chainId).networkId,
         )
         if (mismatched) return { kind: 'network-mismatch', target: mismatched }
-        // CARDS and SELL gate on flag hooks that already fold in their capability.
+        // CARDS, SELL and CLOUD_BACKUP gate on flag hooks that already fold in
+        // their capability.
         if (link.type === DeeplinkType.CARDS) {
             return isPeraCardEnabled ? undefined : { kind: 'unavailable' }
         }
         if (link.type === DeeplinkType.SELL) {
             return isGiftCardsEnabled ? undefined : { kind: 'unavailable' }
+        }
+        if (link.type === DeeplinkType.CLOUD_BACKUP) {
+            return isCloudBackupAvailable ? undefined : { kind: 'unavailable' }
         }
         const unsupportedChainId = unsupportedLinkChainOf(link)
         if (unsupportedChainId) {
@@ -200,6 +218,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const submitChainAction = useChainActionDeeplink()
     const openBrowser = useBrowserDeeplink()
     const openDiscoverPath = useDiscoverPathDeeplink()
+    const openPassphraseBackup = usePassphraseBackupDeeplink()
     const handlePeraWebImport = usePeraWebImportDeeplink()
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
@@ -587,6 +606,73 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
                 }
 
+                case DeeplinkType.SCAN: {
+                    if (
+                        useScannerRequestStore.getState().openScannerCount > 0
+                    ) {
+                        break
+                    }
+                    navigateHome(replaceCurrentScreen)
+                    useScannerRequestStore.getState().requestScanner()
+                    break
+                }
+
+                case DeeplinkType.CLOUD_BACKUP: {
+                    // The stack picks intro, setup or overview on its own.
+                    navigateToScreen(replaceCurrentScreen, 'Settings', {
+                        screen: 'CloudBackupSettings',
+                    })
+                    break
+                }
+
+                case DeeplinkType.PORTFOLIO: {
+                    navigateHome(replaceCurrentScreen)
+                    useAccountDrawerRequestStore
+                        .getState()
+                        .requestAccountDrawer()
+                    break
+                }
+
+                case DeeplinkType.INBOX:
+                case DeeplinkType.NOTIFICATIONS: {
+                    navigateToScreen(replaceCurrentScreen, 'Messages', {
+                        screen: 'MessagesHome',
+                        params: {
+                            initialTab:
+                                parsedData.type === DeeplinkType.INBOX
+                                    ? 'Inbox'
+                                    : 'Notifications',
+                        },
+                    })
+                    break
+                }
+
+                case DeeplinkType.PASSPHRASE_BACKUP: {
+                    openPassphraseBackup(replaceCurrentScreen)
+                    break
+                }
+
+                case DeeplinkType.NFT_DETAIL: {
+                    // The detail screen reads the selected account, so hand
+                    // the selection to the holder first.
+                    const { assetId } = parsedData.assetRef
+                    const holder = await resolveAssetHolderAddress(assetId)
+                    if (holder) {
+                        selectAccountByAddress(
+                            parsedData.target.chainId,
+                            holder,
+                        )
+                    }
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Home',
+                        params: {
+                            screen: 'CollectibleDetails',
+                            params: { assetId },
+                        },
+                    })
+                    break
+                }
+
                 case DeeplinkType.ASSET_INBOX: {
                     navigateToScreen(false, 'Messages', {
                         screen: 'AssetTransferRequests',
@@ -697,6 +783,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         parsedData.target.chainId,
                         parsedData.address,
                     )
+                    if (parsedData.tab === 'history') {
+                        useAccountTabRequestStore
+                            .getState()
+                            .requestAccountTab('History')
+                    }
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: { screen: 'AccountDetails' },

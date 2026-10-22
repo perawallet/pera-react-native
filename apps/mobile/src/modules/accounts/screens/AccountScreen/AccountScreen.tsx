@@ -21,6 +21,7 @@ import { useShouldPlayConfetti } from '@modules/onboarding'
 import { useAccountScreenAnimation } from './useAccountScreenAnimation'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
+import { useScannerRequest } from '@hooks/useScannerRequest'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useAccountDrawerPickerKind } from '@modules/accounts/components/AccountDrawer'
 import { QRScannerView } from '@components/QRScannerView'
@@ -45,6 +46,7 @@ export const AccountScreen = () => {
     const styles = useStyles(insets)
     const account = useSelectedAccount()
     const scannerState = useModalState()
+    useScannerRequest(scannerState.open)
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =

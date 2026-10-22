@@ -13,3 +13,4 @@
 export * from './useRequiresMnemonicBackup'
 export * from './useShouldPromptMnemonicBackup'
 export * from './useMarkMnemonicBackupComplete'
+export * from './useAccountsNeedingMnemonicBackup'

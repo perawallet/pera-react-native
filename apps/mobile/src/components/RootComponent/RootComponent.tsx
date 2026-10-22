@@ -38,7 +38,11 @@ import { WebViewOverlay } from '@modules/webview/shell'
 import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkLabel } from '@hooks/useNetworkLabel'
-import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
+import {
+    useAppQuickActions,
+    useNotificationDeeplinkListener,
+    usePendingScanRequest,
+} from '@modules/deeplink/shell'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
@@ -59,6 +63,7 @@ import {
 } from '@utils/app-state'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
+import { useWidgetSnapshotSync } from '@modules/widgets/shell'
 import { config } from '@perawallet/wallet-core-config'
 
 export type RootComponentProps = {
@@ -84,6 +89,8 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     useNetworkStatusListener()
     useTokenListener(fcmToken)
     useNotificationDeeplinkListener()
+    useAppQuickActions()
+    usePendingScanRequest()
     // Refresh the notification badge/inbox as soon as a foreground push lands.
     useNotificationReceivedListener()
 
@@ -169,6 +176,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
+    useWidgetSnapshotSync()
 
     useEffect(() => {
         // Hold the background poll until migration finishes: its initial

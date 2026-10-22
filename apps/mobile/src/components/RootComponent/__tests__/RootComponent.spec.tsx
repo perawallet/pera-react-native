@@ -74,8 +74,13 @@ vi.mock('@modules/token', () => ({
 vi.mock('@hooks/useNotificationReceivedListener', () => ({
     useNotificationReceivedListener: vi.fn(),
 }))
+vi.mock('@modules/widgets/shell', () => ({
+    useWidgetSnapshotSync: vi.fn(),
+}))
 vi.mock('@modules/deeplink/shell', () => ({
     useNotificationDeeplinkListener: vi.fn(),
+    useAppQuickActions: vi.fn(),
+    usePendingScanRequest: vi.fn(),
 }))
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: vi.fn() }),
