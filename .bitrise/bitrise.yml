@@ -1189,6 +1189,25 @@ workflows:
             # A CRX exists only when CWS_CRX_SIGNING_KEY_BASE64 is set; once the
             # store's verified-CRX opt-in is on it rejects the zip.
             pnpm run release:upload-chrome-web-store "${BITRISE_EXTENSION_CRX_PATH:-$BITRISE_EXTENSION_ZIP_PATH}"
+    - script@1:
+        title: Upload to Microsoft Edge Add-ons (draft)
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # As the Chrome Web Store step: skipped on a ref without the script, rc
+            # tags only, and never publishes. Edge takes the zip; verified CRX
+            # uploads are a Chrome Web Store setting.
+            if [ ! -f tools/release/upload-edge-add-ons.mjs ]; then
+              echo "No Edge Add-ons upload on this ref"
+              exit 0
+            fi
+            if [[ ! "${BITRISE_GIT_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+              echo "Not an rc tag, so no Edge Add-ons upload"
+              exit 0
+            fi
+            pnpm run release:upload-edge-add-ons "$BITRISE_EXTENSION_ZIP_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:

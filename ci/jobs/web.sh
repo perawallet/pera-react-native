@@ -2,8 +2,8 @@
 set -euxo pipefail
 
 # Mirrors bitrise.yml's web-production: the zip, its signed CRX when the key is
-# set, then on a production release tag the upload to the Chrome Web Store as a
-# draft.
+# set, then on a production release tag the uploads to the Chrome Web Store and
+# Microsoft Edge Add-ons as drafts.
 
 source ci/jobs/lib/toolchain.sh
 use_pinned_node
@@ -64,6 +64,8 @@ fi
 if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ] && [ "$ENVIRONMENT" = "production" ] &&
   [[ "${CI_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
   pnpm run release:upload-chrome-web-store "$PACKAGE"
+  # Edge takes the zip; verified CRX uploads are a Chrome Web Store setting.
+  pnpm run release:upload-edge-add-ons "$CI_ARTIFACT_DIR/$NAME"
 else
-  echo "pera-ci: uploads disabled, not production or not an rc tag; no Chrome Web Store upload"
+  echo "pera-ci: uploads disabled, not production or not an rc tag; no store uploads"
 fi
