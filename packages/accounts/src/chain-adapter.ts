@@ -187,6 +187,13 @@ export type HoldingBalanceHistoryPoint = {
     usdValue: Decimal
 }
 
+/** Stored holdings a read could not see; the syncer keeps their rows as they are. */
+export type UnrefreshedHoldings = {
+    includes(assetId: string): boolean
+    /** Why the read missed them. */
+    error: unknown
+}
+
 /** One read of an account's balance, holdings and signer, as the syncer persists it. */
 export type AccountStateSnapshot = {
     /** Base units of the chain's native asset. */
@@ -200,6 +207,11 @@ export type AccountStateSnapshot = {
      * advances past rounds actually observed. Null when the source omits it.
      */
     observedRound: Nullable<number>
+    /**
+     * Set when part of the holdings could not be read: those stored rows are
+     * kept, not removed for being absent from `holdings`.
+     */
+    unrefreshedHoldings?: UnrefreshedHoldings
 }
 
 /** An authority recorded outside a sync, with no `account_chain_state` row behind it. */

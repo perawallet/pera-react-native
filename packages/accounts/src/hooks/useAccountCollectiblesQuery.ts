@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
@@ -19,6 +20,7 @@ import {
 } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
+import { useHoldingsRefreshStore } from '../store/holdingsRefresh'
 import { getAccountCollectiblesQueryKey } from './querykeys'
 
 export type UseAccountCollectiblesQueryParams = {
@@ -38,6 +40,8 @@ export type UseAccountCollectiblesQueryResult = {
     isRefetching: boolean
     isError: boolean
     isPaused: boolean
+    /** True while any source's last sync left some of its holdings unrefreshed. */
+    hasUnrefreshedHoldings: boolean
 }
 
 const sourcesSignature = (sources: readonly unknown[]): string =>
@@ -111,6 +115,13 @@ export const useAccountCollectiblesQuery = (
         },
     })
 
+    const hasUnrefreshedHoldings = useHoldingsRefreshStore(state =>
+        sources.some(
+            ({ address, scope }) =>
+                state.failed[toScopeKey(scope)]?.[address] === true,
+        ),
+    )
+
     return {
         collectibles: query.data ?? [],
         isPending: query.isPending,
@@ -118,5 +129,6 @@ export const useAccountCollectiblesQuery = (
         isRefetching: query.isRefetching,
         isError: query.isError,
         isPaused: query.isPaused,
+        hasUnrefreshedHoldings,
     }
 }

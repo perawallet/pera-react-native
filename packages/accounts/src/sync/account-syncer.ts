@@ -34,6 +34,7 @@ import {
     isEqualAccountChainState,
     useAccountChainStateStore,
 } from '../store/accountChainState'
+import { useHoldingsRefreshStore } from '../store/holdingsRefresh'
 
 export type AccountSyncResult = {
     /** True if the chain-state row or holdings changed — drives query invalidation. */
@@ -156,10 +157,15 @@ async function doFetchAndPersistAccount(
         scope,
     })
 
-    const { nativeBalanceBaseUnits, chainState, holdings, observedRound } =
-        await adapter.fetchAccountState(address, scope, {
-            priorChainState: prior?.chainData,
-        })
+    const {
+        nativeBalanceBaseUnits,
+        chainState,
+        holdings,
+        observedRound,
+        unrefreshedHoldings,
+    } = await adapter.fetchAccountState(address, scope, {
+        priorChainState: prior?.chainData,
+    })
 
     // ASA amount changes are caught by refreshAccountHoldings below; this
     // covers the native balance and everything in chainState (opt-in counts,
@@ -184,7 +190,30 @@ async function doFetchAndPersistAccount(
         accountAddress: address,
         holdings,
         scope,
+        retain:
+            unrefreshedHoldings &&
+            (assetId => unrefreshedHoldings.includes(assetId)),
     })
+    useHoldingsRefreshStore
+        .getState()
+        .setHoldingsRefreshFailed(
+            scope,
+            address,
+            unrefreshedHoldings !== undefined,
+        )
+    if (unrefreshedHoldings) {
+        logger.warn('Account holdings partly unrefreshed', {
+            address,
+            scope,
+            error:
+                unrefreshedHoldings.error instanceof Error
+                    ? {
+                          message: unrefreshedHoldings.error.message,
+                          stack: unrefreshedHoldings.error.stack,
+                      }
+                    : unrefreshedHoldings.error,
+        })
+    }
 
     return {
         changed: isStateChanged || holdingsChanged,
