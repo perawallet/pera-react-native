@@ -1014,7 +1014,8 @@
             "replace_cancel": "Mevcut olanı koru"
         },
         "add_contact": {
-            "duplicate_address_warning": "Bu adres için bir kişi zaten var."
+            "duplicate_address_warning": "Bu adres için bir kişi zaten var.",
+            "add": "Ekle"
         },
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
@@ -2778,6 +2779,7 @@
             "max_fee": "Maksimum ücret"
         },
         "confirmation": {
+            "add_to_contacts": "+ Kişilere ekle",
             "edit": "Düzenle",
             "title": "İşlemi onayla",
             "amount": "Miktar",

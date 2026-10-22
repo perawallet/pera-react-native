@@ -12,6 +12,7 @@
 
 import {
     afterAll,
+    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -21,9 +22,16 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
+import { useNavigation } from '@react-navigation/native'
 
 import { server } from '@test-utils/msw-server'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
@@ -40,6 +48,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     KeyNotFoundError,
@@ -51,6 +60,7 @@ import { useSendFundsStore } from '@modules/transactions'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
+import { AddContactScreen } from '@modules/contacts/routes'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -857,5 +867,167 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             { timeout: 10_000 },
         )
         expect(sendSpy).not.toHaveBeenCalled()
+    })
+})
+
+describe('Flow: save the recipient as a contact from Confirm Transaction', () => {
+    // The store itself, not a hook render per read: each renderHook would stay
+    // mounted for the rest of the test.
+    const savedContacts = () => useContactsStore.getState().contacts
+
+    const resetContacts = () => {
+        act(() => useContactsStore.getState().resetState())
+    }
+
+    // The test navigator drops headers, so this stands in for the back button.
+    const AddContactWithBack = () => {
+        const navigation = useNavigation()
+        return (
+            <>
+                <AddContactScreen />
+                <button
+                    data-testid='add_contact_back'
+                    onClick={() => navigation.goBack()}
+                >
+                    back
+                </button>
+            </>
+        )
+    }
+
+    const renderConfirmWithAddContact = () =>
+        renderWithNavigation(
+            TransactionConfirmationScreen,
+            'ConfirmTransaction',
+            {
+                additionalScreens: [
+                    { name: 'AddContact', component: AddContactWithBack },
+                ],
+            },
+        )
+
+    const prefillSend = () => {
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+    }
+
+    beforeAll(async () => {
+        await setupTestDatabase()
+    })
+    afterAll(async () => {
+        await teardownTestDatabase()
+    })
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset('mainnet')
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useSendFundsStore.getState().reset()
+        resetContacts()
+        server.use(
+            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodAccountInformation({
+                address: ALGO25_TEST_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodAccountInformation({
+                address: RECEIVER_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockIndexerSearchForAccounts(),
+        )
+    })
+
+    afterEach(() => {
+        resetContacts()
+    })
+
+    it('Given an unknown recipient, when the user adds it from the To row, then Add Contact opens prefilled, saving returns to Confirm, and the link goes away', async () => {
+        await seedAlgo25Sender()
+        prefillSend()
+
+        renderConfirmWithAddContact()
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'send_save_recipient_contact_button',
+                undefined,
+                { timeout: 5000 },
+            ),
+        )
+
+        // The recipient arrives as the contact's Algorand address row.
+        expect(
+            await screen.findByTestId('contact_address_row_algorand'),
+        ).toBeTruthy()
+        fireEvent.change(screen.getByTestId('contact_name_input'), {
+            target: { value: 'Bob' },
+        })
+        await waitFor(() =>
+            expect(
+                isElementDisabled(screen.getByTestId('add_contact_button')),
+            ).toBe(false),
+        )
+        fireEvent.click(screen.getByTestId('add_contact_button'))
+
+        await waitFor(() =>
+            expect(savedContacts()).toEqual([
+                expect.objectContaining({
+                    name: 'Bob',
+                    addresses: { algorand: RECEIVER_ADDRESS },
+                }),
+            ]),
+        )
+        await screen.findByTestId('send_confirm_button')
+        expect(
+            screen.queryByTestId('send_save_recipient_contact_button'),
+        ).toBeNull()
+    })
+
+    it('Given Add Contact is open from the To row, when the user backs out, then Confirm is unchanged, the link is still there and no contact is saved', async () => {
+        await seedAlgo25Sender()
+        prefillSend()
+
+        renderConfirmWithAddContact()
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'send_save_recipient_contact_button',
+                undefined,
+                { timeout: 5000 },
+            ),
+        )
+        await screen.findByTestId('contact_address_row_algorand')
+        fireEvent.click(screen.getByTestId('add_contact_back'))
+
+        expect(await screen.findByTestId('send_confirm_button')).toBeTruthy()
+        expect(
+            screen.getByTestId('send_save_recipient_contact_button'),
+        ).toBeTruthy()
+        expect(savedContacts()).toEqual([])
+    })
+
+    it('Given the recipient is already a contact, then the To row offers no save button', async () => {
+        await seedAlgo25Sender()
+        act(() => {
+            useContactsStore.getState().addContact({
+                name: 'Bob',
+                addresses: { algorand: RECEIVER_ADDRESS },
+            })
+        })
+        prefillSend()
+
+        renderSendConfirmationStack()
+
+        await screen.findByTestId('send_confirm_button', undefined, {
+            timeout: 5000,
+        })
+        expect(
+            screen.queryByTestId('send_save_recipient_contact_button'),
+        ).toBeNull()
     })
 })

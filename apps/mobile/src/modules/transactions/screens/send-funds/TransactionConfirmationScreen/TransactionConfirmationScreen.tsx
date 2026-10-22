@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWScreen, PWView } from '@components/core'
+import { PWButton, PWDivider, PWScreen, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -26,6 +26,7 @@ import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
 import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
+import { useSaveRecipientContact } from './useSaveRecipientContact'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -57,6 +58,11 @@ export const TransactionConfirmationScreen = () => {
         isRecipientInfoPending,
         isSigning,
     } = useTransactionConfirmationScreen()
+    const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
+        destination,
+        scope,
+        isSigning,
+    )
 
     if (!isReady) {
         return <LoadingView variant='circle' />
@@ -119,6 +125,18 @@ export const TransactionConfirmationScreen = () => {
                             showCopy={false}
                             showSecondaryAddress
                         />
+                        {canSaveRecipient ? (
+                            <PWButton
+                                variant='linkPositive'
+                                title={t(
+                                    'send_funds.confirmation.add_to_contacts',
+                                )}
+                                paddingStyle='none'
+                                onPress={saveRecipient}
+                                style={styles.addContact}
+                                testID='send_save_recipient_contact_button'
+                            />
+                        ) : null}
                     </KeyValueRow>
                 )}
                 <FeeSection

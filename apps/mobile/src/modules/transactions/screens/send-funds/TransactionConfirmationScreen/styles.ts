@@ -17,6 +17,10 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
+        addContact: {
+            alignSelf: 'flex-start',
+            marginTop: theme.spacing.xs,
+        },
         scrollContent: {
             gap: theme.spacing.xl,
             paddingTop: theme.spacing.lg,

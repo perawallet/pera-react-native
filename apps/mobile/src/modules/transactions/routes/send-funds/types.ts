@@ -11,12 +11,15 @@
  */
 
 import type { StackScreenProps } from '@react-navigation/stack'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type SendFundsStackParamList = {
     AssetSelection: undefined
     InputAmount: undefined
     SelectDestination: undefined
     ConfirmTransaction: undefined
+    /** The contacts form, prefilled with the recipient on its chain. */
+    AddContact: { address: string; chainId: ChainId }
     ExpressSend: undefined
     AssetInboxSendSummary: undefined
     InsufficientBalance: { requiredBalanceLabel: string }

@@ -15,6 +15,7 @@ import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@perawallet/wallet-core-chain-contract/testing'
 import {
     addressFamilyOf,
+    findContactByAddress,
     isSameFamilyAddress,
     isValidFamilyAddress,
 } from '../addressFamily'
@@ -101,5 +102,37 @@ describe('isSameFamilyAddress', () => {
         expect(
             isSameFamilyAddress('evm', EVM_ADDRESS, `0x${'c'.repeat(40)}`),
         ).toBe(false)
+    })
+})
+
+describe('findContactByAddress', () => {
+    const ALICE = { addresses: { algorand: ALGORAND_ADDRESS } }
+    const BOB = { addresses: { evm: EVM_ADDRESS } }
+
+    test("finds the contact holding the address in that family, by the family's codec", () => {
+        expect(
+            findContactByAddress(
+                [ALICE, BOB],
+                EVM_ADDRESS.toUpperCase(),
+                'evm',
+            ),
+        ).toBe(BOB)
+    })
+
+    test('ignores a contact holding the address only in another family', () => {
+        expect(
+            findContactByAddress([BOB], EVM_ADDRESS, 'algorand'),
+        ).toBeUndefined()
+    })
+
+    test('searches every family when none is given', () => {
+        expect(findContactByAddress([ALICE, BOB], EVM_ADDRESS)).toBe(BOB)
+        expect(findContactByAddress([ALICE, BOB], ALGORAND_ADDRESS)).toBe(ALICE)
+    })
+
+    test('does not match a mere part of an address', () => {
+        expect(
+            findContactByAddress([BOB], EVM_ADDRESS.slice(0, 10)),
+        ).toBeUndefined()
     })
 })

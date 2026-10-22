@@ -83,3 +83,6 @@ export const ContactsStackNavigator = () => {
         </ContactsStack.Navigator>
     )
 }
+
+// Mounted by the Send flow so a recipient can be saved without leaving it.
+export { AddContactScreen }

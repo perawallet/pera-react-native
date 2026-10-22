@@ -723,6 +723,17 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
         useContactsStore,
         ContactNotFoundError: class ContactNotFoundError extends Error {},
         contactAddressEntries,
+        findContactByAddress: (
+            contacts: { addresses: Record<string, string | undefined> }[],
+            address: string,
+            family?: string,
+        ) =>
+            contacts.find(contact =>
+                (family
+                    ? [contact.addresses[family]]
+                    : Object.values(contact.addresses)
+                ).includes(address),
+            ),
         primaryContactAddress: ({
             addresses,
         }: {

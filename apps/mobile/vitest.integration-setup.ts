@@ -251,6 +251,22 @@ vi.mock('expo-file-system', () => {
     }
 })
 
+// expo-image-picker's native entry crashes under jsdom resolving
+// `./ImportMetaRegistry`; the contact form only needs the picker to decline.
+vi.mock('expo-image-picker', () => ({
+    getMediaLibraryPermissionsAsync: vi.fn(async () => ({
+        granted: true,
+        canAskAgain: true,
+    })),
+    requestMediaLibraryPermissionsAsync: vi.fn(async () => ({
+        granted: true,
+    })),
+    launchImageLibraryAsync: vi.fn(async () => ({
+        canceled: true,
+        assets: [],
+    })),
+}))
+
 vi.mock('expo-media-library', () => ({
     requestPermissionsAsync: vi.fn().mockResolvedValue({ granted: true }),
     saveToLibraryAsync: vi.fn().mockResolvedValue(undefined),

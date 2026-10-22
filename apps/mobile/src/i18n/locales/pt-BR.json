@@ -1014,7 +1014,8 @@
             "replace_cancel": "Manter o atual"
         },
         "add_contact": {
-            "duplicate_address_warning": "Já existe um contato para este endereço."
+            "duplicate_address_warning": "Já existe um contato para este endereço.",
+            "add": "Adicionar"
         },
         "view_contact": {
             "no_contact_title": "Nenhum contato encontrado",
@@ -2794,6 +2795,7 @@
             "max_fee": "Taxa máxima"
         },
         "confirmation": {
+            "add_to_contacts": "+ Adicionar aos contatos",
             "edit": "Editar",
             "title": "Confirmar transação",
             "amount": "Valor",

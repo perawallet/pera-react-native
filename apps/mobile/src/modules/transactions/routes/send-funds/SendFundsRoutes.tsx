@@ -22,6 +22,7 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import { AddContactScreen } from '@modules/contacts/routes'
 import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
 import { SelectDestinationScreen } from '../../screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
@@ -106,6 +107,15 @@ export const SendFundsRoutes = () => {
                     title: 'send_funds.confirmation.title',
                 }}
             />
+
+            <Stack.Screen
+                name='AddContact'
+                options={{
+                    title: 'screens.add_contact',
+                }}
+            >
+                {() => <AddContactScreen submitPlacement='header' />}
+            </Stack.Screen>
 
             <Stack.Screen
                 name='ExpressSend'
