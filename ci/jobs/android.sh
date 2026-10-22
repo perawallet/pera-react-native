@@ -139,7 +139,7 @@ if [ "${CI_UPLOADS_ENABLED:-false}" != "true" ]; then
   # A standard Expo prebuild project has no product flavors — see the
   # Fastfile's build_android, which passes only a build type. assembleRelease
   # is the only release task gradle actually defines.
-  (cd apps/mobile/android && ./gradlew assembleRelease)
+  (cd apps/mobile/android && CI=true ./gradlew assembleRelease)
   collect_artifacts
   exit 0
 fi
@@ -154,5 +154,5 @@ fi
 # Only this upload path runs fastlane, so only it needs the pinned Ruby.
 use_pinned_ruby
 (cd apps/mobile && BUNDLE_FROZEN=true bundle install)
-(cd apps/mobile && bundle exec fastlane android "deploy_${DISTRIBUTION}" "flavor:$ENVIRONMENT")
+(cd apps/mobile && CI=true bundle exec fastlane android "deploy_${DISTRIBUTION}" "flavor:$ENVIRONMENT")
 collect_artifacts
