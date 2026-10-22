@@ -14,6 +14,7 @@ export { ChromeAppLifecycleService } from './app-lifecycle'
 export { ChromeKeyValueStorageService } from './key-value-storage'
 export { ChromeDeviceInfoService } from './device'
 export { ChromeDatabaseService } from './database'
+export { ChromeMonotonicClockService } from './monotonic-clock'
 export {
     ChromeAgeGateService,
     ChromeAppIntegrityService,

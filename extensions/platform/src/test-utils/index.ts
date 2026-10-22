@@ -15,5 +15,6 @@
 export * from './app-lifecycle'
 export * from './database'
 export * from './migration'
+export * from './monotonic-clock'
 export * from './storage'
 export * from './wrapper'
