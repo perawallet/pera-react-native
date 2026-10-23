@@ -65,8 +65,8 @@ type EvmTransfer = { call: EvmTransferCall; summary: TransactionSummary }
 
 const ONE = new Decimal(1)
 
-// An ERC-1155 amount of 0 is allowed: the amount step prices the fee before the
-// user types one.
+// An ERC-1155 amount of 0 only prices: the amount step estimates the fee before
+// the user types one, and `buildEvmTransfer` refuses to build it.
 const toNftTransfer = async (
     chainId: number,
     intent: TransferIntent,
@@ -164,6 +164,14 @@ const buildEvmTransfer = async (
     intent: TransactionIntent,
     context: BuildContext,
 ): Promise<UnsignedTransaction[]> => {
+    // Review honours no NFT transfer of nothing, so build none.
+    if (
+        intent.kind === 'transfer' &&
+        isEvmNftAssetId(intent.assetRef.assetId) &&
+        intent.amount.isZero()
+    ) {
+        throw new InvalidSendParamsError()
+    }
     const { call, summary } = await toEvmTransfer(chain, intent, context)
     const client = createEvmClient(context.scope, ctx, chain)
     // The node's pending count and the ledger's open sends, not

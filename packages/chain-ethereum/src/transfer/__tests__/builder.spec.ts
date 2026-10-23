@@ -459,6 +459,14 @@ describe('an NFT transfer', () => {
         expect(estimate.amount.isPositive()).toBe(true)
     })
 
+    it('refuses to build an ERC-1155 of 0, which review would not honour', async () => {
+        storeNft('erc1155')
+
+        await expect(
+            adapter.build(nftIntent(0), context),
+        ).rejects.toBeInstanceOf(InvalidSendParamsError)
+    })
+
     it.each([
         ['an ERC-721 of 2', 'erc721', 2],
         ['an ERC-721 of 0', 'erc721', 0],
