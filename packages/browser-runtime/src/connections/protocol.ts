@@ -358,7 +358,11 @@ export type ConnectionApprovalRequest =
           connectionKind: ConnectionKind
           peer: ConnectionPeer
           /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
-          requested: { networks: string[]; chains: ChainId[]; methods: string[] }
+          requested: {
+              networks: string[]
+              chains: ChainId[]
+              methods: string[]
+          }
           expiresAt: number
           /** See `ConnectionsControlMessage`'s `pair.requesterOrigin`. */
           requesterOrigin?: string

@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    NetworkId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { AppError, logger } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,

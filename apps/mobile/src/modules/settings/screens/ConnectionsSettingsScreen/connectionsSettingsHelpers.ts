@@ -11,10 +11,7 @@
  */
 
 import type { ModalState } from '@hooks/useModalState'
-import {
-    DAPP_KIND,
-    EIP1193_DAPP_KIND,
-} from '@perawallet/wallet-core-dapp/wire'
+import { DAPP_KIND, EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
 import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 

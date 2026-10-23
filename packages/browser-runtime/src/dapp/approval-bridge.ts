@@ -45,7 +45,11 @@ export type PendingApproval =
           connectionKind: ConnectionKind
           peer: ConnectionPeer
           /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
-          requested: { networks: string[]; chains: ChainId[]; methods: string[] }
+          requested: {
+              networks: string[]
+              chains: ChainId[]
+              methods: string[]
+          }
           expiresAt: number
           // Browser-verified origin of the requesting tab; absent for a
           // user-initiated pairing. Never conflate with `origin` above.

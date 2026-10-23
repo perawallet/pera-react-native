@@ -1128,10 +1128,10 @@ describe('ApprovalWindowBridge', () => {
             connectionKind: 'walletconnect-v1',
             peer: { name: 'dApp', url: 'https://dapp.example' },
             requested: {
-        networks: ['mainnet'],
-        chains: ['algorand'],
-        methods: ['algo_signTxn'],
-    },
+                networks: ['mainnet'],
+                chains: ['algorand'],
+                methods: ['algo_signTxn'],
+            },
             expiresAt: 1,
         })
         await flush()

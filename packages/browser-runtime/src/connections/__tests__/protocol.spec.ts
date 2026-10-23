@@ -324,7 +324,11 @@ describe('isConnectionApprovalRequestMessage', () => {
                     scope: CONNECTIONS_REQUEST_SCOPE,
                     request: {
                         ...proposal,
-                        requested: { networks: ['mainnet'], chains, methods: [] },
+                        requested: {
+                            networks: ['mainnet'],
+                            chains,
+                            methods: [],
+                        },
                     },
                 }),
             ).toBe(false)

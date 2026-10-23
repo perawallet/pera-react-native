@@ -66,7 +66,9 @@ describe('createChromeDappTransport', () => {
     it('hands a trusted host request to the listener with the stamped context and acks it', () => {
         const { chrome: chromeLike, listeners } = makeChrome()
         const listener = vi.fn()
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         const sendResponse = vi.fn()
         listeners[0](hostRequest, SW_SENDER, sendResponse)
         expect(listener).toHaveBeenCalledWith(
@@ -109,7 +111,11 @@ describe('createChromeDappTransport', () => {
             chromeLike,
         })
         transport.onRequest(listener)
-        listeners[0]({ ...hostRequest, provider: 'eip1193' }, SW_SENDER, vi.fn())
+        listeners[0](
+            { ...hostRequest, provider: 'eip1193' },
+            SW_SENDER,
+            vi.fn(),
+        )
         const respond = listener.mock.calls[0][2] as (
             r: unknown,
         ) => Promise<void>
@@ -127,7 +133,9 @@ describe('createChromeDappTransport', () => {
     it('ignores the same message from a non-extension-page sender', () => {
         const { chrome: chromeLike, listeners } = makeChrome()
         const listener = vi.fn()
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         expect(listeners[0](hostRequest, PAGE_SENDER, vi.fn())).toBe(false)
         expect(listener).not.toHaveBeenCalled()
     })
@@ -137,7 +145,9 @@ describe('createChromeDappTransport', () => {
         const listener = vi.fn(() => {
             throw new Error('listener preamble exploded')
         })
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         const sendResponse = vi.fn()
         expect(() =>
             listeners[0](hostRequest, SW_SENDER, sendResponse),
@@ -148,7 +158,9 @@ describe('createChromeDappTransport', () => {
     it('respond sends a host response addressed to the requesting tab and resolves on ack', async () => {
         const { chrome: chromeLike, listeners, sendMessage } = makeChrome()
         const listener = vi.fn()
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         listeners[0](hostRequest, SW_SENDER, vi.fn())
         const respond = listener.mock.calls[0][2] as (
             r: unknown,
@@ -168,7 +180,9 @@ describe('createChromeDappTransport', () => {
         const { chrome: chromeLike, listeners, sendMessage } = makeChrome()
         sendMessage.mockResolvedValueOnce({ ok: false })
         const listener = vi.fn()
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         listeners[0](hostRequest, SW_SENDER, vi.fn())
         const respond = listener.mock.calls[0][2] as (
             r: unknown,
@@ -185,10 +199,10 @@ describe('createChromeDappTransport', () => {
             method: 'disconnect',
             params: {},
         }
-        await createChromeDappTransport({ provider: 'pera', chromeLike }).notify(
-            'https://a.example',
-            notification,
-        )
+        await createChromeDappTransport({
+            provider: 'pera',
+            chromeLike,
+        }).notify('https://a.example', notification)
         expect(sendMessage).toHaveBeenCalledWith({
             scope: DAPP_HOST_RESPONSE_SCOPE,
             provider: 'pera',
@@ -203,7 +217,9 @@ describe('createChromeDappTransport', () => {
             new Error('Receiving end does not exist'),
         )
         const listener = vi.fn()
-        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(listener)
+        createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(
+            listener,
+        )
         listeners[0](hostRequest, SW_SENDER, vi.fn())
         const respond = listener.mock.calls[0][2] as (
             r: unknown,
@@ -220,7 +236,10 @@ describe('createChromeDappTransport', () => {
             method: 'disconnect',
             params: {},
         }
-        const transport = createChromeDappTransport({ provider: 'pera', chromeLike })
+        const transport = createChromeDappTransport({
+            provider: 'pera',
+            chromeLike,
+        })
         sendMessage.mockResolvedValueOnce({ ok: false })
         await expect(
             transport.notify('https://a.example', notification),
@@ -235,7 +254,10 @@ describe('createChromeDappTransport', () => {
 
     it('unsubscribing removes the runtime listener', () => {
         const { chrome: chromeLike, listeners } = makeChrome()
-        const off = createChromeDappTransport({ provider: 'pera', chromeLike }).onRequest(vi.fn())
+        const off = createChromeDappTransport({
+            provider: 'pera',
+            chromeLike,
+        }).onRequest(vi.fn())
         expect(listeners).toHaveLength(1)
         off()
         expect(listeners).toHaveLength(0)

@@ -165,9 +165,9 @@ describe('createEip1193ConnectionHandler', () => {
         it('reports the first served eip155 chain before any connection', async () => {
             const { transport, registry } = setup()
             await registry.initialize()
-            expect(
-                resultOf(await transport.send(ORIGIN, 'eth_chainId')),
-            ).toBe('0x1')
+            expect(resultOf(await transport.send(ORIGIN, 'eth_chainId'))).toBe(
+                '0x1',
+            )
         })
 
         it('skips a chain whose dApp connections are switched off', async () => {
@@ -175,9 +175,9 @@ describe('createEip1193ConnectionHandler', () => {
                 disabled: ['ethereum'],
             })
             await registry.initialize()
-            expect(
-                resultOf(await transport.send(ORIGIN, 'eth_chainId')),
-            ).toBe('0x2105')
+            expect(resultOf(await transport.send(ORIGIN, 'eth_chainId'))).toBe(
+                '0x2105',
+            )
         })
 
         it('answers disconnected when no eip155 chain is served', async () => {
@@ -195,9 +195,9 @@ describe('createEip1193ConnectionHandler', () => {
                 networks: { ethereum: 'sepolia' },
             })
             await registry.initialize()
-            expect(
-                resultOf(await transport.send(ORIGIN, 'eth_chainId')),
-            ).toBe('0xaa36a7')
+            expect(resultOf(await transport.send(ORIGIN, 'eth_chainId'))).toBe(
+                '0xaa36a7',
+            )
         })
     })
 
@@ -247,9 +247,9 @@ describe('createEip1193ConnectionHandler', () => {
             expect(connection.metadata).toEqual({ chainId: 'ethereum' })
             expect((await store.get(ID))?.accounts).toEqual([ADDR_Y])
             expect(resultOf(await pending)).toEqual([ADDR_Y])
-            expect(
-                notificationsOf(transport, 'accountsChanged'),
-            ).toEqual([{ origin: ORIGIN, params: [ADDR_Y] }])
+            expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                { origin: ORIGIN, params: [ADDR_Y] },
+            ])
         })
 
         it('returns the user-rejected error when the user declines', async () => {
@@ -338,9 +338,7 @@ describe('createEip1193ConnectionHandler', () => {
                 metadata: undefined,
                 origin: undefined,
             }
-            const { transport, registry, proposals, store } = setup([
-                algorand,
-            ])
+            const { transport, registry, proposals, store } = setup([algorand])
             await registry.initialize()
             void transport.send(ORIGIN, 'eth_requestAccounts')
             await flush()
@@ -385,9 +383,9 @@ describe('createEip1193ConnectionHandler', () => {
                 EIP1193_ERROR_CODE.unrecognizedChain,
             )
             // Pera has Sepolia, but the wallet is on mainnet for Ethereum.
-            expect(
-                errorOf(await switchTo(transport, '0xaa36a7'))?.code,
-            ).toBe(EIP1193_ERROR_CODE.unrecognizedChain)
+            expect(errorOf(await switchTo(transport, '0xaa36a7'))?.code).toBe(
+                EIP1193_ERROR_CODE.unrecognizedChain,
+            )
             expect(messages).toHaveLength(0)
         })
 
