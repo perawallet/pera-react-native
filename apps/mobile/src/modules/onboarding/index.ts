@@ -25,6 +25,7 @@ export {
     useShouldPlayConfetti,
 } from './hooks'
 export { useTermsAcceptance } from './hooks/useTermsAcceptance'
+export type { WatchAccountCopy } from './types'
 export type {
     AddAccountStackParamList,
     OnboardingStackParamList,

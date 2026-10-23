@@ -23,6 +23,7 @@ import type {
     AssetDetailsDisplay,
     CollectibleDetailsDisplay,
 } from '@modules/assets'
+import type { WatchAccountCopy } from '@modules/onboarding'
 import type { CustomNodeDisplay } from '@modules/settings'
 import type { TransactionDisplay } from '@modules/signing'
 import type { SendConfirmationDisplay } from '@modules/transactions'
@@ -37,6 +38,8 @@ export type ChainUi = {
     /** The family's name where one address serves every chain in it, as on a contact. */
     familyLabel?: I18nKey
     accountOptions?: AccountOptionsDisplay
+    /** Used while this family alone can watch accounts; otherwise the watch flow names no chain. */
+    watchAccountCopy?: WatchAccountCopy
     /** The chain's logo; a chain without one shows initials of its name. */
     icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }
