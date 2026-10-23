@@ -37,7 +37,11 @@ import { ETHEREUM } from '../../__tests__/evm-chains'
 
 import { ASSETS_PATH } from '../api/endpoints'
 import type { AssetItemResponse } from '../api/schema'
-import { peraEvmAssetHandlers, unknownAssetItem } from '../api/msw-handlers'
+import {
+    evmNftItem,
+    peraEvmAssetHandlers,
+    unknownAssetItem,
+} from '../api/msw-handlers'
 import {
     erc20CallResponder,
     evmRpcHandlers,
@@ -55,10 +59,12 @@ const repository = vi.hoisted(() => ({
     stale: (ids: string[]): string[] => ids,
     node: [] as PeraAsset[],
     full: [] as PeraAsset[],
+    cached: null as PeraAsset | null,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<object>()),
+    getAssetById: vi.fn(async () => repository.cached),
     getStaleOrMissingAssetIds: vi.fn(
         async ({ assetIds }: { assetIds: string[] }) =>
             repository.stale(assetIds),
@@ -74,6 +80,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
         importOriginal,
+        ['nfts'],
     ),
 )
 
@@ -138,6 +145,7 @@ beforeEach(() => {
     repository.stale = ids => ids
     repository.node.length = 0
     repository.full.length = 0
+    repository.cached = null
     vi.mocked(getStaleOrMissingAssetIds).mockClear()
     vi.mocked(upsertAssets).mockClear()
     vi.mocked(upsertNodeAssets).mockClear()
@@ -738,5 +746,127 @@ describe('foreign scopes and refs', () => {
         )
         expect(requests).toEqual([])
         expect(getStaleOrMissingAssetIds).not.toHaveBeenCalled()
+    })
+})
+
+describe('NFTs', () => {
+    const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+    const APE = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/1234'
+    const ERC721_ID = `eip155:1/erc721:${BAYC}/1234`
+    const ERC1155_ID = `eip155:1/erc1155:${BAYC}/1234`
+    const nftServices = ['assets', 'prices', 'nfts']
+
+    const recordNftIds = (): string[][] => {
+        const asked: string[][] = []
+        server.events.on('request:start', async ({ request }) => {
+            if (!request.url.endsWith('/api/v4/nfts/')) return
+            const { ids } = (await request.clone().json()) as { ids: string[] }
+            asked.push(ids)
+        })
+        return asked
+    }
+
+    it('asks for both standards when nothing is cached, and stores the answer', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                nfts: { [ERC721_ID]: evmNftItem() },
+            }),
+        )
+        const asked = recordNftIds()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        const asset = await ops.getAssetMetadata(ref(APE), SCOPE)
+
+        expect(asked).toEqual([[ERC721_ID, ERC1155_ID]])
+        expect(asset).toMatchObject({
+            assetId: APE,
+            peraMetadata: { type: 'collectible', isUnique: true },
+        })
+        expect(repository.full.map(a => a.assetId)).toEqual([APE])
+    })
+
+    it("asks for the cached row's standard only", async () => {
+        repository.cached = {
+            assetId: APE,
+            decimals: 0,
+            creator: { address: BAYC },
+            totalSupply: ETHEREUM_NATIVE_ASSET.totalSupply,
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified',
+                collectible: { standard: 'erc1155' },
+            },
+        }
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                nfts: {
+                    [ERC1155_ID]: evmNftItem({
+                        asset_id: ERC1155_ID,
+                        standard: 'erc1155',
+                    }),
+                },
+            }),
+        )
+        const asked = recordNftIds()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        const asset = await ops.getAssetMetadata(ref(APE), SCOPE)
+
+        expect(asked).toEqual([[ERC1155_ID]])
+        expect(asset.peraMetadata?.isUnique).toBe(false)
+    })
+
+    it('falls back to the cached row when the backend fails', async () => {
+        const cached: PeraAsset = {
+            assetId: APE,
+            name: 'Stored ape',
+            decimals: 0,
+            creator: { address: BAYC },
+            totalSupply: ETHEREUM_NATIVE_ASSET.totalSupply,
+        }
+        repository.cached = cached
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, nfts: 502 }),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        await expect(ops.getAssetMetadata(ref(APE), SCOPE)).resolves.toBe(
+            cached,
+        )
+    })
+
+    it('rejects an NFT neither the backend nor the cache knows', async () => {
+        server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        await expect(ops.getAssetMetadata(ref(APE), SCOPE)).rejects.toThrow()
+    })
+
+    it('never reads an NFT as an ERC-20 or prices it', async () => {
+        const urls = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        await expect(ops.fetchOnChainAsset(ref(APE), SCOPE)).rejects.toThrow()
+        await expect(ops.getPrices([ref(APE)], SCOPE)).resolves.toEqual([])
+        await ops.syncAssets([ref(APE)], SCOPE)
+
+        expect(urls).toEqual([])
     })
 })

@@ -296,7 +296,7 @@ describe('Pera deployments', () => {
 })
 
 describe('peraServicesFor', () => {
-    test('lists exactly the seven Pera services', () => {
+    test('lists exactly the eight Pera services', () => {
         expect(PERA_SERVICES).toEqual([
             'accounts',
             'assets',
@@ -305,6 +305,7 @@ describe('peraServicesFor', () => {
             'devices',
             'notifications',
             'blockFollowing',
+            'nfts',
         ])
     })
 

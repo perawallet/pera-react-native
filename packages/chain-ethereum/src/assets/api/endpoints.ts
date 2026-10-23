@@ -12,18 +12,23 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import {
     assetsResponseSchema,
+    nftHoldingsPageSchema,
+    nftItemSchema,
+    nftsResponseSchema,
     whitelistResponseSchema,
     type AssetItemSchemaOutput,
+    type NftItemSchemaOutput,
 } from './schema'
 import { toWhitelistRow, type WhitelistRow } from './transformers'
 
 export const ASSETS_SERVICE = 'assets'
 export const PRICES_SERVICE = 'prices'
+export const NFTS_SERVICE = 'nfts'
 
 export const ASSETS_PATH = '/api/v4/assets/'
 // The backend rejects a request naming more ids than this (422).
@@ -31,6 +36,17 @@ export const ASSETS_MAX_IDS = 500
 
 export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
+
+export const NFTS_PATH = '/api/v4/nfts/'
+// The backend rejects a request naming more ids than this (422).
+export const NFTS_MAX_IDS = 100
+// A cursor that never ends must fail the read, not hang the account sync.
+export const NFT_HOLDINGS_MAX_PAGES = 100
+
+export const nftHoldingsPath = (
+    eip155ChainId: number | string,
+    address: string,
+): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
 
 /**
  * One item per id, in request order; at most `ASSETS_MAX_IDS` ids. Rejects
@@ -87,4 +103,87 @@ export const fetchWhitelist = async (
     })
     const { results } = whitelistResponseSchema.parse(data)
     return results.flatMap(row => toWhitelistRow(row, scope, chain) ?? [])
+}
+
+/**
+ * Every NFT `address` holds on the scope's chain, across all pages; a row
+ * this client can't read is skipped. Rejects with a `PeraNetworkError` on a
+ * failed page, so a partial list never stands in for the whole.
+ */
+export const fetchNftHoldings = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    address: string,
+): Promise<NftItemSchemaOutput[]> => {
+    const url = nftHoldingsPath(
+        eip155ChainIdOf(scope, chain),
+        address.toLowerCase(),
+    )
+    const items = new Map<string, NftItemSchemaOutput>()
+    let cursor: Nullable<string> = null
+    for (let page = 0; page < NFT_HOLDINGS_MAX_PAGES; page++) {
+        const { data } = await queryClient<unknown>({
+            backend: 'pera',
+            service: NFTS_SERVICE,
+            scope,
+            method: 'GET',
+            url,
+            params: cursor === null ? undefined : { cursor },
+            headers: buildIntegrityHeaders(),
+        })
+        const { results, next } = nftHoldingsPageSchema.parse(data)
+        for (const row of results) {
+            const parsed = nftItemSchema.safeParse(row)
+            if (parsed.success) {
+                items.set(parsed.data.asset_id.toLowerCase(), parsed.data)
+            }
+        }
+        if (next === null) return [...items.values()]
+        cursor = next
+    }
+    throw new Error(
+        `Pera NFT holdings for ${scope.chainId}/${scope.networkId} ran past ${NFT_HOLDINGS_MAX_PAGES} pages`,
+    )
+}
+
+/**
+ * One entry per CAIP-19 id, in request order, null where the backend knows
+ * none; at most `NFTS_MAX_IDS` ids. Rejects with a `PeraNetworkError` on a
+ * failed request.
+ */
+export const fetchNftItems = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    caip19Ids: string[],
+): Promise<Nullable<NftItemSchemaOutput>[]> => {
+    if (caip19Ids.length === 0) return []
+    eip155ChainIdOf(scope, chain)
+    const ids = caip19Ids.map(id => id.toLowerCase())
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: NFTS_SERVICE,
+        scope,
+        method: 'POST',
+        url: NFTS_PATH,
+        headers: buildIntegrityHeaders(),
+        data: { ids },
+    })
+    const items = nftsResponseSchema.parse(data).results.map(row => {
+        const parsed = nftItemSchema.safeParse(row)
+        return parsed.success ? parsed.data : null
+    })
+    // As with fetchAssetItems: position is the only key, so a misaligned
+    // answer would store one token's metadata under another's id.
+    if (
+        items.length !== ids.length ||
+        items.some(
+            (item, index) =>
+                item !== null && item.asset_id.toLowerCase() !== ids[index],
+        )
+    ) {
+        throw new Error(
+            `Pera NFTs for ${scope.chainId}/${scope.networkId} answered out of request order`,
+        )
+    }
+    return items
 }

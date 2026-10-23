@@ -500,6 +500,17 @@ describe('useWatchAccountScreen', () => {
             )
         })
 
+        it("uses Algorand's copy while every chain it can watch on is in Algorand's family", () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(result.current.descriptionKey).toBe(
+                'onboarding.watch_account.description',
+            )
+            expect(result.current.invalidAddressKey).toBe(
+                'onboarding.watch_account.invalid_address',
+            )
+        })
+
         it('ignores a codec whose chain is not registered', () => {
             const unregisteredChainId = 'fixtureorphan' as ChainId
             const orphanAddress = `orphan-${'1'.repeat(8)}`

@@ -13,8 +13,13 @@
 import { canonify } from 'canonify'
 import { z } from 'zod'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { utf8ByteLength, encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    utf8ByteLength,
+    encodeToBase64,
+    hasUnprintableChars,
+} from '@perawallet/wallet-core-shared'
 import { Arc60BadJsonError } from './arc60-errors'
+import { isDisplaySafeDomain } from './arc60-wire'
 
 const maxBytes = (max: number) => (value: string) =>
     utf8ByteLength(value) <= max
@@ -46,13 +51,24 @@ const cappedDateTime = z.iso
         message: `exceeds ${SIWA_MAX_FIELD_BYTES} bytes`,
     })
 
+// SIWA follows EIP-4361, whose grammar allows only printable ASCII and space in
+// the statement: no line breaks, no tabs. The consent screen renders it
+// verbatim, so a multi-line statement could push the signing account off
+// screen or pose as wallet copy. Non-ASCII letters stay allowed for localized
+// statements.
+const STATEMENT_FORBIDDEN_WHITESPACE = /[\t\n\r\u2028\u2029]/
+const isSingleLinePrintable = (value: string): boolean =>
+    !STATEMENT_FORBIDDEN_WHITESPACE.test(value) && !hasUnprintableChars(value)
+
 /**
  * Zod schema for a Sign-In With Algorand (SIWA) AUTH-scope payload. Field
  * names match the Lute reference implementation so payloads interop across
  * wallets.
  */
 export const siwaSchema = z.object({
-    domain: requiredField,
+    domain: requiredField.refine(isDisplaySafeDomain, {
+        message: 'contains whitespace or unprintable characters',
+    }),
     account_address: requiredField,
     uri: requiredField,
     version: requiredField,
@@ -60,6 +76,9 @@ export const siwaSchema = z.object({
         .string()
         .refine(maxBytes(SIWA_MAX_STATEMENT_BYTES), {
             message: `statement exceeds ${SIWA_MAX_STATEMENT_BYTES} bytes`,
+        })
+        .refine(isSingleLinePrintable, {
+            message: 'statement must be a single line of printable text',
         })
         .optional(),
     nonce: cappedField.optional(),

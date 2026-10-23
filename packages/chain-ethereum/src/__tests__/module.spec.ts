@@ -45,6 +45,7 @@ const ENABLED = [
     'privateKeys',
     'dappConnect',
     'ledger',
+    'nft',
     'cloudBackup',
 ]
 

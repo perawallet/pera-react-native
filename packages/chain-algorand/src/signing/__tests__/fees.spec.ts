@@ -61,32 +61,40 @@ describe('calculateTotalFee', () => {
     })
 })
 
+const padding = (count: number, txType: string, sender: string) =>
+    Array.from({ length: count }, () => makeTx(0n, txType, sender))
+
 describe('maxReasonableGroupFee', () => {
     const signable = new Set(['ADDR1'])
 
-    test('allows 0.5 ALGO per ordinary transaction', () => {
-        const txs = [makeTx(1000n), makeTx(1000n), makeTx(1000n)]
-        expect(maxReasonableGroupFee(txs, signable)).toBe(1_500_000n)
+    test('allows a flat 0.5 ALGO regardless of group size', () => {
+        expect(maxReasonableGroupFee([makeTx(1000n)], signable)).toBe(500_000n)
+        expect(
+            maxReasonableGroupFee(
+                [makeTx(1000n), ...padding(15, 'pay', 'ADDR1')],
+                signable,
+            ),
+        ).toBe(500_000n)
     })
 
-    test('allows 5 ALGO for a signable keyreg transaction', () => {
-        expect(maxReasonableGroupFee([makeTx(1000n, 'keyreg')], signable)).toBe(
-            5_000_000n,
+    test('adds the fees on the user’s keyregs to the base allowance', () => {
+        expect(
+            maxReasonableGroupFee([makeTx(2_000_000n, 'keyreg')], signable),
+        ).toBe(2_500_000n)
+    })
+
+    test('a zero-fee keyreg adds nothing', () => {
+        expect(maxReasonableGroupFee([makeTx(0n, 'keyreg')], signable)).toBe(
+            500_000n,
         )
     })
 
-    test('sums per-type allowances across a mixed group', () => {
-        // keyreg (5 ALGO) + 15 ordinary (0.5 ALGO each = 7.5 ALGO)
-        const txs = [
-            makeTx(1000n, 'keyreg'),
-            ...Array.from({ length: 15 }, () => makeTx(1000n)),
-        ]
-        expect(maxReasonableGroupFee(txs, signable)).toBe(12_500_000n)
+    test('caps the keyreg allowance at 5 ALGO however many keyregs there are', () => {
+        const txs = [makeTx(3_000_000n, 'keyreg'), makeTx(3_000_000n, 'keyreg')]
+        expect(maxReasonableGroupFee(txs, signable)).toBe(5_500_000n)
     })
 
-    test('a foreign keyreg only earns the default allowance', () => {
-        // The user does not sign ADDR2's keyreg — it must not inflate the
-        // budget for fees the user pays.
+    test('a foreign keyreg earns no keyreg allowance', () => {
         const txs = [makeTx(1000n, 'keyreg', 'ADDR2')]
         expect(maxReasonableGroupFee(txs, signable)).toBe(500_000n)
     })
@@ -95,8 +103,7 @@ describe('maxReasonableGroupFee', () => {
 describe('detectHighGroupFee', () => {
     const signable = new Set(['ADDR1'])
 
-    test('returns null when the signable fee is within budget', () => {
-        // single keyreg paying the 2 ALGO incentive fee — under the 5 ALGO cap
+    test('does not flag a single keyreg paying the incentive-eligibility fee', () => {
         expect(
             detectHighGroupFee([makeTx(2_000_000n, 'keyreg')], signable),
         ).toBeNull()
@@ -107,8 +114,30 @@ describe('detectHighGroupFee', () => {
         expect(warning).toEqual({ type: 'high-fee', totalFee: 10_000_000n })
     })
 
+    test.each([
+        [500_000n, null],
+        [500_001n, { type: 'high-fee', totalFee: 500_001n }],
+    ])(
+        'a %s µAlgo fee against the 0.5 ALGO allowance → %o',
+        (fee, expected) => {
+            expect(detectHighGroupFee([makeTx(fee)], signable)).toEqual(
+                expected,
+            )
+        },
+    )
+
+    test('a zero-fee keyreg of the user’s own does not cover a high fee elsewhere', () => {
+        const txs = [
+            makeTx(4_900_000n, 'pay', 'ADDR1'),
+            makeTx(0n, 'keyreg', 'ADDR1'),
+        ]
+        expect(detectHighGroupFee(txs, signable)).toEqual({
+            type: 'high-fee',
+            totalFee: 4_900_000n,
+        })
+    })
+
     test('only counts fees on the user’s signable transactions', () => {
-        // ADDR2 pays the huge fee but the user does not sign it → no warning.
         const txs = [
             makeTx(1000n, 'pay', 'ADDR1'),
             makeTx(50_000_000n, 'pay', 'ADDR2'),
@@ -116,39 +145,45 @@ describe('detectHighGroupFee', () => {
         expect(detectHighGroupFee(txs, signable)).toBeNull()
     })
 
-    test('budget scales with group size (fee pooling not flagged)', () => {
-        // One signed tx pays the whole 16-tx group fee: 16 * 0.5 = 8 ALGO
-        // budget. A pooled 7.9 ALGO fee stays within budget.
+    test('does not flag fee pooling across a full group', () => {
         const txs = [
-            makeTx(7_900_000n, 'pay', 'ADDR1'),
-            ...Array.from({ length: 15 }, () => makeTx(0n, 'pay', 'ADDR2')),
+            makeTx(16_000n, 'pay', 'ADDR1'),
+            ...padding(15, 'pay', 'ADDR2'),
         ]
         expect(detectHighGroupFee(txs, signable)).toBeNull()
     })
 
-    test('flags when the pooled fee exceeds the whole-group budget', () => {
-        const txs = [
-            makeTx(9_000_000n, 'pay', 'ADDR1'),
-            ...Array.from({ length: 15 }, () => makeTx(0n, 'pay', 'ADDR2')),
-        ]
-        expect(detectHighGroupFee(txs, signable)).toEqual({
-            type: 'high-fee',
-            totalFee: 9_000_000n,
-        })
-    })
+    test.each([
+        ['a foreign sender', 'ADDR2'],
+        ['the user’s own address', 'ADDR1'],
+    ])(
+        'zero-fee padding from %s does not suppress the warning',
+        (_, sender) => {
+            const txs = [
+                makeTx(2_000_000n, 'pay', 'ADDR1'),
+                ...padding(15, 'pay', sender),
+            ]
+            expect(detectHighGroupFee(txs, signable)).toEqual({
+                type: 'high-fee',
+                totalFee: 2_000_000n,
+            })
+        },
+    )
 
-    test('keyreg-padding cannot inflate the budget past the warning', () => {
-        // Attack shape: 15 zero-fee keyregs from the attacker's own address.
-        // If foreign keyregs earned the 5 ALGO allowance the budget would be
-        // 75.5 ALGO; with the signable-only rule it stays 0.5 * 16 = 8 ALGO,
-        // so a 10 ALGO fee on the user's payment still warns.
-        const txs = [
-            makeTx(10_000_000n, 'pay', 'ADDR1'),
-            ...Array.from({ length: 15 }, () => makeTx(0n, 'keyreg', 'ADDR2')),
-        ]
-        expect(detectHighGroupFee(txs, signable)).toEqual({
-            type: 'high-fee',
-            totalFee: 10_000_000n,
-        })
-    })
+    test.each([
+        ['a foreign sender', 'ADDR2'],
+        ['the user’s own address', 'ADDR1'],
+    ])(
+        'keyreg padding from %s does not multiply the keyreg allowance',
+        (_, sender) => {
+            const txs = [
+                makeTx(10_000_000n, 'keyreg', 'ADDR1'),
+                ...padding(15, 'keyreg', sender),
+            ]
+            expect(detectHighGroupFee(txs, signable)).toEqual({
+                type: 'high-fee',
+                totalFee: 10_000_000n,
+            })
+        },
+    )
 })

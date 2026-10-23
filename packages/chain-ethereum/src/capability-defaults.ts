@@ -27,6 +27,7 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'privateKeys',
     'dappConnect',
     'ledger',
+    'nft',
     // Still behind the app-wide enable_cloud_backup flag, as for Algorand.
     'cloudBackup',
 ])

@@ -20,13 +20,15 @@ export const TEST_INTEGRITY_TOKEN = 'test-integrity-token'
 
 /**
  * A config-module mock giving every EVM scope a Pera deployment, both
- * deployments the test host, serving block following, assets, prices and history, and the client an API
- * key, for specs reaching it through queryClient:
+ * deployments the test host, serving block following, assets, prices,
+ * history and `extraServices`, and the client an API key, for specs reaching
+ * it through queryClient:
  * `vi.mock('@perawallet/wallet-core-config', async original =>
  * (await import('./pera-backend')).withEthereumPeraBackend(original))`.
  */
 export const withEthereumPeraBackend = async (
     importOriginal: () => Promise<typeof ConfigModule>,
+    extraServices: readonly string[] = [],
 ): Promise<typeof ConfigModule> => {
     const actual = await importOriginal()
     return {
@@ -51,9 +53,13 @@ export const withEthereumPeraBackend = async (
                 : actual.peraDeploymentOf(scope),
         hasPeraService: (scope, service) =>
             isEvmChainId(scope.chainId)
-                ? ['blockFollowing', 'assets', 'prices', 'history'].includes(
-                      service,
-                  )
+                ? [
+                      'blockFollowing',
+                      'assets',
+                      'prices',
+                      'history',
+                      ...extraServices,
+                  ].includes(service)
                 : actual.hasPeraService(scope, service),
     }
 }

@@ -79,6 +79,9 @@ describe('ethereum descriptor', () => {
         expect(descriptor.explorer.assetUrl('mainnet', '0xC')).toBe(
             'https://etherscan.io/token/0xC',
         )
+        expect(descriptor.explorer.collectibleUrl('mainnet', '0xC/42')).toBe(
+            'https://etherscan.io/nft/0xC/42',
+        )
     })
 
     it('has no explorer link for the native asset or an unlisted network', () => {
