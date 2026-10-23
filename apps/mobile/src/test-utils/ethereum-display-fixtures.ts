@@ -25,6 +25,7 @@ import { createEthereumReviewer } from '@packages/chain-ethereum/src/signing/rev
 export type EthereumDisplayFixtureKind =
     | 'transfer'
     | 'token-transfer'
+    | 'nft-transfer'
     | 'contract-call'
     | 'contract-creation'
 
@@ -43,6 +44,14 @@ export const ETHEREUM_FIXTURE_APPROVE_DATA =
 // transfer(RECIPIENT, 5_000_000)
 const TOKEN_TRANSFER_DATA =
     '0xa9059cbb00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c800000000000000000000000000000000000000000000000000000000004c4b40'
+
+export const ETHEREUM_FIXTURE_NFT_CONTRACT =
+    '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+export const ETHEREUM_FIXTURE_NFT_ID = `${ETHEREUM_FIXTURE_NFT_CONTRACT}/7`
+
+// ERC-721 safeTransferFrom(SENDER, RECIPIENT, 7)
+const NFT_TRANSFER_DATA =
+    '0x42842e0e000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c80000000000000000000000000000000000000000000000000000000000000007'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
@@ -75,6 +84,18 @@ const TOKEN_TRANSFER_SUMMARY: TransactionSummary = {
     },
 }
 
+const NFT_TRANSFER_SUMMARY: TransactionSummary = {
+    kind: 'nft-transfer',
+    title: { key: i18nKey('transactions.list_item.send') },
+    direction: 'out',
+    icon: 'send',
+    counterparty: ETHEREUM_FIXTURE_RECIPIENT,
+    amount: {
+        assetRef: { chainId: 'ethereum', assetId: ETHEREUM_FIXTURE_NFT_ID },
+        value: new Decimal(1),
+    },
+}
+
 const TRANSACTIONS: Record<
     EthereumDisplayFixtureKind,
     { transaction: Record<string, unknown>; summary: TransactionSummary }
@@ -97,6 +118,16 @@ const TRANSACTIONS: Record<
             data: TOKEN_TRANSFER_DATA,
         },
         summary: TOKEN_TRANSFER_SUMMARY,
+    },
+    'nft-transfer': {
+        transaction: {
+            ...BASE_TRANSACTION,
+            to: ETHEREUM_FIXTURE_NFT_CONTRACT,
+            value: 0n,
+            gas: 100_000n,
+            data: NFT_TRANSFER_DATA,
+        },
+        summary: NFT_TRANSFER_SUMMARY,
     },
     'contract-call': {
         transaction: {
@@ -140,7 +171,7 @@ export const reviewEthereumFixture = async (
     }).decoder.decode([buildEthereumUnsignedTransaction(kind)], {
         scope: SCOPE,
         heldAddresses: [ETHEREUM_FIXTURE_SENDER],
-        isWalletBuilt: kind === 'token-transfer',
+        isWalletBuilt: kind === 'token-transfer' || kind === 'nft-transfer',
         capabilities: ethereumCapabilityDefaults,
     })
     return transactions[0].native

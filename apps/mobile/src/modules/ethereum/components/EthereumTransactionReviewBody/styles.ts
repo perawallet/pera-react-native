@@ -61,6 +61,11 @@ export const useStyles = makeStyles(theme => ({
     asset: {
         gap: theme.spacing.xs,
     },
+    nft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     feeRow: {
         flexDirection: 'row',
         alignItems: 'center',

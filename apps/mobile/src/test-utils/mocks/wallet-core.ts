@@ -285,6 +285,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isPending: false,
     })),
     useSingleAssetDetailsQuery: vi.fn(() => ({ data: null, isPending: false })),
+    // The Ethereum reviewer reads an NFT's stored row to label it.
+    getAssetById: vi.fn(async () => null),
     useInvalidateAssetPrices: vi.fn(() => ({ invalidate: vi.fn() })),
     useToggleAssetFavoriteMutation: vi.fn(() => ({
         toggleAssetFavorite: vi.fn(),
