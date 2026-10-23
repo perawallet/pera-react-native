@@ -158,7 +158,7 @@ about `armBinding` or an unwrap; every step below needs physical hardware.
 3. Add an alternate Face ID appearance (iOS). The key becomes unusable either at
    the next `checkBinding` (`absent`) or at the next unwrap (`decrypt-failed`);
    record which. In the first case the hook must land on `disabledReason:
-   'rebind-required'` before any prompt; in the second it must land there after
+'rebind-required'` before any prompt; in the second it must land there after
    `MAX_BIOMETRIC_UNWRAP_FAILURES` unlock attempts, each of which must fall back
    to the PIN pad.
 4. Remove the device passcode (iOS): the Secure Enclave key is destroyed with
