@@ -14,28 +14,25 @@ import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getIconPixelSize, PWText, PWView } from '@components/core'
 import { ChainIcon } from '@modules/chain-ui/icon'
-import { useNetworkIconStack } from './useNetworkIconStack'
+import { useChainIconStack } from './useChainIconStack'
 import { useStyles } from './styles'
 
-export type NetworkIconStackProps = {
+export type ChainIconStackProps = {
     chainIds: ChainId[]
 }
 
-export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
+export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
-    const { visibleChainIds, hiddenCount } = useNetworkIconStack(chainIds)
+    const { visibleChainIds, hiddenCount } = useChainIconStack(chainIds)
 
     return (
-        <PWView style={styles.networkStack}>
+        <PWView style={styles.chainIconStack}>
             {visibleChainIds.map((chainId, index) => (
                 <PWView
                     key={chainId}
-                    testID={`network_icon_${chainId}`}
-                    style={[
-                        styles.networkIcon,
-                        index > 0 && styles.stackedNetworkIcon,
-                    ]}
+                    testID={`chain_icon_stack_${chainId}`}
+                    style={index > 0 && styles.stackedChainIcon}
                 >
                     <ChainIcon
                         chainId={chainId}
@@ -47,7 +44,7 @@ export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
                 <PWText
                     variant='caption'
                     style={styles.subtitle}
-                    testID='network_icon_stack_more'
+                    testID='chain_icon_stack_more'
                 >
                     {`+${hiddenCount}`}
                 </PWText>

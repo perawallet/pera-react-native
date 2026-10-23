@@ -159,10 +159,10 @@ describe("Flow: One account's assets across chains", () => {
         )
         const ethereumMember = screen.getByTestId(`asset_row_${ETH_USDC}`)
         expect(
-            within(algorandMember).getByTestId('network_label_algorand'),
+            within(algorandMember).getByTestId('chain_label_algorand'),
         ).toBeTruthy()
         expect(
-            within(ethereumMember).getByTestId('network_label_ethereum'),
+            within(ethereumMember).getByTestId('chain_label_ethereum'),
         ).toBeTruthy()
         expect(screen.queryByTestId('asset_details_stub')).toBeNull()
     })

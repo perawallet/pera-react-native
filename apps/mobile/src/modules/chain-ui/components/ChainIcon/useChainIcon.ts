@@ -23,9 +23,11 @@ import { algorandChainIcon } from '@modules/algorand/chain-icons'
 import { ethereumChainIcon } from '@modules/ethereum/chain-icons'
 
 // Kept out of the chain-UI registry: the assets barrel draws chain icons, and
-// the registry would drag every chain's transaction UI in with them.
-const CHAIN_ICONS: Partial<
-    Record<ChainFamily, (chainId: ChainId) => Optional<ComponentType<SvgProps>>>
+// the registry would drag every chain's transaction UI in with them. Total, so a
+// new family fails to compile until it has icons.
+const CHAIN_ICONS: Record<
+    ChainFamily,
+    (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 > = {
     algorand: algorandChainIcon,
     evm: ethereumChainIcon,

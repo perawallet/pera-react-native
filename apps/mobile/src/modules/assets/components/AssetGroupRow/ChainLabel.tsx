@@ -18,19 +18,19 @@ import { ChainIcon } from '@modules/chain-ui/icon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type NetworkLabelProps = {
+export type ChainLabelProps = {
     chainId: ChainId
 }
 
-export const NetworkLabel = ({ chainId }: NetworkLabelProps) => {
+export const ChainLabel = ({ chainId }: ChainLabelProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <PWView
-            style={styles.networkLabel}
-            testID={`network_label_${chainId}`}
+            style={styles.chainLabel}
+            testID={`chain_label_${chainId}`}
         >
             <ChainIcon
                 chainId={chainId}

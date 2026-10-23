@@ -14,9 +14,9 @@ export { AccountAssetSelectionList } from './components/AccountAssetSelectionLis
 export { AddAssetContent } from './components/AddAssetContent'
 export {
     AssetGroupRow,
-    NetworkLabel,
+    ChainLabel,
     type AssetGroupRowProps,
-    type NetworkLabelProps,
+    type ChainLabelProps,
 } from './components/AssetGroupRow'
 export { AccountAssetItemView, AssetItemView } from './components/AssetItem'
 export { AssetNameBadge } from './components/AssetNameBadge'

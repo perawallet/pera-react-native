@@ -13,21 +13,21 @@
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-const MAX_VISIBLE_NETWORKS = 3
+const MAX_VISIBLE_CHAINS = 3
 
-export type UseNetworkIconStackResult = {
+export type UseChainIconStackResult = {
     visibleChainIds: ChainId[]
-    /** Networks past the visible ones, shown as "+N". */
+    /** Chains past the visible ones, shown as "+N". */
     hiddenCount: number
 }
 
-export const useNetworkIconStack = (
+export const useChainIconStack = (
     chainIds: ChainId[],
-): UseNetworkIconStackResult =>
+): UseChainIconStackResult =>
     useMemo(
         () => ({
-            visibleChainIds: chainIds.slice(0, MAX_VISIBLE_NETWORKS),
-            hiddenCount: Math.max(0, chainIds.length - MAX_VISIBLE_NETWORKS),
+            visibleChainIds: chainIds.slice(0, MAX_VISIBLE_CHAINS),
+            hiddenCount: Math.max(0, chainIds.length - MAX_VISIBLE_CHAINS),
         }),
         [chainIds],
     )

@@ -23,7 +23,7 @@ import {
     groupedHoldingItemKey,
     type GroupedHoldingItem,
 } from '../../utils/groupedHoldings'
-import { AssetGroupRow, NetworkLabel } from '../AssetGroupRow'
+import { AssetGroupRow, ChainLabel } from '../AssetGroupRow'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -106,7 +106,7 @@ export const AccountAssetSelectionList = ({
                     showFrozenBadge={isTransferBlocked}
                     subtitle={
                         isGroupMember ? (
-                            <NetworkLabel chainId={item.scope.chainId} />
+                            <ChainLabel chainId={item.scope.chainId} />
                         ) : undefined
                     }
                     testID={`asset-list-item-${item.assetId}`}

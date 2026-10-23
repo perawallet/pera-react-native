@@ -34,22 +34,19 @@ export const useStyles = makeStyles(theme => ({
     subtitle: {
         color: theme.colors.textGray,
     },
-    networkStack: {
+    chainIconStack: {
         flexDirection: 'row',
         alignItems: 'center',
         marginLeft: theme.spacing.xs,
     },
-    // A ring in the row's background keeps each overlapping icon distinct.
-    networkIcon: {
+    // Overlaps the icon before it; the ring in the row's background keeps the two distinct.
+    stackedChainIcon: {
+        marginLeft: -theme.spacing.xs,
         borderWidth: theme.borders.md,
         borderColor: theme.colors.background,
         borderRadius: theme.borderRadius.full,
     },
-    // Overlap the icons so the stack reads as one group of networks.
-    stackedNetworkIcon: {
-        marginLeft: -theme.spacing.xs,
-    },
-    networkLabel: {
+    chainLabel: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
