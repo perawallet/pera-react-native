@@ -198,14 +198,19 @@ const toPeraError: ToError = (code, message, data) =>
 const send = (method: DappMethod, params?: unknown): Promise<unknown> =>
     sendRpc('pera', method, params, toPeraError)
 
-const eip1193 = createEip1193Provider((method, params) =>
-    sendRpc(
-        'eip1193',
-        method,
-        params,
-        (code, message, data) => new Eip1193ProviderError(code, message, data),
-    ),
-)
+// Written with the baked flag inline so esbuild folds it away entirely in a
+// build that serves no EVM chain.
+const eip1193 = __PERA_SERVES_EVM__
+    ? createEip1193Provider((method, params) =>
+          sendRpc(
+              'eip1193',
+              method,
+              params,
+              (code, message, data) =>
+                  new Eip1193ProviderError(code, message, data),
+          ),
+      )
+    : null
 
 // The wallet claims a per-origin connect slot synchronously, so a second
 // concurrent connect() would be refused with InvalidRequest — including when
@@ -278,7 +283,7 @@ const installProvider = (): void => {
             const { notification, provider } = detail
             if (!isJsonRpcNotification(notification)) return
             if (provider === 'eip1193') {
-                eip1193.handleNotification(notification)
+                eip1193?.handleNotification(notification)
                 return
             }
             if (provider !== 'pera') return
@@ -307,7 +312,7 @@ const installProvider = (): void => {
         // below rather than throwing out of the installer.
     }
 
-    installEip1193Provider(eip1193.provider)
+    if (__PERA_SERVES_EVM__ && eip1193) installEip1193Provider(eip1193.provider)
 
     // Connect-modal hook: offers the extension in a dApp's own QR modal when
     // the dApp's SDK renders no extension row of its own.

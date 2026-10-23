@@ -12,6 +12,13 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Stands in for the flag scripts/build.mjs bakes into the bundle; read once,
+// when the module loads.
+vi.hoisted(() => {
+    ;(globalThis as { __PERA_SERVES_EVM__?: boolean }).__PERA_SERVES_EVM__ =
+        true
+})
 import { JsonRpcErrorCode } from '@perawallet/wallet-core-browser-runtime'
 import { CHANNEL_HANDSHAKE_EVENT, CHANNEL_RELAY_READY_EVENT } from '../channel'
 import { installMainProvider } from '../inject-main'

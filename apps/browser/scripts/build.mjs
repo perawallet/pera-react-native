@@ -324,7 +324,10 @@ await build({
 })
 
 // 2c. Content scripts. MAIN world (inject-main) and isolated world (relay) are
-// separate bundles so Chrome can load each into its declared world.
+// separate bundles so Chrome can load each into its declared world. Config's
+// dist was rebuilt in step 0, so reading its chain list here is safe.
+const { config: chainConfig } = await import('@perawallet/wallet-core-config')
+const servesEvm = listsEvmChain(chainConfig.chains.enabled)
 for (const [entry, outfile] of [
     ['src/content/inject-main.ts', 'content-inject-main.js'],
     ['src/content/relay-isolated.ts', 'content-relay-isolated.js'],
@@ -342,6 +345,7 @@ for (const [entry, outfile] of [
         bundle: true,
         format: 'iife', // content scripts are classic scripts, not ES modules
         target: 'chrome120',
+        define: { __PERA_SERVES_EVM__: JSON.stringify(servesEvm) },
         alias: {
             // Narrow alias: content scripts run on every http/https page, so
             // they get only the pure dapp wire (content-wire.ts), not the
