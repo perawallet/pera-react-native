@@ -25,7 +25,7 @@ import type {
     MailingAddressInput,
     PersonalDetailsInput,
     RegistrationSettings,
-    VeriffSession,
+    KycSession,
 } from '../../models'
 import {
     addressResponseSchema,
@@ -189,7 +189,7 @@ export type StartRegisterVerificationParams = ScopeParams & {
  */
 export const startRegisterVerification = async (
     params: StartRegisterVerificationParams,
-): Promise<VeriffSession> => {
+): Promise<KycSession> => {
     const response = await getCardTransport().request({
         scope: params.scope,
         method: 'POST',
@@ -249,7 +249,7 @@ export const fetchOnboardingDetails = async (
     const parsed = onboardingDetailsResponseSchema.parse(response.data)
     return {
         // An unrecognised state maps to null, not UNVERIFIED — coercing would
-        // eventually route a progressing user into re-minting a Veriff session.
+        // eventually route a progressing user into re-minting a KYC session.
         verificationState: toEnumValueOrNull(
             VerificationState,
             parsed.verificationState,
@@ -439,7 +439,7 @@ export const submitOnboardingConsent = async (
 }
 
 // Step 2 of Baanx's two-step consent flow: link the consent set created above to
-// the permanent user id, known only once the account exists. Idempotent — Baanx returns 409
+// the permanent user id, known only once the account exists. Idempotent: Baanx returns 409
 // Conflict if the set is already linked (the desired end state), which we swallow.
 // Deliberately NOT `authenticated`: per the Baanx api-reference
 // (api-reference/consent/link-user-to-consent) this endpoint uses API-key

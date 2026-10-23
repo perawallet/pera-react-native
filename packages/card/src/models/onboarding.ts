@@ -105,11 +105,11 @@ export type CurrentRegion = {
 }
 
 /**
- * Veriff KYC session. During onboarding it comes from the pre-auth
- * POST /v1/auth/register/verification; post-login re-verification uses
+ * Hosted KYC (Sumsub) session. Before the account exists it comes from the
+ * pre-auth POST /v1/auth/register/verification; with a session, from
  * GET /v1/user/verification.
  */
-export type VeriffSession = {
+export type KycSession = {
     sessionUrl: string
 }
 
@@ -178,7 +178,7 @@ export type AddressInput = {
     isSameMailingAddress: boolean
 }
 
-/** US residents only; this step issues the session token the address step withheld. */
+/** US residents shipping the card somewhere other than their residence. */
 export type MailingAddressInput = {
     onboardingId: string
     addressLine1: string

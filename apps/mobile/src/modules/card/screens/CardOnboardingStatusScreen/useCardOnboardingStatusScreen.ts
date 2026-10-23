@@ -42,7 +42,7 @@ export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
     /** Every form Baanx asks for is in, so KYC can start. */
     areDetailsSubmitted: boolean
-    /** The account and session exist (KYC verified) — gates the later steps. */
+    /** The account and session exist (KYC verified); gates the later steps. */
     isRegistrationComplete: boolean
     /** A Pera account has been linked as the funding source. */
     isFundsConnected: boolean

@@ -287,7 +287,7 @@ beforeEach(() => {
 })
 
 describe('useCardOnboardingStatusScreen', () => {
-    it('reports pending while Veriff reviews', () => {
+    it('reports pending while KYC is under review', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 

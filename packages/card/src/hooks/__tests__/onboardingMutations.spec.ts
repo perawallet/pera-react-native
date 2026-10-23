@@ -70,7 +70,8 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         })
         vi.clearAllMocks()
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
-        // The address step returns a token-bearing body the mutation reads.
+        // Token-bearing by default to cover the tolerant finalize path; the
+        // null-token answer is set per test.
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
@@ -475,7 +476,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
         // The created consent set id is stashed for the link step.
         expect(useCardStore.getState().consentSetId).toBe('cs_1')
-        // Consent is part of the final address step — it must not advance the
+        // Consent is part of the address step, so it must not advance the
         // onboarding step on its own.
         expect(useCardStore.getState().onboardingStep).toBe(stepBefore)
     })

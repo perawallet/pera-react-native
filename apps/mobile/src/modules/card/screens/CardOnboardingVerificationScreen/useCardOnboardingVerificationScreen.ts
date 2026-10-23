@@ -36,7 +36,7 @@ import { useCardScope } from '../../hooks/useCardScope'
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */
     isBusy: boolean
-    /** Opens the Veriff session in the system browser and starts polling. */
+    /** Opens the hosted KYC session in the system browser and starts polling. */
     handleVerify: () => void
     handleLogout: () => void
     handleOpenSupport: () => void
@@ -54,10 +54,10 @@ export const useCardOnboardingVerificationScreen =
         })
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)
-        // Polling starts only once a Veriff session has been opened.
+        // Polling starts only once a KYC session has been opened.
         const [hasStarted, setHasStarted] = useState(false)
         // Pause the 4 s poll while another screen covers this one; the
-        // AppState listener below already refetches on refocus-from-Veriff.
+        // AppState listener below already refetches on refocus from the KYC session.
         const isFocused = useIsFocused()
 
         const startVerification = useStartVerificationMutation(scope)
@@ -125,7 +125,7 @@ export const useCardOnboardingVerificationScreen =
 
         const handleOpenSupport = useOpenCardSupport()
 
-        // Veriff reported back (submitted/decided — including a state we don't
+        // KYC reported back (submitted or decided, including a state we don't
         // model): continue on the setup status checklist. Abandoning the
         // browser leaves the state UNVERIFIED and the user here, with the
         // button still re-tappable.
@@ -143,19 +143,19 @@ export const useCardOnboardingVerificationScreen =
             navigation.navigate('CardOnboardingStatus')
         }, [hasStarted, verificationState, isStateUnknown, navigation])
 
-        // The poll gave up waiting for Veriff to report back (repeated failures,
+        // The poll gave up waiting for KYC to report back (repeated failures,
         // or a still-processing/abandoned session). Hand off to the setup
         // checklist rather than stranding the user here with a hard error: the
         // checklist keeps polling (so a late PENDING still lands automatically)
         // and, if the session really was abandoned, shows the "verify" row —
-        // without forcing a fresh Veriff session the way a re-tap here would.
+        // without forcing a fresh KYC session the way a re-tap here would.
         useEffect(() => {
             if (!hasStarted || !hasPollTimedOut) return
             setHasStarted(false)
             navigation.navigate('CardOnboardingStatus')
         }, [hasStarted, hasPollTimedOut, navigation])
 
-        // When the user returns from the Veriff browser, refetch immediately
+        // When the user returns from the KYC browser session, refetch immediately
         // rather than waiting for the next poll tick. Refs keep the listener
         // stable so it isn't re-subscribed on every render.
         const previousAppState = useRef<AppStateStatus>(AppState.currentState)

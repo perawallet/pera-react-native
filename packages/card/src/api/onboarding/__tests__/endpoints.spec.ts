@@ -227,7 +227,7 @@ describe('onboarding endpoints', () => {
 
     it('starts onboarding KYC with the onboarding id and returns the session url', async () => {
         request.mockResolvedValue({
-            data: { sessionUrl: 'https://veriff/session' },
+            data: { sessionUrl: 'https://kyc.example/session' },
         })
 
         const result = await startRegisterVerification({
@@ -235,7 +235,7 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        expect(result).toEqual({ sessionUrl: 'https://veriff/session' })
+        expect(result).toEqual({ sessionUrl: 'https://kyc.example/session' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'POST',
@@ -377,7 +377,7 @@ describe('onboarding endpoints', () => {
         })
 
         // Never coerce an unknown state to UNVERIFIED: consumers would treat a
-        // progressing user as needing a fresh Veriff session.
+        // progressing user as needing a fresh KYC session.
         expect(result.verificationState).toBeNull()
     })
 

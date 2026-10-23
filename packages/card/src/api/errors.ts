@@ -257,7 +257,7 @@ export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
     )
 
 /**
- * Baanx's final registration step (address) returns this generic message when
+ * Baanx's address step returns this generic message when
  * the user was already created by an earlier attempt whose response was lost
  * (seen live on the dev env: first call 500s after creating the user, every
  * retry then fails with this text). Matched on text like

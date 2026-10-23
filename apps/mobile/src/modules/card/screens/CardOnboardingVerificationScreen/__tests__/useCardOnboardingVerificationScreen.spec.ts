@@ -127,7 +127,7 @@ vi.mock('@hooks/useLanguage')
 import { useCardOnboardingVerificationScreen } from '../useCardOnboardingVerificationScreen'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
-const SESSION_URL = 'https://veriff.example/session'
+const SESSION_URL = 'https://kyc.example/session'
 
 let appStateListener: ((state: string) => void) | undefined
 
@@ -214,7 +214,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
     })
 
-    it('moves to the setup status once Veriff reports back', async () => {
+    it('moves to the setup status once KYC reports back', async () => {
         const { result, rerender } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
@@ -233,7 +233,7 @@ describe('useCardOnboardingVerificationScreen', () => {
             useCardOnboardingVerificationScreen(),
         )
         await startVerification(result)
-        // Polling is live while we wait for Veriff to report back.
+        // Polling is live while we wait for KYC to report back.
         expect(mockPollOptions?.enabled).toBe(true)
 
         mockVerificationState = 'PENDING'
@@ -271,7 +271,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
         await startVerification(result)
 
-        // An unknown (null) state means Veriff reported back with something we
+        // An unknown (null) state means KYC reported back with something we
         // don't model — still a handoff, not "user abandoned".
         mockVerificationState = null
         mockIsStateUnknown = true
@@ -282,7 +282,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
     })
 
-    it('stays put while the state is still UNVERIFIED (user abandoned Veriff)', async () => {
+    it('stays put while the state is still UNVERIFIED (user abandoned KYC)', async () => {
         const { result, rerender } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
@@ -301,7 +301,7 @@ describe('useCardOnboardingVerificationScreen', () => {
 
         await startVerification(result)
 
-        // Opening a fresh Veriff session must restart the give-up counters so a
+        // Opening a fresh KYC session must restart the give-up counters so a
         // prior stuck run doesn't immediately trip the new one.
         expect(mockRestartPolling).toHaveBeenCalled()
     })

@@ -63,7 +63,7 @@ export const useStatusFundingType = (
         setSelectedFundingType(type)
     }, [])
 
-    // Only `canCreateCard` is needed here — the actual creation sequence
+    // Only `canCreateCard` is needed here: the actual creation sequence
     // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
     const { canCreateCard } = useEscrowCardCreation()
     const isAutoFundingEnabled = useIsCardAutoFundingEnabled()

@@ -101,14 +101,14 @@ export const mockLinkOnboardingConsent = ({
         HttpResponse.json({ success: true }, { status }),
     )
 
-// Onboarding KYC: pre-auth start (returns the Veriff session URL) + the status
+// Onboarding KYC: pre-auth start (returns the hosted session URL) + the status
 // poll the verification screen watches.
 export type MockStartRegisterVerificationParams = {
     response?: RegisterVerificationApiResponse
     status?: number
 }
 export const mockStartRegisterVerification = ({
-    response = { sessionUrl: 'https://veriff.example/session' },
+    response = { sessionUrl: 'https://kyc.example/session' },
     status = 200,
 }: MockStartRegisterVerificationParams = {}): HttpHandler => {
     validateMockResponse(

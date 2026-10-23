@@ -35,7 +35,7 @@ const STATUS_POLL_MS = 5000
 /**
  * Poll cadence for the KYC decision while the dashboard waits with no card.
  * Deliberately slower than onboarding's 4s active-wait: this is an idle
- * background watch, not a "user just finished Veriff" moment.
+ * background watch, not a "user just finished KYC" moment.
  */
 const USER_POLL_MS = 15_000
 

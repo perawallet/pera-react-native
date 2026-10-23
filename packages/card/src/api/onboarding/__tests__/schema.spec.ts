@@ -67,13 +67,13 @@ describe('registerVerificationResponseSchema', () => {
     it('parses the session url and rejects a missing one', () => {
         expect(
             registerVerificationResponseSchema.parse({
-                sessionUrl: 'https://veriff/session',
+                sessionUrl: 'https://kyc.example/session',
             }).sessionUrl,
-        ).toBe('https://veriff/session')
+        ).toBe('https://kyc.example/session')
         expect(() => registerVerificationResponseSchema.parse({})).toThrow()
     })
 
-    it.each(['http://veriff/session', 'javascript:alert(1)'])(
+    it.each(['http://kyc.example/session', 'javascript:alert(1)'])(
         'rejects a %s session url before it reaches Linking.openURL',
         sessionUrl => {
             expect(() =>

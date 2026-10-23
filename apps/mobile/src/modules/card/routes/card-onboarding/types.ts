@@ -29,7 +29,7 @@ export type CardOnboardingStackParamList = {
     // BoP residents only, when Baanx's phase asks for it.
     CardOnboardingAdditionalDetails: undefined
     CardOnboardingAddress: undefined
-    // US residents who ship the card elsewhere; issues the session token.
+    // US residents who ship the card somewhere other than their residence.
     CardOnboardingMailingAddress: undefined
     // The funding type chosen on the status screen; the signing screen reads
     // the connected account itself from the card store.

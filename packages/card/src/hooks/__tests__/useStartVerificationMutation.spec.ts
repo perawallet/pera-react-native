@@ -59,7 +59,7 @@ describe.each(SCOPES)('useStartVerificationMutation ($chainId)', SCOPE => {
 
     it('starts pre-auth KYC with the onboarding id and returns the session url', async () => {
         startRegisterVerification.mockResolvedValue({
-            sessionUrl: 'https://veriff/session',
+            sessionUrl: 'https://kyc.example/session',
         })
 
         const { result } = renderHook(
@@ -75,7 +75,9 @@ describe.each(SCOPES)('useStartVerificationMutation ($chainId)', SCOPE => {
             onboardingId: 'ob_1',
             scope: SCOPE,
         })
-        expect(result.current.data?.sessionUrl).toBe('https://veriff/session')
+        expect(result.current.data?.sessionUrl).toBe(
+            'https://kyc.example/session',
+        )
     })
 
     it('starts KYC through the authenticated endpoint when a session already exists', async () => {

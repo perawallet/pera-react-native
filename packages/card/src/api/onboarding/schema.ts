@@ -88,7 +88,7 @@ export const registerStepResponseSchema = z.object({
 export type RegisterStepApiResponse = z.infer<typeof registerStepResponseSchema>
 
 // POST /v1/auth/register/verification — pre-auth (client key only); returns the
-// Veriff session URL for the onboarding KYC step. The caller hands it to
+// hosted KYC session URL for the onboarding KYC step. The caller hands it to
 // Linking.openURL, so the scheme is gated here.
 export const registerVerificationResponseSchema = z.object({
     sessionUrl: httpsUrlSchema,

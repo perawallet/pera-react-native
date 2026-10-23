@@ -241,10 +241,9 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(mockQueryScope).toBe(SCOPE)
     })
 
-    // The final address step consumes the onboarding session server-side, so
-    // GET register only answers "Invalid onboarding ID" afterwards. Keeping
-    // the poll running would burn 3 failing calls and flip a PENDING row into
-    // a bogus timed-out error.
+    // Once the account exists the onboarding record is no longer the source
+    // of truth; without a session to read the user instead, polling it would
+    // only burn failing calls and flip a PENDING row into a bogus error.
     it('self-disables once registration completes, even when the caller enables it', () => {
         mockOnboardingStep = 'COMPLETED'
         renderHook(() => useOnboardingKycPoll(SCOPE, { enabled: true }))

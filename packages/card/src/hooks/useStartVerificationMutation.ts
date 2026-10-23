@@ -15,7 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { startRegisterVerification } from '../api/onboarding'
 import { fetchVerificationSession } from '../api/user'
-import type { VeriffSession } from '../models'
+import type { KycSession } from '../models'
 import { hasCardSession } from '../session'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -26,7 +26,7 @@ export type StartVerificationParams = {
 
 export type UseStartVerificationMutationResult = CardMutationResult<
     StartVerificationParams,
-    VeriffSession
+    KycSession
 >
 
 /**
@@ -37,18 +37,16 @@ export type UseStartVerificationMutationResult = CardMutationResult<
 export const useStartVerificationMutation = (
     scope: ChainScope,
 ): UseStartVerificationMutationResult => {
-    const mutation = useMutation<VeriffSession, Error, StartVerificationParams>(
-        {
-            mutationFn: ({ onboardingId }) => {
-                if (hasCardSession()) return fetchVerificationSession({ scope })
-                if (onboardingId === null) {
-                    throw new Error('Starting KYC needs an onboarding id')
-                }
-                return startRegisterVerification({ onboardingId, scope })
-            },
-            throwOnError: false,
+    const mutation = useMutation<KycSession, Error, StartVerificationParams>({
+        mutationFn: ({ onboardingId }) => {
+            if (hasCardSession()) return fetchVerificationSession({ scope })
+            if (onboardingId === null) {
+                throw new Error('Starting KYC needs an onboarding id')
+            }
+            return startRegisterVerification({ onboardingId, scope })
         },
-    )
+        throwOnError: false,
+    })
 
     return toCardMutationResult(mutation)
 }
