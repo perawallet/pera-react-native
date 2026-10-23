@@ -176,7 +176,6 @@ export const runOnGoogleDrive = async <T>(
         return result
     } catch (error) {
         const driveError = asDriveError(error)
-        // Releasing lets the next attempt pick another account.
         release =
             driveError instanceof CloudFileNotFoundError ||
             driveError instanceof GoogleDriveAuthFailedError

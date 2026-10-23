@@ -12,6 +12,8 @@
 
 package com.algorand.perarn.peragoogleauth
 
+import android.accounts.Account
+import android.accounts.AccountManager
 import android.app.Activity
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
@@ -20,34 +22,40 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.Scope
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 // Matches the code JS already maps to GooglePlayServicesUnavailableError.
 private const val PLAY_SERVICES_NOT_AVAILABLE = "PLAY_SERVICES_NOT_AVAILABLE"
 private const val ERR_GOOGLE_AUTH = "ERR_GOOGLE_AUTH"
+private const val ACCOUNT_REQUEST_CODE = 0x6046
 private const val CONSENT_REQUEST_CODE = 0x6047
+private const val GOOGLE_ACCOUNT_TYPE = "com.google"
+
+private data class PendingScreen(val requestCode: Int, val scope: String, val promise: Promise)
 
 class PeraGoogleAuthModule : Module() {
-  // The consent screen in flight, settled from OnActivityResult.
-  private var pendingConsent: Pair<String, Promise>? = null
+  // The account chooser or consent screen in flight, settled from OnActivityResult.
+  private var pending: PendingScreen? = null
 
   override fun definition() = ModuleDefinition {
     Name("PeraGoogleAuth")
 
     // Resolves an access token for `scope`, or null when the user backs out.
-    // Shows UI only when the scope has not been granted yet.
     AsyncFunction("authorize") { scope: String, promise: Promise ->
       val activity = appContext.currentActivity ?: throw Exceptions.MissingActivity()
       // Offers the Play Services update or enable dialog when that is all
       // that's missing.
       GoogleApiAvailability.getInstance()
         .makeGooglePlayServicesAvailable(activity)
-        .addOnSuccessListener { requestAuthorization(activity, scope, promise) }
+        .addOnSuccessListener { chooseAccount(activity, scope, promise) }
         .addOnFailureListener {
           promise.reject(PLAY_SERVICES_NOT_AVAILABLE, it.message, it)
         }
     }
+      // makeGooglePlayServicesAvailable throws off the main thread.
+      .runOnQueue(Queues.MAIN)
 
     // Drops a token from the device cache so the next authorize mints a new one.
     AsyncFunction("clearToken") { token: String, promise: Promise ->
@@ -59,14 +67,19 @@ class PeraGoogleAuthModule : Module() {
     }
 
     OnActivityResult { activity, payload ->
-      if (payload.requestCode != CONSENT_REQUEST_CODE) return@OnActivityResult
-      val (scope, promise) = pendingConsent ?: return@OnActivityResult
-      pendingConsent = null
+      val (requestCode, scope, promise) =
+        pending?.takeIf { it.requestCode == payload.requestCode } ?: return@OnActivityResult
+      pending = null
       if (payload.resultCode != Activity.RESULT_OK) {
         promise.resolve(null)
         return@OnActivityResult
       }
       try {
+        if (requestCode == ACCOUNT_REQUEST_CODE) {
+          val name = requireNotNull(payload.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME))
+          requestAuthorization(activity, Account(name, GOOGLE_ACCOUNT_TYPE), scope, promise)
+          return@OnActivityResult
+        }
         val result = Identity.getAuthorizationClient(activity)
           .getAuthorizationResultFromIntent(payload.data)
         promise.resolve(if (scope in result.grantedScopes) result.accessToken else null)
@@ -76,8 +89,33 @@ class PeraGoogleAuthModule : Module() {
     }
   }
 
-  private fun requestAuthorization(activity: Activity, scope: String, promise: Promise) {
+  private fun startScreen(requestCode: Int, scope: String, promise: Promise, start: () -> Unit) {
+    // A screen left open by an earlier call is abandoned.
+    pending?.promise?.resolve(null)
+    pending = PendingScreen(requestCode, scope, promise)
+    start()
+  }
+
+  // AuthorizationClient can silently reuse the last account it authorized, so a
+  // user whose backup is on another account could never switch. The system
+  // chooser returns straight away when the device has a single Google account.
+  private fun chooseAccount(activity: Activity, scope: String, promise: Promise) {
+    val chooser = AccountManager.newChooseAccountIntent(
+      null, null, arrayOf(GOOGLE_ACCOUNT_TYPE), null, null, null, null,
+    )
+    startScreen(ACCOUNT_REQUEST_CODE, scope, promise) {
+      activity.startActivityForResult(chooser, ACCOUNT_REQUEST_CODE)
+    }
+  }
+
+  private fun requestAuthorization(
+    activity: Activity,
+    account: Account,
+    scope: String,
+    promise: Promise,
+  ) {
     val request = AuthorizationRequest.builder()
+      .setAccount(account)
       .setRequestedScopes(listOf(Scope(scope)))
       .build()
     Identity.getAuthorizationClient(activity)
@@ -88,12 +126,11 @@ class PeraGoogleAuthModule : Module() {
           promise.resolve(result.accessToken)
           return@addOnSuccessListener
         }
-        // A consent screen left open by an earlier call is abandoned.
-        pendingConsent?.second?.resolve(null)
-        pendingConsent = scope to promise
-        activity.startIntentSenderForResult(
-          consent.intentSender, CONSENT_REQUEST_CODE, null, 0, 0, 0,
-        )
+        startScreen(CONSENT_REQUEST_CODE, scope, promise) {
+          activity.startIntentSenderForResult(
+            consent.intentSender, CONSENT_REQUEST_CODE, null, 0, 0, 0,
+          )
+        }
       }
       .addOnFailureListener { promise.reject(ERR_GOOGLE_AUTH, it.message, it) }
   }

@@ -27,7 +27,7 @@ const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
 interface NativePeraGoogleAuth {
     /** iOS: the redirect URL, or null when the user closes the sheet. */
     authenticate(url: string, callbackScheme: string): Promise<string | null>
-    /** Android: an access token for `scope`, or null when the user backs out. */
+    /** Android: an access token for `scope` on an account the user picks, or null when they back out. */
     authorize(scope: string): Promise<string | null>
     /** Android: drops the token from the device's cache. */
     clearToken(token: string): Promise<null>

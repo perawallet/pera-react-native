@@ -163,7 +163,7 @@ describe('readFromGoogleDrive resolving which file to read', () => {
         expect(readFile).not.toHaveBeenCalled()
     })
 
-    test('reports an account holding nothing of ours as not found, and releases the token so another can be picked', async () => {
+    test('reports an account holding nothing of ours as not found, and releases the token', async () => {
         readdir.mockResolvedValueOnce(['other-app.json'])
 
         await expect(readFromGoogleDrive(options())).rejects.toBeInstanceOf(
