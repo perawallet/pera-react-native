@@ -43,10 +43,11 @@ export const WcConnectScreen = (): React.JSX.Element => {
         peer,
         peerName,
         permissions,
-        requesterOrigin,
         requesterOriginLabel,
         isRequesterOriginDistinct,
         chainId,
+        chainNetwork,
+        verificationTier,
         accounts,
         selected,
         toggle,
@@ -102,7 +103,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         peer={peer}
                         peerName={peerName}
                         permissions={permissions}
-                        requesterOrigin={requesterOrigin}
+                        chainNetwork={chainNetwork}
+                        verificationTier={verificationTier}
                         requesterOriginLabel={requesterOriginLabel}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
                         peerUrlLabel={peerUrlLabel}

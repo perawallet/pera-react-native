@@ -21,6 +21,35 @@ const mocks = vi.hoisted(() => ({
     useSigningAccounts: vi.fn(),
     useSelectedAccountId: vi.fn(),
     useApprovalArming: vi.fn(),
+    useProjectByUrlQuery: vi.fn(),
+    selectedNetworks: {} as Record<string, string>,
+}))
+
+const NETWORKS: Record<string, { id: string; displayName: string }[]> = {
+    algorand: [{ id: 'mainnet', displayName: 'MainNet' }],
+    base: [
+        { id: 'mainnet', displayName: 'Mainnet' },
+        { id: 'sepolia', displayName: 'Sepolia' },
+    ],
+}
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mocks.selectedNetworks[chainId] ?? 'mainnet',
+    }),
+    chainDisplayNameOf: (chainId: string) =>
+        ({ algorand: 'Algorand', base: 'Base' })[chainId],
+    getChainDescriptor: (chainId: string) => ({
+        networks: NETWORKS[chainId] ?? [],
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-projects', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-projects')
+    >()),
+    useProjectByUrlQuery: mocks.useProjectByUrlQuery,
 }))
 
 vi.mock('../../../hooks/useDappRequest.web', () => ({
@@ -97,6 +126,8 @@ describe('useWcConnectScreen', () => {
             selectedAccountId: null,
         })
         mocks.useApprovalArming.mockReturnValue(true)
+        mocks.useProjectByUrlQuery.mockReturnValue({ data: undefined })
+        mocks.selectedNetworks = {}
     })
 
     it('exposes the proposal peer and its requested methods as the permissions list', () => {
@@ -128,6 +159,104 @@ describe('useWcConnectScreen', () => {
 
         expect(result.current.chainId).toBe('algorand')
         expect(mocks.useSigningAccounts).toHaveBeenLastCalledWith('algorand')
+    })
+
+    describe('chain and network', () => {
+        const baseProposal = () =>
+            proposalApproval({
+                connectionKind: 'dapp-eip1193',
+                requesterOrigin: 'https://dapp.example',
+                requested: {
+                    networks: ['sepolia'],
+                    chains: ['base'],
+                    methods: ['eth_accounts'],
+                },
+            })
+
+        it('names another chain and the wallet’s network on it', () => {
+            mocks.selectedNetworks = { base: 'sepolia' }
+
+            const { result } = render(baseProposal())
+
+            expect(result.current.chainNetwork).toEqual({
+                chain: 'Base',
+                network: 'Sepolia',
+            })
+        })
+
+        it('falls back to the raw ids when the chain or network has no display name', () => {
+            mocks.selectedNetworks = { zora: 'testnet' }
+
+            const { result } = render(
+                proposalApproval({
+                    requested: {
+                        networks: ['testnet'],
+                        chains: ['zora'],
+                        methods: ['eth_accounts'],
+                    },
+                }),
+            )
+
+            expect(result.current.chainNetwork).toEqual({
+                chain: 'zora',
+                network: 'testnet',
+            })
+        })
+
+        it('names nothing for an Algorand proposal, whose network the testnet indicator already states', () => {
+            expect(render().result.current.chainNetwork).toBeUndefined()
+        })
+
+        it('checks every chain’s peer url against the dApp registry on Algorand’s network', () => {
+            mocks.selectedNetworks = { algorand: 'testnet', base: 'sepolia' }
+
+            render(baseProposal())
+
+            expect(mocks.useProjectByUrlQuery).toHaveBeenLastCalledWith({
+                scope: { chainId: 'algorand', networkId: 'testnet' },
+                url: 'https://dapp.example',
+                isEnabled: true,
+            })
+        })
+    })
+
+    describe('registry verification tier', () => {
+        const PROJECT = {
+            url: 'https://dapp.example',
+            verificationTier: 'verified',
+        }
+
+        it('shows a positive tier when the requesting tab is the registered site', () => {
+            mocks.useProjectByUrlQuery.mockReturnValue({ data: PROJECT })
+
+            const { result } = render(
+                proposalApproval({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            expect(result.current.verificationTier).toBe('verified')
+        })
+
+        it('withholds a positive tier from a tab asserting another site’s url', () => {
+            mocks.useProjectByUrlQuery.mockReturnValue({ data: PROJECT })
+
+            const { result } = render(
+                proposalApproval({ requesterOrigin: 'https://evil.example' }),
+            )
+
+            expect(result.current.verificationTier).toBeUndefined()
+        })
+
+        it('still flags a suspicious site', () => {
+            mocks.useProjectByUrlQuery.mockReturnValue({
+                data: { ...PROJECT, verificationTier: 'suspicious' },
+            })
+
+            const { result } = render(
+                proposalApproval({ requesterOrigin: 'https://evil.example' }),
+            )
+
+            expect(result.current.verificationTier).toBe('suspicious')
+        })
     })
 
     it('pre-selects the active account by its address on the proposal’s chain', () => {

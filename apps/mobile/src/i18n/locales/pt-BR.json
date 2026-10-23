@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "A Pera não conseguiu enviar sua decisão ao site. A extensão entrou em suspensão enquanto esta janela estava aberta. Feche esta janela e faça a solicitação novamente no site.",
+            "chain_network": "Rede: {{chain}} {{network}}",
             "request_origin": "A solicitação veio de {{origin}}",
             "requester_verified_label": "Aba verificada: {{origin}}",
             "requester_mismatch": "Esta solicitação veio de {{origin}}, não de {{claimed}}.",
