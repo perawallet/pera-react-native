@@ -17,7 +17,7 @@ import {
     type OnrampStatus,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: vi.fn(),
+    useDeploymentDeviceID: vi.fn(),
 }))
 
 vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
@@ -74,7 +74,7 @@ describe('useHasPendingRampOrders', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsFocused = true
-        vi.mocked(useScopedDeviceID).mockReturnValue('device-123')
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('device-123')
         vi.mocked(useOnrampAccount).mockReturnValue(onrampAccountAt('ADDR'))
         vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
             makeQueryResult([]),

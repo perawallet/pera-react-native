@@ -19,8 +19,8 @@ import {
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { config } from '@perawallet/wallet-core-config'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { config, deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     getSignRequestDetailQueryKey,
     useSignRequestDetailQuery,
@@ -93,7 +93,7 @@ export const useSignRequestFailure = (
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const deviceId = useScopedDeviceID(scope) ?? ''
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const queryClient = useQueryClient()
 
     const cosignSignRequestId =

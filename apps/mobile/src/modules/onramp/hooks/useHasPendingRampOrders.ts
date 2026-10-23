@@ -11,7 +11,8 @@
  */
 
 import { useIsFocused } from '@react-navigation/native'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     hasPendingRampOrder,
     useRampHistoryInfiniteQuery,
@@ -30,7 +31,7 @@ import { useOnrampAccount } from './useOnrampAccount'
  */
 export const useHasPendingRampOrders = (): boolean => {
     const { scope, address } = useOnrampAccount()
-    const deviceId = useScopedDeviceID(scope) ?? ''
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const isFocused = useIsFocused()
 
     const { items } = useRampHistoryInfiniteQuery({

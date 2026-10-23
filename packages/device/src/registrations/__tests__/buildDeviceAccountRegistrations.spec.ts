@@ -60,12 +60,14 @@ describe('buildDeviceAccountRegistrations', () => {
 
         expect(result).toEqual([
             {
+                chainId: FIRST_CHAIN,
                 address: 'SIGNER',
                 accountType: 'first-signing',
                 rank: 2,
                 receiveNotifications: true,
             },
             {
+                chainId: FIRST_CHAIN,
                 address: 'WATCHER',
                 accountType: 'first-watch',
                 rank: 1,
@@ -115,20 +117,60 @@ describe('buildDeviceAccountRegistrations', () => {
             },
         }
 
-        const result = buildDeviceAccountRegistrations(
-            [account],
-            ['second-addr'],
-        )
+        const result = buildDeviceAccountRegistrations([account], [])
 
         expect(result).toEqual([
             {
+                chainId: FIRST_CHAIN,
                 address: 'FIRST-ADDR',
                 accountType: 'first-signing',
                 rank: 2,
                 receiveNotifications: true,
             },
             {
+                chainId: SECOND_CHAIN,
                 address: 'second-addr',
+                accountType: 'second-signing',
+                rank: 2,
+                receiveNotifications: true,
+            },
+        ])
+    })
+
+    it.each(['FIRST-ADDR', 'second-addr'])(
+        'mutes the account on every chain when %s is muted',
+        muted => {
+            deviceChainAdapters.register(adapterFor(SECOND_CHAIN, 'second'))
+            const account: TestAccount = {
+                kind: 'signing',
+                chains: {
+                    [FIRST_CHAIN]: { address: 'FIRST-ADDR' },
+                    [SECOND_CHAIN]: { address: 'second-addr' },
+                },
+            }
+
+            const result = buildDeviceAccountRegistrations([account], [muted])
+
+            expect(result.map(entry => entry.receiveNotifications)).toEqual([
+                false,
+                false,
+            ])
+        },
+    )
+
+    it('registers an account held only on the second chain there alone', () => {
+        deviceChainAdapters.register(adapterFor(SECOND_CHAIN, 'second'))
+        const elsewhere: TestAccount = {
+            kind: 'signing',
+            chains: { [SECOND_CHAIN]: { address: '0xabc' } },
+        }
+
+        const result = buildDeviceAccountRegistrations([elsewhere], ['0xabc'])
+
+        expect(result).toEqual([
+            {
+                chainId: SECOND_CHAIN,
+                address: '0xabc',
                 accountType: 'second-signing',
                 rank: 2,
                 receiveNotifications: false,
@@ -146,6 +188,7 @@ describe('buildDeviceAccountRegistrations', () => {
             buildDeviceAccountRegistrations([elsewhere, onFirst('HELD')], []),
         ).toEqual([
             {
+                chainId: FIRST_CHAIN,
                 address: 'HELD',
                 accountType: 'first-signing',
                 rank: 2,

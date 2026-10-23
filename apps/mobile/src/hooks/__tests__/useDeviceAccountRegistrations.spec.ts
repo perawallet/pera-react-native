@@ -20,6 +20,7 @@ import {
 import { useNotificationsStore } from '@perawallet/wallet-core-messages'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     registerAlgorandAccountsAdapter,
@@ -90,12 +91,14 @@ describe('useDeviceAccountRegistrations', () => {
 
         expect(result.current).toEqual([
             {
+                chainId: LEGACY_CHAIN_ID,
                 address: 'QADDR',
                 accountType: 'quantum',
                 rank: 6,
                 receiveNotifications: true,
             },
             {
+                chainId: LEGACY_CHAIN_ID,
                 address: 'WADDR',
                 accountType: 'watch',
                 rank: 1,
@@ -170,5 +173,40 @@ describe('useDeviceAccountRegistrations', () => {
         const { result } = renderHook(() => useDeviceAccountRegistrations())
 
         expect(result.current).toEqual([])
+    })
+
+    it('registers an Ethereum address an account gains, and drops it once removed', () => {
+        deviceChainAdapters.register({
+            chainId: 'ethereum',
+            accountTypeOf: () => 'watch',
+            rankOf: () => 0,
+        })
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', custody: { kind: 'watch' } },
+        ])
+        const { result } = renderHook(() => useDeviceAccountRegistrations())
+        const chainsOf = () =>
+            result.current.map(entry => `${entry.chainId}:${entry.address}`)
+
+        act(() => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: '1',
+                    custody: { kind: 'watch' },
+                    chains: {
+                        algorand: { address: 'ADDR_A' },
+                        ethereum: { address: '0xabc' },
+                    },
+                },
+            ])
+        })
+        expect(chainsOf()).toEqual(['algorand:ADDR_A', 'ethereum:0xabc'])
+
+        act(() => {
+            seedAccounts([
+                { id: '1', address: 'ADDR_A', custody: { kind: 'watch' } },
+            ])
+        })
+        expect(chainsOf()).toEqual(['algorand:ADDR_A'])
     })
 })

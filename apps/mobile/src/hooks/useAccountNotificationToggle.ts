@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     buildDeviceAccountRegistrations,
     useDevice,
@@ -24,7 +27,7 @@ import { useLanguage } from './useLanguage'
 export type UseAccountNotificationToggleResult = {
     /**
      * Writes the store optimistically so the switch moves at once, then
-     * re-registers the device with the flag applied inline (v3 has no
+     * re-registers the device with the flag applied inline (the API has no
      * per-account route), reverting on rejection. Resolves `true` only when the
      * backend accepted.
      *
@@ -70,6 +73,28 @@ export const clearAccountNotificationToggleGuardForTests = (): void => {
     inFlightAddresses.clear()
 }
 
+// Registration mutes an account on every chain once any of its addresses is
+// muted, so the stored preference moves all of them together; otherwise an
+// account muted through one address could only be unmuted through that one.
+// Every account holding the address counts: a watch account can share one
+// with a signing account that also holds addresses on other chains.
+const addressesOfAccountsHolding = (
+    accounts: readonly WalletAccount[],
+    address: string,
+): string[] => {
+    const holders = accounts.filter(candidate =>
+        Object.values(candidate.chains).some(
+            entry => entry?.address === address,
+        ),
+    )
+    const addresses = holders.flatMap(holder =>
+        Object.values(holder.chains).flatMap(entry =>
+            entry === undefined ? [] : [entry.address],
+        ),
+    )
+    return addresses.length === 0 ? [address] : [...new Set(addresses)]
+}
+
 export const useAccountNotificationToggle =
     (): UseAccountNotificationToggleResult => {
         const { disabledAccounts, setAccountEnabled } =
@@ -93,14 +118,26 @@ export const useAccountNotificationToggle =
 
         const toggleAccountNotification = useCallback(
             async (address: string, enabled: boolean): Promise<boolean> => {
-                if (inFlightAddresses.has(address)) {
+                // Guarded per account: the write below moves every address
+                // it holds, whichever one the caller toggled through.
+                const accountAddresses = addressesOfAccountsHolding(
+                    accounts,
+                    address,
+                )
+                if (
+                    accountAddresses.some(each => inFlightAddresses.has(each))
+                ) {
                     return false
                 }
 
-                inFlightAddresses.add(address)
-                ownPendingAddressesRef.current.add(address)
+                accountAddresses.forEach(each => {
+                    inFlightAddresses.add(each)
+                    ownPendingAddressesRef.current.add(each)
+                })
                 setPendingAddresses([...ownPendingAddressesRef.current])
-                setAccountEnabled(address, enabled)
+                accountAddresses.forEach(each =>
+                    setAccountEnabled(each, enabled),
+                )
 
                 try {
                     // Fail fast offline instead of trusting the native
@@ -111,27 +148,36 @@ export const useAccountNotificationToggle =
                     // from the backend.
                     assertOnline()
 
-                    // v3 has no per-account route: notification flags ride
+                    // The API has no per-account route: notification flags ride
                     // inline on the full accounts array. Compute the post-
                     // toggle disabled set explicitly rather than re-reading
                     // the store, which has not re-rendered this closure yet.
                     const nextDisabled = enabled
                         ? disabledAccounts.filter(
-                              disabled => disabled !== address,
+                              disabled => !accountAddresses.includes(disabled),
                           )
-                        : [...new Set([...disabledAccounts, address])]
+                        : [
+                              ...new Set([
+                                  ...disabledAccounts,
+                                  ...accountAddresses,
+                              ]),
+                          ]
 
                     await registerDevice(
                         buildDeviceAccountRegistrations(accounts, nextDisabled),
                     )
                     return true
                 } catch (error) {
-                    setAccountEnabled(address, !enabled)
+                    accountAddresses.forEach(each =>
+                        setAccountEnabled(each, !enabled),
+                    )
                     showError(error, t('common.error.title'))
                     return false
                 } finally {
-                    inFlightAddresses.delete(address)
-                    ownPendingAddressesRef.current.delete(address)
+                    accountAddresses.forEach(each => {
+                        inFlightAddresses.delete(each)
+                        ownPendingAddressesRef.current.delete(each)
+                    })
                     setPendingAddresses([...ownPendingAddressesRef.current])
                 }
             },

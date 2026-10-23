@@ -18,7 +18,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     IN_FLIGHT_SIGN_REQUEST_STATUSES,
     useSignRequestDetailQuery,
@@ -74,7 +75,7 @@ export const useMultisigSignInboxItem = (
 ): UseMultisigSignInboxItemResult => {
     const isDark = useIsDarkMode()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const deviceId = useScopedDeviceID(scope) ?? ''
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
     const avatarIcon: IconName = isDark
         ? 'accounts/dark/multisig-account'

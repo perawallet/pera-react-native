@@ -61,7 +61,7 @@ ${IMPORT_IGNORE_BUTTON}                 xpath=//*[@resource-id='import-shared-ac
 # The import screen once its lookup has answered: the account, or the error state.
 ${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @resource-id='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry' or @resource-id='import-shared-account-retry']
 
-${CREATION_BLOCKED}                     The build cannot register its device (the app showed 'An error occurred': POST /api/v3/devices returned 401, so no deviceId). Rebuild with BACKEND_API_KEY set.
+${CREATION_BLOCKED}                     The build cannot register its device (the app showed 'An error occurred': POST /api/v4/devices/ returned 401, so no deviceId). Rebuild with BACKEND_API_KEY set.
 
 
 *** Keywords ***

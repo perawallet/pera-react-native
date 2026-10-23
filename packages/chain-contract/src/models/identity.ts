@@ -14,7 +14,8 @@ import evmNetworks from './evm-networks.json'
 
 /**
  * A chain package adds its own id here in the change that creates it; an EVM
- * chain also adds its networks to evm-networks.json.
+ * chain also adds its networks to evm-networks.json. Append only: device
+ * registration's refusal fallback drops the last chain first, as the newest.
  */
 export const CHAIN_IDS = [
     'algorand',

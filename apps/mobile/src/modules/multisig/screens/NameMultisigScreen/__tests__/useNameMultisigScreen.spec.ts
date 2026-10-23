@@ -119,7 +119,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
-    useScopedDeviceID: () => mockUseDeviceID(),
+    useDeploymentDeviceID: () => mockUseDeviceID(),
 }))
 
 const mockShowError = vi.fn()

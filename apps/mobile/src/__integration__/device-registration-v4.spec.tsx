@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-// Acceptance test for the whole device-API-v3 migration: the swap
-// backend can only price a quantum account's fee correctly once device
-// registration reports `account_type: 'quantum'` for its address. Everything
-// else in the migration (endpoints, serializers, the account-type mapping) is
-// machinery in service of this one assertion.
+// Device registration as the backend receives it: one item per address and
+// chain, so the swap backend can price a quantum account's fee from its
+// `account_type`, and EVM-keyed services see the wallet's EVM addresses.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 
-// The default driver mock in vitest.setup.ts predates the v3 payload (its
+// The default driver mock in vitest.setup.ts predates the current payload (its
 // `deviceInfo` stub exposes `getVersion`, not `getAppVersion`) — mirrors
 // migration-inbox.spec.tsx. Unmocking routes `getProvider()` (already real
 // for every integration test, see vitest.integration-setup.ts) through the
@@ -31,6 +29,19 @@ vi.unmock('@perawallet/wallet-extension-platform-driver')
 // exports rather than the vitest.setup.ts stubs — same pairing
 // migration-inbox.spec.tsx uses.
 vi.unmock('@perawallet/wallet-extension-platform')
+
+// The integration setup registers whichever chains config enables.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+        },
+    }
+})
 
 import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
@@ -112,12 +123,28 @@ const algo25Account: WalletAccount = {
     name: 'Algo25 account',
 }
 
-describe('Device registration v3', () => {
+const ALGORAND_MAINNET = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+
+const hdAccountWithEthereum: WalletAccount = {
+    id: 'hd-1',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+    chains: {
+        algorand: { address: HD_TEST_ADDRESS, keyPairId: 'hd-1-key' },
+        ethereum: { address: ETH_ADDRESS, keyPairId: 'hd-1-eth-key' },
+    },
+    name: 'HD account',
+}
+
+describe('Device registration', () => {
     beforeEach(async () => {
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_device_registration_v4', true)
     })
 
     // Unmount first: resetting the accounts store under a mounted registrar
@@ -136,7 +163,7 @@ describe('Device registration v3', () => {
     it('registers a quantum account with account_type quantum', async () => {
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 bodies.push((await request.json()) as DeviceRegistrationRequest)
                 return HttpResponse.json({ id: 'DEV-1' })
             }),
@@ -154,21 +181,133 @@ describe('Device registration v3', () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     address: addressOf(quantumAccount),
+                    chain: ALGORAND_MAINNET,
                     account_type: 'quantum',
                     receive_notifications: true,
                 }),
                 expect.objectContaining({
                     address: addressOf(watchedAccount),
+                    chain: ALGORAND_MAINNET,
                     account_type: 'watch',
                 }),
             ]),
         )
     })
 
-    it('sends the required v3 fields and none of the v1-only ones', async () => {
+    it('registers an Algorand-only wallet as one item per account, all on Algorand', async () => {
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([quantumAccount, watchedAccount, algo25Account])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const latest = bodies[bodies.length - 1]
+
+        expect(
+            latest.accounts.map(({ address, chain, account_type }) => ({
+                address,
+                chain,
+                account_type,
+            })),
+        ).toEqual([
+            {
+                address: addressOf(quantumAccount),
+                chain: ALGORAND_MAINNET,
+                account_type: 'quantum',
+            },
+            {
+                address: addressOf(watchedAccount),
+                chain: ALGORAND_MAINNET,
+                account_type: 'watch',
+            },
+            {
+                address: addressOf(algo25Account),
+                chain: ALGORAND_MAINNET,
+                account_type: 'algo25',
+            },
+        ])
+    })
+
+    it('registers an account holding an Ethereum address once per chain', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v4/devices/', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([hdAccountWithEthereum])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        expect(bodies[bodies.length - 1].accounts).toEqual([
+            {
+                address: HD_TEST_ADDRESS,
+                chain: ALGORAND_MAINNET,
+                account_type: 'hdWallet',
+                receive_notifications: true,
+            },
+            {
+                address: ETH_ADDRESS,
+                chain: 'eip155:1',
+                account_type: 'hdWallet',
+                receive_notifications: true,
+            },
+        ])
+    })
+
+    it.each(['unknown_chain', 'chain_not_enabled'])(
+        'registers the Algorand accounts again when the backend refuses a chain with %s',
+        async code => {
+            const bodies: DeviceRegistrationRequest[] = []
+            server.use(
+                http.post('*/api/v4/devices/', async ({ request }) => {
+                    const body =
+                        (await request.json()) as DeviceRegistrationRequest
+                    bodies.push(body)
+                    return body.accounts.some(account =>
+                        account.chain.startsWith('eip155:'),
+                    )
+                        ? HttpResponse.json(
+                              { error: 'Refused chain', code },
+                              { status: 422 },
+                          )
+                        : HttpResponse.json({ id: 'DEV-1' })
+                }),
+            )
+
+            seedAccounts([hdAccountWithEthereum])
+            renderApp()
+
+            await waitFor(
+                () => expect(useDeviceStore.getState().deviceIDs.size).toBe(1),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(bodies[bodies.length - 1].accounts).toEqual([
+                expect.objectContaining({
+                    address: HD_TEST_ADDRESS,
+                    chain: ALGORAND_MAINNET,
+                }),
+            ])
+        },
+    )
+
+    it('sends the required fields and none of the v1-only ones', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 bodies.push((await request.json()) as DeviceRegistrationRequest)
                 return HttpResponse.json({ id: 'DEV-1' })
             }),
@@ -193,7 +332,7 @@ describe('Device registration v3', () => {
     it('re-registers with the new currency when the user changes it', async () => {
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 bodies.push((await request.json()) as DeviceRegistrationRequest)
                 return HttpResponse.json({ id: 'DEV-1' })
             }),
@@ -221,7 +360,7 @@ describe('Device registration v3', () => {
     it('carries the device id on the registration that follows the first', async () => {
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 bodies.push((await request.json()) as DeviceRegistrationRequest)
                 return HttpResponse.json({ id: 'DEV-1' })
             }),
@@ -235,8 +374,6 @@ describe('Device registration v3', () => {
         })
         expect(bodies[0].id).toBeUndefined()
 
-        // No `addAccount` harness helper exists yet — drive the accounts
-        // store directly, per the task brief's fallback instruction.
         addAccount(algo25Account)
 
         await waitFor(() => expect(bodies.length).toBeGreaterThan(1), {
@@ -248,7 +385,7 @@ describe('Device registration v3', () => {
     it('registers a muted account with receive_notifications false and an unmuted one with true, in the same body', async () => {
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 bodies.push((await request.json()) as DeviceRegistrationRequest)
                 return HttpResponse.json({ id: 'DEV-1' })
             }),
@@ -282,5 +419,33 @@ describe('Device registration v3', () => {
                 }),
             ]),
         )
+    })
+
+    it('stays on v3 with only the Algorand accounts while the v4 flag is off', async () => {
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_device_registration_v4', false)
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([hdAccountWithEthereum])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+
+        expect(bodies[bodies.length - 1].accounts).toEqual([
+            {
+                address: HD_TEST_ADDRESS,
+                account_type: 'hdWallet',
+                receive_notifications: true,
+            },
+        ])
     })
 })

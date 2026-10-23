@@ -28,7 +28,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -67,7 +68,7 @@ export const useMultisigInvitationNameScreen =
         const { t } = useLanguage()
         const { errorToast, successToast } = useToast()
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const deviceId = useScopedDeviceID(scope) ?? ''
+        const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
         const accounts = useAllAccounts()
         const setAccounts = useAccountsStore(state => state.setAccounts)

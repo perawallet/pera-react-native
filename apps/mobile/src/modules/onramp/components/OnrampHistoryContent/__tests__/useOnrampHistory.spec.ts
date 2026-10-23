@@ -16,7 +16,7 @@ import {
     useRampHistoryInfiniteQuery,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
@@ -27,7 +27,7 @@ vi.mock('@perawallet/wallet-core-onramp', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: vi.fn(),
+    useDeploymentDeviceID: vi.fn(),
 }))
 
 vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
@@ -80,7 +80,7 @@ const makeQueryResult = (
 describe('useOnrampHistory', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useScopedDeviceID).mockReturnValue('device-123')
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('device-123')
         vi.mocked(useOnrampAccount).mockReturnValue(onrampAccountAt('ADDR'))
         vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
             makeQueryResult(),
@@ -137,8 +137,8 @@ describe('useOnrampHistory', () => {
         expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
     })
 
-    it('falls back to empty deviceId when useScopedDeviceID returns null', () => {
-        vi.mocked(useScopedDeviceID).mockReturnValue(null)
+    it('falls back to empty deviceId when useDeploymentDeviceID returns null', () => {
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         renderHook(() => useOnrampHistory())
 

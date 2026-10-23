@@ -29,6 +29,7 @@ import {
     getPeraServicesConfig,
     hasPeraBackend,
     hasPeraService,
+    deploymentOf,
     peraDeploymentOf,
     peraServicesFor,
     registerCustomNetworkSource,
@@ -292,6 +293,17 @@ describe('Pera deployments', () => {
 
     test('an unconfigured fixture chain has no deployment', () => {
         expect(peraDeploymentOf(FIXTURE_MAINNET)).toBeUndefined()
+    })
+})
+
+describe('deploymentOf', () => {
+    test('is the deployment serving the scope', () => {
+        expect(deploymentOf(algorandScope('testnet'))).toBe('developer')
+    })
+
+    test('is null for a scope no deployment serves, or no scope', () => {
+        expect(deploymentOf(algorandScope('betanet'))).toBeNull()
+        expect(deploymentOf(null)).toBeNull()
     })
 })
 

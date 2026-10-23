@@ -10,25 +10,14 @@
  limitations under the License
  */
 
-import type {
-    ChainScope,
-    WalletMode,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    deviceIdForDeployment,
-    deviceIdForScope,
-    useDeviceStore,
-} from '../store'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { deviceIdForDeployment, useDeviceStore } from '../store'
 
-export const useScopedDeviceID = (
-    scope: Nullable<ChainScope>,
+/** `null` for no deployment, as on a network no Pera deployment serves. */
+export const useDeploymentDeviceID = (
+    deployment: Nullable<WalletMode>,
 ): Nullable<string> =>
     useDeviceStore(state =>
-        scope === null ? null : deviceIdForScope(state, scope),
+        deployment === null ? null : deviceIdForDeployment(state, deployment),
     )
-
-export const useDeploymentDeviceID = (
-    deployment: WalletMode,
-): Nullable<string> =>
-    useDeviceStore(state => deviceIdForDeployment(state, deployment))

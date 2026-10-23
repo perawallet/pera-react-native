@@ -7,7 +7,7 @@ import { ownText, referencesQuery } from '../shared/references.js'
 import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
 // A package joins once its Algorand half sits behind adapters.
-const CHAIN_NEUTRAL_PACKAGES = ['backup', 'migrate']
+const CHAIN_NEUTRAL_PACKAGES = ['backup', 'device', 'migrate']
 
 // Word-bounded `Networks` so `useNetworks` stays legal; the rest match inside
 // names (`rekeyed`, `onRekey`, `ARC59_APP_ID`, `AsbImport…`, `ALGORAND_…`).
@@ -33,7 +33,7 @@ export default defineRule({
     card: {
         message: 'a chain-neutral package names an Algorand concept',
         remediation:
-            "backup and migrate reach Algorand only through their chain adapters (BackupChainAdapter, MigrationChainAdapter) and chain-contract's legacy helpers (LEGACY_CHAIN_ID, LEGACY_CHAIN_FAMILY). Put the Algorand-specific code in packages/chain-algorand and call it through the adapter, or name the concept neutrally (secure-backup, delegation).",
+            "backup, device and migrate reach Algorand only through their chain adapters (BackupChainAdapter, DeviceChainAdapter, MigrationChainAdapter) and chain-contract's legacy helpers (LEGACY_CHAIN_ID, LEGACY_CHAIN_FAMILY). Put the Algorand-specific code in packages/chain-algorand and call it through the adapter, or name the concept neutrally (secure-backup, delegation).",
         examples: {
             bad: 'const prefix = ALGORAND_SIGN_PREFIX',
             good: 'const prefix = BACKUP_PROOF_PREFIX',

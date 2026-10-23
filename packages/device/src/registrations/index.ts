@@ -12,3 +12,5 @@
 
 export * from './chain-adapter'
 export * from './buildDeviceAccountRegistrations'
+export * from './registrationChain'
+export * from './withoutNewestChain'

@@ -18,8 +18,10 @@ import {
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 
 import { useDevice } from './useDevice'
+import { isDeviceRegistrationV4Enabled } from './registrationApi'
 import { useDeviceStore } from '../store'
 import type { DeviceAccountRegistration } from '../models'
 
@@ -68,14 +70,20 @@ export const useDeviceRegistration = (
     // the effect on a stable serialization so it only refires when something
     // the backend actually receives changed — one store write or a reorder
     // must not mean one device registration. Account *names* are deliberately
-    // absent: v3 doesn't carry them, so renaming must not re-register.
+    // absent: the API doesn't carry them, so renaming must not re-register.
     const accountsKey = accounts
         .map(
             account =>
-                `${account.address}|${account.accountType}|${account.receiveNotifications ? '1' : '0'}`,
+                `${account.chainId}|${account.address}|${account.accountType}|${account.receiveNotifications ? '1' : '0'}`,
         )
         .sort()
         .join('\n')
+
+    // Switching API versions changes what the backend holds (v3 carries only
+    // the chains it always did), so a flip must re-register. Selected through
+    // the overrides store so a developer override re-renders too; a fetched
+    // remote value is re-read on the next render.
+    const isV4 = useRemoteConfigStore(() => isDeviceRegistrationV4Enabled())
 
     // The key is a digest, not a payload — keep the real array in a ref so
     // the effect and the retry closure both send the current registrations
@@ -125,7 +133,7 @@ export const useDeviceRegistration = (
             .finally(() => {
                 if (isCurrent()) inFlightRef.current = false
             })
-    }, [accountsKey, deployment, registerDevice, setRegistrationPending])
+    }, [accountsKey, deployment, isV4, registerDevice, setRegistrationPending])
 
     // A failed registration used to stay silently unregistered (no push
     // notifications) until the account set or deployment changed. While one is

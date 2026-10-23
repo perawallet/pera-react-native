@@ -34,7 +34,7 @@ describe('device/hooks/useDeviceIdLookup', () => {
         useDeviceStore.getState().resetState()
     })
 
-    test('returns the id stored under the scope', () => {
+    test('returns the id stored for the deployment', () => {
         act(() => {
             useDeviceStore
                 .getState()
@@ -43,24 +43,18 @@ describe('device/hooks/useDeviceIdLookup', () => {
 
         const { result } = renderHook(() => useDeviceIdLookup())
 
-        expect(
-            result.current({ chainId: 'algorand', networkId: 'testnet' }),
-        ).toBe('device-test-456')
+        expect(result.current('developer')).toBe('device-test-456')
     })
 
-    test('returns null for a scope with no id', () => {
+    test('returns null for a deployment with no id, or no deployment', () => {
         act(() => {
             useDeviceStore.getState().setDeviceID('live', 'device-main-123')
         })
 
         const { result } = renderHook(() => useDeviceIdLookup())
 
-        expect(
-            result.current({ chainId: 'algorand', networkId: 'testnet' }),
-        ).toBeNull()
-        expect(
-            result.current({ chainId: 'ethereum', networkId: 'mainnet' }),
-        ).toBeNull()
+        expect(result.current('developer')).toBeNull()
+        expect(result.current(null)).toBeNull()
     })
 
     test('returns a fresh lookup once an id is set', () => {
@@ -70,8 +64,6 @@ describe('device/hooks/useDeviceIdLookup', () => {
             useDeviceStore.getState().setDeviceID('live', 'device-new-123')
         })
 
-        expect(
-            result.current({ chainId: 'algorand', networkId: 'mainnet' }),
-        ).toBe('device-new-123')
+        expect(result.current('live')).toBe('device-new-123')
     })
 })

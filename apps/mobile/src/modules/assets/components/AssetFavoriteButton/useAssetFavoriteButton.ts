@@ -12,7 +12,8 @@
 
 import { useCallback } from 'react'
 import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
@@ -27,7 +28,7 @@ export const useAssetFavoriteButton = (
     isFavorite: Optional<boolean>,
     scope: ChainScope,
 ) => {
-    const deviceId = useScopedDeviceID(scope)
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const { invalidate: invalidateHoldings } = useAccountHoldingsInvalidator()
     const { showError } = useErrorToast()
     const hasFavorites = useChainCapability(scope.chainId, 'assetFavorites')

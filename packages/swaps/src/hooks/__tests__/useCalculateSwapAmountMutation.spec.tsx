@@ -19,7 +19,7 @@ import { useCalculateSwapAmountMutation } from '../useCalculateSwapAmountMutatio
 import { calculateSwapAmount } from '../../api'
 
 const mocks = vi.hoisted(() => ({
-    deviceIdOf: vi.fn<(scope: unknown) => string | null>(),
+    deviceIdOf: vi.fn<(deployment: unknown) => string | null>(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({

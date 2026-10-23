@@ -11,17 +11,20 @@
  */
 
 import { useCallback } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { deviceIdForScope, useDeviceStore } from '../store'
+import { deviceIdForDeployment, useDeviceStore } from '../store'
 
-/** One subscription for callers that resolve device ids for several scopes. */
+/** One subscription for callers that resolve device ids for several deployments. */
 export const useDeviceIdLookup = (): ((
-    scope: ChainScope,
+    deployment: Nullable<WalletMode>,
 ) => Nullable<string>) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
     return useCallback(
-        (scope: ChainScope) => deviceIdForScope({ deviceIDs }, scope),
+        (deployment: Nullable<WalletMode>) =>
+            deployment === null
+                ? null
+                : deviceIdForDeployment({ deviceIDs }, deployment),
         [deviceIDs],
     )
 }

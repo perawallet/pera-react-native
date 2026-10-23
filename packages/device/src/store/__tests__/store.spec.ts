@@ -107,8 +107,8 @@ describe('device/store', () => {
         )
     })
 
-    test('a developer id is read back by deployment and by an Algorand testnet scope, and persists under algorand/testnet', async () => {
-        const { useDeviceStore, deviceIdForDeployment, deviceIdForScope } =
+    test('a developer id is read back by deployment and persists under algorand/testnet', async () => {
+        const { useDeviceStore, deviceIdForDeployment } =
             await import('../index')
         act(() => {
             useDeviceStore.getState().setDeviceID('developer', 'id-1')
@@ -116,12 +116,6 @@ describe('device/store', () => {
 
         const state = useDeviceStore.getState()
         expect(deviceIdForDeployment(state, 'developer')).toBe('id-1')
-        expect(
-            deviceIdForScope(state, {
-                chainId: 'algorand',
-                networkId: 'testnet',
-            }),
-        ).toBe('id-1')
         const { partialize } = useDeviceStore.persist.getOptions()
         expect(partialize?.(state)).toMatchObject({
             deviceIDs: { 'algorand/testnet': 'id-1' },

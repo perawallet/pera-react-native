@@ -72,7 +72,8 @@ vi.mock('../useSwapScope', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceIdLookup: () => (scope: ChainScope) => `device-${scope.networkId}`,
+    useDeviceIdLookup: () => (deployment: string | null) =>
+        `device-${deployment}`,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -151,7 +152,7 @@ describe('useExecuteSwapMutation', () => {
             },
             {
                 scope: { chainId: 'algorand', networkId: 'testnet' },
-                deviceId: 'device-testnet',
+                deviceId: 'device-developer',
                 addSignRequest: mockAddSignRequest,
                 prepareTransactions: expect.any(Function),
                 updateSwapStatus: expect.any(Function),

@@ -19,6 +19,7 @@ import {
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import {
@@ -218,12 +219,12 @@ export const useSwapCosignResolver = ({
             ),
             queryFn: () =>
                 getSignRequestsWithSignatures(handoff.scope, {
-                    device_id: deviceIdOf(handoff.scope) ?? '',
+                    device_id: deviceIdOf(deploymentOf(handoff.scope)) ?? '',
                     proposed_sign_request_ids: [handoff.signRequestId],
                 }),
             select: (data: SignRequestResponse[]) =>
                 data.find(item => item.id === handoff.signRequestId),
-            enabled: isAppActive && !!deviceIdOf(handoff.scope),
+            enabled: isAppActive && !!deviceIdOf(deploymentOf(handoff.scope)),
         }),
         [deviceIdOf, isAppActive],
     )
@@ -284,7 +285,7 @@ export const useSwapCosignResolver = ({
                     // skipped if the backend didn't echo a proposer address or
                     // the device id isn't ready.
                     declineSignRequest: async (signRequestId: string) => {
-                        const deviceId = deviceIdOf(handoff.scope)
+                        const deviceId = deviceIdOf(deploymentOf(handoff.scope))
                         if (!proposerAddress || !deviceId) return
                         await addSignature(handoff.scope, signRequestId, [
                             {

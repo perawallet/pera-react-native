@@ -201,7 +201,7 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
         let deviceBody: DeviceRegistrationRequest | null = null
 
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 deviceBody = (await request.json()) as DeviceRegistrationRequest
                 // Deliberately NOT `deviceBody.id ?? LEGACY_DEVICE_ID`:
                 // that would answer an id-less create with the same

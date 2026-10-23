@@ -14,14 +14,12 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     networkTierForMode,
-    rekeyLegacyNetworkRecord,
     scopeFromNetworkColumn,
+    scopeKeyLegacyNetworkRecord,
     toScopeKey,
-    type ChainScope,
     type ChainScopeKey,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import { peraDeploymentOf } from '@perawallet/wallet-core-config'
 import {
     guardedPersist,
     registerStore,
@@ -57,14 +55,14 @@ export const migrateDeviceState = (
     if (version < 2) {
         state = {
             ...state,
-            deviceIDs: rekeyLegacyNetworkRecord(state.deviceIDs),
-            deviceIdOrigins: rekeyLegacyNetworkRecord(state.deviceIdOrigins),
+            deviceIDs: scopeKeyLegacyNetworkRecord(state.deviceIDs),
+            deviceIdOrigins: scopeKeyLegacyNetworkRecord(state.deviceIdOrigins),
         }
     }
     return state
 }
 
-// Ids keep the key the v2 migration gave them: the deployment's Algorand tier.
+// Ids keep the key the v2 migration gave them: the deployment's legacy-chain scope key.
 const deviceStorageKey = (deployment: WalletMode): ChainScopeKey =>
     toScopeKey(scopeFromNetworkColumn(networkTierForMode(deployment)))
 
@@ -74,17 +72,6 @@ export const deviceIdForDeployment = (
     deployment: WalletMode,
 ): Nullable<string> =>
     state.deviceIDs?.get(deviceStorageKey(deployment)) ?? null
-
-/** The id of the deployment serving the scope; every chain of a tier shares it. */
-export const deviceIdForScope = (
-    state: Pick<DeviceState, 'deviceIDs'>,
-    scope: ChainScope,
-): Nullable<string> => {
-    const deployment = peraDeploymentOf(scope)
-    return deployment === undefined
-        ? null
-        : deviceIdForDeployment(state, deployment)
-}
 
 export const deviceIdOriginFor = (
     state: Pick<DeviceState, 'deviceIdOrigins'>,

@@ -43,6 +43,10 @@ const WIRE = [
 ] as const
 
 describe('algorandDeviceAdapter', () => {
+    it('registers on the v3 devices API while v4 is off', () => {
+        expect(algorandDeviceAdapter.isOnV3DevicesApi).toBe(true)
+    })
+
     it('spells every account type the way the devices API expects', () => {
         expect(Object.values(ALGORAND_DEVICE_ACCOUNT_TYPES).sort()).toEqual(
             WIRE.map(([wire]) => wire).sort(),
@@ -86,6 +90,7 @@ describe('algorandDeviceAdapter', () => {
                 buildDeviceAccountRegistrations(accounts, ['ADDR-4']),
             ).toEqual(
                 WIRE.map(([wire, rank], index) => ({
+                    chainId: 'algorand',
                     address: `ADDR-${index}`,
                     accountType: wire,
                     rank,

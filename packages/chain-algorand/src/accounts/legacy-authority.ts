@@ -12,7 +12,7 @@
 
 import type { DecodedLegacyAuthority } from '@perawallet/wallet-core-accounts'
 import {
-    rekeyLegacyNetworkRecord,
+    scopeKeyLegacyNetworkRecord,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -38,7 +38,7 @@ export const decodeAlgorandLegacyAuthority = (
     if (isPlainObject(rekeyAddressByNetwork)) {
         const byScope: Partial<Record<ChainScopeKey, string>> = {}
         for (const [key, address] of Object.entries(
-            rekeyLegacyNetworkRecord(rekeyAddressByNetwork),
+            scopeKeyLegacyNetworkRecord(rekeyAddressByNetwork),
         ) as [ChainScopeKey, unknown][]) {
             if (typeof address === 'string' && address !== '') {
                 byScope[key] = address
