@@ -77,6 +77,15 @@ const isChainRefusedError = (error: unknown): boolean =>
 
 type RegisterDeviceResult = { createdNew: boolean }
 
+/**
+ * `refusal` is set when the backend accepted a create only with no accounts:
+ * the device exists, but nothing was registered on it.
+ */
+type SubmitRegistrationResult = {
+    response: DeviceResponse
+    refusal?: unknown
+}
+
 // Module scope, deliberately NOT a `useRef`: every `useDevice()` call site —
 // the mount-time registration, a notification-preference toggle mounted from
 // a completely different screen, any future caller — must share ONE queue per
@@ -222,15 +231,19 @@ export const useDevice = () => {
      * Beyond the single 400 replay in `submitOnce`, a chain refusal re-submits
      * without the newest chain until the backend accepts or only the oldest
      * chain is left, so one unknown chain never keeps the rest unregistered.
-     * A refusal of that last chain propagates rather than registering no
-     * accounts: every request replaces the device's whole account list, so an
-     * empty one would unregister accounts the backend already holds.
+     * On an update, a refusal of that last chain propagates rather than
+     * registering no accounts: every request replaces the device's whole
+     * account list, so an empty one would unregister accounts the backend
+     * already holds. A create has no list to lose, so it goes through with no
+     * accounts: the device still needs an id, which every device-keyed
+     * feature reads. The refusal comes back with that response so the caller
+     * can save the id and still fail the attempt.
      */
     const submitRegistration = useCallback(
         async (
             targetDeployment: WalletMode,
             payload: DeviceRegistration,
-        ): Promise<DeviceResponse> => {
+        ): Promise<SubmitRegistrationResult> => {
             const refused =
                 refusedChainsByDeployment.get(targetDeployment) ??
                 new Set<ChainId>()
@@ -238,22 +251,36 @@ export const useDevice = () => {
                 account => !refused.has(account.chainId),
             )
             let lastDropped: ReadonlySet<ChainId> = new Set()
+            let emptyCreateRefusal: unknown
             for (;;) {
                 try {
                     const response = await submitOnce(targetDeployment, {
                         ...payload,
                         accounts,
                     })
+                    if (emptyCreateRefusal !== undefined) {
+                        // An accepted empty create proves nothing about its
+                        // last chain, so that chain is tried again next time.
+                        return { response, refusal: emptyCreateRefusal }
+                    }
                     if (lastDropped.size > 0) {
                         refusedChainsByDeployment.set(
                             targetDeployment,
                             new Set([...refused, ...lastDropped]),
                         )
                     }
-                    return response
+                    return { response }
                 } catch (error) {
                     if (!isChainRefusedError(error)) throw error
-                    const narrowed = withoutNewestChain(accounts)
+                    let narrowed = withoutNewestChain(accounts)
+                    if (
+                        narrowed === null &&
+                        payload.id === undefined &&
+                        accounts.length > 0
+                    ) {
+                        emptyCreateRefusal = error
+                        narrowed = []
+                    }
                     if (narrowed === null) throw error
                     const kept = new Set(narrowed.map(each => each.chainId))
                     lastDropped = new Set(
@@ -279,7 +306,7 @@ export const useDevice = () => {
             targetDeployment: WalletMode,
             accounts: DeviceAccountRegistration[],
         ): Promise<string> => {
-            const result = await submitRegistration(
+            const { response: result, refusal } = await submitRegistration(
                 targetDeployment,
                 buildPayload(accounts),
             )
@@ -290,6 +317,10 @@ export const useDevice = () => {
                 throw new Error('Device create response carried no id')
             }
             setDeviceID(targetDeployment, result.id)
+            // The id is kept, but nothing was registered on it: fail the
+            // attempt so the registration stays pending and the retry, now an
+            // update, sends the accounts again.
+            if (refusal !== undefined) throw refusal
             return result.id
         },
         [buildPayload, submitRegistration, setDeviceID],
@@ -322,7 +353,29 @@ export const useDevice = () => {
                         useDeviceStore.getState(),
                         targetDeployment,
                     ) === 'migrated'
-                await createDeviceForDeployment(targetDeployment, accounts)
+                const staleId = deviceIdForDeployment(
+                    useDeviceStore.getState(),
+                    targetDeployment,
+                )
+                try {
+                    await createDeviceForDeployment(targetDeployment, accounts)
+                } finally {
+                    // A create refused on its only chain saves the new id and
+                    // still throws, so the bookkeeping runs on the stored id,
+                    // not on the create resolving.
+                    const isIdReplaced =
+                        deviceIdForDeployment(
+                            useDeviceStore.getState(),
+                            targetDeployment,
+                        ) !== staleId
+                    if (isReplacingMigratedId && isIdReplaced) {
+                        setDeviceIdOrigin(targetDeployment, 'recreated')
+                        logEvent(MIGRATED_DEVICE_ID_REPLACED_EVENT, {
+                            network: networkTierForMode(targetDeployment),
+                            reason: 'not_found',
+                        })
+                    }
+                }
                 // Replacing a migrated id orphans its device-keyed server
                 // state (Discover favorites, price alerts, banner
                 // dismissals) — no reconciliation endpoint exists yet,
@@ -338,13 +391,6 @@ export const useDevice = () => {
                 // push-token race that must be retried rather than re-created
                 // (see `isPushTokenClaimedError`). A 400 therefore never
                 // reaches this branch and never replaces an id.
-                if (isReplacingMigratedId) {
-                    setDeviceIdOrigin(targetDeployment, 'recreated')
-                    logEvent(MIGRATED_DEVICE_ID_REPLACED_EVENT, {
-                        network: networkTierForMode(targetDeployment),
-                        reason: 'not_found',
-                    })
-                }
                 return { createdNew: true }
             }
         },

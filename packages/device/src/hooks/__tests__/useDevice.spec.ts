@@ -377,6 +377,83 @@ describe('services/device/hooks', () => {
         )
     })
 
+    test('flips the origin and emits the replacement event when the 404 recreate is refused on its only chain', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('live', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
+
+        const refusal = new PeraNetworkError('client', {
+            status: 422,
+            backendCode: 'chain_not_enabled',
+        })
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
+            )
+            .mockRejectedValueOnce(refusal)
+            .mockResolvedValueOnce({ id: 'FRESH-1' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice(accounts)
+            }),
+        ).rejects.toBe(refusal)
+
+        expect(
+            useDeviceStore.getState().deviceIDs.get('algorand/mainnet'),
+        ).toBe('FRESH-1')
+        expect(
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
+        ).toBe('recreated')
+        expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
+            'migrated_device_id_replaced',
+            { network: 'mainnet', reason: 'not_found' },
+        )
+    })
+
+    test('leaves the migrated origin alone when the 404 recreate fails before saving an id', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('live', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('live', 'migrated')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
+            )
+            .mockRejectedValueOnce(
+                new PeraNetworkError('server', { status: 500 }),
+            )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice(accounts)
+            }),
+        ).rejects.toThrow()
+
+        expect(
+            useDeviceStore.getState().deviceIdOrigins['algorand/mainnet'],
+        ).toBe('migrated')
+        expect(mockLogEvent).not.toHaveBeenCalled()
+    })
+
     test('the replacement event on the developer deployment carries the testnet tier', async () => {
         vi.resetModules()
 
@@ -805,6 +882,87 @@ describe('services/device/hooks', () => {
             }),
         ).rejects.toThrow()
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
+    })
+
+    test('creates the device with no accounts when its only chain is refused, and still fails the attempt', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore, deviceIdForDeployment } =
+            await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+
+        mockedRegisterDeviceMutation.mockRejectedValueOnce(
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            }),
+        )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice([
+                    {
+                        chainId: 'ethereum',
+                        address: '0xabc',
+                        accountType: 'watch',
+                        rank: 0,
+                        receiveNotifications: true,
+                    },
+                ])
+            }),
+        ).rejects.toMatchObject({
+            status: 422,
+            backendCode: 'chain_not_enabled',
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        expect(chainsSent(1)).toEqual([])
+        expect(deviceIdForDeployment(useDeviceStore.getState(), 'live')).toBe(
+            'new-device-id',
+        )
+    })
+
+    test('sends the chain again after a create that went through with no accounts', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+
+        mockedRegisterDeviceMutation.mockRejectedValueOnce(
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            }),
+        )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice(accounts)
+            }),
+        ).rejects.toThrow()
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(3)
+        expect(chainsSent(1)).toEqual([])
+        expect(chainsSent(2)).toEqual(['algorand'])
+        const [secondCall] = mockedRegisterDeviceMutation.mock.calls[2] as [
+            { data: { id?: string } },
+        ]
+        expect(secondCall.data.id).toBe('new-device-id')
     })
 
     test('surfaces a chain refusal of a single-chain registration after one attempt', async () => {

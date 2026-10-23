@@ -368,6 +368,37 @@ describe('useDeviceRegistration', () => {
         })
     })
 
+    test('stays pending after a create that saved an id but registered no accounts, and retries on reconnect', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore, deviceIdForDeployment } =
+            await import('../../store')
+        // What useDevice does on an empty create: save the id, then fail.
+        mockRegisterDevice.mockImplementationOnce(async () => {
+            useDeviceStore.getState().setDeviceID('live', 'DEV-EMPTY')
+            throw new Error('chain refused')
+        })
+        const accounts = [registration('0xacct', { chainId: 'ethereum' })]
+        renderHook(() => useDeviceRegistration(accounts))
+
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationDeployments,
+            ).toContain('live')
+        })
+        expect(deviceIdForDeployment(useDeviceStore.getState(), 'live')).toBe(
+            'DEV-EMPTY',
+        )
+
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(accounts)
+    })
+
     test('retries a failed registration on an edge the caller supplies', async () => {
         mockRegisterDevice.mockRejectedValueOnce(
             new Error('no integrity token'),
