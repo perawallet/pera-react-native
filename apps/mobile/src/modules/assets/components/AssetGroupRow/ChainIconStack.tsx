@@ -10,33 +10,33 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { AssetIcon } from '@components/AssetIcon'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkIconStack } from './useNetworkIconStack'
+import { getIconPixelSize, PWText, PWView } from '@components/core'
+import { ChainIcon } from '@modules/chain-ui/icon'
+import { useChainIconStack } from './useChainIconStack'
 import { useStyles } from './styles'
 
-export type NetworkIconStackProps = {
+export type ChainIconStackProps = {
     chainIds: ChainId[]
 }
 
-// The app ships no chain logos, so each network shows its native asset's icon.
-export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
+export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
     const styles = useStyles()
-    const { visibleChainIds, hiddenCount } = useNetworkIconStack(chainIds)
+    const { theme } = useTheme()
+    const { visibleChainIds, hiddenCount } = useChainIconStack(chainIds)
 
     return (
-        <PWView style={styles.networkStack}>
+        <PWView style={styles.chainIconStack}>
             {visibleChainIds.map((chainId, index) => (
                 <PWView
                     key={chainId}
-                    testID={`network_icon_${chainId}`}
-                    style={index > 0 ? styles.stackedNetworkIcon : undefined}
+                    testID={`chain_icon_stack_${chainId}`}
+                    style={index > 0 && styles.stackedChainIcon}
                 >
-                    <AssetIcon
-                        asset={nativeAssetFor(chainId)}
-                        size='xs'
+                    <ChainIcon
+                        chainId={chainId}
+                        size={getIconPixelSize(theme, 'xs')}
                     />
                 </PWView>
             ))}
@@ -44,7 +44,7 @@ export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
                 <PWText
                     variant='caption'
                     style={styles.subtitle}
-                    testID='network_icon_stack_more'
+                    testID='chain_icon_stack_more'
                 >
                     {`+${hiddenCount}`}
                 </PWText>

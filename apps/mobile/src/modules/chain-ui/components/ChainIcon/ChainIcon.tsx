@@ -27,13 +27,16 @@ export const ChainIcon = ({ chainId, size = DEFAULT_SIZE }: ChainIconProps) => {
     const styles = useStyles(size)
 
     if (Icon) {
+        // Clipped so every chain reads as a circle, whatever shape its brand mark is.
         return (
-            <Icon
-                width={size}
-                height={size}
-                accessibilityLabel={displayName}
-                testID={`chain_icon_${chainId}`}
-            />
+            <PWView style={styles.clip}>
+                <Icon
+                    width={size}
+                    height={size}
+                    accessibilityLabel={displayName}
+                    testID={`chain_icon_${chainId}`}
+                />
+            </PWView>
         )
     }
     return (

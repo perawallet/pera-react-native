@@ -22,7 +22,7 @@ import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
-import { NetworkIconStack } from './NetworkIconStack'
+import { ChainIconStack } from './ChainIconStack'
 import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
@@ -83,7 +83,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                         size='xs'
                         style={isExpanded ? styles.chevronExpanded : undefined}
                     />
-                    <NetworkIconStack chainIds={chainIds} />
+                    <ChainIconStack chainIds={chainIds} />
                 </PWView>
             </PWView>
             <PWView style={styles.amountContainer}>

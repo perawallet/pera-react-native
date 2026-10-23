@@ -88,8 +88,12 @@ export const useStyles = makeStyles(theme => ({
     chainIconStack: {
         flexDirection: 'row',
     },
+    // The ring matches seeAllButton's fill so each overlapping icon stays distinct.
     stackedChainIcon: {
         marginLeft: -theme.spacing.xs,
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.layerGrayLightest,
+        borderRadius: theme.borderRadius.full,
     },
     sharedAccountOptions: {
         marginBottom: theme.spacing.lg,

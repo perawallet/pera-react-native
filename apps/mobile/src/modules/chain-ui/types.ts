@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import type { ComponentType } from 'react'
-import type { SvgProps } from 'react-native-svg'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     ChainFamily,
-    ChainId,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AccountOptionsDisplay } from '@modules/accounts'
@@ -40,8 +36,6 @@ export type ChainUi = {
     accountOptions?: AccountOptionsDisplay
     /** Used while this family alone can watch accounts; otherwise the watch flow names no chain. */
     watchAccountCopy?: WatchAccountCopy
-    /** The chain's logo; a chain without one shows initials of its name. */
-    icon?: (chainId: ChainId) => Optional<ComponentType<SvgProps>>
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>
