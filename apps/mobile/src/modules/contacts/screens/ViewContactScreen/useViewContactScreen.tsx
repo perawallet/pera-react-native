@@ -44,17 +44,6 @@ export type ViewContactAddressRow = {
     hasExplorer: boolean
 }
 
-const chainsOfFamily = (family: ChainFamily): ChainDescriptor[] => {
-    const byFamily = new Map<ChainFamily, ChainDescriptor[]>()
-    for (const descriptor of getProvider().chains.list()) {
-        byFamily.set(descriptor.family, [
-            ...(byFamily.get(descriptor.family) ?? []),
-            descriptor,
-        ])
-    }
-    return byFamily.get(family) ?? []
-}
-
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>
     /** One per family the contact holds an address on, in family order. */
@@ -65,6 +54,18 @@ export type UseViewContactScreenResult = {
     openExplorer: (family: ChainFamily, address: string) => Promise<void>
     goToEdit: () => void
     handleShare: () => Promise<void>
+}
+
+// App code may not compare `.family` (pera/no-chain-identity-in-shared-packages), so group by it.
+const chainsOfFamily = (family: ChainFamily): ChainDescriptor[] => {
+    const byFamily = new Map<ChainFamily, ChainDescriptor[]>()
+    for (const descriptor of getProvider().chains.list()) {
+        byFamily.set(descriptor.family, [
+            ...(byFamily.get(descriptor.family) ?? []),
+            descriptor,
+        ])
+    }
+    return byFamily.get(family) ?? []
 }
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {

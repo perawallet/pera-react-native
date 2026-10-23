@@ -12,10 +12,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    CUSTOM_NETWORK_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getChainDescriptor,
     getSelectedScope,
+    useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -86,6 +90,13 @@ const accountUrl = (chainId: ChainId, address: string) =>
         address,
     )
 
+const selectCustomNetwork = (chainId: ChainId): void => {
+    const store = useNetworkStore.getState()
+    store.setMode('developer')
+    store.setCustomNetwork(chainId, { id: CUSTOM_NETWORK_ID })
+    store.selectNetwork(chainId, CUSTOM_NETWORK_ID)
+}
+
 const registerBaseChain = (): void => {
     const { chains } = getProvider()
     if (!chains.has(BASE_CHAIN_ID)) {
@@ -110,6 +121,7 @@ describe('useViewContactScreen', () => {
     })
 
     afterEach(() => {
+        useNetworkStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
         restoreAlgorandOnlyChains()
     })
@@ -161,6 +173,17 @@ describe('useViewContactScreen', () => {
         })
     })
 
+    it("has no explorer when the family's only chain is on a custom network", () => {
+        selectCustomNetwork(ETHEREUM_CHAIN_ID)
+        const { result } = renderHook(() => useViewContactScreen())
+
+        expect(result.current.addressRows).toContainEqual({
+            family: 'evm',
+            address: '0xA11CE',
+            hasExplorer: false,
+        })
+    })
+
     it("opens the explorer of a family's only chain without asking for a network", async () => {
         const { result } = renderHook(() => useViewContactScreen())
 
@@ -193,6 +216,18 @@ describe('useViewContactScreen', () => {
                     autoCreateContainer: false,
                 },
             })
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('leaves a chain on a custom network out, opening the remaining one directly', async () => {
+            selectCustomNetwork(ETHEREUM_CHAIN_ID)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
             expect(mocks.pushWebView).toHaveBeenCalledWith({
                 url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
             })
