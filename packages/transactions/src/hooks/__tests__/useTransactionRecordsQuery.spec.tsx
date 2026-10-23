@@ -272,6 +272,34 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
     })
 
+    test('caps a run of empty pages after a match too, rather than walking the whole history', async () => {
+        mocks.getTransactionHistoryWithPending.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => ({
+                items: page ? [] : [record('MATCH', JAN_10)],
+                next: { cursor: `${page?.cursor ?? 'c'}+` },
+            }),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        expect(result.current.isSearchPaused).toBe(false)
+
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(result.current.records.map(r => r.id)).toEqual(['MATCH'])
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
+            1 + MAX_AUTO_RECORD_FETCHES * MAX_RECORD_PAGE_READS,
+        )
+    })
+
     test('stays paused, not loading, while a background refetch re-reads its pages', async () => {
         mocks.getTransactionHistoryWithPending.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({

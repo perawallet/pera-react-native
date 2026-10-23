@@ -1192,6 +1192,9 @@ describe('useAssetTransactionList', () => {
 
             expect(result.current.isSearchPaused).toBe(true)
             expect(result.current.isInitialLoad).toBe(false)
+            act(() => result.current.handleLoadMore())
+            expect(mockFetchNextPage).not.toHaveBeenCalled()
+
             act(() => result.current.handleSearchOlder())
             expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
         })

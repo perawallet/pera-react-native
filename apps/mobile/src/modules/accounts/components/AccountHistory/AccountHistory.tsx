@@ -25,6 +25,7 @@ import {
     TransactionListItem,
     TransactionDateHeader,
     TransactionHistoryLoadState,
+    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
@@ -83,8 +84,22 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 </PWView>
             )
         }
+        if (isSearchPaused) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <TransactionHistorySearchOlder
+                        onPress={handleSearchOlder}
+                    />
+                </PWView>
+            )
+        }
         return null
-    }, [isFetchingNextPage, styles.loadingFooter])
+    }, [
+        isFetchingNextPage,
+        isSearchPaused,
+        handleSearchOlder,
+        styles.loadingFooter,
+    ])
 
     const handleFilterPress = useCallback(() => {
         void handleOpenFilter()
@@ -104,7 +119,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     // account tab pager collapses to zero height on native, which blanked the
     // whole History tab — title included. The NFTs tab handles its
     // empty state the same way.
-    if (isInitialLoad || isLoadFailed || isSearchPaused || isEmpty) {
+    const isPausedWithNothing = isSearchPaused && rows.length === 0
+    if (isInitialLoad || isLoadFailed || isPausedWithNothing || isEmpty) {
         return (
             <PWView style={styles.container}>
                 <PWView style={styles.stateContainer}>

@@ -76,7 +76,7 @@ export type UseAccountHistoryResult = {
     /** Re-requests the page that failed. */
     handleRetry: () => void
     isRetrying: boolean
-    /** Nothing found yet and the automatic search stopped; see `handleSearchOlder`. */
+    /** The automatic search stopped after a run of empty pages, rows loaded or not; see `handleSearchOlder`. */
     isSearchPaused: boolean
     handleSearchOlder: () => void
     /** Whether more data is being fetched */
@@ -187,11 +187,12 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         beforeTime,
     })
 
+    // A paused search waits for Search Older, not for the list's end.
     const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage) {
+        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
             fetchNextPage()
         }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
 
     const refreshAddresses = useMemo(
         () => (accountAddress ? [accountAddress] : []),

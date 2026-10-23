@@ -58,8 +58,9 @@ export type UseTransactionRecordsQueryResult = {
     error: Nullable<Error>
     hasNextPage: boolean
     /**
-     * Nothing to show after {@link MAX_AUTO_RECORD_FETCHES} page fetches, with
+     * The last {@link MAX_AUTO_RECORD_FETCHES} page fetches found nothing, with
      * history left: the hook stopped reading until `fetchNextPage` resumes it.
+     * Holds with rows loaded too, so a list's load-more should respect it.
      */
     isSearchPaused: boolean
     fetchNextPage: () => void
@@ -78,7 +79,7 @@ type RecordsPage = {
  */
 export const MAX_RECORD_PAGE_READS = 5
 
-/** Page fetches the hook makes on its own while nothing has loaded, per resume. */
+/** Empty page fetches in a row the hook makes on its own, per resume. */
 export const MAX_AUTO_RECORD_FETCHES = 4
 
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
@@ -198,10 +199,11 @@ export const useTransactionRecordsQuery = ({
         [query.data],
     )
 
-    // An empty list never fires `onEndReached`, so a capped read that found
-    // nothing would park the list on its skeleton. A failed page stops this
-    // until a retry, and every MAX_AUTO_RECORD_FETCHES pages it pauses so a
-    // barely used asset doesn't walk the whole history unasked.
+    // A page that found nothing changes no visible row, so `onEndReached`
+    // can't be trusted to ask for the next one: the hook walks on itself while
+    // the last page is empty. A failed page stops this until a retry, and every
+    // MAX_AUTO_RECORD_FETCHES empty pages in a row it pauses, so a barely used
+    // asset doesn't walk the whole history unasked.
     const {
         isFetched,
         isFetching,
@@ -210,21 +212,23 @@ export const useTransactionRecordsQuery = ({
         fetchNextPage,
         refetch,
     } = query
-    const pageCount = query.data?.pages.length ?? 0
-    const isNothingFound =
-        isFetched && !isError && records.length === 0 && hasNextPage
+    const pages = query.data?.pages ?? []
+    const pageCount = pages.length
+    const trailingEmptyPages =
+        pageCount - 1 - pages.findLastIndex(page => page.records.length > 0)
+    const isWalking =
+        isFetched && !isError && hasNextPage && trailingEmptyPages > 0
     // Gated on the next page only, so a background refetch of the loaded pages
     // keeps the paused state up instead of flipping back to the skeleton.
     const isSearchPaused =
-        isNothingFound &&
+        isWalking &&
         !query.isFetchingNextPage &&
-        pageCount % MAX_AUTO_RECORD_FETCHES === 0
+        trailingEmptyPages % MAX_AUTO_RECORD_FETCHES === 0
     // Keyed on pageCount too: a fast page can land in the same notify batch as
     // its own fetching state, so `isFetching` never reads true in between.
     useEffect(() => {
-        if (isNothingFound && !isFetching && !isSearchPaused)
-            void fetchNextPage()
-    }, [isNothingFound, isFetching, isSearchPaused, pageCount, fetchNextPage])
+        if (isWalking && !isFetching && !isSearchPaused) void fetchNextPage()
+    }, [isWalking, isFetching, isSearchPaused, pageCount, fetchNextPage])
 
     const handleFetchNextPage = useCallback(
         () => void fetchNextPage(),

@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/core'
 import type { PWViewProps } from '@components/core/PWView'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
+import { TransactionHistorySearchOlder } from '../TransactionHistorySearchOlder'
 
 export type TransactionHistoryLoadStateProps = {
     isLoadFailed: boolean
@@ -66,11 +66,7 @@ export const TransactionHistoryLoadState = ({
                         'asset_details.transaction_list.search_paused_body',
                     )}
                     button={
-                        <PWButton
-                            title={t(
-                                'asset_details.transaction_list.search_older',
-                            )}
-                            variant='link'
+                        <TransactionHistorySearchOlder
                             onPress={onSearchOlder}
                         />
                     }

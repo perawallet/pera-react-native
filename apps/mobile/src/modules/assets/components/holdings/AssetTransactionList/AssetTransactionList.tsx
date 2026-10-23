@@ -29,6 +29,7 @@ import {
     TransactionListItem,
     TransactionDateHeader,
     TransactionHistoryLoadState,
+    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
@@ -162,11 +163,17 @@ export const AssetTransactionList = ({
                     />
                 }
                 ListFooterComponent={
-                    !isFetchingNextPage ? null : (
+                    isFetchingNextPage ? (
                         <PWView style={styles.loadingFooter}>
                             <PWLoadingIndicator size='sm' />
                         </PWView>
-                    )
+                    ) : isSearchPaused && rows.length > 0 ? (
+                        <PWView style={styles.loadingFooter}>
+                            <TransactionHistorySearchOlder
+                                onPress={handleSearchOlder}
+                            />
+                        </PWView>
+                    ) : null
                 }
                 refreshControl={
                     <PWRefreshControl

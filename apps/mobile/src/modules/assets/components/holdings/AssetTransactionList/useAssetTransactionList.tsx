@@ -139,11 +139,12 @@ export const useAssetTransactionList = ({
         assetId,
     })
 
+    // A paused search waits for Search Older, not for the list's end.
     const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage) {
+        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
             fetchNextPage()
         }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
 
     const refreshAddresses = useMemo(() => [accountAddress], [accountAddress])
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
