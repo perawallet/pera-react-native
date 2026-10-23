@@ -142,10 +142,14 @@ describe('createEip1193Provider', () => {
         return { provider, handleNotification, send, events }
     }
 
-    it('is a frozen provider marked as Pera', () => {
+    it('is marked as Pera and takes the flags dApps set on it at startup', () => {
         const { provider } = setup(async () => null)
         expect(provider.isPera).toBe(true)
-        expect(Object.isFrozen(provider)).toBe(true)
+        expect(() => {
+            ;(
+                provider as unknown as { autoRefreshOnNetworkChange: boolean }
+            ).autoRefreshOnNetworkChange = false
+        }).not.toThrow()
     })
 
     it('forwards the method and params and resolves with the wallet’s answer', async () => {

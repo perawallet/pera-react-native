@@ -143,7 +143,9 @@ export const createEip1193Provider = (
         })
     }
 
-    const provider: PeraEip1193Provider = Object.freeze({
+    // Not frozen: dApps written against MetaMask set flags on it at startup
+    // (`autoRefreshOnNetworkChange`), which throws on a frozen object.
+    const provider: PeraEip1193Provider = {
         isPera: true as const,
         request,
         on: (event: Eip1193Event, listener: Listener) => {
@@ -156,7 +158,7 @@ export const createEip1193Provider = (
             listeners.get(event)?.delete(listener)
             return provider
         },
-    })
+    }
 
     const handleNotification = (notification: JsonRpcNotification): void => {
         if (notification.method === EIP1193_EVENT.accountsChanged) {
