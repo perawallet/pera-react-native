@@ -15,6 +15,9 @@ Source of truth in code:
   `packages/browser-runtime/src/dapp/transport.ts`,
   `packages/browser-runtime/src/dapp/host-client.ts`,
   `apps/browser/src/background/dapp.ts`
+- EIP-1193 provider for EVM dApps: `apps/browser/src/content/eip1193-main.ts`,
+  answered by `packages/dapp/src/eip1193Handler.ts` (see
+  [EIP-1193 provider](#eip-1193-provider))
 
 ## Why a Pera namespace
 
@@ -217,6 +220,33 @@ a terminal answer.
 The handler is a `ConnectionHandler` ([Connections](CONNECTIONS.md)): `connect`
 is a `connection-proposal`, signing is a `connection-request`, and the record
 shows in the connections settings screen like any other kind.
+
+Every message on this path carries `provider: 'pera' | 'eip1193'`, and each
+offscreen transport takes only its own. The two page providers share the one
+channel and the one trust boundary, and they share notification names
+(`accountsChanged`, `disconnect`), so an untagged message is dropped rather
+than guessed at.
+
+## EIP-1193 provider
+
+The same content script installs an EIP-1193 provider for EVM dApps. It is
+always announced through EIP-6963 (rdns `app.perawallet`). It takes
+`window.ethereum` only when nothing has claimed it, and leaves the property
+replaceable, so a wallet that injects after Pera still gets it. It sends
+nothing at install: a page load never wakes the offscreen document.
+
+`dapp-eip1193` connections are keyed `dapp-eip1193:<origin>`, so a site
+connected through both providers holds two independent records. Each record
+stores the site's own EVM chain (`metadata.chainId`); the EIP-155 id reported
+is that chain's network as the wallet has selected it, and a dApp's
+`wallet_switchEthereumChain` moves only that record, never the wallet's
+selection. The chains on offer are the `eip155` chain adapters with
+`dappConnect` on; a network the wallet hasn't selected answers 4902, and
+`wallet_addEthereumChain` is refused.
+
+A revoked site, from the dApp (`wallet_revokePermissions`) or from Settings,
+gets `accountsChanged([])`, not `disconnect`, because EIP-1193 reserves
+`disconnect` for a provider that has lost every chain.
 
 ## The dApp's own connect modal
 
