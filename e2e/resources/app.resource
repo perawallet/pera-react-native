@@ -318,3 +318,21 @@ Displayed Number Should Be At Least
     Should Be True    ${value} >= ${minimum}
     ...    msg=${test_id} shows ${value} ("${text}"), which is below ${minimum}.
     RETURN    ${value}
+
+Text Under
+    [Documentation]    The text a container renders, gathered from its child text nodes. Reading a
+    ...                container directly gives back an empty string on Android.
+    [Arguments]    ${locator}
+    # The locator carries its strategy prefix; the descendant step has to go on the xpath itself.
+    ${path}=    Set Variable    ${{ $locator.split('=', 1)[1] if $locator.startswith('xpath=') else $locator }}
+    ${found}    ${nodes}=    Run Keyword And Ignore Error    Get Webelements
+    ...    xpath=(${path})//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
+    IF    '${found}' != 'PASS'    RETURN    ${EMPTY}
+    @{parts}=    Create List
+    FOR    ${node}    IN    @{nodes}
+        ${text}=    Get Text    ${node}
+        ${seen}=    Evaluate    $text in $parts
+        IF    $text and not ${seen}    Append To List    ${parts}    ${text}
+    END
+    RETURN    ${{ ' '.join($parts) }}
+

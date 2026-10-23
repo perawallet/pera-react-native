@@ -62,8 +62,10 @@ Open Opt In Sheet
         ${there}=    Run Keyword And Return Status
         ...    Page Should Contain Element    ${result}
         IF    not ${there}
-            Search Assets For USDC    ${result}
-            Dismiss Keyboard
+            # Already on the results; the remote lookup re-renders, so wait for the row to come
+            # back rather than reopening the search for one specific asset id.
+            Run Keyword And Ignore Error
+            ...    Wait Until Page Contains Element    ${result}    timeout=20s
         END
         Run Keyword And Ignore Error    Tap    ${result}
         ${open}=    Run Keyword And Return Status

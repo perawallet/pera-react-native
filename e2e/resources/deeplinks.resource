@@ -82,7 +82,9 @@ Add Contact Form Should Be Prefilled
     Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=${timeout}
     Input Should Hold    contact_name_input    ${LINK_LABEL}
     Wait Until Page Contains Element    ${CONTACT_ADDRESS_ROW_ALGORAND}    timeout=${timeout}
-    ${shown}=    Get Text    ${CONTACT_ADDRESS_ROW_ALGORAND}
+    # The row is a container; its address sits in a child text node, so reading the row itself
+    # gives back an empty string on Android.
+    ${shown}=    Text Under    ${CONTACT_ADDRESS_ROW_ALGORAND}
     Should Contain    ${shown}    ${{ $LINK_ADDRESS[:5] }}
     ...    msg=The prefilled address row reads "${shown}", which does not start with ${LINK_ADDRESS}.
     Should Contain    ${shown}    ${{ $LINK_ADDRESS[-5:] }}
