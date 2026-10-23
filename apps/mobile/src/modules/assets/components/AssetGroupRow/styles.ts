@@ -39,6 +39,12 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         marginLeft: theme.spacing.xs,
     },
+    // A ring in the row's background keeps each overlapping icon distinct.
+    networkIcon: {
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.background,
+        borderRadius: theme.borderRadius.full,
+    },
     // Overlap the icons so the stack reads as one group of networks.
     stackedNetworkIcon: {
         marginLeft: -theme.spacing.xs,
