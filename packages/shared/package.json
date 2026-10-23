@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@tanstack/react-query": "catalog:",

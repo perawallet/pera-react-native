@@ -17,7 +17,10 @@ import {
     notificationIconDrawableTarget,
 } from '../withAndroidNotificationIcon'
 
-const FCM_ICON_META = 'com.google.firebase.messaging.default_notification_icon'
+const ICON_META_KEYS = [
+    'com.google.firebase.messaging.default_notification_icon',
+    'expo.modules.notifications.default_notification_icon',
+]
 
 type MetaDataItem = { $: Record<string, string> }
 
@@ -36,12 +39,12 @@ const metaData = (manifest: ReturnType<typeof emptyManifest>): MetaDataItem[] =>
     manifest.manifest.application[0]['meta-data'] ?? []
 
 describe('addNotificationIconMetaData', () => {
-    it('registers the FCM default notification icon as a drawable resource', () => {
+    // FCM draws background pushes, expo-notifications the foreground copy.
+    it.each(ICON_META_KEYS)('registers %s as the drawable resource', key => {
         const result = addNotificationIconMetaData(emptyManifest())
         const entry = metaData(result).find(
-            (m: MetaDataItem) => m.$['android:name'] === FCM_ICON_META,
+            (m: MetaDataItem) => m.$['android:name'] === key,
         )
-        expect(entry).toBeDefined()
         expect(entry?.$['android:resource']).toBe(
             '@drawable/ic_notification_small',
         )
@@ -50,10 +53,7 @@ describe('addNotificationIconMetaData', () => {
     it('is idempotent — does not add the meta-data twice', () => {
         const once = addNotificationIconMetaData(emptyManifest())
         const twice = addNotificationIconMetaData(once)
-        const count = metaData(twice).filter(
-            (m: MetaDataItem) => m.$['android:name'] === FCM_ICON_META,
-        ).length
-        expect(count).toBe(1)
+        expect(metaData(twice)).toHaveLength(ICON_META_KEYS.length)
     })
 })
 

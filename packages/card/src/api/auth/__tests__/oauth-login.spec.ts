@@ -29,7 +29,7 @@ import {
     exchangeLoginForOauthTokens,
     OauthStateMismatchError,
 } from '../oauth-login'
-import { createCodeChallenge } from '../pkce'
+import { createCodeChallenge } from '@perawallet/wallet-core-shared'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 

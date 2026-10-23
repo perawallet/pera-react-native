@@ -16,24 +16,19 @@ import { AppState, Linking, type AppStateStatus } from 'react-native'
 
 import { useSystemNotificationPermission } from '../useSystemNotificationPermission'
 
-const { getNotificationSettings, AuthorizationStatus } = vi.hoisted(() => ({
-    getNotificationSettings: vi.fn(),
-    AuthorizationStatus: {
-        NOT_DETERMINED: -1,
-        DENIED: 0,
-        AUTHORIZED: 1,
-        PROVISIONAL: 2,
-    },
+const { getPermissionsAsync } = vi.hoisted(() => ({
+    getPermissionsAsync: vi.fn(),
 }))
 
-// The global stub has no getNotificationSettings and a string status enum.
-vi.mock('@notifee/react-native', () => ({
-    default: { getNotificationSettings },
-    AuthorizationStatus,
-}))
+vi.mock('expo-notifications', () => ({ getPermissionsAsync }))
 
-const respondWith = (authorizationStatus: number): void => {
-    getNotificationSettings.mockResolvedValue({ authorizationStatus })
+// expo-notifications grants only on iOS `.authorized`; provisional and
+// ephemeral come back undetermined.
+const respondWith = (status: 'granted' | 'denied' | 'undetermined'): void => {
+    getPermissionsAsync.mockResolvedValue({
+        status,
+        granted: status === 'granted',
+    })
 }
 
 const appStateListener = (): ((state: AppStateStatus) => void) =>
@@ -43,7 +38,7 @@ const appStateListener = (): ((state: AppStateStatus) => void) =>
 
 describe('useSystemNotificationPermission (native)', () => {
     beforeEach(() => {
-        respondWith(AuthorizationStatus.AUTHORIZED)
+        respondWith('granted')
     })
 
     it('reports enabled once the OS has granted notifications', async () => {
@@ -55,21 +50,22 @@ describe('useSystemNotificationPermission (native)', () => {
         expect(result.current.isPushServiceUnavailable).toBe(false)
     })
 
-    it.each([
-        ['denied', AuthorizationStatus.DENIED],
-        ['not determined', AuthorizationStatus.NOT_DETERMINED],
-        ['provisional', AuthorizationStatus.PROVISIONAL],
-    ])('reports disabled when the permission is %s', async (_, status) => {
-        respondWith(status)
+    it.each(['denied', 'undetermined'] as const)(
+        'reports disabled when the permission is %s',
+        async status => {
+            respondWith(status)
 
-        const { result } = renderHook(() => useSystemNotificationPermission())
+            const { result } = renderHook(() =>
+                useSystemNotificationPermission(),
+            )
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.isEnabled).toBe(false)
-    })
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            expect(result.current.isEnabled).toBe(false)
+        },
+    )
 
     it('reports disabled when the settings cannot be read', async () => {
-        getNotificationSettings.mockRejectedValue(new Error('unavailable'))
+        getPermissionsAsync.mockRejectedValue(new Error('unavailable'))
 
         const { result } = renderHook(() => useSystemNotificationPermission())
 
@@ -78,11 +74,11 @@ describe('useSystemNotificationPermission (native)', () => {
     })
 
     it('re-reads the permission when the app returns to the foreground', async () => {
-        respondWith(AuthorizationStatus.DENIED)
+        respondWith('denied')
         const { result } = renderHook(() => useSystemNotificationPermission())
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        respondWith(AuthorizationStatus.AUTHORIZED)
+        respondWith('granted')
         await act(async () => appStateListener()('active'))
 
         expect(result.current.isEnabled).toBe(true)
@@ -94,7 +90,7 @@ describe('useSystemNotificationPermission (native)', () => {
 
         await act(async () => appStateListener()('background'))
 
-        expect(getNotificationSettings).toHaveBeenCalledTimes(1)
+        expect(getPermissionsAsync).toHaveBeenCalledTimes(1)
     })
 
     it('stops listening to app state on unmount', () => {
@@ -108,11 +104,11 @@ describe('useSystemNotificationPermission (native)', () => {
     })
 
     it('re-reads the permission on refetch', async () => {
-        respondWith(AuthorizationStatus.DENIED)
+        respondWith('denied')
         const { result } = renderHook(() => useSystemNotificationPermission())
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        respondWith(AuthorizationStatus.AUTHORIZED)
+        respondWith('granted')
         await act(() => result.current.refetch())
 
         expect(result.current.isEnabled).toBe(true)

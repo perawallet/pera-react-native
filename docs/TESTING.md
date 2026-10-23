@@ -112,7 +112,7 @@ registers the `vi.mock`s for one concern and says why at the top of each mock:
 | `react-native.ts`                         | Unit-only DOM stubs for react-native's components                         |
 | `react-native-apis.ts`                    | Factory for the native-only APIs (Platform, Alert, Linking, AppState, …)  |
 | `native-modules.ts`, `expo.ts`            | Keychain, MMKV, crypto, netinfo, clipboard, camera; the expo-\* modules   |
-| `firebase.ts`, `navigation.ts`            | Firebase and notifee; the react-navigation stubs                          |
+| `firebase.ts`, `navigation.ts`            | Firebase and expo-notifications; the react-navigation stubs               |
 | `animation-gesture.ts`                    | Reanimated, worklets, gesture-handler, Lottie                             |
 | `third-party-ui.ts`                       | Safe area, gorhom bottom sheet, FlashList, pager, charts, WebView, SVG, … |
 | `rneui.ts`, `pw-icon.ts`                  | Unit-only `@rneui/themed` and `PWIcon` stubs                              |
