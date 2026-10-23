@@ -62,7 +62,7 @@ const INVISIBLE_OR_BIDI_CHARS =
 
 // Characters that let a payload masquerade as innocuous text: C0/C1 controls
 // and DEL (valid UTF-8 no human can read), plus the invisible/bidi set above.
-const hasUnprintableChars = (text: string): boolean => {
+export const hasUnprintableChars = (text: string): boolean => {
     if (INVISIBLE_OR_BIDI_CHARS.test(text)) {
         return true
     }

@@ -89,6 +89,28 @@ describe('parseArc60WireRequest', () => {
         )
     })
 
+    it.each([
+        ['a right-to-left override', 'arc60\u202E.io'],
+        ['a space', 'arc60 .io'],
+        ['a line feed', 'arc60.io\nWallet'],
+        ['a zero-width space', 'arc60\u200B.io'],
+    ])('throws Arc60BadRequestError when domain has %s', (_label, domain) => {
+        expect(() =>
+            parseArc60WireRequest({ ...validWireRequest, domain }),
+        ).toThrow(Arc60BadRequestError)
+    })
+
+    it.each(['example.com', 'localhost:3000'])(
+        'accepts the domain %s',
+        domain => {
+            const { authData } = parseArc60WireRequest({
+                ...validWireRequest,
+                domain,
+            })
+            expect(authData.domain).toBe(domain)
+        },
+    )
+
     it('throws Arc60BadRequestError when metadata.scope is the wrong type', () => {
         expect(() =>
             parseArc60WireRequest({

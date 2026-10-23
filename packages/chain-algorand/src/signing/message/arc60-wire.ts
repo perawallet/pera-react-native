@@ -13,6 +13,7 @@
 import { z } from 'zod'
 import {
     decodeFromBase64,
+    hasUnprintableChars,
     utf8ByteLength,
 } from '@perawallet/wallet-core-shared'
 import { BASE64_PATTERN } from '@perawallet/wallet-core-signing/constants'
@@ -38,11 +39,19 @@ export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
     }
 }
 
+// The domain is self-asserted by the peer and interpolated into consent copy,
+// so whitespace, control, bidi or zero-width characters could reflow or spoof
+// it. No hostname grammar on purpose: a domain may carry a port.
+export const isDisplaySafeDomain = (domain: string): boolean =>
+    !/\s/.test(domain) && !hasUnprintableChars(domain)
+
 /** ARC-60's `StdSigData` + `Metadata` as sent on the wire; `authenticatorData` is base64 and decoded after parsing. */
 export const arc60WireSchema = z.object({
     data: z.string().max(16 * 1024), // base64-encoded SIWA blob
     signer: z.string().min(1).max(128),
-    domain: z.string().min(1).max(256),
+    domain: z.string().min(1).max(256).refine(isDisplaySafeDomain, {
+        message: 'contains whitespace or unprintable characters',
+    }),
     /**
      * ARC-60 requires the first 32 decoded bytes to be `sha256(domain)`, and 44
      * is the shortest base64 encoding of 32 bytes (`ceil(32/3)*4`).
