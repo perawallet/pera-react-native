@@ -128,7 +128,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                     <PWIcon
                         name='chevron-down'
                         size='sm'
-                        variant='link'
+                        variant='positive'
                         style={isExpanded ? styles.chevronExpanded : undefined}
                     />
                 </PWView>

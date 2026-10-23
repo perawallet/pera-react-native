@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { findNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    findNativeAsset,
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
@@ -28,13 +32,23 @@ import { getVerificationIcon } from '../../utils/verification'
 
 const ONE = new Decimal(1)
 
+// `trusted` isn't a metadata tier: only a chain's native coin earns it, as on single rows.
+type GroupTier = PeraAssetVerificationTier | 'trusted'
+
 // Lowest first: a group shows its most cautious member's tier, so one
 // suspicious network is never hidden behind a verified one.
-const TIER_CAUTION_ORDER = ['suspicious', 'unverified', 'verified', 'trusted']
+const TIER_CAUTION_ORDER: readonly GroupTier[] = [
+    PeraAssetVerificationTier.suspicious,
+    PeraAssetVerificationTier.unverified,
+    PeraAssetVerificationTier.verified,
+    'trusted',
+]
 
-const cautionRankOf = (tier: string): number => {
+const cautionRankOf = (tier: GroupTier): number => {
     const rank = TIER_CAUTION_ORDER.indexOf(tier)
-    return rank === -1 ? TIER_CAUTION_ORDER.indexOf('unverified') : rank
+    return rank === -1
+        ? TIER_CAUTION_ORDER.indexOf(PeraAssetVerificationTier.unverified)
+        : rank
 }
 
 export type UseAssetGroupRowParams<T extends GroupableHolding> = {
@@ -75,7 +89,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     )
 
     const tier = useMemo(() => {
-        const tiers = members.flatMap(({ asset, holding }) => {
+        const tiers = members.flatMap(({ asset, holding }): GroupTier[] => {
             if (!asset) return []
             const isNative =
                 findNativeAsset(holding.scope.chainId)?.assetId ===
@@ -83,10 +97,11 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
             return [
                 isNative
                     ? 'trusted'
-                    : (asset.peraMetadata?.verificationTier ?? 'unverified'),
+                    : (asset.peraMetadata?.verificationTier ??
+                      PeraAssetVerificationTier.unverified),
             ]
         })
-        return tiers.reduce<Nullable<string>>(
+        return tiers.reduce<Nullable<GroupTier>>(
             (lowest, next) =>
                 lowest === null || cautionRankOf(next) < cautionRankOf(lowest)
                     ? next

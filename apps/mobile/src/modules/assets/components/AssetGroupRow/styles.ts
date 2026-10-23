@@ -61,7 +61,7 @@ export const useStyles = makeStyles(theme => ({
     },
     networksToggleLabel: {
         ...getFontWeightVariant(theme, 'h4', 500),
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
         flexShrink: 1,
     },
     chainIconStack: {
