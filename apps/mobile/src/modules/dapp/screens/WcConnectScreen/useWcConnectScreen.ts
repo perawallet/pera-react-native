@@ -20,7 +20,18 @@ import {
 import {
     LEGACY_CHAIN_ID,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import {
+    resolveDisplayableVerificationTier,
+    useProjectByUrlQuery,
+    type VerificationTier,
+} from '@perawallet/wallet-core-projects'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import {
     openValidatedBrowserUrl,
@@ -29,6 +40,11 @@ import {
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
+
+export type ChainNetworkLabel = {
+    chain: string
+    network: string
+}
 
 type UseWcConnectScreenResult = {
     /** `null` until a `connection-proposal` approval has loaded. */
@@ -45,6 +61,10 @@ type UseWcConnectScreenResult = {
     isRequesterOriginDistinct: boolean
     /** The chain the proposal asks for; the listed accounts and addresses are on it. */
     chainId: ChainId
+    /** The proposal's chain and the wallet's network on it; absent for Algorand, whose network TestnetIndicator names. */
+    chainNetwork?: ChainNetworkLabel
+    /** The dApp registry's tier for the peer url, positive only when the requesting tab is that site. */
+    verificationTier?: VerificationTier
     accounts: WalletAccount[]
     selected: Set<string>
     toggle: (address: string) => void
@@ -90,6 +110,16 @@ const isDistinctFromPeerUrl = (
     }
 }
 
+const chainNetworkOf = ({
+    chainId,
+    networkId,
+}: ChainScope): ChainNetworkLabel => ({
+    chain: chainDisplayNameOf(chainId) ?? chainId,
+    network:
+        getChainDescriptor(chainId).networks.find(({ id }) => id === networkId)
+            ?.displayName ?? networkId,
+})
+
 export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const { approval, isLoading, approve, reject, deliveryError } =
         useDappRequest()
@@ -98,6 +128,10 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     // Every proposal reaching this window names one chain.
     const chainId = proposal?.requested.chains[0] ?? LEGACY_CHAIN_ID
     const accounts = useSigningAccounts(chainId)
+    const scope = useSelectedScope(chainId)
+    // Only Algorand's Pera backend serves the dApp registry, and it is keyed by
+    // url alone, so every chain's proposal is checked against it there.
+    const registryScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccountId } = useSelectedAccountId()
 
     const isArmed = useApprovalArming()
@@ -137,6 +171,24 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         void approve([...selected])
     }, [approve, selected, isArmed])
 
+    const isRequesterOriginDistinct = isDistinctFromPeerUrl(
+        proposal?.requesterOrigin,
+        proposal?.origin ?? '',
+    )
+
+    const { data: project } = useProjectByUrlQuery({
+        scope: registryScope,
+        url: proposal?.peer.url,
+        isEnabled: !!proposal?.peer.url,
+    })
+    // The registry is keyed by the peer-asserted url, so a positive tier only
+    // shows when the browser-verified tab is that same site. A page asserting
+    // someone else's url never inherits their checkmark.
+    const verificationTier = resolveDisplayableVerificationTier(
+        project,
+        isRequesterOriginDistinct ? undefined : proposal?.requesterOrigin,
+    )
+
     const handleCancel = useCallback((): void => {
         void reject()
     }, [reject])
@@ -152,11 +204,11 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         permissions: proposal?.requested.methods ?? [],
         requesterOrigin: proposal?.requesterOrigin,
         requesterOriginLabel: toPeerHostLabel(proposal?.requesterOrigin),
-        isRequesterOriginDistinct: isDistinctFromPeerUrl(
-            proposal?.requesterOrigin,
-            proposal?.origin ?? '',
-        ),
+        isRequesterOriginDistinct,
         chainId,
+        chainNetwork:
+            chainId === LEGACY_CHAIN_ID ? undefined : chainNetworkOf(scope),
+        verificationTier,
         accounts,
         selected,
         toggle,
