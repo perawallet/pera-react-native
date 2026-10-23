@@ -428,6 +428,60 @@ describe('useTransactionRecordsQuery', () => {
         expect(result.current.hasNextPage).toBe(false)
     })
 
+    test('keeps the loaded pages and their cursor when a refetch runs offline', async () => {
+        mocks.getTransactionHistoryWithPending
+            .mockResolvedValueOnce({
+                items: [record('B', JAN_10)],
+                next: { cursor: 'c1' },
+            })
+            .mockResolvedValueOnce({
+                items: [record('A', JAN_10 - DAY_MS)],
+                next: { cursor: 'c2' },
+            })
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        act(() => result.current.fetchNextPage())
+        await waitFor(() => expect(result.current.records).toHaveLength(2))
+
+        onlineManager.setOnline(false)
+        act(() => result.current.refetch())
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.records.map(r => r.id)).toEqual(['B', 'A'])
+        expect(result.current.hasNextPage).toBe(true)
+        expect(mocks.getPendingTransactionRecords).not.toHaveBeenCalled()
+    })
+
+    test('keeps the next-page cursor when loading more offline', async () => {
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [record('B', JAN_10)],
+            next: { cursor: 'c1' },
+        })
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+        onlineManager.setOnline(false)
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.hasNextPage).toBe(true)
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+    })
+
     test('reports a failed read as an error', async () => {
         const failure = new Error('history service refused')
         mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(failure)

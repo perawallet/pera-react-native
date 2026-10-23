@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
+import {
+    useInfiniteQuery,
+    useQueryClient,
+    onlineManager,
+} from '@tanstack/react-query'
 import type {
     ChainScope,
     PageRef,
@@ -20,6 +24,7 @@ import type {
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
     isoDateToUnixSeconds,
+    PeraNetworkError,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -114,12 +119,15 @@ export const useTransactionRecordsQuery = ({
             ((fromMs === undefined || record.timestamp >= fromMs) &&
                 (untilMs === undefined || record.timestamp < untilMs)))
 
+    const queryClient = useQueryClient()
+    const queryKey = transactionQueryKeys.records(accountAddress, scope, {
+        assetId,
+        afterTime,
+        beforeTime,
+    })
+
     const query = useInfiniteQuery({
-        queryKey: transactionQueryKeys.records(accountAddress, scope, {
-            assetId,
-            afterTime,
-            beforeTime,
-        }),
+        queryKey,
         queryFn: async ({
             pageParam,
             signal,
@@ -127,17 +135,23 @@ export const useTransactionRecordsQuery = ({
             pageParam: Nullable<PageRef>
             signal: AbortSignal
         }): Promise<RecordsPage> => {
-            // networkMode 'always' lets this run offline, where the ledger's
-            // own sends are all there is to show.
             if (!onlineManager.isOnline()) {
-                const pending =
-                    pageParam === null
-                        ? await getPendingTransactionRecords({
-                              address: accountAddress,
-                              scope,
-                              listedIds: new Set(),
-                          })
-                        : []
+                // A refetch rebuilds from page one and stops at the first page
+                // with no cursor, so an offline page here would drop every page
+                // already loaded. Throwing keeps them, and their cursors.
+                if (
+                    pageParam !== null ||
+                    queryClient.getQueryData(queryKey) !== undefined
+                ) {
+                    throw new PeraNetworkError('offline')
+                }
+                // A cold start has nothing to lose: networkMode 'always' lets
+                // it show the ledger's own sends, all there is offline.
+                const pending = await getPendingTransactionRecords({
+                    address: accountAddress,
+                    scope,
+                    listedIds: new Set(),
+                })
                 return { records: pending.filter(isKept), next: null }
             }
 

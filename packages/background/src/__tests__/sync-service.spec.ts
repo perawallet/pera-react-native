@@ -2111,6 +2111,25 @@ describe('SyncService', () => {
                 ).not.toHaveBeenCalledWith(queryClient, ETHEREUM)
             })
 
+            it("keeps every scope's changed accounts when several change in one tick", async () => {
+                const { invalidateAccountQueriesForAddresses } =
+                    await import('@perawallet/wallet-core-accounts')
+
+                await runOneTick()
+
+                const algorandAddresses = mockAccounts.flatMap(account =>
+                    account.chains.algorand
+                        ? [account.chains.algorand.address]
+                        : [],
+                )
+                expect(
+                    invalidateAccountQueriesForAddresses,
+                ).toHaveBeenCalledWith(queryClient, algorandAddresses)
+                expect(
+                    invalidateAccountQueriesForAddresses,
+                ).toHaveBeenCalledWith(queryClient, ['0xabc'])
+            })
+
             it("refreshes a records chain's History for the accounts that changed", async () => {
                 const { invalidateTransactionQueriesForAddresses } =
                     await import('@perawallet/wallet-core-transactions')

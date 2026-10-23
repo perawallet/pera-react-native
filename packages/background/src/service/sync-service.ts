@@ -528,8 +528,10 @@ export class SyncService {
         // Invalidation forces a wide DB re-read per account, so skip the
         // unchanged ones — which is the common tick.
         const { changedAddresses } = accountPass
+        // Keyed per scope: the debounce keeps only the latest run per key, so
+        // a shared key would drop the earlier scope's addresses.
         if (changedAddresses.length > 0) {
-            this.debouncedInvalidate('accounts', () =>
+            this.debouncedInvalidate(`accounts:${toScopeKey(scope)}`, () =>
                 invalidateAccountQueriesForAddresses(
                     this.deps.queryClient,
                     changedAddresses,
@@ -575,8 +577,7 @@ export class SyncService {
             'transactions',
         )
         recordOutcome(txPass)
-        // Keyed per scope: the debounce keeps only the latest run per key, so
-        // a shared key would drop the earlier scope's invalidation.
+        // Per scope, like the accounts key above.
         const transactionsKey = `transactions:${toScopeKey(scope)}`
         if (!hasCachedHistoryRows(scope.chainId)) {
             // No cached rows, so History reads the backend: refetch it only

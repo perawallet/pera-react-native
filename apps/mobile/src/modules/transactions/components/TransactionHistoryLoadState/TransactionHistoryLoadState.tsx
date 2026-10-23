@@ -55,8 +55,7 @@ export const TransactionHistoryLoadState = ({
             isUnavailable={isLoadUnavailable}
             isIntegrityBlocked={isLoadIntegrityBlocked}
             isError={isLoadFailed}
-            // No retry offline: it can only fail again, and an offline records
-            // read drops its next-page cursor. Reconnecting refetches anyway.
+            // No retry offline: it can only fail again.
             onRetry={isLoadOffline ? undefined : onRetry}
             isRetrying={isRetrying}
             style={style}
