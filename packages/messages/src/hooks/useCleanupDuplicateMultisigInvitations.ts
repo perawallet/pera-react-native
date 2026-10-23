@@ -12,7 +12,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { addressOn, useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { InboxResponse } from '../api/inbox'
@@ -22,7 +23,7 @@ import { useDeleteMultisigInvitationMutation } from './useDeleteMultisigInvitati
 export const useCleanupDuplicateMultisigInvitations = (
     scope: ChainScope,
 ): void => {
-    const deviceID = useScopedDeviceID(scope) ?? ''
+    const deviceID = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     // Shares the inbox query with useInboxQuery: spreading the owner's
     // options keeps the two observers' query-level config (queryFn, retry)
     // identical — only the per-observer select differs.

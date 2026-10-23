@@ -11,7 +11,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -50,7 +51,7 @@ const addressesOn = (
  * per-observer `select` is the only thing a consumer should add.
  */
 export const useInboxQueryOptions = (scope: ChainScope) => {
-    const deviceID = useScopedDeviceID(scope) ?? ''
+    const deviceID = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const signingAccounts = useSigningAccounts(scope.chainId)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,

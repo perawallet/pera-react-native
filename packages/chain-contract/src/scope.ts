@@ -105,7 +105,7 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
 // scope key passes through, so migrated state re-keys to itself. Any other key
 // is dropped rather than thrown: a throw inside a store migration discards the
 // whole store.
-export const rekeyLegacyNetworkRecord = <V>(
+export const scopeKeyLegacyNetworkRecord = <V>(
     record: Readonly<Record<string, V>> | null | undefined,
 ): Partial<Record<ChainScopeKey, V>> => {
     const byScopeKey: Partial<Record<ChainScopeKey, V>> = {}

@@ -19,6 +19,7 @@ import {
     useAccountsStore,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
@@ -91,7 +92,7 @@ export const useExecuteSwapMutation = () => {
                 { ...variables, account, signer },
                 {
                     scope,
-                    deviceId: deviceIdOf(scope),
+                    deviceId: deviceIdOf(deploymentOf(scope)),
                     addSignRequest,
                     prepareTransactions: data =>
                         prepareOnScope({ data, scope }),

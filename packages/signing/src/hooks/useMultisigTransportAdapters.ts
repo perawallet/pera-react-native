@@ -18,8 +18,9 @@ import {
     multisigParametersOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import {
-    deviceIdForScope,
+    deviceIdForDeployment,
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import {
@@ -112,9 +113,15 @@ export const useMultisigTransportAdapters =
         // when its adapters were built.
         const getDeviceIdOn = useCallback(
             (scope: ChainScope): GetDeviceIdFn =>
-                () =>
-                    deviceIdForScope(useDeviceStore.getState(), scope) ??
-                    undefined,
+                () => {
+                    const deployment = deploymentOf(scope)
+                    return deployment === null
+                        ? undefined
+                        : (deviceIdForDeployment(
+                              useDeviceStore.getState(),
+                              deployment,
+                          ) ?? undefined)
+                },
             [],
         )
 

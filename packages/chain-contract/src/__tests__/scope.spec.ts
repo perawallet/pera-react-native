@@ -23,7 +23,7 @@ import {
     LEGACY_SCOPES,
     parseScopeKey,
     queryKeyReferencesScope,
-    rekeyLegacyNetworkRecord,
+    scopeKeyLegacyNetworkRecord,
     scopeFromNetworkColumn,
     toScopeKey,
 } from '../scope'
@@ -207,9 +207,9 @@ describe('queryKeyReferencesScope', () => {
     })
 })
 
-describe('rekeyLegacyNetworkRecord', () => {
+describe('scopeKeyLegacyNetworkRecord', () => {
     it('re-keys bare legacy networks to scope keys, values unchanged', () => {
-        const rekeyed = rekeyLegacyNetworkRecord({
+        const rekeyed = scopeKeyLegacyNetworkRecord({
             mainnet: 'id-main',
             testnet: null,
         })
@@ -223,11 +223,11 @@ describe('rekeyLegacyNetworkRecord', () => {
     it('passes keys that already are scope keys through', () => {
         const migrated = { 'algorand/testnet': 42 }
 
-        expect(rekeyLegacyNetworkRecord(migrated)).toEqual(migrated)
+        expect(scopeKeyLegacyNetworkRecord(migrated)).toEqual(migrated)
     })
 
     it('drops keys it cannot read instead of throwing', () => {
-        const rekeyed = rekeyLegacyNetworkRecord({
+        const rekeyed = scopeKeyLegacyNetworkRecord({
             mainnet: 1,
             devnet: 2,
             'unknown/mainnet': 3,
@@ -237,6 +237,6 @@ describe('rekeyLegacyNetworkRecord', () => {
     })
 
     it('treats a missing record as empty', () => {
-        expect(rekeyLegacyNetworkRecord(undefined)).toEqual({})
+        expect(scopeKeyLegacyNetworkRecord(undefined)).toEqual({})
     })
 })
