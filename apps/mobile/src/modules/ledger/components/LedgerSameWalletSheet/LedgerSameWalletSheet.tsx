@@ -37,10 +37,12 @@ export const LedgerSameWalletSheet = ({
         <ConfirmActionContent<LedgerSameWalletChoice>
             icon='ledger'
             title={t('ledger.verify.same_wallet_title')}
-            message={
-                failure?.body ??
-                t('ledger.verify.same_wallet_body', { appName })
-            }
+            message={[
+                failure?.body,
+                t('ledger.verify.same_wallet_body', { appName }),
+            ]
+                .filter(Boolean)
+                .join('\n\n')}
             confirmLabel={
                 canRead ? t('ledger.verify.same_wallet_confirm') : separateLabel
             }
