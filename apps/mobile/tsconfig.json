@@ -1,6 +1,10 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
+    // RN's legacy types: @rneui/themed's makeStyles widens style literals
+    // (`flexDirection: string`), which the strict API's style props reject in
+    // ~500 files. RN drops this condition after 0.89.
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"],
     "noUncheckedSideEffectImports": true,
     "verbatimModuleSyntax": true,
     "types": [

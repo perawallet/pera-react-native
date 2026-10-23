@@ -30,7 +30,7 @@ export const shareFile = async (
 ): Promise<ShareFileResult> => {
     const staged = new File(Paths.cache, fileName)
     staged.create({ overwrite: true })
-    staged.write(contents)
+    await staged.write(contents)
     try {
         const { success } = await Share.open({
             url: staged.uri,
