@@ -51,10 +51,21 @@ const deliverToTab = (
     )
 
 // Each page provider answers in its own error vocabulary.
-const unauthorizedCodeFor = (provider: DappProvider): number =>
-    provider === 'eip1193'
-        ? EIP1193_ERROR_CODE.unauthorized
-        : JsonRpcErrorCode.Unauthorized
+const ERROR_CODES: Record<
+    DappProvider,
+    { unauthorized: number; invalidParams: number; internal: number }
+> = {
+    pera: {
+        unauthorized: JsonRpcErrorCode.Unauthorized,
+        invalidParams: JsonRpcErrorCode.InvalidParams,
+        internal: JsonRpcErrorCode.InternalError,
+    },
+    eip1193: {
+        unauthorized: EIP1193_ERROR_CODE.unauthorized,
+        invalidParams: EIP1193_ERROR_CODE.invalidParams,
+        internal: EIP1193_ERROR_CODE.internal,
+    },
+}
 
 // No `tabs` permission, so URLs are stripped from query results.
 const broadcastToTabs = (
@@ -100,22 +111,22 @@ export const installDappPageRequestRoute = ({
 
             const origin = sender?.origin
             const tabId = sender?.tab?.id
-            const unauthorized = unauthorizedCodeFor(provider)
+            const codes = ERROR_CODES[provider]
             if (sender?.id !== chromeLike.runtime.id || tabId === undefined) {
-                return refuse(unauthorized, 'Untrusted sender')
+                return refuse(codes.unauthorized, 'Untrusted sender')
             }
             // The content scripts run top-frame only; this holds however they
             // are registered, so a framed page can't ask under its own origin
             // from inside another site's tab.
             if (sender.frameId !== 0) {
-                return refuse(unauthorized, 'Sub-frames get no provider')
+                return refuse(codes.unauthorized, 'Sub-frames get no provider')
             }
             if (!isSecureDappOrigin(origin)) {
-                return refuse(unauthorized, 'Insecure origin')
+                return refuse(codes.unauthorized, 'Insecure origin')
             }
             if (!isWithinDappPayloadBounds(request)) {
                 return refuse(
-                    JsonRpcErrorCode.InvalidParams,
+                    codes.invalidParams,
                     'Request exceeds size limits',
                 )
             }
@@ -153,7 +164,7 @@ export const installDappPageRequestRoute = ({
                         origin,
                         payload: jsonRpcError(
                             request.id,
-                            JsonRpcErrorCode.InternalError,
+                            codes.internal,
                             'Wallet unavailable',
                         ),
                     },

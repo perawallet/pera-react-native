@@ -269,7 +269,8 @@ export const createEip1193ConnectionHandler = (
                 return release(jsonRpcResult(request.id, accounts))
             }
         }
-        if (!existing && !ctx.hasUserActivation) {
+        // Unlike a reconnect, every path from here opens the approval window.
+        if (!ctx.hasUserActivation) {
             return release(
                 jsonRpcError(
                     request.id,
@@ -500,11 +501,16 @@ export const createEip1193ConnectionHandler = (
                         after,
                     )
                 }
-                await respond(jsonRpcResult(request.id, null))
+                // Settled before answering: the switch has happened, so a tab
+                // gone meanwhile must not turn it into a decline.
                 settle()
+                await deliver(respond, jsonRpcResult(request.id, null))
             },
             reject: async error => {
-                await respond(
+                if (isSettled()) return
+                settle()
+                await deliver(
+                    respond,
                     isUserRejection(error)
                         ? jsonRpcError(
                               request.id,
@@ -517,7 +523,6 @@ export const createEip1193ConnectionHandler = (
                               sanitizeErrorForWebview(error),
                           ),
                 )
-                settle()
             },
         })
         kit.recordActivity(connection.id)

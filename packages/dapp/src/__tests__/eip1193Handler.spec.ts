@@ -330,6 +330,45 @@ describe('createEip1193ConnectionHandler', () => {
             expect(proposals[0].requested.chains).toEqual(['base'])
         })
 
+        it('refuses a gesture-free request that would open an approval for a site left with no accounts', async () => {
+            const { transport, registry, proposals } = setup([
+                connectedOn('base', [ADDR_Y]),
+            ])
+            await registry.initialize()
+            const response = await transport.send(
+                ORIGIN,
+                'eth_requestAccounts',
+                undefined,
+                { hasUserActivation: false },
+            )
+            expect(errorOf(response)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('proposes only on a chain whose dApp connections are on', async () => {
+            const { transport, registry, proposals } = setup([], {
+                disabled: ['ethereum'],
+            })
+            await registry.initialize()
+            void transport.send(ORIGIN, 'eth_requestAccounts')
+            await flush()
+            expect(proposals[0].requested.chains).toEqual(['base'])
+        })
+
+        it('answers disconnected and opens nothing when every chain’s dApp connections are off', async () => {
+            const { transport, registry, proposals } = setup([], {
+                disabled: ['ethereum', 'base'],
+            })
+            await registry.initialize()
+            const response = await transport.send(ORIGIN, 'eth_requestAccounts')
+            expect(errorOf(response)?.code).toBe(
+                EIP1193_ERROR_CODE.disconnected,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
         it('keeps the same site’s window.pera record apart', async () => {
             const algorand: Connection = {
                 ...connectedOn('ethereum'),
@@ -468,6 +507,31 @@ describe('createEip1193ConnectionHandler', () => {
             expect((await store.get(ID))?.metadata).toEqual({
                 chainId: 'base',
             })
+        })
+
+        it('keeps an approved switch when the requesting tab has gone, and never expires it later', async () => {
+            const { transport, registry, messages, store } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            void switchTo(transport, '0x2105')
+            await flush()
+            const message = messages[0]
+            if (message.kind !== 'request') throw new Error('not a request')
+            transport.setReachable(ORIGIN, false)
+
+            await expect(
+                message.respond({ type: 'switch-network' }),
+            ).resolves.toBeUndefined()
+            vi.advanceTimersByTime(1_000)
+            await flush()
+
+            expect((await store.get(ID))?.metadata).toEqual({
+                chainId: 'base',
+            })
+            expect(messages.map(({ kind }) => kind)).not.toContain(
+                'request-expired',
+            )
         })
 
         it('allows a chain no shared account can use, leaving the site with no accounts', async () => {
