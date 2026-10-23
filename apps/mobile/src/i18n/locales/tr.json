@@ -1024,10 +1024,10 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
-            "send": "Gönder",
+            "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",
-            "send_network_title": "Ağ seç"
+            "network_title": "Ağ seç"
         },
         "list": {
             "no_contacts_title": "Henüz hiç kişi eklemedin",

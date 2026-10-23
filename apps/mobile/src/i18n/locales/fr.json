@@ -1024,10 +1024,10 @@
             "no_contact_title": "Aucun contact trouvé",
             "no_contact_body": "Une erreur semble s’être produite. Impossible de trouver le contact indiqué.",
             "nfd_label": "NFDomain",
-            "send": "Envoyer",
+            "view_in_explorer": "Voir dans l’explorateur",
             "copy": "Copier l’adresse",
             "show_qr": "Afficher le code QR",
-            "send_network_title": "Choisir un réseau"
+            "network_title": "Choisir un réseau"
         },
         "list": {
             "no_contacts_title": "Vous n’avez pas encore ajouté de contact",

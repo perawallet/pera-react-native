@@ -1016,10 +1016,10 @@
             "no_contact_title": "Kein Kontakt gefunden",
             "no_contact_body": "Es scheint ein Fehler aufgetreten zu sein.  Der angegebene Kontakt konnte nicht gefunden werden",
             "nfd_label": "NFDomain",
-            "send": "Senden",
+            "view_in_explorer": "Im Explorer ansehen",
             "copy": "Adresse kopieren",
             "show_qr": "QR-Code anzeigen",
-            "send_network_title": "Netzwerk wählen"
+            "network_title": "Netzwerk wählen"
         },
         "list": {
             "no_contacts_title": "Du hast noch keine Kontakte hinzugefügt",
