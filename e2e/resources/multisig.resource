@@ -124,7 +124,19 @@ Home Should Be Back
 
 Accounts In Open Menu
     [Documentation]    Addresses of the wallet's accounts, read from the account rows' test IDs.
+    ...
+    ...                Get Webelements raises when nothing matches rather than returning an empty
+    ...                list, and this runs in Suite Setup: one switcher that had not finished
+    ...                drawing its rows failed every case in the suite. Wait for the first row,
+    ...                and hand back an empty list if none arrives - the callers compare lists and
+    ...                say what they expected.
     ${prefix}=    Test Id Starting With    ${ACCOUNT_ROW_PREFIX}
+    ${listed}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${prefix}    timeout=15s
+    IF    not ${listed}
+        Log    The account switcher lists no rows; returning no addresses.    level=WARN
+        RETURN    ${{ [] }}
+    END
     ${rows}=    Get Webelements    ${prefix}
     VAR    @{addresses}
     FOR    ${row}    IN    @{rows}
