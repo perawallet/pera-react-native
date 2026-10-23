@@ -165,6 +165,35 @@ describe('PeraNetworkError.fromKyErrorWithBody', () => {
         expect(error.kind).toBe('client')
         expect(error.backendType).toBeUndefined()
     })
+
+    it('extracts the backend error code from an { error, code } body', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(422, {
+                error: 'Unknown chain',
+                code: 'unknown_chain',
+            }),
+        )
+        expect(error.status).toBe(422)
+        expect(error.backendCode).toBe('unknown_chain')
+        expect(error.backendType).toBeUndefined()
+    })
+
+    it('reads the body ky already parsed into data', async () => {
+        const error = makeHttpErrorWithBody(422, {})
+        error.data = { code: 'chain_not_enabled' }
+        await error.response.text()
+
+        const result = await PeraNetworkError.fromKyErrorWithBody(error)
+
+        expect(result.backendCode).toBe('chain_not_enabled')
+    })
+
+    it('leaves backendCode unset for a non-string code field', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(422, { code: 7 }),
+        )
+        expect(error.backendCode).toBeUndefined()
+    })
 })
 
 describe('getNetworkErrorMessageKeys', () => {

@@ -90,6 +90,7 @@ type PeraNetworkErrorOptions = {
     status?: number
     originalError?: Error
     backendType?: string
+    backendCode?: string
 }
 
 /**
@@ -105,10 +106,20 @@ export class PeraNetworkError extends AppError {
      * Undefined unless the body was JSON with a string `type` field.
      */
     public readonly backendType?: string
+    /**
+     * The machine-readable `code` of a `{ error, code }` error body (e.g.
+     * `unknown_chain`), parsed by {@link fromKyErrorWithBody}.
+     */
+    public readonly backendCode?: string
 
     constructor(
         kind: PeraNetworkErrorKind,
-        { status, originalError, backendType }: PeraNetworkErrorOptions = {},
+        {
+            status,
+            originalError,
+            backendType,
+            backendCode,
+        }: PeraNetworkErrorOptions = {},
     ) {
         super(
             `[network:${kind}]${status !== undefined ? ` ${status}` : ''} ${originalError?.message ?? kind}`,
@@ -123,6 +134,7 @@ export class PeraNetworkError extends AppError {
         this.kind = kind
         this.status = status
         this.backendType = backendType
+        this.backendCode = backendCode
     }
 
     /**
@@ -153,9 +165,9 @@ export class PeraNetworkError extends AppError {
      * Same normalization as {@link fromKyError}, but additionally attempts to
      * read the backend's error `type` off the HTTP response body (e.g. Pera 6
      * apps used `device_already_exists` to fall back from PUT to POST on
-     * device registration). Body-parse failures of any kind — non-JSON body,
-     * null body, missing/non-string `type` — are swallowed and the base error
-     * is returned unchanged.
+     * device registration) and its `code`. Body-parse failures of any kind —
+     * non-JSON body, null body, neither field a string — are swallowed and
+     * the base error is returned unchanged.
      *
      * NOTE: the `type` field name is an assumption pending backend
      * confirmation (see Coordination Prerequisite #1) — adjust here if the
@@ -165,21 +177,27 @@ export class PeraNetworkError extends AppError {
         error: unknown,
     ): Promise<PeraNetworkError> {
         const base = PeraNetworkError.fromKyError(error)
-        if (base.backendType !== undefined) return base
+        if (base.backendType !== undefined || base.backendCode !== undefined)
+            return base
         if (!isHTTPError(error)) return base
         try {
-            const body: unknown = await error.response.clone().json()
-            const backendType =
-                typeof body === 'object' &&
-                body !== null &&
-                typeof (body as { type?: unknown }).type === 'string'
-                    ? (body as { type: string }).type
-                    : undefined
-            if (backendType === undefined) return base
+            // ky consumes the body into `data` before the error reaches us, so
+            // the response itself is only readable for an error built by hand.
+            const body: unknown =
+                error.data !== undefined
+                    ? error.data
+                    : await error.response.clone().json()
+            if (typeof body !== 'object' || body === null) return base
+            const { type, code } = body as { type?: unknown; code?: unknown }
+            const backendType = typeof type === 'string' ? type : undefined
+            const backendCode = typeof code === 'string' ? code : undefined
+            if (backendType === undefined && backendCode === undefined)
+                return base
             return new PeraNetworkError(base.kind, {
                 status: base.status,
                 originalError: error instanceof Error ? error : undefined,
                 backendType,
+                backendCode,
             })
         } catch {
             return base
