@@ -47,6 +47,21 @@ export const transactionQueryKeys = {
             { accountAddress, scope, ...filters },
         ] as const,
 
+    records: (
+        accountAddress: string,
+        scope: ChainScope,
+        filters: {
+            assetId?: string
+            afterTime?: string
+            beforeTime?: string
+        },
+    ) =>
+        [
+            MODULE_PREFIX,
+            'records',
+            { accountAddress, scope, ...filters },
+        ] as const,
+
     paginatedHistory: (
         accountAddress: string,
         scope: ChainScope,

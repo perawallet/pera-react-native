@@ -54,6 +54,7 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
+    hasCachedHistoryRows,
     mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
     historyItemGroupToOpen,

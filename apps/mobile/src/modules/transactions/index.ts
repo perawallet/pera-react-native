@@ -21,6 +21,7 @@ export {
     useSendAccountResolver,
     useSendFunds,
     useSendFundsStore,
+    useTransactionHistoryRows,
     type SendAccountResolution,
 } from './hooks'
 export type {
@@ -28,6 +29,7 @@ export type {
     SendTrailingSectionProps,
 } from './types/send-confirmation-display'
 export {
+    buildRecordListRows,
     buildTransactionListRows,
     getTransactionRowKey,
     getTransactionRowType,

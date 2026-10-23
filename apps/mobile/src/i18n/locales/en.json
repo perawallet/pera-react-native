@@ -265,6 +265,8 @@
             "empty_body": "No transactions found",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
+            "load_failed_title": "Couldn't load transactions",
+            "load_failed_body": "Something went wrong while loading this history. Try again in a moment.",
             "filter": "Filter",
             "csv": "CSV"
         },

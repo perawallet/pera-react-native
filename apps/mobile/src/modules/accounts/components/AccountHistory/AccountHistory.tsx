@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    PWButton,
     PWFlatList,
     PWLoadingIndicator,
     PWRefreshControl,
@@ -41,6 +42,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const {
         rows,
         isInitialLoad,
+        isLoadFailed,
+        handleRetry,
         isFetchingNextPage,
         isEmpty,
         isOfflineEmpty,
@@ -58,6 +61,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         ({ item }: { item: TransactionListRow }) =>
             item.kind === 'header' ? (
                 <TransactionDateHeader title={item.title} />
+            ) : item.kind === 'record' ? (
+                <TransactionListItem record={item.record} />
             ) : (
                 <TransactionListItem
                     transaction={item.transaction}
@@ -96,13 +101,30 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     // account tab pager collapses to zero height on native, which blanked the
     // whole History tab — title included. The NFTs tab handles its
     // empty state the same way.
-    if (isInitialLoad || isEmpty) {
+    if (isInitialLoad || isLoadFailed || isEmpty) {
         return (
             <PWView style={styles.container}>
                 <PWView style={styles.stateContainer}>
                     {titleBar}
                     {isInitialLoad ? (
                         <HistorySkeleton />
+                    ) : isLoadFailed ? (
+                        <EmptyView
+                            title={t(
+                                'asset_details.transaction_list.load_failed_title',
+                            )}
+                            body={t(
+                                'asset_details.transaction_list.load_failed_body',
+                            )}
+                            button={
+                                <PWButton
+                                    title={t('common.retry.label')}
+                                    variant='secondary'
+                                    onPress={handleRetry}
+                                />
+                            }
+                            style={styles.emptyView}
+                        />
                     ) : isOfflineEmpty ? (
                         // Nothing cached and no way to fetch — saying "no
                         // transactions found" here would assert an empty
@@ -174,10 +196,7 @@ type RowSeparatorProps = {
 const RowSeparator = ({ leadingItem, trailingItem }: RowSeparatorProps) => {
     const styles = useStyles()
 
-    if (
-        leadingItem.kind !== 'transaction' ||
-        trailingItem.kind !== 'transaction'
-    ) {
+    if (leadingItem.kind === 'header' || trailingItem.kind === 'header') {
         return null
     }
 

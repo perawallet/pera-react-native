@@ -21,6 +21,7 @@ import {
     chainDataCodecFor,
     fetchMoreTransactions,
     fetchTransactionHistory,
+    hasCachedHistoryRows,
     healCachedRows,
     historyChainAdapters,
     historyItemGroupToOpen,
@@ -210,6 +211,16 @@ describe('a chain whose history is not cached as rows', () => {
         await expect(
             fetchMoreTransactions({ url: 'NEXT', scope }),
         ).rejects.toBeInstanceOf(TransactionHistoryRowsUnsupportedError)
+    })
+
+    it('reports no cached rows, unlike a row-caching chain or an unregistered one', () => {
+        historyChainAdapters.register(makeAdapter())
+
+        expect(hasCachedHistoryRows('ethereum')).toBe(false)
+        expect(hasCachedHistoryRows('algorand')).toBe(true)
+        expect(hasCachedHistoryRows('solana' as ChainScope['chainId'])).toBe(
+            false,
+        )
     })
 
     it('has no codec to store a row with', () => {

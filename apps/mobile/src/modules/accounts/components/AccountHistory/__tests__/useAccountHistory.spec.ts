@@ -26,8 +26,13 @@ import {
     historyChainAdapters,
     useCsvExportMutation,
     useTransactionHistoryQuery,
+    useTransactionRecordsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import {
+    i18nKey,
+    type TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     algorandHistoryAdapter,
     EMPTY_ALGORAND_HISTORY_DATA,
@@ -72,8 +77,8 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
         networkId: mockScopeNetwork.current,
     }),
-    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
-        account.chains.algorand?.address,
+    addressOn: (account: { chains: Record<string, { address: string }> }) =>
+        Object.values(account.chains)[0]?.address,
 }))
 
 vi.mock(
@@ -104,6 +109,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         typeof import('@perawallet/wallet-core-transactions')
     >()),
     useTransactionHistoryQuery: vi.fn(),
+    useTransactionRecordsQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
 
@@ -211,6 +217,18 @@ describe('useAccountHistory', () => {
             fetchNextPage: mockFetchNextPage,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
+
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [],
+            isLoading: false,
+            isFetched: false,
+            isFetchingNextPage: false,
+            isError: false,
+            error: null,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
 
         vi.mocked(useCsvExportMutation).mockReturnValue({
             exportCsv: mockExportCsv,
@@ -363,6 +381,48 @@ describe('useAccountHistory', () => {
             expect(result.current.isEmpty).toBe(false)
         })
 
+        it('shows a retry state, not an endless skeleton, when the read fails', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetched: true,
+                isError: true,
+                error: new Error('history unavailable'),
+                // A failed next page leaves the query thinking there is more.
+                hasNextPage: true,
+                fetchNextPage: mockFetchNextPage,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.isInitialLoad).toBe(false)
+            expect(result.current.isEmpty).toBe(false)
+
+            act(() => result.current.handleRetry())
+
+            expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
+        })
+
+        it('re-reads from the start when the first page itself failed', () => {
+            const refetch = vi.fn()
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                hasNextPage: false,
+                refetch,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+            act(() => result.current.handleRetry())
+
+            expect(refetch).toHaveBeenCalledTimes(1)
+            expect(mockFetchNextPage).not.toHaveBeenCalled()
+        })
+
         it('keeps rendering cached rows instead of the skeleton on refetch', () => {
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions: [{ id: '1', roundTime: 1_704_067_200 }],
@@ -437,6 +497,59 @@ describe('useAccountHistory', () => {
             )
             expect(result.current.customRange).toEqual(customRange)
         })
+    })
+
+    it("lists an Ethereum account's history from its records, never the row cache", () => {
+        registerEthereumChain()
+        const address = `0x${'c'.repeat(40)}`
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        const record: TransactionRecord = {
+            id: '0xhash',
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            status: 'confirmed',
+            timestamp: 1_704_067_200_000,
+            summary: {
+                kind: 'transfer',
+                title: { key: i18nKey('transactions.list_item.receive') },
+                direction: 'in',
+                icon: 'receive',
+            },
+            chainData: { family: 'evm' },
+        }
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [record],
+            isLoading: false,
+            isFetched: true,
+            isFetchingNextPage: false,
+            isError: false,
+            error: null,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() => useAccountHistory())
+
+        expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ isEnabled: false }),
+        )
+        expect(useTransactionRecordsQuery).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountAddress: address,
+                isEnabled: true,
+            }),
+        )
+        expect(result.current.rows).toEqual([
+            expect.objectContaining({ kind: 'header', key: '2024-01-01' }),
+            { kind: 'record', key: '0xhash', record },
+        ])
+        expect(result.current.isEmpty).toBe(false)
+        expect(result.current.isInitialLoad).toBe(false)
     })
 
     it("tracks filtering and downloading on an Ethereum account's chain", async () => {

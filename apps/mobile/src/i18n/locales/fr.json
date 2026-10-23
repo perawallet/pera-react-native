@@ -265,6 +265,8 @@
             "empty_body": "Aucune transaction trouvée",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
+            "load_failed_title": "Impossible de charger les transactions",
+            "load_failed_body": "Une erreur s’est produite lors du chargement de cet historique. Réessayez dans un instant.",
             "filter": "Filtrer",
             "csv": "CSV"
         },

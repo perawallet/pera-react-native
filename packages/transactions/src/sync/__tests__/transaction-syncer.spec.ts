@@ -17,11 +17,13 @@ const mocks = vi.hoisted(() => ({
     fetchTransactionHistory: vi.fn(),
     upsertTransactions: vi.fn(),
     healCachedRows: vi.fn(),
+    hasCachedHistoryRows: vi.fn(),
 }))
 
 vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: mocks.fetchTransactionHistory,
     healCachedRows: mocks.healCachedRows,
+    hasCachedHistoryRows: mocks.hasCachedHistoryRows,
 }))
 
 vi.mock('../../db', () => ({
@@ -43,9 +45,23 @@ beforeEach(() => {
     mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
     mocks.upsertTransactions.mockResolvedValue(undefined)
     mocks.healCachedRows.mockResolvedValue(undefined)
+    mocks.hasCachedHistoryRows.mockReturnValue(true)
 })
 
 describe('fetchAndPersistTransactions', () => {
+    it('skips a chain that keeps no cached history rows', async () => {
+        mocks.hasCachedHistoryRows.mockReturnValue(false)
+
+        await fetchAndPersistTransactions(ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: NETWORK,
+        } as const)
+
+        expect(mocks.fetchTransactionHistory).not.toHaveBeenCalled()
+        expect(mocks.upsertTransactions).not.toHaveBeenCalled()
+        expect(mocks.healCachedRows).not.toHaveBeenCalled()
+    })
+
     it('does a full fetch (no afterTime) when nothing is stored yet', async () => {
         mocks.getLatestTransactionRoundTime.mockResolvedValue(null)
         mocks.fetchTransactionHistory.mockResolvedValue({

@@ -265,6 +265,8 @@
             "empty_body": "Keine Transaktionen gefunden",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
+            "load_failed_title": "Transaktionen konnten nicht geladen werden",
+            "load_failed_body": "Beim Laden des Verlaufs ist etwas schiefgelaufen. Versuch es gleich noch einmal.",
             "filter": "Filter",
             "csv": "CSV"
         },

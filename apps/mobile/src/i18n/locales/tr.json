@@ -265,6 +265,8 @@
             "empty_body": "İşlem bulunamadı",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
+            "load_failed_title": "İşlemler yüklenemedi",
+            "load_failed_body": "Bu geçmiş yüklenirken bir sorun oluştu. Birazdan tekrar dene.",
             "filter": "Filtrele",
             "csv": "CSV"
         },

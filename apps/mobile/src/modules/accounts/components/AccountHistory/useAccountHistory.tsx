@@ -29,7 +29,6 @@ import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
-    useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
@@ -50,7 +49,7 @@ import {
 import type { AppStackParamList } from '@routes/types'
 import { getFilterTimes } from './utils'
 import {
-    buildTransactionListRows,
+    useTransactionHistoryRows,
     type TransactionListRow,
 } from '@modules/transactions'
 import {
@@ -68,6 +67,10 @@ export type UseAccountHistoryResult = {
     isLoading: boolean
     /** Whether to render the cold-start skeleton (no read has resolved yet) */
     isInitialLoad: boolean
+    /** Nothing loaded and the read failed: a retry state, not the skeleton. */
+    isLoadFailed: boolean
+    /** Re-requests the page that failed. */
+    handleRetry: () => void
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -154,7 +157,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     )
 
     const {
-        transactions,
+        rows,
+        transactionCount,
         isLoading,
         isFetched,
         isFetchingNextPage,
@@ -162,18 +166,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         error,
         hasNextPage,
         fetchNextPage,
-    } = useTransactionHistoryQuery({
-        accountAddress: accountAddress ?? '',
+        retry: handleRetry,
+    } = useTransactionHistoryRows({
+        accountAddress,
         scope,
-        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
     })
-
-    const rows = useMemo(
-        () => buildTransactionListRows(transactions),
-        [transactions],
-    )
 
     const handleLoadMore = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -255,13 +254,17 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
-    const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isEmpty = isFetched && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
-    const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
+    // A failed read leaves `hasNextPage` set, so without the error check it
+    // reads as a load still in progress and the skeleton never leaves.
+    const isLoadFailed = rows.length === 0 && isError
+    const isInitialLoad =
+        !isLoadFailed && rows.length === 0 && (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
-    // `transactions.length > 0` rather than `!isEmpty` also keeps the button
+    // `transactionCount > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
     // avoiding a brief visible-then-gone flicker.
     // A chain whose build has no CSV export hides the action outright; one that
@@ -272,12 +275,14 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         'csvExport',
     )
     const isCsvExportVisible =
-        transactions.length > 0 && (hasCsvExport || isCsvExportRestricted)
+        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
 
     return {
         rows,
         isLoading,
         isInitialLoad,
+        isLoadFailed,
+        handleRetry,
         isFetchingNextPage,
         isError,
         error,

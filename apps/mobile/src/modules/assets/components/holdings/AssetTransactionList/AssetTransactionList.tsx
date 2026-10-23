@@ -53,6 +53,8 @@ export const AssetTransactionList = ({
     const {
         rows,
         isInitialLoad,
+        isLoadFailed,
+        handleRetry,
         isOfflineEmpty,
         isFetchingNextPage,
         isRefreshing,
@@ -69,6 +71,8 @@ export const AssetTransactionList = ({
         ({ item }: { item: TransactionListRow }) =>
             item.kind === 'header' ? (
                 <TransactionDateHeader title={item.title} />
+            ) : item.kind === 'record' ? (
+                <TransactionListItem record={item.record} />
             ) : (
                 <TransactionListItem
                     transaction={item.transaction}
@@ -139,7 +143,24 @@ export const AssetTransactionList = ({
                 ListEmptyComponent={
                     // Offline with nothing cached isn't the same claim as "this
                     // asset has no transactions" — we were never able to read.
-                    isOfflineEmpty ? (
+                    isLoadFailed ? (
+                        <EmptyView
+                            style={styles.emptyView}
+                            title={t(
+                                'asset_details.transaction_list.load_failed_title',
+                            )}
+                            body={t(
+                                'asset_details.transaction_list.load_failed_body',
+                            )}
+                            button={
+                                <PWButton
+                                    title={t('common.retry.label')}
+                                    variant='secondary'
+                                    onPress={handleRetry}
+                                />
+                            }
+                        />
+                    ) : isOfflineEmpty ? (
                         <EmptyView
                             style={styles.emptyView}
                             title={t(
