@@ -11,8 +11,17 @@
  */
 
 import { http, HttpResponse, type RequestHandler } from 'msw'
-import { ASSETS_PATH, whitelistPath } from './endpoints'
-import type { AssetItemResponse, WhitelistItemResponse } from './schema'
+import {
+    ASSETS_PATH,
+    nftHoldingsPath,
+    NFTS_PATH,
+    whitelistPath,
+} from './endpoints'
+import type {
+    AssetItemResponse,
+    NftItemResponse,
+    WhitelistItemResponse,
+} from './schema'
 import { evmChainOfEip155Id } from '../../chains/table'
 
 export type PeraEvmAssetFixtures = {
@@ -28,7 +37,54 @@ export type PeraEvmAssetFixtures = {
      * number fails every metadata read with that status.
      */
     assets?: Record<string, AssetItemResponse> | number
+    /**
+     * NFT holdings pages keyed by lowercase address; an address left out
+     * holds none. A number fails every holdings read with that status.
+     */
+    nftHoldings?: Record<string, NftItemResponse[][]> | number
+    /**
+     * NFT metadata keyed by lowercase CAIP-19 id; an id left out answers
+     * null. A number fails every metadata read with that status.
+     */
+    nfts?: Record<string, NftItemResponse> | number
 }
+
+const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+
+/** A held ERC-721 on Ethereum mainnet, as the NFT holdings endpoint lists it. */
+export const evmNftItem = (
+    overrides: Partial<NftItemResponse> = {},
+): NftItemResponse => ({
+    asset_id: `eip155:1/erc721:${BAYC}/1234`,
+    standard: 'erc721',
+    balance: '1',
+    name: 'Bored Ape #1234',
+    description: 'An ape.',
+    collection: {
+        address: BAYC,
+        name: 'Bored Ape Yacht Club',
+        symbol: 'BAYC',
+        verification_tier: 'verified',
+    },
+    primary_image: {
+        url: 'https://nft.pera.test/bayc/1234.png',
+        preview_url: 'https://nft.pera.test/bayc/1234-preview.png',
+    },
+    media: [
+        {
+            type: 'image',
+            url: 'https://nft.pera.test/bayc/1234.png',
+            preview_url: 'https://nft.pera.test/bayc/1234-preview.png',
+            mime_type: 'image/png',
+        },
+    ],
+    traits: [{ name: 'Background', value: 'Orange' }],
+    acquired_at: '2026-03-02T10:15:00Z',
+    explorer_url: `https://etherscan.io/nft/${BAYC}/1234`,
+    ...overrides,
+})
+
+const NFT_CURSOR = /^page:(\d+)$/
 
 /** How the backend answers an id it has no metadata for; its type comes from the CAIP-19 namespace. */
 export const unknownAssetItem = (caip19: string): AssetItemResponse => ({
@@ -101,6 +157,8 @@ export const peraEvmAssetHandlers = ({
     baseUrl = '*',
     whitelist = {},
     assets = {},
+    nftHoldings = {},
+    nfts = {},
 }: PeraEvmAssetFixtures = {}): RequestHandler[] => {
     const base = baseUrl.replace(/\/+$/, '')
     return [
@@ -131,6 +189,47 @@ export const peraEvmAssetHandlers = ({
                         ...(assets[caip19] ?? unknownAssetItem(caip19)),
                         asset_id: caip19,
                     }
+                }),
+            })
+        }),
+        http.get(
+            `${base}${nftHoldingsPath(':chainId', ':address')}`,
+            ({ request, params }) => {
+                const refused = rejectUnauthenticated(request)
+                if (refused) return refused
+                if (typeof nftHoldings === 'number') {
+                    return failWith(nftHoldings)
+                }
+                const listed = nftHoldings[String(params.address).toLowerCase()]
+                const pages = listed?.length ? listed : [[]]
+                const cursor = new URL(request.url).searchParams.get('cursor')
+                const index =
+                    cursor === null
+                        ? 0
+                        : Number(NFT_CURSOR.exec(cursor)?.[1] ?? NaN)
+                const results = pages[index]
+                if (!results) {
+                    return HttpResponse.json(
+                        { error: 'Invalid cursor', code: 'invalid_cursor' },
+                        { status: 404 },
+                    )
+                }
+                return HttpResponse.json({
+                    next: index + 1 < pages.length ? `page:${index + 1}` : null,
+                    results,
+                })
+            },
+        ),
+        http.post(`${base}${NFTS_PATH}`, async ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
+            if (typeof nfts === 'number') return failWith(nfts)
+            const { ids } = (await request.json()) as { ids: string[] }
+            return HttpResponse.json({
+                results: ids.map(id => {
+                    const caip19 = id.toLowerCase()
+                    const item = nfts[caip19]
+                    return item ? { ...item, asset_id: caip19 } : null
                 }),
             })
         }),

@@ -46,6 +46,8 @@ type UpsertAccountHoldingsParams = {
     accountAddress: string
     holdings: UpsertHoldingInput[]
     scope: ChainScope
+    /** True for a stored holding to keep even though `holdings` omits it. */
+    retain?: (assetId: string) => boolean
 }
 
 /**
@@ -59,6 +61,7 @@ export async function refreshAccountHoldings({
     accountAddress,
     holdings,
     scope,
+    retain,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
     const scopeKey = toScopeKey(scope)
     const now = Date.now()
@@ -97,7 +100,9 @@ export async function refreshAccountHoldings({
             !isEqualChainData(prev.native, h.native ?? null)
         )
     })
-    const removed = [...existing.keys()].filter(id => !incomingIds.has(id))
+    const removed = [...existing.keys()].filter(
+        id => !incomingIds.has(id) && !retain?.(id),
+    )
 
     if (changed.length === 0 && removed.length === 0) return false
 

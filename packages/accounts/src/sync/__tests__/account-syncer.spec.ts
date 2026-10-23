@@ -107,4 +107,64 @@ describe('fetchAndPersistAccount', () => {
         expect(first).toMatchObject({ authAddress: 'S' })
         expect(second).toBe(first)
     })
+
+    describe('a read that leaves holdings unrefreshed', () => {
+        const unrefreshed = {
+            includes: (assetId: string) => assetId.startsWith('nft/'),
+            error: new Error('upstream_unavailable'),
+        }
+
+        const registerReads = async (
+            reads: { unrefreshedHoldings?: typeof unrefreshed }[],
+        ) => {
+            const { Decimal } = await import('decimal.js')
+            const queue = [...reads]
+            ;(
+                await import('../../__tests__/fakeAccountsChain')
+            ).registerFakeAccountsChain({
+                fetchAccountState: async () => ({
+                    nativeBalanceBaseUnits: new Decimal(0),
+                    chainState: {
+                        family: 'algorand',
+                        authAddress: 'S',
+                        minBalance: new Decimal(0),
+                        status: 'Offline',
+                        totalAssetsOptedIn: 0,
+                        totalCreatedAssets: 0,
+                        totalAppsOptedIn: 0,
+                    },
+                    holdings: [],
+                    observedRound: null,
+                    ...queue.shift(),
+                }),
+            })
+        }
+
+        it('keeps the rows it covers and flags the account until a clean read', async () => {
+            await registerReads([{ unrefreshedHoldings: unrefreshed }, {}])
+            const { refreshAccountHoldings } = await import('../../db')
+            const { useHoldingsRefreshStore } =
+                await import('../../store/holdingsRefresh')
+            const mainnetKey = 'algorand/mainnet' as never
+
+            await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+            const { retain } = vi.mocked(refreshAccountHoldings).mock
+                .lastCall![0]
+            expect(retain?.('nft/1')).toBe(true)
+            expect(retain?.('100')).toBe(false)
+            expect(
+                useHoldingsRefreshStore.getState().failed[mainnetKey]?.A,
+            ).toBe(true)
+
+            await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+            expect(
+                vi.mocked(refreshAccountHoldings).mock.lastCall![0].retain,
+            ).toBeUndefined()
+            expect(
+                useHoldingsRefreshStore.getState().failed[mainnetKey]?.A,
+            ).toBeUndefined()
+        })
+    })
 })

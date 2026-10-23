@@ -12,55 +12,121 @@
 
 import { Decimal } from 'decimal.js'
 import {
+    type AssetDisplayHint,
     type BalanceChange,
     type ChainScope,
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
 import {
     areEvmAddressesEqual,
     normalizeEvmAddress,
 } from '../accounts/address-codec'
-import { fromCaip19, InvalidCaip19Error } from '../blockchain/utils/caip19'
+import {
+    fromCaip19,
+    InvalidCaip19Error,
+    toEvmNftAssetId,
+} from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import type { EvmHistoryItem } from './api/schema'
+import type { EvmHistoryItem, EvmNftTransfer } from './api/schema'
 
 const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const CONTRACT_CALL = i18nKey('transactions.list_item.contract_call')
+const NFT_SUBTITLE = i18nKey('transactions.list_item.nft_subtitle')
 
 const areEqual = areEvmAddressesEqual
 const normalize = normalizeEvmAddress
 
+type NftLeg = {
+    leg: EvmNftTransfer
+    assetId: string
+    isIn: boolean
+    isOut: boolean
+}
+
+const nftDisplayOf = (leg: EvmNftTransfer): AssetDisplayHint => ({
+    symbol: leg.collection_symbol ?? '',
+    decimals: 0,
+})
+
+// The NFT legs `address` sends or receives; a leg whose token id this client
+// can't name drops itself.
+const nftLegsOf = (item: EvmHistoryItem, address: string): NftLeg[] =>
+    item.nft_transfers.flatMap(leg => {
+        const isIn = areEqual(leg.to, address)
+        const isOut = areEqual(leg.from, address)
+        if (!isIn && !isOut) return []
+        let assetId: string
+        try {
+            assetId = toEvmNftAssetId(leg.contract, leg.token_id)
+        } catch {
+            return []
+        }
+        return [{ leg, assetId, isIn, isOut }]
+    })
+
+const nftChangeOf = (
+    chain: EvmChain,
+    { leg, assetId, isIn }: NftLeg,
+): BalanceChange => {
+    const quantity = new Decimal(leg.quantity)
+    return {
+        assetRef: { chainId: chain.row.id, assetId },
+        value: isIn ? quantity : quantity.negated(),
+        display: nftDisplayOf(leg),
+    }
+}
+
+// The backend's impacts may leave an NFT out, so a leg it misses adds its own
+// line; a self-transfer nets to nothing and adds none.
 const balanceChangesOf = (
     item: EvmHistoryItem,
+    address: string,
     scope: ChainScope,
     chain: EvmChain,
-): BalanceChange[] =>
-    item.balance_impacts.flatMap(({ asset_id, amount }) => {
-        try {
-            return {
-                assetRef: {
-                    chainId: chain.row.id,
-                    assetId: fromCaip19(asset_id, scope, chain),
-                },
-                value: new Decimal(amount),
+): BalanceChange[] => {
+    const nftLegs = nftLegsOf(item, address)
+    const displayById = new Map(
+        nftLegs.map(({ assetId, leg }) => [assetId, nftDisplayOf(leg)]),
+    )
+    const impacts: BalanceChange[] = item.balance_impacts.flatMap(
+        ({ asset_id, amount }) => {
+            try {
+                const assetId = fromCaip19(asset_id, scope, chain)
+                const display = displayById.get(assetId)
+                return {
+                    assetRef: { chainId: chain.row.id, assetId },
+                    value: new Decimal(amount),
+                    ...(display && { display }),
+                }
+            } catch (error) {
+                // An asset this client can't name drops its line, not the row.
+                if (error instanceof InvalidCaip19Error) return []
+                throw error
             }
-        } catch (error) {
-            // An asset this client can't name drops its line, not the row.
-            if (error instanceof InvalidCaip19Error) return []
-            throw error
-        }
-    })
+        },
+    )
+    const listed = new Set(impacts.map(change => change.assetRef.assetId))
+    const missing = nftLegs
+        .filter(
+            ({ assetId, isIn, isOut }) =>
+                isIn !== isOut && !listed.has(assetId),
+        )
+        .map(nftLeg => nftChangeOf(chain, nftLeg))
+    return [...impacts, ...missing]
+}
 
 const summarizeWithdrawal = (
     item: EvmHistoryItem,
+    address: string,
     scope: ChainScope,
     chain: EvmChain,
 ): TransactionSummary => {
     const nativeRef = chain.descriptor.nativeAsset.ref
-    const credit = balanceChangesOf(item, scope, chain).find(
+    const credit = balanceChangesOf(item, address, scope, chain).find(
         change => change.assetRef.assetId === nativeRef.assetId,
     )
     return {
@@ -147,6 +213,77 @@ const summarizeTokenTransfer = (
     }
 }
 
+type NftDirection = 'in' | 'out' | 'self'
+
+const nftDirectionOf = (legs: NftLeg[]): NftDirection => {
+    if (legs.every(({ isIn, isOut }) => isIn && !isOut)) return 'in'
+    if (legs.every(({ isIn, isOut }) => isOut && !isIn)) return 'out'
+    return 'self'
+}
+
+const NFT_PRESENTATION: Record<
+    NftDirection,
+    Pick<TransactionSummary, 'icon'> & { title: typeof SEND }
+> = {
+    in: { title: RECEIVE, icon: 'receive' },
+    out: { title: SEND, icon: 'send' },
+    self: { title: CONTRACT_CALL, icon: 'contract-call' },
+}
+
+// Only NFTs move: no tokens, and no value that would make it a purchase.
+const summarizeNftTransfer = (
+    item: EvmHistoryItem,
+    address: string,
+    chain: EvmChain,
+): TransactionSummary | undefined => {
+    const legs = nftLegsOf(item, address)
+    if (
+        legs.length === 0 ||
+        item.token_transfers.length > 0 ||
+        !new Decimal(item.value ?? '0').isZero()
+    ) {
+        return undefined
+    }
+    const direction = nftDirectionOf(legs)
+    const presentation = NFT_PRESENTATION[direction]
+    const base = {
+        kind: 'nft-transfer',
+        title: { key: presentation.title },
+        icon: presentation.icon,
+        direction,
+    } as const
+    const [only, ...others] = legs
+    if (!only || others.length > 0) {
+        return {
+            ...base,
+            balanceChanges: legs
+                .filter(({ isIn, isOut }) => isIn !== isOut)
+                .map(leg => nftChangeOf(chain, leg)),
+        }
+    }
+    const { leg, assetId } = only
+    const counterparty: Nullable<string> =
+        direction === 'in' ? leg.from : direction === 'out' ? leg.to : null
+    return {
+        ...base,
+        ...(counterparty !== null && {
+            counterparty: normalize(counterparty),
+        }),
+        subtitle: {
+            key: NFT_SUBTITLE,
+            params: {
+                collection: leg.collection_name ?? normalize(leg.contract),
+                tokenId: leg.token_id,
+            },
+        },
+        amount: {
+            assetRef: { chainId: chain.row.id, assetId },
+            value: new Decimal(leg.quantity),
+            display: nftDisplayOf(leg),
+        },
+    }
+}
+
 const summarizeContractCall = (
     item: EvmHistoryItem,
     address: string,
@@ -161,7 +298,7 @@ const summarizeContractCall = (
         icon: 'contract-call',
         direction: 'none',
         ...(other !== null && { counterparty: normalize(other) }),
-        balanceChanges: balanceChangesOf(item, scope, chain),
+        balanceChanges: balanceChangesOf(item, address, scope, chain),
     }
 }
 
@@ -177,9 +314,10 @@ export const summarizeEthereumHistoryItem = (
 ): TransactionSummary => {
     const summary =
         item.kind === 'withdrawal'
-            ? summarizeWithdrawal(item, scope, chain)
+            ? summarizeWithdrawal(item, address, scope, chain)
             : (summarizeNativeTransfer(item, address, chain) ??
               summarizeTokenTransfer(item, address, chain) ??
+              summarizeNftTransfer(item, address, chain) ??
               summarizeContractCall(item, address, scope, chain))
     const notice = transactionStatusNotice(
         item.status === 'success' ? 'confirmed' : 'failed',

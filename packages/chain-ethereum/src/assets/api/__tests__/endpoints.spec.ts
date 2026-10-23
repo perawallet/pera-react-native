@@ -23,8 +23,19 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { fetchAssetItems, fetchWhitelist } from '../endpoints'
-import { nativeWhitelistItem, unknownAssetItem } from '../msw-handlers'
+import {
+    fetchAssetItems,
+    fetchNftHoldings,
+    fetchNftItems,
+    fetchWhitelist,
+    NFT_HOLDINGS_MAX_PAGES,
+} from '../endpoints'
+import {
+    evmNftItem,
+    nativeWhitelistItem,
+    peraEvmAssetHandlers,
+    unknownAssetItem,
+} from '../msw-handlers'
 import type { AssetItemResponse, WhitelistItemResponse } from '../schema'
 import {
     PERA_URL,
@@ -36,6 +47,7 @@ import { ETHEREUM } from '../../../__tests__/evm-chains'
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../../__tests__/pera-backend')).withEthereumPeraBackend(
         importOriginal,
+        ['nfts'],
     ),
 )
 
@@ -221,5 +233,125 @@ describe('fetchWhitelist', () => {
         await expect(fetchWhitelist(SCOPE, ETHEREUM)).rejects.toBeInstanceOf(
             PeraNetworkError,
         )
+    })
+})
+
+const HOLDER = '0x5AAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+const ape = (tokenId: string) =>
+    evmNftItem({ asset_id: `eip155:1/erc721:${BAYC}/${tokenId}` })
+
+describe('fetchNftHoldings', () => {
+    it('reads every page, passing the cursor, with the API key and integrity token', async () => {
+        const cursors: (string | null)[] = []
+        let headers: Headers | undefined
+        server.events.on('request:start', ({ request }) => {
+            cursors.push(new URL(request.url).searchParams.get('cursor'))
+            headers = request.headers
+        })
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nftHoldings: {
+                    [HOLDER.toLowerCase()]: [[ape('1'), ape('2')], [ape('3')]],
+                },
+            }),
+        )
+
+        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+        server.events.removeAllListeners()
+
+        expect(items.map(item => item.asset_id)).toEqual([
+            `eip155:1/erc721:${BAYC}/1`,
+            `eip155:1/erc721:${BAYC}/2`,
+            `eip155:1/erc721:${BAYC}/3`,
+        ])
+        expect(cursors).toEqual([null, 'page:1'])
+        expect(headers?.get('x-api-key')).toBe(TEST_API_KEY)
+        expect(headers?.get('x-app-integrity-token')).toBe(TEST_INTEGRITY_TOKEN)
+    })
+
+    it('asks for the lowercase address and skips a row it cannot read', async () => {
+        let path = ''
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/1/accounts/:address/nfts/`,
+                ({ request }) => {
+                    path = new URL(request.url).pathname
+                    return HttpResponse.json({
+                        next: null,
+                        results: [{ asset_id: 'broken' }, ape('1')],
+                    })
+                },
+            ),
+        )
+
+        const items = await fetchNftHoldings(SCOPE, ETHEREUM, HOLDER)
+
+        expect(path).toBe(
+            `/api/v3/evm/1/accounts/${HOLDER.toLowerCase()}/nfts/`,
+        )
+        expect(items).toHaveLength(1)
+    })
+
+    it.each([502, 429])('rejects on a %s', async status => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: PERA_URL, nftHoldings: status }),
+        )
+
+        await expect(
+            fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
+        ).rejects.toBeInstanceOf(PeraNetworkError)
+    })
+
+    it('rejects a cursor that never ends', async () => {
+        let requests = 0
+        server.use(
+            http.get(`${PERA_URL}/api/v3/evm/1/accounts/:address/nfts/`, () => {
+                requests++
+                return HttpResponse.json({ next: 'again', results: [] })
+            }),
+        )
+
+        await expect(
+            fetchNftHoldings(SCOPE, ETHEREUM, HOLDER),
+        ).rejects.toThrow()
+        expect(requests).toBe(NFT_HOLDINGS_MAX_PAGES)
+    })
+})
+
+describe('fetchNftItems', () => {
+    const known = `eip155:1/erc721:${BAYC}/1`
+    const unknown = `eip155:1/erc1155:${BAYC}/1`
+
+    it('answers in request order, null for an unknown id', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: PERA_URL,
+                nfts: { [known]: ape('1') },
+            }),
+        )
+
+        const items = await fetchNftItems(SCOPE, ETHEREUM, [unknown, known])
+
+        expect(items[0]).toBeNull()
+        expect(items[1]?.asset_id).toBe(known)
+    })
+
+    it('rejects a misaligned answer', async () => {
+        server.use(
+            http.post(`${PERA_URL}/api/v4/nfts/`, () =>
+                HttpResponse.json({ results: [ape('2')] }),
+            ),
+        )
+
+        await expect(fetchNftItems(SCOPE, ETHEREUM, [known])).rejects.toThrow()
+        await expect(
+            fetchNftItems(SCOPE, ETHEREUM, [known, unknown]),
+        ).rejects.toThrow()
+    })
+
+    it('makes no request for no ids', async () => {
+        await expect(fetchNftItems(SCOPE, ETHEREUM, [])).resolves.toEqual([])
     })
 })

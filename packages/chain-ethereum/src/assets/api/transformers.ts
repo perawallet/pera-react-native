@@ -11,16 +11,28 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { getAddress } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     PeraAssetType,
     type AssetPriceRow,
+    type CollectibleMedia,
+    type CollectibleMediaType,
     type PeraAsset,
+    type PeraCollectible,
 } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { fromCaip19, InvalidCaip19Error } from '../../blockchain/utils/caip19'
+import {
+    fromCaip19,
+    InvalidCaip19Error,
+    isEvmNftAssetId,
+} from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
-import { whitelistItemSchema, type AssetItemSchemaOutput } from './schema'
+import {
+    whitelistItemSchema,
+    type AssetItemSchemaOutput,
+    type NftItemSchemaOutput,
+} from './schema'
 
 /**
  * `asset` is null when the backend has no metadata for the token: it does not
@@ -100,4 +112,98 @@ export const toWhitelistRow = (
         if (error instanceof InvalidCaip19Error) return null
         throw error
     }
+}
+
+export type NftHolding = {
+    asset: PeraAsset
+    /** Base units; an NFT has no decimals, so also the held quantity. */
+    amount: Decimal
+}
+
+const appAssetIdOf = (
+    caip19: string,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<string> => {
+    try {
+        return fromCaip19(caip19, scope, chain)
+    } catch (error) {
+        if (error instanceof InvalidCaip19Error) return null
+        throw error
+    }
+}
+
+// `image/png` → `png`; the media list keeps no file name to read it from.
+const extensionOf = (mimeType: Nullable<string>): string =>
+    mimeType?.split('/')[1]?.split(';')[0]?.trim() ?? ''
+
+const toCollectible = (item: NftItemSchemaOutput): PeraCollectible => {
+    const primaryImage =
+        item.primary_image?.preview_url ?? item.primary_image?.url ?? undefined
+    const media: CollectibleMedia[] = item.media.map(entry => ({
+        type: entry.type,
+        downloadUrl: entry.url,
+        previewUrl: entry.preview_url ?? undefined,
+        extension: extensionOf(entry.mime_type),
+    }))
+    const mediaType: CollectibleMediaType =
+        media[0]?.type ?? (primaryImage ? 'image' : 'unknown')
+    return {
+        title: item.name ?? undefined,
+        standard: item.standard,
+        primaryImage,
+        mediaType,
+        explorerUrl: item.explorer_url ?? undefined,
+        collection: item.collection.name
+            ? { name: item.collection.name }
+            : undefined,
+        description: item.description ?? undefined,
+        traits: item.traits.map(trait => ({
+            displayName: trait.name ?? undefined,
+            displayValue: trait.value,
+        })),
+        media,
+    }
+}
+
+/** Null for an id that isn't an NFT on the scope's chain. */
+export const toNftAsset = (
+    item: NftItemSchemaOutput,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<PeraAsset> => {
+    const assetId = appAssetIdOf(item.asset_id, scope, chain)
+    if (assetId === null || !isEvmNftAssetId(assetId)) return null
+    const collectible = toCollectible(item)
+    // isFavorited and isPriceAlertEnabled stay unset, as in toPeraAsset.
+    return {
+        assetId,
+        name: item.name ?? undefined,
+        unitName: item.collection.symbol ?? undefined,
+        decimals: 0,
+        totalSupply: new Decimal(0),
+        creator: { address: getAddress(item.collection.address) },
+        peraMetadata: {
+            isDeleted: false,
+            verificationTier: item.collection.verification_tier,
+            type: PeraAssetType.collectible,
+            isUnique: item.standard === 'erc721',
+            explorerUrl: collectible.explorerUrl,
+            logo: collectible.primaryImage ?? null,
+            collectible,
+        },
+    }
+}
+
+/** Null for an item that isn't held: no balance, or a zero one. */
+export const toNftHolding = (
+    item: NftItemSchemaOutput,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<NftHolding> => {
+    if (item.balance === undefined) return null
+    const amount = new Decimal(item.balance)
+    if (amount.isZero()) return null
+    const asset = toNftAsset(item, scope, chain)
+    return asset ? { asset, amount } : null
 }

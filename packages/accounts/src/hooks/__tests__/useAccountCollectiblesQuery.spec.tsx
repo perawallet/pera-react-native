@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountCollectiblesQuery } from '../useAccountCollectiblesQuery'
+import { useHoldingsRefreshStore } from '../../store/holdingsRefresh'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const sourcesOf = (address: string) => [{ address, scope: SCOPE }]
@@ -55,6 +56,37 @@ const makeRow = (assetId: string, title: string) => ({
 describe('useAccountCollectiblesQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useHoldingsRefreshStore.getState().resetState()
+    })
+
+    it('flags unrefreshed holdings for its own sources only', async () => {
+        mockGetAccountCollectiblesLite.mockResolvedValue([])
+        const { result } = renderHook(
+            () => useAccountCollectiblesQuery(sourcesOf('ADDR1')),
+            { wrapper: wrapper() },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(SCOPE, 'ADDR2', true),
+        )
+        expect(result.current.hasUnrefreshedHoldings).toBe(false)
+
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(SCOPE, 'ADDR1', true),
+        )
+        expect(result.current.hasUnrefreshedHoldings).toBe(true)
+
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(SCOPE, 'ADDR1', false),
+        )
+        expect(result.current.hasUnrefreshedHoldings).toBe(false)
     })
 
     it('reads the rows SQL sorted for the requested mode', async () => {

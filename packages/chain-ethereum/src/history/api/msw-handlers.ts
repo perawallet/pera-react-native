@@ -49,6 +49,21 @@ export const evmHistoryItem = (
     ...overrides,
 })
 
+/** An ERC-721 moving between two placeholder addresses; override the parties. */
+export const evmNftTransferLeg = (
+    overrides: Partial<EvmHistoryItemResponse['nft_transfers'][number]> = {},
+): EvmHistoryItemResponse['nft_transfers'][number] => ({
+    standard: 'erc721',
+    contract: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+    token_id: '1234',
+    quantity: '1',
+    from: '0x00000000000000000000000000000000000000bb',
+    to: '0x00000000000000000000000000000000000000aa',
+    collection_name: 'Bored Ape Yacht Club',
+    collection_symbol: 'BAYC',
+    ...overrides,
+})
+
 /** The Pera backend's EVM transaction history endpoint. */
 export const peraEvmHistoryHandlers = ({
     baseUrl = '*',

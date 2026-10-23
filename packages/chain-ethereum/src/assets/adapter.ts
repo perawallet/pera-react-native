@@ -18,6 +18,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    getAssetById,
     getStaleOrMissingAssetIds,
     PeraAssetVerificationTier,
     upsertAssets,
@@ -25,17 +26,25 @@ import {
     type AssetsChainAdapter,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { partition } from '@perawallet/wallet-core-shared'
-import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import { partition, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    eip155ChainIdOf,
+    InvalidCaip19Error,
+    isEvmNftAssetId,
+    toCaip19,
+    type EvmNftStandard,
+} from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { readErc20 } from '../blockchain/utils/erc20'
 import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
     fetchAssetItems,
+    fetchNftItems,
+    NFTS_SERVICE,
     PRICES_SERVICE,
 } from './api/endpoints'
-import { toAssetMetadata, toPriceRow } from './api/transformers'
+import { toAssetMetadata, toNftAsset, toPriceRow } from './api/transformers'
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 
 // Token metadata rarely changes; the same window as Algorand's asset cache.
@@ -177,6 +186,59 @@ const syncAssets =
         }
     }
 
+const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']
+
+const isNftStandard = (value: unknown): value is EvmNftStandard =>
+    NFT_STANDARDS.includes(value as EvmNftStandard)
+
+// The id doesn't carry its standard; the cached row may, and otherwise one
+// request asks for both and takes whichever the backend knows.
+const fetchNftMetadata = async (
+    chain: EvmChain,
+    assetId: string,
+    scope: ChainScope,
+    cached: Nullable<PeraAsset>,
+): Promise<Nullable<PeraAsset>> => {
+    const standard = cached?.peraMetadata?.collectible?.standard
+    const standards = isNftStandard(standard) ? [standard] : NFT_STANDARDS
+    const items = await fetchNftItems(
+        scope,
+        chain,
+        standards.map(each => toCaip19(assetId, scope, chain, each)),
+    )
+    const item = items.find(each => each !== null)
+    return item ? toNftAsset(item, scope, chain) : null
+}
+
+// Falls back to the stored row, so a backend outage keeps an NFT the account
+// already synced on screen.
+const getNftMetadata = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    assetId: string,
+    scope: ChainScope,
+): Promise<PeraAsset> => {
+    const cached = await getAssetById({ assetId, scope })
+    if (!hasServices(ctx, scope, NFTS_SERVICE)) {
+        if (cached) return cached
+        throw new InvalidCaip19Error(assetId, scope)
+    }
+    let asset: Nullable<PeraAsset>
+    try {
+        asset = await fetchNftMetadata(chain, assetId, scope, cached)
+    } catch (error) {
+        if (cached) return cached
+        throw error
+    }
+    if (!asset) {
+        if (cached) return cached
+        throw new InvalidCaip19Error(assetId, scope)
+    }
+    // A failed cache write must not fail the read.
+    await upsertAssets({ items: [asset], scope }).catch(() => undefined)
+    return asset
+}
+
 const getAssetMetadata =
     (
         ctx: ChainContext,
@@ -186,6 +248,9 @@ const getAssetMetadata =
         eip155ChainIdOf(scope, chain)
         const assetId = evmAssetIdOf(chain, ref)
         if (assetId === NATIVE_ASSET_ID) return chain.nativeAsset
+        if (isEvmNftAssetId(assetId)) {
+            return getNftMetadata(ctx, chain, assetId, scope)
+        }
         const tokenId = getAddress(assetId)
         if (!isTokenAddress(tokenId)) {
             throw new InvalidAddressError({ address: assetId })
@@ -272,9 +337,12 @@ export const createEthereumAssetsAdapter = (
         fetchOnChainAsset: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)
             const assetId = evmAssetIdOf(chain, ref)
-            return assetId === NATIVE_ASSET_ID
-                ? chain.nativeAsset
-                : readErc20(ctx, chain, assetId, scope)
+            if (assetId === NATIVE_ASSET_ID) return chain.nativeAsset
+            // An NFT has no ERC-20 surface to read.
+            if (isEvmNftAssetId(assetId)) {
+                throw new InvalidAddressError({ address: assetId })
+            }
+            return readErc20(ctx, chain, assetId, scope)
         },
         getPrices: getPrices(ctx, chain),
     }
