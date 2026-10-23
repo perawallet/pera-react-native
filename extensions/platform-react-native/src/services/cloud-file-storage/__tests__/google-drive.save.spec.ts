@@ -31,6 +31,7 @@ const auth = vi.hoisted(() => ({
 vi.mock('../google-auth', () => ({
     ...auth,
     DRIVE_FILE_SCOPE: 'https://www.googleapis.com/auth/drive.file',
+    DRIVE_TIMEOUT_MS: 15_000,
 }))
 
 const { writeFile, mkdir, constructed } = vi.hoisted(() => ({
@@ -163,6 +164,26 @@ describe('saveToGoogleDrive', () => {
         expect(
             auth.releaseGoogleDriveToken.mock.invocationCallOrder[0]!,
         ).toBeLessThan(auth.authorizeGoogleDrive.mock.invocationCallOrder[1]!)
+        expect(constructed).toHaveBeenLastCalledWith(
+            'googledrive',
+            driveOptions('token-2'),
+        )
+    })
+
+    test('still retries when releasing the rejected token fails', async () => {
+        writeFile.mockRejectedValueOnce(unauthorized())
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
+        auth.releaseGoogleDriveToken.mockRejectedValueOnce(
+            Object.assign(new Error('clear failed'), {
+                code: 'ERR_GOOGLE_AUTH',
+            }),
+        )
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
+            'saved',
+        )
         expect(constructed).toHaveBeenLastCalledWith(
             'googledrive',
             driveOptions('token-2'),

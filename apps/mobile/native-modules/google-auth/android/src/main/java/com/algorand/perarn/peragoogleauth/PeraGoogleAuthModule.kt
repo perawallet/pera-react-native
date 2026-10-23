@@ -93,7 +93,14 @@ class PeraGoogleAuthModule : Module() {
     // A screen left open by an earlier call is abandoned.
     pending?.promise?.resolve(null)
     pending = PendingScreen(requestCode, scope, promise)
-    start()
+    try {
+      start()
+    } catch (error: Exception) {
+      // SendIntentException or ActivityNotFoundException; thrown from a Task
+      // listener it would crash the app.
+      pending = null
+      promise.reject(ERR_GOOGLE_AUTH, error.message, error)
+    }
   }
 
   // AuthorizationClient can silently reuse the last account it authorized, so a

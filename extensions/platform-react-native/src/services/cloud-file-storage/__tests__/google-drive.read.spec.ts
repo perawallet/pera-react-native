@@ -34,6 +34,7 @@ const auth = vi.hoisted(() => ({
 vi.mock('../google-auth', () => ({
     ...auth,
     DRIVE_FILE_SCOPE: 'https://www.googleapis.com/auth/drive.file',
+    DRIVE_TIMEOUT_MS: 15_000,
 }))
 
 const { readFile, readdir, stat, constructed } = vi.hoisted(() => ({

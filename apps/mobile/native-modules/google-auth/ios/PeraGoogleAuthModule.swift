@@ -24,6 +24,12 @@ public class PeraGoogleAuthModule: Module {
 
     // Resolves the redirect URL, or nil when the user closes the sheet.
     AsyncFunction("authenticate") { (url: URL, callbackScheme: String, promise: Promise) in
+      // Replacing an open session would deallocate it with its promise
+      // unsettled, and its completion would then nil out the new one.
+      guard self.session == nil else {
+        promise.reject("ERR_GOOGLE_AUTH", "An authentication session is already open")
+        return
+      }
       let session = ASWebAuthenticationSession(
         url: url,
         callbackURLScheme: callbackScheme

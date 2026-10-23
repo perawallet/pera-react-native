@@ -21,6 +21,10 @@ import {
 
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
 
+// The Drive library's 3 s default is too short for an upload on a mobile
+// network. An abort surfaces as an AbortError, read as Drive being unreachable.
+export const DRIVE_TIMEOUT_MS = 15_000
+
 const AUTHORIZE_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
 
@@ -116,6 +120,7 @@ const authorizeOnIos = async (): Promise<string | null> => {
     const response = await fetch(TOKEN_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        signal: AbortSignal.timeout(DRIVE_TIMEOUT_MS),
         body: toQuery({
             code: result.code,
             client_id: clientId,

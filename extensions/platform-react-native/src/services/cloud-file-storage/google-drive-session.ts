@@ -28,14 +28,12 @@ import {
 import { hasCode } from './cloud-storage-error'
 import {
     authorizeGoogleDrive,
+    DRIVE_TIMEOUT_MS,
     isGoogleDriveConfigured,
     releaseGoogleDriveToken,
 } from './google-auth'
 
 export { DRIVE_FILE_SCOPE, isGoogleDriveConfigured } from './google-auth'
-
-// The library's 3 s default is too short for an upload on a mobile network.
-const DRIVE_TIMEOUT_MS = 15_000
 
 /** What an operation returns when the user backs out of a prompt it raised. */
 export const DRIVE_CANCELLED = Symbol('drive cancelled')
@@ -145,8 +143,9 @@ const runSession = async <T>(
     } catch (error) {
         if (!isUnauthorized(error)) throw error
         // The library never refreshes tokens, and Android would hand the
-        // rejected one back from its cache.
-        await releaseGoogleDriveToken(accessToken)
+        // rejected one back from its cache. A failed release must not replace
+        // the 401; the retry goes ahead regardless.
+        await releaseGoogleDriveToken(accessToken).catch(() => undefined)
         const freshToken = await authorizeInto(held)
         if (freshToken === null) return { status: 'cancelled' }
         return toSessionResult(await operation(driveWithToken(freshToken)))

@@ -17,6 +17,7 @@ import { createCodeChallenge } from '@perawallet/wallet-core-shared'
 import {
     authorizeGoogleDrive,
     DRIVE_FILE_SCOPE,
+    DRIVE_TIMEOUT_MS,
     isGoogleDriveConfigured,
     releaseGoogleDriveToken,
 } from '../google-auth'
@@ -189,6 +190,19 @@ describe('authorizeGoogleDrive on iOS', () => {
             GoogleDriveAuthFailedError,
         )
         expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    test('bounds the code exchange by the Drive timeout', async () => {
+        const signal = new AbortController().signal
+        const timeout = vi
+            .spyOn(AbortSignal, 'timeout')
+            .mockReturnValueOnce(signal)
+        redirectWith({ code: 'auth-code' })
+
+        await authorizeGoogleDrive()
+
+        expect(timeout).toHaveBeenCalledWith(DRIVE_TIMEOUT_MS)
+        expect(fetchMock.mock.calls[0]![1]).toMatchObject({ signal })
     })
 
     test('names a refused code exchange', async () => {
