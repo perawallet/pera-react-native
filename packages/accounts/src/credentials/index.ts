@@ -44,6 +44,7 @@ export {
     findAddressHolder,
     findHardwareHolder,
     findPathHolder,
+    hardwareJoinCandidates,
     isEnabledByDefault,
     nextChainPosition,
     preferDefaultChain,

@@ -111,24 +111,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         hasCustody: (account: WalletAccount, kind: string) =>
             account.custody.kind === kind,
         findPathHolder: findPathHolderMock,
-        findHardwareHolder: (
-            accounts: WalletAccount[],
-            position: {
-                manufacturer: string
-                deviceId: string
-                accountIndex: number
-                transportType: string
-            },
-        ) =>
-            accounts.find(
-                account =>
-                    position.transportType === 'ble' &&
-                    account.custody.kind === 'hardware' &&
-                    account.custody.accountIndex === position.accountIndex &&
-                    account.custody.device.deviceId === position.deviceId &&
-                    account.custody.device.manufacturer ===
-                        position.manufacturer,
-            ),
         isSameAddress: (_chainId: string, a: string, b: string) => a === b,
         DuplicateAccountError,
         AddressMismatchError: class AddressMismatchError extends Error {},
@@ -1766,7 +1748,42 @@ describe('useCloudBackupImport hardware on several chains', () => {
         expect(summary).toMatchObject({ imported: 1, failed: [] })
     })
 
-    test('joins an entry to the account the wallet already holds at the device position', async () => {
+    test("joins a record's entry to the account holding another of its addresses, whatever the order", async () => {
+        const existing: WalletAccount = {
+            id: 'existing',
+            custody: {
+                kind: 'hardware',
+                device: LEDGER_DEVICE,
+                accountIndex: 0,
+            },
+            chains: { algorand: { address: 'LEDGER_ALGO' } },
+        }
+        storeState.accounts = [existing]
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            { ...hardwareEntry('0xledger', 'ethereum'), group: 'record' },
+            { ...hardwareEntry('LEDGER_ALGO', 'algorand'), group: 'record' },
+        ])
+
+        expect(storeState.accounts).toEqual([
+            {
+                ...existing,
+                name: 'My Ledger',
+                chains: {
+                    algorand: { address: 'LEDGER_ALGO' },
+                    ethereum: { address: '0xledger', ...CREATED },
+                },
+            },
+        ])
+        expect(summary).toMatchObject({
+            imported: 0,
+            skippedDuplicate: 1,
+            failed: [],
+        })
+    })
+
+    test('restores an entry sharing no address with the account at its device position as its own account', async () => {
         const existing: WalletAccount = {
             id: 'existing',
             custody: {
@@ -1784,15 +1801,16 @@ describe('useCloudBackupImport hardware on several chains', () => {
         ])
 
         expect(storeState.accounts).toEqual([
-            {
-                ...existing,
-                chains: {
-                    algorand: { address: 'LEDGER_ALGO' },
-                    ethereum: { address: '0xledger', ...CREATED },
-                },
-            },
+            existing,
+            expect.objectContaining({
+                custody: expect.objectContaining({
+                    kind: 'hardware',
+                    accountIndex: 0,
+                }),
+                chains: { ethereum: { address: '0xledger', ...CREATED } },
+            }),
         ])
-        expect(summary).toMatchObject({ imported: 0, failed: [] })
+        expect(summary).toMatchObject({ imported: 1, failed: [] })
     })
 
     test('restores another seed at a held position as its own account', async () => {

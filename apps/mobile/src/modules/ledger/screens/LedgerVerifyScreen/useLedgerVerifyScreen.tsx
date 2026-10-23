@@ -18,6 +18,7 @@ import {
     chainAccountOf,
     findAccountByAddressOn,
     hardwareDetailsOf,
+    hardwareJoinCandidates,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
     isLedgerAccount,
@@ -30,9 +31,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    hasLedgerAppDriver,
     ledgerAppNameFor,
     type HardwareWalletDerivedAccount,
     type HardwareWalletTransport,
+    type LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
     verifyLedgerAddress,
@@ -43,7 +46,10 @@ import {
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -59,6 +65,10 @@ import {
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
 import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
+import {
+    LedgerSameWalletSheet,
+    type LedgerSameWalletChoice,
+} from '@modules/ledger/components/LedgerSameWalletSheet'
 import {
     useLedgerExpandedTabHandoff,
     useLedgerFlowChainId,
@@ -89,6 +99,93 @@ const authAccountOf = (
     s: LedgerSelectableAccount,
 ): HardwareWalletDerivedAccount =>
     s.kind === 'derived' ? s.account : s.authAccount
+
+/** An entry bound for a device position, and the account it must not join. */
+type JoinTarget = {
+    details: HardwareWalletDetails
+    chainIds: ChainId[]
+    movingId?: string
+}
+
+/** A device read that proves `holderId` holds the connected device's seed. */
+type HolderClaim = {
+    holderId: string
+    chainId: ChainId
+    accountIndex: number
+    address: string
+}
+
+const claimsFor = (
+    accounts: readonly WalletAccount[],
+    { details, chainIds, movingId }: JoinTarget,
+): HolderClaim[] =>
+    hardwareJoinCandidates(
+        accounts.filter(account => account.id !== movingId),
+        details,
+        chainIds,
+    ).flatMap(holder => {
+        const proofChain = (Object.keys(holder.chains) as ChainId[]).find(
+            id =>
+                chainAccountOf(holder, id) !== undefined &&
+                hasLedgerAppDriver(id) &&
+                addressCodecs.has(id),
+        )
+        const address =
+            proofChain && chainAccountOf(holder, proofChain)?.address
+        return proofChain && address
+            ? [
+                  {
+                      holderId: holder.id,
+                      chainId: proofChain,
+                      accountIndex: holder.custody.accountIndex,
+                      address,
+                  },
+              ]
+            : []
+    })
+
+/** The device's addresses at `accountIndices` in `chainId`'s app, unconfirmed on screen. */
+const readDeviceAddresses = async (
+    transportType: LedgerTransportType,
+    deviceId: string,
+    chainId: ChainId,
+    accountIndices: readonly number[],
+): Promise<Map<number, string>> => {
+    const provider = getProvider().hardwareWalletRegistry.getProvider(
+        'ledger',
+        transportType,
+    )
+    if (!provider) {
+        throw new LedgerProviderNotFoundError(
+            `No Ledger provider registered for transport "${transportType}"`,
+        )
+    }
+    const connectPromise = provider.connect(deviceId, chainId)
+    let transport: Nullable<HardwareWalletTransport> = null
+    try {
+        transport = await withLedgerConnectionTimeout(
+            connectPromise,
+            'Connect to Ledger',
+        )
+        const addresses = new Map<number, string>()
+        for (const accountIndex of new Set(accountIndices)) {
+            const { address } = await withLedgerConnectionTimeout(
+                transport.getAddress(accountIndex, false),
+                'Read Ledger address',
+            )
+            addresses.set(accountIndex, address)
+        }
+        return addresses
+    } finally {
+        if (transport) {
+            await transport.disconnect().catch(() => {})
+        } else {
+            connectPromise
+                .then(t => t.disconnect().catch(() => {}))
+                .catch(() => {})
+        }
+    }
+}
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -216,6 +313,69 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         void verify()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    // A device id can name a model (USB) or be shared by passphrase seeds
+    // (BLE), so an entry joins an account already at its device position only
+    // once the device reads that account's address on a chain it holds; the
+    // user opens that chain's app or keeps the entry as its own account.
+    // Resolves the proven account ids, or null when the user abandons the add.
+    const proveClaims = useCallback(
+        async (
+            claims: readonly HolderClaim[],
+        ): Promise<Nullable<ReadonlySet<string>>> => {
+            const proven = new Set<string>()
+            const claimsByChain = new Map<ChainId, HolderClaim[]>()
+            for (const claim of claims) {
+                claimsByChain.set(claim.chainId, [
+                    ...(claimsByChain.get(claim.chainId) ?? []),
+                    claim,
+                ])
+            }
+            for (const [claimChain, chainClaims] of claimsByChain) {
+                let hasReadFailed = false
+                for (;;) {
+                    const choice =
+                        await requestBottomSheet<LedgerSameWalletChoice>({
+                            contents: (
+                                <LedgerSameWalletSheet
+                                    appName={ledgerAppNameFor(claimChain)}
+                                    hasReadFailed={hasReadFailed}
+                                />
+                            ),
+                            options: {
+                                size: 'auto',
+                                enablePanDownToClose: true,
+                            },
+                        })
+                    if (choice === undefined) return null
+                    if (choice === 'separate') break
+                    try {
+                        const read = await readDeviceAddresses(
+                            transportType,
+                            deviceId,
+                            claimChain,
+                            chainClaims.map(claim => claim.accountIndex),
+                        )
+                        const codec = addressCodecs.get(claimChain)
+                        for (const claim of chainClaims) {
+                            const address = read.get(claim.accountIndex)
+                            if (
+                                address !== undefined &&
+                                codec.areEqual(address, claim.address)
+                            ) {
+                                proven.add(claim.holderId)
+                            }
+                        }
+                        break
+                    } catch {
+                        hasReadFailed = true
+                    }
+                }
+            }
+            return proven
+        },
+        [deviceId, requestBottomSheet, transportType],
+    )
 
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
@@ -356,18 +516,53 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (!confirmed) return
         }
 
+        const movingClaims = (id: string, details: HardwareWalletDetails) =>
+            claimsFor(current, {
+                details,
+                chainIds: Object.keys(
+                    current.find(account => account.id === id)?.chains ?? {},
+                ) as ChainId[],
+                movingId: id,
+            })
+        const upgradeClaims = upgrades.map(({ id, details }) =>
+            movingClaims(id, details),
+        )
+        const rebindClaims = rebinds.map(({ id, details }) =>
+            movingClaims(id, details),
+        )
+        const entryClaims = hardwareEntries.map(({ details }) =>
+            claimsFor(current, { details, chainIds: [chainId] }),
+        )
+        const claims = [
+            ...upgradeClaims,
+            ...rebindClaims,
+            ...entryClaims,
+        ].flat()
+        // Only an import that could join an account waits on the device.
+        const proven =
+            claims.length > 0 ? await proveClaims(claims) : new Set<string>()
+        if (!proven) return
+        const joinIdOf = (targetClaims: readonly HolderClaim[]) =>
+            targetClaims.find(claim => proven.has(claim.holderId))?.holderId
+
         const store = useAccountsStore.getState()
-        for (const upgrade of upgrades) {
+        upgrades.forEach((upgrade, i) => {
             store.upgradeWatchAccountToHardware(
                 upgrade.id,
                 upgrade.details,
                 chainId,
+                joinIdOf(upgradeClaims[i]),
             )
-        }
-        for (const rebind of rebinds) {
-            store.updateHardwareDetails(rebind.id, rebind.details, chainId)
-        }
-        for (const { address, details } of hardwareEntries) {
+        })
+        rebinds.forEach((rebind, i) => {
+            store.updateHardwareDetails(
+                rebind.id,
+                rebind.details,
+                chainId,
+                joinIdOf(rebindClaims[i]),
+            )
+        })
+        for (const [i, { address, details }] of hardwareEntries.entries()) {
             const before = useAccountsStore.getState().accounts.length
             store.addHardwareChainAccount(
                 details,
@@ -376,6 +571,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 t('ledger.default_account_name', {
                     number: nextDefaultNameNumber,
                 }),
+                undefined,
+                joinIdOf(entryClaims[i]),
             )
             // An entry joining the device's account keeps that account's
             // name, so only a created account uses up a number.
@@ -428,6 +625,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         deviceName,
         transportType,
         selectedAccounts,
+        proveClaims,
         requestBottomSheet,
         setAccounts,
         setSelectedAccountId,

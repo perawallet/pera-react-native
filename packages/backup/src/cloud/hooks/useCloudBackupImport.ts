@@ -16,7 +16,6 @@ import {
     chainAccountOf,
     DuplicateAccountError,
     findAddressHolder,
-    findHardwareHolder,
     findPathHolder,
     hasCustody,
     isSameAddress,
@@ -524,35 +523,28 @@ const attachWatchChain = (
     return true
 }
 
-/** A hardware account on several chains comes as one entry per chain, and
- *  the wallet may already hold the device position from another record; the
- *  entry joins that account. False when there is none free on the chain: one
- *  holding another address there is another seed, so the entry is its own
- *  account. */
+/** A hardware account on several chains comes as one entry per chain; the
+ *  entry joins the account its record restored or already shares an address
+ *  with. Never another account at the same device position: a device id can
+ *  name a model or be shared by passphrase seeds, and a restore has no device
+ *  to read the seed from, so that entry is its own account. */
 const attachHardwareChain = (
     context: ImportContext,
     groupHolder: WalletAccount | undefined,
     chainId: ChainId,
     payload: HardwareAddressPayload,
 ): boolean => {
-    const holder =
-        groupHolder && hasCustody(groupHolder, 'hardware')
-            ? groupHolder
-            : findHardwareHolder(
-                  useAccountsStore
-                      .getState()
-                      .accounts.filter(
-                          account =>
-                              chainAccountOf(account, chainId) === undefined,
-                      ),
-                  payload,
-              )
-    if (!holder || chainAccountOf(holder, chainId) !== undefined) return false
+    if (
+        !groupHolder ||
+        !hasCustody(groupHolder, 'hardware') ||
+        chainAccountOf(groupHolder, chainId) !== undefined
+    )
+        return false
     assertValidAddress(chainId, payload.address)
     context.replaceAccount({
-        ...holder,
+        ...groupHolder,
         chains: {
-            ...holder.chains,
+            ...groupHolder.chains,
             [chainId]: withEnablement({ address: payload.address }, 'created'),
         },
     })
@@ -836,7 +828,11 @@ const importBatch = async (
 
     const restoredAccountIds = new Set<string>()
     for (const entries of groups) {
-        let groupHolder: WalletAccount | undefined
+        // Any entry the wallet already holds names the account, wherever the
+        // record lists it.
+        let groupHolder = entries
+            .map(account => holderOf(context, account))
+            .find(holder => holder !== undefined)
         const restoredChains: ChainId[] = []
         let hasRestoredEntry = false
         for (const account of entries) {
