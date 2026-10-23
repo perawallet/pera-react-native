@@ -24,7 +24,6 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     chainDisplayNameOf,
     useSelectedScope,
-    useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import type { FilterOption } from '@components/FilterSelection'
@@ -67,27 +66,36 @@ type UseAddAssetViewResult = {
     hasNextPage: boolean
     fetchNextPage: Nullable<() => void>
     /** Asset ids on the selected chain. */
-    optedInAssetIds: Set<string>
+    optedInAssetIds: ReadonlySet<string>
     /** Asset ids on the selected chain. */
-    optingInAssetIds: Set<string>
+    optingInAssetIds: ReadonlySet<string>
     /** Off: rows offer no add action on the selected chain. */
     canManageAssets: boolean
     handleRequestAdd: (assetId: string) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
-// Keyed by chain as well, so an asset added on one chain never reads as added
-// on another after the user switches chips.
-const chainAssetKey = (chainId: ChainId, assetId: string): string =>
-    `${chainId}:${assetId}`
+// Keyed by chain, so an asset added on one chain never reads as added on
+// another after the user switches chips.
+type AssetIdsByChain = ReadonlyMap<ChainId, ReadonlySet<string>>
 
-const assetIdsOn = (keys: Set<string>, chainId: ChainId): Set<string> => {
-    const prefix = chainAssetKey(chainId, '')
-    const ids = new Set<string>()
-    for (const key of keys) {
-        if (key.startsWith(prefix)) ids.add(key.slice(prefix.length))
-    }
-    return ids
+const EMPTY_ASSET_IDS: ReadonlySet<string> = new Set()
+
+const withAssetId = (
+    byChain: AssetIdsByChain,
+    chainId: ChainId,
+    assetId: string,
+): AssetIdsByChain =>
+    new Map(byChain).set(chainId, new Set(byChain.get(chainId)).add(assetId))
+
+const withoutAssetId = (
+    byChain: AssetIdsByChain,
+    chainId: ChainId,
+    assetId: string,
+): AssetIdsByChain => {
+    const ids = new Set(byChain.get(chainId))
+    ids.delete(assetId)
+    return new Map(byChain).set(chainId, ids)
 }
 
 export const useAddAssetView = (
@@ -95,10 +103,11 @@ export const useAddAssetView = (
 ): UseAddAssetViewResult => {
     const { t } = useLanguage()
     const hasCollectible = options.variant === 'collectible'
-    const [optingInKeys, setOptingInKeys] = useState<Set<string>>(new Set())
-    const [recentlyOptedInKeys, setRecentlyOptedInKeys] = useState<Set<string>>(
-        new Set(),
+    const [optingInByChain, setOptingInByChain] = useState<AssetIdsByChain>(
+        new Map(),
     )
+    const [recentlyOptedInByChain, setRecentlyOptedInByChain] =
+        useState<AssetIdsByChain>(new Map())
 
     const [pickedChainId, setPickedChainId] = useState<Nullable<ChainId>>(null)
 
@@ -106,15 +115,8 @@ export const useAddAssetView = (
         state.getSelectedAccount(),
     )
     // A chain without asset search would only ever show the unavailable state.
-    const searchableChainIds = useCapableChainIds('assetSearch')
-    const switchedOffChainIds = useSwitchedOffChainIds()
-    const offeredChainIds = useMemo(
-        () =>
-            searchableChainIds.filter(
-                chainId => !switchedOffChainIds.includes(chainId),
-            ),
-        [searchableChainIds, switchedOffChainIds],
-    )
+    // A switched-off chain reports every capability off, so it's left out too.
+    const offeredChainIds = useCapableChainIds('assetSearch')
     // Derived, never written back: a picked or opening chain that stops being
     // offered falls through to the first offered one.
     const selectedChainId =
@@ -185,15 +187,19 @@ export const useAddAssetView = (
                 }
             }
         }
-        for (const id of assetIdsOn(recentlyOptedInKeys, scope.chainId)) {
+        for (const id of recentlyOptedInByChain.get(scope.chainId) ??
+            EMPTY_ASSET_IDS) {
             ids.add(id)
         }
         return ids
-    }, [accountBalances, selectedAddress, recentlyOptedInKeys, scope.chainId])
-    const optingInAssetIds = useMemo(
-        () => assetIdsOn(optingInKeys, scope.chainId),
-        [optingInKeys, scope.chainId],
-    )
+    }, [
+        accountBalances,
+        selectedAddress,
+        recentlyOptedInByChain,
+        scope.chainId,
+    ])
+    const optingInAssetIds =
+        optingInByChain.get(scope.chainId) ?? EMPTY_ASSET_IDS
 
     const handleSearchChange = useCallback(
         (text: string) => {
@@ -222,8 +228,8 @@ export const useAddAssetView = (
 
     const handleRequestAdd = useCallback(
         async (assetId: string) => {
-            const key = chainAssetKey(scope.chainId, assetId)
-            if (!canManageAssets || optingInKeys.has(key)) return
+            const { chainId } = scope
+            if (!canManageAssets || optingInAssetIds.has(assetId)) return
             let sender: string | undefined
             try {
                 sender = await resolveSender()
@@ -247,14 +253,16 @@ export const useAddAssetView = (
             const pendingAsset = results.find(r => r.assetId === assetId)
             const assetDisplayName =
                 pendingAsset?.unitName ?? pendingAsset?.name ?? null
-            setOptingInKeys(prev => new Set(prev).add(key))
+            setOptingInByChain(prev => withAssetId(prev, chainId, assetId))
 
             try {
                 await optIn({
                     sender,
                     assetId: BigInt(assetId),
                 })
-                setRecentlyOptedInKeys(prev => new Set(prev).add(key))
+                setRecentlyOptedInByChain(prev =>
+                    withAssetId(prev, chainId, assetId),
+                )
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: assetDisplayName
@@ -270,18 +278,16 @@ export const useAddAssetView = (
                 }
                 showError(err, t('add_asset.opt_in.failed_title'))
             } finally {
-                setOptingInKeys(prev => {
-                    const next = new Set(prev)
-                    next.delete(key)
-                    return next
-                })
+                setOptingInByChain(prev =>
+                    withoutAssetId(prev, chainId, assetId),
+                )
             }
         },
         [
             canManageAssets,
             resolveSender,
             scope,
-            optingInKeys,
+            optingInAssetIds,
             requestByType,
             results,
             optIn,
