@@ -15,19 +15,28 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     OnboardingNotVerifiedError,
+    type RegistrationOption,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockCountryIso: string | null = 'GB'
-let mockSettings: { countries: SupportedCountry[]; usStates: [] } | undefined
+type MockSettings = {
+    countries: SupportedCountry[]
+    usStates: []
+    employmentStatuses: RegistrationOption[]
+    employmentSectors: RegistrationOption[]
+}
+let mockSettings: MockSettings | undefined
 type MockOnboardingDetails = {
     verificationState: string
     firstName: string | null
     lastName: string | null
     dateOfBirth: string | null
     countryOfNationality: string | null
+    additionalNationalities?: string[]
+    portugalInvestmentScheme?: boolean | null
 }
 let mockOnboardingDetails: MockOnboardingDetails | undefined
 // The gate's own derivation is unit-tested in the card package
@@ -60,7 +69,11 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             refetch: vi.fn(),
         }),
         useOnboardingDetailsQuery: () => ({
-            data: mockOnboardingDetails,
+            data: mockOnboardingDetails && {
+                additionalNationalities: [],
+                portugalInvestmentScheme: null,
+                ...mockOnboardingDetails,
+            },
             isLoading: mockIsRecordLoading,
             isError: false,
             refetch: vi.fn(),
@@ -139,6 +152,40 @@ const usa: SupportedCountry = {
     cardProvider: null,
 }
 
+const EMPLOYED: RegistrationOption = { key: 'employed', name: 'Employed' }
+const IT_SECTOR: RegistrationOption = {
+    key: 'informationTechnology',
+    name: 'Information technology',
+}
+const settingsWith = (countries: SupportedCountry[]): MockSettings => ({
+    countries,
+    usStates: [],
+    employmentStatuses: [EMPLOYED],
+    employmentSectors: [IT_SECTOR],
+})
+
+type HookResult = {
+    current: ReturnType<typeof useCardOnboardingPersonalDetailsScreen>
+}
+
+// The employment pickers have no server prefill, so every valid form needs them.
+const pickEmployment = async (result: HookResult) => {
+    mockRequest.mockResolvedValueOnce(EMPLOYED)
+    act(() => {
+        result.current.handleSelectEmploymentStatus()
+    })
+    await waitFor(() =>
+        expect(result.current.selectedEmploymentStatus).toEqual(EMPLOYED),
+    )
+    mockRequest.mockResolvedValueOnce(IT_SECTOR)
+    act(() => {
+        result.current.handleSelectEmploymentSector()
+    })
+    await waitFor(() =>
+        expect(result.current.selectedEmploymentSector).toEqual(IT_SECTOR),
+    )
+}
+
 beforeEach(() => {
     registerAlgorandCardAdapter()
 })
@@ -148,7 +195,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         vi.clearAllMocks()
         mockOnboardingId = 'mock-onboarding-id'
         mockCountryIso = 'GB'
-        mockSettings = { countries: [uk, france], usStates: [] }
+        mockSettings = settingsWith([uk, france])
         mockOnboardingDetails = undefined
         mockIsKycRequired = false
         mockIsRecordLoading = false
@@ -244,8 +291,9 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             useCardOnboardingPersonalDetailsScreen(),
         )
 
-        // Prefilled identity (DOB converted to DD/MM/YYYY) makes the form valid
-        // with no typing, and those fields are locked.
+        // Prefilled identity (DOB converted to DD/MM/YYYY) plus the employment
+        // picks make the form valid with no typing, and those fields are locked.
+        await pickEmployment(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
         expect(result.current.isFirstNameLocked).toBe(true)
         expect(result.current.isLastNameLocked).toBe(true)
@@ -311,7 +359,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
     describe('US residents', () => {
         it('asks for the SSN and keeps the form invalid until it is entered', async () => {
             mockCountryIso = 'US'
-            mockSettings = { countries: [uk, france, usa], usStates: [] }
+            mockSettings = settingsWith([uk, france, usa])
             prefillValidForm()
             const { result } = renderHook(() =>
                 useCardOnboardingPersonalDetailsScreen(),
@@ -332,6 +380,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
                 useCardOnboardingPersonalDetailsScreen(),
             )
 
+            await pickEmployment(result)
             await waitFor(() => expect(result.current.isValid).toBe(true))
             expect(result.current.isUsResident).toBe(false)
         })
@@ -362,6 +411,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             const { result } = renderHook(() =>
                 useCardOnboardingPersonalDetailsScreen(),
             )
+            await pickEmployment(result)
             await waitFor(() => expect(result.current.isValid).toBe(true))
 
             await act(async () => {
@@ -385,6 +435,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         const { result } = renderHook(() =>
             useCardOnboardingPersonalDetailsScreen(),
         )
+        await pickEmployment(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
 
         await act(async () => {
@@ -415,6 +466,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         const { result } = renderHook(() =>
             useCardOnboardingPersonalDetailsScreen(),
         )
+        await pickEmployment(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
 
         await act(async () => {
@@ -436,6 +488,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         const { result } = renderHook(() =>
             useCardOnboardingPersonalDetailsScreen(),
         )
+        await pickEmployment(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
 
         await act(async () => {
@@ -460,6 +513,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         const { result } = renderHook(() =>
             useCardOnboardingPersonalDetailsScreen(),
         )
+        await pickEmployment(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
 
         await act(async () => {
@@ -470,6 +524,252 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress'),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    describe('employment', () => {
+        it('opens the option sheet over the matching settings list and submits the picked keys', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            await pickEmployment(result)
+            const [statusRequest, sectorRequest] = mockRequest.mock.calls.map(
+                call => call[0],
+            )
+            expect(statusRequest.contents.props).toEqual({
+                title: 'peraCard.personal_details.employment_status_label',
+                list: 'employmentStatuses',
+            })
+            expect(sectorRequest.contents.props.list).toBe('employmentSectors')
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockMutateAsync).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    employmentStatus: 'employed',
+                    employmentSector: 'informationTechnology',
+                }),
+            )
+        })
+
+        it('keeps the form invalid until both employment fields are picked', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            await waitFor(() =>
+                expect(result.current.isFirstNameLocked).toBe(true),
+            )
+            expect(result.current.isValid).toBe(false)
+        })
+    })
+
+    it('hides and skips employment when the environment lists no options', async () => {
+        mockSettings = {
+            ...settingsWith([uk, france]),
+            employmentStatuses: [],
+            employmentSectors: [],
+        }
+        prefillValidForm()
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.hasEmploymentStatuses).toBe(false)
+        expect(result.current.hasEmploymentSectors).toBe(false)
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        const sent = mockMutateAsync.mock.calls[0][0]
+        expect(sent).not.toHaveProperty('employmentStatus')
+        expect(sent).not.toHaveProperty('employmentSector')
+    })
+
+    describe('additional nationalities', () => {
+        const spain: SupportedCountry = {
+            ...france,
+            id: 'es',
+            iso3166alpha2: 'ES',
+            name: 'Spain',
+        }
+
+        const addNationality = async (
+            result: HookResult,
+            country: SupportedCountry,
+        ) => {
+            const before = result.current.additionalNationalities.length
+            mockRequest.mockResolvedValueOnce(country)
+            act(() => {
+                result.current.handleAddNationality()
+            })
+            await waitFor(() =>
+                expect(result.current.additionalNationalities).toHaveLength(
+                    before + 1,
+                ),
+            )
+        }
+
+        it('allows two extra nationalities and sends them with the details', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await pickEmployment(result)
+
+            await addNationality(result, france)
+            expect(result.current.canAddNationality).toBe(true)
+            await addNationality(result, spain)
+            expect(result.current.canAddNationality).toBe(false)
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockMutateAsync).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    additionalNationalities: ['FR', 'ES'],
+                }),
+            )
+        })
+
+        it('changes and removes an extra nationality', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await addNationality(result, france)
+
+            mockRequest.mockResolvedValueOnce(spain)
+            act(() => {
+                result.current.handleChangeAdditionalNationality(0)
+            })
+            await waitFor(() =>
+                expect(result.current.additionalNationalities).toEqual([spain]),
+            )
+
+            act(() => {
+                result.current.handleRemoveAdditionalNationality(0)
+            })
+            expect(result.current.additionalNationalities).toEqual([])
+        })
+
+        it('flags an extra nationality that repeats the main one and blocks submit', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await pickEmployment(result)
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await addNationality(result, uk)
+
+            await waitFor(() =>
+                expect(
+                    result.current.errors.additionalNationalities,
+                ).toBeTruthy(),
+            )
+            expect(result.current.isValid).toBe(false)
+        })
+
+        it('omits the field when no extra nationality was added', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await pickEmployment(result)
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockMutateAsync.mock.calls[0][0]).not.toHaveProperty(
+                'additionalNationalities',
+            )
+        })
+
+        it('prefills the extra nationalities the record already holds', async () => {
+            mockOnboardingDetails = {
+                verificationState: 'UNVERIFIED',
+                firstName: null,
+                lastName: null,
+                dateOfBirth: null,
+                countryOfNationality: null,
+                additionalNationalities: ['FR', 'JP'],
+            }
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            // JP is not a supported country, so only FR can be shown.
+            await waitFor(() =>
+                expect(result.current.additionalNationalities).toEqual([
+                    france,
+                ]),
+            )
+        })
+    })
+
+    describe('Portugal residents', () => {
+        const portugal: SupportedCountry = {
+            ...france,
+            id: 'pt',
+            iso3166alpha2: 'PT',
+            name: 'Portugal',
+        }
+
+        it('asks about the investment scheme and sends the answer', async () => {
+            mockCountryIso = 'PT'
+            mockSettings = settingsWith([uk, france, portugal])
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await pickEmployment(result)
+            expect(result.current.isPortugalResident).toBe(true)
+            expect(result.current.isPortugalInvestmentScheme).toBe(false)
+
+            act(() => {
+                result.current.handleTogglePortugalInvestmentScheme()
+            })
+            await waitFor(() =>
+                expect(result.current.isPortugalInvestmentScheme).toBe(true),
+            )
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockMutateAsync).toHaveBeenCalledWith(
+                expect.objectContaining({ portugalInvestmentScheme: true }),
+            )
+        })
+
+        it('does not send the scheme answer for anyone else', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await pickEmployment(result)
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(result.current.isPortugalResident).toBe(false)
+            expect(mockMutateAsync.mock.calls[0][0]).not.toHaveProperty(
+                'portugalInvestmentScheme',
+            )
+        })
     })
 
     it('stays editable when the server nationality is not in the supported list', async () => {

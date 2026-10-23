@@ -33,6 +33,7 @@ export {
     type FetchOnboardingDetailsParams,
     type OnboardingDetails,
     type SubmitPersonalDetailsParams,
+    type RegisterStepResult,
     type SubmitAddressParams,
     type SubmitAddressResult,
     type SubmitOnboardingConsentParams,

@@ -79,6 +79,14 @@ export const verifyEmailResponseSchema = z.object({
     hasAccount: z.boolean().nullish(),
 })
 
+// POST /v1/auth/register/personal-details (and later form steps): `user.phase`
+// names the step Baanx wants next. Everything is nullish so a body without the
+// user block still reads as "no phase" rather than failing a saved step.
+export const registerStepResponseSchema = z.object({
+    user: z.object({ phase: z.string().nullish() }).nullish(),
+})
+export type RegisterStepApiResponse = z.infer<typeof registerStepResponseSchema>
+
 // POST /v1/auth/register/verification — pre-auth (client key only); returns the
 // Veriff session URL for the onboarding KYC step. The caller hands it to
 // Linking.openURL, so the scheme is gated here.

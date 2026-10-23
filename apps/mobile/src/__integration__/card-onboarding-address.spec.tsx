@@ -384,7 +384,9 @@ describe('Flow: Card onboarding — residential address', () => {
         await waitFor(() =>
             expect(
                 getInputErrorMessage(
-                    screen.getByTestId('card-onboarding-address-state-input'),
+                    screen.getByTestId(
+                        'card-onboarding-address-state-field-input',
+                    ),
                 ),
             ).toBe('peraCard.address.us_state_required'),
         )

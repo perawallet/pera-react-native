@@ -10,24 +10,14 @@
  limitations under the License
  */
 
-import {
-    createElement,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react'
+import { useCallback, useMemo } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-    dobToIsoDate,
     getCardApiError,
     isDuplicateError,
-    isoDateToDob,
     OnboardingNotVerifiedError,
     createPersonalDetailsSchema,
-    ssnToApi,
     US_ISO,
     useCardStore,
     useOnboardingDetailsQuery,
@@ -35,19 +25,28 @@ import {
     useRegistrationSettingsQuery,
     useSubmitPersonalDetailsMutation,
     type PersonalDetailsFormValues,
+    type RegistrationOption,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
-import { useCardErrorToast } from '@modules/card/hooks'
+import {
+    useCardErrorToast,
+    useCardOptionField,
+    useRepeatedCountryField,
+} from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
+import { toPersonalDetailsInput } from './toPersonalDetailsInput'
+import { usePersonalDetailsPrefill } from './usePersonalDetailsPrefill'
+import { usePreselectedCountryField } from './usePreselectedCountryField'
+
+/** ISO 3166-1 alpha-2 of Portugal; Baanx asks its residents about an investment scheme. */
+const PORTUGAL_ISO = 'PT'
+const MAX_ADDITIONAL_NATIONALITIES = 2
 
 export type UseCardOnboardingPersonalDetailsScreenResult = {
     control: Control<PersonalDetailsFormValues>
@@ -78,6 +77,23 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
     selectedBirthCountry: Optional<SupportedCountry>
     isBirthCountryLocked: boolean
     handleSelectBirthCountry: () => void
+    /** Nationalities besides the main one, in the order they were added. */
+    additionalNationalities: SupportedCountry[]
+    canAddNationality: boolean
+    handleAddNationality: () => void
+    handleChangeAdditionalNationality: (index: number) => void
+    handleRemoveAdditionalNationality: (index: number) => void
+    /** The environment lists employment options; the fields hide otherwise. */
+    hasEmploymentStatuses: boolean
+    hasEmploymentSectors: boolean
+    selectedEmploymentStatus: Optional<RegistrationOption>
+    handleSelectEmploymentStatus: () => void
+    selectedEmploymentSector: Optional<RegistrationOption>
+    handleSelectEmploymentSector: () => void
+    /** Baanx asks Portugal residents whether they take part in an investment scheme. */
+    isPortugalResident: boolean
+    isPortugalInvestmentScheme: boolean
+    handleTogglePortugalInvestmentScheme: () => void
     handleConfirm: () => void
 }
 
@@ -99,24 +115,32 @@ export const useCardOnboardingPersonalDetailsScreen =
             bodyKey: i18nKey('peraCard.kyc_required.body'),
             shouldUseBackendMessage: false,
         })
-        const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
         const countryIso = useCardStore(state => state.countryIso)
         const isUsResident = countryIso === US_ISO
-        const personalDetailsSchema = useMemo(
-            () => createPersonalDetailsSchema({ isUsResident }),
-            [isUsResident],
-        )
+        const isPortugalResident = countryIso === PORTUGAL_ISO
         const submitPersonalDetails = useSubmitPersonalDetailsMutation(scope)
         const { data: settings } = useRegistrationSettingsQuery(scope)
+        // Required until the settings say an environment lists none.
+        const hasEmploymentStatuses = settings
+            ? settings.employmentStatuses.length > 0
+            : true
+        const hasEmploymentSectors = settings
+            ? settings.employmentSectors.length > 0
+            : true
+        const personalDetailsSchema = useMemo(
+            () =>
+                createPersonalDetailsSchema({
+                    isUsResident,
+                    hasEmploymentStatuses,
+                    hasEmploymentSectors,
+                }),
+            [isUsResident, hasEmploymentStatuses, hasEmploymentSectors],
+        )
         // On resume the onboarding record already holds the user's details, so
         // we prefill them and lock the fields the server has confirmed.
         const { data: onboardingDetails, isLoading: isRecordLoading } =
             useOnboardingDetailsQuery(scope, { onboardingId })
-
-        const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
-        const isLastNameLocked = Boolean(onboardingDetails?.lastName)
-        const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
 
         const { isKycRequired, markServerRefused } = useOnboardingKycGate(
             scope,
@@ -129,227 +153,161 @@ export const useCardOnboardingPersonalDetailsScreen =
             navigation.navigate('CardOnboardingVerification')
         }, [navigation])
 
-        // The server's confirmed nationality, resolved against the supported
-        // list so we can render its flag/name. Lock the field only when it
-        // actually resolves — a nationality the list doesn't contain (e.g.
-        // pulled from the KYC scan, or a list that shrank between sessions)
-        // must stay editable, otherwise the unmatched value would leave the
-        // field empty *and* locked, blocking submit with no way to fix it.
-        const serverNationality =
-            onboardingDetails?.countryOfNationality ?? null
-        const serverNationalityCountry = serverNationality
-            ? settings?.countries.find(
-                  country => country.iso3166alpha2 === serverNationality,
-              )
-            : undefined
-        const isNationalityLocked = Boolean(serverNationalityCountry)
-
-        const [selectedNationality, setSelectedNationality] =
-            useState<Optional<SupportedCountry>>(undefined)
-        const hasPreselected = useRef(false)
-        const serverBirthCountry = onboardingDetails?.countryOfBirth ?? null
-        const serverBirthCountryEntry = serverBirthCountry
-            ? settings?.countries.find(
-                  country => country.iso3166alpha2 === serverBirthCountry,
-              )
-            : undefined
-        const isBirthCountryLocked = Boolean(serverBirthCountryEntry)
-        const [selectedBirthCountry, setSelectedBirthCountry] =
-            useState<Optional<SupportedCountry>>(undefined)
-        const hasPreselectedBirth = useRef(false)
-        const hasPrefilled = useRef(false)
-
         const {
             control,
             handleSubmit,
             setValue,
+            trigger,
+            watch,
             formState: { isValid, errors },
         } = useForm<PersonalDetailsFormValues>({
             resolver: zodResolver(personalDetailsSchema),
             mode: 'onChange',
             defaultValues: {
                 firstName: '',
+                middleName: '',
                 lastName: '',
                 dateOfBirth: '',
                 countryOfNationality: '',
                 countryOfBirth: '',
+                additionalNationalities: [],
+                portugalInvestmentScheme: false,
+                employmentStatus: '',
+                employmentSector: '',
                 ssn: '',
             },
         })
+        const isPortugalInvestmentScheme = watch('portugalInvestmentScheme')
 
-        // Prefill the text fields from the onboarding record once it loads.
-        // Only fires once and only for fields the server actually returned, so a
-        // fresh registration (all profile fields null) leaves the form empty.
-        useEffect(() => {
-            if (hasPrefilled.current || !onboardingDetails) return
-            const { firstName, lastName, dateOfBirth } = onboardingDetails
-            if (!firstName && !lastName && !dateOfBirth) return
-            hasPrefilled.current = true
-            if (firstName) {
-                setValue('firstName', firstName, { shouldValidate: true })
-            }
-            if (lastName) {
-                setValue('lastName', lastName, { shouldValidate: true })
-            }
-            if (dateOfBirth) {
-                setValue('dateOfBirth', isoDateToDob(dateOfBirth), {
-                    shouldValidate: true,
-                })
-            }
-        }, [onboardingDetails, setValue])
-
-        // Preselect the nationality once settings load: prefer the server's
-        // confirmed value (resume), else fall back to the residence country as
-        // a changeable guess — including when the server value isn't in the
-        // supported list. Fires once and never overrides a manual pick.
-        useEffect(() => {
-            if (hasPreselected.current || selectedNationality) return
-            if (!settings?.countries.length) return
-            const match =
-                serverNationalityCountry ??
-                (countryIso
-                    ? settings.countries.find(
-                          country => country.iso3166alpha2 === countryIso,
-                      )
-                    : undefined)
-            if (!match) return
-            hasPreselected.current = true
-            setSelectedNationality(match)
-            setValue('countryOfNationality', match.iso3166alpha2, {
-                shouldValidate: true,
-            })
-        }, [
-            serverNationalityCountry,
-            countryIso,
-            settings,
-            selectedNationality,
-            setValue,
-        ])
-        // Baanx requires the birth country for EU/UK residents. Preselect it
-        // from the residence country like nationality, so the common case
-        // needs no extra tap and the field stays editable for the rest.
-        useEffect(() => {
-            if (hasPreselectedBirth.current || selectedBirthCountry) return
-            if (!settings?.countries.length) return
-            const match =
-                serverBirthCountryEntry ??
-                (countryIso
-                    ? settings.countries.find(
-                          country => country.iso3166alpha2 === countryIso,
-                      )
-                    : undefined)
-            if (!match) return
-            hasPreselectedBirth.current = true
-            setSelectedBirthCountry(match)
-            setValue('countryOfBirth', match.iso3166alpha2, {
-                shouldValidate: true,
-            })
-        }, [
-            serverBirthCountryEntry,
-            countryIso,
-            settings,
-            selectedBirthCountry,
-            setValue,
-        ])
-
-        const handleSelectNationality = useCallback(() => {
-            const openPicker = async () => {
-                const country = await request<SupportedCountry>({
-                    contents: createElement(CardCountryPickerContent, {
-                        title: t(
-                            'peraCard.personal_details.nationality_picker_title',
-                        ),
-                    }),
-                    // The picker owns a scrollable list, so it manages its own
-                    // layout — `false` gives that list a bounded height to scroll.
-                    options: { size: 'full', autoCreateContainer: false },
-                })
-                if (country) {
-                    setSelectedNationality(country)
+        const nationality = usePreselectedCountryField({
+            serverIso: onboardingDetails?.countryOfNationality ?? null,
+            residenceIso: countryIso,
+            countries: settings?.countries,
+            pickerTitle: t(
+                'peraCard.personal_details.nationality_picker_title',
+            ),
+            onChange: useCallback(
+                (country: SupportedCountry) => {
                     setValue('countryOfNationality', country.iso3166alpha2, {
                         shouldValidate: true,
                     })
-                }
-            }
-            void openPicker()
-        }, [request, setValue, t])
-
-        const handleSelectBirthCountry = useCallback(() => {
-            const openPicker = async () => {
-                const country = await request<SupportedCountry>({
-                    contents: createElement(CardCountryPickerContent, {
-                        title: t(
-                            'peraCard.personal_details.birth_country_picker_title',
-                        ),
-                    }),
-
-                    options: { size: 'full', autoCreateContainer: false },
-                })
-
-                if (country) {
-                    setSelectedBirthCountry(country)
-
+                    // The duplicate check lives on the extra nationalities, so
+                    // a new main one has to re-run it there.
+                    void trigger('additionalNationalities')
+                },
+                [setValue, trigger],
+            ),
+        })
+        // Baanx requires the birth country for EU/UK residents; preselecting
+        // the residence covers the common case with no extra tap.
+        const birthCountry = usePreselectedCountryField({
+            serverIso: onboardingDetails?.countryOfBirth ?? null,
+            residenceIso: countryIso,
+            countries: settings?.countries,
+            pickerTitle: t(
+                'peraCard.personal_details.birth_country_picker_title',
+            ),
+            onChange: useCallback(
+                (country: SupportedCountry) =>
                     setValue('countryOfBirth', country.iso3166alpha2, {
                         shouldValidate: true,
-                    })
-                }
+                    }),
+                [setValue],
+            ),
+        })
+        const extraNationalities = useRepeatedCountryField({
+            max: MAX_ADDITIONAL_NATIONALITIES,
+            pickerTitle: t(
+                'peraCard.personal_details.nationality_picker_title',
+            ),
+            onChange: useCallback(
+                (countries: SupportedCountry[]) =>
+                    setValue(
+                        'additionalNationalities',
+                        countries.map(country => country.iso3166alpha2),
+                        { shouldValidate: true },
+                    ),
+                [setValue],
+            ),
+        })
+        const employmentStatus = useCardOptionField({
+            list: 'employmentStatuses',
+            pickerTitle: t('peraCard.personal_details.employment_status_label'),
+            onChange: useCallback(
+                (option: RegistrationOption) =>
+                    setValue('employmentStatus', option.key, {
+                        shouldValidate: true,
+                    }),
+                [setValue],
+            ),
+        })
+        const employmentSector = useCardOptionField({
+            list: 'employmentSectors',
+            pickerTitle: t('peraCard.personal_details.employment_sector_label'),
+            onChange: useCallback(
+                (option: RegistrationOption) =>
+                    setValue('employmentSector', option.key, {
+                        shouldValidate: true,
+                    }),
+                [setValue],
+            ),
+        })
+
+        usePersonalDetailsPrefill({
+            record: onboardingDetails,
+            countries: settings?.countries,
+            maxExtraNationalities: MAX_ADDITIONAL_NATIONALITIES,
+            setValue,
+            setExtraNationalities: extraNationalities.setCountries,
+        })
+
+        const handleTogglePortugalInvestmentScheme = useCallback(() => {
+            setValue('portugalInvestmentScheme', !isPortugalInvestmentScheme, {
+                shouldValidate: true,
+            })
+        }, [isPortugalInvestmentScheme, setValue])
+
+        const submitDetails = handleSubmit(async values => {
+            // Set by email/verify; if missing, re-verify rather than submit an
+            // empty onboarding id.
+            if (onboardingId === null) {
+                errorToast(
+                    t('peraCard.personal_details.error_title'),
+                    t('peraCard.personal_details.error_body'),
+                )
+                navigation.navigate('CardOnboardingEmailVerify')
+                return
             }
-
-            void openPicker()
-        }, [request, setValue, t])
-
-        const submitDetails = handleSubmit(
-            async ({
-                firstName,
-                lastName,
-                dateOfBirth,
-                countryOfNationality,
-                countryOfBirth,
-                ssn,
-            }) => {
-                // Set by email/verify; if missing, re-verify rather than submit
-                // an empty onboarding id.
-                if (onboardingId === null) {
-                    errorToast(
-                        t('peraCard.personal_details.error_title'),
-                        t('peraCard.personal_details.error_body'),
-                    )
-                    navigation.navigate('CardOnboardingEmailVerify')
+            try {
+                await submitPersonalDetails.mutateAsync(
+                    toPersonalDetailsInput(values, {
+                        onboardingId,
+                        isUsResident,
+                        isPortugalResident,
+                    }),
+                )
+                navigation.navigate('CardOnboardingAddress')
+            } catch (error) {
+                // Checked before getCardApiError: the typed error carries no
+                // body, so it would otherwise fall through to the generic
+                // toast and the signal would be lost.
+                if (error instanceof OnboardingNotVerifiedError) {
+                    markServerRefused()
+                    await showKycError(error)
                     return
                 }
-                try {
-                    await submitPersonalDetails.mutateAsync({
-                        onboardingId,
-                        firstName,
-                        lastName,
-                        dateOfBirth: dobToIsoDate(dateOfBirth),
-                        countryOfNationality,
-                        countryOfBirth,
-                        ssn: isUsResident ? ssnToApi(ssn) : undefined,
-                    })
+                // A duplicate means Baanx already holds these details (a
+                // retried non-idempotent submit), so continue rather than
+                // strand the user. Otherwise prefer Baanx's own message so the
+                // real reason shows (e.g. a wrong-phase rejection).
+                const apiError = await getCardApiError(error)
+                if (isDuplicateError(apiError)) {
                     navigation.navigate('CardOnboardingAddress')
-                } catch (error) {
-                    // Checked before getCardApiError: the typed error carries
-                    // no body, so it would otherwise fall through to the
-                    // generic toast and the signal would be lost.
-                    if (error instanceof OnboardingNotVerifiedError) {
-                        markServerRefused()
-                        await showKycError(error)
-                        return
-                    }
-                    // A duplicate means Baanx already holds these details (a
-                    // retried non-idempotent submit) — continue rather than
-                    // strand the user. Otherwise prefer Baanx's own message so
-                    // the real reason shows (e.g. a wrong-phase rejection).
-                    const apiError = await getCardApiError(error)
-                    if (isDuplicateError(apiError)) {
-                        navigation.navigate('CardOnboardingAddress')
-                        return
-                    }
-                    await showError(error, apiError)
+                    return
                 }
-            },
-        )
+                await showError(error, apiError)
+            }
+        })
 
         const handleConfirm = () => {
             trackEvent(CardEvent.CreateVerifyAccountContinue)
@@ -361,19 +319,33 @@ export const useCardOnboardingPersonalDetailsScreen =
             errors,
             isValid,
             isSubmitting: submitPersonalDetails.isPending,
-            selectedNationality,
-            isFirstNameLocked,
-            isLastNameLocked,
-            isDateOfBirthLocked,
-            isNationalityLocked,
+            selectedNationality: nationality.selected,
+            isFirstNameLocked: Boolean(onboardingDetails?.firstName),
+            isLastNameLocked: Boolean(onboardingDetails?.lastName),
+            isDateOfBirthLocked: Boolean(onboardingDetails?.dateOfBirth),
+            isNationalityLocked: nationality.isLocked,
             isKycRequired,
             isRecordLoading,
             isUsResident,
             handleVerifyIdentity,
-            handleSelectNationality,
-            selectedBirthCountry,
-            isBirthCountryLocked,
-            handleSelectBirthCountry,
+            handleSelectNationality: nationality.handleSelect,
+            selectedBirthCountry: birthCountry.selected,
+            isBirthCountryLocked: birthCountry.isLocked,
+            handleSelectBirthCountry: birthCountry.handleSelect,
+            additionalNationalities: extraNationalities.countries,
+            canAddNationality: extraNationalities.canAdd,
+            handleAddNationality: extraNationalities.handleAdd,
+            handleChangeAdditionalNationality: extraNationalities.handleChange,
+            handleRemoveAdditionalNationality: extraNationalities.handleRemove,
+            hasEmploymentStatuses,
+            hasEmploymentSectors,
+            selectedEmploymentStatus: employmentStatus.selected,
+            handleSelectEmploymentStatus: employmentStatus.handleSelect,
+            selectedEmploymentSector: employmentSector.selected,
+            handleSelectEmploymentSector: employmentSector.handleSelect,
+            isPortugalResident,
+            isPortugalInvestmentScheme,
+            handleTogglePortugalInvestmentScheme,
             handleConfirm,
         }
     }

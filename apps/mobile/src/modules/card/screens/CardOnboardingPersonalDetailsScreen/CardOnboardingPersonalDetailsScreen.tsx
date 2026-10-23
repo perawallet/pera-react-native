@@ -17,11 +17,14 @@ import {
     PWInput,
     PWScreen,
     PWSkeleton,
+    PWText,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardConsentCheckboxRow } from '../../components/CardConsentCheckboxRow'
 import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
+import { OptionSelectorField } from '../../components/OptionSelectorField'
 import { useCardOnboardingPersonalDetailsScreen } from './useCardOnboardingPersonalDetailsScreen'
 import { useStyles } from './styles'
 
@@ -46,6 +49,20 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         selectedBirthCountry,
         isBirthCountryLocked,
         handleSelectBirthCountry,
+        additionalNationalities,
+        canAddNationality,
+        handleAddNationality,
+        handleChangeAdditionalNationality,
+        handleRemoveAdditionalNationality,
+        hasEmploymentStatuses,
+        hasEmploymentSectors,
+        selectedEmploymentStatus,
+        handleSelectEmploymentStatus,
+        selectedEmploymentSector,
+        handleSelectEmploymentSector,
+        isPortugalResident,
+        isPortugalInvestmentScheme,
+        handleTogglePortugalInvestmentScheme,
         handleConfirm,
     } = useCardOnboardingPersonalDetailsScreen()
 
@@ -104,6 +121,39 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                         : undefined
                                 }
                                 testID='card-onboarding-first-name-input'
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        control={control}
+                        name='middleName'
+                        render={({
+                            field: { onChange, onBlur, value },
+                            fieldState: { error },
+                        }) => (
+                            <PWInput
+                                label={t(
+                                    'peraCard.personal_details.middle_name_label',
+                                )}
+                                labelStyle={styles.label}
+                                value={value}
+                                onChangeText={onChange}
+                                onBlur={onBlur}
+                                autoCapitalize='words'
+                                autoCorrect={false}
+                                returnKeyType='next'
+                                showErrorOnBlur
+                                renderErrorMessage
+                                errorStyle={styles.errorMessage}
+                                errorMessage={
+                                    error && value
+                                        ? t(
+                                              'peraCard.personal_details.middle_name_invalid',
+                                          )
+                                        : undefined
+                                }
+                                testID='card-onboarding-middle-name-input'
                             />
                         )}
                     />
@@ -231,6 +281,59 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                         testID='card-onboarding-nationality-field'
                     />
 
+                    {additionalNationalities.map((country, index) => (
+                        <PWView key={`${country.iso3166alpha2}-${index}`}>
+                            <CountrySelectorField
+                                label={t(
+                                    'peraCard.personal_details.additional_nationality_label',
+                                )}
+                                placeholder={t(
+                                    'peraCard.personal_details.nationality_placeholder',
+                                )}
+                                country={country}
+                                onPress={() =>
+                                    handleChangeAdditionalNationality(index)
+                                }
+                                testID={`card-onboarding-additional-nationality-field-${index}`}
+                            />
+                            <PWText
+                                variant='linkPositive'
+                                onPress={() =>
+                                    handleRemoveAdditionalNationality(index)
+                                }
+                                style={styles.inlineLink}
+                                testID={`card-onboarding-remove-nationality-${index}`}
+                            >
+                                {t(
+                                    'peraCard.personal_details.remove_nationality',
+                                )}
+                            </PWText>
+                        </PWView>
+                    ))}
+
+                    {errors.additionalNationalities ? (
+                        <PWText
+                            variant='footnoteMedium'
+                            style={styles.fieldError}
+                            testID='card-onboarding-additional-nationality-error'
+                        >
+                            {t(
+                                'peraCard.personal_details.additional_nationality_duplicate',
+                            )}
+                        </PWText>
+                    ) : null}
+
+                    {canAddNationality ? (
+                        <PWText
+                            variant='linkPositive'
+                            onPress={handleAddNationality}
+                            style={styles.inlineLink}
+                            testID='card-onboarding-add-nationality'
+                        >
+                            {t('peraCard.personal_details.add_nationality')}
+                        </PWText>
+                    ) : null}
+
                     <CountrySelectorField
                         label={t(
                             'peraCard.personal_details.birth_country_label',
@@ -250,6 +353,46 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                         }
                         testID='card-onboarding-birth-country-field'
                     />
+
+                    {hasEmploymentStatuses ? (
+                        <OptionSelectorField
+                            label={t(
+                                'peraCard.personal_details.employment_status_label',
+                            )}
+                            placeholder={t(
+                                'peraCard.personal_details.option_placeholder',
+                            )}
+                            value={selectedEmploymentStatus?.name}
+                            onPress={handleSelectEmploymentStatus}
+                            testID='card-onboarding-employment-status-field'
+                        />
+                    ) : null}
+
+                    {hasEmploymentSectors ? (
+                        <OptionSelectorField
+                            label={t(
+                                'peraCard.personal_details.employment_sector_label',
+                            )}
+                            placeholder={t(
+                                'peraCard.personal_details.option_placeholder',
+                            )}
+                            value={selectedEmploymentSector?.name}
+                            onPress={handleSelectEmploymentSector}
+                            testID='card-onboarding-employment-sector-field'
+                        />
+                    ) : null}
+
+                    {isPortugalResident ? (
+                        <CardConsentCheckboxRow
+                            checked={isPortugalInvestmentScheme}
+                            onPress={handleTogglePortugalInvestmentScheme}
+                            testID='card-onboarding-portugal-scheme-checkbox'
+                        >
+                            {t(
+                                'peraCard.personal_details.portugal_investment_scheme',
+                            )}
+                        </CardConsentCheckboxRow>
+                    ) : null}
                 </PWView>
 
                 <PWButton

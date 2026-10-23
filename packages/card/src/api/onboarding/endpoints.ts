@@ -30,6 +30,7 @@ import {
     addressResponseSchema,
     consentResponseSchema,
     onboardingDetailsResponseSchema,
+    registerStepResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     sendEmailVerificationResponseSchema,
@@ -131,17 +132,34 @@ export const verifyPhone = async (params: VerifyPhoneParams): Promise<void> => {
     })
 }
 
+export type RegisterStepResult = {
+    /** The step Baanx wants next; null when it sent none we model. */
+    phase: Nullable<OnboardingPhase>
+}
+
+const toRegisterStepResult = (response: unknown): RegisterStepResult => {
+    const parsed = registerStepResponseSchema.safeParse(
+        (response as { data?: unknown } | undefined)?.data,
+    )
+    return {
+        phase: parsed.success
+            ? toEnumValueOrNull(OnboardingPhase, parsed.data.user?.phase)
+            : null,
+    }
+}
+
 export type SubmitPersonalDetailsParams = ScopeParams & {
     details: PersonalDetailsInput
 }
 export const submitPersonalDetails = async (
     params: SubmitPersonalDetailsParams,
-): Promise<void> => {
-    await postRegisterStep(
+): Promise<RegisterStepResult> => {
+    const response = await postRegisterStep(
         '/v1/auth/register/personal-details',
         params.details,
         params,
     )
+    return toRegisterStepResult(response)
 }
 
 export type StartRegisterVerificationParams = ScopeParams & {

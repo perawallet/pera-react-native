@@ -22,6 +22,7 @@ import {
     verifyPhone,
     startRegisterVerification,
     fetchOnboardingDetails,
+    submitPersonalDetails,
     submitAddress,
     submitMailingAddress,
     submitOnboardingConsent,
@@ -391,6 +392,69 @@ describe('onboarding endpoints', () => {
 
         expect(result.verificationState).toBeNull()
     })
+
+    it('submits personal details and returns the phase Baanx asks for next', async () => {
+        request.mockResolvedValue({
+            data: {
+                onboardingId: 'ob_1',
+                user: { id: 'ob_1', phase: 'ADDITIONAL_DETAILS' },
+            },
+        })
+        const details = {
+            onboardingId: 'ob_1',
+            firstName: 'Jane',
+            middleName: 'Ann',
+            lastName: 'Doe',
+            dateOfBirth: '2000-01-01',
+            countryOfNationality: 'PT',
+            countryOfBirth: 'PT',
+            additionalNationalities: ['ES'],
+            portugalInvestmentScheme: false,
+            employmentStatus: 'employed',
+            employmentSector: 'informationTechnology',
+        }
+
+        const result = await submitPersonalDetails({
+            details,
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toEqual({ phase: OnboardingPhase.AdditionalDetails })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/personal-details',
+                data: details,
+            }),
+        )
+    })
+
+    it.each([
+        ['no body', undefined],
+        ['no user block', { success: true }],
+        ['an unmodelled phase', { user: { phase: 'SOMETHING_NEW' } }],
+    ])(
+        'returns a null phase when personal details come back with %s',
+        async (_label, data) => {
+            request.mockResolvedValue({ data })
+
+            const result = await submitPersonalDetails({
+                details: {
+                    onboardingId: 'ob_1',
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                    dateOfBirth: '2000-01-01',
+                    countryOfNationality: 'GB',
+                    countryOfBirth: 'GB',
+                    employmentStatus: 'employed',
+                    employmentSector: 'retail',
+                },
+                scope: ALGORAND_MAINNET,
+            })
+
+            expect(result).toEqual({ phase: null })
+        },
+    )
 
     it('submits address and returns the access token, onboarding id, and user id', async () => {
         request.mockResolvedValue({

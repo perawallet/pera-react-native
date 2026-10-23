@@ -83,10 +83,15 @@ describe('PASSWORD_RULES', () => {
 describe('personalDetailsSchema', () => {
     const valid = {
         firstName: 'John',
+        middleName: '',
         lastName: 'Morgan',
         dateOfBirth: '27/02/1986',
         countryOfNationality: 'GB',
         countryOfBirth: 'GB',
+        additionalNationalities: [],
+        portugalInvestmentScheme: false,
+        employmentStatus: 'employed',
+        employmentSector: 'informationTechnology',
         ssn: '',
     }
 
@@ -95,7 +100,11 @@ describe('personalDetailsSchema', () => {
     })
 
     it('requires a masked SSN for US residents only', () => {
-        const usSchema = createPersonalDetailsSchema({ isUsResident: true })
+        const usSchema = createPersonalDetailsSchema({
+            isUsResident: true,
+            hasEmploymentStatuses: true,
+            hasEmploymentSectors: true,
+        })
         expect(usSchema.safeParse(valid).success).toBe(false)
         expect(
             usSchema.safeParse({ ...valid, ssn: '123-45-678' }).success,
@@ -104,10 +113,68 @@ describe('personalDetailsSchema', () => {
             usSchema.safeParse({ ...valid, ssn: '123-45-6789' }).success,
         ).toBe(true)
         expect(
-            createPersonalDetailsSchema({ isUsResident: false }).safeParse(
-                valid,
-            ).success,
+            createPersonalDetailsSchema({
+                isUsResident: false,
+                hasEmploymentStatuses: true,
+                hasEmploymentSectors: true,
+            }).safeParse(valid).success,
         ).toBe(true)
+    })
+
+    it('accepts a middle name with accents, apostrophes and hyphens, and two more nationalities', () => {
+        expect(
+            personalDetailsSchema.safeParse({
+                ...valid,
+                middleName: "Zoë O’Neil-d'Arc",
+                additionalNationalities: ['ES', 'PT'],
+            }).success,
+        ).toBe(true)
+    })
+
+    it('reports a repeated nationality on the additional nationalities', () => {
+        const result = personalDetailsSchema.safeParse({
+            ...valid,
+            additionalNationalities: ['GB'],
+        })
+
+        expect(result.error?.issues[0]).toMatchObject({
+            path: ['additionalNationalities'],
+            message: 'nationality-duplicate',
+        })
+    })
+
+    it('does not require employment where the environment lists no options', () => {
+        const schema = createPersonalDetailsSchema({
+            isUsResident: false,
+            hasEmploymentStatuses: false,
+            hasEmploymentSectors: false,
+        })
+
+        expect(
+            schema.safeParse({
+                ...valid,
+                employmentStatus: '',
+                employmentSector: '',
+            }).success,
+        ).toBe(true)
+    })
+
+    it('requires each employment field only where its list has options', () => {
+        const schema = createPersonalDetailsSchema({
+            isUsResident: false,
+            hasEmploymentStatuses: true,
+            hasEmploymentSectors: false,
+        })
+
+        const result = schema.safeParse({
+            ...valid,
+            employmentStatus: '',
+            employmentSector: '',
+        })
+
+        expect(result.error?.issues.map(issue => issue.path[0])).toEqual([
+            'employmentStatus',
+        ])
     })
 
     it('accepts a real leap-day date', () => {
@@ -137,6 +204,22 @@ describe('personalDetailsSchema', () => {
         ['future date', { dateOfBirth: '01/01/2999' }],
         ['pre-1900 year (typo guard)', { dateOfBirth: '01/01/0186' }],
         ['short nationality', { countryOfNationality: 'G' }],
+        ['middle name over 50 characters', { middleName: 'A'.repeat(51) }],
+        ['digits in the middle name', { middleName: 'J4mes' }],
+        ['no employment status', { employmentStatus: '' }],
+        ['no employment sector', { employmentSector: '' }],
+        [
+            'three additional nationalities',
+            { additionalNationalities: ['ES', 'FR', 'DE'] },
+        ],
+        [
+            'an additional nationality equal to the main one',
+            { additionalNationalities: ['GB'] },
+        ],
+        [
+            'the same additional nationality twice',
+            { additionalNationalities: ['ES', 'ES'] },
+        ],
     ])('rejects a record with %s', (_label, override) => {
         expect(
             personalDetailsSchema.safeParse({ ...valid, ...override }).success,

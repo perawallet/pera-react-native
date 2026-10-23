@@ -48,7 +48,7 @@ import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutat
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useLinkConsentMutation } from '../useLinkConsentMutation'
 import { useCardStore } from '../../store'
-import { OnboardingStep } from '../../models'
+import { OnboardingPhase, OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
 import { cardQueryKeys } from '../querykeys'
 
@@ -208,7 +208,12 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
             dateOfBirth: '2000-01-01',
             countryOfNationality: 'GB',
             countryOfBirth: 'GB',
+            employmentStatus: 'employed',
+            employmentSector: 'informationTechnology',
         }
+        api.submitPersonalDetails.mockResolvedValue({
+            phase: OnboardingPhase.PhysicalAddress,
+        })
         const { result } = renderHook(
             () => useSubmitPersonalDetailsMutation(SCOPE),
             {
@@ -221,6 +226,9 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         expect(api.submitPersonalDetails).toHaveBeenCalledWith({
             details,
             scope: SCOPE,
+        })
+        expect(result.current.data).toEqual({
+            phase: OnboardingPhase.PhysicalAddress,
         })
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Address,

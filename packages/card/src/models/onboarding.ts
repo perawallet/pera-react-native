@@ -70,6 +70,14 @@ export type SupportedUsState = {
     canSignUp: boolean
 }
 
+/** The settings lists made of {@link RegistrationOption}s. */
+export type RegistrationOptionList =
+    | 'occupations'
+    | 'sourcesOfWealth'
+    | 'businessSectors'
+    | 'employmentSectors'
+    | 'employmentStatuses'
+
 export type RegistrationSettings = {
     countries: SupportedCountry[]
     usStates: SupportedUsState[]
@@ -107,6 +115,8 @@ export type VeriffSession = {
 export type PersonalDetailsInput = {
     onboardingId: string
     firstName: string
+    /** As on the identity document; improves the KYC name match. */
+    middleName?: string
     lastName: string
     /** ISO date, YYYY-MM-DD. */
     dateOfBirth: string
@@ -116,6 +126,16 @@ export type PersonalDetailsInput = {
      * for everyone since the form preselects it from the residence country.
      */
     countryOfBirth: string
+    /** ISO 3166-1 alpha-2, up to two besides `countryOfNationality`. */
+    additionalNationalities?: string[]
+    /** Portugal residents only. */
+    portugalInvestmentScheme?: boolean
+    /**
+     * Keys from `employmentSectors` / `employmentStatuses` in the settings;
+     * omitted when the environment lists none.
+     */
+    employmentSector?: string
+    employmentStatus?: string
     /** US residents only. */
     ssn?: string
 }
@@ -266,9 +286,20 @@ const isValidPastDob = (value: string): boolean => {
     return isRealDate && date.getTime() <= Date.now()
 }
 
+/** Baanx accepts letters, spaces, apostrophes and hyphens in a middle name. */
+const MIDDLE_NAME_REGEX = /^[\p{L}\p{M} '’-]*$/u
+const MIDDLE_NAME_MAX_LENGTH = 50
+const MAX_ADDITIONAL_NATIONALITIES = 2
+
 /** Validation for the personal-details onboarding step. */
 const personalDetailsBaseSchema = z.object({
     firstName: z.string().trim().min(1),
+    /** Optional; empty means none. */
+    middleName: z
+        .string()
+        .trim()
+        .max(MIDDLE_NAME_MAX_LENGTH)
+        .regex(MIDDLE_NAME_REGEX),
     lastName: z.string().trim().min(1),
     /** Display format `DD/MM/YYYY`; converted to ISO before submission. */
     dateOfBirth: z.string().refine(isValidPastDob),
@@ -276,6 +307,14 @@ const personalDetailsBaseSchema = z.object({
     countryOfNationality: z.string().length(2),
     /** ISO 3166-1 alpha-2 of the birth country (required by Baanx for EU/UK). */
     countryOfBirth: z.string().length(2),
+    additionalNationalities: z
+        .array(z.string().length(2))
+        .max(MAX_ADDITIONAL_NATIONALITIES),
+    /** Only sent for Portugal residents. */
+    portugalInvestmentScheme: z.boolean(),
+    /** Empty when the environment lists no options. */
+    employmentStatus: z.string(),
+    employmentSector: z.string(),
     /** Display format `XXX-XX-XXXX`; empty unless the residence is the US. */
     ssn: z.string(),
 })
@@ -284,14 +323,33 @@ const SSN_DISPLAY_PATTERN = /^\d{3}-\d{2}-\d{4}$/
 
 /**
  * Baanx requires the SSN only for US residents, so the requirement is decided
- * by the residence rather than by the record itself.
+ * by the residence rather than by the record itself. Employment is required
+ * only where the environment lists options for it.
  */
 export const createPersonalDetailsSchema = ({
     isUsResident,
+    hasEmploymentStatuses,
+    hasEmploymentSectors,
 }: {
     isUsResident: boolean
+    hasEmploymentStatuses: boolean
+    hasEmploymentSectors: boolean
 }) =>
     personalDetailsBaseSchema.superRefine((values, ctx) => {
+        if (hasEmploymentStatuses && !values.employmentStatus) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['employmentStatus'],
+                message: 'employment-status-required',
+            })
+        }
+        if (hasEmploymentSectors && !values.employmentSector) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['employmentSector'],
+                message: 'employment-sector-required',
+            })
+        }
         if (isUsResident && !SSN_DISPLAY_PATTERN.test(values.ssn)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -299,10 +357,23 @@ export const createPersonalDetailsSchema = ({
                 message: 'ssn-invalid',
             })
         }
+        const nationalities = [
+            values.countryOfNationality,
+            ...values.additionalNationalities,
+        ]
+        if (new Set(nationalities).size !== nationalities.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['additionalNationalities'],
+                message: 'nationality-duplicate',
+            })
+        }
     })
 
 export const personalDetailsSchema = createPersonalDetailsSchema({
     isUsResident: false,
+    hasEmploymentStatuses: true,
+    hasEmploymentSectors: true,
 })
 
 export type PersonalDetailsFormValues = z.infer<

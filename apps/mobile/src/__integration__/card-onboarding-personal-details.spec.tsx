@@ -23,26 +23,19 @@ import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboa
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
+import {
+    buildRegistrationSettingsResponse,
+    settingsCountry,
+} from './__fixtures__/cardRegistrationSettings'
 
-const SETTINGS_RESPONSE = {
+const SETTINGS_RESPONSE = buildRegistrationSettingsResponse({
     countries: [
-        {
-            id: 'gb',
-            iso3166alpha2: 'GB',
-            name: 'United Kingdom',
-            callingCode: '44',
-            canSignUp: true,
-        },
-        {
-            id: 'us',
-            iso3166alpha2: 'US',
-            name: 'United States of America',
-            callingCode: '1',
-            canSignUp: true,
-        },
+        settingsCountry('GB', 'United Kingdom', '44'),
+        settingsCountry('US', 'United States of America'),
+        settingsCountry('PT', 'Portugal', '351'),
+        settingsCountry('ES', 'Spain', '34'),
     ],
-    usStates: [],
-}
+})
 
 // The screen reads the onboarding id from the store (no nav params), so seed it.
 const renderFlow = () =>
@@ -67,6 +60,24 @@ const renderFlow = () =>
         },
     )
 
+const pickOption = async (fieldTestId: string, optionKey: string) => {
+    fireEvent.click(screen.getByTestId(fieldTestId))
+    const option = await screen.findByTestId(`card-option-${optionKey}`)
+    fireEvent.click(option)
+    await waitFor(() =>
+        expect(screen.queryByTestId(`card-option-${optionKey}`)).toBeNull(),
+    )
+}
+
+// Employment has no server prefill, so every complete form picks it.
+const pickEmployment = async () => {
+    await pickOption('card-onboarding-employment-status-field', 'employed')
+    await pickOption(
+        'card-onboarding-employment-sector-field',
+        'informationTechnology',
+    )
+}
+
 // Fill only the name + date fields, leaving nationality to the preselect. The
 // form appears once the onboarding record has answered, so wait for it.
 const fillNameAndDob = async () => {
@@ -81,6 +92,7 @@ const fillNameAndDob = async () => {
     fireEvent.change(screen.getByTestId('card-onboarding-dob-input'), {
         target: { value: '27021986' },
     })
+    await pickEmployment()
 }
 
 // Fill the name + date fields and pick the UK as nationality so the form validates.
@@ -160,7 +172,12 @@ describe('Flow: Card onboarding — personal details', () => {
             dateOfBirth: '1986-02-27',
             countryOfNationality: 'GB',
             countryOfBirth: 'GB',
+            employmentStatus: 'employed',
+            employmentSector: 'informationTechnology',
         })
+        expect(body).not.toHaveProperty('middleName')
+        expect(body).not.toHaveProperty('additionalNationalities')
+        expect(body).not.toHaveProperty('portugalInvestmentScheme')
         // A successful submit advances the flow to the residential-address step.
         await waitFor(() =>
             expect(screen.getByTestId('card-onboarding-address')).toBeTruthy(),
@@ -224,6 +241,8 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
 
         // The server-confirmed identity fields are populated from the record.
+        await screen.findByTestId('card-onboarding-first-name-input')
+        await pickEmployment()
         await waitFor(() =>
             expect(
                 screen
@@ -238,7 +257,7 @@ describe('Flow: Card onboarding — personal details', () => {
             // Server ISO datetime is shown in the masked DD/MM/YYYY format.
         ).toBe('08/11/1997')
 
-        // Prefill alone makes the form valid — no typing needed.
+        // Prefill plus the employment picks make the form valid, no typing needed.
         const confirm = () =>
             screen.getByTestId('card-onboarding-personal-details-confirm')
         await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
@@ -294,6 +313,82 @@ describe('Flow: Card onboarding — personal details', () => {
                 countryOfNationality: 'US',
                 ssn: '123456789',
             }),
+        )
+    })
+
+    it('Given a Portugal resident with a middle name and a second nationality, when Continue is pressed, then all of them post', async () => {
+        useCardStore.getState().setCountryIso('PT')
+        let body: Record<string, unknown> | undefined
+        server.use(
+            http.post(
+                '*/v1/auth/register/personal-details',
+                async ({ request }) => {
+                    body = (await request.json()) as Record<string, unknown>
+                    return HttpResponse.json(
+                        { user: { phase: 'ADDITIONAL_DETAILS' } },
+                        { status: 200 },
+                    )
+                },
+            ),
+        )
+
+        renderFlow()
+        await fillNameAndDob()
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-middle-name-input'),
+            { target: { value: 'James' } },
+        )
+        fireEvent.click(screen.getByTestId('card-onboarding-add-nationality'))
+        fireEvent.click(await screen.findByTestId('card-country-ES'))
+        await screen.findByTestId(
+            'card-onboarding-additional-nationality-field-0',
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-portugal-scheme-checkbox'),
+        )
+
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
+
+        await waitFor(() =>
+            expect(body).toMatchObject({
+                middleName: 'James',
+                countryOfNationality: 'PT',
+                additionalNationalities: ['ES'],
+                portugalInvestmentScheme: true,
+            }),
+        )
+    })
+
+    it('Given an extra nationality equal to the main one, then the duplicate error shows and Continue stays gated', async () => {
+        renderFlow()
+        await fillNameAndDob()
+
+        fireEvent.click(screen.getByTestId('card-onboarding-add-nationality'))
+        fireEvent.click(await screen.findByTestId('card-country-GB'))
+
+        expect(
+            await screen.findByTestId(
+                'card-onboarding-additional-nationality-error',
+            ),
+        ).toBeTruthy()
+        expect(
+            isElementDisabled(
+                screen.getByTestId('card-onboarding-personal-details-confirm'),
+            ),
+        ).toBe(true)
+
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-remove-nationality-0'),
+        )
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId(
+                    'card-onboarding-additional-nationality-error',
+                ),
+            ).toBeNull(),
         )
     })
 

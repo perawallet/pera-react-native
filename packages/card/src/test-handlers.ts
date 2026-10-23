@@ -108,7 +108,12 @@ export {
     mockGetRegistrationSettings,
 } from './api/onboarding/msw-handlers'
 export type {
+    OnboardingDetailsApiResponse,
+    RegistrationSettingsApiResponse,
+} from './api/onboarding/schema'
+export type {
     MockGetRegistrationSettingsParams,
+    MockRegisterStepParams,
     MockSubmitOnboardingConsentParams,
     MockLinkOnboardingConsentParams,
 } from './api/onboarding/msw-handlers'

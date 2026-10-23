@@ -12,19 +12,12 @@
 
 import { Controller } from 'react-hook-form'
 import { Trans } from 'react-i18next'
-import {
-    PWButton,
-    PWIcon,
-    PWInput,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
 import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
+import { OptionSelectorField } from '../../components/OptionSelectorField'
 import { useCardOnboardingAddressScreen } from './useCardOnboardingAddressScreen'
 import { useStyles } from './styles'
 
@@ -196,44 +189,20 @@ export const CardOnboardingAddressScreen = () => {
                     />
 
                     {isUsResident ? (
-                        <PWTouchableOpacity
+                        <OptionSelectorField
+                            label={t('peraCard.address.us_state_label')}
+                            placeholder={t(
+                                'peraCard.address.us_state_placeholder',
+                            )}
+                            value={selectedUsState?.name}
                             onPress={handleSelectUsState}
-                            accessibilityRole='button'
-                            accessibilityLabel={`${t('peraCard.address.us_state_label')}, ${selectedUsState ? selectedUsState.name : t('peraCard.address.us_state_placeholder')}`}
+                            errorMessage={
+                                errors.usState
+                                    ? t('peraCard.address.us_state_required')
+                                    : undefined
+                            }
                             testID='card-onboarding-address-state-field'
-                        >
-                            <PWView
-                                pointerEvents='none'
-                                importantForAccessibility='no-hide-descendants'
-                                accessibilityElementsHidden
-                            >
-                                <PWInput
-                                    label={t('peraCard.address.us_state_label')}
-                                    labelStyle={styles.label}
-                                    value={selectedUsState?.name ?? ''}
-                                    placeholder={t(
-                                        'peraCard.address.us_state_placeholder',
-                                    )}
-                                    editable={false}
-                                    renderErrorMessage={!!errors.usState}
-                                    errorStyle={styles.errorMessage}
-                                    errorMessage={
-                                        errors.usState
-                                            ? t(
-                                                  'peraCard.address.us_state_required',
-                                              )
-                                            : undefined
-                                    }
-                                    rightIcon={
-                                        <PWIcon
-                                            name='chevron-down'
-                                            variant='secondary'
-                                        />
-                                    }
-                                    testID='card-onboarding-address-state-input'
-                                />
-                            </PWView>
-                        </PWTouchableOpacity>
+                        />
                     ) : null}
                 </PWView>
 
