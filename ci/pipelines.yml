@@ -138,11 +138,11 @@ _web_secrets: &web_secrets
   - GA_MEASUREMENT_API_SECRET
   - SENTRY_DSN
 
-# The web list plus the Chrome Web Store and Edge Add-ons uploads', which only
-# web-production runs. CWS_CRX_SIGNING_KEY_BASE64 may be stored empty: the
-# daemon has no optional secrets, and with an empty key ci/jobs/web.sh signs
-# nothing and uploads the zip. YAML cannot append to an anchored list, so a
-# secret added to _web_secrets goes here too.
+# The web list plus the Chrome Web Store upload's, which only web-production
+# runs. CWS_CRX_SIGNING_KEY_BASE64 may be stored empty: the daemon has no
+# optional secrets, and with an empty key ci/jobs/web.sh signs nothing and
+# uploads the zip. YAML cannot append to an anchored list, so a secret added to
+# _web_secrets goes here too.
 _web_production_secrets: &web_production_secrets
   - SLACK_WEBHOOK_URL
   - MAINNET_BACKEND_URL
@@ -175,9 +175,6 @@ _web_production_secrets: &web_production_secrets
   - CWS_PUBLISHER_ID
   - CWS_ITEM_ID
   - CWS_CRX_SIGNING_KEY_BASE64
-  - EDGE_CLIENT_ID
-  - EDGE_API_KEY
-  - EDGE_PRODUCT_ID
 
 pipelines:
   release:

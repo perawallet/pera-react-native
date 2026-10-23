@@ -40,7 +40,6 @@
     "check:patch-pins": "node tools/check-patch-pins.mjs",
     "check:single-algosdk": "node tools/check-single-algosdk.mjs",
     "release:upload-chrome-web-store": "node tools/release/upload-chrome-web-store.mjs",
-    "release:upload-edge-add-ons": "node tools/release/upload-edge-add-ons.mjs",
     "check:autodraw-hash": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-autodraw-template-hash.mjs",
     "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "check:dts-emit": "node tools/check-dts-emit.mjs",
