@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi } from 'vitest'
+import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -26,6 +27,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import {
+    buildRecordListRows,
     buildTransactionListRows,
     getTransactionRowKey,
     getTransactionRowType,
@@ -97,7 +99,48 @@ describe('buildTransactionListRows', () => {
     })
 })
 
+const makeRecord = (id: string, timestamp?: number) =>
+    ({ id, timestamp }) as TransactionRecord
+
+describe('buildRecordListRows', () => {
+    it('groups records by the day of their millisecond timestamp, newest day first', () => {
+        const rows = buildRecordListRows([
+            makeRecord('b', JAN_2 * 1000),
+            makeRecord('a', JAN_1 * 1000 + 60_000),
+        ])
+
+        expect(rows.map(row => `${row.kind}:${row.key}`)).toEqual([
+            'header:2024-01-02',
+            'record:b',
+            'header:2024-01-01',
+            'record:a',
+        ])
+    })
+
+    it('files a record with no timestamp under today', () => {
+        vi.useFakeTimers({ now: JAN_2 * 1000 + 3_600_000 })
+        try {
+            const rows = buildRecordListRows([makeRecord('pending')])
+
+            expect(rows[0].key).toBe('2024-01-02')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+})
+
 describe('row identity', () => {
+    it('pools record rows with transaction rows, which render the same item', () => {
+        const [, transactionRow] = buildTransactionListRows([
+            makeTransaction('1', JAN_1),
+        ])
+        const [, recordRow] = buildRecordListRows([makeRecord('2', JAN_1)])
+
+        expect(getTransactionRowType(recordRow)).toBe(
+            getTransactionRowType(transactionRow),
+        )
+    })
+
     it('pools headers and transactions separately', () => {
         const rows = buildTransactionListRows([makeTransaction('1', JAN_1)])
 

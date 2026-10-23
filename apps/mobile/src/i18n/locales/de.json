@@ -265,6 +265,8 @@
             "empty_body": "Keine Transaktionen gefunden",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
+            "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
+            "search_older": "Ältere durchsuchen",
             "filter": "Filter",
             "csv": "CSV"
         },

@@ -12,13 +12,20 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { fetchTransactionHistory, healCachedRows } from '../history-adapter'
+import {
+    fetchTransactionHistory,
+    hasCachedHistoryRows,
+    healCachedRows,
+} from '../history-adapter'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 
 export async function fetchAndPersistTransactions(
     address: string,
     scope: ChainScope,
 ): Promise<void> {
+    // Such a chain's History reads the backend on demand; there is no cache to fill.
+    if (!hasCachedHistoryRows(scope.chainId)) return
+
     const latestRoundTime = await getLatestTransactionRoundTime({
         accountAddress: address,
         scope,

@@ -19,13 +19,14 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
     type LocalizedText,
+    type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     summarizeHistoryItem,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { transactionIconName } from '@components/TransactionIcon'
@@ -39,10 +40,13 @@ import {
     type AmountDisplay,
 } from './amounts'
 
-export type UseTransactionListItemParams = {
-    transaction: TransactionHistoryItem
-    onPress?: (transaction: TransactionHistoryItem) => void
-}
+export type UseTransactionListItemParams =
+    | {
+          transaction: TransactionHistoryItem
+          onPress?: (transaction: TransactionHistoryItem) => void
+      }
+    // Opens nothing: the details screen reads a cached history row, which a record has none of.
+    | { record: TransactionRecord }
 
 export type UseTransactionListItemResult = {
     iconName: IconName
@@ -53,26 +57,34 @@ export type UseTransactionListItemResult = {
     amountsOverflowCount: number
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
-    handlePress: () => void
+    /** Unset on a row that opens nothing; long-press still copies, so the row stays touchable. */
+    handlePress: Optional<() => void>
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
 }
 
-export const useTransactionListItem = ({
-    transaction,
-    onPress,
-}: UseTransactionListItemParams): UseTransactionListItemResult => {
+export const useTransactionListItem = (
+    params: UseTransactionListItemParams,
+): UseTransactionListItemResult => {
+    const transaction = 'transaction' in params ? params.transaction : undefined
+    const record = 'record' in params ? params.record : undefined
+    const onPress = 'onPress' in params ? params.onPress : undefined
     const account = useSelectedAccount()
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = record?.scope ?? selectedScope
     const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
+    const id = (record ?? transaction)?.id ?? ''
 
     const summary = useMemo(
-        () => summarizeHistoryItem(transaction, address, scope.chainId),
-        [transaction, address, scope.chainId],
+        () =>
+            record
+                ? record.summary
+                : summarizeHistoryItem(transaction!, address, scope.chainId),
+        [record, transaction, address, scope.chainId],
     )
 
     const counterpartyName = useCounterpartyName(
@@ -114,13 +126,13 @@ export const useTransactionListItem = ({
         [visibleAmounts, storedAssets],
     )
 
-    const handlePress = useCallback(() => {
-        onPress?.(transaction)
+    const handleTransactionPress = useCallback(() => {
+        if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
 
     const handleLongPress = useCallback(
-        () => void copyToClipboard(transaction.id),
-        [copyToClipboard, transaction.id],
+        () => void copyToClipboard(id),
+        [copyToClipboard, id],
     )
 
     return {
@@ -133,7 +145,7 @@ export const useTransactionListItem = ({
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
         notice,
-        handlePress,
+        handlePress: record ? undefined : handleTransactionPress,
         handleLongPress,
     }
 }

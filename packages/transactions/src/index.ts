@@ -54,6 +54,7 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
+    hasCachedHistoryRows,
     mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
     historyItemGroupToOpen,
@@ -71,6 +72,7 @@ export {
     getPendingTransactionRecords,
     getTransactionHistoryWithPending,
     type GetPendingTransactionRecordsParams,
+    type HistoryPageWithPending,
 } from './pending-history'
 export * from './utils'
 

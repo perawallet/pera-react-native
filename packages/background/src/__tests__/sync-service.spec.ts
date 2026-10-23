@@ -220,6 +220,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    hasCachedHistoryRows: vi.fn(() => true),
     fetchTransactionHistory: vi.fn(() =>
         Promise.resolve({
             transactions: [],
@@ -232,6 +233,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     invalidateSpendableBalanceQueries: vi.fn(),
     invalidateTransactionQueries: vi.fn(),
     invalidateTransactionQueriesForAddresses: vi.fn(),
+    invalidateTransactionQueriesForScope: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
 
@@ -298,8 +300,9 @@ describe('SyncService', () => {
             await import('@perawallet/wallet-core-accounts')
         const { fetchAndPersistAssets, fetchAndPersistPrices } =
             await import('@perawallet/wallet-core-assets')
-        const { fetchAndPersistTransactions } =
+        const { fetchAndPersistTransactions, hasCachedHistoryRows } =
             await import('@perawallet/wallet-core-transactions')
+        vi.mocked(hasCachedHistoryRows).mockImplementation(() => true)
         vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
             Promise.resolve({ changed: true, holdingsChanged: true }),
         )
@@ -1171,7 +1174,7 @@ describe('SyncService', () => {
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1', 'ADDR2'])
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1', 'ADDR2'], TESTNET)
         })
 
         it('scopes invalidation to the given addresses when no holdings changed', async () => {
@@ -1199,7 +1202,7 @@ describe('SyncService', () => {
             )
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
 
             vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
                 Promise.resolve({ changed: true, holdingsChanged: true }),
@@ -1257,7 +1260,7 @@ describe('SyncService', () => {
             )
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
 
             vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
                 Promise.resolve(),
@@ -1330,7 +1333,7 @@ describe('SyncService', () => {
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
         })
     })
 
@@ -1470,8 +1473,11 @@ describe('SyncService', () => {
     })
 
     it('does not invalidate transaction queries when every account transaction fetch fails', async () => {
-        const { fetchAndPersistTransactions, invalidateTransactionQueries } =
-            await import('@perawallet/wallet-core-transactions')
+        const {
+            fetchAndPersistTransactions,
+            invalidateTransactionQueries,
+            invalidateTransactionQueriesForScope,
+        } = await import('@perawallet/wallet-core-transactions')
 
         vi.mocked(fetchAndPersistTransactions).mockRejectedValue(
             new Error('tx fetch blew up'),
@@ -1484,6 +1490,7 @@ describe('SyncService', () => {
         // When every account's transaction fetch rejects, invalidation
         // would force a re-read from DB with no new data — so we skip it.
         expect(invalidateTransactionQueries).not.toHaveBeenCalled()
+        expect(invalidateTransactionQueriesForScope).not.toHaveBeenCalled()
 
         vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
             Promise.resolve(),
@@ -2063,6 +2070,94 @@ describe('SyncService', () => {
             mockSendShouldRefreshRequest.mockResolvedValue({
                 refresh: true,
                 round: 42,
+            })
+        })
+
+        describe('transaction query invalidation', () => {
+            const runOneTick = async () => {
+                const { hasCachedHistoryRows } =
+                    await import('@perawallet/wallet-core-transactions')
+                vi.mocked(hasCachedHistoryRows).mockImplementation(
+                    chainId => chainId === 'algorand',
+                )
+                ethereumSignal.mockResolvedValue({ changed: true, cursor: 8 })
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                service = new SyncService({
+                    queryClient,
+                    stores: createSyncStorePorts(),
+                    chains: chainsDep(),
+                })
+                service.start()
+                await vi.advanceTimersByTimeAsync(50)
+                service.stop()
+                // Past the invalidation debounce.
+                await vi.advanceTimersByTimeAsync(300)
+            }
+
+            it("scopes a cached-row chain's invalidation to that chain", async () => {
+                const {
+                    invalidateTransactionQueries,
+                    invalidateTransactionQueriesForScope,
+                } = await import('@perawallet/wallet-core-transactions')
+
+                await runOneTick()
+
+                expect(invalidateTransactionQueries).not.toHaveBeenCalled()
+                expect(
+                    invalidateTransactionQueriesForScope,
+                ).toHaveBeenCalledWith(queryClient, MAINNET)
+                expect(
+                    invalidateTransactionQueriesForScope,
+                ).not.toHaveBeenCalledWith(queryClient, ETHEREUM)
+            })
+
+            it("keeps every scope's changed accounts when several change in one tick", async () => {
+                const { invalidateAccountQueriesForAddresses } =
+                    await import('@perawallet/wallet-core-accounts')
+
+                await runOneTick()
+
+                const algorandAddresses = mockAccounts.flatMap(account =>
+                    account.chains.algorand
+                        ? [account.chains.algorand.address]
+                        : [],
+                )
+                expect(
+                    invalidateAccountQueriesForAddresses,
+                ).toHaveBeenCalledWith(queryClient, algorandAddresses)
+                expect(
+                    invalidateAccountQueriesForAddresses,
+                ).toHaveBeenCalledWith(queryClient, ['0xabc'])
+            })
+
+            it("refreshes a records chain's History for the accounts that changed", async () => {
+                const { invalidateTransactionQueriesForAddresses } =
+                    await import('@perawallet/wallet-core-transactions')
+
+                await runOneTick()
+
+                expect(
+                    invalidateTransactionQueriesForAddresses,
+                ).toHaveBeenCalledWith(queryClient, ['0xabc'], ETHEREUM)
+            })
+
+            it("leaves a records chain's History alone when none of its accounts changed", async () => {
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                const { invalidateTransactionQueriesForAddresses } =
+                    await import('@perawallet/wallet-core-transactions')
+                vi.mocked(fetchAndPersistAccount).mockImplementation(
+                    async (_address, scope) =>
+                        scope.chainId === 'ethereum'
+                            ? { changed: false, holdingsChanged: false }
+                            : { changed: true, holdingsChanged: true },
+                )
+
+                await runOneTick()
+
+                expect(
+                    invalidateTransactionQueriesForAddresses,
+                ).not.toHaveBeenCalledWith(queryClient, ['0xabc'], ETHEREUM)
             })
         })
 

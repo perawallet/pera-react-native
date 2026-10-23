@@ -16,6 +16,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
+    i18nKey,
+    type TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -256,7 +260,7 @@ describe('useTransactionListItem', () => {
             const onPress = vi.fn()
             const transfer = golden('payment sent')
 
-            renderRow(transfer, onPress).handlePress()
+            renderRow(transfer, onPress).handlePress?.()
 
             expect(onPress).toHaveBeenCalledWith(transfer.item)
         })
@@ -266,5 +270,63 @@ describe('useTransactionListItem', () => {
 
             expect(mockCopyToClipboard).toHaveBeenCalledWith('TX')
         })
+    })
+})
+
+describe('useTransactionListItem with a record', () => {
+    const record: TransactionRecord = {
+        id: '0xhash',
+        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        status: 'confirmed',
+        timestamp: 1_704_067_200_000,
+        summary: {
+            kind: 'transfer',
+            title: { key: i18nKey('transactions.list_item.send') },
+            direction: 'out',
+            counterparty: '0xbob',
+            amount: {
+                assetRef: { chainId: 'ethereum', assetId: '0xusdc' },
+                value: new Decimal(1),
+            },
+            icon: 'send',
+        },
+        chainData: { family: 'evm' },
+    }
+
+    const renderRecord = () => {
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            chains: { ethereum: { address: '0xalice' } },
+        } as unknown as ReturnType<typeof useSelectedAccount>)
+        return renderHook(() => useTransactionListItem({ record }), {
+            wrapper,
+        }).result.current
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        historyChainAdapters.reset()
+        stored([])
+    })
+
+    it("renders the record's own summary without a history adapter", () => {
+        const row = renderRecord()
+
+        expect(row.title).toBe('transactions.list_item.send')
+        expect(row.subtitle).toBe('Counterparty')
+        expect(useCounterpartyName).toHaveBeenCalledWith('0xbob', 'ethereum')
+    })
+
+    it("looks its amounts' assets up on the record's own scope", () => {
+        renderRecord()
+
+        expect(useAssetsQuery).toHaveBeenCalledWith(record.scope, ['0xusdc'])
+    })
+
+    it('opens nothing on press, and still copies its id on long-press', () => {
+        const row = renderRecord()
+
+        expect(row.handlePress).toBeUndefined()
+        row.handleLongPress()
+        expect(mockCopyToClipboard).toHaveBeenCalledWith('0xhash')
     })
 })

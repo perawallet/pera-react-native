@@ -265,6 +265,8 @@
             "empty_body": "İşlem bulunamadı",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
+            "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
+            "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
             "csv": "CSV"
         },

@@ -228,6 +228,7 @@ describe('getTransactionHistoryWithPending', () => {
             '0xmined',
         ])
         expect(page.items[0].status).toBe('pending')
+        expect(page.minedItems.map(record => record.id)).toEqual(['0xmined'])
         expect(page.next).toEqual({ cursor: 'page-2' })
     })
 
@@ -258,7 +259,7 @@ describe('getTransactionHistoryWithPending', () => {
             cursor: 'page-2',
         })
 
-        expect(page).toBe(later)
+        expect(page).toEqual({ ...later, minedItems: later.items })
         expect(getSubmissionAttemptsWithHistoryEntry).not.toHaveBeenCalled()
     })
 
