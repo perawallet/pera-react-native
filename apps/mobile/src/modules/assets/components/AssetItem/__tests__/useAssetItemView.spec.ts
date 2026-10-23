@@ -33,7 +33,7 @@ describe('useAssetItemView', () => {
         const { result } = renderHook(() => useAssetItemView(make()))
         expect(result.current.isCollectible).toBe(false)
         expect(result.current.displayName).toBe('Test Asset')
-        expect(result.current.secondaryText).toBe('TST - 123')
+        expect(result.current.secondaryText).toBe('TST · 123')
         expect(result.current.iconShape).toBe('circle')
     })
 
@@ -100,7 +100,7 @@ describe('useAssetItemView', () => {
         )
         expect(result.current.isCollectible).toBe(true)
         expect(result.current.displayName).toBe('Penguin #42')
-        expect(result.current.secondaryText).toBe('Penguins - 123')
+        expect(result.current.secondaryText).toBe('Penguins · 123')
         expect(result.current.iconShape).toBe('square')
     })
 

@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getIconPixelSize, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { ChainIcon } from '@modules/chain-ui/icon'
 import { useChainIconStack } from './useChainIconStack'
-import { useStyles } from './styles'
+import { CHAIN_ICON_SIZE, useStyles } from './styles'
 
 export type ChainIconStackProps = {
     chainIds: ChainId[]
@@ -23,7 +22,6 @@ export type ChainIconStackProps = {
 
 export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { visibleChainIds, hiddenCount } = useChainIconStack(chainIds)
 
     return (
@@ -36,18 +34,24 @@ export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
                 >
                     <ChainIcon
                         chainId={chainId}
-                        size={getIconPixelSize(theme, 'xs')}
+                        size={CHAIN_ICON_SIZE}
                     />
                 </PWView>
             ))}
             {hiddenCount > 0 && (
-                <PWText
-                    variant='caption'
-                    style={styles.subtitle}
+                <PWView
+                    style={styles.stackedChainIcon}
                     testID='chain_icon_stack_more'
                 >
-                    {`+${hiddenCount}`}
-                </PWText>
+                    <PWView style={styles.moreChains}>
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.moreChainsLabel}
+                        >
+                            {`+${hiddenCount}`}
+                        </PWText>
+                    </PWView>
+                </PWView>
             )}
         </PWView>
     )

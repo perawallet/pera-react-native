@@ -13,8 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
 
+// Matches the design's 20px chain icons and "+N" chip.
+export const CHAIN_ICON_SIZE = 20
+
 export const useStyles = makeStyles(theme => ({
     container: {
+        gap: theme.spacing.sm,
+    },
+    summaryRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.lg,
@@ -22,22 +28,46 @@ export const useStyles = makeStyles(theme => ({
     info: {
         flex: 1,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        flexShrink: 1,
+    },
     title: {
         ...getFontWeightVariant(theme, 'h4', 500),
         flexShrink: 1,
     },
-    networksRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
+    suspiciousTitle: {
+        ...getFontWeightVariant(theme, 'h4', 500),
+        color: theme.colors.error,
+        flexShrink: 1,
     },
     subtitle: {
         color: theme.colors.textGray,
     },
+    // Starts at the text column: the xl asset icon plus the row gap.
+    networksRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
+    },
+    networksToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        flexShrink: 1,
+    },
+    networksToggleLabel: {
+        ...getFontWeightVariant(theme, 'h4', 500),
+        color: theme.colors.positive,
+        flexShrink: 1,
+    },
     chainIconStack: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: theme.spacing.xs,
+        marginLeft: theme.spacing.sm,
     },
     // Overlaps the icon before it; the ring in the row's background keeps the two distinct.
     stackedChainIcon: {
@@ -45,6 +75,21 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: theme.borders.md,
         borderColor: theme.colors.background,
         borderRadius: theme.borderRadius.full,
+    },
+    // Sits inside the same ring as the icons, so it matches their size and stays
+    // distinct from the icon it overlaps.
+    moreChains: {
+        width: CHAIN_ICON_SIZE,
+        height: CHAIN_ICON_SIZE,
+        borderRadius: theme.borderRadius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        backgroundColor: theme.colors.background,
+    },
+    moreChainsLabel: {
+        color: theme.colors.textGray,
     },
     chainLabel: {
         flexDirection: 'row',

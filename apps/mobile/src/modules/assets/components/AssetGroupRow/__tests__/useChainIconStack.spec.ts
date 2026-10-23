@@ -30,6 +30,14 @@ describe('useChainIconStack', () => {
         })
     })
 
+    it('shows exactly three chains with no "+N"', () => {
+        const { result } = renderHook(() =>
+            useChainIconStack(chains('algorand', 'ethereum', 'base')),
+        )
+
+        expect(result.current.hiddenCount).toBe(0)
+    })
+
     it('shows three chains and counts the rest', () => {
         const { result } = renderHook(() =>
             useChainIconStack(
