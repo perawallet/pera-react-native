@@ -87,9 +87,6 @@ export const createReactNativeApiMocks = () => {
             addEventListener: vi.fn(() => ({ remove: vi.fn() })),
             removeEventListener: vi.fn(),
         },
-        InteractionManager: {
-            runAfterInteractions: vi.fn(cb => cb()),
-        },
         Keyboard: {
             dismiss: vi.fn(),
             addListener: vi.fn(),

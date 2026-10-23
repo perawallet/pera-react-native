@@ -18,7 +18,7 @@ const appStateFake = vi.hoisted(() => {
     return {
         handlers,
         AppState: {
-            currentState: 'active',
+            currentState: 'active' as string | null,
             addEventListener: vi.fn((_type: string, handler: Handler) => {
                 handlers.push(handler)
                 return {
@@ -69,5 +69,11 @@ describe('RNAppLifecycleService', () => {
 
         expect(listener).toHaveBeenCalledWith('inactive')
         expect(service.getCurrentState()).toBe('inactive')
+    })
+
+    it('reports unknown before RN has a native state', () => {
+        appStateFake.AppState.currentState = null
+
+        expect(new RNAppLifecycleService().getCurrentState()).toBe('unknown')
     })
 })

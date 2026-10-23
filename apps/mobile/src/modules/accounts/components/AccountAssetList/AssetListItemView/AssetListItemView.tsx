@@ -29,7 +29,7 @@ import {
     AssetItemView,
     CollectibleListItem,
     AssetRowSkeleton,
-    NetworkLabel,
+    ChainLabel,
     type AssetFiatConverter,
 } from '@modules/assets'
 import { useStyles } from './styles'
@@ -152,7 +152,7 @@ const AssetListItemViewBase = ({
             asset={asset}
             right={balance}
             subtitle={
-                isGroupMember ? <NetworkLabel chainId={chainId} /> : undefined
+                isGroupMember ? <ChainLabel chainId={chainId} /> : undefined
             }
             showFavorite
             showDeletedLabel

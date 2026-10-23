@@ -43,7 +43,6 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
-import { ChainNetworkIconProvider } from '@modules/chain-ui/shell'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { PairingProgressOverlay } from '@modules/walletconnect/shell'
 import { useTokenListener } from '@modules/token'
@@ -210,7 +209,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
 
     return (
-        <ChainNetworkIconProvider>
+        <>
             <BottomSheetModalProvider>
                 {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>
@@ -232,6 +231,6 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             {/* LAST node in the root tree so it paints above navigation, sheet
                 modals and the AutoLockGuard PIN overlay (zIndex.max). Keep it last. */}
             <OfflineBanner />
-        </ChainNetworkIconProvider>
+        </>
     )
 }

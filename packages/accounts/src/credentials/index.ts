@@ -42,6 +42,7 @@ export {
     eligibleChains,
     eligibleChainsInFamily,
     findAddressHolder,
+    findHardwareHolder,
     findPathHolder,
     isEnabledByDefault,
     nextChainPosition,

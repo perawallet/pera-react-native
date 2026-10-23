@@ -22,7 +22,7 @@ import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 
 export type SerializedLedgerAccount = {
     address: string
-    /** Raw 32-byte Ed25519 public key, hex-encoded. */
+    /** The public key in the chain's signing-scheme encoding (32-byte Ed25519 on Algorand, 65-byte secp256k1 on Ethereum), hex-encoded. */
     publicKeyHex: string
     accountIndex: number
 }

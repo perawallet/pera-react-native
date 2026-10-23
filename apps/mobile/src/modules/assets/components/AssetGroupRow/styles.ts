@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
 
 // Matches the design's 20px chain icons and "+N" chip.
-export const NETWORK_ICON_SIZE = 20
+export const CHAIN_ICON_SIZE = 20
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -64,35 +64,31 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.linkPrimary,
         flexShrink: 1,
     },
-    networkStack: {
+    chainIconStack: {
         flexDirection: 'row',
         alignItems: 'center',
         marginLeft: theme.spacing.sm,
     },
-    networkIcon: {
-        borderRadius: theme.borderRadius.full,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.background,
-        overflow: 'hidden',
-    },
-    // Overlap the icons so the stack reads as one group of networks.
-    stackedNetworkIcon: {
+    // Overlaps the icon before it; the ring in the row's background keeps the two distinct.
+    stackedChainIcon: {
         marginLeft: -theme.spacing.xs,
-    },
-    moreNetworks: {
-        width: NETWORK_ICON_SIZE,
-        height: NETWORK_ICON_SIZE,
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.background,
         borderRadius: theme.borderRadius.full,
+    },
+    moreChains: {
+        width: CHAIN_ICON_SIZE,
+        height: CHAIN_ICON_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         backgroundColor: theme.colors.background,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
-    moreNetworksLabel: {
+    moreChainsLabel: {
         color: theme.colors.textGray,
     },
-    networkLabel: {
+    chainLabel: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,

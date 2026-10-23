@@ -415,10 +415,11 @@ describe('services/accounts/store', () => {
 
             const upgraded = useAccountsStore
                 .getState()
-                .upgradeWatchAccountToHardware('w1', {
-                    ...hardwareDetails,
-                    accountIndex: 3,
-                })
+                .upgradeWatchAccountToHardware(
+                    'w1',
+                    { ...hardwareDetails, accountIndex: 3 },
+                    MAINNET_SCOPE.chainId,
+                )
 
             expect(upgraded).toBe(true)
             expect(useAccountsStore.getState().accounts[0]).toStrictEqual({
@@ -445,7 +446,11 @@ describe('services/accounts/store', () => {
 
             const upgraded = useAccountsStore
                 .getState()
-                .upgradeWatchAccountToHardware('SIGNER', hardwareDetails)
+                .upgradeWatchAccountToHardware(
+                    'SIGNER',
+                    hardwareDetails,
+                    MAINNET_SCOPE.chainId,
+                )
 
             expect(upgraded).toBe(false)
             expect(useAccountsStore.getState().accounts[0]).toEqual(signer)
@@ -455,7 +460,11 @@ describe('services/accounts/store', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .upgradeWatchAccountToHardware('MISSING', hardwareDetails),
+                    .upgradeWatchAccountToHardware(
+                        'MISSING',
+                        hardwareDetails,
+                        MAINNET_SCOPE.chainId,
+                    ),
             ).toBe(false)
             expect(useAccountsStore.getState().accounts).toEqual([])
         })
@@ -469,10 +478,11 @@ describe('services/accounts/store', () => {
 
             const updated = useAccountsStore
                 .getState()
-                .updateHardwareDetails('HW', {
-                    ...hardwareDetails,
-                    deviceId: 'new-device',
-                })
+                .updateHardwareDetails(
+                    'HW',
+                    { ...hardwareDetails, deviceId: 'new-device' },
+                    MAINNET_SCOPE.chainId,
+                )
 
             expect(updated).toBe(true)
             const [stored] = useAccountsStore.getState().accounts
@@ -496,7 +506,11 @@ describe('services/accounts/store', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .updateHardwareDetails('HW', { ...hardwareDetails }),
+                    .updateHardwareDetails(
+                        'HW',
+                        { ...hardwareDetails },
+                        MAINNET_SCOPE.chainId,
+                    ),
             ).toBe(false)
         })
 
@@ -507,7 +521,11 @@ describe('services/accounts/store', () => {
             expect(
                 useAccountsStore
                     .getState()
-                    .updateHardwareDetails('WATCHED', hardwareDetails),
+                    .updateHardwareDetails(
+                        'WATCHED',
+                        hardwareDetails,
+                        MAINNET_SCOPE.chainId,
+                    ),
             ).toBe(false)
             expect(useAccountsStore.getState().accounts[0]).toEqual(watch)
         })

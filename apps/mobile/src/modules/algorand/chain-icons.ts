@@ -10,18 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
-import { NetworkIconProvider } from '@modules/assets'
-import { ChainIcon } from '../ChainIcon'
+// A separate entry so ChainIcon gets the logo without chain-ui.ts's transaction UI.
+import type { ComponentType } from 'react'
+import type { SvgProps } from 'react-native-svg'
+import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 
-export type ChainNetworkIconProviderProps = {
-    children: React.ReactNode
-}
-
-export const ChainNetworkIconProvider = ({
-    children,
-}: ChainNetworkIconProviderProps) => (
-    <NetworkIconProvider NetworkIcon={ChainIcon}>
-        {children}
-    </NetworkIconProvider>
-)
+export const algorandChainIcon = (): ComponentType<SvgProps> => AlgoAssetIcon

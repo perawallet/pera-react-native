@@ -47,6 +47,10 @@ import {
     kmsCore,
 } from '@perawallet/wallet-core-kms'
 import { createKmsCore } from '@perawallet/wallet-core-kms/create-kms-core'
+import {
+    addressCodecs,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { backupChainAdapters } from '../../../chain-adapter'
 import {
@@ -77,6 +81,28 @@ const ETH_HD_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const WATCH_ADDRESS = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 
 const store = () => useAccountsStore.getState()
+const LEDGER_ETH_ADDRESS = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
+const LEDGER_CUSTODY = {
+    kind: 'hardware',
+    device: {
+        manufacturer: 'ledger',
+        deviceId: 'ble-1',
+        deviceName: 'Nano X',
+        transportType: 'ble',
+    },
+    accountIndex: 0,
+} as const
+
+// The HD specs below never validate an Algorand address; the hardware restore does.
+const registerAlgorandCodec = () => {
+    if (addressCodecs.has('algorand')) return
+    addressCodecs.register({
+        chainId: 'algorand',
+        isValid: () => true,
+        normalize: (address: string) => address,
+        areEqual: (a: string, b: string) => a === b,
+    } as unknown as AddressCodec)
+}
 
 /** Whatever the sync engine would have pushed and the restore would pull back. */
 const throughTheWire = (accounts: WalletAccount[], hdFirstAddress: string) =>
@@ -275,6 +301,72 @@ describe('chain accounts through serialize and restore', () => {
                 prehash: false,
             }),
         ).toBe(true)
+    })
+
+    test('a Ledger account on Algorand and Ethereum comes back as one account with both entries', async () => {
+        const ledger = {
+            id: 'ledger',
+            name: 'Ledger 1',
+            custody: LEDGER_CUSTODY,
+            chains: {
+                algorand: { address: 'LEDGER-ALGO' },
+                ethereum: { address: LEDGER_ETH_ADDRESS },
+            },
+        } as unknown as WalletAccount
+        registerAlgorandCodec()
+        const pulled = await throughTheWire([ledger], 'FIRST')
+
+        store().resetState()
+        const { result } = renderHook(() =>
+            useCloudBackupImport({ chainId: 'algorand', networkId: 'mainnet' }),
+        )
+        const summary = await result.current.importAccounts(pulled)
+
+        expect(summary).toEqual({
+            imported: 1,
+            skippedDuplicate: 0,
+            failed: [],
+        })
+        expect(store().accounts).toHaveLength(1)
+        expect(store().accounts[0]).toMatchObject({
+            name: 'Ledger 1',
+            custody: LEDGER_CUSTODY,
+            chains: {
+                algorand: { address: 'LEDGER-ALGO' },
+                ethereum: { address: LEDGER_ETH_ADDRESS },
+            },
+        })
+    })
+
+    test('an Algorand-only Ledger account comes back as it went', async () => {
+        const ledger = {
+            id: 'ledger',
+            name: 'Ledger 1',
+            custody: LEDGER_CUSTODY,
+            chains: { algorand: { address: 'LEDGER-ALGO' } },
+        } as unknown as WalletAccount
+        registerAlgorandCodec()
+        const pulled = await throughTheWire([ledger], 'FIRST')
+
+        store().resetState()
+        const { result } = renderHook(() =>
+            useCloudBackupImport({ chainId: 'algorand', networkId: 'mainnet' }),
+        )
+        await result.current.importAccounts(pulled)
+
+        expect(store().accounts).toEqual([
+            expect.objectContaining({
+                name: 'Ledger 1',
+                custody: LEDGER_CUSTODY,
+                chains: {
+                    algorand: {
+                        address: 'LEDGER-ALGO',
+                        enabledAt: expect.any(Number),
+                        enabledBy: 'created',
+                    },
+                },
+            }),
+        ])
     })
 
     test('an HD account and an imported key, each on Ethereum and Base, come back with the same chains enabled and one key each', async () => {

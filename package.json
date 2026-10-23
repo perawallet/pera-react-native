@@ -60,7 +60,7 @@
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.87.0",
-    "oxlint-tsgolint": "^7.0.2003",
+    "oxlint-tsgolint": "^7.0.2004",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tsx": "catalog:",

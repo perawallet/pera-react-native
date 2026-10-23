@@ -19,6 +19,12 @@ vi.mock('@modules/chain-ui', () => {
     return { chainUiFor: vi.fn() }
 })
 
+// The assets barrel draws ChainIcon through the icon entry, which must not reach the registry either.
+vi.mock('../registry', () => {
+    loaded.chainUi = true
+    return { chainUiFor: vi.fn() }
+})
+
 // The registry builds its map at module load. If the assets barrel ever reached
 // it, Algorand's transaction bodies (which import AssetTitle from that barrel)
 // could still be initialising and its entry would come out undefined.

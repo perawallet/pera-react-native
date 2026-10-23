@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { LedgerHowItWorksContent } from './LedgerHowItWorksContent'
+export {
+    LedgerHowItWorksContent,
+    type LedgerHowItWorksContentProps,
+} from './LedgerHowItWorksContent'

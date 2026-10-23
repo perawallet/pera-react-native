@@ -36,6 +36,14 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
+
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
@@ -63,6 +71,7 @@ const buildChildSnapshot = (value: ChildValue): HardwareChildSnapshot => {
         value,
         matches,
         context: {
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             deviceName: 'Nano X',
             currentTx: null,
             totalTxs: null,

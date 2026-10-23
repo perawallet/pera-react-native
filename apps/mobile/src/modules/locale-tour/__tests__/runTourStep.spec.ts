@@ -81,6 +81,11 @@ describe('runTourStep', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         sheetStore.reset()
+        // RN installs it globally; jsdom has none.
+        vi.stubGlobal('requestIdleCallback', (callback: () => void) => {
+            callback()
+            return 0
+        })
         logged = []
         vi.spyOn(console, 'log').mockImplementation(line => {
             logged.push(String(line))

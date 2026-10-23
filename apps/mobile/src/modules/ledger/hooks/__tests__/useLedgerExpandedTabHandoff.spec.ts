@@ -21,7 +21,7 @@ describe('useLedgerExpandedTabHandoff (native default)', () => {
         expect(result.current.isPopupSurface).toBe(false)
         expect(result.current.isHandoffTab).toBe(false)
         await expect(
-            result.current.openLedgerExpandedTab('usb'),
+            result.current.openLedgerExpandedTab('usb', 'algorand'),
         ).resolves.toBeUndefined()
     })
 })

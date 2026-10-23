@@ -455,7 +455,7 @@ index 57f9b7c6f01682b537cd0b5b8c188f025965586d..bbf4400076c7675c195f9efa1d03d542
                  biometricPrompt.authenticate(promptInfo)
              }
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index c0b23c0c1c5de2e32ed94b442125c56f7660b347..87e6ace83bfc2a83369842fdac27d69ae2b25c20 100644
+index c0b23c0c1c5de2e32ed94b442125c56f7660b347..458c3be81148f1bf8c53ce05f2a1ad776f46dfcd 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 @@ -4,7 +4,10 @@ import expo.modules.kotlin.exception.CodedException
@@ -470,6 +470,83 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..87e6ace83bfc2a83369842fdac27d69a
  import android.content.ComponentName
  import android.content.Context
  import android.content.Intent
+@@ -45,7 +48,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+ 
+     OnCreate {
+       instance = this@ReactNativePasskeyAutofillModule
+-      ((appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context)?.let { PasskeyLog.init(it) }
++      appContext.reactContext?.let { PasskeyLog.init(it) }
+     }
+ 
+     OnDestroy {
+@@ -58,7 +61,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // promise. Logging and resolving would let the wallet believe the key is in
+     // place while credential creation is impossible.
+     AsyncFunction("setMasterKey") { secret: ByteArray ->
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+         ?: throw MasterKeyException("Could not get context to save master key")
+       try {
+         credentialRepository.saveMasterKey(context, secret)
+@@ -72,7 +75,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // The scheme is not a parameter: it is read from the record's own metadata,
+     // so a wallet cannot mislabel which hierarchy it handed us.
+     AsyncFunction("setMainKeyId") { id: String ->
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+       if (context != null) {
+         credentialRepository.saveMainKeyId(context, id)
+       } else {
+@@ -81,7 +84,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     }
+ 
+     AsyncFunction("getMainKeyId") {
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+       if (context != null) {
+         credentialRepository.getMainKeyId(context)
+       } else {
+@@ -93,7 +96,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // Deprecated aliases of the two above, kept because installed wallets still
+     // call them. They address the same slot — see `saveMainKeyId`.
+     AsyncFunction("setHdRootKeyId") { id: String ->
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+       if (context != null) {
+         credentialRepository.saveMainKeyId(context, id)
+       } else {
+@@ -102,7 +105,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     }
+ 
+     AsyncFunction("getHdRootKeyId") {
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+       if (context != null) {
+         credentialRepository.getMainKeyId(context)
+       } else {
+@@ -112,19 +115,19 @@ class ReactNativePasskeyAutofillModule : Module() {
+     }
+ 
+     AsyncFunction("clearCredentials") {
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+         ?: return@AsyncFunction Unit
+       credentialRepository.clearCredentials(context)
+     }
+ 
+     AsyncFunction("deleteCredential") { credentialId: String ->
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+         ?: return@AsyncFunction Unit
+       credentialRepository.deleteCredential(context, credentialId)
+     }
+ 
+     AsyncFunction("configureIntentActions") { getPasskeyAction: String, createPasskeyAction: String ->
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+       if (context != null) {
+         credentialRepository.configureIntentActions(context, getPasskeyAction, createPasskeyAction)
+       }
 @@ -143,14 +146,6 @@ class ReactNativePasskeyAutofillModule : Module() {
        // No-op: see comment above.
      }
@@ -485,9 +562,26 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..87e6ace83bfc2a83369842fdac27d69a
      // NoOp on Android. iOS exposes diagnostics from the shared App Group
      // store; there is no equivalent on Android yet.
      AsyncFunction("getDiagnostics") {
-@@ -172,14 +167,13 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -158,28 +153,27 @@ class ReactNativePasskeyAutofillModule : Module() {
+     }
+ 
+     AsyncFunction("isProviderActive") {
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+         ?: return@AsyncFunction false
+       isProviderEnabled(context)
+     }
+ 
+     AsyncFunction("openProviderSettings") {
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
+         ?: return@AsyncFunction false
+       openCredentialProviderSettings(context)
+     }
+ 
      AsyncFunction("getStoredCredentials") {
-       val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+-      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val context = appContext.reactContext
          ?: return@AsyncFunction emptyList<Map<String, Any>>()
 +      // PERA LOCAL PATCH: maps the key-free summary; JS never read `publicKey` or `derivationScheme`.
        credentialRepository.getAllCredentials(context).map { credential ->

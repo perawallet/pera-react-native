@@ -49,7 +49,11 @@ const openedTransport: HardwareWalletTransport = {
     disconnect: vi.fn(),
 }
 const driverOpenMock = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
-const fakeDriver: LedgerAppDriver = { chainId: 'test', open: driverOpenMock }
+const fakeDriver: LedgerAppDriver = {
+    chainId: 'test',
+    appName: 'Test',
+    open: driverOpenMock,
+}
 
 // The real @ledgerhq/react-native-hid DeviceObj exposes only vendorId,
 // productId and deviceName — there is no stable per-device id — so
@@ -252,7 +256,11 @@ describe('RNLedgerUsbService', () => {
 
     test('opens only the driver of the chain it connects for', async () => {
         const otherOpen = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
-        ledgerAppDriverRegistry.register({ chainId: 'other', open: otherOpen })
+        ledgerAppDriverRegistry.register({
+            chainId: 'other',
+            appName: 'Other',
+            open: otherOpen,
+        })
 
         await connectToFirstDevice(undefined, 'other')
         expect(otherOpen).toHaveBeenCalledTimes(1)

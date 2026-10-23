@@ -18,18 +18,25 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export type ChainSelectionContentProps = {
     chainIds: ChainId[]
+    /** Header text; defaults to asking which chain an address is on. */
+    title?: string
 }
 
 /** Resolves the picked chain's id. */
 export const ChainSelectionContent = ({
     chainIds,
+    title,
 }: ChainSelectionContentProps) => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<ChainId>()
 
     return (
         <PWSheetLayout
-            header={<SheetHeader title={t('deeplink.select_chain.title')} />}
+            header={
+                <SheetHeader
+                    title={title ?? t('deeplink.select_chain.title')}
+                />
+            }
         >
             {chainIds.map(chainId => (
                 <PWListItem

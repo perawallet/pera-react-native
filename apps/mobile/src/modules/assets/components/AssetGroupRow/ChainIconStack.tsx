@@ -12,44 +12,40 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
-import { useNetworkIcon } from '../NetworkIconProvider'
-import { useNetworkIconStack } from './useNetworkIconStack'
-import { NETWORK_ICON_SIZE, useStyles } from './styles'
+import { ChainIcon } from '@modules/chain-ui/icon'
+import { useChainIconStack } from './useChainIconStack'
+import { CHAIN_ICON_SIZE, useStyles } from './styles'
 
-export type NetworkIconStackProps = {
+export type ChainIconStackProps = {
     chainIds: ChainId[]
 }
 
-export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
+export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
     const styles = useStyles()
-    const NetworkIcon = useNetworkIcon()
-    const { visibleChainIds, hiddenCount } = useNetworkIconStack(chainIds)
+    const { visibleChainIds, hiddenCount } = useChainIconStack(chainIds)
 
     return (
-        <PWView style={styles.networkStack}>
+        <PWView style={styles.chainIconStack}>
             {visibleChainIds.map((chainId, index) => (
                 <PWView
                     key={chainId}
-                    testID={`network_icon_${chainId}`}
-                    style={[
-                        styles.networkIcon,
-                        index > 0 ? styles.stackedNetworkIcon : undefined,
-                    ]}
+                    testID={`chain_icon_stack_${chainId}`}
+                    style={index > 0 && styles.stackedChainIcon}
                 >
-                    <NetworkIcon
+                    <ChainIcon
                         chainId={chainId}
-                        size={NETWORK_ICON_SIZE}
+                        size={CHAIN_ICON_SIZE}
                     />
                 </PWView>
             ))}
             {hiddenCount > 0 && (
                 <PWView
-                    style={[styles.moreNetworks, styles.stackedNetworkIcon]}
-                    testID='network_icon_stack_more'
+                    style={[styles.stackedChainIcon, styles.moreChains]}
+                    testID='chain_icon_stack_more'
                 >
                     <PWText
                         variant='captionMedium'
-                        style={styles.moreNetworksLabel}
+                        style={styles.moreChainsLabel}
                     >
                         {`+${hiddenCount}`}
                     </PWText>

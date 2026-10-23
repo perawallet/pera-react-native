@@ -19,12 +19,15 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 // the locale tour's register/registry are the files metro.config.js stubs out
 // of release builds, the history row needs only Algorand's icon map, and the
 // chain-UI registry only each chain's per-feature UI, so neither goes through
-// the barrel.
+// the barrel. Chain icons get their own pair (each chain's logos, and the
+// ChainIcon that draws them) because the assets barrel renders them and must
+// not load the registry.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
-    algorand: ['icons', 'chain-ui'],
+    algorand: ['icons', 'chain-ui', 'chain-icons'],
     banners: ['carousel'],
+    'chain-ui': ['icon'],
     deeplink: ['core'],
-    ethereum: ['chain-ui'],
+    ethereum: ['chain-ui', 'chain-icons'],
     'locale-tour': ['register', 'registry'],
     webview: ['browser'],
 }

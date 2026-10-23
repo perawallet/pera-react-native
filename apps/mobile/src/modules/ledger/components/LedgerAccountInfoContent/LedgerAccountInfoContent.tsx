@@ -25,7 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AccountAssetItemView } from '@modules/assets'
 import {
@@ -54,15 +54,17 @@ const LEDGER_AUTH_ACCOUNT: HardwareWalletAccount = {
 export type LedgerAccountInfoContentProps = {
     address: string
     accountIndex: number
+    chainId: ChainId
     title?: string
 }
 
 export const LedgerAccountInfoContent = ({
     address,
     accountIndex,
+    chainId,
     title,
 }: LedgerAccountInfoContentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
@@ -72,7 +74,7 @@ export const LedgerAccountInfoContent = ({
         isLoading,
         isError,
         refetch,
-    } = useLedgerAccountInfoContent(address, accountIndex, title)
+    } = useLedgerAccountInfoContent(address, accountIndex, chainId, title)
 
     const renderItem = useCallback(
         ({ item }: { item: LedgerInfoListItem }) => {
@@ -103,14 +105,14 @@ export const LedgerAccountInfoContent = ({
                             <PWView style={styles.balanceContainer}>
                                 <AssetAmount
                                     asset={nativeAsset}
-                                    value={item.algoBalance}
+                                    value={item.nativeBalance}
                                     density='compact'
                                     variant='bodyCompact'
                                 />
                                 <PreferredAmount
                                     sourceAssetId={nativeAsset.assetId}
-                                    sourceAmount={item.algoBalance}
-                                    usdPrice={item.algoUsdPrice}
+                                    sourceAmount={item.nativeBalance}
+                                    usdPrice={item.nativeUsdPrice}
                                     density='compact'
                                     variant='bodyCompact'
                                     style={styles.fiatBalance}

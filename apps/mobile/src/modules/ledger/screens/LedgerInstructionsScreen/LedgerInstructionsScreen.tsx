@@ -32,7 +32,7 @@ const USB_INSTRUCTIONS = [
 
 export const LedgerInstructionsScreen = () => {
     const styles = useStyles()
-    const { isChecking, transportType, handleContinue, t } =
+    const { isChecking, transportType, appName, handleContinue, t } =
         useLedgerInstructionsScreen()
 
     const isUsb = transportType === 'usb'
@@ -79,7 +79,7 @@ export const LedgerInstructionsScreen = () => {
                             variant='body'
                             style={styles.instructionText}
                         >
-                            {t(key)}
+                            {t(key, { appName })}
                         </PWText>
                     </PWView>
                 ))}

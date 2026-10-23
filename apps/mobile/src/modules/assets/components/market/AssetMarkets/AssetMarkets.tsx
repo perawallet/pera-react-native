@@ -29,7 +29,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { NetworkLabel } from '../../AssetGroupRow'
+import { ChainLabel } from '../../AssetGroupRow'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
@@ -165,9 +165,7 @@ export const AssetMarkets = ({
                         />
                     </PWView>
                 </PWView>
-                {isNetworkLineVisible && (
-                    <NetworkLabel chainId={scope.chainId} />
-                )}
+                {isNetworkLineVisible && <ChainLabel chainId={scope.chainId} />}
                 <PWView style={styles.priceContainer}>
                     <PWView>
                         {selectedPoint ? (

@@ -19,20 +19,18 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.sm,
     },
-    activeChip: {
-        ...getFontWeightVariant(theme, 'body', 500),
+    chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
         paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.full,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
+    },
+    activeChip: {
         backgroundColor: theme.colors.layerGrayLighter,
     },
-    chip: {
-        paddingVertical: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.lg,
-        borderRadius: theme.borderRadius.full,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-    },
+    activeLabel: getFontWeightVariant(theme, 'body', 500),
 }))

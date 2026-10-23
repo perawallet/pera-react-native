@@ -17,6 +17,7 @@ import {
     putTabResumeIntent,
 } from '@perawallet/wallet-core-browser-runtime'
 import { peekTabResumeIntent } from '@utils/tabResumeIntent'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { UseLedgerExpandedTabHandoffResult } from './useLedgerExpandedTabHandoff'
 import { isLedgerHandoffTab } from './useLedgerHandoffTabExit.web'
@@ -32,9 +33,13 @@ import { isLedgerHandoffTab } from './useLedgerHandoffTabExit.web'
 export const useLedgerExpandedTabHandoff =
     (): UseLedgerExpandedTabHandoffResult => ({
         isPopupSurface: getSurface() === 'popup',
-        openLedgerExpandedTab: (transportType: LedgerTransportType) =>
+        openLedgerExpandedTab: (
+            transportType: LedgerTransportType,
+            chainId: ChainId,
+        ) =>
             openExpandedTab(
                 transportType === 'usb' ? 'ledger-usb' : 'ledger-ble',
+                chainId,
             ),
         openWalletInTab: async () => {
             // Read before the first await: the caller closes the error sheet

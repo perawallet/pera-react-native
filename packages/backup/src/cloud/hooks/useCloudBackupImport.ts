@@ -16,6 +16,7 @@ import {
     chainAccountOf,
     DuplicateAccountError,
     findAddressHolder,
+    findHardwareHolder,
     findPathHolder,
     hasCustody,
     isSameAddress,
@@ -523,6 +524,41 @@ const attachWatchChain = (
     return true
 }
 
+/** A hardware account on several chains comes as one entry per chain, and
+ *  the wallet may already hold the device position from another record; the
+ *  entry joins that account. False when there is none free on the chain: one
+ *  holding another address there is another seed, so the entry is its own
+ *  account. */
+const attachHardwareChain = (
+    context: ImportContext,
+    groupHolder: WalletAccount | undefined,
+    chainId: ChainId,
+    payload: HardwareAddressPayload,
+): boolean => {
+    const holder =
+        groupHolder && hasCustody(groupHolder, 'hardware')
+            ? groupHolder
+            : findHardwareHolder(
+                  useAccountsStore
+                      .getState()
+                      .accounts.filter(
+                          account =>
+                              chainAccountOf(account, chainId) === undefined,
+                      ),
+                  payload,
+              )
+    if (!holder || chainAccountOf(holder, chainId) !== undefined) return false
+    assertValidAddress(chainId, payload.address)
+    context.replaceAccount({
+        ...holder,
+        chains: {
+            ...holder.chains,
+            [chainId]: withEnablement({ address: payload.address }, 'created'),
+        },
+    })
+    return true
+}
+
 const chainOf = (context: ImportContext, account: PulledAccount): ChainId =>
     account.chain ?? context.scope.chainId
 
@@ -602,6 +638,15 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.hardware: {
+            if (
+                attachHardwareChain(
+                    context,
+                    groupHolder,
+                    chainId,
+                    addressPayload,
+                )
+            )
+                return 0
             context.appendAccount(buildHardwareAccount(chainId, addressPayload))
             return 1
         }

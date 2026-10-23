@@ -17,7 +17,7 @@ import { useLedgerTroubleshootingScreen } from './useLedgerTroubleshootingScreen
 
 export const LedgerTroubleshootingScreen = () => {
     const styles = useStyles()
-    const { pairingStepKeys, commonIssueKeys, handleDone, t } =
+    const { pairingStepKeys, commonIssueKeys, appName, handleDone, t } =
         useLedgerTroubleshootingScreen()
 
     return (
@@ -58,7 +58,7 @@ export const LedgerTroubleshootingScreen = () => {
                             variant='body'
                             style={styles.listItemText}
                         >
-                            {t(key)}
+                            {t(key, { appName })}
                         </PWText>
                     </PWView>
                 ))}

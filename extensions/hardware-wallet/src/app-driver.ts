@@ -40,6 +40,8 @@ export type LedgerAppErrorClassifier = (error: unknown) => AppError
 export interface LedgerAppDriver {
     /** A chain-contract `ChainId`; extensions may not depend on chain-contract. */
     chainId: string
+    /** The device app the user opens for this chain, as Ledger Live lists it. */
+    appName: string
     open(
         transport: LedgerAppTransport,
         classifyError?: LedgerAppErrorClassifier,

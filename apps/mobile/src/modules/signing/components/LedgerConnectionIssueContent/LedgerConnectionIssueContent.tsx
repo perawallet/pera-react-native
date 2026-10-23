@@ -18,11 +18,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { useStyles } from './styles'
 
+const APP_OPEN_TIP_KEY = i18nKey('ledger.troubleshooting.tip_app_open')
+
 const TIP_KEYS = [
     i18nKey('ledger.troubleshooting.tip_unlocked'),
     i18nKey('ledger.troubleshooting.tip_nearby'),
     i18nKey('ledger.troubleshooting.tip_bluetooth'),
-    i18nKey('ledger.troubleshooting.tip_app_open'),
+    APP_OPEN_TIP_KEY,
     i18nKey('ledger.troubleshooting.tip_repair'),
 ] as const
 
@@ -40,7 +42,11 @@ export const LedgerConnectionIssueContent = () => {
     // hardware strategy, which clears the error and reopens the signing
     // overlay; this troubleshooting sheet then auto-dismisses once the store
     // leaves the error state.
-    const { onRetry } = useLedgerSigningContent()
+    const { onRetry, ledgerAppName } = useLedgerSigningContent()
+    // Without a signing chain there is no app to name, so its tip goes.
+    const tipKeys = ledgerAppName
+        ? TIP_KEYS
+        : TIP_KEYS.filter(key => key !== APP_OPEN_TIP_KEY)
 
     return (
         <PWView style={styles.container}>
@@ -48,13 +54,15 @@ export const LedgerConnectionIssueContent = () => {
                 {t('ledger.troubleshooting.title')}
             </PWText>
 
-            {TIP_KEYS.map(key => (
+            {tipKeys.map(key => (
                 <PWView
                     key={key}
                     style={styles.bulletWrapper}
                 >
                     <PWText style={styles.bullet}>{'•'}</PWText>
-                    <PWText style={styles.tip}>{t(key)}</PWText>
+                    <PWText style={styles.tip}>
+                        {t(key, { appName: ledgerAppName })}
+                    </PWText>
                 </PWView>
             ))}
 

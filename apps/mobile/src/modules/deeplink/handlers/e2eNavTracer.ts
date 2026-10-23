@@ -52,7 +52,7 @@ const mirrorToFile = (line: string): void => {
     try {
         const file = new File(Paths.document, 'e2e-nav.log')
         file.create({ overwrite: true })
-        file.write(traceLines.join('\n'))
+        file.writeSync(traceLines.join('\n'))
     } catch {
         // The device log still carries the line; a missing file only loses the mirror.
     }

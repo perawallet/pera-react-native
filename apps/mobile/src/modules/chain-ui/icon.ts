@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export {
-    NetworkIconProvider,
-    useNetworkIcon,
-    type NetworkIconProps,
-    type NetworkIconProviderProps,
-} from './NetworkIconProvider'
+// A separate entry so the assets barrel can draw chain icons without loading the registry.
+export { ChainIcon, type ChainIconProps } from './components/ChainIcon'

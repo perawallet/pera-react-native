@@ -87,7 +87,7 @@ vi.mock('../../../utils/braveBrowser', () => ({
 }))
 
 const routeParams = vi.hoisted(() => ({
-    current: {} as { transportType?: 'ble' | 'usb' },
+    current: {} as { transportType?: 'ble' | 'usb'; chainId?: string },
 }))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
@@ -138,6 +138,15 @@ vi.mock('../../../hooks', () => ({
         isPopupSurface: expandedTabHandoffState.isPopupSurface,
         openLedgerExpandedTab: mockOpenLedgerExpandedTab,
     }),
+    useLedgerFlowChainId: () => routeParams.current?.chainId ?? 'algorand',
+}))
+
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
@@ -267,6 +276,7 @@ describe('useLedgerScanScreen', () => {
 
         expect(mockStopScan).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
+            chainId: 'algorand',
             deviceId: DEVICE.id,
             deviceName: DEVICE.name,
             transportType: DEVICE.transportType,
@@ -286,10 +296,26 @@ describe('useLedgerScanScreen', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
+            chainId: 'algorand',
             deviceId: hostileDevice.id,
             deviceName: 'Ledger X9F2A',
             transportType: hostileDevice.transportType,
         })
+    })
+
+    it("runs on the route's chain: names its app and carries it to discovery", () => {
+        routeParams.current = { transportType: 'ble', chainId: 'ethereum' }
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        act(() => {
+            result.current.handleDevicePress(DEVICE)
+        })
+
+        expect(result.current.appName).toBe('Ethereum')
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'LedgerFetchAccounts',
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
     })
 
     it('navigates to troubleshooting on handleTroubleshoot', () => {
@@ -299,7 +325,9 @@ describe('useLedgerScanScreen', () => {
             result.current.handleTroubleshoot()
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting')
+        expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting', {
+            chainId: 'algorand',
+        })
     })
 
     it('shows a Bluetooth-off error toast when the adapter is powered off', () => {
@@ -536,7 +564,10 @@ describe('useLedgerScanScreen', () => {
                 result.current.handleStartScan()
             })
 
-            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('usb')
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith(
+                'usb',
+                'algorand',
+            )
             expect(mockStartScan).not.toHaveBeenCalled()
         })
 
@@ -551,7 +582,10 @@ describe('useLedgerScanScreen', () => {
                 result.current.handleStartScan()
             })
 
-            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith(
+                'ble',
+                'algorand',
+            )
             expect(mockStartScan).not.toHaveBeenCalled()
         })
 
@@ -565,7 +599,10 @@ describe('useLedgerScanScreen', () => {
                 result.current.handleRetry()
             })
 
-            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith(
+                'ble',
+                'algorand',
+            )
             expect(mockStartScan).not.toHaveBeenCalled()
         })
     })
@@ -638,6 +675,7 @@ describe('useLedgerScanScreen', () => {
 
             expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
                 transportType: 'usb',
+                chainId: 'algorand',
             })
         })
     })

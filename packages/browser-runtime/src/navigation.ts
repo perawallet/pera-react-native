@@ -57,11 +57,20 @@ const findExpandedTab = async (): Promise<chrome.tabs.Tab | undefined> => {
  * focus, which is the intended hand-off.
  *
  * If an expanded tab is already open, it's focused and re-pointed at the new
- * `?flow=` instead of stacking a second tab.
+ * `?flow=` instead of stacking a second tab. `chainId` rides along as
+ * `&chain=` for a flow that already knows its chain.
  */
-export const openExpandedTab = async (flow?: ExpandedFlow): Promise<void> => {
-    const path = flow ? `expanded.html?flow=${flow}` : 'expanded.html'
-    const url = chrome.runtime.getURL(path)
+export const openExpandedTab = async (
+    flow?: ExpandedFlow,
+    chainId?: string,
+): Promise<void> => {
+    const query = new URLSearchParams()
+    if (flow) query.set('flow', flow)
+    if (flow && chainId) query.set('chain', chainId)
+    const search = query.toString()
+    const url = chrome.runtime.getURL(
+        search ? `expanded.html?${search}` : 'expanded.html',
+    )
 
     const existing = await findExpandedTab()
     if (existing?.id !== undefined) {
@@ -93,6 +102,7 @@ export const closeCurrentTab = async (): Promise<void> => {
 
 let consumed = false
 let consumedFlow: ExpandedFlow | null = null
+let consumedChainId: string | null = null
 
 const readSearch = (): string => {
     const testSeam = (globalThis as { __PERA_TEST_SEARCH__?: string })
@@ -124,6 +134,7 @@ const stripFlowFromUrl = (): void => {
     if (!loc?.href || typeof historyObj?.replaceState !== 'function') return
     const url = new URL(loc.href)
     url.searchParams.delete('flow')
+    url.searchParams.delete('chain')
     historyObj.replaceState(null, '', url.toString())
 }
 
@@ -136,12 +147,17 @@ const stripFlowFromUrl = (): void => {
 export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
     if (consumed) return null
     consumed = true
-    const flow = new URLSearchParams(readSearch()).get('flow')
+    const params = new URLSearchParams(readSearch())
+    const flow = params.get('flow')
     if (flow === null || !FLOWS.includes(flow)) return null
     stripFlowFromUrl()
     consumedFlow = flow as ExpandedFlow
+    consumedChainId = params.get('chain')
     return consumedFlow
 }
+
+/** The `&chain=` the popup passed with the consumed flow; not validated here. */
+export const getConsumedExpandedChainId = (): string | null => consumedChainId
 
 /**
  * The flow this tab was opened for, once `consumeInitialExpandedFlow` has

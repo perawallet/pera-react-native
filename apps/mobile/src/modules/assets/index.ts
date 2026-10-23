@@ -14,9 +14,9 @@ export { AccountAssetSelectionList } from './components/AccountAssetSelectionLis
 export { AddAssetContent } from './components/AddAssetContent'
 export {
     AssetGroupRow,
-    NetworkLabel,
+    ChainLabel,
     type AssetGroupRowProps,
-    type NetworkLabelProps,
+    type ChainLabelProps,
 } from './components/AssetGroupRow'
 export { AccountAssetItemView, AssetItemView } from './components/AssetItem'
 export { AssetNameBadge } from './components/AssetNameBadge'
@@ -24,11 +24,6 @@ export { AssetRowSkeleton } from './components/AssetRowSkeleton'
 export { AssetSelectionList } from './components/AssetSelectionList'
 export { AssetTierChip } from './components/AssetTierChip'
 export { AssetTitle } from './components/AssetTitle'
-export {
-    NetworkIconProvider,
-    type NetworkIconProps,
-    type NetworkIconProviderProps,
-} from './components/NetworkIconProvider'
 export { CollectibleGridItem } from './components/CollectibleGridItem'
 export { CollectibleListItem } from './components/CollectibleListItem'
 export { OptInAccountSelectionContent } from './components/OptInAccountSelectionContent'

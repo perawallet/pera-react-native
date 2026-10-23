@@ -23,7 +23,14 @@ const STEP_KEYS = [
     i18nKey('ledger.how_does_it_work.step_4'),
 ] as const
 
-export const LedgerHowItWorksContent = () => {
+export type LedgerHowItWorksContentProps = {
+    /** The device app the steps tell the user to install and open. */
+    appName: string
+}
+
+export const LedgerHowItWorksContent = ({
+    appName,
+}: LedgerHowItWorksContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -48,7 +55,7 @@ export const LedgerHowItWorksContent = () => {
                             variant='body'
                             style={styles.itemText}
                         >
-                            {t(key)}
+                            {t(key, { appName })}
                         </PWText>
                     </PWView>
                 ))}

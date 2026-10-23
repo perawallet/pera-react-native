@@ -24,6 +24,7 @@ const {
     mockSheetRequest,
     mockSheetDismiss,
     mockFetchAccountExists,
+    routeParams,
 } = vi.hoisted(() => ({
     mockDiscover: vi.fn(),
     mockNavigate: vi.fn(),
@@ -32,6 +33,7 @@ const {
     mockSheetRequest: vi.fn(),
     mockSheetDismiss: vi.fn(),
     mockFetchAccountExists: vi.fn(),
+    routeParams: {} as Record<string, unknown>,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -64,32 +66,36 @@ vi.mock('@perawallet/wallet-core-ledger', () => ({
     LedgerProviderNotFoundError: class extends Error {},
     classifyLedgerError: (e: unknown) => e as Error,
 }))
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-shared')
-    >()),
-    fetchAccountExists: mockFetchAccountExists,
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccountExistsOn: mockFetchAccountExists,
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 vi.mock('@modules/ledger/utils', async () => ({
     ...(await vi.importActual<
         typeof import('../../../utils/serializedLedgerAccounts')
     >('../../../utils/serializedLedgerAccounts')),
-    getLedgerErrorPreset: () => ({ title: 't', body: 'b' }),
+    getLedgerErrorPreset: (_error: unknown, _t: unknown, appName: string) => ({
+        title: 't',
+        body: appName,
+    }),
 }))
 vi.mock('@react-navigation/native', () => ({
-    useRoute: () => ({
-        params: {
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-    }),
+    useRoute: () => ({ params: routeParams }),
+}))
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
 import { useLedgerFetchAccountsScreen } from '../useLedgerFetchAccountsScreen'
@@ -111,6 +117,12 @@ type DiscoverOptions = {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    for (const key of Object.keys(routeParams)) delete routeParams[key]
+    Object.assign(routeParams, {
+        deviceId: 'device-1',
+        deviceName: 'Nano X',
+        transportType: 'ble',
+    })
     // The connecting sheet stays open until dismissed — model it as pending.
     mockSheetRequest.mockReturnValue(new Promise(() => {}))
     mockFetchAccountExists.mockResolvedValue(true)
@@ -129,6 +141,7 @@ describe('useLedgerFetchAccountsScreen', () => {
 
         await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
         expect(mockReplace).toHaveBeenCalledWith('LedgerSelectAccounts', {
+            chainId: 'algorand',
             deviceId: 'device-1',
             deviceName: 'Nano X',
             transportType: 'ble',
@@ -141,6 +154,53 @@ describe('useLedgerFetchAccountsScreen', () => {
             networkId: 'mainnet',
         })
         expect(mockSheetRequest).toHaveBeenCalledTimes(1)
+    })
+
+    it("discovers on the route's chain, probes that chain and carries it to the select screen", async () => {
+        routeParams.chainId = 'ethereum'
+        const transport = buildTransport()
+        mockDiscover.mockImplementation(async (opts: DiscoverOptions) => {
+            await opts.isAccountOnChain('0xprobe')
+            return { accounts: [account(0, '0xledger')], transport }
+        })
+
+        renderHook(() => useLedgerFetchAccountsScreen())
+
+        await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+        expect(mockDiscover.mock.calls[0][0]).toMatchObject({
+            chainId: 'ethereum',
+        })
+        expect(mockFetchAccountExists).toHaveBeenCalledWith('0xprobe', {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+        expect(mockReplace.mock.calls[0][1]).toMatchObject({
+            chainId: 'ethereum',
+        })
+    })
+
+    it("hands discovery a probe that rejects when the chain's can't be reached, so it falls back to a capped scan", async () => {
+        routeParams.chainId = 'ethereum'
+        const failure = new Error('rpc down')
+        mockFetchAccountExists.mockRejectedValue(failure)
+        mockDiscover.mockReturnValue(new Promise(() => {}))
+
+        renderHook(() => useLedgerFetchAccountsScreen())
+
+        await waitFor(() => expect(mockDiscover).toHaveBeenCalled())
+        const { isAccountOnChain } = mockDiscover.mock
+            .calls[0][0] as DiscoverOptions
+        await expect(isAccountOnChain('0xprobe')).rejects.toBe(failure)
+    })
+
+    it("names the chain's app in an error", async () => {
+        routeParams.chainId = 'ethereum'
+        mockDiscover.mockRejectedValue(new Error('locked'))
+
+        const { result } = renderHook(() => useLedgerFetchAccountsScreen())
+
+        await waitFor(() => expect(result.current.errorPreset).not.toBeNull())
+        expect(result.current.errorPreset?.body).toBe('Ethereum')
     })
 
     it('reports discovery progress while the device probes indices', async () => {
