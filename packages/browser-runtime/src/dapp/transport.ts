@@ -11,7 +11,10 @@
  */
 
 import type { DappTransport, DappRespond } from '@perawallet/wallet-core-dapp'
-import type { JsonRpcNotification } from '@perawallet/wallet-core-dapp/wire'
+import type {
+    DappProvider,
+    JsonRpcNotification,
+} from '@perawallet/wallet-core-dapp/wire'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
 import {
     DAPP_HOST_RESPONSE_SCOPE,
@@ -38,10 +41,18 @@ const sendHostResponse = async (
     if (!isDappAck(ack)) throw new Error('dapp response was not delivered')
 }
 
-/** Offscreen side of the transport: requests arrive from the service worker, answers go back through it. */
+/**
+ * Offscreen side of the transport: requests arrive from the service worker,
+ * answers go back through it. One per page provider; another provider's
+ * requests are left for its own transport.
+ */
 export const createChromeDappTransport = ({
+    provider,
     chromeLike = chrome,
-}: { chromeLike?: typeof chrome } = {}): DappTransport => ({
+}: {
+    provider: DappProvider
+    chromeLike?: typeof chrome
+}): DappTransport => ({
     onRequest(listener) {
         const onMessage = (
             message: unknown,
@@ -49,11 +60,13 @@ export const createChromeDappTransport = ({
             sendResponse: (response: unknown) => void,
         ): boolean => {
             if (!isDappHostRequestMessage(message)) return false
+            if (message.provider !== provider) return false
             if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
             const { origin, hasUserActivation, faviconUrl, returnTo, request } =
                 message
             const respond: DappRespond = response =>
                 sendHostResponse(chromeLike, {
+                    provider,
                     origin,
                     payload: response,
                     returnTo,
@@ -86,6 +99,7 @@ export const createChromeDappTransport = ({
         // every tab of the origin being gone is the normal steady state.
         try {
             await sendHostResponse(chromeLike, {
+                provider,
                 origin,
                 payload: notification,
             })

@@ -15,15 +15,17 @@ import {
     WC_PAGE_PAIR_SCOPE,
     isDappPageRequestAck,
     isDappPageResponseMessage,
+    isDappProvider,
+    type DappProvider,
 } from '@perawallet/wallet-core-browser-runtime'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
     CONNECT_MODAL_PAIR_EVENT,
-    type BridgeNotificationEnvelope,
-    type BridgeRequestEnvelope,
-    type BridgeResponseEnvelope,
     type ConnectModalPairDetail,
+    type DappBridgeNotificationEnvelope,
+    type DappBridgeRequestEnvelope,
+    type DappBridgeResponseEnvelope,
 } from './channel'
 
 // Isolated-world relay. Learns the MAIN script's per-load channel names from the
@@ -34,9 +36,11 @@ let requestEventName: string | null = null
 let responseEventName: string | null = null
 
 const onRequest = (e: Event): void => {
-    const { id, request } = (e as CustomEvent).detail as BridgeRequestEnvelope
+    const { id, request, provider } = (e as CustomEvent)
+        .detail as DappBridgeRequestEnvelope
+    if (!isDappProvider(provider)) return
     try {
-        forwardRequest(id, request)
+        forwardRequest(id, request, provider)
     } catch {
         // Extension context invalidated — the page outlived an extension
         // reload or update, and sendMessage then throws SYNCHRONOUSLY rather
@@ -53,12 +57,17 @@ const hasUserActivation = (): boolean =>
     (navigator as Navigator & { userActivation?: { isActive: boolean } })
         .userActivation?.isActive === true
 
-const forwardRequest = (id: string, request: unknown): void => {
+const forwardRequest = (
+    id: string,
+    request: unknown,
+    provider: DappProvider,
+): void => {
     chrome.runtime.sendMessage(
         // Read here, in the ISOLATED world: a page script cannot alter this
         // world's view of the window's user-activation state.
         {
             scope: DAPP_PAGE_REQUEST_SCOPE,
+            provider,
             request,
             hasUserActivation: hasUserActivation(),
         },
@@ -76,8 +85,9 @@ const forwardRequest = (id: string, request: unknown): void => {
                 new CustomEvent(responseEventName, {
                     detail: {
                         id,
+                        provider,
                         response: ack.response,
-                    } satisfies BridgeResponseEnvelope,
+                    } satisfies DappBridgeResponseEnvelope,
                 }),
             )
         },
@@ -116,11 +126,13 @@ chrome.runtime.onMessage.addListener(
             return false
         if (message.origin !== window.location.origin) return false
         if (!responseEventName) return false
-        const { payload } = message
-        const detail: BridgeResponseEnvelope | BridgeNotificationEnvelope =
+        const { payload, provider } = message
+        const detail:
+            | DappBridgeResponseEnvelope
+            | DappBridgeNotificationEnvelope =
             'id' in payload
-                ? { id: String(payload.id), response: payload }
-                : { notification: payload }
+                ? { id: String(payload.id), provider, response: payload }
+                : { provider, notification: payload }
         window.dispatchEvent(new CustomEvent(responseEventName, { detail }))
         // Receipt by the relay, not proof the page settled: without any answer
         // chrome.tabs.sendMessage rejects, the SW reports the response as

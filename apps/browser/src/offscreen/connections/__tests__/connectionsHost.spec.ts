@@ -164,7 +164,10 @@ describe('startConnectionsHost', () => {
         host = startConnectionsHost({
             registry: fake.registry,
             activeNetworkId: () => 'mainnet' as NetworkId,
-            knownAddresses: () => ['ADDR1', 'ADDR2'],
+            knownAddresses: chainIds =>
+                chainIds.flatMap(chainId =>
+                    chainId === 'ethereum' ? ['0xETH'] : ['ADDR1', 'ADDR2'],
+                ),
             requestApproval,
             broadcastEvent,
         })
@@ -218,6 +221,26 @@ describe('startConnectionsHost', () => {
                     }),
                 },
             })
+        })
+
+        it('checks the approved accounts against the proposal’s own chains', async () => {
+            const proposal = makeProposal({
+                kind: 'dapp-eip1193',
+                requested: {
+                    networks: ['mainnet' as NetworkId],
+                    chains: ['ethereum'],
+                    methods: ['eth_accounts'],
+                },
+            })
+            fake.emitProposal(proposal)
+
+            await control({
+                kind: 'approve-proposal',
+                proposalId: 'proposal-1',
+                accounts: ['0xETH', 'ADDR1'],
+            })
+
+            expect(proposal.approve).toHaveBeenCalledWith(['0xETH'])
         })
 
         it('rejects the proposal instead of approving when no account belongs to the wallet', async () => {

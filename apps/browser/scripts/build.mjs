@@ -549,9 +549,13 @@ const BUNDLE_LIMITS = [
 
 // Bundled code keeps no module paths, so the marker has to be a string the
 // handler graph leaves behind. 'react-native' survives as a literal in the
-// packages the handler pulls in; the handler's own factory name survives
+// packages the handlers pull in; each handler's own factory name survives
 // because esbuild keeps top-level function names.
-const FORBIDDEN_SYMBOLS = ['react-native', 'createDappConnectionHandler']
+const FORBIDDEN_SYMBOLS = [
+    'react-native',
+    'createDappConnectionHandler',
+    'createEip1193ConnectionHandler',
+]
 
 for (const [name, maxBytes] of BUNDLE_LIMITS) {
     const file = path.join(dist, name)

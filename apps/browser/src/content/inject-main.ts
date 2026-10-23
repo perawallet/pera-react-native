@@ -14,10 +14,12 @@ import {
     type DAPP_NOTIFICATIONS,
     DAPP_PAGE_TIMEOUT_MS,
     DAPP_PROVIDER_VERSION,
+    EIP1193_ERROR_CODE,
     JsonRpcErrorCode,
     isJsonRpcNotification,
     isJsonRpcResponse,
     type DappMethod,
+    type DappProvider,
     type JsonRpcRequest,
     type JsonRpcResponse,
 } from '@perawallet/wallet-core-browser-runtime'
@@ -25,16 +27,22 @@ import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
     CONNECT_MODAL_PAIR_EVENT,
-    type BridgeNotificationEnvelope,
-    type BridgeRequestEnvelope,
-    type BridgeResponseEnvelope,
     type ConnectModalPairDetail,
+    type DappBridgeNotificationEnvelope,
+    type DappBridgeRequestEnvelope,
+    type DappBridgeResponseEnvelope,
 } from './channel'
 import { installConnectModalWatcher } from './connect-modal-watcher'
+import {
+    Eip1193ProviderError,
+    createEip1193Provider,
+    installEip1193Provider,
+} from './eip1193-main'
 
-// MAIN-world provider. No chrome.* here. Installs window.pera and bridges each
-// call to the isolated relay over per-load-randomized CustomEvents; answers and
-// wallet-initiated notifications come back on the response channel.
+// MAIN-world providers. No chrome.* here. Installs window.pera and the EIP-1193
+// provider, and bridges each call to the isolated relay over
+// per-load-randomized CustomEvents; answers and wallet-initiated notifications
+// come back on the response channel, tagged with the provider they belong to.
 
 export type PeraAccount = { address: string; name: string }
 export type PeraConnectOptions = {
@@ -105,8 +113,10 @@ let installed = false
 type Pending = {
     resolve: (value: unknown) => void
     reject: (error: Error) => void
+    toError: ToError
     timer: ReturnType<typeof setTimeout>
 }
+type ToError = (code: number, message: string, data?: unknown) => Error
 const pending = new Map<string, Pending>()
 const listeners = new Map<string, Set<(params: unknown) => void>>()
 
@@ -135,7 +145,7 @@ const settle = (response: JsonRpcResponse): void => {
     clearTimeout(entry.timer)
     if ('error' in response) {
         entry.reject(
-            new PeraProviderError(
+            entry.toError(
                 response.error.code,
                 response.error.message,
                 response.error.data,
@@ -146,7 +156,17 @@ const settle = (response: JsonRpcResponse): void => {
     }
 }
 
-const send = (method: DappMethod, params?: unknown): Promise<unknown> =>
+const TIMEOUT_CODE: Record<DappProvider, number> = {
+    pera: JsonRpcErrorCode.RequestTimedOut,
+    eip1193: EIP1193_ERROR_CODE.internal,
+}
+
+const sendRpc = (
+    provider: DappProvider,
+    method: string,
+    params: unknown,
+    toError: ToError,
+): Promise<unknown> =>
     new Promise((resolve, reject) => {
         const id = globalThis.crypto.randomUUID()
         const request: JsonRpcRequest = {
@@ -158,23 +178,34 @@ const send = (method: DappMethod, params?: unknown): Promise<unknown> =>
         // Backstop only; the wallet's own expiry is shorter and answers first.
         const timer = setTimeout(() => {
             if (!pending.delete(id)) return
-            reject(
-                new PeraProviderError(
-                    JsonRpcErrorCode.RequestTimedOut,
-                    'No response from wallet',
-                ),
-            )
+            reject(toError(TIMEOUT_CODE[provider], 'No response from wallet'))
         }, DAPP_PAGE_TIMEOUT_MS)
-        pending.set(id, { resolve, reject, timer })
+        pending.set(id, { resolve, reject, toError, timer })
         window.dispatchEvent(
             new CustomEvent(requestEventName, {
                 detail: {
                     id,
+                    provider,
                     request,
-                } satisfies BridgeRequestEnvelope<JsonRpcRequest>,
+                } satisfies DappBridgeRequestEnvelope,
             }),
         )
     })
+
+const toPeraError: ToError = (code, message, data) =>
+    new PeraProviderError(code, message, data)
+
+const send = (method: DappMethod, params?: unknown): Promise<unknown> =>
+    sendRpc('pera', method, params, toPeraError)
+
+const eip1193 = createEip1193Provider((method, params) =>
+    sendRpc(
+        'eip1193',
+        method,
+        params,
+        (code, message, data) => new Eip1193ProviderError(code, message, data),
+    ),
+)
 
 // The wallet claims a per-origin connect slot synchronously, so a second
 // concurrent connect() would be refused with InvalidRequest — including when
@@ -241,11 +272,16 @@ const installProvider = (): void => {
 
     window.addEventListener(responseEventName, (e: Event) => {
         const detail = (e as CustomEvent).detail as
-            | BridgeResponseEnvelope<unknown>
-            | BridgeNotificationEnvelope<unknown>
+            | DappBridgeResponseEnvelope
+            | DappBridgeNotificationEnvelope
         if ('notification' in detail) {
-            const { notification } = detail
+            const { notification, provider } = detail
             if (!isJsonRpcNotification(notification)) return
+            if (provider === 'eip1193') {
+                eip1193.handleNotification(notification)
+                return
+            }
+            if (provider !== 'pera') return
             listeners.get(notification.method)?.forEach(handler => {
                 try {
                     handler(notification.params)
@@ -270,6 +306,8 @@ const installProvider = (): void => {
         // Its provider wins; ours must still install the connect-modal hook
         // below rather than throwing out of the installer.
     }
+
+    installEip1193Provider(eip1193.provider)
 
     // Connect-modal hook: offers the extension in a dApp's own QR modal when
     // the dApp's SDK renders no extension row of its own.

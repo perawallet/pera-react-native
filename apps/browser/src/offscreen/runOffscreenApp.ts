@@ -49,10 +49,13 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     bootConnections,
     createConnectionRegistry,
+    watchWalletNotices,
 } from '@perawallet/wallet-core-connections'
 import {
     createDappConnectionHandler,
+    createEip1193ConnectionHandler,
     importLegacyDappPermissions,
+    type DappAccount,
 } from '@perawallet/wallet-core-dapp'
 import {
     createStorageSessionKeyStore,
@@ -66,6 +69,25 @@ import { createDatabaseRecovery } from './databaseRecovery'
 import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
+
+// Read on every answer, so a deleted or demoted account drops out at once.
+const signingDappAccountsOn = (chainId: ChainId): DappAccount[] => {
+    const { accounts } = useAccountsStore.getState()
+    return accounts.flatMap(account => {
+        const address = chainAccountOf(account, chainId)?.address
+        return address && canSignWith(account, accounts, chainId)
+            ? [{ address, name: account.name ?? address }]
+            : []
+    })
+}
+
+const addressesOn = (chainIds: readonly ChainId[]): string[] =>
+    useAccountsStore.getState().accounts.flatMap(account =>
+        chainIds.flatMap(chainId => {
+            const address = chainAccountOf(account, chainId)?.address
+            return address ? [address] : []
+        }),
+    )
 
 // Each store hydrates once (the accounts store when registerChainAdapters has
 // registered the chains, writing nothing before then; the others at import)
@@ -157,37 +179,28 @@ export const runOffscreenApp = async ({
     )
     registry.register(
         createDappConnectionHandler({
-            transport: createChromeDappTransport(),
+            transport: createChromeDappTransport({ provider: 'pera' }),
             chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
-            getAccounts: () => {
-                const { accounts } = useAccountsStore.getState()
-                return accounts.flatMap(account => {
-                    const address = chainAccountOf(
-                        account,
-                        ALGORAND_CHAIN_ID,
-                    )?.address
-                    return address &&
-                        canSignWith(account, accounts, ALGORAND_CHAIN_ID)
-                        ? [{ address, name: account.name ?? address }]
-                        : []
-                })
-            },
+            getAccounts: () => signingDappAccountsOn(ALGORAND_CHAIN_ID),
+        }),
+    )
+    registry.register(
+        createEip1193ConnectionHandler({
+            transport: createChromeDappTransport({ provider: 'eip1193' }),
+            getNetworkId,
+            isDappConnectEnabled: chainId =>
+                provider.chains.has(chainId) &&
+                provider.chains.capabilities(chainId).dappConnect,
+            getAccounts: signingDappAccountsOn,
         }),
     )
     const connectionsHost = startConnectionsHost({
         registry,
         activeNetworkId: () => getSelectedScope(ALGORAND_CHAIN_ID).networkId,
-        knownAddresses: () =>
-            useAccountsStore.getState().accounts.flatMap(account => {
-                const address = chainAccountOf(
-                    account,
-                    ALGORAND_CHAIN_ID,
-                )?.address
-                return address ? [address] : []
-            }),
+        knownAddresses: addressesOn,
         requestApproval: sendConnectionApprovalRequest,
         broadcastEvent: broadcastConnectionsEvent,
     })
@@ -217,6 +230,8 @@ export const runOffscreenApp = async ({
         },
     })
     onConnectionsControlMessage(connectionsHost.handleControlMessage)
+    // Baselines are taken here, after boot, so nothing restored is announced.
+    watchWalletNotices(registry)
 
     logger.info('[offscreen] connections host started')
 }

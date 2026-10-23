@@ -21,8 +21,10 @@ import {
     type DappPageResponseMessage,
 } from '@perawallet/wallet-core-browser-runtime'
 import {
+    EIP1193_ERROR_CODE,
     JsonRpcErrorCode,
     jsonRpcError,
+    type DappProvider,
 } from '@perawallet/wallet-core-dapp/wire'
 import { isWithinDappPayloadBounds } from '@perawallet/wallet-core-dapp/bounds'
 import { ensureOffscreenDocument } from './offscreen'
@@ -47,6 +49,12 @@ const deliverToTab = (
             return false
         },
     )
+
+// Each page provider answers in its own error vocabulary.
+const unauthorizedCodeFor = (provider: DappProvider): number =>
+    provider === 'eip1193'
+        ? EIP1193_ERROR_CODE.unauthorized
+        : JsonRpcErrorCode.Unauthorized
 
 // No `tabs` permission, so URLs are stripped from query results.
 const broadcastToTabs = (
@@ -81,7 +89,7 @@ export const installDappPageRequestRoute = ({
     chromeLike.runtime.onMessage.addListener(
         (message, sender, sendResponse: (ack: DappPageRequestAck) => void) => {
             if (!isDappPageRequestMessage(message)) return false
-            const { request, hasUserActivation } = message
+            const { provider, request, hasUserActivation } = message
             const refuse = (code: number, text: string): boolean => {
                 sendResponse({
                     ok: false,
@@ -92,11 +100,18 @@ export const installDappPageRequestRoute = ({
 
             const origin = sender?.origin
             const tabId = sender?.tab?.id
+            const unauthorized = unauthorizedCodeFor(provider)
             if (sender?.id !== chromeLike.runtime.id || tabId === undefined) {
-                return refuse(JsonRpcErrorCode.Unauthorized, 'Untrusted sender')
+                return refuse(unauthorized, 'Untrusted sender')
+            }
+            // The content scripts run top-frame only; this holds however they
+            // are registered, so a framed page can't ask under its own origin
+            // from inside another site's tab.
+            if (sender.frameId !== 0) {
+                return refuse(unauthorized, 'Sub-frames get no provider')
             }
             if (!isSecureDappOrigin(origin)) {
-                return refuse(JsonRpcErrorCode.Unauthorized, 'Insecure origin')
+                return refuse(unauthorized, 'Insecure origin')
             }
             if (!isWithinDappPayloadBounds(request)) {
                 return refuse(
@@ -113,6 +128,7 @@ export const installDappPageRequestRoute = ({
             const faviconUrl = sender.tab?.favIconUrl
             void sendDappHostRequest(
                 {
+                    provider,
                     origin,
                     hasUserActivation,
                     ...(faviconUrl ? { faviconUrl } : {}),
@@ -133,6 +149,7 @@ export const installDappPageRequestRoute = ({
                     tabId,
                     {
                         scope: DAPP_PAGE_RESPONSE_SCOPE,
+                        provider,
                         origin,
                         payload: jsonRpcError(
                             request.id,
@@ -165,6 +182,7 @@ export const installDappHostResponseRoute = ({
             if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
             const outbound: DappPageResponseMessage = {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: message.provider,
                 origin: message.origin,
                 payload: message.payload,
             }
