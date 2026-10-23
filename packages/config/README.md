@@ -72,8 +72,8 @@ network needs no edit here. Its Pera traffic reuses the Pera backend URL of the 
 the same tier. An empty list leaves the scope with no Pera deployment, so every Pera request for it
 is refused. A build whose `CHAINS` lists an EVM chain fails in `tools/dev/generate-config.sh` unless
 every one of its networks' RPC URLs is set and baked, so a `CONFIG_ALLOWLIST` that keeps `chainIds`
-must keep them too. Each Bitrise channel workflow in `.bitrise/bitrise.yml` sets `CHAINS`
-itself: staging ships every chain, production pins Algorand, and
+must keep them too. Each channel workflow in `.bitrise/bitrise.yml` and job in `ci/pipelines.yml`
+sets its own `CHAINS`: staging ships every chain, production ships Algorand alone, and
 `tools/__tests__/bitrise-chains.test.sh` fails if either drifts. Staging also lists the Pera
 services the staging backend serves for each EVM network, which the same test pins.
 
