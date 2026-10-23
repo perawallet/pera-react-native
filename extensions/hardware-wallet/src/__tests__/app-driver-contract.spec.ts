@@ -20,6 +20,7 @@ const unused = () => Promise.reject(new Error('not exercised'))
 
 const driver: LedgerAppDriver = {
     chainId: 'fixture',
+    appName: 'Fixture',
     open: (transport, classifyError = error => error as never) =>
         ({
             getAddress: unused,

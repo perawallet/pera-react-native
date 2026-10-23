@@ -63,7 +63,11 @@ describe('registerHardwareWalletTransports (web)', () => {
     test('refuses a Bluetooth connect that needs a picker from the toolbar popup', async () => {
         setSurface('popup')
         ledgerAppDriverRegistry.reset()
-        ledgerAppDriverRegistry.register({ chainId: 'test', open: vi.fn() })
+        ledgerAppDriverRegistry.register({
+            chainId: 'test',
+            appName: 'Test',
+            open: vi.fn(),
+        })
         const registry = createHardwareWalletRegistry()
         registerHardwareWalletTransports(registry)
 

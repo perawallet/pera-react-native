@@ -60,11 +60,19 @@ vi.mock('@perawallet/wallet-core-ledger', async importOriginal => ({
     connectAndDiscoverAccounts: mocks.connectAndDiscoverAccounts,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccountExistsOn: vi.fn().mockResolvedValue(true),
+}))
+
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
     ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-shared')
+        typeof import('@perawallet/wallet-core-hardware-wallet')
     >()),
-    fetchAccountExists: vi.fn().mockResolvedValue(true),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
 }))
 
 vi.mock(
@@ -131,7 +139,7 @@ describe('useLedgerFetchAccountsScreen - connecting state', () => {
         expect(result.current.progress).toEqual({ current: 1, total: null })
     })
 
-    it('discovers for the legacy chain until the flow carries a choice', async () => {
+    it('discovers on the first Ledger chain when the route names none', async () => {
         mocks.connectAndDiscoverAccounts.mockReturnValue(new Promise(() => {}))
 
         renderHook(() => useLedgerFetchAccountsScreen())

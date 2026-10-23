@@ -2208,9 +2208,9 @@
             "private_key_title": "Import a Private Key",
             "private_key_description": "Add an account from its private key",
             "pair_ledger_title": "Pair Ledger via Bluetooth",
-            "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via Bluetooth",
+            "pair_ledger_description": "I want to recover an account that is backed by my Ledger hardware wallet via Bluetooth",
             "pair_ledger_usb_title": "Pair Ledger via USB",
-            "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_usb_description": "I want to recover an account that is backed by my Ledger hardware wallet via USB cable",
             "pair_ledger_unsupported_description": "Not supported by this browser or device",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
@@ -2811,8 +2811,8 @@
             "title": "Sending the transaction",
             "subtitle": "Your transaction is being processed by the Algorand network.",
             "title_hardware": "Connecting to your Ledger device",
-            "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the Algorand app is open.",
-            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the Algorand app is open."
+            "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the {{appName}} app is open.",
+            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the {{appName}} app is open."
         },
         "success": {
             "title": "Transaction Processed",
@@ -3774,8 +3774,8 @@
         "how_does_it_work": {
             "title": "Pair with Ledger",
             "step_1": "Make sure that your Ledger device is on and has Bluetooth enabled.",
-            "step_2": "Install the Algorand app (version 1.2.9 or later) onto your Ledger.",
-            "step_3": "After confirming pairing on your Ledger device, open the Algorand app.",
+            "step_2": "Install the latest {{appName}} app onto your Ledger.",
+            "step_3": "After confirming pairing on your Ledger device, open the {{appName}} app.",
             "step_4": "Make sure Bluetooth is enabled on your smartphone."
         },
         "connecting": {
@@ -3787,7 +3787,7 @@
             "title": "Pair Ledger Device",
             "description": "Follow these steps to connect your Ledger device:",
             "step_1": "Turn on your Ledger device",
-            "step_2": "Open the Algorand app on your Ledger",
+            "step_2": "Open the {{appName}} app on your Ledger",
             "step_3": "Keep your Ledger device nearby",
             "continue": "Continue",
             "permission_required_title": "Bluetooth Permission Required",
@@ -3796,7 +3796,7 @@
                 "title": "Connect Ledger via USB",
                 "description": "Follow these steps to connect your Ledger device via USB:",
                 "step_1": "Plug your Ledger device into your phone with a USB cable",
-                "step_2": "Unlock your Ledger and open the Algorand app",
+                "step_2": "Unlock your Ledger and open the {{appName}} app",
                 "step_3": "Allow USB access if your phone asks, then tap continue"
             }
         },
@@ -3895,10 +3895,7 @@
         "errors": {
             "app_not_open": "Open the {{appName}} app on your Ledger. Then return to Pera and continue.",
             "app_not_open_title": "Open the {{appName}} app",
-            "app_not_open_unnamed": "Open the app for this account on your Ledger. Then return to Pera and continue.",
-            "app_not_open_unnamed_title": "Open the app on your Ledger",
             "blind_signing_required": "The {{appName}} app on your Ledger needs blind signing for this transaction. Turn on Blind signing in the app's settings on your Ledger, then try again.",
-            "blind_signing_required_unnamed": "The app on your Ledger needs blind signing for this transaction. Turn on Blind signing in the app's settings on your Ledger, then try again.",
             "blind_signing_required_title": "Turn on blind signing",
             "connection_lost": "Connection lost. Reconnect your Ledger and try again.",
             "connection_lost_title": "Connection lost",
@@ -3909,8 +3906,8 @@
             "bluetooth_permission_title": "Permission required",
             "bluetooth_permission": "Bluetooth scan permission needs to be granted in order to search for nearby Ledgers.",
             "scan_timeout_title": "Couldn't find your Ledger",
-            "scan_timeout": "Connection timed out. Ensure your Ledger is unlocked, the Algorand app is open, and Bluetooth is enabled before trying again.",
-            "connection_failed": "Couldn't connect to your Ledger. Check that Bluetooth is enabled, your Ledger is unlocked, the Algorand app is open, and then try again.",
+            "scan_timeout": "Connection timed out. Ensure your Ledger is unlocked, the {{appName}} app is open, and Bluetooth is enabled before trying again.",
+            "connection_failed": "Couldn't connect to your Ledger. Check that Bluetooth is enabled, your Ledger is unlocked, the {{appName}} app is open, and then try again.",
             "connection_failed_title": "Couldn't connect",
             "signing_failed_title": "Signing failed",
             "signing_failed": "Failed to sign transaction. Please try again.",
@@ -3923,8 +3920,8 @@
             "unsupported_device_title": "Unsupported device",
             "unsupported_device": "This Ledger device is not supported.",
             "app_outdated_title": "Update required",
-            "app_outdated": "Update required. Please update your Ledger firmware and the Algorand app to the latest version.",
-            "timeout": "Connection timed out. Ensure your Ledger is unlocked, the Algorand app is open, and Bluetooth is enabled before trying again.",
+            "app_outdated": "Update required. Please update your Ledger firmware and the {{appName}} app to the latest version.",
+            "timeout": "Connection timed out. Ensure your Ledger is unlocked, the {{appName}} app is open, and Bluetooth is enabled before trying again.",
             "timeout_title": "Connection timed out",
             "interrupted_title": "Signing was interrupted",
             "interrupted": "The app went to the background during signing, so the session was stopped for safety. Retry to reconnect to your Ledger and sign again.",
@@ -3961,8 +3958,8 @@
             "description": "If you are having issues pairing or using your Ledger device, check the steps below.",
             "pairing_steps_title": "Pairing steps",
             "pairing_step_1": "Make sure that your Ledger device is on and has Bluetooth enabled.",
-            "pairing_step_2": "Open the Algorand app on your Ledger.",
-            "pairing_step_3": "If the Algorand app is not installed, install it from Ledger Live.",
+            "pairing_step_2": "Open the {{appName}} app on your Ledger.",
+            "pairing_step_3": "If the {{appName}} app is not installed, install it from Ledger Live.",
             "common_issues_title": "Common issues",
             "issue_unlocked": "Make sure the device is unlocked, nearby and has Bluetooth enabled. If problems persist, remove the device from your phone's Bluetooth settings and re-pair it following the Pera Wallet instructions.",
             "issue_bluetooth": "Bluetooth must be enabled on your device in order to search for nearby Ledger devices.",
@@ -3972,7 +3969,7 @@
             "tip_unlocked": "Make sure the device is unlocked",
             "tip_nearby": "Make sure the device is nearby",
             "tip_bluetooth": "Make sure Bluetooth is enabled",
-            "tip_app_open": "Make sure the Algorand app is open on your Ledger",
+            "tip_app_open": "Make sure the {{appName}} app is open on your Ledger",
             "tip_repair": "If problems persist, try re-pairing the device from Settings"
         },
         "scan_header": {
@@ -3982,6 +3979,9 @@
         "handoff_added": {
             "title": "Ledger account added",
             "body": "You can now use it in the Pera extension."
+        },
+        "select_chain": {
+            "title": "Which blockchain is your Ledger account on?"
         }
     },
     "countries": {

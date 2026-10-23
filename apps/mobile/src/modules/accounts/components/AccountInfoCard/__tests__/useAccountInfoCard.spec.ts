@@ -57,6 +57,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useHdSeedGroups: () => mockUseHdSeedGroups(),
+        useCapabilityChainResolver:
+            () =>
+            ({ chains }: { chains: Record<string, unknown> }) =>
+                Object.keys(chains)[0],
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
         useDelegatedTransition: () => mockUseDelegatedTransition(),
@@ -314,6 +318,7 @@ describe('useAccountInfoCard', () => {
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
             screen: 'LedgerFetchAccounts',
             params: {
+                chainId: 'algorand',
                 deviceId: 'device-abc',
                 deviceName: 'My Ledger',
                 transportType: 'ble',

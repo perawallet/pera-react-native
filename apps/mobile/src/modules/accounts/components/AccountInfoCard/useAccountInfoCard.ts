@@ -17,6 +17,7 @@ import {
     hardwareDetailsOf,
     hdIndexOf,
     isLedgerAccount,
+    useCapabilityChainResolver,
     useHdSeedGroups,
     useLedgerDeviceGroups,
 } from '@perawallet/wallet-core-accounts'
@@ -58,6 +59,7 @@ export const useAccountInfoCard = ({
 
     const { hdSeedGroups } = useHdSeedGroups()
     const { ledgerDeviceGroups } = useLedgerDeviceGroups()
+    const ledgerChainOf = useCapabilityChainResolver('ledger')
 
     const isHDWallet = hdIndexOf(account) !== undefined
     const isLedger = isLedgerAccount(account)
@@ -159,13 +161,15 @@ export const useAccountInfoCard = ({
             navigationRef.navigate('AddAccount', {
                 screen: 'LedgerFetchAccounts',
                 params: {
+                    // The rescan runs on a chain the account is on, not the default one.
+                    chainId: ledgerChainOf(account),
                     deviceId: hardwareDetails.deviceId,
                     deviceName: hardwareDetails.deviceName,
                     transportType: hardwareDetails.transportType,
                 },
             })
         }
-    }, [account, isHDWallet, hardwareDetails, onClose])
+    }, [account, isHDWallet, hardwareDetails, ledgerChainOf, onClose])
 
     return {
         isExpanded,

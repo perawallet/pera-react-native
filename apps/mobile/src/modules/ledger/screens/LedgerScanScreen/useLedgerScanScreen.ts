@@ -10,16 +10,17 @@
  limitations under the License
  */
 
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import type {
-    HardwareWalletAdapterState,
-    HardwareWalletDevice,
-    LedgerTransportType,
+import {
+    ledgerAppNameFor,
+    type HardwareWalletAdapterState,
+    type HardwareWalletDevice,
+    type LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
     LedgerLocationServicesDisabledError,
@@ -33,6 +34,7 @@ import {
     useBluetoothState,
     useLedgerConnection,
     useLedgerExpandedTabHandoff,
+    useLedgerFlowChainId,
 } from '../../hooks'
 import { sanitizeDeviceName } from '../../utils'
 import { isBraveBrowser } from '../../utils/braveBrowser'
@@ -117,6 +119,8 @@ type UseLedgerScanScreenResult = {
      * the CTA actually triggers the device picker). Always false on native.
      */
     isPopupSurface: boolean
+    /** The device app the timeout copy tells the user to open. */
+    appName: string
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleStartScan: () => void
     handleRetry: () => void
@@ -139,6 +143,8 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const navigation = useAppNavigation()
     const { errorToast } = useToast()
     const route = useRoute<RouteProp<LedgerScanRouteParams, 'LedgerScan'>>()
+    const chainId = useLedgerFlowChainId()
+    const appName = useMemo(() => ledgerAppNameFor(chainId), [chainId])
     // A user who explicitly chose the USB pairing entry point doesn't care
     // about BLE state at all — scanning stays USB-only and the BLE
     // permission/adapter-state warnings below are suppressed, so e.g.
@@ -308,12 +314,13 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         (device: HardwareWalletDevice) => {
             stopScan()
             navigation.navigate('LedgerFetchAccounts', {
+                chainId,
                 deviceId: device.id,
                 deviceName: sanitizeDeviceName(device.name),
                 transportType: device.transportType,
             })
         },
-        [navigation, stopScan],
+        [navigation, stopScan, chainId],
     )
 
     // Calls `startScan()` synchronously inside the click so the device-picker
@@ -324,23 +331,23 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // auto-close the popup or silently resolve the picker empty.
     const handleStartScan = useCallback(() => {
         if (isPopupSurface) {
-            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble')
+            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble', chainId)
             return
         }
         hasStartedOnWebRef.current = true
         setHasStartedOnWeb(true)
         startScan()
-    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly])
+    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly, chainId])
 
     const handleRetry = useCallback(() => {
         if (isPopupSurface) {
-            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble')
+            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble', chainId)
             return
         }
         hasStartedOnWebRef.current = true
         setHasStartedOnWeb(true)
         startScan()
-    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly])
+    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly, chainId])
 
     const handleRequestPermissions = useCallback(() => {
         // After the OS marks the permission as NEVER_ASK_AGAIN the system
@@ -363,12 +370,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     }, [openLocationSettings])
 
     const handleTroubleshoot = useCallback(() => {
-        navigation.navigate('LedgerTroubleshooting')
-    }, [navigation])
+        navigation.navigate('LedgerTroubleshooting', { chainId })
+    }, [navigation, chainId])
 
     const handleUseUsb = useCallback(() => {
-        navigation.push('LedgerInstructions', { transportType: 'usb' })
-    }, [navigation])
+        navigation.push('LedgerInstructions', { transportType: 'usb', chainId })
+    }, [navigation, chainId])
 
     // The blocking denied state only renders when no scan can run at all —
     // a USB fallback scan keeps the device list usable while BLE is denied.
@@ -412,6 +419,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isBraveBluetoothScanError,
         needsManualStart,
         isPopupSurface,
+        appName,
         handleDevicePress,
         handleStartScan,
         handleRetry,

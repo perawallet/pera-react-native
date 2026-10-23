@@ -12,10 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useLedgerAccountPreview,
@@ -34,8 +31,9 @@ export type LedgerInfoListItem =
           kind: 'account'
           key: string
           account: WalletAccount
-          algoBalance: Decimal
-          algoUsdPrice: Decimal
+          /** Display units of the chain's native asset. */
+          nativeBalance: Decimal
+          nativeUsdPrice: Decimal
           // Forced because the synth account isn't yet in the store, so
           // AccountIcon can't derive signability from canSignWith.
           displayStateOverride?: AccountDisplayState
@@ -95,11 +93,12 @@ const watchDisplayAccount = (address: string, chainId: ChainId): WatchAccount =>
 export const useLedgerAccountInfoContent = (
     address: string,
     accountIndex: number,
+    chainId: ChainId,
     /** When provided, used as the sheet title instead of the default `Ledger #N` label. */
     titleOverride?: string,
 ): UseLedgerAccountInfoContentResult => {
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId)
     const { preview, isLoading, isError, refetch } = useLedgerAccountPreview(
         address,
         scope,
@@ -121,9 +120,8 @@ export const useLedgerAccountInfoContent = (
                       scope.chainId,
                   )
 
-        // Extract usdPrice from the ALGO preview asset for the account row.
-        const algoPreviewAsset = preview.assets.find(a => a.isNative)
-        const algoUsdPrice = algoPreviewAsset?.usdPrice ?? new Decimal(0)
+        const nativePreviewAsset = preview.assets.find(a => a.isNative)
+        const nativeUsdPrice = nativePreviewAsset?.usdPrice ?? new Decimal(0)
 
         const list: LedgerInfoListItem[] = [
             {
@@ -135,8 +133,8 @@ export const useLedgerAccountInfoContent = (
                 kind: 'account',
                 key: 'account',
                 account: synthAccount,
-                algoBalance: preview.nativeBalance,
-                algoUsdPrice,
+                nativeBalance: preview.nativeBalance,
+                nativeUsdPrice,
                 // For the rekeyed-to case the synth is a watch + rekey,
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
@@ -157,12 +155,14 @@ export const useLedgerAccountInfoContent = (
                     assetId: asset.assetId,
                     amount: asset.amount,
                     restriction: asset.restriction,
-                    // Holding value in ALGOs (display units):
-                    // amount * usdPrice / algoUsdPrice; unknown while the
-                    // ALGO USD price is.
-                    nativeValue: algoUsdPrice.isZero()
+                    // Holding value in the native asset (display units):
+                    // amount * usdPrice / nativeUsdPrice; unknown while the
+                    // native USD price is.
+                    nativeValue: nativeUsdPrice.isZero()
                         ? null
-                        : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
+                        : asset.amount
+                              .times(asset.usdPrice)
+                              .div(nativeUsdPrice),
                     // The preview's usdPrice is 0 when unknown, so it can't tell unpriced from worthless.
                     fiatValue: null,
                 } satisfies AssetWithAccountBalance,

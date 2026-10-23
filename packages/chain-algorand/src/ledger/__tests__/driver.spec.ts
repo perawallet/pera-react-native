@@ -70,6 +70,10 @@ describe('algorandLedgerAppDriver', () => {
         expect(algorandLedgerAppDriver.chainId).toBe(ALGORAND_CHAIN_ID)
     })
 
+    test('names the Algorand device app', () => {
+        expect(algorandLedgerAppDriver.appName).toBe('Algorand')
+    })
+
     test('opens the Algorand app over the transport it is given', () => {
         open()
 

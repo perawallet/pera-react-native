@@ -10,12 +10,16 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 
 export type UseLedgerExpandedTabHandoffResult = {
     /** Always false off-web: native has no popup surface to escape. */
     isPopupSurface: boolean
-    openLedgerExpandedTab: (transportType: LedgerTransportType) => Promise<void>
+    openLedgerExpandedTab: (
+        transportType: LedgerTransportType,
+        chainId: ChainId,
+    ) => Promise<void>
     /** Opens the wallet itself in a tab, for flows that started in the popup. */
     openWalletInTab: () => Promise<void>
     /** True in the tab a popup opened for Ledger pairing; always false off-web. */

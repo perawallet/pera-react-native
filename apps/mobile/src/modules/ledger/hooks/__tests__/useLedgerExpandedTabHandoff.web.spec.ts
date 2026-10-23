@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: () => surfaceState.current,
 }))
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
-    openExpandedTab: (flow: string) => mockOpenExpandedTab(flow),
+    openExpandedTab: (...args: unknown[]) => mockOpenExpandedTab(...args),
     closeCurrentTab: vi.fn(),
     getConsumedExpandedFlow: () => consumedFlow.current,
     putTabResumeIntent: (intent: unknown) => mockPutTabResumeIntent(intent),
@@ -83,20 +83,26 @@ describe('useLedgerExpandedTabHandoff (web)', () => {
 
     it('opens the ledger-usb flow for a USB transport', async () => {
         const { result } = renderHook(() => useLedgerExpandedTabHandoff())
-        await result.current.openLedgerExpandedTab('usb')
-        expect(mockOpenExpandedTab).toHaveBeenCalledWith('ledger-usb')
+        await result.current.openLedgerExpandedTab('usb', 'algorand')
+        expect(mockOpenExpandedTab).toHaveBeenCalledWith(
+            'ledger-usb',
+            'algorand',
+        )
     })
 
     it('opens the ledger-ble flow for a BLE transport', async () => {
         const { result } = renderHook(() => useLedgerExpandedTabHandoff())
-        await result.current.openLedgerExpandedTab('ble')
-        expect(mockOpenExpandedTab).toHaveBeenCalledWith('ledger-ble')
+        await result.current.openLedgerExpandedTab('ble', 'ethereum')
+        expect(mockOpenExpandedTab).toHaveBeenCalledWith(
+            'ledger-ble',
+            'ethereum',
+        )
     })
 
     it('opens the wallet home when no flow registered anything to resume', async () => {
         const { result } = renderHook(() => useLedgerExpandedTabHandoff())
         await result.current.openWalletInTab()
-        expect(mockOpenExpandedTab).toHaveBeenCalledExactlyOnceWith(undefined)
+        expect(mockOpenExpandedTab).toHaveBeenCalledExactlyOnceWith()
         expect(mockPutTabResumeIntent).not.toHaveBeenCalled()
     })
 

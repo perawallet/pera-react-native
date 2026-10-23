@@ -32,6 +32,7 @@ import {
     UserRejectedSigningError,
     useSigningEvent,
 } from '@perawallet/wallet-core-signing'
+import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
@@ -51,6 +52,8 @@ export type UseTransactionProcessingScreenResult = {
     isHardwareSender: boolean
     /** The hardware device's display name when known, otherwise null. */
     hardwareDeviceName: string | null
+    /** The device app the send's chain opens; null unless `isHardwareSender`. */
+    ledgerAppName: string | null
 }
 
 export const useTransactionProcessingScreen =
@@ -229,5 +232,10 @@ export const useTransactionProcessingScreen =
             (signingAccount && hardwareDetailsOf(signingAccount)?.deviceName) ??
             null
 
-        return { isHardwareSender, hardwareDeviceName }
+        const ledgerAppName = useMemo(
+            () => (isHardwareSender ? ledgerAppNameFor(scope.chainId) : null),
+            [isHardwareSender, scope.chainId],
+        )
+
+        return { isHardwareSender, hardwareDeviceName, ledgerAppName }
     }

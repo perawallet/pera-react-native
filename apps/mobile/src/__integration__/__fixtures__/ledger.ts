@@ -10,24 +10,31 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export type FakeLedgerOptions = {
-    address: string | ((accountIndex: number) => string)
+    address: string | ((accountIndex: number, chainId: ChainId) => string)
+    /** The chains whose device app the fake serves; the legacy chain alone by default. */
+    chainIds?: readonly ChainId[]
     // Resolves immediately by default. Pass one that blocks on a deferred to
     // observe the awaiting-approval UI before releasing the signature.
-    signTransaction?: () => Promise<Uint8Array>
+    signTransaction?: (
+        accountIndex: number,
+        payload: Uint8Array,
+    ) => Promise<Uint8Array>
 }
 
 // Without a registered BLE transport every Ledger screen throws
-// `LedgerProviderNotFoundError` before reaching the flow under test. The fake
-// serves only the legacy chain, as a build with one registered app driver
-// does, so a flow that connects for another chain fails the way it would on a
-// device.
+// `LedgerProviderNotFoundError` before reaching the flow under test. A chain
+// outside `chainIds` fails to connect the way a device without its app does.
 export const registerFakeLedgerProvider = ({
     address,
+    chainIds = [LEGACY_CHAIN_ID],
     signTransaction = async () => new Uint8Array(64),
 }: FakeLedgerOptions): void => {
     getProvider().hardwareWalletRegistry.register({
@@ -35,16 +42,19 @@ export const registerFakeLedgerProvider = ({
         transportType: 'ble',
         scan: () => () => {},
         connect: async (_deviceId: string, chainId: string) => {
-            if (chainId !== LEGACY_CHAIN_ID) {
+            if (!chainIds.includes(chainId as ChainId)) {
                 throw new LedgerAppDriverNotRegisteredError(chainId)
             }
             return {
                 getAddress: async (accountIndex: number) => ({
                     address:
                         typeof address === 'function'
-                            ? address(accountIndex)
+                            ? address(accountIndex, chainId as ChainId)
                             : address,
-                    publicKey: new Uint8Array(32),
+                    // An Ed25519 key on the legacy chain, an uncompressed secp256k1 one elsewhere.
+                    publicKey: new Uint8Array(
+                        chainId === LEGACY_CHAIN_ID ? 32 : 65,
+                    ),
                     accountIndex,
                 }),
                 signTransaction,

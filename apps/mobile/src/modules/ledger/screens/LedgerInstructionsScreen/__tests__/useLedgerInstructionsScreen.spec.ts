@@ -43,11 +43,30 @@ vi.mock('../../../hooks', async importOriginal => ({
     }),
 }))
 
-const setTransport = (transportType?: 'ble' | 'usb'): void => {
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
+
+const setTransport = (
+    transportType?: 'ble' | 'usb',
+    chainId?: string,
+): void => {
+    const params = {
+        ...(transportType ? { transportType } : {}),
+        ...(chainId ? { chainId } : {}),
+    }
     vi.mocked(useRoute).mockReturnValue({
         key: 'LedgerInstructions',
         name: 'LedgerInstructions',
-        params: transportType ? { transportType } : undefined,
+        params: Object.keys(params).length > 0 ? params : undefined,
     })
 }
 
@@ -72,6 +91,24 @@ describe('useLedgerInstructionsScreen', () => {
         expect(result.current.transportType).toBe('ble')
     })
 
+    it("names the route chain's app and scans on that chain", async () => {
+        setTransport('usb', 'ethereum')
+        const { result } = renderHook(() => useLedgerInstructionsScreen())
+
+        expect(result.current.appName).toBe('Ethereum')
+        await continueAndSettle(result.current.handleContinue)
+        expect(mocks.navigate).toHaveBeenCalledWith('LedgerScan', {
+            transportType: 'usb',
+            chainId: 'ethereum',
+        })
+    })
+
+    it("names the first Ledger chain's app when the route names none", () => {
+        const { result } = renderHook(() => useLedgerInstructionsScreen())
+
+        expect(result.current.appName).toBe('Algorand')
+    })
+
     it('reports the permission check in progress', () => {
         mocks.isChecking = true
 
@@ -89,6 +126,7 @@ describe('useLedgerInstructionsScreen', () => {
         expect(mocks.requestPermissions).not.toHaveBeenCalled()
         expect(mocks.navigate).toHaveBeenCalledWith('LedgerScan', {
             transportType: 'usb',
+            chainId: 'algorand',
         })
     })
 
@@ -101,6 +139,7 @@ describe('useLedgerInstructionsScreen', () => {
         expect(mocks.requestPermissions).not.toHaveBeenCalled()
         expect(mocks.navigate).toHaveBeenCalledWith('LedgerScan', {
             transportType: 'ble',
+            chainId: 'algorand',
         })
     })
 
@@ -112,6 +151,7 @@ describe('useLedgerInstructionsScreen', () => {
         expect(mocks.requestPermissions).toHaveBeenCalledTimes(1)
         expect(mocks.navigate).toHaveBeenCalledWith('LedgerScan', {
             transportType: 'ble',
+            chainId: 'algorand',
         })
     })
 

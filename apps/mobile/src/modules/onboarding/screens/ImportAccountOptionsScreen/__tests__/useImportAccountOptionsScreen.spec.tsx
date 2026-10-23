@@ -158,6 +158,11 @@ vi.mock('@modules/ledger', () => ({
     useSupportedLedgerTransports: () => mockLedgerSupport,
 }))
 
+const ledgerChains = vi.hoisted(() => ({ ids: ['algorand'] as string[] }))
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainIds: () => ledgerChains.ids,
+}))
+
 vi.mock('@modules/cloud-backup', () => ({
     useRestoreBackupOptions: () => ({
         chooseRestoreRoute: mockChooseRestoreRoute,
@@ -354,21 +359,65 @@ describe('useImportAccountOptionsScreen', () => {
         expect(result.current.isQRScannerVisible).toBe(true)
     })
 
-    it('Ledger BLE option navigates to LedgerPair', () => {
+    it('Ledger BLE option navigates to LedgerPair on the only Ledger chain without asking', async () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const ledgerOption = result.current.options.find(
             o => o.testID === 'import_account_options_pair_ledger_button',
         )!
 
-        act(() => {
+        await act(async () => {
             ledgerOption.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerPair')
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith('LedgerPair', {
+            chainId: 'algorand',
+        })
     })
 
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType', () => {
+    describe('with more than one Ledger chain', () => {
+        beforeEach(() => {
+            ledgerChains.ids = ['algorand', 'ethereum']
+        })
+
+        afterEach(() => {
+            ledgerChains.ids = ['algorand']
+        })
+
+        it('asks for the chain and pairs on the one picked', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('ethereum')
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const ledgerOption = result.current.options.find(
+                o => o.testID === 'import_account_options_pair_ledger_button',
+            )!
+
+            await act(async () => {
+                ledgerOption.onPress()
+            })
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(mockPush).toHaveBeenCalledWith('LedgerPair', {
+                chainId: 'ethereum',
+            })
+        })
+
+        it('stays put when the chain sheet is dismissed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const ledgerOption = result.current.options.find(
+                o => o.testID === 'import_account_options_pair_ledger_button',
+            )!
+
+            await act(async () => {
+                ledgerOption.onPress()
+            })
+
+            expect(mockPush).not.toHaveBeenCalled()
+        })
+    })
+
+    it('Ledger USB option navigates to LedgerInstructions with usb transportType', async () => {
         mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -377,12 +426,13 @@ describe('useImportAccountOptionsScreen', () => {
             o => o.testID === 'import_account_options_pair_ledger_usb_button',
         )!
 
-        act(() => {
+        await act(async () => {
             usbOption.onPress()
         })
 
         expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
             transportType: 'usb',
+            chainId: 'algorand',
         })
     })
 

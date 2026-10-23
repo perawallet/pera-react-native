@@ -71,11 +71,25 @@ describe('registerFakeLedgerProvider', () => {
         ).resolves.toBe(signature)
     })
 
-    it('serves only the legacy chain', async () => {
+    it('serves only the legacy chain by default', async () => {
         registerFakeLedgerProvider({ address: 'FIXED' })
 
         await expect(connectFakeLedger('ethereum')).rejects.toBeInstanceOf(
             LedgerAppDriverNotRegisteredError,
         )
+    })
+
+    it('serves each chain it is given, deriving its address there', async () => {
+        registerFakeLedgerProvider({
+            address: (index, chainId) => `${chainId}-${index}`,
+            chainIds: ['algorand', 'ethereum'],
+        })
+
+        const transport = await connectFakeLedger('ethereum')
+
+        await expect(transport.getAddress(2)).resolves.toMatchObject({
+            address: 'ethereum-2',
+            publicKey: new Uint8Array(65),
+        })
     })
 })
