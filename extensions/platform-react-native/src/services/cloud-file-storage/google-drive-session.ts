@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import {
     CloudFileNotFoundError,
     GoogleDriveAuthFailedError,
@@ -19,27 +18,22 @@ import {
     GooglePlayServicesUnavailableError,
 } from '@perawallet/wallet-extension-platform'
 import {
-    GoogleSignin,
-    isCancelledResponse,
-    isNoSavedCredentialFoundResponse,
-    isSuccessResponse,
-    type User,
-} from '@react-native-google-signin/google-signin'
-import {
     CloudStorage,
     CloudStorageError,
     CloudStorageErrorCode,
     CloudStorageProvider,
     CloudStorageScope,
 } from 'react-native-cloud-storage'
-import { config } from '@perawallet/wallet-core-config'
 
 import { hasCode } from './cloud-storage-error'
+import {
+    authorizeGoogleDrive,
+    DRIVE_TIMEOUT_MS,
+    isGoogleDriveConfigured,
+    releaseGoogleDriveToken,
+} from './google-auth'
 
-export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
-
-// The library's 3 s default is too short for an upload on a mobile network.
-const DRIVE_TIMEOUT_MS = 15_000
+export { DRIVE_FILE_SCOPE, isGoogleDriveConfigured } from './google-auth'
 
 /** What an operation returns when the user backs out of a prompt it raised. */
 export const DRIVE_CANCELLED = Symbol('drive cancelled')
@@ -52,61 +46,14 @@ export type DriveSessionResult<T> =
     | { status: 'done'; value: T }
     | { status: 'cancelled' }
 
-/** Sign-in needs the client id of the platform it runs on, and only that one. */
-export const isGoogleDriveConfigured = (): boolean =>
-    Boolean(
-        Platform.OS === 'ios'
-            ? config.googleIosClientId
-            : config.googleWebClientId,
-    )
-
-const configureGoogleSignIn = (): void => {
-    if (!isGoogleDriveConfigured()) throw new GoogleDriveNotConfiguredError()
-    GoogleSignin.configure({
-        scopes: [DRIVE_FILE_SCOPE],
-        iosClientId: config.googleIosClientId || undefined,
-        webClientId: config.googleWebClientId || undefined,
-    })
-}
-
-const hasDriveScope = (user: User): boolean =>
-    user.scopes.includes(DRIVE_FILE_SCOPE)
-
-const signIn = async (): Promise<User | null> => {
-    if (GoogleSignin.hasPreviousSignIn()) {
-        try {
-            const silent = await GoogleSignin.signInSilently()
-            if (!isNoSavedCredentialFoundResponse(silent)) return silent.data
-        } catch {
-            // iOS rejects restoring a grant revoked from the Google account and
-            // keeps the stale keychain entry; prompting replaces it.
-        }
-    }
-    const response = await GoogleSignin.signIn()
-    return isCancelledResponse(response) ? null : response.data
-}
-
-const grantDriveScope = async (user: User): Promise<boolean> => {
-    if (hasDriveScope(user)) return true
-    const response = await GoogleSignin.addScopes({
-        scopes: [DRIVE_FILE_SCOPE],
-    })
-    return (
-        response !== null &&
-        isSuccessResponse(response) &&
-        hasDriveScope(response.data)
-    )
-}
-
 // The library only names a 401 AUTHENTICATION_FAILED when the body says
 // `UNAUTHENTICATED`; anything else keeps the raw status of the HTTP failure.
 const isAuthFailure = (error: unknown): boolean =>
     hasCode(error, CloudStorageErrorCode.AUTHENTICATION_FAILED) ||
     (error as { status?: unknown } | null)?.status === 401
 
-// The library's `statusCodes` reads native constants, so it is undefined
-// wherever the module isn't linked — and an undefined comparand would match
-// every error that carries no code. Both platforms spell it this literal.
+// PeraGoogleAuth rejects with this code when Android's Play Services are
+// missing and the user doesn't install or enable them.
 const PLAY_SERVICES_NOT_AVAILABLE = 'PLAY_SERVICES_NOT_AVAILABLE'
 
 const isPlayServicesUnavailable = (error: unknown): boolean =>
@@ -169,80 +116,73 @@ const toSessionResult = <T>(
         ? { status: 'cancelled' }
         : { status: 'done', value }
 
-const runWithFreshToken = async <T>(
-    operation: DriveOperation<T>,
-    rejectedToken: string,
-): Promise<T | typeof DRIVE_CANCELLED> => {
-    // Android's getTokens can hand back the rejected token from its cache.
-    if (Platform.OS === 'android') {
-        await GoogleSignin.clearCachedAccessToken(rejectedToken)
-    }
-    const { accessToken } = await GoogleSignin.getTokens()
-    try {
-        return await operation(driveWithToken(accessToken))
-    } catch (error) {
-        // iOS keeps returning a revoked token until it nears expiry; signing
-        // out makes the next call prompt for a new grant.
-        if (isUnauthorized(error)) await GoogleSignin.signOut()
-        throw error
-    }
-}
+/**
+ * The token the session holds, so it can be released however the session
+ * ends.
+ */
+type HeldToken = { current: string | null }
 
-// A failed sign-out must not turn a finished save into an error.
-const releaseGoogleSession = (): Promise<unknown> =>
-    GoogleSignin.signOut().catch(() => undefined)
+const authorizeInto = async (held: HeldToken): Promise<string | null> => {
+    held.current = await authorizeGoogleDrive()
+    return held.current
+}
 
 const runSession = async <T>(
     operation: DriveOperation<T>,
+    held: HeldToken,
     onAuthorized?: () => void,
 ): Promise<DriveSessionResult<T>> => {
-    configureGoogleSignIn()
+    if (!isGoogleDriveConfigured()) throw new GoogleDriveNotConfiguredError()
 
-    // Offers Android's Play Services update dialog up front; without current
-    // Play Services the call fails here rather than inside sign-in.
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
-
-    const user = await signIn()
-    if (!user || !(await grantDriveScope(user))) return { status: 'cancelled' }
+    const accessToken = await authorizeInto(held)
+    if (accessToken === null) return { status: 'cancelled' }
 
     onAuthorized?.()
-    const { accessToken } = await GoogleSignin.getTokens()
     try {
         return toSessionResult(await operation(driveWithToken(accessToken)))
     } catch (error) {
         if (!isUnauthorized(error)) throw error
-        // The library never refreshes tokens.
-        return toSessionResult(await runWithFreshToken(operation, accessToken))
+        // The library never refreshes tokens, and Android would hand the
+        // rejected one back from its cache. A failed release must not replace
+        // the 401; the retry goes ahead regardless.
+        await releaseGoogleDriveToken(accessToken).catch(() => undefined)
+        const freshToken = await authorizeInto(held)
+        if (freshToken === null) return { status: 'cancelled' }
+        return toSessionResult(await operation(driveWithToken(freshToken)))
     }
 }
 
 /**
- * `cancelled` when the user backs out of sign-in, the scope grant, or a prompt
+ * `cancelled` when the user backs out of the consent screen or a prompt
  * `operation` itself raised. `operation` runs again after a rejected token, so
  * it must be safe to repeat. Failures are mapped here rather than inside, so
  * the token retry still sees the original 401.
  *
- * A session that reached the operation gives the `drive.file` grant back on
- * the way out rather than leaving a refreshable token alive — from a `finally`,
- * because a read has several exits and each one has to release. A cancellation
- * keeps the sign-in: the user may retry straight away.
+ * A session that reached the operation releases its token on the way out,
+ * from a `finally` because a read has several exits and each one has to
+ * release. So does one whose token was rejected twice. A cancellation or any
+ * other failure keeps it: the user may retry straight away.
  */
 export const runOnGoogleDrive = async <T>(
     operation: DriveOperation<T>,
     onAuthorized?: () => void,
 ): Promise<DriveSessionResult<T>> => {
+    const held: HeldToken = { current: null }
     let release = false
     try {
-        const result = await runSession(operation, onAuthorized)
+        const result = await runSession(operation, held, onAuthorized)
         release = result.status === 'done'
         return result
     } catch (error) {
         const driveError = asDriveError(error)
-        // Sign-in silently reuses the last account; signing out lets the next
-        // attempt pick another.
-        release = driveError instanceof CloudFileNotFoundError
+        release =
+            driveError instanceof CloudFileNotFoundError ||
+            driveError instanceof GoogleDriveAuthFailedError
         throw driveError
     } finally {
-        if (release) await releaseGoogleSession()
+        // A failed release must not turn a finished save into an error.
+        if (release && held.current) {
+            await releaseGoogleDriveToken(held.current).catch(() => undefined)
+        }
     }
 }

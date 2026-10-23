@@ -28,12 +28,10 @@
     "react-native-mmkv": "catalog:",
     "react-native-cloud-storage": "3.2.0",
     "react-native-ssl-public-key-pinning": "catalog:",
-    "@react-native-google-signin/google-signin": "16.1.5",
     "@react-native-firebase/analytics": "catalog:",
     "@react-native-firebase/crashlytics": "catalog:",
     "@react-native-firebase/messaging": "catalog:",
     "@react-native-firebase/remote-config": "catalog:",
-    "@notifee/react-native": "catalog:",
     "drizzle-orm": "catalog:",
     "expo-sqlite": "catalog:",
     "@expo/app-integrity": "catalog:",
@@ -42,6 +40,7 @@
     "expo-device": "catalog:",
     "expo-local-authentication": "catalog:",
     "expo-localization": "catalog:",
+    "expo-notifications": "catalog:",
     "expo": "catalog:"
   },
   "devDependencies": {
