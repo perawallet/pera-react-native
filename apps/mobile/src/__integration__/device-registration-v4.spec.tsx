@@ -424,7 +424,7 @@ describe('Device registration', () => {
     it('stays on v3 with only the Algorand accounts while the v4 flag is off', async () => {
         useRemoteConfigStore
             .getState()
-            .setConfigOverride('enable_device_registration_v4', null)
+            .setConfigOverride('enable_device_registration_v4', false)
         const bodies: DeviceRegistrationRequest[] = []
         server.use(
             http.post('*/api/v3/devices', async ({ request }) => {

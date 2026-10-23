@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isProd } from '@perawallet/wallet-core-config'
 import {
     readRemoteConfigWithOverrides,
     RemoteConfigKeys,
@@ -18,9 +19,12 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 // Read per request, not per session, so flipping the flag takes effect on the
-// next registration without a relaunch.
+// next registration without a relaunch. Keyed on the backend variant, not on
+// debug: a local debug bundle of the production variant talks to the
+// production backend. Every non-production variant talks to staging, which
+// serves v4, so it defaults on; production waits for Remote Config.
 export const isDeviceRegistrationV4Enabled = (): boolean =>
     readRemoteConfigWithOverrides(
         getProvider().remoteConfig,
         useRemoteConfigStore.getState().configOverrides,
-    ).getBooleanValue(RemoteConfigKeys.enable_device_registration_v4, false)
+    ).getBooleanValue(RemoteConfigKeys.enable_device_registration_v4, !isProd)

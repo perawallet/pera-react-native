@@ -14,7 +14,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { isDeviceRegistrationV4Enabled } from '../registrationApi'
 
-const mocks = vi.hoisted(() => ({ remote: undefined as boolean | undefined }))
+const mocks = vi.hoisted(() => ({
+    remote: undefined as boolean | undefined,
+    isProd: true,
+    isDebug: false,
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    get isProd() {
+        return mocks.isProd
+    },
+    get isDebug() {
+        return mocks.isDebug
+    },
+}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -34,15 +48,33 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 describe('isDeviceRegistrationV4Enabled', () => {
     afterEach(() => {
         mocks.remote = undefined
+        mocks.isProd = true
+        mocks.isDebug = false
         useRemoteConfigStore.getState().resetState()
     })
 
-    it('is off until remote config turns it on', () => {
+    it('is off on a production build, debug bundles included, until Remote Config turns it on', () => {
         expect(isDeviceRegistrationV4Enabled()).toBe(false)
 
         mocks.remote = true
 
         expect(isDeviceRegistrationV4Enabled()).toBe(true)
+    })
+
+    it('stays off on a debug bundle of the production variant, which talks to the production backend', () => {
+        mocks.isDebug = true
+
+        expect(isDeviceRegistrationV4Enabled()).toBe(false)
+    })
+
+    it('is on by default on a non-production build, and Remote Config can still turn it off', () => {
+        mocks.isProd = false
+
+        expect(isDeviceRegistrationV4Enabled()).toBe(true)
+
+        mocks.remote = false
+
+        expect(isDeviceRegistrationV4Enabled()).toBe(false)
     })
 
     it('follows a developer override', () => {

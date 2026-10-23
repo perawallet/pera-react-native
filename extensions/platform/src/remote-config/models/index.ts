@@ -106,8 +106,10 @@ export const RemoteConfigDefaults: Readonly<
     // redeploy; defaults to Google's generate_204 interim.
     network_reachability_url: 'https://clients3.google.com/generate_204',
     // Registers through the devices API's v4 route, which carries every chain.
-    // Off until the backend serves that route: while off, registration stays on
-    // v3, which takes only the accounts of chains a v3 registration carried.
+    // While off, registration stays on v3, which takes only the accounts of
+    // chains a v3 registration carried. Non-production variants default on in
+    // the reader; the production variant, debug bundles included, stays off
+    // until Remote Config turns it on.
     enable_device_registration_v4: false,
 }
 
