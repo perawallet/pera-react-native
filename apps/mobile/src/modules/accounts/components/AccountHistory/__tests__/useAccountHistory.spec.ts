@@ -756,6 +756,27 @@ describe('useAccountHistory', () => {
             )
         })
 
+        it('refreshes an Ethereum account on its own chain, so its records History is invalidated', async () => {
+            registerEthereumChain()
+            const address = `0x${'c'.repeat(40)}`
+            vi.mocked(useSelectedAccount).mockReturnValue({
+                id: 'eth',
+                custody: { kind: 'watch' },
+                chains: { ethereum: { address } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+            await act(async () => {
+                result.current.handleRefresh()
+            })
+
+            expect(mockRefreshAccounts).toHaveBeenCalledWith([address], {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            })
+        })
+
         it('reports isRefreshing while the sync refresh is in flight', async () => {
             let releaseRefresh: () => void = () => {}
             mockRefreshAccounts.mockReturnValue(

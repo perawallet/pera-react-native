@@ -199,6 +199,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     const { t } = useLanguage()

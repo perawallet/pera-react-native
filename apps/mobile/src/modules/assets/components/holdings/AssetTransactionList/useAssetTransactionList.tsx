@@ -148,6 +148,7 @@ export const useAssetTransactionList = ({
     const refreshAddresses = useMemo(() => [accountAddress], [accountAddress])
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     const { t } = useLanguage()

@@ -188,6 +188,7 @@ export const useAccountOverview = ({
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     const contextValue = useMemo<UseAccountOverviewModalResult>(
