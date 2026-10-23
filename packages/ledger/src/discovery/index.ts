@@ -21,6 +21,17 @@ export { verifyLedgerAddress } from './verifyAddress'
 export { ledgerReadableChainOf, readLedgerAddresses } from './readAddresses'
 export type { ReadLedgerAddressesOptions } from './readAddresses'
 export {
+    isLedgerClaimMetBy,
+    ledgerClaimsByChain,
+    ledgerHolderClaim,
+    proveLedgerHolders,
+} from './proveHolders'
+export type {
+    LedgerHolder,
+    LedgerHolderClaim,
+    ProveLedgerHoldersOptions,
+} from './proveHolders'
+export {
     ledgerTimeoutReason,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
