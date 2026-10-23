@@ -265,8 +265,8 @@
             "empty_body": "No se encontraron transacciones",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
-            "load_failed_title": "No se pudieron cargar las transacciones",
-            "load_failed_body": "Algo salió mal al cargar este historial. Vuelve a intentarlo en un momento.",
+            "search_paused_body": "No se encontraron transacciones en el historial reciente.",
+            "search_older": "Buscar más antiguas",
             "filter": "Filtrar",
             "csv": "CSV"
         },

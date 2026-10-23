@@ -64,9 +64,15 @@ export type UseAssetTransactionListResult = {
     isLoading: boolean
     /** Whether to render the cold-start skeleton (no read has resolved yet) */
     isInitialLoad: boolean
-    /** See `useAccountHistory`: nothing loaded and the read failed. */
+    /** See `useAccountHistory` for these load states. */
     isLoadFailed: boolean
+    isLoadUnavailable: boolean
+    isLoadIntegrityBlocked: boolean
+    isLoadOffline: boolean
     handleRetry: () => void
+    isRetrying: boolean
+    isSearchPaused: boolean
+    handleSearchOlder: () => void
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
@@ -118,8 +124,13 @@ export const useAssetTransactionList = ({
         isError,
         error,
         hasNextPage,
+        isSearchPaused,
         fetchNextPage,
         retry: handleRetry,
+        isRetrying,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
     } = useTransactionHistoryRows({
         accountAddress,
         scope,
@@ -231,9 +242,13 @@ export const useAssetTransactionList = ({
     // answer for the length of one request.
     const isEmpty = isFetched && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
-    const isLoadFailed = rows.length === 0 && isError
+    // The failed read happened offline, so it gets the offline copy, not the error one.
+    const isLoadOffline = isLoadFailed && !hasInternet
     const isInitialLoad =
-        !isLoadFailed && rows.length === 0 && (!isFetched || hasNextPage)
+        !isLoadFailed &&
+        !isSearchPaused &&
+        rows.length === 0 &&
+        (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
@@ -254,7 +269,13 @@ export const useAssetTransactionList = ({
         isLoading,
         isInitialLoad,
         isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
         handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder: fetchNextPage,
         isFetchingNextPage,
         isError,
         error,

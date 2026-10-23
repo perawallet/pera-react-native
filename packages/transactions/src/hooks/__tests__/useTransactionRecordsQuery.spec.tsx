@@ -25,6 +25,7 @@ import {
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    MAX_AUTO_RECORD_FETCHES,
     MAX_RECORD_PAGE_READS,
     useTransactionRecordsQuery,
 } from '../useTransactionRecordsQuery'
@@ -35,7 +36,14 @@ const mocks = vi.hoisted(() => ({
 }))
 
 // The real module reaches the accounts package, which needs a platform provider.
-vi.mock('../../pending-history', () => mocks)
+// A page with no `minedItems` stands for one with no pending sends merged in.
+vi.mock('../../pending-history', () => ({
+    getPendingTransactionRecords: mocks.getPendingTransactionRecords,
+    getTransactionHistoryWithPending: async (...args: unknown[]) => {
+        const page = await mocks.getTransactionHistoryWithPending(...args)
+        return { minedItems: page.items, ...page }
+    },
+}))
 
 const ADDRESS = '0xabc'
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -229,6 +237,91 @@ describe('useTransactionRecordsQuery', () => {
         expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
             callsAtFailure + 1,
         )
+    })
+
+    test('pauses the search after its fetch budget and resumes on fetchNextPage', async () => {
+        mocks.getTransactionHistoryWithPending.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => ({
+                items: [],
+                next: { cursor: `${page?.cursor ?? 'c'}+` },
+            }),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        const budget = MAX_AUTO_RECORD_FETCHES * MAX_RECORD_PAGE_READS
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
+            budget,
+        )
+
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() =>
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(2 * budget),
+        )
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+    })
+
+    test('stays paused, not loading, while a background refetch re-reads its pages', async () => {
+        mocks.getTransactionHistoryWithPending.mockImplementation(
+            async (_address, _scope, page?: { cursor: string }) => ({
+                items: [],
+                next: { cursor: `${page?.cursor ?? 'c'}+` },
+            }),
+        )
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
+
+        mocks.getTransactionHistoryWithPending.mockImplementation(
+            () => new Promise(() => {}),
+        )
+        act(() => result.current.refetch())
+
+        await waitFor(() => expect(result.current.isFetching).toBe(true))
+        expect(result.current.isSearchPaused).toBe(true)
+    })
+
+    test('keeps paging past a pending send older than the range start', async () => {
+        const staleSend = record('STALE_SEND', JAN_10 - DAY_MS)
+        mocks.getTransactionHistoryWithPending
+            .mockResolvedValueOnce({
+                items: [record('JAN10_LATE', JAN_10), staleSend],
+                minedItems: [record('JAN10_LATE', JAN_10)],
+                next: { cursor: 'c1' },
+            })
+            .mockResolvedValueOnce({
+                items: [record('JAN10_EARLY', JAN_10 - 1000)],
+            })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    afterTime: '2026-01-10',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        expect(result.current.hasNextPage).toBe(true)
     })
 
     test('keeps fetchNextPage and refetch stable across renders', async () => {

@@ -72,6 +72,7 @@ export {
     getPendingTransactionRecords,
     getTransactionHistoryWithPending,
     type GetPendingTransactionRecordsParams,
+    type HistoryPageWithPending,
 } from './pending-history'
 export * from './utils'
 

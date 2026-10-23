@@ -69,8 +69,16 @@ export type UseAccountHistoryResult = {
     isInitialLoad: boolean
     /** Nothing loaded and the read failed: a retry state, not the skeleton. */
     isLoadFailed: boolean
+    /** The failure is a Pera service this network doesn't have, so retrying can't help. */
+    isLoadUnavailable: boolean
+    isLoadIntegrityBlocked: boolean
+    isLoadOffline: boolean
     /** Re-requests the page that failed. */
     handleRetry: () => void
+    isRetrying: boolean
+    /** Nothing found yet and the automatic search stopped; see `handleSearchOlder`. */
+    isSearchPaused: boolean
+    handleSearchOlder: () => void
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -165,8 +173,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isError,
         error,
         hasNextPage,
+        isSearchPaused,
         fetchNextPage,
         retry: handleRetry,
+        isRetrying,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
     } = useTransactionHistoryRows({
         accountAddress,
         scope,
@@ -256,11 +269,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // answer for the length of one request.
     const isEmpty = isFetched && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
-    // A failed read leaves `hasNextPage` set, so without the error check it
-    // reads as a load still in progress and the skeleton never leaves.
-    const isLoadFailed = rows.length === 0 && isError
+    // The failed read happened offline, so it gets the offline copy, not the error one.
+    const isLoadOffline = isLoadFailed && !hasInternet
     const isInitialLoad =
-        !isLoadFailed && rows.length === 0 && (!isFetched || hasNextPage)
+        !isLoadFailed &&
+        !isSearchPaused &&
+        rows.length === 0 &&
+        (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
@@ -282,7 +297,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoading,
         isInitialLoad,
         isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
         handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder: fetchNextPage,
         isFetchingNextPage,
         isError,
         error,

@@ -12,6 +12,7 @@
 
 import type { ReactNode } from 'react'
 import { PWButton } from '@components/core'
+import type { PWViewProps } from '@components/core/PWView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { IntegrityBlockedView } from './IntegrityBlockedView'
@@ -52,12 +53,16 @@ export type OfflineTolerantViewProps = {
      * doomed request.
      */
     onRetry?: () => void
+    /** A retry is in flight: the error stays set until it settles, so the button spins meanwhile. */
+    isRetrying?: boolean
     /** Retry button copy. Defaults to `common.retry.label`. */
     retryLabel?: string
     /** Replaces the generic `common.error.body` copy on the error arm. */
     errorBody?: string
     offlineTestID?: string
     errorTestID?: string
+    /** Applied to whichever surface replaces the children. */
+    style?: PWViewProps['style']
     children: ReactNode
 }
 
@@ -77,10 +82,12 @@ export const OfflineTolerantView = ({
     isIntegrityBlocked = false,
     isError = false,
     onRetry,
+    isRetrying = false,
     retryLabel,
     errorBody,
     offlineTestID,
     errorTestID,
+    style,
     children,
 }: OfflineTolerantViewProps) => {
     const { t } = useLanguage()
@@ -97,6 +104,7 @@ export const OfflineTolerantView = ({
                 icon='globe'
                 title={t('common.network_unavailable.title')}
                 body={t('common.network_unavailable.body')}
+                style={style}
             />
         )
     }
@@ -106,6 +114,7 @@ export const OfflineTolerantView = ({
             variant='link'
             title={retryLabel ?? t('common.retry.label')}
             onPress={onRetry}
+            isLoading={isRetrying}
         />
     ) : undefined
 
@@ -120,12 +129,18 @@ export const OfflineTolerantView = ({
                 body={t('common.offline_refresh_body')}
                 button={retryButton}
                 testID={offlineTestID}
+                style={style}
             />
         )
     }
 
     if (isIntegrityBlocked) {
-        return <IntegrityBlockedView onRetry={onRetry} />
+        return (
+            <IntegrityBlockedView
+                onRetry={onRetry}
+                style={style}
+            />
+        )
     }
 
     return (
@@ -135,6 +150,7 @@ export const OfflineTolerantView = ({
             body={errorBody ?? t('common.error.body')}
             button={retryButton}
             testID={errorTestID}
+            style={style}
         />
     )
 }

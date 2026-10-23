@@ -15,6 +15,7 @@
 export { QuantumFeeExplainer } from './components/QuantumFeeExplainer'
 export { TransactionDateHeader } from './components/TransactionDateHeader'
 export { TransactionListItem } from './components/TransactionListItem'
+export { TransactionHistoryLoadState } from './components/TransactionHistoryLoadState'
 export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
 export {
     useReceiveFunds,

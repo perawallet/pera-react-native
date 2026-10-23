@@ -12,9 +12,10 @@
 
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 import type { Decimal } from 'decimal.js'
-import type {
-    AssetRef,
-    ChainScope,
+import {
+    queryKeyReferencesScope,
+    type AssetRef,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 
 export const MODULE_PREFIX = 'transactions'
@@ -130,6 +131,22 @@ export function invalidateTransactionQueries(queryClient: QueryClient): void {
     })
 }
 
+/**
+ * Scoped variant of {@link invalidateTransactionQueries} for one chain scope,
+ * so a sync pass on one chain doesn't refetch another chain's backend-read
+ * history.
+ */
+export function invalidateTransactionQueriesForScope(
+    queryClient: QueryClient,
+    scope: ChainScope,
+): void {
+    void queryClient.invalidateQueries({
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            queryKeyReferencesScope(query.queryKey, scope),
+    })
+}
+
 export function invalidateSpendableBalanceQueries(
     queryClient: QueryClient,
 ): void {
@@ -145,16 +162,20 @@ export function invalidateSpendableBalanceQueries(
  * field (history, filtered history, pagination pages), so a post-submission
  * refresh can re-read just the affected accounts' histories instead of
  * refetching every mounted account's infinite query, all pages included.
+ * Pass `scope` to stop at one chain: EVM chains share addresses.
  */
 export function invalidateTransactionQueriesForAddresses(
     queryClient: QueryClient,
     addresses: string[],
+    scope?: ChainScope,
 ): void {
     if (addresses.length === 0) return
     const targets = new Set(addresses)
     void queryClient.invalidateQueries({
         predicate: query =>
             query.queryKey[0] === MODULE_PREFIX &&
+            (scope === undefined ||
+                queryKeyReferencesScope(query.queryKey, scope)) &&
             query.queryKey.some(part => {
                 if (typeof part !== 'object' || part === null) return false
                 const { accountAddress } = part as Record<string, unknown>

@@ -130,6 +130,8 @@ export type UseTransactionHistoryQueryResult = {
      * the first read. Gate empty states on this instead.
      */
     isFetched: boolean
+    /** Any page in flight, a refetch included. */
+    isFetching: boolean
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -524,6 +526,7 @@ export const useTransactionHistoryQuery = (
         transactions,
         isLoading: query.isLoading,
         isFetched: query.isFetched,
+        isFetching: query.isFetching,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         isPaused: query.isPaused,

@@ -19,7 +19,11 @@ import {
     type UseTransactionHistoryQueryResult,
     type UseTransactionRecordsQueryResult,
 } from '@perawallet/wallet-core-transactions'
-import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { useTransactionHistoryRows } from '../useTransactionHistoryRows'
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -41,6 +45,7 @@ const historyResult = (
     transactions: [],
     isLoading: false,
     isFetched: true,
+    isFetching: false,
     isFetchingNextPage: false,
     isError: false,
     isPaused: false,
@@ -57,10 +62,12 @@ const recordsResult = (
     records: [],
     isLoading: false,
     isFetched: true,
+    isFetching: false,
     isFetchingNextPage: false,
     isError: false,
     error: null,
     hasNextPage: false,
+    isSearchPaused: false,
     fetchNextPage: vi.fn(),
     refetch: vi.fn(),
     ...overrides,
@@ -157,5 +164,64 @@ describe('useTransactionHistoryRows', () => {
         rerender()
         act(() => result.current.retry())
         expect(failedFirst.refetch).toHaveBeenCalledTimes(1)
+    })
+    it('reports a retry in flight only while the failed read is re-requested', () => {
+        vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+            recordsResult({ isError: true, isFetching: true }),
+        )
+
+        const { result, rerender } = renderHook(() =>
+            useTransactionHistoryRows({
+                accountAddress: '0xabc',
+                scope: ETH_SCOPE,
+            }),
+        )
+        expect(result.current.isRetrying).toBe(true)
+
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+            recordsResult({ isFetching: true }),
+        )
+        rerender()
+        expect(result.current.isRetrying).toBe(false)
+    })
+
+    it("passes the records query's paused search through, and never on cached rows", () => {
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+            recordsResult({ isSearchPaused: true }),
+        )
+        vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+
+        const { result, rerender } = renderHook(
+            ({ scope }) =>
+                useTransactionHistoryRows({ accountAddress: '0xabc', scope }),
+            { initialProps: { scope: ETH_SCOPE as ChainScope } },
+        )
+        expect(result.current.isSearchPaused).toBe(true)
+
+        vi.mocked(hasCachedHistoryRows).mockReturnValue(true)
+        rerender({ scope: { chainId: 'algorand', networkId: 'mainnet' } })
+        expect(result.current.isSearchPaused).toBe(false)
+    })
+
+    it('reports a load failure, and a missing Pera service as its own kind, only with nothing loaded', () => {
+        vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+            recordsResult({
+                isError: true,
+                error: new PeraServiceUnavailableError(ETH_SCOPE),
+            }),
+        )
+
+        const { result } = renderHook(() =>
+            useTransactionHistoryRows({
+                accountAddress: '0xabc',
+                scope: ETH_SCOPE,
+            }),
+        )
+
+        expect(result.current.isLoadFailed).toBe(true)
+        expect(result.current.isLoadUnavailable).toBe(true)
+        expect(result.current.isLoadIntegrityBlocked).toBe(false)
     })
 })

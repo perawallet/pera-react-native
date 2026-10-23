@@ -44,8 +44,9 @@ import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
 import {
     AppError,
+    IntegrityRequiredError,
     isPeraServiceUnavailableError,
-    type PeraServiceUnavailableError,
+    PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 
@@ -222,10 +223,12 @@ describe('useAccountHistory', () => {
             records: [],
             isLoading: false,
             isFetched: false,
+            isFetching: false,
             isFetchingNextPage: false,
             isError: false,
             error: null,
             hasNextPage: false,
+            isSearchPaused: false,
             fetchNextPage: mockFetchNextPage,
             refetch: vi.fn(),
         })
@@ -423,6 +426,75 @@ describe('useAccountHistory', () => {
             expect(mockFetchNextPage).not.toHaveBeenCalled()
         })
 
+        it('tells a Pera service this network lacks apart from a failure a retry can fix', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                error: new PeraServiceUnavailableError({
+                    chainId: 'algorand',
+                    networkId: 'mainnet',
+                }),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.isLoadUnavailable).toBe(true)
+            expect(result.current.isLoadIntegrityBlocked).toBe(false)
+        })
+
+        it('reports a refused integrity token as its own load state', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                error: new IntegrityRequiredError({
+                    code: null,
+                    status: 401,
+                    hadToken: false,
+                }),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isLoadIntegrityBlocked).toBe(true)
+            expect(result.current.isLoadUnavailable).toBe(false)
+        })
+
+        it('marks a read that failed offline so it gets the offline copy', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: false })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                error: new Error('network down'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.isLoadOffline).toBe(true)
+        })
+
+        it('reports a retry in flight while the failure is still set', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isFetching: true,
+                isError: true,
+                error: new Error('history unavailable'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isRetrying).toBe(true)
+        })
+
         it('keeps rendering cached rows instead of the skeleton on refetch', () => {
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions: [{ id: '1', roundTime: 1_704_067_200 }],
@@ -525,10 +597,12 @@ describe('useAccountHistory', () => {
             records: [record],
             isLoading: false,
             isFetched: true,
+            isFetching: false,
             isFetchingNextPage: false,
             isError: false,
             error: null,
             hasNextPage: false,
+            isSearchPaused: false,
             fetchNextPage: mockFetchNextPage,
             refetch: vi.fn(),
         })
@@ -550,6 +624,39 @@ describe('useAccountHistory', () => {
         ])
         expect(result.current.isEmpty).toBe(false)
         expect(result.current.isInitialLoad).toBe(false)
+    })
+
+    it('offers to search older history, not a skeleton, once the records search pauses', () => {
+        registerEthereumChain()
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [],
+            isLoading: false,
+            isFetched: true,
+            isFetching: false,
+            isFetchingNextPage: false,
+            isError: false,
+            error: null,
+            hasNextPage: true,
+            isSearchPaused: true,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() => useAccountHistory())
+
+        expect(result.current.isSearchPaused).toBe(true)
+        expect(result.current.isInitialLoad).toBe(false)
+        expect(result.current.isEmpty).toBe(false)
+
+        act(() => result.current.handleSearchOlder())
+
+        expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
     })
 
     it("tracks filtering and downloading on an Ethereum account's chain", async () => {

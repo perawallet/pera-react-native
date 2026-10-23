@@ -136,9 +136,8 @@ export const syncTransactionsPhase = async (
     scope: ChainScope,
     phase: string,
 ): Promise<SyncPhaseResult<void>> => {
-    // An empty pass, not a successful one: a success invalidates every
-    // transaction query, which on a records chain refetches History from the
-    // backend on each new block.
+    // There is no cache to fill. Empty rather than successful, so callers
+    // don't read it as new history to surface.
     if (!hasCachedHistoryRows(scope.chainId)) return summarize([])
     const results = await mapWithConcurrency(
         addresses,

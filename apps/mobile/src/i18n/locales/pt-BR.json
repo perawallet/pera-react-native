@@ -265,8 +265,8 @@
             "empty_body": "Nenhuma transação encontrada",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
-            "load_failed_title": "Não foi possível carregar as transações",
-            "load_failed_body": "Algo deu errado ao carregar este histórico. Tente novamente em instantes.",
+            "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
+            "search_older": "Buscar mais antigas",
             "filter": "Filtrar",
             "csv": "CSV"
         },

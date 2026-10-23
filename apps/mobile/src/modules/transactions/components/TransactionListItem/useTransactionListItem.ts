@@ -45,7 +45,7 @@ export type UseTransactionListItemParams =
           transaction: TransactionHistoryItem
           onPress?: (transaction: TransactionHistoryItem) => void
       }
-    // Opens nothing yet: the details screen reads a cached history row.
+    // Opens nothing: the details screen reads a cached history row, which a record has none of.
     | { record: TransactionRecord }
 
 export type UseTransactionListItemResult = {
@@ -57,7 +57,7 @@ export type UseTransactionListItemResult = {
     amountsOverflowCount: number
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
-    /** Unset on a row that opens nothing, so it doesn't look pressable. */
+    /** Unset on a row that opens nothing; long-press still copies, so the row stays touchable. */
     handlePress: Optional<() => void>
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void

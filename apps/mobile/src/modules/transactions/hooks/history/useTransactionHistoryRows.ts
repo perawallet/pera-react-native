@@ -12,7 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    isPeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     hasCachedHistoryRows,
     useTransactionHistoryQuery,
@@ -45,10 +49,19 @@ export type UseTransactionHistoryRowsResult = {
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
+    /** Nothing loaded and the read failed: a retry state, not the skeleton. */
+    isLoadFailed: boolean
+    /** The failure is a Pera service this network doesn't have, so retrying can't help. */
+    isLoadUnavailable: boolean
+    isLoadIntegrityBlocked: boolean
     hasNextPage: boolean
+    /** See `UseTransactionRecordsQueryResult.isSearchPaused`; `fetchNextPage` resumes it. */
+    isSearchPaused: boolean
     fetchNextPage: () => void
     /** Re-requests whichever page failed: the next one when pages loaded before it. */
     retry: () => void
+    /** A failed read is being re-requested; the error stays set until it settles. */
+    isRetrying: boolean
 }
 
 /**
@@ -90,6 +103,9 @@ export const useTransactionHistoryRows = ({
     )
 
     const query = isRowCached ? historyQuery : recordsQuery
+    // A failed read leaves `hasNextPage` set, so without this a screen reads
+    // it as a load still in progress and the skeleton never leaves.
+    const isLoadFailed = rows.length === 0 && query.isError
     const { hasNextPage, fetchNextPage, refetch } = query
     const retry = useCallback(
         () => (hasNextPage ? fetchNextPage() : refetch()),
@@ -104,8 +120,15 @@ export const useTransactionHistoryRows = ({
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         error: query.error,
+        isLoadFailed,
+        isLoadUnavailable:
+            isLoadFailed && isPeraServiceUnavailableError(query.error),
+        isLoadIntegrityBlocked:
+            isLoadFailed && isIntegrityRequiredError(query.error),
         hasNextPage,
+        isSearchPaused: !isRowCached && recordsQuery.isSearchPaused,
         fetchNextPage,
         retry,
+        isRetrying: query.isError && query.isFetching,
     }
 }

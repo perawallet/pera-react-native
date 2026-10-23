@@ -47,10 +47,16 @@ export type UseTransactionRecordsQueryResult = {
     isLoading: boolean
     /** See `UseTransactionHistoryQueryResult.isFetched`. */
     isFetched: boolean
+    isFetching: boolean
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
     hasNextPage: boolean
+    /**
+     * Nothing to show after {@link MAX_AUTO_RECORD_FETCHES} page fetches, with
+     * history left: the hook stopped reading until `fetchNextPage` resumes it.
+     */
+    isSearchPaused: boolean
     fetchNextPage: () => void
     refetch: () => void
 }
@@ -66,6 +72,9 @@ type RecordsPage = {
  * read, and an unmount stops it.
  */
 export const MAX_RECORD_PAGE_READS = 5
+
+/** Page fetches the hook makes on its own while nothing has loaded, per resume. */
+export const MAX_AUTO_RECORD_FETCHES = 4
 
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
     record.summary.amount?.assetRef.assetId === assetId ||
@@ -137,14 +146,17 @@ export const useTransactionRecordsQuery = ({
             let page = pageParam ?? undefined
             for (let read = 1; ; read++) {
                 signal.throwIfAborted()
-                const { items, next } = await getTransactionHistoryWithPending(
-                    accountAddress,
-                    scope,
-                    page,
-                )
+                const { items, minedItems, next } =
+                    await getTransactionHistoryWithPending(
+                        accountAddress,
+                        scope,
+                        page,
+                    )
+                // Mined records only: a wallet send merged into page one can
+                // predate the range while the next page still holds records in it.
                 const isPastRange =
                     fromMs !== undefined &&
-                    items.some(
+                    minedItems.some(
                         record =>
                             record.timestamp !== undefined &&
                             record.timestamp < fromMs,
@@ -174,7 +186,8 @@ export const useTransactionRecordsQuery = ({
 
     // An empty list never fires `onEndReached`, so a capped read that found
     // nothing would park the list on its skeleton. A failed page stops this
-    // until a retry.
+    // until a retry, and every MAX_AUTO_RECORD_FETCHES pages it pauses so a
+    // barely used asset doesn't walk the whole history unasked.
     const {
         isFetched,
         isFetching,
@@ -183,18 +196,21 @@ export const useTransactionRecordsQuery = ({
         fetchNextPage,
         refetch,
     } = query
-    const hasNothingToShow = records.length === 0
+    const pageCount = query.data?.pages.length ?? 0
+    const isNothingFound =
+        isFetched && !isError && records.length === 0 && hasNextPage
+    // Gated on the next page only, so a background refetch of the loaded pages
+    // keeps the paused state up instead of flipping back to the skeleton.
+    const isSearchPaused =
+        isNothingFound &&
+        !query.isFetchingNextPage &&
+        pageCount % MAX_AUTO_RECORD_FETCHES === 0
+    // Keyed on pageCount too: a fast page can land in the same notify batch as
+    // its own fetching state, so `isFetching` never reads true in between.
     useEffect(() => {
-        if (!isFetched || isFetching || isError) return
-        if (hasNothingToShow && hasNextPage) void fetchNextPage()
-    }, [
-        isFetched,
-        isFetching,
-        isError,
-        hasNothingToShow,
-        hasNextPage,
-        fetchNextPage,
-    ])
+        if (isNothingFound && !isFetching && !isSearchPaused)
+            void fetchNextPage()
+    }, [isNothingFound, isFetching, isSearchPaused, pageCount, fetchNextPage])
 
     const handleFetchNextPage = useCallback(
         () => void fetchNextPage(),
@@ -206,10 +222,12 @@ export const useTransactionRecordsQuery = ({
         records,
         isLoading: query.isLoading,
         isFetched,
+        isFetching,
         isFetchingNextPage: query.isFetchingNextPage,
         isError,
         error: query.error,
         hasNextPage,
+        isSearchPaused,
         fetchNextPage: handleFetchNextPage,
         refetch: handleRefetch,
     }

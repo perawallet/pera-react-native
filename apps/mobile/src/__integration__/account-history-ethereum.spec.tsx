@@ -193,11 +193,9 @@ describe('Flow: History on an Ethereum account', () => {
 
         renderWithNavigation(AccountHistory, 'AccountHistory')
 
-        await screen.findByText(
-            'asset_details.transaction_list.load_failed_title',
-            undefined,
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
+        await screen.findByText('common.error.title', undefined, {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
 
         server.use(
             ...peraEvmHistoryHandlers({
