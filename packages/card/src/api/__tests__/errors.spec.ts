@@ -13,6 +13,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
     getCardApiError,
+    isAccountLockedError,
+    isOnboardingNotFoundError,
     isConflictError,
     isInvalidInputError,
     isInvalidCredentialsError,
@@ -21,6 +23,49 @@ import {
     isDuplicateError,
     isNotVerifiedError,
 } from '../errors'
+
+describe('isAccountLockedError', () => {
+    it.each([
+        ['a 423', { status: 423 }],
+        ['a 429', { status: 429 }],
+        [
+            'a 403 that says locked',
+            {
+                status: 403,
+                message: 'Account Locked, contact support@baanx.com',
+            },
+        ],
+        [
+            'any answer that says locked',
+            { status: 400, message: 'user locked' },
+        ],
+    ])('reads %s as locked', (_label, apiError) => {
+        expect(isAccountLockedError(apiError)).toBe(true)
+    })
+
+    it.each([
+        ['a plain 401', { status: 401 }],
+        ['a 403 without the word', { status: 403, message: 'Forbidden' }],
+    ])('does not read %s as locked', (_label, apiError) => {
+        expect(isAccountLockedError(apiError)).toBe(false)
+    })
+})
+
+describe('isOnboardingNotFoundError', () => {
+    it.each([
+        ['a 404', { status: 404 }],
+        [
+            'Invalid onboarding ID',
+            { status: 400, message: 'Invalid onboarding ID' },
+        ],
+    ])('reads %s as a record turned into an account', (_label, apiError) => {
+        expect(isOnboardingNotFoundError(apiError)).toBe(true)
+    })
+
+    it('does not read an outage as not found', () => {
+        expect(isOnboardingNotFoundError({ status: 503 })).toBe(false)
+    })
+})
 
 describe('getCardApiError', () => {
     it('returns an empty result for a non-object error', async () => {
@@ -45,6 +90,20 @@ describe('getCardApiError', () => {
             status: 409,
             code: undefined,
             message: 'That email is already in use',
+        })
+    })
+
+    it('flags a login 400 that only lacks the 2FA code', async () => {
+        const error = {
+            response: { status: 400 },
+            data: { message: 'OTP required', isOtpRequired: true },
+        }
+
+        expect(await getCardApiError(error)).toEqual({
+            status: 400,
+            code: undefined,
+            message: 'OTP required',
+            isOtpRequired: true,
         })
     })
 

@@ -19,8 +19,9 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
-import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardingPasswordScreen'
+import { buildRegistrationSettingsResponse } from './__fixtures__/cardRegistrationSettings'
 
 const VALID_CODE = '123456'
 
@@ -36,8 +37,8 @@ const renderVerify = () =>
                     component: CardOnboardingPasswordScreen,
                 },
                 {
-                    name: 'CardOnboardingVerification',
-                    component: CardOnboardingVerificationScreen,
+                    name: 'CardOnboardingPersonalDetails',
+                    component: CardOnboardingPersonalDetailsScreen,
                 },
             ],
         },
@@ -55,9 +56,21 @@ describe('card onboarding — phone verify', () => {
         store.setOnboardingId('mock-onboarding-id')
     })
 
-    it('verifies the code (auto-submit) and advances to identity verification', async () => {
+    it('verifies the code (auto-submit) and moves on to the personal details form', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
-        server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
+        server.use(
+            http.post('*/v1/auth/register/phone/verify', verifySpy),
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(buildRegistrationSettingsResponse()),
+            ),
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json({
+                    id: 'mock-onboarding-id',
+                    verificationState: 'UNVERIFIED',
+                    phase: 'PERSONAL_INFORMATION',
+                }),
+            ),
+        )
 
         renderVerify()
 
@@ -68,11 +81,11 @@ describe('card onboarding — phone verify', () => {
         )
 
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-verification'),
-            ).toBeTruthy(),
-        )
+        // KYC now runs after the forms, so the details come first.
+        expect(
+            await screen.findByTestId('card-onboarding-personal-details'),
+        ).toBeTruthy()
+        expect(useCardStore.getState().onboardingStep).toBe('PERSONAL_DETAILS')
     })
 
     it('surfaces an inline error when phone/verify rejects the code', async () => {

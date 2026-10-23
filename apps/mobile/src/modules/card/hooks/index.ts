@@ -19,6 +19,11 @@ export {
     type UseCardOnboardingLogoutResult,
 } from './useCardOnboardingLogout'
 export {
+    useCardOnboardingRouter,
+    type OnboardingNextStepInput,
+    type UseCardOnboardingRouterResult,
+} from './useCardOnboardingRouter'
+export {
     useCardAddAccount,
     type UseCardAddAccountResult,
 } from './useCardAddAccount'

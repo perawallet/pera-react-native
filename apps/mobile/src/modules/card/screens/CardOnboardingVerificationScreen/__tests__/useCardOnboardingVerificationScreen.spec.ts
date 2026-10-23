@@ -36,6 +36,7 @@ let mockIsStateUnknown = false
 let mockHasPollTimedOut = false
 let mockPollOptions: { enabled?: boolean } | undefined
 let mockIsFocused = true
+let mockHasSession = false
 
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
@@ -78,6 +79,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardStore: (
             selector: (state: { onboardingId: string | null }) => unknown,
         ) => selector({ onboardingId: mockOnboardingId }),
+        hasCardSession: () => mockHasSession,
     }
 })
 
@@ -138,6 +140,7 @@ beforeEach(() => {
     mockHasPollTimedOut = false
     mockPollOptions = undefined
     mockIsFocused = true
+    mockHasSession = false
     mockStartMutateAsync.mockResolvedValue({ sessionUrl: SESSION_URL })
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
@@ -192,6 +195,23 @@ describe('useCardOnboardingVerificationScreen', () => {
         expect(mockErrorToast).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingEmailVerify')
         expect(mockStartMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('starts KYC without an onboarding id when a card session already exists', async () => {
+        mockOnboardingId = null
+        mockHasSession = true
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await startVerification(result)
+
+        expect(mockStartMutateAsync).toHaveBeenCalledWith({
+            onboardingId: null,
+        })
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CardOnboardingEmailVerify',
+        )
     })
 
     it('moves to the setup status once Veriff reports back', async () => {

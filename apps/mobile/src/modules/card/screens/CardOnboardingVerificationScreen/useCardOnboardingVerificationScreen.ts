@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
 import {
+    hasCardSession,
     useCardStore,
     useOnboardingKycPoll,
     useStartVerificationMutation,
@@ -72,8 +73,8 @@ export const useCardOnboardingVerificationScreen =
         const handleVerify = useCallback(() => {
             trackEvent(CardEvent.CreateSubmitDocs)
             // Set by email/verify; if missing, re-verify rather than start a
-            // KYC session with an empty onboarding id.
-            if (onboardingId === null) {
+            // KYC session with an empty onboarding id. A session needs none.
+            if (onboardingId === null && !hasCardSession()) {
                 errorToast(
                     t('peraCard.verification.error_title'),
                     t('peraCard.verification.error_body'),

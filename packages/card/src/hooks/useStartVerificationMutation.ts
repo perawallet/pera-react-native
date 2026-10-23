@@ -12,13 +12,16 @@
 
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { startRegisterVerification } from '../api/onboarding'
+import { fetchVerificationSession } from '../api/user'
 import type { VeriffSession } from '../models'
+import { hasCardSession } from '../session'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type StartVerificationParams = {
-    /** From email/verify — the pre-auth onboarding KYC start only needs this. */
-    onboardingId: string
+    /** From email/verify; only the pre-auth start needs it. */
+    onboardingId: Nullable<string>
 }
 
 export type UseStartVerificationMutationResult = CardMutationResult<
@@ -26,14 +29,23 @@ export type UseStartVerificationMutationResult = CardMutationResult<
     VeriffSession
 >
 
-/** Starts onboarding KYC and returns the Veriff session URL for the caller to open. */
+/**
+ * Starts KYC and returns the hosted session URL for the caller to open. A user
+ * who already has a card session (Baanx issued a token early) starts it through
+ * the authenticated endpoint instead of the pre-auth one.
+ */
 export const useStartVerificationMutation = (
     scope: ChainScope,
 ): UseStartVerificationMutationResult => {
     const mutation = useMutation<VeriffSession, Error, StartVerificationParams>(
         {
-            mutationFn: ({ onboardingId }) =>
-                startRegisterVerification({ onboardingId, scope }),
+            mutationFn: ({ onboardingId }) => {
+                if (hasCardSession()) return fetchVerificationSession({ scope })
+                if (onboardingId === null) {
+                    throw new Error('Starting KYC needs an onboarding id')
+                }
+                return startRegisterVerification({ onboardingId, scope })
+            },
             throwOnError: false,
         },
     )

@@ -22,7 +22,6 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConsentCheckboxRow } from '../../components/CardConsentCheckboxRow'
-import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
 import { OptionSelectorField } from '../../components/OptionSelectorField'
 import { useCardOnboardingPersonalDetailsScreen } from './useCardOnboardingPersonalDetailsScreen'
@@ -41,10 +40,8 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isLastNameLocked,
         isDateOfBirthLocked,
         isNationalityLocked,
-        isKycRequired,
         isRecordLoading,
         isUsResident,
-        handleVerifyIdentity,
         handleSelectNationality,
         selectedBirthCountry,
         isBirthCountryLocked,
@@ -65,12 +62,6 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         handleTogglePortugalInvestmentScheme,
         handleConfirm,
     } = useCardOnboardingPersonalDetailsScreen()
-
-    // Baanx refuses this step until the identity check is far enough along, so
-    // the form is replaced rather than shown unsubmittable.
-    if (isKycRequired) {
-        return <CardKycRequiredView onVerify={handleVerifyIdentity} />
-    }
 
     if (isRecordLoading) {
         return (

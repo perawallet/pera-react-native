@@ -19,6 +19,7 @@ import type { OnboardingStep } from './onboarding'
 import type { CardStatus } from './card'
 import type { CardTransactionFilters } from './transaction'
 import type { FundingType } from './funding'
+import type { LoginAttempts } from './login-attempts'
 
 /** Which verification code Baanx rejected, surfaced on the matching verify screen. */
 export type CodeVerificationTarget = 'email' | 'phone'
@@ -32,6 +33,16 @@ export type CardUxState = BaseStoreState & {
     countryIso: Nullable<string>
     /** Transient OTP — memory only, excluded from `partialize`. */
     verificationCode: Nullable<string>
+    /**
+     * The password from email/verify or a mid-onboarding sign-in, held so the
+     * post-KYC login can create the session without asking again. Memory only,
+     * excluded from `partialize`. Cleared once that login settles, on logout,
+     * on a fresh sign-up and when the onboarding navigator unmounts; a killed
+     * app falls back to the sign-in screen.
+     */
+    password: Nullable<string>
+    /** Budget for the logins that use {@link password}; same lifetime. */
+    loginAttempts: LoginAttempts
     /**
      * Drives the inline "code invalid" error. Transient — never persisted,
      * cleared once the user edits the code.
@@ -96,6 +107,11 @@ export type CardUxState = BaseStoreState & {
     setEmail: (email: Nullable<string>) => void
     setCountryIso: (countryIso: Nullable<string>) => void
     setVerificationCode: (verificationCode: Nullable<string>) => void
+    setPassword: (password: Nullable<string>) => void
+    recordLoginAttempt: (attempt: { isAutomatic: boolean; at: number }) => void
+    markLoginLocked: () => void
+    /** Drops the password and the login budget together. */
+    clearLoginSecrets: () => void
     setCodeVerificationError: (target: Nullable<CodeVerificationTarget>) => void
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void

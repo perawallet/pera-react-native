@@ -21,7 +21,6 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
-import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 import {
     buildRegistrationSettingsResponse,
@@ -51,10 +50,6 @@ const renderFlow = () =>
                 {
                     name: 'CardOnboardingAddress',
                     component: CardOnboardingAddressScreen,
-                },
-                {
-                    name: 'CardOnboardingVerification',
-                    component: CardOnboardingVerificationScreen,
                 },
             ],
         },
@@ -122,14 +117,13 @@ describe('Flow: Card onboarding — personal details', () => {
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
             ),
             // Default: a record with no profile data yet, so the form stays
-            // empty + editable. PENDING because that is the real precondition
-            // for reaching this screen at all: KYC must be submitted first,
-            // and Baanx reviews it asynchronously. Prefill tests override this.
+            // empty and editable. KYC only starts after the forms, so it is
+            // still UNVERIFIED here. Prefill tests override this.
             http.get('*/v1/auth/register', () =>
                 HttpResponse.json(
                     {
                         id: 'mock-onboarding-id',
-                        verificationState: 'PENDING',
+                        verificationState: 'UNVERIFIED',
                         firstName: null,
                         lastName: null,
                         dateOfBirth: null,
@@ -456,68 +450,5 @@ describe('Flow: Card onboarding — personal details', () => {
             ).toBeTruthy(),
         )
         expect(submitSpy).not.toHaveBeenCalled()
-    })
-
-    it('Given the KYC was never submitted, then the form is replaced by the verify prompt', async () => {
-        const submitSpy = vi.fn()
-        server.use(
-            http.get('*/v1/auth/register', () =>
-                HttpResponse.json(
-                    {
-                        id: 'mock-onboarding-id',
-                        verificationState: 'UNVERIFIED',
-                        firstName: null,
-                        lastName: null,
-                        dateOfBirth: null,
-                        countryOfNationality: null,
-                    },
-                    { status: 200 },
-                ),
-            ),
-            http.post('*/v1/auth/register/personal-details', () => {
-                submitSpy()
-                return HttpResponse.json({}, { status: 200 })
-            }),
-        )
-
-        renderFlow()
-
-        expect(await screen.findByTestId('card-kyc-required')).toBeTruthy()
-        expect(
-            screen.queryByTestId('card-onboarding-first-name-input'),
-        ).toBeNull()
-        expect(submitSpy).not.toHaveBeenCalled()
-
-        fireEvent.click(screen.getByTestId('card-kyc-required-verify'))
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-verification'),
-            ).toBeTruthy(),
-        )
-    })
-
-    // The reported bug end to end: Baanx reports PENDING from the moment a
-    // Veriff session is created, so an abandoned check reaches this form and
-    // is only refused at submit time.
-    it('Given Baanx refuses the submit as not verified, then the form is replaced and the address step is never reached', async () => {
-        server.use(
-            http.post('*/v1/auth/register/personal-details', () =>
-                HttpResponse.json(
-                    { message: 'User is not verified' },
-                    { status: 400 },
-                ),
-            ),
-        )
-
-        renderFlow()
-        await fillFormAndPickNationality()
-
-        const confirm = () =>
-            screen.getByTestId('card-onboarding-personal-details-confirm')
-        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
-        fireEvent.click(confirm())
-
-        expect(await screen.findByTestId('card-kyc-required')).toBeTruthy()
-        expect(screen.queryByTestId('card-onboarding-address')).toBeNull()
     })
 })

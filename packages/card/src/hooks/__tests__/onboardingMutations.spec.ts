@@ -48,11 +48,8 @@ import { useSubmitAdditionalDetailsMutation } from '../useSubmitAdditionalDetail
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
 import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
-import { useLinkConsentMutation } from '../useLinkConsentMutation'
 import { useCardStore } from '../../store'
 import { OnboardingPhase, OnboardingStep } from '../../models'
-import { OnboardingNotVerifiedError } from '../../api/errors'
-import { cardQueryKeys } from '../querykeys'
 
 const SCOPES: ChainScope[] = [
     { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
@@ -144,6 +141,8 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
             }),
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
+        // Held in memory for the login that creates the session after KYC.
+        expect(useCardStore.getState().password).toBe('pw')
         // email/verify only stores the onboarding id — it doesn't advance the
         // step. The phone/send and phone/verify calls that follow move it on.
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -176,7 +175,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
     })
 
-    it('useVerifyPhoneMutation forwards the code and advances to verification', async () => {
+    it('useVerifyPhoneMutation forwards the code and leaves the step to the router', async () => {
         const { result } = renderHook(() => useVerifyPhoneMutation(SCOPE), {
             wrapper,
         })
@@ -196,9 +195,9 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
                 scope: SCOPE,
             }),
         )
-        // Phone verified → the KYC (verification) step comes next.
+        // The router owns the step once phone verification is done.
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Verification,
+            OnboardingStep.EmailSend,
         )
     })
 
@@ -232,12 +231,9 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         expect(result.current.data).toEqual({
             phase: OnboardingPhase.PhysicalAddress,
         })
-        expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Address,
-        )
     })
 
-    it('useSubmitPersonalDetailsMutation moves to additional details when Baanx asks for them', async () => {
+    it('useSubmitPersonalDetailsMutation returns the phase Baanx asks for next', async () => {
         api.submitPersonalDetails.mockResolvedValue({
             phase: OnboardingPhase.AdditionalDetails,
         })
@@ -258,12 +254,12 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.AdditionalDetails,
-        )
+        expect(result.current.data).toEqual({
+            phase: OnboardingPhase.AdditionalDetails,
+        })
     })
 
-    it('useSubmitAdditionalDetailsMutation posts the details and moves to the address step', async () => {
+    it('useSubmitAdditionalDetailsMutation posts the details and returns the next phase', async () => {
         api.submitAdditionalDetails.mockResolvedValue({
             phase: OnboardingPhase.PhysicalAddress,
         })
@@ -292,15 +288,9 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         expect(result.current.data).toEqual({
             phase: OnboardingPhase.PhysicalAddress,
         })
-        expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Address,
-        )
     })
 
-    it('useSubmitAdditionalDetailsMutation surfaces a failure without moving on', async () => {
-        useCardStore
-            .getState()
-            .setOnboardingStep(OnboardingStep.AdditionalDetails)
+    it('useSubmitAdditionalDetailsMutation surfaces a failure', async () => {
         api.submitAdditionalDetails.mockRejectedValue({
             response: { status: 503 },
             data: { message: 'Risk standards are unavailable' },
@@ -322,48 +312,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.AdditionalDetails,
-        )
-    })
-
-    // Baanx refuses registration steps until the identity check is far enough
-    // along. It reports PENDING from the moment a Veriff session is created,
-    // so this refusal is the only trustworthy signal: it has to reach the
-    // screen as a typed error, and it must invalidate the cached KYC record.
-    const NOT_VERIFIED_FAILURE = {
-        response: { status: 400 },
-        data: { message: 'User is not verified' },
-    }
-
-    it('useSubmitPersonalDetailsMutation types a not-verified refusal and refreshes the onboarding record', async () => {
-        api.submitPersonalDetails.mockRejectedValue(NOT_VERIFIED_FAILURE)
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(
-            () => useSubmitPersonalDetailsMutation(SCOPE),
-            { wrapper },
-        )
-
-        result.current.mutate({
-            onboardingId: 'ob_1',
-            firstName: 'Jane',
-            lastName: 'Doe',
-            dateOfBirth: '2000-01-01',
-            countryOfNationality: 'GB',
-            countryOfBirth: 'GB',
-        })
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
-        expect(invalidateSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-                queryKey: expect.arrayContaining(['onboarding-details']),
-            }),
-        )
-        // The step must not advance on a refusal.
-        expect(useCardStore.getState().onboardingStep).not.toBe(
-            OnboardingStep.Address,
-        )
+        expect(result.current.data).toBeNull()
     })
 
     const address = {
@@ -374,25 +323,6 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         isSameMailingAddress: true,
     }
 
-    it('useSubmitAddressMutation types a not-verified refusal and refreshes the onboarding record', async () => {
-        api.submitAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
-            wrapper,
-        })
-
-        result.current.mutate(address)
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
-        expect(invalidateSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-                queryKey: expect.arrayContaining(['onboarding-details']),
-            }),
-        )
-        expect(session.setCardSession).not.toHaveBeenCalled()
-    })
-
     const mailingAddress = {
         onboardingId: 'ob_1',
         addressLine1: '23 Werrington Bridge Rd',
@@ -401,7 +331,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         usState: 'NY',
     }
 
-    it('useSubmitMailingAddressMutation forwards the scope and completes registration on it', async () => {
+    it('useSubmitMailingAddressMutation forwards the scope and completes registration if Baanx sends a token', async () => {
         const { result } = renderHook(
             () => useSubmitMailingAddressMutation(SCOPE),
             { wrapper },
@@ -422,25 +352,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
     })
 
-    it('useSubmitMailingAddressMutation types a not-verified refusal and refreshes the onboarding record for its scope', async () => {
-        api.submitMailingAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(
-            () => useSubmitMailingAddressMutation(SCOPE),
-            { wrapper },
-        )
-
-        result.current.mutate(mailingAddress)
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
-        expect(invalidateSpy).toHaveBeenCalledWith({
-            queryKey: cardQueryKeys.onboardingDetails(SCOPE, 'ob_1'),
-        })
-        expect(session.setCardSession).not.toHaveBeenCalled()
-    })
-
-    it('useSubmitAddressMutation exchanges the registration token for the OAuth pair and completes onboarding', async () => {
+    it('useSubmitAddressMutation exchanges a token Baanx sends for the OAuth pair and completes onboarding', async () => {
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
@@ -497,12 +409,13 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
     })
 
-    it('useSubmitAddressMutation leaves the mailing step owed when no token is issued', async () => {
-        // The US separate-mailing path returns accessToken: null; the mailing
-        // step issues the token and completes registration.
+    it('useSubmitAddressMutation leaves registration open when no token is issued', async () => {
+        // The usual answer: the session comes from the login after KYC.
+        useCardStore.getState().setOnboardingStep(OnboardingStep.Address)
         api.submitAddress.mockResolvedValue({
             accessToken: null,
             onboardingId: 'ob_1',
+            userId: null,
         })
         const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
             wrapper,
@@ -513,8 +426,27 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         expect(auth.acquireCardSessionTokens).not.toHaveBeenCalled()
         expect(session.setCardSession).not.toHaveBeenCalled()
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.MailingAddress,
+            OnboardingStep.Address,
         )
+    })
+
+    it('useSubmitAddressMutation links the stashed consent once a token names the user', async () => {
+        useCardStore.getState().setConsentSetId('cs_1')
+        useCardStore.getState().setPassword('pw')
+        const { result } = renderHook(() => useSubmitAddressMutation(SCOPE), {
+            wrapper,
+        })
+        result.current.mutate(address)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.linkOnboardingConsent).toHaveBeenCalledWith({
+            consentSetId: 'cs_1',
+            userId: 'user_1',
+            scope: SCOPE,
+        })
+        expect(useCardStore.getState().consentSetId).toBeNull()
+        expect(useCardStore.getState().cardUserId).toBe('user_1')
+        expect(useCardStore.getState().password).toBeNull()
     })
 
     it('useSubmitConsentMutation forwards the payload, stashes the consentSetId, and does not advance the step', async () => {
@@ -565,19 +497,5 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(useCardStore.getState().consentSetId).toBe('cs_first')
-    })
-
-    it('useLinkConsentMutation forwards the consentSetId and userId', async () => {
-        const { result } = renderHook(() => useLinkConsentMutation(SCOPE), {
-            wrapper,
-        })
-        result.current.mutate({ consentSetId: 'cs_1', userId: 'user_1' })
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(api.linkOnboardingConsent).toHaveBeenCalledWith({
-            consentSetId: 'cs_1',
-            userId: 'user_1',
-            scope: SCOPE,
-        })
     })
 })

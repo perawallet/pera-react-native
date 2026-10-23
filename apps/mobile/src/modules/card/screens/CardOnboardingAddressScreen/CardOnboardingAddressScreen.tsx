@@ -15,7 +15,6 @@ import { Trans } from 'react-i18next'
 import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
 import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
 import { OptionSelectorField } from '../../components/OptionSelectorField'
 import { useCardOnboardingAddressScreen } from './useCardOnboardingAddressScreen'
@@ -48,16 +47,8 @@ export const CardOnboardingAddressScreen = () => {
         handleTogglePlatformTerms,
         handleOpenCardTerms,
         handleOpenPlatformTerms,
-        isKycRequired,
-        handleVerifyIdentity,
         handleConfirm,
     } = useCardOnboardingAddressScreen()
-
-    // Baanx refuses this step until the identity check is far enough along, so
-    // the form is replaced rather than shown unsubmittable.
-    if (isKycRequired) {
-        return <CardKycRequiredView onVerify={handleVerifyIdentity} />
-    }
 
     return (
         <PWScreen testID='card-onboarding-address'>

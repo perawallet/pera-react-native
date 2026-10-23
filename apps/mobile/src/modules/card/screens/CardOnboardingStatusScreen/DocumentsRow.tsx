@@ -11,11 +11,17 @@
  */
 
 import React from 'react'
+import { Trans } from 'react-i18next'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
-import { PWButton, type IconName, type PWIconVariant } from '@components/core'
+import {
+    PWButton,
+    PWText,
+    type IconName,
+    type PWIconVariant,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
-import type { DocumentsState } from './useCardOnboardingStatusScreen'
+import type { DocumentsState } from './documentsState'
 import { useStyles } from './styles'
 
 // Icon, color, and copy for the "Submit Your Documents" row per KYC state.
@@ -28,6 +34,12 @@ const DOCUMENTS_ROW: Record<
         showsPendingLabel: boolean
     }
 > = {
+    locked: {
+        icon: 'pending',
+        variant: 'secondary',
+        bodyKey: i18nKey('peraCard.setup_status.documents_locked_body'),
+        showsPendingLabel: false,
+    },
     unverified: {
         icon: 'pending',
         variant: 'primary',
@@ -44,6 +56,24 @@ const DOCUMENTS_ROW: Record<
         icon: 'check',
         variant: 'positive',
         bodyKey: i18nKey('peraCard.setup_status.documents_verified_body'),
+        showsPendingLabel: false,
+    },
+    preparing: {
+        icon: 'pending',
+        variant: 'warning',
+        bodyKey: i18nKey('peraCard.setup_status.documents_preparing_body'),
+        showsPendingLabel: true,
+    },
+    'preparing-slow': {
+        icon: 'pending',
+        variant: 'warning',
+        bodyKey: i18nKey('peraCard.setup_status.documents_preparing_slow_body'),
+        showsPendingLabel: true,
+    },
+    'account-locked': {
+        icon: 'cross',
+        variant: 'error',
+        bodyKey: i18nKey('peraCard.setup_status.documents_account_locked_body'),
         showsPendingLabel: false,
     },
     rejected: {
@@ -63,15 +93,21 @@ const DOCUMENTS_ROW: Record<
 type DocumentsRowProps = {
     documentsState: DocumentsState
     onRetry: () => void
-    /** Resumes KYC from the unverified state (reopens the Veriff entry). */
+    /** Resumes KYC from the unverified state. */
     onVerify: () => void
+    onOpenSupport: () => void
+    /** Enables the "Try again" login while the account is being set up. */
+    canTryAgain: boolean
+    onTryAgain: () => void
 }
 
-/** Checklist row 1 — "Submit Your Documents", driven by the KYC state. */
 export const DocumentsRow = ({
     documentsState,
     onRetry,
     onVerify,
+    onOpenSupport,
+    canTryAgain,
+    onTryAgain,
 }: DocumentsRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -81,6 +117,7 @@ export const DocumentsRow = ({
         <StatusChecklistRow
             icon={row.icon}
             iconVariant={row.variant}
+            isInactive={documentsState === 'locked'}
             pendingLabel={
                 row.showsPendingLabel
                     ? t('peraCard.setup_status.documents_pending_label')
@@ -98,6 +135,36 @@ export const DocumentsRow = ({
                     style={styles.detailsButton}
                     testID='card-onboarding-status-documents-verify'
                 />
+            ) : null}
+            {documentsState === 'preparing' ||
+            documentsState === 'preparing-slow' ? (
+                <PWButton
+                    variant='secondary'
+                    title={t('peraCard.setup_status.documents_retry')}
+                    onPress={onTryAgain}
+                    isDisabled={!canTryAgain}
+                    style={styles.detailsButton}
+                    testID='card-onboarding-status-documents-try-again'
+                />
+            ) : null}
+            {documentsState === 'preparing-slow' ||
+            documentsState === 'account-locked' ? (
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                >
+                    <Trans
+                        i18nKey='peraCard.verification.contact_us'
+                        components={[
+                            <PWText
+                                key='link'
+                                variant='linkPositive'
+                                onPress={onOpenSupport}
+                                testID='card-onboarding-status-documents-contact-link'
+                            />,
+                        ]}
+                    />
+                </PWText>
             ) : null}
             {documentsState === 'error' ? (
                 <PWButton

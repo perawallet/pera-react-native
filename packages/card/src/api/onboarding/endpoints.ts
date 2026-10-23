@@ -182,10 +182,10 @@ export type StartRegisterVerificationParams = ScopeParams & {
     onboardingId: string
 }
 /**
- * Starts the onboarding KYC session (step 3 of registration, after phone
- * verification). Pre-auth — only the client key is required. The caller opens
- * the returned Veriff `sessionUrl`, then polls `fetchOnboardingDetails` for the
- * `verificationState` to transition.
+ * Starts the onboarding KYC session once every form is in (after the address,
+ * or the mailing address for a US resident shipping elsewhere). Pre-auth: only
+ * the client key is required. The caller opens the returned `sessionUrl`, then
+ * polls `fetchOnboardingDetails` for the `verificationState` to transition.
  */
 export const startRegisterVerification = async (
     params: StartRegisterVerificationParams,
@@ -275,11 +275,8 @@ export const fetchOnboardingDetails = async (
 }
 
 export type SubmitAddressParams = ScopeParams & { address: AddressInput }
-// The final registration step. Unlike the other register steps its response
-// matters: it carries the `accessToken` that authenticates the post-onboarding
-// user endpoints plus the permanent `userId` the consent-link step binds to, so
-// we parse and return them rather than discarding the body via `postRegisterStep`.
 export type SubmitAddressResult = {
+    /** Usually null: the session comes from the login once KYC verifies. */
     accessToken: string | null
     onboardingId: string
     /** Permanent user id (`user.id`); null until Baanx returns the user block. */
@@ -297,7 +294,7 @@ export const submitAddress = async (
     })
     const parsed = addressResponseSchema.parse(response.data)
     return {
-        accessToken: parsed.accessToken,
+        accessToken: parsed.accessToken ?? null,
         onboardingId: parsed.onboardingId,
         userId: parsed.user?.id ?? null,
     }
@@ -306,8 +303,7 @@ export const submitAddress = async (
 export type SubmitMailingAddressParams = ScopeParams & {
     address: MailingAddressInput
 }
-// Reached only when the address step was posted with isSameMailingAddress
-// false; Baanx then withholds the token there and issues it here instead.
+// US residents only, after an address posted with isSameMailingAddress false.
 export const submitMailingAddress = async (
     params: SubmitMailingAddressParams,
 ): Promise<SubmitAddressResult> => {
@@ -320,7 +316,7 @@ export const submitMailingAddress = async (
     })
     const parsed = addressResponseSchema.parse(response.data)
     return {
-        accessToken: parsed.accessToken,
+        accessToken: parsed.accessToken ?? null,
         onboardingId: parsed.onboardingId,
         userId: parsed.user?.id ?? null,
     }
@@ -401,7 +397,7 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
 // Step 1 of Baanx's two-step consent flow: create the consent set during
 // registration (before the address step). The tenant id is build-time config
 // (per network), like the Baanx client key. Returns the `consentSetId` the link
-// step (below) binds to the user once the address step issues the userId.
+// step (below) binds to the user once the post-KYC login names the userId.
 export type SubmitOnboardingConsentParams = ScopeParams &
     Omit<OnboardingConsentInput, 'tenantId'>
 export type SubmitOnboardingConsentResult = {
@@ -443,7 +439,7 @@ export const submitOnboardingConsent = async (
 }
 
 // Step 2 of Baanx's two-step consent flow: link the consent set created above to
-// the permanent user id the address step issues. Idempotent — Baanx returns 409
+// the permanent user id, known only once the account exists. Idempotent — Baanx returns 409
 // Conflict if the set is already linked (the desired end state), which we swallow.
 // Deliberately NOT `authenticated`: per the Baanx api-reference
 // (api-reference/consent/link-user-to-consent) this endpoint uses API-key

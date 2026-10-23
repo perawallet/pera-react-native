@@ -16,13 +16,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
     getCardApiError,
     isDuplicateError,
-    OnboardingNotVerifiedError,
-    OnboardingPhase,
+    OnboardingStep,
     createPersonalDetailsSchema,
     US_ISO,
     useCardStore,
     useOnboardingDetailsQuery,
-    useOnboardingKycGate,
     useRegistrationSettingsQuery,
     useSubmitPersonalDetailsMutation,
     type PersonalDetailsFormValues,
@@ -34,6 +32,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
+    useCardOnboardingRouter,
     useCardOptionField,
     usePreselectedCountryField,
     useRepeatedCountryField,
@@ -60,20 +59,10 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
     isLastNameLocked: boolean
     isDateOfBirthLocked: boolean
     isNationalityLocked: boolean
-    /**
-     * The record's identity check isn't far enough along for Baanx to accept
-     * this step, so the form is replaced by the "finish verifying" view.
-     */
-    isKycRequired: boolean
-    /**
-     * The onboarding record hasn't answered yet. The form waits for it so a
-     * late prefill can't land on top of what the user already typed.
-     */
+    /** The form waits for the record so a late prefill can't overwrite typing. */
     isRecordLoading: boolean
     /** Baanx requires an SSN from US residents, so the field shows only for them. */
     isUsResident: boolean
-    /** Sends the user back to the identity-verification step. */
-    handleVerifyIdentity: () => void
     handleSelectNationality: () => void
     selectedBirthCountry: Optional<SupportedCountry>
     isBirthCountryLocked: boolean
@@ -108,16 +97,19 @@ export const useCardOnboardingPersonalDetailsScreen =
             titleKey: i18nKey('peraCard.personal_details.error_title'),
             bodyKey: i18nKey('peraCard.personal_details.error_body'),
         })
-        // Baanx's own wording for this is "User is not verified", which reads
-        // as an account problem rather than an unfinished step, so this toast
-        // always uses our copy.
-        const showKycError = useCardErrorToast({
-            titleKey: i18nKey('peraCard.kyc_required.title'),
-            bodyKey: i18nKey('peraCard.kyc_required.body'),
-            shouldUseBackendMessage: false,
-        })
+        const { goToNextStep } = useCardOnboardingRouter()
         const onboardingId = useCardStore(state => state.onboardingId)
-        const countryIso = useCardStore(state => state.countryIso)
+        // On resume the onboarding record already holds the user's details, so
+        // we prefill them and lock the fields the server has confirmed.
+        const {
+            data: onboardingDetails,
+            isLoading: isRecordLoading,
+            refetch: refetchRecord,
+        } = useOnboardingDetailsQuery(scope, { onboardingId })
+        // Another device or a reinstall holds no residence of its own.
+        const storedCountryIso = useCardStore(state => state.countryIso)
+        const countryIso =
+            storedCountryIso ?? onboardingDetails?.countryOfResidence ?? null
         const isUsResident = countryIso === US_ISO
         const isPortugalResident = countryIso === PORTUGAL_ISO
         const submitPersonalDetails = useSubmitPersonalDetailsMutation(scope)
@@ -138,21 +130,6 @@ export const useCardOnboardingPersonalDetailsScreen =
                 }),
             [isUsResident, hasEmploymentStatuses, hasEmploymentSectors],
         )
-        // On resume the onboarding record already holds the user's details, so
-        // we prefill them and lock the fields the server has confirmed.
-        const { data: onboardingDetails, isLoading: isRecordLoading } =
-            useOnboardingDetailsQuery(scope, { onboardingId })
-
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
-            scope,
-            {
-                onboardingId,
-            },
-        )
-
-        const handleVerifyIdentity = useCallback(() => {
-            navigation.navigate('CardOnboardingVerification')
-        }, [navigation])
 
         const {
             control,
@@ -287,27 +264,21 @@ export const useCardOnboardingPersonalDetailsScreen =
                         isPortugalResident,
                     }),
                 )
-                navigation.navigate(
-                    phase === OnboardingPhase.AdditionalDetails
-                        ? 'CardOnboardingAdditionalDetails'
-                        : 'CardOnboardingAddress',
-                )
+                goToNextStep({ phase, localStep: OnboardingStep.Address })
             } catch (error) {
-                // Checked before getCardApiError: the typed error carries no
-                // body, so it would otherwise fall through to the generic
-                // toast and the signal would be lost.
-                if (error instanceof OnboardingNotVerifiedError) {
-                    markServerRefused()
-                    await showKycError(error)
-                    return
-                }
                 // A duplicate means Baanx already holds these details (a
                 // retried non-idempotent submit), so continue rather than
                 // strand the user. Otherwise prefer Baanx's own message so the
                 // real reason shows (e.g. a wrong-phase rejection).
                 const apiError = await getCardApiError(error)
                 if (isDuplicateError(apiError)) {
-                    navigation.navigate('CardOnboardingAddress')
+                    // The record's phase still says whether additional
+                    // details are owed.
+                    const { data: record } = await refetchRecord()
+                    goToNextStep({
+                        phase: record?.phase ?? null,
+                        localStep: OnboardingStep.Address,
+                    })
                     return
                 }
                 await showError(error, apiError)
@@ -329,10 +300,8 @@ export const useCardOnboardingPersonalDetailsScreen =
             isLastNameLocked: Boolean(onboardingDetails?.lastName),
             isDateOfBirthLocked: Boolean(onboardingDetails?.dateOfBirth),
             isNationalityLocked: nationality.isLocked,
-            isKycRequired,
             isRecordLoading,
             isUsResident,
-            handleVerifyIdentity,
             handleSelectNationality: nationality.handleSelect,
             selectedBirthCountry: birthCountry.selected,
             isBirthCountryLocked: birthCountry.isLocked,

@@ -140,15 +140,15 @@ export const mockGetOnboardingDetails = ({
     )
 }
 
-// The address step returns the access token the verification step needs, so the
-// mock returns a token-bearing body by default (overridable per test).
+// Baanx answers the address steps without a token; the session comes from the
+// login after KYC.
 export type MockSubmitAddressParams = {
     response?: AddressApiResponse
     status?: number
 }
 export const mockSubmitAddress = ({
     response = {
-        accessToken: 'mock-access-token',
+        accessToken: null,
         onboardingId: 'mock-onboarding-id',
         user: { id: 'mock-user-id' },
     },
@@ -162,7 +162,7 @@ export const mockSubmitAddress = ({
 
 export const mockSubmitMailingAddress = ({
     response = {
-        accessToken: 'mock-access-token',
+        accessToken: null,
         onboardingId: 'mock-onboarding-id',
         user: { id: 'mock-user-id' },
     },

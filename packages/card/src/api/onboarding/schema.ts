@@ -128,20 +128,19 @@ export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema
 >
 
-// POST /v1/auth/register/address — the final registration step; issues the
-// bearer token the authenticated user endpoints require. `accessToken` is null
-// only when US AND isSameMailingAddress=false (a mailing address is still
-// owed). `user.id` is the permanent userId the consent-link (PATCH) step needs;
-// we model just that field of the larger `user` block.
+// POST /v1/auth/register/address and /mailing-address. Baanx's flow answers
+// with a null token (the session comes from the login after KYC), while its
+// spec text still documents one; both are accepted. `user.id` is the only
+// field of the larger `user` block we read.
 export const addressResponseSchema = z.object({
-    accessToken: z.string().nullable(),
+    accessToken: z.string().nullish(),
     onboardingId: z.string(),
     user: z.object({ id: z.string() }).optional().nullable(),
 })
 export type AddressApiResponse = z.infer<typeof addressResponseSchema>
 
 // POST /v2/consent/onboarding — returns the created consent set's id, which the
-// link (PATCH) step binds to the user once the address step issues the userId.
+// link (PATCH) step binds to the user once the post-KYC login names the userId.
 export const consentResponseSchema = z.object({
     consentSetId: z.string(),
 })

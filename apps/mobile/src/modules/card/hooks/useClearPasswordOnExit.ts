@@ -10,4 +10,15 @@
  limitations under the License
  */
 
-export { CardKycRequiredView } from './CardKycRequiredView'
+import { useEffect } from 'react'
+import { useCardStore } from '@perawallet/wallet-core-card'
+
+/** Drops the in-memory onboarding password and its login budget once the flow unmounts. */
+export const useClearPasswordOnExit = (): void => {
+    useEffect(
+        () => () => {
+            useCardStore.getState().clearLoginSecrets()
+        },
+        [],
+    )
+}

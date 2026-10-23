@@ -125,6 +125,11 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockGoToNextStep = vi.fn()
+vi.mock('@modules/card/hooks/useCardOnboardingRouter', () => ({
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -279,7 +284,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
         await waitFor(() => expect(result.current.isValid).toBe(true))
     })
 
-    it('posts the details and continues to the address step', async () => {
+    it('posts the details and routes on with the phase Baanx returns', async () => {
         const { result } = renderScreenHook()
         await waitFor(() =>
             expect(result.current.selectedTinCountry).toEqual(PORTUGAL),
@@ -301,7 +306,10 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
             estimatedAnnualIncome: '30000',
             incomeCountries: ['PT'],
         })
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress')
+        expect(mockGoToNextStep).toHaveBeenCalledWith({
+            phase: 'PHYSICAL_ADDRESS',
+            localStep: 'ADDRESS',
+        })
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'card_onb_create_addlDetails_continue',
         )
@@ -415,7 +423,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
                 'peraCard.additional_details.unavailable_body',
             ),
         )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it("surfaces Baanx's message for any other failure", async () => {
@@ -440,7 +448,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
                 'Invalid tin',
             ),
         )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('routes back to email verification when the onboarding id is missing', async () => {

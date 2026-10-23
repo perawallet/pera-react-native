@@ -27,7 +27,6 @@ import {
     CardSetupIncompleteError,
     CardUserUnavailableError,
 } from '../card-creation/errors'
-import { OnboardingNotVerifiedError } from '../errors'
 import {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
@@ -92,14 +91,6 @@ const cases: Case[] = [
         message: 'Card creation is temporarily unavailable.',
         category: ErrorCategory.NETWORK,
         isRetryable: true,
-    },
-    {
-        error: new OnboardingNotVerifiedError(),
-        name: 'OnboardingNotVerifiedError',
-        message:
-            'Identity verification must be submitted before registration can continue.',
-        category: ErrorCategory.ACCOUNTS,
-        isRetryable: false,
     },
     {
         error: new CardOrderNotVerifiedError(),

@@ -18,6 +18,7 @@ import {
     getCardApiError,
     OTHER_OCCUPATION_KEY,
     OTHER_SOURCE_OF_WEALTH_KEY,
+    OnboardingStep,
     US_ISO,
     useCardStore,
     useOnboardingDetailsQuery,
@@ -32,6 +33,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
+    useCardOnboardingRouter,
     useCardOptionField,
     usePreselectedCountryField,
     useRepeatedCountryField,
@@ -82,6 +84,7 @@ export const useCardOnboardingAdditionalDetailsScreen =
         const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const { goToNextStep } = useCardOnboardingRouter()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
             titleKey: i18nKey('peraCard.additional_details.error_title'),
@@ -259,7 +262,7 @@ export const useCardOnboardingAdditionalDetailsScreen =
                 return
             }
             try {
-                await submitAdditionalDetails.mutateAsync({
+                const { phase } = await submitAdditionalDetails.mutateAsync({
                     onboardingId,
                     tin: values.tin,
                     tinCountry: values.tinCountry,
@@ -276,7 +279,7 @@ export const useCardOnboardingAdditionalDetailsScreen =
                     estimatedAnnualIncome: values.estimatedAnnualIncome,
                     incomeCountries: values.incomeCountries,
                 })
-                navigation.navigate('CardOnboardingAddress')
+                goToNextStep({ phase, localStep: OnboardingStep.Address })
             } catch (error) {
                 const apiError = await getCardApiError(error)
                 if (apiError.status === SERVICE_UNAVAILABLE_STATUS) {

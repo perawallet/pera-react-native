@@ -18,8 +18,7 @@ import {
     type RegisterStepResult,
 } from '../api/onboarding'
 import { getCardApiError } from '../api/errors'
-import { OnboardingStep, type AdditionalDetailsInput } from '../models'
-import { useCardStore } from '../store'
+import type { AdditionalDetailsInput } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitAdditionalDetailsMutationResult = CardMutationResult<
@@ -36,9 +35,6 @@ export const useSubmitAdditionalDetailsMutation = (
         AdditionalDetailsInput
     >({
         mutationFn: details => submitAdditionalDetails({ details, scope }),
-        onSuccess: () => {
-            useCardStore.getState().setOnboardingStep(OnboardingStep.Address)
-        },
         onError: async error => {
             const apiError = await getCardApiError(error)
             logger.warn('Card additional details submission failed', {

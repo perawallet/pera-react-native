@@ -13,25 +13,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { OnboardingStep, VerificationState } from '../models'
+import { getCardApiError, isOnboardingNotFoundError } from '../api/errors'
+import { OnboardingPhase, OnboardingStep, VerificationState } from '../models'
 import { useCardStore } from '../store'
+import { useCardSession } from './useCardSession'
+import { useCardUserQuery } from './useCardUserQuery'
 import { useOnboardingDetailsQuery } from './useOnboardingDetailsQuery'
 
-/** How often we re-check the KYC state while a decision is pending. */
-const POLL_INTERVAL_MS = 4000
+/** Re-check cadence right after the user returns from the KYC session. */
+const ACTIVE_POLL_INTERVAL_MS = 4000
+
+/** A Sumsub review can take far longer than a minute, so the wait slows down. */
+const BACKOFF_POLL_INTERVAL_MS = 15_000
+const ACTIVE_POLL_WINDOW_MS = 60_000
 
 /** Consecutive poll failures (~12s) before giving up. */
 const POLL_FAILURE_LIMIT = 3
 
 /**
  * Consecutive "not reported back" polls (~60s) before giving up. A record that
- * stays UNVERIFIED (or on a state we don't model) means Veriff never reported a
- * result — polling it can't move it, so we stop and let the consumer act.
+ * stays UNVERIFIED (or on a state we don't model) means the KYC provider never
+ * reported a result; polling it can't move it, so we stop and let the consumer act.
  */
 const STUCK_POLL_LIMIT = 15
 
+const isDecided = (state: Nullable<VerificationState>): boolean =>
+    state === VerificationState.Verified || state === VerificationState.Rejected
+
 export type UseOnboardingKycPollOptions = {
-    /** Gates polling (e.g. only once a Veriff session has been opened). */
+    /** Gates polling (e.g. only once a KYC session has been opened). */
     enabled?: boolean
 }
 
@@ -46,6 +56,11 @@ export type UseOnboardingKycPollResult = {
     /** Polling gave up: repeated failures, or the record never reported a
      * result (UNVERIFIED/unknown) for the whole budget. */
     hasPollTimedOut: boolean
+    /**
+     * The onboarding record says Baanx has created the account: its phase is
+     * ACCOUNT, or the record no longer resolves. Free to watch, unlike a login.
+     */
+    hasAccountSignal: boolean
     /** Clears the give-up state and counters, then re-arms with a fresh fetch. */
     restartPolling: () => void
     refetch: () => void
@@ -55,10 +70,9 @@ export type UseOnboardingKycPollResult = {
  * Polls the onboarding KYC state and knows when to give up. Shared by the
  * setup-status checklist and the verification entry screen so both stop
  * hammering a dead record and can surface an explicit error instead.
- * Self-disables once registration completes: the final address step consumes
- * the onboarding session server-side, so GET register only answers
- * "Invalid onboarding ID" from then on and the KYC decision must be tracked
- * via the authenticated user record instead.
+ * Before the account exists it reads the pre-auth onboarding record; once a
+ * card session exists it reads the authenticated user, since the onboarding
+ * record is no longer the source of truth for a registered user.
  */
 export const useOnboardingKycPoll = (
     scope: ChainScope,
@@ -68,26 +82,65 @@ export const useOnboardingKycPoll = (
     const isRegistrationComplete = useCardStore(
         state => state.onboardingStep === OnboardingStep.Completed,
     )
+    const { isAuthenticated } = useCardSession()
     const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
+    const pollStartedAtRef = useRef(Date.now())
 
-    const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
-        useOnboardingDetailsQuery(scope, {
-            onboardingId,
-            enabled: enabled && !isRegistrationComplete,
-            // Function form so polling stops on the very fetch that lands a
-            // decision — no mirror state, no one-render lag.
-            refetchInterval: query => {
-                if (hasPollTimedOut) return false
-                const state = query.state.data?.verificationState ?? null
-                const isDecided =
-                    state === VerificationState.Verified ||
-                    state === VerificationState.Rejected
-                return isDecided ? false : POLL_INTERVAL_MS
-            },
+    // Function form so polling stops on the very fetch that lands a decision,
+    // with no mirror state and no one-render lag.
+    const nextPollInterval = (
+        state: Nullable<VerificationState>,
+        isAccountCreated: boolean,
+    ): number | false => {
+        if (hasPollTimedOut || state === VerificationState.Rejected) {
+            return false
+        }
+        // A verified record keeps being watched until Baanx turns it into an
+        // account, which is what lets the post-KYC login run.
+        if (isDecided(state) && isAccountCreated) return false
+        return Date.now() - pollStartedAtRef.current < ACTIVE_POLL_WINDOW_MS
+            ? ACTIVE_POLL_INTERVAL_MS
+            : BACKOFF_POLL_INTERVAL_MS
+    }
+
+    const onboardingQuery = useOnboardingDetailsQuery(scope, {
+        onboardingId,
+        enabled: enabled && !isAuthenticated && !isRegistrationComplete,
+        refetchInterval: query =>
+            nextPollInterval(
+                query.state.data?.verificationState ?? null,
+                query.state.data?.phase === OnboardingPhase.Account,
+            ),
+    })
+    const userQuery = useCardUserQuery(scope, {
+        enabled: enabled && isAuthenticated,
+        refetchInterval: query =>
+            nextPollInterval(query.state.data?.verificationState ?? null, true),
+    })
+    const [isRecordGone, setIsRecordGone] = useState(false)
+    const recordError = onboardingQuery.error
+    useEffect(() => {
+        if (!recordError) return
+        let isCurrent = true
+        void getCardApiError(recordError).then(apiError => {
+            if (isCurrent && isOnboardingNotFoundError(apiError)) {
+                setIsRecordGone(true)
+            }
         })
+        return () => {
+            isCurrent = false
+        }
+    }, [recordError])
+    const hasAccountSignal =
+        !isAuthenticated &&
+        (onboardingQuery.data?.phase === OnboardingPhase.Account ||
+            isRecordGone)
+    const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
+        isAuthenticated ? userQuery : onboardingQuery
 
     const verificationState = data?.verificationState ?? null
-    const isStateUnknown = data !== undefined && data.verificationState === null
+    const isStateUnknown =
+        data !== undefined && data !== null && verificationState === null
     // React Query's own loading flag — true only while the first fetch is
     // actually in flight; false when the query is disabled (no onboardingId) or
     // has errored with no data. Using `data === undefined` here would pin a
@@ -97,6 +150,10 @@ export const useOnboardingKycPoll = (
     const hasReportedBack =
         verificationState !== null &&
         verificationState !== VerificationState.Unverified
+
+    useEffect(() => {
+        if (enabled) pollStartedAtRef.current = Date.now()
+    }, [enabled])
 
     const pollFailuresRef = useRef(0)
     const unresolvedPollsRef = useRef(0)
@@ -127,6 +184,7 @@ export const useOnboardingKycPoll = (
     const restartPolling = useCallback(() => {
         pollFailuresRef.current = 0
         unresolvedPollsRef.current = 0
+        pollStartedAtRef.current = Date.now()
         setHasPollTimedOut(false)
         void refetch()
     }, [refetch])
@@ -140,6 +198,7 @@ export const useOnboardingKycPoll = (
         isStateUnknown,
         isLoading,
         hasPollTimedOut,
+        hasAccountSignal,
         restartPolling,
         refetch: stableRefetch,
     }

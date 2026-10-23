@@ -20,8 +20,10 @@ const {
     mockShowError,
     mockErrorToast,
     mockNavigate,
+    mockGoToNextStep,
     storeState,
 } = vi.hoisted(() => ({
+    mockGoToNextStep: vi.fn(),
     mockMutateAsync: vi.fn(),
     mockRequest: vi.fn(),
     mockShowError: vi.fn(),
@@ -47,6 +49,7 @@ vi.mock('@modules/card/components/CardUsStatePicker', () => ({
 }))
 vi.mock('@modules/card/hooks', () => ({
     useCardErrorToast: () => mockShowError,
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
 }))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -112,7 +115,7 @@ describe('useCardOnboardingMailingAddressScreen', () => {
         )
     })
 
-    it('submits the mailing address and hands back to the setup checklist', async () => {
+    it('submits the mailing address and moves on to identity verification', async () => {
         const { result } = renderHook(() =>
             useCardOnboardingMailingAddressScreen(),
         )
@@ -123,7 +126,9 @@ describe('useCardOnboardingMailingAddressScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingStatus'),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                localStep: 'VERIFICATION',
+            }),
         )
         expect(mockMutateAsync).toHaveBeenCalledWith({
             onboardingId: 'mock-onboarding-id',
@@ -147,7 +152,7 @@ describe('useCardOnboardingMailingAddressScreen', () => {
         })
 
         await waitFor(() => expect(mockShowError).toHaveBeenCalled())
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('routes back to email verification when the onboarding id is missing', async () => {

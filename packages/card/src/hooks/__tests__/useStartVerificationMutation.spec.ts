@@ -15,10 +15,15 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const { startRegisterVerification } = vi.hoisted(() => ({
-    startRegisterVerification: vi.fn(),
-}))
+const { startRegisterVerification, fetchVerificationSession, hasCardSession } =
+    vi.hoisted(() => ({
+        startRegisterVerification: vi.fn(),
+        fetchVerificationSession: vi.fn(),
+        hasCardSession: vi.fn(),
+    }))
 vi.mock('../../api/onboarding', () => ({ startRegisterVerification }))
+vi.mock('../../api/user', () => ({ fetchVerificationSession }))
+vi.mock('../../session', () => ({ hasCardSession }))
 
 import {
     type ChainScope,
@@ -42,6 +47,7 @@ describe.each(SCOPES)('useStartVerificationMutation ($chainId)', SCOPE => {
             },
         })
         vi.clearAllMocks()
+        hasCardSession.mockReturnValue(false)
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -70,5 +76,33 @@ describe.each(SCOPES)('useStartVerificationMutation ($chainId)', SCOPE => {
             scope: SCOPE,
         })
         expect(result.current.data?.sessionUrl).toBe('https://veriff/session')
+    })
+
+    it('starts KYC through the authenticated endpoint when a session already exists', async () => {
+        hasCardSession.mockReturnValue(true)
+        fetchVerificationSession.mockResolvedValue({
+            sessionUrl: 'https://kyc.example/session',
+        })
+
+        const { result } = renderHook(
+            () => useStartVerificationMutation(SCOPE),
+            { wrapper },
+        )
+        result.current.mutate({ onboardingId: null })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(fetchVerificationSession).toHaveBeenCalledWith({ scope: SCOPE })
+        expect(startRegisterVerification).not.toHaveBeenCalled()
+    })
+
+    it('fails without an onboarding id when there is no session', async () => {
+        const { result } = renderHook(
+            () => useStartVerificationMutation(SCOPE),
+            { wrapper },
+        )
+        result.current.mutate({ onboardingId: null })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(startRegisterVerification).not.toHaveBeenCalled()
     })
 })

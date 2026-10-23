@@ -10,24 +10,13 @@
  limitations under the License
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     submitPersonalDetails,
     type RegisterStepResult,
 } from '../api/onboarding'
-import {
-    getCardApiError,
-    isNotVerifiedError,
-    OnboardingNotVerifiedError,
-} from '../api/errors'
-import {
-    OnboardingPhase,
-    OnboardingStep,
-    type PersonalDetailsInput,
-} from '../models'
-import { useCardStore } from '../store'
-import { cardQueryKeys } from './querykeys'
+import type { PersonalDetailsInput } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitPersonalDetailsMutationResult = CardMutationResult<
@@ -38,46 +27,12 @@ export type UseSubmitPersonalDetailsMutationResult = CardMutationResult<
 export const useSubmitPersonalDetailsMutation = (
     scope: ChainScope,
 ): UseSubmitPersonalDetailsMutationResult => {
-    const queryClient = useQueryClient()
-
     const mutation = useMutation<
         RegisterStepResult,
         Error,
         PersonalDetailsInput
     >({
-        mutationFn: async details => {
-            try {
-                return await submitPersonalDetails({ details, scope })
-            } catch (error) {
-                // Typed so the screen can show the "finish verifying"
-                // state instead of Baanx's raw refusal string.
-                if (isNotVerifiedError(await getCardApiError(error))) {
-                    throw new OnboardingNotVerifiedError()
-                }
-                throw error
-            }
-        },
-        onSuccess: ({ phase }) => {
-            useCardStore
-                .getState()
-                .setOnboardingStep(
-                    phase === OnboardingPhase.AdditionalDetails
-                        ? OnboardingStep.AdditionalDetails
-                        : OnboardingStep.Address,
-                )
-        },
-        onError: (error, variables) => {
-            // The refusal proves our cached KYC state is optimistic, so
-            // refetch the record the screen gates on.
-            if (error instanceof OnboardingNotVerifiedError) {
-                void queryClient.invalidateQueries({
-                    queryKey: cardQueryKeys.onboardingDetails(
-                        scope,
-                        variables.onboardingId,
-                    ),
-                })
-            }
-        },
+        mutationFn: details => submitPersonalDetails({ details, scope }),
         throwOnError: false,
     })
 

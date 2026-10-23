@@ -1600,7 +1600,8 @@
             "otp_body_with_phone": "Saisissez le code de vérification que nous avons envoyé au {{phone}} pour terminer la connexion.",
             "otp_invalid": "Ce code est incorrect. Veuillez réessayer.",
             "send_again": "Renvoyer",
-            "send_again_in": "Renvoyer dans {{count}} s"
+            "send_again_in": "Renvoyer dans {{count}} s",
+            "account_locked": "Votre compte Pera Card est temporairement verrouillé. <0>Contactez le support</0> pour le déverrouiller."
         },
         "forgot_password": {
             "navigation_title": "Réinitialiser le mot de passe",
@@ -1814,25 +1815,26 @@
             "error_body": "Nous n’avons pas pu démarrer la vérification. Veuillez réessayer.",
             "open_link_error_body": "Nous n’avons pas pu ouvrir la page de vérification. Veuillez réessayer."
         },
-        "kyc_required": {
-            "title": "Terminez la vérification de votre identité",
-            "body": "Votre vérification d’identité n’est pas encore terminée. Vérifiez votre identité pour poursuivre votre demande de Pera Card.",
-            "verify_button": "Vérifier votre compte"
-        },
         "setup_status": {
             "title": "Terminez la configuration et commencez à payer on-chain",
             "documents_title": "Envoyez vos documents",
+            "documents_locked_body": "Saisissez d’abord vos informations, puis vérifiez votre identité.",
             "documents_pending_label": "En attente",
             "documents_unverified_body": "Veuillez vérifier votre compte pour commencer à payer on-chain.",
             "documents_verify_button": "Vérifier votre compte",
             "documents_pending_body": "Votre vérification a été envoyée. Nous vous enverrons un e-mail dès qu’elle sera terminée.",
             "documents_verified_body": "Votre identité a été vérifiée.",
+            "documents_preparing_body": "Votre identité est vérifiée. Nous configurons votre compte, ce qui peut prendre quelques minutes.",
+            "documents_preparing_slow_body": "Votre identité est vérifiée, mais la configuration de votre compte prend plus de temps que d’habitude. Nous continuons d’essayer.",
+            "documents_account_locked_body": "Votre compte Pera Card est temporairement verrouillé. Contactez le support pour le déverrouiller.",
             "documents_rejected_body": "Nous n’avons pas pu vérifier votre identité. Veuillez contacter le support pour obtenir de l’aide.",
             "documents_error_body": "Nous n’avons pas pu vérifier l’état de votre vérification. Veuillez réessayer.",
             "documents_retry": "Réessayer",
+            "sign_in_to_finish_title": "Connectez-vous pour terminer",
+            "sign_in_to_finish_body": "Votre identité est vérifiée. Connectez-vous avec votre mot de passe Pera Card pour terminer la configuration de votre compte.",
             "details_title": "Saisissez vos informations",
             "details_body": "Vérifiez vos informations et saisissez votre adresse pour continuer.",
-            "details_button": "Vérifier votre compte",
+            "details_button": "Saisir vos informations",
             "connect_funds_title": "Connecter des fonds",
             "connect_funds_body": "Connectez l’un de vos comptes Pera comme source de financement pour commencer à utiliser votre Pera Card.",
             "connect_funds_button": "Connecter un compte Pera",

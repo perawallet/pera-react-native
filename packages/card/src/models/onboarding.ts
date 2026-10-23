@@ -13,20 +13,21 @@
 import { z } from 'zod'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-// Declared in flow order: KYC (Verification) runs after phone verify and
-// before personal details; address is the final step and issues the session.
+// Declared in flow order, which is the fallback when Baanx sends no `phase`:
+// the forms come first, KYC runs once they are in, and the account (and the
+// session) only exists after KYC verifies.
 export const OnboardingStep = {
     EmailSend: 'EMAIL_SEND',
     EmailVerify: 'EMAIL_VERIFY',
     PhoneSend: 'PHONE_SEND',
     PhoneVerify: 'PHONE_VERIFY',
-    Verification: 'VERIFICATION',
     PersonalDetails: 'PERSONAL_DETAILS',
     /** BoP residents only; Baanx asks for it through `phase`. */
     AdditionalDetails: 'ADDITIONAL_DETAILS',
     Address: 'ADDRESS',
-    /** US residents shipping the card elsewhere; the address step withheld the token. */
+    /** US residents shipping the card somewhere other than their residence. */
     MailingAddress: 'MAILING_ADDRESS',
+    Verification: 'VERIFICATION',
     Completed: 'COMPLETED',
 } as const
 export type OnboardingStep =

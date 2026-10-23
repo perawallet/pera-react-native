@@ -10,109 +10,39 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    useNavigation,
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
+import { useCallback, useEffect } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    CardAccountLinkedElsewhereError,
-    FundingType,
-    isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
+    useCardSession,
     useCardStore,
-    useFundingAddressLinkMutation,
+    useOnboardingDetailsQuery,
     useOnboardingKycPoll,
-    VerificationState,
+    type FundingType,
 } from '@perawallet/wallet-core-card'
-import {
-    isLedgerAccount,
-    useAllAccounts,
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import {
-    canAutoFund,
-    useCardFundingSourcePicker,
-    useCardErrorToast,
     useCardOnboardingLogout,
-    useEscrowCardCreation,
+    useCardOnboardingRouter,
     useOpenCardSupport,
-    isSigningCapableFundingSource,
 } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
-import {
-    cardAccountAddressOf,
-    findCardAccount,
-} from '../../utils/cardAccountAddress'
-
-/**
- * The "Submit Your Documents" checklist row's visual state.
- * - `unverified`: KYC not submitted yet (or state unknown) — the user must
- *   still complete Veriff; the later steps stay locked.
- * - `pending`: submitted and under review — Baanx reviews async, so the later
- *   steps unlock.
- */
-export type DocumentsState =
-    | 'unverified'
-    | 'pending'
-    | 'verified'
-    | 'rejected'
-    | 'error'
-
-/**
- * Maps the polled KYC state to the documents row. Loading shows a neutral
- * pending row (no actionable CTA) so a cold entry can't flash "verify" at an
- * already-decided user. Only a submitted-but-unconfirmed review (PENDING) that
- * the poll gave up on escalates to the retry 'error' row; UNVERIFIED and
- * unmodelled/unfetched states surface the actionable 'unverified' row —
- * UNLESS registration has already completed. The KYC verification step is
- * only reachable before Personal Details/Address, so `Completed` is itself
- * proof documents were already submitted and decided; this makes the screen
- * re-entrant when the poll has no data (e.g. `onboardingId` was lost on a
- * cold resume) instead of wrongly asking an already-approved user to redo it.
- */
-const resolveDocumentsState = (
-    isLoading: boolean,
-    verificationState: Nullable<VerificationState>,
-    hasPollTimedOut: boolean,
-    isRegistrationComplete: boolean,
-): DocumentsState => {
-    if (isLoading) return 'pending'
-    switch (verificationState) {
-        case VerificationState.Verified: {
-            return 'verified'
-        }
-        case VerificationState.Rejected: {
-            return 'rejected'
-        }
-        case VerificationState.Pending: {
-            return hasPollTimedOut ? 'error' : 'pending'
-        }
-        default: {
-            return isRegistrationComplete ? 'verified' : 'unverified'
-        }
-    }
-}
+import { getOnboardingNextRoute } from '../../utils/onboardingRoute'
+import { useFinishRegistrationOnVerified } from './useFinishRegistrationOnVerified'
+import { resolveDocumentsState, type DocumentsState } from './documentsState'
+import { useStatusFundingSource } from './useStatusFundingSource'
+import { useStatusFundingType } from './useStatusFundingType'
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
-    /**
-     * KYC is submitted (PENDING under review, or VERIFIED) — the only states
-     * that unlock the details/address step. UNVERIFIED, rejected, and unknown
-     * states keep it locked behind the "verify" prompt.
-     */
-    isKycSubmitted: boolean
-    /** Registration (details + address) is finalized — gates the later steps. */
+    /** Every form Baanx asks for is in, so KYC can start. */
+    areDetailsSubmitted: boolean
+    /** The account and session exist (KYC verified) — gates the later steps. */
     isRegistrationComplete: boolean
     /** A Pera account has been linked as the funding source. */
     isFundsConnected: boolean
@@ -132,10 +62,13 @@ export type UseCardOnboardingStatusScreenResult = {
     isLedgerAccount: boolean
     /** Navigates to the signing screen, which runs the actual create sequence. */
     handleCreatePeraCard: () => void
-    /** Continues to the personal-details step (allowed while Baanx reviews). */
+    /** Opens the form Baanx still expects. */
     handleEnterDetails: () => void
-    /** Resumes KYC from the unverified documents row (reopens the Veriff entry). */
+    /** Resumes KYC from the unverified documents row. */
     handleVerifyIdentity: () => void
+    /** One login, while the account is being set up and the spacing allows. */
+    canTryAgain: boolean
+    handleTryAgain: () => void
     /** Recovers the documents-row error state (PENDING review) by re-polling. */
     handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
@@ -147,44 +80,82 @@ export type UseCardOnboardingStatusScreenResult = {
 export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
         const scope = useCardScope()
-        const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { errorToast } = useToast()
         const { handleLogout } = useCardOnboardingLogout()
+        const { goToNextStep } = useCardOnboardingRouter()
+        const { isAuthenticated } = useCardSession()
 
-        // You land here once Veriff has reported back (PENDING or a decision).
-        // The shared poll keeps the row live until a decision (or gives up);
-        // UNVERIFIED (cold resume) and unmodelled states render the actionable
-        // 'unverified' row, and only the initial in-flight fetch shows 'pending'.
+        // The shared poll keeps the documents row live until a decision (or
+        // gives up); only the initial in-flight fetch shows 'pending'.
         const {
             verificationState,
             isLoading,
             hasPollTimedOut,
+            hasAccountSignal,
             restartPolling,
         } = useOnboardingKycPoll(scope)
 
-        // The address step sets Completed, so it doubles as the "details done"
-        // signal that unlocks the Connect Funds step — and as proof documents
-        // were already submitted (see resolveDocumentsState).
-        const isRegistrationComplete = useCardStore(
-            state => state.onboardingStep === OnboardingStep.Completed,
+        // Completed is written once the session exists, which Baanx only
+        // allows after KYC verifies; it unlocks Connect Funds.
+        const onboardingStep = useCardStore(state => state.onboardingStep)
+        const isRegistrationComplete =
+            onboardingStep === OnboardingStep.Completed
+        const onboardingId = useCardStore(state => state.onboardingId)
+        const storedCountryIso = useCardStore(state => state.countryIso)
+        const hasContactVerificationId = useCardStore(
+            state => state.contactVerificationId !== null,
         )
+        const { data: onboardingRecord } = useOnboardingDetailsQuery(scope, {
+            onboardingId,
+            enabled: !isAuthenticated && !isRegistrationComplete,
+        })
+        const phase = onboardingRecord?.phase ?? null
+
+        // The same router the forms use answers whether a form is still owed.
+        const { screen: nextScreen } = getOnboardingNextRoute({
+            phase,
+            verificationState,
+            // Another device or a reinstall holds no residence of its own.
+            countryIso:
+                storedCountryIso ??
+                onboardingRecord?.countryOfResidence ??
+                null,
+            localStep: onboardingStep,
+            hasSession: isAuthenticated,
+            hasContactVerificationId,
+        })
+        const areDetailsSubmitted =
+            nextScreen === 'CardOnboardingVerification' ||
+            nextScreen === 'CardOnboardingStatus'
+
+        const storedEmail = useCardStore(state => state.email)
+        const {
+            accountPreparation,
+            isLoginLocked,
+            canTryAgain,
+            handleTryAgain,
+        } = useFinishRegistrationOnVerified(scope, {
+            hasAccountSignal,
+            verificationState,
+            isRegistrationComplete,
+            isAuthenticated,
+            email: onboardingRecord?.email ?? storedEmail ?? null,
+        })
 
         const documentsState = resolveDocumentsState(
             isLoading,
             verificationState,
             hasPollTimedOut,
             isRegistrationComplete,
+            areDetailsSubmitted,
+            accountPreparation,
+            isLoginLocked,
         )
+        const isIdentityVerified =
+            documentsState === 'verified' ||
+            documentsState === 'preparing' ||
+            documentsState === 'preparing-slow'
 
-        // Submitted (PENDING/VERIFIED) gates the later steps — the shared
-        // predicate keeps this in lockstep with the sign-in resume route. Read
-        // from the KYC state, not the row state, so a poll hiccup on a submitted
-        // review (documentsState 'error') doesn't relock the step.
-        const isKycSubmitted = isKycStateSubmitted(verificationState)
-
-        // The documents row's "Verify your Account" CTA — resumes KYC by
-        // reopening the Veriff entry screen.
         const handleVerifyIdentity = useCallback(() => {
             trackEvent(CardEvent.CreateVerifyAccount)
             navigation.navigate('CardOnboardingVerification')
@@ -196,43 +167,6 @@ export const useCardOnboardingStatusScreen =
             restartPolling()
         }, [restartPolling])
 
-        const connectedAddress = useCardStore(
-            state => state.connectedFundingSourceAddress,
-        )
-        const isFundsConnected = connectedAddress !== null
-
-        const accounts = useAllAccounts()
-        const connectedAccount = useMemo<Optional<WalletAccount>>(
-            () => findCardAccount(accounts, connectedAddress, scope.chainId),
-            [accounts, connectedAddress, scope.chainId],
-        )
-
-        // Funding type is chosen locally and committed by the creation of an lsig.
-        // Seed from the persisted choice (so a prior selection survives a
-        // re-entry/cold resume); default to Auto to match the design.
-        const [selectedFundingType, setSelectedFundingType] =
-            useState<FundingType>(
-                () =>
-                    useCardStore.getState().selectedFundingType ??
-                    FundingType.Auto,
-            )
-        const handleSelectFundingType = useCallback((type: FundingType) => {
-            trackEvent(
-                type === FundingType.Auto
-                    ? CardEvent.CreateCardAutoFunding
-                    : CardEvent.CreateCardManualFunding,
-            )
-            setSelectedFundingType(type)
-        }, [])
-
-        // After the add-account flow finishes it returns here with this one-shot
-        // flag; the new account is the globally selected one, so link it as the
-        // funding source.
-        const route =
-            useRoute<
-                RouteProp<CardOnboardingStackParamList, 'CardOnboardingStatus'>
-            >()
-        const autoConnectSelected = route.params?.autoConnectSelected ?? false
         const stackNavigation =
             useNavigation<
                 NativeStackNavigationProp<
@@ -240,32 +174,12 @@ export const useCardOnboardingStatusScreen =
                     'CardOnboardingStatus'
                 >
             >()
-        const { setParams } = stackNavigation
-        const selectedAccount = useSelectedAccount()
-        const selectedAccountAddress = selectedAccount
-            ? cardAccountAddressOf(selectedAccount, scope.chainId)
-            : undefined
-
-        useEffect(() => {
-            if (
-                !autoConnectSelected ||
-                !selectedAccountAddress ||
-                selectedAccountAddress === connectedAddress
-            ) {
-                return
-            }
-            // Consume the one-shot flag so it can't re-fire on later focuses.
-            setParams({ autoConnectSelected: undefined })
-            // Purely local, the card gets created and linked to this account by the Pera backend
-            useCardStore
-                .getState()
-                .setConnectedFundingSourceAddress(selectedAccountAddress)
-        }, [
-            autoConnectSelected,
-            selectedAccountAddress,
+        const {
             connectedAddress,
-            setParams,
-        ])
+            isFundsConnected,
+            connectedAccount,
+            handleConnectAccount,
+        } = useStatusFundingSource(scope)
 
         // Once KYC is approved this screen becomes the card hub, so a back
         // action (header arrow, swipe, or Android hardware back) exits to the
@@ -273,7 +187,7 @@ export const useCardOnboardingStatusScreen =
         // navigation (Enter Details, Create Pera Card) isn't a back action, so
         // it stays unaffected.
         useEffect(() => {
-            if (documentsState !== 'verified') return
+            if (!isIdentityVerified) return
             const unsubscribe = stackNavigation.addListener(
                 'beforeRemove',
                 event => {
@@ -284,133 +198,30 @@ export const useCardOnboardingStatusScreen =
                 },
             )
             return unsubscribe
-        }, [documentsState, stackNavigation, navigation])
+        }, [isIdentityVerified, stackNavigation, navigation])
 
         const handleEnterDetails = useCallback(() => {
-            // Defence in depth: the CTA is already hidden unless KYC is
-            // submitted, but a future entry point (or a state flip between
-            // render and tap) must not persist a step Baanx will refuse.
-            if (!isKycSubmitted) {
-                handleVerifyIdentity()
-                return
-            }
-            useCardStore
-                .getState()
-                .setOnboardingStep(OnboardingStep.PersonalDetails)
-            navigation.navigate('CardOnboardingPersonalDetails')
-        }, [isKycSubmitted, handleVerifyIdentity, navigation])
-
-        // Creation always needs the ownership-proof signature, so only offer
-        // accounts that can produce one.
-        const offerSigningCapable = useCallback(
-            (account: WalletAccount) =>
-                isSigningCapableFundingSource(account, scope),
-            [scope],
-        )
-        const { pickFundingSource } = useCardFundingSourcePicker({
-            accountFilter: offerSigningCapable,
-        })
-        const { checkFundingAddress } = useFundingAddressLinkMutation(scope)
-        // Same copy the post-signature failure shows, resolved from the same
-        // error type rather than restating its keys here.
-        const showCardError = useCardErrorToast()
-        const handleConnectAccount = useCallback(
-            (source: 'connect' | 'change') => {
-                trackEvent(
-                    source === 'change'
-                        ? CardEvent.CreateCardChangeAccount
-                        : CardEvent.CreateConnectWallet,
-                )
-                void (async () => {
-                    const account = await pickFundingSource()
-                    const address = account
-                        ? cardAccountAddressOf(account, scope.chainId)
-                        : undefined
-                    if (address === undefined) return
-                    // Ask before the ownership signature whether the backend
-                    // would even accept this address: creation links it to the
-                    // Baanx user and refuses one held by someone else, which
-                    // the user would otherwise hit three prompts later. An
-                    // unanswerable preflight is not a refusal, so only an
-                    // explicit `linked_to_other` stops the connect.
-                    const link = await checkFundingAddress(address).catch(
-                        () => null,
-                    )
-                    if (link?.state === 'linked_to_other') {
-                        await showCardError(
-                            new CardAccountLinkedElsewhereError(),
-                        )
-                        return
-                    }
-                    trackEvent(CardEvent.CreateVerifyAccountSelect)
-                    // Purely local, the card gets created and linked to this account by the Pera backend
-                    useCardStore
-                        .getState()
-                        .setConnectedFundingSourceAddress(address)
-                })()
-            },
-            [
-                pickFundingSource,
-                checkFundingAddress,
-                showCardError,
-                scope.chainId,
-            ],
-        )
-
-        // Only `canCreateCard` is needed here — the actual creation sequence
-        // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
-        const { canCreateCard } = useEscrowCardCreation()
-        const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
-        // Auto availability keys off LSig signing, NOT card creation: a Ledger
-        // creates a card but can never sign the AutoDraw LSig.
-        const isConnectedLedger =
-            connectedAccount != null && isLedgerAccount(connectedAccount)
-        const isAutoFundingUnavailable =
-            !isAutoFundingEnabled ||
-            (connectedAccount != null && !canAutoFund(connectedAccount, scope))
-
-        // A connected account that can't sign an LSig (e.g. Ledger) can't use Auto, so
-        // fall back to Manual. Without this the Auto option stays selected but
-        // disabled, and "Create Pera Card" dead-ends trying to sign a
-        // delegation the account can't produce.
-        useEffect(() => {
-            if (
-                isAutoFundingUnavailable &&
-                selectedFundingType === FundingType.Auto
-            ) {
-                setSelectedFundingType(FundingType.Manual)
-            }
-        }, [isAutoFundingUnavailable, selectedFundingType])
-
-        // Both paths sign (ARC-60 for creation; +LSig for Auto), so a
-        // signing-capable connected account is required before handing off to
-        // the signing screen, which runs the actual create sequence.
-        const handleCreatePeraCard = useCallback(() => {
-            trackEvent(CardEvent.CreateCard)
-            if (!connectedAccount || !canCreateCard(connectedAccount)) {
-                errorToast(
-                    t('peraCard.setup_status.create_card_account_error_title'),
-                    t('peraCard.setup_status.create_card_account_error_body'),
-                )
-                return
-            }
-            navigation.navigate('CardOnboardingSigning', {
-                fundingType: selectedFundingType,
+            goToNextStep({
+                phase,
+                localStep: onboardingStep,
+                verificationState,
             })
-        }, [
-            connectedAccount,
-            canCreateCard,
-            errorToast,
-            navigation,
+        }, [goToNextStep, phase, onboardingStep, verificationState])
+
+        const {
             selectedFundingType,
-            t,
-        ])
+            handleSelectFundingType,
+            isAutoFundingUnavailable,
+            isAutoFundingEnabled,
+            isConnectedLedger,
+            handleCreatePeraCard,
+        } = useStatusFundingType(scope, connectedAccount)
 
         const handleOpenSupport = useOpenCardSupport()
 
         return {
             documentsState,
-            isKycSubmitted,
+            areDetailsSubmitted,
             isRegistrationComplete,
             isFundsConnected,
             connectedAccount,
@@ -424,6 +235,8 @@ export const useCardOnboardingStatusScreen =
             handleEnterDetails,
             handleVerifyIdentity,
             handleRetryStatus,
+            canTryAgain,
+            handleTryAgain,
             handleConnectAccount,
             handleLogout,
             handleOpenSupport,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     type ChainScope,
@@ -18,7 +18,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 type MockQuery = {
-    state: { data?: { verificationState: string | null } }
+    state: {
+        data?: { verificationState: string | null; phase?: string | null }
+    }
 }
 type MockQueryOptions = {
     onboardingId: string | null
@@ -34,11 +36,13 @@ let mockErrorUpdatedAt = 0
 let mockQueryScope: ChainScope | undefined
 let mockQueryOptions: MockQueryOptions | undefined
 let mockOnboardingStep = 'VERIFICATION'
+let mockPhase: string | null = null
+let mockQueryError: unknown = null
 
 const queryData = () =>
     mockVerificationState === undefined
         ? undefined
-        : { verificationState: mockVerificationState }
+        : { verificationState: mockVerificationState, phase: mockPhase }
 
 // Stub the wrapped query and the store directly (the two sibling modules the
 // hook composes) so the poll/give-up mechanics are exercised in isolation.
@@ -57,6 +61,35 @@ vi.mock('../useOnboardingDetailsQuery', () => ({
             refetch: mockRefetch,
             dataUpdatedAt: mockDataUpdatedAt,
             errorUpdatedAt: mockErrorUpdatedAt,
+            error: mockQueryError,
+        }
+    },
+}))
+
+let mockIsAuthenticated = false
+let mockUserVerificationState: string | undefined
+let mockUserQueryOptions: Omit<MockQueryOptions, 'onboardingId'> | undefined
+vi.mock('../useCardSession', () => ({
+    useCardSession: () => ({ isAuthenticated: mockIsAuthenticated }),
+}))
+vi.mock('../useCardUserQuery', () => ({
+    useCardUserQuery: (
+        _scope: ChainScope,
+        options: Omit<MockQueryOptions, 'onboardingId'>,
+    ) => {
+        mockUserQueryOptions = options
+        return {
+            data:
+                mockUserVerificationState === undefined
+                    ? undefined
+                    : {
+                          id: 'u1',
+                          verificationState: mockUserVerificationState,
+                      },
+            isLoading: false,
+            refetch: mockRefetch,
+            dataUpdatedAt: 0,
+            errorUpdatedAt: 0,
         }
     },
 }))
@@ -98,6 +131,12 @@ beforeEach(() => {
     mockQueryScope = undefined
     mockQueryOptions = undefined
     mockOnboardingStep = 'VERIFICATION'
+    mockPhase = null
+    mockQueryError = null
+    mockIsAuthenticated = false
+    mockUserVerificationState = undefined
+    mockUserQueryOptions = undefined
+    vi.useRealTimers()
 })
 
 describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
@@ -111,11 +150,88 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(scheduledInterval()).not.toBe(false)
     })
 
-    it('stops polling once the decision lands', () => {
-        mockVerificationState = 'VERIFIED'
+    it('polls every 4 s for the first minute, then every 15 s', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'PENDING'
         renderHook(() => useOnboardingKycPoll(SCOPE))
 
+        expect(scheduledInterval()).toBe(4000)
+
+        vi.advanceTimersByTime(61_000)
+        expect(scheduledInterval()).toBe(15_000)
+    })
+
+    it('restarts the fast cadence when polling is restarted', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'PENDING'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        vi.advanceTimersByTime(61_000)
+
+        act(() => {
+            result.current.restartPolling()
+        })
+
+        expect(scheduledInterval()).toBe(4000)
+    })
+
+    it('reads the authenticated user instead of the onboarding record once a session exists', () => {
+        mockIsAuthenticated = true
+        mockVerificationState = 'UNVERIFIED'
+        mockUserVerificationState = 'PENDING'
+
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(result.current.verificationState).toBe('PENDING')
+        expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockUserQueryOptions?.enabled).toBe(true)
+        const interval = mockUserQueryOptions?.refetchInterval
+        expect(
+            typeof interval === 'function'
+                ? interval({
+                      state: { data: { verificationState: 'VERIFIED' } },
+                  })
+                : interval,
+        ).toBe(false)
+    })
+
+    it('keeps watching a verified record until Baanx turns it into an account', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(scheduledInterval()).not.toBe(false)
+        expect(result.current.hasAccountSignal).toBe(false)
+    })
+
+    it('stops once the verified record says the account exists, and signals it', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'ACCOUNT'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
         expect(scheduledInterval()).toBe(false)
+        expect(result.current.hasAccountSignal).toBe(true)
+    })
+
+    it('signals the account once the record no longer resolves', async () => {
+        mockVerificationState = 'VERIFIED'
+        mockQueryError = {
+            response: { status: 400 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        await waitFor(() => expect(result.current.hasAccountSignal).toBe(true))
+    })
+
+    it('does not read an outage as the account existing', async () => {
+        mockVerificationState = 'VERIFIED'
+        mockQueryError = { response: { status: 503 } }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        expect(result.current.hasAccountSignal).toBe(false)
     })
 
     it('passes the scope and enabled gate through to the query', () => {

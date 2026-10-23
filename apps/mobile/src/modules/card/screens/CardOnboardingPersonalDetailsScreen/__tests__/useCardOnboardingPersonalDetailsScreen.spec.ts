@@ -14,7 +14,6 @@ import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    OnboardingNotVerifiedError,
     type RegistrationOption,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
@@ -37,13 +36,11 @@ type MockOnboardingDetails = {
     countryOfNationality: string | null
     additionalNationalities?: string[]
     portugalInvestmentScheme?: boolean | null
+    countryOfResidence?: string | null
 }
 let mockOnboardingDetails: MockOnboardingDetails | undefined
-// The gate's own derivation is unit-tested in the card package
-// (useOnboardingKycGate.spec.ts); here only the screen's wiring matters.
-let mockIsKycRequired = false
 let mockIsRecordLoading = false
-const mockMarkServerRefused = vi.fn()
+const mockRefetchRecord = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -76,11 +73,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             },
             isLoading: mockIsRecordLoading,
             isError: false,
-            refetch: vi.fn(),
-        }),
-        useOnboardingKycGate: () => ({
-            isKycRequired: mockIsKycRequired,
-            markServerRefused: mockMarkServerRefused,
+            refetch: mockRefetchRecord,
         }),
         useCardStore: (
             selector: (state: {
@@ -103,6 +96,11 @@ vi.mock('@modules/bottom-sheet', () => ({
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
+}))
+
+const mockGoToNextStep = vi.fn()
+vi.mock('@modules/card/hooks/useCardOnboardingRouter', () => ({
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
 }))
 
 const mockNavigate = vi.fn()
@@ -197,7 +195,6 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockCountryIso = 'GB'
         mockSettings = settingsWith([uk, france])
         mockOnboardingDetails = undefined
-        mockIsKycRequired = false
         mockIsRecordLoading = false
         mockMutateAsync.mockResolvedValue({ phase: 'PHYSICAL_ADDRESS' })
     })
@@ -276,7 +273,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         })
 
         expect(mockMutateAsync).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('prefills and locks the identity fields the server has confirmed', async () => {
@@ -386,50 +383,6 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         })
     })
 
-    describe('KYC gating', () => {
-        it('surfaces the gate and offers a route back to verification', () => {
-            mockIsKycRequired = true
-            const { result } = renderHook(() =>
-                useCardOnboardingPersonalDetailsScreen(),
-            )
-
-            expect(result.current.isKycRequired).toBe(true)
-
-            act(() => {
-                result.current.handleVerifyIdentity()
-            })
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingVerification',
-            )
-        })
-
-        it('marks the gate refused and keeps the user here when the server rejects the submit', async () => {
-            prefillValidForm()
-            mockMutateAsync.mockRejectedValueOnce(
-                new OnboardingNotVerifiedError(),
-            )
-            const { result } = renderHook(() =>
-                useCardOnboardingPersonalDetailsScreen(),
-            )
-            await pickEmployment(result)
-            await waitFor(() => expect(result.current.isValid).toBe(true))
-
-            await act(async () => {
-                result.current.handleConfirm()
-            })
-
-            expect(mockMarkServerRefused).toHaveBeenCalledTimes(1)
-            expect(mockNavigate).not.toHaveBeenCalledWith(
-                'CardOnboardingAddress',
-            )
-            // Our copy, never Baanx's "User is not verified".
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'peraCard.kyc_required.title',
-                'peraCard.kyc_required.body',
-            )
-        })
-    })
-
     it('submits the details and continues to the address step', async () => {
         prefillValidForm()
         const { result } = renderHook(() =>
@@ -443,7 +396,10 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress'),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                phase: 'PHYSICAL_ADDRESS',
+                localStep: 'ADDRESS',
+            }),
         )
         expect(mockMutateAsync).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -457,7 +413,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
-    it('continues to additional details when Baanx asks for them', async () => {
+    it("hands Baanx's phase to the router so additional details can come next", async () => {
         prefillValidForm()
         mockMutateAsync.mockResolvedValueOnce({ phase: 'ADDITIONAL_DETAILS' })
         const { result } = renderHook(() =>
@@ -471,9 +427,10 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingAdditionalDetails',
-            ),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                phase: 'ADDITIONAL_DETAILS',
+                localStep: 'ADDRESS',
+            }),
         )
     })
 
@@ -499,7 +456,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
                 'Registration is not in the expected phase',
             ),
         )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('falls back to the generic error body when the failure carries no message', async () => {
@@ -521,11 +478,14 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
                 'peraCard.personal_details.error_body',
             ),
         )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
-    it('treats a duplicate submission as success and continues to the address step', async () => {
+    it('treats a duplicate submission as success and routes by the refreshed record', async () => {
         prefillValidForm()
+        mockRefetchRecord.mockResolvedValueOnce({
+            data: { phase: 'ADDITIONAL_DETAILS' },
+        })
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 409 },
             data: { message: 'Duplicate onboardingId - record already exists' },
@@ -540,10 +500,35 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             result.current.handleConfirm()
         })
 
+        // The refreshed record's phase decides, so additional details are not skipped.
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress'),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                phase: 'ADDITIONAL_DETAILS',
+                localStep: 'ADDRESS',
+            }),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it("falls back to the record's residence when this device holds none", async () => {
+        mockCountryIso = null
+        mockSettings = settingsWith([uk, france, usa])
+        mockOnboardingDetails = {
+            verificationState: 'UNVERIFIED',
+            firstName: null,
+            lastName: null,
+            dateOfBirth: null,
+            countryOfNationality: null,
+            countryOfResidence: 'US',
+        }
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isUsResident).toBe(true)
+        await waitFor(() =>
+            expect(result.current.selectedNationality).toEqual(usa),
+        )
     })
 
     describe('employment', () => {

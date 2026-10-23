@@ -15,6 +15,7 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     getCardApiError,
+    isAccountLockedError,
     isInvalidCredentialsError,
     isInvalidInputError,
     signInSchema,
@@ -37,10 +38,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useCardScope } from '../../hooks/useCardScope'
+import { useOpenCardSupport } from '../../hooks/useOpenCardSupport'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { getOnboardingNextRoute } from '../../utils/onboardingRoute'
 import { maskPhoneNumber } from '../../utils/phone'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
-import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 
 /** Seconds the user must wait before the OTP code can be re-requested. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -69,6 +71,9 @@ export type UseCardSignInScreenResult = {
      */
     handleSignIn: (submittedOtp?: string) => void
     handleForgotPassword: () => void
+    /** Baanx locked the account after repeated failed logins. */
+    isAccountLocked: boolean
+    handleOpenSupport: () => void
 }
 
 export const useCardSignInScreen = (): UseCardSignInScreenResult => {
@@ -96,12 +101,16 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
 
     const route = useRoute<RouteProp<PeraCardStackParamList, 'CardSignIn'>>()
 
+    const finishesRegistration = route.params?.finishesRegistration ?? false
+
     useEffect(() => {
         const email = route.params?.email
         if (email) setValue('email', email, { shouldValidate: true })
     }, [route.params?.email, setValue])
 
     const [isOtpRequired, setIsOtpRequired] = useState(false)
+    const [isAccountLocked, setIsAccountLocked] = useState(false)
+    const handleOpenSupport = useOpenCardSupport()
     // Where Baanx says it sent the code. Only the login response carries it, so
     // it has to be held from that call through to the OTP step.
     const [otpPhone, setOtpPhone] = useState<Nullable<string>>(null)
@@ -157,6 +166,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     email,
                     password,
                     otpCode: otp,
+                    linkConsent: finishesRegistration,
                 })
 
                 // Credentials accepted but a 2FA code is required — ask Baanx
@@ -223,18 +233,20 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 }
 
                 // A non-null `phase` (with no token) means registration is
-                // unfinished. Resume on the screen the server is actually
-                // waiting for — the phase names the pending step, and the KYC
-                // state decides whether verification must run first.
+                // unfinished. Resume where the server is waiting, through the
+                // same router the onboarding steps use.
                 if (result.phase) {
-                    const { screen, step } = getOnboardingResumeRoute(
-                        result.phase,
-                        result.verificationState,
-                        useCardStore.getState().contactVerificationId !== null,
-                    )
-                    if (step !== null) {
-                        useCardStore.getState().setOnboardingStep(step)
-                    }
+                    const store = useCardStore.getState()
+                    const { screen, step } = getOnboardingNextRoute({
+                        phase: result.phase,
+                        verificationState: result.verificationState,
+                        countryIso: store.countryIso,
+                        localStep: store.onboardingStep,
+                        hasSession: false,
+                        hasContactVerificationId:
+                            store.contactVerificationId !== null,
+                    })
+                    store.setOnboardingStep(step)
                     if (screen === 'CardOnboardingStatus') {
                         navigation.navigate('PeraCard', {
                             screen: 'CardOnboarding',
@@ -256,6 +268,12 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 )
             } catch (error) {
                 const apiError = await getCardApiError(error)
+                // Checked first: a locked account can also answer 401/403,
+                // and retrying it only keeps it locked.
+                if (isAccountLockedError(apiError)) {
+                    setIsAccountLocked(true)
+                    return
+                }
                 // A rejected OTP submission: flag a bad code for a 400/422, else
                 // a generic toast (network, 5xx).
                 if (otp !== undefined) {
@@ -286,6 +304,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         },
         [
             login,
+            finishesRegistration,
             restoreEscrowCardAsync,
             accounts,
             navigation,
@@ -350,5 +369,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         handleResendOtp,
         handleSignIn,
         handleForgotPassword,
+        isAccountLocked,
+        handleOpenSupport,
     }
 }

@@ -1600,7 +1600,8 @@
             "otp_body_with_phone": "Introduce el código de verificación que enviamos a {{phone}} para terminar de iniciar sesión.",
             "otp_invalid": "Ese código no es correcto. Vuelve a intentarlo.",
             "send_again": "Reenviar",
-            "send_again_in": "Reenviar en {{count}}s"
+            "send_again_in": "Reenviar en {{count}}s",
+            "account_locked": "Tu cuenta de Pera Card está bloqueada temporalmente. <0>Contacta con soporte</0> para desbloquearla."
         },
         "forgot_password": {
             "navigation_title": "Restablecer contraseña",
@@ -1814,25 +1815,26 @@
             "error_body": "No pudimos iniciar la verificación. Vuelve a intentarlo.",
             "open_link_error_body": "No pudimos abrir la página de verificación. Vuelve a intentarlo."
         },
-        "kyc_required": {
-            "title": "Termina de verificar tu identidad",
-            "body": "Tu verificación de identidad aún no se ha completado. Verifica tu identidad para continuar con tu solicitud de Pera Card.",
-            "verify_button": "Verificar tu cuenta"
-        },
         "setup_status": {
             "title": "Completa la configuración y empieza a gastar on-chain",
             "documents_title": "Envía tus documentos",
+            "documents_locked_body": "Primero introduce tus datos y después verifica tu identidad.",
             "documents_pending_label": "Pendiente",
             "documents_unverified_body": "Verifica tu cuenta para empezar a gastar on-chain.",
             "documents_verify_button": "Verificar tu cuenta",
             "documents_pending_body": "Se ha enviado tu verificación. Te avisaremos por correo cuando esté completa.",
             "documents_verified_body": "Tu identidad ha sido verificada.",
+            "documents_preparing_body": "Tu identidad está verificada. Estamos configurando tu cuenta, lo que puede tardar unos minutos.",
+            "documents_preparing_slow_body": "Tu identidad está verificada, pero la configuración de tu cuenta está tardando más de lo habitual. Seguiremos intentándolo.",
+            "documents_account_locked_body": "Tu cuenta de Pera Card está bloqueada temporalmente. Contacta con soporte para desbloquearla.",
             "documents_rejected_body": "No pudimos verificar tu identidad. Contacta con soporte para obtener ayuda.",
             "documents_error_body": "No pudimos comprobar el estado de tu verificación. Vuelve a intentarlo.",
             "documents_retry": "Reintentar",
+            "sign_in_to_finish_title": "Inicia sesión para terminar",
+            "sign_in_to_finish_body": "Tu identidad está verificada. Inicia sesión con tu contraseña de Pera Card para terminar de configurar tu cuenta.",
             "details_title": "Introduce tus datos",
             "details_body": "Verifica tus datos e introduce tu dirección para continuar.",
-            "details_button": "Verificar tu cuenta",
+            "details_button": "Introducir datos",
             "connect_funds_title": "Conectar fondos",
             "connect_funds_body": "Conecta una de tus cuentas de Pera como fuente de financiación para empezar a usar tu Pera Card.",
             "connect_funds_button": "Conectar una cuenta de Pera",

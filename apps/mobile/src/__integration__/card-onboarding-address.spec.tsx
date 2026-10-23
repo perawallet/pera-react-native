@@ -14,7 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
-import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    clearCardSession,
+    OnboardingStep,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
 import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
@@ -23,12 +27,21 @@ import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardin
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingMailingAddressScreen } from '@modules/card/screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
+import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
-// The final registration step returns the access token + onboarding id.
+// Baanx answers the address without a token: the session comes from the
+// login once KYC verifies.
 const ADDRESS_RESPONSE = {
+    accessToken: null,
+    onboardingId: 'mock-onboarding-id',
+}
+
+// The spec still documents a token here; the app takes it if one is sent.
+const TOKEN_ADDRESS_RESPONSE = {
     accessToken: 'mock-access-token',
     onboardingId: 'mock-onboarding-id',
+    user: { id: 'user_123' },
 }
 
 const SETTINGS_RESPONSE = {
@@ -84,6 +97,10 @@ const renderFlow = () =>
                 name: 'CardOnboardingMailingAddress',
                 component: CardOnboardingMailingAddressScreen,
             },
+            {
+                name: 'CardOnboardingVerification',
+                component: CardOnboardingVerificationScreen,
+            },
         ],
     })
 
@@ -110,8 +127,10 @@ const acceptBothTerms = () => {
 }
 
 describe('Flow: Card onboarding — residential address', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.mocked(Notifier.showNotification).mockClear()
+        // A token answer in an earlier test leaves a session behind.
+        await clearCardSession()
         const store = useCardStore.getState()
         store.resetState()
         store.setEmail('john@example.com')
@@ -131,24 +150,30 @@ describe('Flow: Card onboarding — residential address', () => {
             http.post('*/v2/consent/onboarding', () =>
                 HttpResponse.json({ success: true }, { status: 200 }),
             ),
-            // Submitting the address hands back to the setup checklist, which
-            // polls the onboarding KYC state on mount.
+            // A token Baanx sends lands on the setup checklist, which reads the
+            // KYC state; the usual path stops at the verification entry.
             http.get('*/v1/auth/register', () =>
                 HttpResponse.json(
                     {
                         id: 'mock-onboarding-id',
-                        verificationState: 'VERIFIED',
+                        verificationState: 'UNVERIFIED',
                     },
                     { status: 200 },
                 ),
             ),
-            // The registration-issued token is traded for the durable OAuth
-            // pair (initiate → authorize → token), same chain as sign-in.
+            http.get('*/v1/user', () =>
+                HttpResponse.json(
+                    { id: 'user_123', verificationState: 'UNVERIFIED' },
+                    { status: 200 },
+                ),
+            ),
+            // A token is traded for the durable OAuth pair (initiate →
+            // authorize → token), the same chain as sign-in.
             ...mockOauthChain(),
         )
     })
 
-    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and registration completes', async () => {
+    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and identity verification opens', async () => {
         let body: Record<string, unknown> | undefined
         let consentBody: Record<string, unknown> | undefined
         const submitSpy = vi.fn()
@@ -200,14 +225,40 @@ describe('Flow: Card onboarding — residential address', () => {
                 { consentType: 'smsNotifications', consentStatus: 'granted' },
             ]),
         )
-        // Registration is finalized, so the flow hands back to the setup
-        // checklist (where Connect Funds takes over) and marks onboarding done.
+        // Every form is in, so KYC is next; the account comes after it.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-verification'),
+            ).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Verification,
+        )
+    })
+
+    it('Given Baanx answers the address with a token, then registration completes and the checklist opens', async () => {
+        server.use(
+            http.post('*/v1/auth/register/address', () =>
+                HttpResponse.json(TOKEN_ADDRESS_RESPONSE, { status: 200 }),
+            ),
+        )
+
+        renderFlow()
+        fillAddressFields()
+        acceptBothTerms()
+
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
+
         await waitFor(() =>
             expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
         )
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Completed,
         )
+        expect(useCardStore.getState().cardUserId).toBe('user_123')
     })
 
     it('keeps Continue disabled until both Terms & Conditions are accepted', async () => {
@@ -264,18 +315,14 @@ describe('Flow: Card onboarding — residential address', () => {
         })
     })
 
-    it('Given a US residence with a separate mailing address, then the address posts the flag, the mailing step follows and completes registration', async () => {
+    it('Given a US residence with a separate mailing address, then the address posts the flag and the mailing step follows before identity verification', async () => {
         useCardStore.getState().setCountryIso('US')
         let addressBody: Record<string, unknown> | undefined
         let mailingBody: Record<string, unknown> | undefined
         server.use(
             http.post('*/v1/auth/register/address', async ({ request }) => {
                 addressBody = (await request.json()) as Record<string, unknown>
-                // Baanx withholds the token while the mailing address is owed.
-                return HttpResponse.json(
-                    { accessToken: null, onboardingId: 'mock-onboarding-id' },
-                    { status: 200 },
-                )
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
             http.post(
                 '*/v1/auth/register/mailing-address',
@@ -311,8 +358,7 @@ describe('Flow: Card onboarding — residential address', () => {
         await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
         fireEvent.click(confirm())
 
-        // No token yet, so the flow moves on to the mailing address rather
-        // than the checklist, and onboarding is not marked complete.
+        // The mailing address is owed before KYC.
         await waitFor(() =>
             expect(
                 screen.getByTestId('card-onboarding-mailing-address'),
@@ -356,7 +402,9 @@ describe('Flow: Card onboarding — residential address', () => {
         fireEvent.click(mailingConfirm())
 
         await waitFor(() =>
-            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+            expect(
+                screen.getByTestId('card-onboarding-verification'),
+            ).toBeTruthy(),
         )
         expect(mailingBody).toMatchObject({
             onboardingId: 'mock-onboarding-id',
@@ -366,7 +414,7 @@ describe('Flow: Card onboarding — residential address', () => {
             usState: 'NY',
         })
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Completed,
+            OnboardingStep.Verification,
         )
     })
 
@@ -483,20 +531,19 @@ describe('Flow: Card onboarding — residential address', () => {
         await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
         fireEvent.click(confirm())
 
-        // The duplicate consent is swallowed, so the finalize still runs...
+        // The duplicate consent is swallowed, so the address still posts...
         await waitFor(() => expect(addressSpy).toHaveBeenCalled())
-        // ...and registration completes (hands back to the setup checklist).
+        // ...and the flow moves on to identity verification.
         await waitFor(() =>
-            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
-        )
-        expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Completed,
+            expect(
+                screen.getByTestId('card-onboarding-verification'),
+            ).toBeTruthy(),
         )
     })
 
-    it('Given consent and address succeed, when Continue is pressed, then the consent set is linked to the user via PATCH', async () => {
-        // Baanx's two-step consent: create returns a consentSetId, the address
-        // step returns the permanent userId, and the link binds them together.
+    it('Given a token-bearing address answer, then the consent set is linked to the user via PATCH', async () => {
+        // Baanx's two-step consent: create returns a consentSetId; once a token
+        // names the user, the link binds them together.
         let linkBody: Record<string, unknown> | undefined
         let linkPath: string | undefined
         const linkSpy = vi.fn()
@@ -505,10 +552,7 @@ describe('Flow: Card onboarding — residential address', () => {
                 HttpResponse.json({ consentSetId: 'cs_123' }, { status: 200 }),
             ),
             http.post('*/v1/auth/register/address', () =>
-                HttpResponse.json(
-                    { ...ADDRESS_RESPONSE, user: { id: 'user_123' } },
-                    { status: 200 },
-                ),
+                HttpResponse.json(TOKEN_ADDRESS_RESPONSE, { status: 200 }),
             ),
             http.patch(
                 '*/v2/consent/onboarding/:consentSetId',
@@ -541,18 +585,15 @@ describe('Flow: Card onboarding — residential address', () => {
     })
 
     it('Given the consent link fails, when Continue is pressed, then registration still completes', async () => {
-        // The address step already finalized registration, so a link failure
-        // must not strand the user — it is logged and the flow proceeds.
+        // The account already exists, so a link failure must not strand the
+        // user; it is logged and the flow proceeds.
         const linkSpy = vi.fn()
         server.use(
             http.post('*/v2/consent/onboarding', () =>
                 HttpResponse.json({ consentSetId: 'cs_123' }, { status: 200 }),
             ),
             http.post('*/v1/auth/register/address', () =>
-                HttpResponse.json(
-                    { ...ADDRESS_RESPONSE, user: { id: 'user_123' } },
-                    { status: 200 },
-                ),
+                HttpResponse.json(TOKEN_ADDRESS_RESPONSE, { status: 200 }),
             ),
             http.patch('*/v2/consent/onboarding/:consentSetId', () => {
                 linkSpy()

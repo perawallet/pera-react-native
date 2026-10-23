@@ -46,9 +46,10 @@ import { capabilityState } from '@test-utils/capability-mock'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
-const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
+const { mockNavigate, mockDispatch, mockGetCurrentRoute } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockDispatch: vi.fn(),
+    mockGetCurrentRoute: vi.fn(),
 }))
 
 const sendAccount = vi.hoisted(() => ({
@@ -63,6 +64,7 @@ vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
         navigate: mockNavigate,
         dispatch: mockDispatch,
+        getCurrentRoute: mockGetCurrentRoute,
         isReady: vi.fn(() => true),
     },
 }))
@@ -84,6 +86,17 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('../../parser', () => ({
     parseDeeplink: vi.fn(),
+}))
+
+// The cards deeplink reads only where this device's card onboarding stands.
+// Stub the package so the real persisted card store stays out of this graph.
+const mockCardOnboarding = vi.hoisted(() => ({
+    onboardingId: null as string | null,
+    onboardingStep: 'EMAIL_SEND',
+}))
+vi.mock('@perawallet/wallet-core-card', () => ({
+    OnboardingStep: { Completed: 'COMPLETED' },
+    useCardStore: { getState: () => mockCardOnboarding },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -2088,6 +2101,77 @@ describe('useDeepLink', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
             screen: 'PeraCardIntro',
+        })
+    })
+
+    describe('the onboarding-status CARDS path Baanx returns KYC users to', () => {
+        const openOnboardingStatus = async () => {
+            mockIsPeraCardEnabled.mockReturnValue(true)
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.CARDS,
+                path: 'onboarding-status',
+            })
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'https://perawallet.app/qr/perawallet/app/cards?path=onboarding-status',
+                    true,
+                    'deeplink',
+                )
+            })
+        }
+
+        beforeEach(() => {
+            mockCardOnboarding.onboardingId = null
+            mockCardOnboarding.onboardingStep = 'EMAIL_SEND'
+            mockGetCurrentRoute.mockReturnValue(undefined)
+        })
+
+        it('opens the setup checklist while onboarding is in progress, without replacing the screen', async () => {
+            mockCardOnboarding.onboardingId = 'ob_1'
+            mockCardOnboarding.onboardingStep = 'VERIFICATION'
+
+            await openOnboardingStatus()
+
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus', params: {} },
+            })
+            expect(vi.mocked(StackActions.replace)).not.toHaveBeenCalled()
+        })
+
+        it('leaves the checklist alone when it is already open', async () => {
+            mockCardOnboarding.onboardingId = 'ob_1'
+            mockCardOnboarding.onboardingStep = 'VERIFICATION'
+            mockGetCurrentRoute.mockReturnValue({
+                name: 'CardOnboardingStatus',
+            })
+
+            await openOnboardingStatus()
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(vi.mocked(StackActions.replace)).not.toHaveBeenCalled()
+        })
+
+        it('opens the card home once onboarding is complete', async () => {
+            mockCardOnboarding.onboardingId = 'ob_1'
+            mockCardOnboarding.onboardingStep = 'COMPLETED'
+
+            await openOnboardingStatus()
+
+            expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+                'TabBar',
+                { screen: 'Home', params: { screen: 'PeraCardAccount' } },
+            )
+        })
+
+        it('keeps the intro when this device has no onboarding', async () => {
+            await openOnboardingStatus()
+
+            expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+                'PeraCard',
+                { screen: 'PeraCardIntro' },
+            )
         })
     })
 

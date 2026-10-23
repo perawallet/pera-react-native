@@ -31,10 +31,13 @@ import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusSc
 import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
 import type { CardOnboardingStackParamList } from './types'
+import { useClearPasswordOnExit } from '../../hooks/useClearPasswordOnExit'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
 
 export const CardOnboardingStackNavigator = () => {
+    useClearPasswordOnExit()
+
     return (
         <Stack.Navigator
             initialRouteName='CardOnboardingEmail'

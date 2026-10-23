@@ -22,7 +22,11 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { OnboardingStep, type CardUxState } from '../models'
+import {
+    INITIAL_LOGIN_ATTEMPTS,
+    OnboardingStep,
+    type CardUxState,
+} from '../models'
 
 const STORE_NAME = 'card-store'
 
@@ -33,6 +37,8 @@ const initialState = {
     email: null,
     countryIso: null,
     verificationCode: null,
+    password: null,
+    loginAttempts: INITIAL_LOGIN_ATTEMPTS,
     codeVerificationError: null,
     phoneCountryCode: null,
     phoneNumber: null,
@@ -105,6 +111,24 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
+            setPassword: password => set({ password }),
+            recordLoginAttempt: ({ isAutomatic, at }) =>
+                set(state => ({
+                    loginAttempts: {
+                        ...state.loginAttempts,
+                        automatic:
+                            state.loginAttempts.automatic +
+                            (isAutomatic ? 1 : 0),
+                        lastAt: at,
+                    },
+                })),
+            markLoginLocked: () =>
+                set(state => ({
+                    password: null,
+                    loginAttempts: { ...state.loginAttempts, isLocked: true },
+                })),
+            clearLoginSecrets: () =>
+                set({ password: null, loginAttempts: INITIAL_LOGIN_ATTEMPTS }),
             setCodeVerificationError: target =>
                 set({ codeVerificationError: target }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
@@ -170,6 +194,8 @@ export const useCardStore: UseBoundStore<
                     email: initialState.email,
                     countryIso: initialState.countryIso,
                     verificationCode: initialState.verificationCode,
+                    password: initialState.password,
+                    loginAttempts: initialState.loginAttempts,
                     codeVerificationError: initialState.codeVerificationError,
                     phoneCountryCode: initialState.phoneCountryCode,
                     phoneNumber: initialState.phoneNumber,
@@ -189,8 +215,8 @@ export const useCardStore: UseBoundStore<
             storage: () => getProvider().keyValueStorage,
             version: 1,
             migrate: migrateCardUxState,
-            // `verificationCode` is intentionally omitted — a transient OTP
-            // that should never be written to disk.
+            // `verificationCode`, `password` and `loginAttempts` are
+            // intentionally omitted: secrets and their budget never touch disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
             // omitted: KYC PII must not sit in unencrypted MMKV. The trade-off
             // is that a mid-onboarding resume re-prompts for them.
