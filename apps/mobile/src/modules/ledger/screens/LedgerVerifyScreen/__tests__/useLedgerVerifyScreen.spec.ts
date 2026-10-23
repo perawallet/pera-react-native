@@ -22,6 +22,7 @@ import {
     addressCodecs,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -44,8 +45,12 @@ const {
     mockConnect,
     mockDisconnect,
     mockSheetRequest,
+    mockErrorPreset,
+    mockProve,
     handoff,
 } = vi.hoisted(() => ({
+    mockProve: vi.fn(),
+    mockErrorPreset: vi.fn(),
     handoff: { isHandoffTab: false, closeHandoffTab: vi.fn() },
     mockVerify: vi.fn(),
     mockExit: vi.fn(),
@@ -100,7 +105,10 @@ vi.mock('@modules/ledger/utils', async () => ({
     ...(await vi.importActual<
         typeof import('../../../utils/serializedLedgerAccounts')
     >('../../../utils/serializedLedgerAccounts')),
-    getLedgerErrorPreset: () => ({ title: 't', body: 'b' }),
+    ...(await vi.importActual<
+        typeof import('../../../utils/requireLedgerProvider')
+    >('../../../utils/requireLedgerProvider')),
+    getLedgerErrorPreset: mockErrorPreset,
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -131,6 +139,42 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
             }
         },
         classifyLedgerError: (e: unknown) => e as Error,
+        // Stand-ins for the claim helpers; packages/ledger's own spec covers
+        // them and the device read behind `proveLedgerHolders`.
+        ledgerHolderClaim: ({
+            id,
+            accountIndex,
+            addresses,
+        }: {
+            id: string
+            accountIndex: number
+            addresses: Record<string, string>
+        }) => {
+            const chainId = ['algorand', 'ethereum'].find(
+                chain => addresses[chain] !== undefined,
+            )
+            return chainId
+                ? {
+                      holderId: id,
+                      chainId,
+                      accountIndex,
+                      address: addresses[chainId],
+                  }
+                : undefined
+        },
+        isLedgerClaimMetBy: (claim: { address: string }, address: string) =>
+            claim.address.toLowerCase() === address.toLowerCase(),
+        ledgerClaimsByChain: (claims: Array<{ chainId: string }>) => {
+            const byChain = new Map<string, typeof claims>()
+            for (const claim of claims) {
+                byChain.set(claim.chainId, [
+                    ...(byChain.get(claim.chainId) ?? []),
+                    claim,
+                ])
+            }
+            return byChain
+        },
+        proveLedgerHolders: mockProve,
         withLedgerConnectionTimeout: <T>(p: Promise<T>, op: string) =>
             withTimeout(p, 20_000, op),
         withLedgerConfirmationTimeout: <T>(p: Promise<T>, op: string) =>
@@ -202,6 +246,12 @@ beforeEach(() => {
         }),
     )
     mockSheetRequest.mockResolvedValue(true)
+    mockErrorPreset.mockReturnValue({
+        kind: 'connection_failed',
+        title: 't',
+        body: 'b',
+        isRetryable: true,
+    })
     handoff.isHandoffTab = false
     useAccountsStore.getState().setAccounts([])
 })
@@ -871,6 +921,33 @@ describe('useLedgerVerifyScreen', () => {
             })
             return result
         }
+        // The same-wallet sheet's props, one entry per time it was shown.
+        const sameWalletPrompts = () =>
+            mockSheetRequest.mock.calls.map(
+                ([request]) =>
+                    (
+                        request as {
+                            contents: { props: Record<string, unknown> }
+                        }
+                    ).contents.props,
+            )
+
+        // The device reads `LEDGER0` at every index in the Algorand app.
+        const proveAgainstDevice = async ({
+            claims,
+        }: {
+            claims: Array<{ holderId: string; address: string }>
+        }) =>
+            new Set(
+                claims
+                    .filter(claim => claim.address === 'LEDGER0')
+                    .map(claim => claim.holderId),
+            )
+
+        beforeEach(() => {
+            mockSheetRequest.mockResolvedValue('read')
+            mockProve.mockImplementation(proveAgainstDevice)
+        })
 
         beforeEach(() => {
             if (!addressCodecs.has('ethereum')) {
@@ -892,7 +969,9 @@ describe('useLedgerVerifyScreen', () => {
         it('verifies on the Ethereum app and creates a hardware account holding the device address', async () => {
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
+            await waitFor(() => expect(mockExit).toHaveBeenCalled())
             expect(mockConnect).toHaveBeenCalledWith('dev', 'ethereum')
+            expect(mockSheetRequest).not.toHaveBeenCalled()
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             expect(accounts[0].custody).toMatchObject({
@@ -905,11 +984,30 @@ describe('useLedgerVerifyScreen', () => {
             expect(accounts[0].chains.algorand).toBeUndefined()
         })
 
-        it("attaches the entry to the device's account at that index instead of adding a second account", async () => {
+        it("attaches the entry to the device's account once the Algorand app reads that account's address", async () => {
             useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
+            await waitFor(() =>
+                expect(mockSetConfetti).toHaveBeenCalledWith(true),
+            )
+            expect(sameWalletPrompts()).toEqual([
+                { appName: 'Algorand', failure: null },
+            ])
+            expect(mockProve).toHaveBeenCalledExactlyOnceWith({
+                provider: expect.objectContaining({ connect: mockConnect }),
+                deviceId: 'dev',
+                chainId: 'algorand',
+                claims: [
+                    {
+                        holderId: 'hw-0',
+                        chainId: 'algorand',
+                        accountIndex: 0,
+                        address: 'LEDGER0',
+                    },
+                ],
+            })
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             expect(accounts[0].id).toBe('hw-0')
@@ -918,7 +1016,166 @@ describe('useLedgerVerifyScreen', () => {
             expect(accounts[0].chains.ethereum?.address).toBe(
                 ETH_LEDGER_0.toLowerCase(),
             )
-            expect(mockSetConfetti).toHaveBeenCalledWith(true)
+        })
+
+        it("adds a separate account when the device's Algorand address at that index is another seed's", async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+            mockProve.mockResolvedValue(new Set())
+
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            await waitFor(() =>
+                expect(useAccountsStore.getState().accounts).toHaveLength(2),
+            )
+            const [held, created] = useAccountsStore.getState().accounts
+            expect(held.chains.ethereum).toBeUndefined()
+            expect(created).toMatchObject({
+                name: 'ledger.default_account_name#2',
+                custody: { kind: 'hardware', accountIndex: 0 },
+                chains: { ethereum: { address: ETH_LEDGER_0.toLowerCase() } },
+            })
+            expect(created.chains.algorand).toBeUndefined()
+        })
+
+        it("joins without a prompt or a second read when the account's address in the same device app was just verified", async () => {
+            if (!addressCodecs.has('base')) {
+                addressCodecs.register({
+                    ...addressCodecs.get('ethereum'),
+                    chainId: 'base',
+                })
+            }
+            useAccountsStore.getState().setAccounts([
+                {
+                    ...ledgerOnAlgorand(0),
+                    chains: {
+                        ethereum: { address: ETH_LEDGER_0.toLowerCase() },
+                    },
+                } as WalletAccount,
+            ])
+            routeParams.current = {
+                chainId: 'base',
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived(ETH_LEDGER_0, 0) },
+                ],
+            }
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await waitFor(() =>
+                expect(result.current.areAllVerified).toBe(true),
+            )
+
+            act(() => {
+                result.current.handleAdd()
+            })
+
+            await waitFor(() =>
+                expect(mockSetConfetti).toHaveBeenCalledWith(true),
+            )
+            expect(mockSheetRequest).not.toHaveBeenCalled()
+            expect(mockProve).not.toHaveBeenCalled()
+            const [account, ...rest] = useAccountsStore.getState().accounts
+            expect(rest).toEqual([])
+            expect(account.id).toBe('hw-0')
+            expect(account.chains.base?.address).toBe(
+                ETH_LEDGER_0.toLowerCase(),
+            )
+        })
+
+        it('asks again with the classified failure, logged, and adds a separate account when the user chooses to', async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const readError = new Error('CLA_NOT_SUPPORTED')
+            const appNotOpen = {
+                kind: 'app_not_open',
+                title: 'Open the app',
+                body: 'Open the Algorand app on your Ledger.',
+                isRetryable: true,
+            }
+            mockErrorPreset.mockReturnValue(appNotOpen)
+            mockSheetRequest
+                .mockResolvedValueOnce('read')
+                .mockResolvedValueOnce('separate')
+            mockProve.mockRejectedValue(readError)
+
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            await waitFor(() =>
+                expect(useAccountsStore.getState().accounts).toHaveLength(2),
+            )
+            expect(mockErrorPreset).toHaveBeenCalledWith(
+                readError,
+                expect.any(Function),
+                'Algorand',
+            )
+            expect(warn).toHaveBeenCalledWith(
+                'Ledger same-wallet read failed',
+                { chainId: 'algorand', error: readError },
+            )
+            expect(sameWalletPrompts()).toEqual([
+                { appName: 'Algorand', failure: null },
+                { appName: 'Algorand', failure: appNotOpen },
+            ])
+            expect(
+                useAccountsStore.getState().accounts[0].chains.ethereum,
+            ).toBeUndefined()
+        })
+
+        it('attaches once a retry finds the Algorand app open', async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+            mockProve.mockRejectedValueOnce(new Error('Ethereum app open'))
+
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            await waitFor(() =>
+                expect(
+                    useAccountsStore.getState().accounts[0].chains.ethereum
+                        ?.address,
+                ).toBe(ETH_LEDGER_0.toLowerCase()),
+            )
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            expect(sameWalletPrompts()).toHaveLength(2)
+            expect(mockProve).toHaveBeenCalledTimes(2)
+        })
+
+        it('reports reading the device while the Algorand app reads, and stops after', async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+            let answer: (proven: Set<string>) => void = () => {}
+            mockProve.mockImplementation(
+                () =>
+                    new Promise<Set<string>>(resolve => {
+                        answer = resolve
+                    }),
+            )
+
+            const result = await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            await waitFor(() =>
+                expect(result.current.isReadingDevice).toBe(true),
+            )
+            await act(async () => {
+                answer(new Set(['hw-0']))
+            })
+            await waitFor(() =>
+                expect(mockSetConfetti).toHaveBeenCalledWith(true),
+            )
+            expect(result.current.isReadingDevice).toBe(false)
+        })
+
+        it('writes nothing when the user cancels the same-wallet prompt', async () => {
+            useAccountsStore.getState().setAccounts([ledgerOnAlgorand(0)])
+            mockSheetRequest.mockResolvedValue(undefined)
+
+            await importOnEthereum(derived(ETH_LEDGER_0, 0))
+
+            await waitFor(() => expect(mockSheetRequest).toHaveBeenCalled())
+            await act(async () => {})
+            expect(useAccountsStore.getState().accounts).toEqual([
+                ledgerOnAlgorand(0),
+            ])
+            expect(mockProve).not.toHaveBeenCalled()
+            expect(mockExit).not.toHaveBeenCalled()
         })
 
         it('names only the accounts it creates', async () => {
@@ -929,6 +1186,10 @@ describe('useLedgerVerifyScreen', () => {
                 derived(ETH_LEDGER_1, 1),
             )
 
+            await waitFor(() =>
+                expect(mockSetConfetti).toHaveBeenCalledWith(true),
+            )
+            expect(mockProve).toHaveBeenCalledOnce()
             const created = useAccountsStore
                 .getState()
                 .accounts.find(a => a.id !== 'hw-0')

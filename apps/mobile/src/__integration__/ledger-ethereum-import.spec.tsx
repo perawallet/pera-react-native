@@ -11,8 +11,10 @@
  */
 
 // The Ledger import runs on the chain the user picks: discovery, verification
-// and the account it writes all use that chain, and a device position the
-// wallet already holds gains the chain instead of becoming a second account.
+// and the account it writes all use that chain. A device position the wallet
+// already holds gains the chain once the device reads that account's address
+// in its own chain's app; another seed behind the same device id gets its own
+// account.
 
 import {
     afterAll,
@@ -45,7 +47,7 @@ import {
     LedgerSelectAccountsScreen,
     LedgerVerifyScreen,
 } from '@modules/ledger'
-import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
 const RPC_URL = 'https://mainnet.rpc.test/'
@@ -108,6 +110,30 @@ const renderEthereumImport = () =>
             { name: 'LedgerTroubleshooting', component: () => null },
         ],
     })
+
+const ledgerOnAlgorand = (address: string) => ({
+    id: 'ledger-algorand',
+    name: 'Ledger 1',
+    custody: {
+        kind: 'hardware' as const,
+        device: {
+            manufacturer: 'ledger' as const,
+            deviceId: DEVICE_ID,
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble' as const,
+        },
+        accountIndex: 0,
+    },
+    chains: { algorand: { address } },
+})
+
+const confirmSameWallet = async () => {
+    fireEvent.click(
+        await waitFor(() => screen.getByTestId('ledger-same-wallet-confirm'), {
+            timeout: 5000,
+        }),
+    )
+}
 
 const importIndexZero = async () => {
     const row = await waitFor(
@@ -212,27 +238,14 @@ describe('Flow: import a Ledger account on Ethereum', () => {
         )
     })
 
-    it('Given the device already has an Algorand account at index 0, when the user imports index 0 on Ethereum, then that account gains the Ethereum entry', async () => {
-        useAccountsStore.getState().setAccounts([
-            {
-                id: 'ledger-algorand',
-                name: 'Ledger 1',
-                custody: {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: DEVICE_ID,
-                        deviceName: 'Ledger Nano X',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
-                },
-                chains: { algorand: { address: ALGORAND_ADDRESS } },
-            },
-        ])
+    it('Given the device already has an Algorand account at index 0, when the user imports index 0 on Ethereum and the Algorand app reads that address, then that account gains the Ethereum entry', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([ledgerOnAlgorand(ALGORAND_ADDRESS)])
         renderEthereumImport()
 
         await importIndexZero()
+        await confirmSameWallet()
 
         await waitFor(
             () => {
@@ -249,6 +262,40 @@ describe('Flow: import a Ledger account on Ethereum', () => {
                         ETHEREUM_ADDRESS,
                     ),
                 ).toBe(true)
+            },
+            { timeout: 10_000 },
+        )
+    })
+
+    it('Given an Algorand account at index 0 of the same device id from another seed, when the user imports index 0 on Ethereum, then the Ethereum address gets its own account', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([ledgerOnAlgorand(ALGO25_TEST_ADDRESS)])
+        renderEthereumImport()
+
+        await importIndexZero()
+        await confirmSameWallet()
+
+        await waitFor(
+            () => {
+                const accounts = useAccountsStore.getState().accounts
+                expect(accounts).toHaveLength(2)
+                const [held, created] = accounts
+                expect(held.id).toBe('ledger-algorand')
+                expect(held.chains.algorand?.address).toBe(ALGO25_TEST_ADDRESS)
+                expect(held.chains.ethereum).toBeUndefined()
+                expect(created.custody).toMatchObject({
+                    kind: 'hardware',
+                    accountIndex: 0,
+                    device: expect.objectContaining({ deviceId: DEVICE_ID }),
+                })
+                expect(
+                    sameAddress(
+                        created.chains.ethereum?.address,
+                        ETHEREUM_ADDRESS,
+                    ),
+                ).toBe(true)
+                expect(created.chains.algorand).toBeUndefined()
             },
             { timeout: 10_000 },
         )

@@ -65,6 +65,7 @@ import {
     findAddressHolder,
     findHardwareHolder,
     findPathHolder,
+    hardwareJoinCandidates,
     isKeyReferenced,
     seedMintableScheme,
     seedOf,
@@ -476,21 +477,6 @@ const rebindToHardware = (
     })
 }
 
-/** Whether `account` holds no address other than `chains`' on any chain both are on. */
-const holdsNoOtherAddress = (
-    account: WalletAccount,
-    chains: AccountChains,
-): boolean =>
-    Object.entries(chains).every(([id, entry]) => {
-        const chainId = id as ChainId
-        const held = chainAccountOf(account, chainId)
-        return (
-            !entry ||
-            !held ||
-            isSameAddress(chainId, held.address, entry.address)
-        )
-    })
-
 /** `holder` with `source`'s entries, keyless, on the chains it has none of. */
 const withEntriesOf = (
     holder: WalletAccount,
@@ -775,12 +761,12 @@ export const withDefaultChains = async <A extends WalletAccount>(
 }
 
 /**
- * Binds `current` to the device at `details`. When another hardware account
- * already sits at that Bluetooth device position holding the same addresses,
- * `current`'s entries join it and `current` goes, so one device position stays
- * one account. One holding another address on a shared chain is another seed
- * (a passphrase identity shares the device id), so `current` rebinds in place
- * instead, as it does over USB.
+ * Binds `current` to the device at `details`. Its entries join the hardware
+ * account `joinId` when that account sits at the Bluetooth device position on
+ * none of `current`'s chains, and `current` goes, so one device position stays
+ * one account. Otherwise `current` rebinds in place, as it always does over
+ * USB: passphrase seeds share a device id, so only a caller that read the
+ * joined account's address off the device may name it.
  */
 const moveToHardware = (
     get: StoreApi<AccountsState>['getState'],
@@ -788,17 +774,18 @@ const moveToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
     chainId: ChainId,
+    joinId: string | undefined,
 ): boolean => {
     if (!chainAccountOf(current, chainId)) return false
     const { accounts, selectedAccountId } = get()
-    const holder = findHardwareHolder(
-        accounts.filter(
-            account =>
-                account.id !== current.id &&
-                holdsNoOtherAddress(account, current.chains),
-        ),
-        details,
-    )
+    const holder =
+        joinId === undefined
+            ? undefined
+            : hardwareJoinCandidates(
+                  accounts.filter(account => account.id !== current.id),
+                  details,
+                  Object.keys(current.chains) as ChainId[],
+              ).find(account => account.id === joinId)
     if (holder) {
         const merged = withEntriesOf(holder, current)
         get().setAccounts(
@@ -1243,6 +1230,7 @@ export const useAccountsStore: UseBoundStore<
                 address,
                 name,
                 enabledBy = 'created',
+                joinId,
             ) => {
                 const scope = scopeOn(chainId)
                 const codec = addressCodecs.get(chainId)
@@ -1251,17 +1239,17 @@ export const useAccountsStore: UseBoundStore<
                 }
                 const normalized = codec.normalize(address)
                 const { accounts } = get()
-                // An account at the position holding another address here is
-                // another seed at the same device id, so it isn't joined.
-                const holder = findHardwareHolder(
-                    accounts.filter(account =>
-                        holdsNoOtherAddress(account, {
-                            [chainId]: { address: normalized },
-                        }),
-                    ),
+                const current = findHardwareHolder(
+                    accounts.filter(account => {
+                        const held = chainAccountOf(account, chainId)
+                        return (
+                            held !== undefined &&
+                            isSameAddress(chainId, held.address, normalized)
+                        )
+                    }),
                     details,
                 )
-                if (holder && chainAccountOf(holder, chainId)) return holder
+                if (current) return current
                 const addressHolder = findAddressHolder(
                     accounts,
                     scope,
@@ -1270,6 +1258,12 @@ export const useAccountsStore: UseBoundStore<
                 if (addressHolder) {
                     throw new DuplicateAccountError(normalized, addressHolder)
                 }
+                const holder =
+                    joinId === undefined
+                        ? undefined
+                        : hardwareJoinCandidates(accounts, details, [
+                              chainId,
+                          ]).find(account => account.id === joinId)
                 const entry = withEnablement({ address: normalized }, enabledBy)
                 if (!holder) {
                     const { accountIndex, ...device } = details
@@ -1409,6 +1403,7 @@ export const useAccountsStore: UseBoundStore<
                 id: string,
                 hardwareDetails: HardwareWalletDetails,
                 chainId: ChainId,
+                joinId?: string,
             ) => {
                 const current = get().accounts.find(a => a.id === id)
                 if (!current || !isWatchAccount(current)) return false
@@ -1418,12 +1413,14 @@ export const useAccountsStore: UseBoundStore<
                     current,
                     hardwareDetails,
                     chainId,
+                    joinId,
                 )
             },
             updateHardwareDetails: (
                 id: string,
                 hardwareDetails: HardwareWalletDetails,
                 chainId: ChainId,
+                joinId?: string,
             ) => {
                 const current = get().accounts.find(a => a.id === id)
                 if (!current || !isHardwareWalletAccount(current)) return false
@@ -1440,6 +1437,7 @@ export const useAccountsStore: UseBoundStore<
                     current,
                     hardwareDetails,
                     chainId,
+                    joinId,
                 )
             },
             resetState: () => set(initialState),

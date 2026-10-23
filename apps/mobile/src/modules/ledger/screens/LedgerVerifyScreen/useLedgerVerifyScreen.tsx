@@ -12,12 +12,12 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     buildAccount,
     chainAccountOf,
     findAccountByAddressOn,
     hardwareDetailsOf,
+    hardwareJoinCandidates,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
     isLedgerAccount,
@@ -35,15 +35,26 @@ import {
     type HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
+    isLedgerClaimMetBy,
+    ledgerClaimsByChain,
+    ledgerHolderClaim,
+    proveLedgerHolders,
     verifyLedgerAddress,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
     LedgerAddressMismatchError,
-    LedgerProviderNotFoundError,
     classifyLedgerError,
+    type LedgerHolderClaim,
 } from '@perawallet/wallet-core-ledger'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    logger,
+    type AppError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -57,8 +68,13 @@ import {
     deserializeSelectableAccount,
     getLedgerErrorPreset,
     type LedgerErrorPreset,
+    requireLedgerProvider,
 } from '@modules/ledger/utils'
 import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
+import {
+    LedgerSameWalletSheet,
+    type LedgerSameWalletChoice,
+} from '@modules/ledger/components/LedgerSameWalletSheet'
 import {
     useLedgerExpandedTabHandoff,
     useLedgerFlowChainId,
@@ -75,6 +91,8 @@ type UseLedgerVerifyScreenResult = {
     handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** True while the device reads an existing account's address before adding. */
+    isReadingDevice: boolean
     /** Set once accounts are added in a Ledger pairing tab, which then shows a result screen. */
     isAddedInHandoffTab: boolean
     handleDone: () => void
@@ -89,6 +107,39 @@ const authAccountOf = (
     s: LedgerSelectableAccount,
 ): HardwareWalletDerivedAccount =>
     s.kind === 'derived' ? s.account : s.authAccount
+
+/**
+ * An entry bound for a device position, the address the device verified for
+ * it, and the account it must not join.
+ */
+type JoinTarget = {
+    details: HardwareWalletDetails
+    chainIds: ChainId[]
+    verifiedAddress: string
+    movingId?: string
+}
+
+const claimsFor = (
+    accounts: readonly WalletAccount[],
+    { details, chainIds, movingId }: JoinTarget,
+): LedgerHolderClaim[] =>
+    hardwareJoinCandidates(
+        accounts.filter(account => account.id !== movingId),
+        details,
+        chainIds,
+    ).flatMap(holder => {
+        const addresses: Partial<Record<ChainId, string>> = {}
+        for (const id of Object.keys(holder.chains) as ChainId[]) {
+            const address = chainAccountOf(holder, id)?.address
+            if (address !== undefined) addresses[id] = address
+        }
+        const claim = ledgerHolderClaim({
+            id: holder.id,
+            accountIndex: holder.custody.accountIndex,
+            addresses,
+        })
+        return claim ? [claim] : []
+    })
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -113,6 +164,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const chainId = useLedgerFlowChainId()
     const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
     const [isAddedInHandoffTab, setIsAddedInHandoffTab] = useState(false)
+    const [isReadingDevice, setIsReadingDevice] = useState(false)
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
         const byIndex = new Map<number, HardwareWalletDerivedAccount>()
@@ -140,15 +192,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             setError(null)
             setVerifiedIndices(new Set())
 
-            const provider = getProvider().hardwareWalletRegistry.getProvider(
-                'ledger',
-                transportType,
-            )
-            if (!provider) {
-                throw new LedgerProviderNotFoundError(
-                    `No Ledger provider registered for transport "${transportType}"`,
-                )
-            }
+            const provider = requireLedgerProvider(transportType)
 
             const connectPromise = provider.connect(deviceId, chainId)
             try {
@@ -217,6 +261,60 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // Resolves the proven holder ids, or null when the user abandons the add.
+    const proveClaims = useCallback(
+        async (
+            claims: readonly LedgerHolderClaim[],
+        ): Promise<Nullable<ReadonlySet<string>>> => {
+            const proven = new Set<string>()
+            for (const [claimChain, chainClaims] of ledgerClaimsByChain(
+                claims,
+            )) {
+                const appName = ledgerAppNameFor(claimChain)
+                let failure: Nullable<LedgerErrorPreset> = null
+                for (;;) {
+                    const choice =
+                        await requestBottomSheet<LedgerSameWalletChoice>({
+                            contents: (
+                                <LedgerSameWalletSheet
+                                    appName={appName}
+                                    failure={failure}
+                                />
+                            ),
+                            options: {
+                                size: 'auto',
+                                enablePanDownToClose: true,
+                            },
+                        })
+                    if (choice === undefined) return null
+                    if (choice === 'separate') break
+                    setIsReadingDevice(true)
+                    try {
+                        const read = await proveLedgerHolders({
+                            provider: requireLedgerProvider(transportType),
+                            deviceId,
+                            chainId: claimChain,
+                            claims: chainClaims,
+                        })
+                        for (const holderId of read) proven.add(holderId)
+                        break
+                    } catch (err) {
+                        const readError = classifyLedgerError(err)
+                        logger.warn('Ledger same-wallet read failed', {
+                            chainId: claimChain,
+                            error: readError,
+                        })
+                        failure = getLedgerErrorPreset(readError, t, appName)
+                    } finally {
+                        setIsReadingDevice(false)
+                    }
+                }
+            }
+            return proven
+        },
+        [deviceId, requestBottomSheet, t, transportType],
+    )
+
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
         // Through the chain's codec: an EVM device reports a checksummed
@@ -240,6 +338,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }> = []
         const rebinds: Array<{
             id: string
+            address: string
             details: HardwareWalletDetails
         }> = []
 
@@ -282,6 +381,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     // same seed. The address match proves the same key.
                     rebinds.push({
                         id: collision.id,
+                        address: acc.address,
                         details: detailsFor(acc),
                     })
                 }
@@ -356,18 +456,69 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (!confirmed) return
         }
 
+        const movingTarget = (
+            id: string,
+            details: HardwareWalletDetails,
+            verifiedAddress: string,
+        ): JoinTarget => ({
+            details,
+            chainIds: Object.keys(
+                current.find(account => account.id === id)?.chains ?? {},
+            ) as ChainId[],
+            verifiedAddress,
+            movingId: id,
+        })
+        const targets = [
+            ...upgrades.map(({ id, details, address }) =>
+                movingTarget(id, details, address),
+            ),
+            ...rebinds.map(({ id, details, address }) =>
+                movingTarget(id, details, address),
+            ),
+            ...hardwareEntries.map(({ details, address }) => ({
+                details,
+                chainIds: [chainId],
+                verifiedAddress: address,
+            })),
+        ]
+        const targetClaims = targets.map(target => claimsFor(current, target))
+        // An address just verified in the same device app proves its claim.
+        const met = targetClaims.flatMap((claims, i) =>
+            claims
+                .filter(claim =>
+                    isLedgerClaimMetBy(claim, targets[i].verifiedAddress),
+                )
+                .map(claim => claim.holderId),
+        )
+        const pending = targetClaims
+            .flat()
+            .filter(claim => !met.includes(claim.holderId))
+        // Only an import with a claim left to read waits on the device.
+        const read =
+            pending.length > 0 ? await proveClaims(pending) : new Set<string>()
+        if (!read) return
+        const proven = new Set([...met, ...read])
+        const joinIdOf = (targetClaims: readonly LedgerHolderClaim[]) =>
+            targetClaims.find(claim => proven.has(claim.holderId))?.holderId
+
         const store = useAccountsStore.getState()
-        for (const upgrade of upgrades) {
+        upgrades.forEach((upgrade, i) => {
             store.upgradeWatchAccountToHardware(
                 upgrade.id,
                 upgrade.details,
                 chainId,
+                joinIdOf(targetClaims[i]),
             )
-        }
-        for (const rebind of rebinds) {
-            store.updateHardwareDetails(rebind.id, rebind.details, chainId)
-        }
-        for (const { address, details } of hardwareEntries) {
+        })
+        rebinds.forEach((rebind, i) => {
+            store.updateHardwareDetails(
+                rebind.id,
+                rebind.details,
+                chainId,
+                joinIdOf(targetClaims[upgrades.length + i]),
+            )
+        })
+        for (const [i, { address, details }] of hardwareEntries.entries()) {
             const before = useAccountsStore.getState().accounts.length
             store.addHardwareChainAccount(
                 details,
@@ -376,6 +527,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 t('ledger.default_account_name', {
                     number: nextDefaultNameNumber,
                 }),
+                undefined,
+                joinIdOf(targetClaims[upgrades.length + rebinds.length + i]),
             )
             // An entry joining the device's account keeps that account's
             // name, so only a created account uses up a number.
@@ -428,6 +581,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         deviceName,
         transportType,
         selectedAccounts,
+        proveClaims,
         requestBottomSheet,
         setAccounts,
         setSelectedAccountId,
@@ -480,6 +634,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isReadingDevice,
         isAddedInHandoffTab,
         handleDone,
         handleCancel: isHandoffTab ? handleDone : undefined,

@@ -79,6 +79,9 @@ vi.mock('@modules/ledger/utils', async () => ({
     ...(await vi.importActual<
         typeof import('../../../utils/serializedLedgerAccounts')
     >('../../../utils/serializedLedgerAccounts')),
+    ...(await vi.importActual<
+        typeof import('../../../utils/requireLedgerProvider')
+    >('../../../utils/requireLedgerProvider')),
     getLedgerErrorPreset: (_error: unknown, _t: unknown, appName: string) => ({
         title: 't',
         body: appName,

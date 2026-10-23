@@ -15,12 +15,10 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     type LedgerConnectionStatus,
     connectAndDiscoverAccounts,
     LedgerNoAccountsFoundError,
-    LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
 import {
@@ -34,8 +32,9 @@ import type { AddAccountStackParamList } from '@modules/onboarding'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getLedgerErrorPreset,
-    serializeLedgerAccount,
     type LedgerErrorPreset,
+    requireLedgerProvider,
+    serializeLedgerAccount,
 } from '@modules/ledger/utils'
 import {
     useLedgerExpandedTabHandoff,
@@ -96,16 +95,7 @@ export const useLedgerFetchAccountsScreen =
             setProgress({ current: 0, total: null })
 
             try {
-                const provider =
-                    getProvider().hardwareWalletRegistry.getProvider(
-                        'ledger',
-                        transportType,
-                    )
-                if (!provider) {
-                    throw new LedgerProviderNotFoundError(
-                        `No Ledger provider registered for transport "${transportType}"`,
-                    )
-                }
+                const provider = requireLedgerProvider(transportType)
 
                 const result = await connectAndDiscoverAccounts({
                     provider,

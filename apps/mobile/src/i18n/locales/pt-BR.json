@@ -3900,7 +3900,11 @@
             "upgrade_watch_body_zero": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
             "upgrade_watch_body_one": "Este endereço já está na sua wallet como conta de observação. Ao importá-lo, ele será atualizado para uma conta Ledger capaz de assinar transações. O nome e as configurações serão mantidos.",
             "upgrade_watch_body_other": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
-            "upgrade_watch_confirm": "Atualizar"
+            "upgrade_watch_confirm": "Atualizar",
+            "same_wallet_title": "Adicionar à sua conta Ledger existente?",
+            "same_wallet_body": "Uma conta deste Ledger já está na sua wallet. Abra o app {{appName}} no seu Ledger para que a Pera confirme que os dois endereços vêm do mesmo Ledger e depois continue. Ou adicione este endereço como uma conta separada.",
+            "same_wallet_confirm": "Continuar",
+            "same_wallet_separate": "Adicionar como conta separada"
         },
         "signing": {
             "cancel": "Cancelar",

@@ -44,7 +44,7 @@ describe('addHardwareChainAccount', () => {
         state().resetState()
     })
 
-    test("attaches the chain to the account already at the device's position", () => {
+    test("attaches the chain to the proven account at the device's position", () => {
         state().setAccounts([ledgerOnAlgorand()])
 
         const result = state().addHardwareChainAccount(
@@ -52,6 +52,8 @@ describe('addHardwareChainAccount', () => {
             ETHEREUM,
             EVM_KEY_ADDRESS.toUpperCase().replace('0X', '0x'),
             'Ledger 2',
+            undefined,
+            'ledger',
         )
 
         expect(state().accounts).toHaveLength(1)
@@ -63,6 +65,44 @@ describe('addHardwareChainAccount', () => {
             enabledAt: expect.any(Number),
             enabledBy: 'created',
         })
+    })
+
+    test("keeps an entry apart from the position's account until it is proven", () => {
+        state().setAccounts([ledgerOnAlgorand()])
+
+        const result = state().addHardwareChainAccount(
+            DEVICE,
+            ETHEREUM,
+            EVM_KEY_ADDRESS,
+            'Ledger 2',
+        )
+
+        expect(state().accounts).toHaveLength(2)
+        expect(result.id).not.toBe('ledger')
+        expect(result.custody).toMatchObject({
+            kind: 'hardware',
+            accountIndex: 0,
+        })
+        expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
+    })
+
+    test('creates an account when the named account already holds the chain', () => {
+        state().setAccounts([ledgerOnAlgorand()])
+
+        const result = state().addHardwareChainAccount(
+            DEVICE,
+            ALGORAND,
+            OTHER_ALGORAND_ADDRESS,
+            'Ledger 2',
+            undefined,
+            'ledger',
+        )
+
+        expect(state().accounts).toHaveLength(2)
+        expect(result.id).not.toBe('ledger')
+        expect(state().accounts[0].chains[ALGORAND]?.address).toBe(
+            ALGORAND_ADDRESS,
+        )
     })
 
     test('creates a hardware account on the chain when the device position has none', () => {
@@ -102,6 +142,9 @@ describe('addHardwareChainAccount', () => {
             { ...DEVICE, transportType: 'usb' },
             ETHEREUM,
             EVM_KEY_ADDRESS,
+            undefined,
+            undefined,
+            'usb-ledger',
         )
 
         expect(state().accounts).toHaveLength(2)
@@ -115,6 +158,9 @@ describe('addHardwareChainAccount', () => {
             { ...DEVICE, accountIndex: 1 },
             ETHEREUM,
             EVM_KEY_ADDRESS,
+            undefined,
+            undefined,
+            'ledger',
         )
 
         expect(state().accounts).toHaveLength(2)
@@ -212,6 +258,7 @@ describe('a device position stays one account', () => {
             'watch',
             DEVICE,
             ETHEREUM,
+            'ledger',
         )
 
         expect(upgraded).toBe(true)
@@ -225,6 +272,24 @@ describe('a device position stays one account', () => {
         expect(state().manualAccountOrder).toEqual(['ledger'])
     })
 
+    test("upgrades in place when the position's account isn't proven", () => {
+        const watch = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
+            { id: 'watch' },
+        )
+        state().setAccounts([ledgerOnAlgorand(), watch])
+
+        expect(
+            state().upgradeWatchAccountToHardware('watch', DEVICE, ETHEREUM),
+        ).toBe(true)
+
+        const [ledger, upgraded] = state().accounts
+        expect(ledger.chains[ETHEREUM]).toBeUndefined()
+        expect(upgraded.id).toBe('watch')
+        expect(upgraded.custody.kind).toBe('hardware')
+    })
+
     test("upgrades in place when the position's account holds another address on the chain", () => {
         const watch = buildTestAccount(
             TEST_CUSTODY.watch,
@@ -234,7 +299,12 @@ describe('a device position stays one account', () => {
         state().setAccounts([ledgerOnAlgorand(), watch])
 
         expect(
-            state().upgradeWatchAccountToHardware('watch', DEVICE, ALGORAND),
+            state().upgradeWatchAccountToHardware(
+                'watch',
+                DEVICE,
+                ALGORAND,
+                'ledger',
+            ),
         ).toBe(true)
 
         const [ledger, upgraded] = state().accounts
@@ -260,7 +330,7 @@ describe('a device position stays one account', () => {
         )
         state().setAccounts([stale, otherSeed])
 
-        state().updateHardwareDetails('stale', DEVICE, ALGORAND)
+        state().updateHardwareDetails('stale', DEVICE, ALGORAND, 'other-seed')
 
         const rebound = state().accounts.find(a => a.id === 'stale')
         expect(state().accounts).toHaveLength(2)
@@ -287,7 +357,12 @@ describe('a device position stays one account', () => {
         )
         state().setAccounts([stale, current])
 
-        const updated = state().updateHardwareDetails('stale', DEVICE, ALGORAND)
+        const updated = state().updateHardwareDetails(
+            'stale',
+            DEVICE,
+            ALGORAND,
+            'current',
+        )
 
         expect(updated).toBe(true)
         expect(state().accounts).toHaveLength(1)
@@ -321,6 +396,7 @@ describe('a device position stays one account', () => {
             'watch',
             { ...usbDevice, accountIndex: 0 },
             ETHEREUM,
+            'usb-ledger',
         )
 
         expect(state().accounts).toHaveLength(2)
@@ -328,6 +404,36 @@ describe('a device position stays one account', () => {
             id: 'watch',
             custody: { kind: 'hardware' },
         })
+    })
+
+    test("rebinds in place when the new position's account isn't proven", () => {
+        const stale = buildTestAccount(
+            {
+                ...TEST_CUSTODY.hardware,
+                device: { ...TEST_CUSTODY.hardware.device, deviceId: 'old' },
+            },
+            { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+            { id: 'stale' },
+        )
+        const current = buildTestAccount(
+            TEST_CUSTODY.hardware,
+            { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
+            { id: 'current' },
+        )
+        state().setAccounts([stale, current])
+
+        expect(state().updateHardwareDetails('stale', DEVICE, ALGORAND)).toBe(
+            true,
+        )
+
+        expect(state().accounts.map(({ id }) => id)).toEqual([
+            'stale',
+            'current',
+        ])
+        expect(state().accounts[0].custody).toMatchObject({
+            device: { deviceId: TEST_CUSTODY.hardware.device.deviceId },
+        })
+        expect(state().accounts[1].chains[ALGORAND]).toBeUndefined()
     })
 
     test('refuses to bind on a chain the account holds no entry on', () => {

@@ -236,10 +236,12 @@ describe('signMessageGroupOnDevice', () => {
         })
         const { provider, registry } = setup()
 
-        await expect(
-            sign(groupOf({ type: 'message', request }), registry),
-        ).rejects.toThrow(
-            new InvalidSignableDataError('the typed data is for another chain'),
+        // Matched by class and message: two error instances differ in their
+        // creation timestamps, so comparing against a fresh one is flaky.
+        const failure = sign(groupOf({ type: 'message', request }), registry)
+        await expect(failure).rejects.toBeInstanceOf(InvalidSignableDataError)
+        await expect(failure).rejects.toThrow(
+            'the typed data is for another chain',
         )
         expect(provider.connect).not.toHaveBeenCalled()
     })

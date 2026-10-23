@@ -218,30 +218,51 @@ export const findPathHolder = (
         )
     })
 
+type HardwarePosition = Pick<
+    HardwareWalletDetails,
+    'manufacturer' | 'deviceId' | 'accountIndex' | 'transportType'
+>
+
+// Only a Bluetooth id names one device: a USB id names a model, so two
+// devices on different seeds share it, and a USB position holds no account.
+const isAtHardwarePosition = (
+    account: WalletAccount,
+    details: HardwarePosition,
+): account is HardwareWalletAccount =>
+    details.transportType === 'ble' &&
+    hasCustody(account, 'hardware') &&
+    account.custody.accountIndex === details.accountIndex &&
+    account.custody.device.deviceId === details.deviceId &&
+    account.custody.device.transportType === 'ble' &&
+    account.custody.device.manufacturer === details.manufacturer
+
 /**
- * The hardware account at this device position, whatever chains it spans.
- * Keyed on the stored device id, so a re-paired device that rotated its id
- * reads as another device until a re-import rebinds it. Only a Bluetooth id
- * names one device: a USB id names a model, so two devices on different seeds
- * share it, and a USB position has no holder.
+ * The hardware account at this Bluetooth device position, whatever chains it
+ * spans. Keyed on the stored device id, so a re-paired device that rotated its
+ * id reads as another device until a re-import rebinds it.
  */
 export const findHardwareHolder = (
     accounts: readonly WalletAccount[],
-    details: Pick<
-        HardwareWalletDetails,
-        'manufacturer' | 'deviceId' | 'accountIndex' | 'transportType'
-    >,
+    details: HardwarePosition,
 ): HardwareWalletAccount | undefined =>
-    details.transportType !== 'ble'
-        ? undefined
-        : accounts.find(
-              (account): account is HardwareWalletAccount =>
-                  hasCustody(account, 'hardware') &&
-                  account.custody.accountIndex === details.accountIndex &&
-                  account.custody.device.deviceId === details.deviceId &&
-                  account.custody.device.transportType === 'ble' &&
-                  account.custody.device.manufacturer === details.manufacturer,
-          )
+    accounts.find(account => isAtHardwarePosition(account, details))
+
+/**
+ * The hardware accounts at this Bluetooth device position holding none of
+ * `chainIds`: those entries on `chainIds` could join. Passphrase seeds share a
+ * device id, so join one only once the device reads that account's address on
+ * a chain it already holds.
+ */
+export const hardwareJoinCandidates = (
+    accounts: readonly WalletAccount[],
+    details: HardwarePosition,
+    chainIds: readonly ChainId[],
+): HardwareWalletAccount[] =>
+    accounts.filter(
+        (account): account is HardwareWalletAccount =>
+            isAtHardwarePosition(account, details) &&
+            chainIds.every(chainId => !chainAccountOf(account, chainId)),
+    )
 
 /**
  * The lowest position of wallet `walletId` (by account, then keyIndex) with no
