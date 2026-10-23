@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { AssetIcon } from '@components/AssetIcon'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { PWText, PWView } from '@components/core'
+import { useNetworkIcon } from '../NetworkIconProvider'
 import { useNetworkIconStack } from './useNetworkIconStack'
-import { useStyles } from './styles'
+import { NETWORK_ICON_SIZE, useStyles } from './styles'
 
 export type NetworkIconStackProps = {
     chainIds: ChainId[]
 }
 
-// The app ships no chain logos, so each network shows its native asset's icon.
 export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
     const styles = useStyles()
+    const NetworkIcon = useNetworkIcon()
     const { visibleChainIds, hiddenCount } = useNetworkIconStack(chainIds)
 
     return (
@@ -32,22 +31,29 @@ export const NetworkIconStack = ({ chainIds }: NetworkIconStackProps) => {
                 <PWView
                     key={chainId}
                     testID={`network_icon_${chainId}`}
-                    style={index > 0 ? styles.stackedNetworkIcon : undefined}
+                    style={[
+                        styles.networkIcon,
+                        index > 0 ? styles.stackedNetworkIcon : undefined,
+                    ]}
                 >
-                    <AssetIcon
-                        asset={nativeAssetFor(chainId)}
-                        size='xs'
+                    <NetworkIcon
+                        chainId={chainId}
+                        size={NETWORK_ICON_SIZE}
                     />
                 </PWView>
             ))}
             {hiddenCount > 0 && (
-                <PWText
-                    variant='caption'
-                    style={styles.subtitle}
+                <PWView
+                    style={[styles.moreNetworks, styles.stackedNetworkIcon]}
                     testID='network_icon_stack_more'
                 >
-                    {`+${hiddenCount}`}
-                </PWText>
+                    <PWText
+                        variant='captionMedium'
+                        style={styles.moreNetworksLabel}
+                    >
+                        {`+${hiddenCount}`}
+                    </PWText>
+                </PWView>
             )}
         </PWView>
     )

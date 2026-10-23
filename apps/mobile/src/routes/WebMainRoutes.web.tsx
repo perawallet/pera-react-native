@@ -59,6 +59,7 @@ import {
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
+import { ChainNetworkIconProvider } from '@modules/chain-ui/shell'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
 import { MultisigOverlays } from '@modules/multisig/shell'
@@ -117,185 +118,189 @@ export const WebMainRoutes = ({
                 handleLedgerTabExit(navigationRef.getCurrentRoute()?.name)
             }
         >
-            {/* Outside ConnectionsProvider, as native's BottomSheetModalProvider
+            <ChainNetworkIconProvider>
+                {/* Outside ConnectionsProvider, as native's BottomSheetModalProvider
                 sits above the provider: SigningOverlays needs the sheet host
                 to survive a nav-tree crash. */}
-            <BottomSheetManager />
-            {/* Wraps only the nav tree: its WalletConnectErrorBoundary
+                <BottomSheetManager />
+                {/* Wraps only the nav tree: its WalletConnectErrorBoundary
                 REPLACES children on an uncaught throw, so the sheet host and
                 SigningOverlays stay outside. */}
-            <ConnectionsProvider>
-                <RootStack.Navigator
-                    screenOptions={{
-                        headerShown: false,
-                        ...SCREEN_ANIMATION_CONFIG,
-                    }}
-                    screenListeners={screenListeners}
-                >
-                    <RootStack.Screen
-                        name='TabBar'
-                        component={TabBarStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='ScanQR'
-                        component={ScanQRScreen}
-                    />
-                    <RootStack.Screen
-                        name='CameraAccess'
-                        component={CameraAccessScreen}
-                    />
-                    <RootStack.Screen
-                        name='Settings'
-                        component={SettingsStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='Contacts'
-                        component={ContactsStackNavigator}
-                    />
-                    {isAllowed({ anyChain: 'assetSearch' }) && (
-                        <RootStack.Screen
-                            name='Search'
-                            component={SearchStackNavigator}
-                        />
-                    )}
-                    {MESSAGES_REQUIREMENTS.some(isAllowed) && (
-                        <RootStack.Screen
-                            name='Messages'
-                            component={MessagesStackNavigator}
-                        />
-                    )}
-                    {isPeraCardEnabled && (
-                        <>
-                            <RootStack.Screen
-                                name='PeraCard'
-                                component={PeraCardStackNavigator}
-                            />
-                            {peraCardFlowScreens.map(screen => (
-                                <RootStack.Screen
-                                    key={screen.name}
-                                    name={screen.name}
-                                    options={screen.options}
-                                    layout={fullScreenLayout}
-                                    component={screen.component}
-                                />
-                            ))}
-                        </>
-                    )}
-                    {isAllowed({
-                        platform: 'staking',
-                        anyChain: 'staking',
-                    }) && (
-                        <RootStack.Screen
-                            name='Staking'
-                            options={headeredScreen('staking.title')}
-                            layout={fullScreenLayout}
-                            component={GatedStakingScreen}
-                        />
-                    )}
-                    <RootStack.Screen
-                        name='AddAccount'
-                        component={AddAccountStackNavigator}
-                    />
-                    {isAllowed({ anyChain: 'mnemonicBackup' }) && (
-                        <RootStack.Screen
-                            name='BackupWallet'
-                            component={BackupStackNavigator}
-                            options={{ headerShown: false }}
-                        />
-                    )}
-                    <RootStack.Screen
-                        name='GroupTransactionList'
-                        layout={fullScreenLayout}
-                        component={GroupTransactionListScreen}
-                        options={headeredScreen(
-                            'transactions.group.group_number',
-                        )}
-                    />
-                    <RootStack.Screen
-                        name='TransactionDetails'
-                        layout={fullScreenLayout}
-                        component={TransactionDetailsScreen}
-                        options={headeredScreen('signing.transactions.details')}
-                    />
-                    <RootStack.Screen
-                        name='BannersCarouselModal'
-                        component={BannersCarouselModalScreen}
-                        options={{
-                            presentation: 'modal',
+                <ConnectionsProvider>
+                    <RootStack.Navigator
+                        screenOptions={{
                             headerShown: false,
+                            ...SCREEN_ANIMATION_CONFIG,
                         }}
-                    />
-                    {isAllowed({
-                        platform: 'sharedAccounts',
-                        anyChain: 'multisig',
-                    }) && (
+                        screenListeners={screenListeners}
+                    >
                         <RootStack.Screen
-                            name='Multisig'
-                            component={MultisigStackNavigator}
+                            name='TabBar'
+                            component={TabBarStackNavigator}
                         />
-                    )}
-                    {isAllowed(rekeyRequirement) && (
                         <RootStack.Screen
-                            name='UndoRekey'
-                            component={UndoRekeyStackNavigator}
+                            name='ScanQR'
+                            component={ScanQRScreen}
                         />
-                    )}
-                    {isAllowed({
-                        ...rekeyRequirement,
-                        anyChain: 'ledger',
-                    }) && (
                         <RootStack.Screen
-                            name='RekeyToLedger'
-                            component={RekeyToLedgerStackNavigator}
+                            name='CameraAccess'
+                            component={CameraAccessScreen}
                         />
-                    )}
-                    {isAllowed(rekeyRequirement) && (
                         <RootStack.Screen
-                            name='RekeyToStandard'
-                            component={RekeyToStandardStackNavigator}
+                            name='Settings'
+                            component={SettingsStackNavigator}
                         />
-                    )}
-                    {isAllowed({
-                        ...rekeyRequirement,
-                        anyChain: 'quantumAccounts',
-                    }) && (
                         <RootStack.Screen
-                            name='RekeyToQuantum'
-                            component={RekeyToQuantumStackNavigator}
+                            name='Contacts'
+                            component={ContactsStackNavigator}
                         />
-                    )}
-                    {isAllowed({
-                        ...rekeyRequirement,
-                        anyChain: 'multisig',
-                    }) && (
+                        {isAllowed({ anyChain: 'assetSearch' }) && (
+                            <RootStack.Screen
+                                name='Search'
+                                component={SearchStackNavigator}
+                            />
+                        )}
+                        {MESSAGES_REQUIREMENTS.some(isAllowed) && (
+                            <RootStack.Screen
+                                name='Messages'
+                                component={MessagesStackNavigator}
+                            />
+                        )}
+                        {isPeraCardEnabled && (
+                            <>
+                                <RootStack.Screen
+                                    name='PeraCard'
+                                    component={PeraCardStackNavigator}
+                                />
+                                {peraCardFlowScreens.map(screen => (
+                                    <RootStack.Screen
+                                        key={screen.name}
+                                        name={screen.name}
+                                        options={screen.options}
+                                        layout={fullScreenLayout}
+                                        component={screen.component}
+                                    />
+                                ))}
+                            </>
+                        )}
+                        {isAllowed({
+                            platform: 'staking',
+                            anyChain: 'staking',
+                        }) && (
+                            <RootStack.Screen
+                                name='Staking'
+                                options={headeredScreen('staking.title')}
+                                layout={fullScreenLayout}
+                                component={GatedStakingScreen}
+                            />
+                        )}
                         <RootStack.Screen
-                            name='RekeyToShared'
-                            component={RekeyToSharedStackNavigator}
+                            name='AddAccount'
+                            component={AddAccountStackNavigator}
                         />
-                    )}
-                    {isAllowed(rekeyRequirement) && (
+                        {isAllowed({ anyChain: 'mnemonicBackup' }) && (
+                            <RootStack.Screen
+                                name='BackupWallet'
+                                component={BackupStackNavigator}
+                                options={{ headerShown: false }}
+                            />
+                        )}
                         <RootStack.Screen
-                            name='RescanRekeyed'
-                            component={RescanRekeyedStackNavigator}
+                            name='GroupTransactionList'
+                            layout={fullScreenLayout}
+                            component={GroupTransactionListScreen}
+                            options={headeredScreen(
+                                'transactions.group.group_number',
+                            )}
                         />
-                    )}
-                </RootStack.Navigator>
-            </ConnectionsProvider>
-            {/* Native mounts this in RootComponent, which this shell replaces.
+                        <RootStack.Screen
+                            name='TransactionDetails'
+                            layout={fullScreenLayout}
+                            component={TransactionDetailsScreen}
+                            options={headeredScreen(
+                                'signing.transactions.details',
+                            )}
+                        />
+                        <RootStack.Screen
+                            name='BannersCarouselModal'
+                            component={BannersCarouselModalScreen}
+                            options={{
+                                presentation: 'modal',
+                                headerShown: false,
+                            }}
+                        />
+                        {isAllowed({
+                            platform: 'sharedAccounts',
+                            anyChain: 'multisig',
+                        }) && (
+                            <RootStack.Screen
+                                name='Multisig'
+                                component={MultisigStackNavigator}
+                            />
+                        )}
+                        {isAllowed(rekeyRequirement) && (
+                            <RootStack.Screen
+                                name='UndoRekey'
+                                component={UndoRekeyStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...rekeyRequirement,
+                            anyChain: 'ledger',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToLedger'
+                                component={RekeyToLedgerStackNavigator}
+                            />
+                        )}
+                        {isAllowed(rekeyRequirement) && (
+                            <RootStack.Screen
+                                name='RekeyToStandard'
+                                component={RekeyToStandardStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...rekeyRequirement,
+                            anyChain: 'quantumAccounts',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToQuantum'
+                                component={RekeyToQuantumStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...rekeyRequirement,
+                            anyChain: 'multisig',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToShared'
+                                component={RekeyToSharedStackNavigator}
+                            />
+                        )}
+                        {isAllowed(rekeyRequirement) && (
+                            <RootStack.Screen
+                                name='RescanRekeyed'
+                                component={RescanRekeyedStackNavigator}
+                            />
+                        )}
+                    </RootStack.Navigator>
+                </ConnectionsProvider>
+                {/* Native mounts this in RootComponent, which this shell replaces.
                 Outside the provider so a nav-tree crash cannot take the
                 blocking prompt down. */}
-            <PromptContainer />
-            {/* Sibling of ConnectionsProvider: nothing else on web watches the
+                <PromptContainer />
+                {/* Sibling of ConnectionsProvider: nothing else on web watches the
                 signing queue, so a connection-delivered sign request would enqueue
                 and never render. MultisigOverlays presents the shared-account
                 pending-signatures sheet; SwapOverlays is native-only. */}
-            <ErrorBoundary
-                onError={handleOverlayError}
-                FallbackComponent={OverlayErrorFallback}
-            >
-                <SigningOverlays />
-                <MultisigOverlays />
-            </ErrorBoundary>
+                <ErrorBoundary
+                    onError={handleOverlayError}
+                    FallbackComponent={OverlayErrorFallback}
+                >
+                    <SigningOverlays />
+                    <MultisigOverlays />
+                </ErrorBoundary>
+            </ChainNetworkIconProvider>
         </NavigationContainer>
     )
 }

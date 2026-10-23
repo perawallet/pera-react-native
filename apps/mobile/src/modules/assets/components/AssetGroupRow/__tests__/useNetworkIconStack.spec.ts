@@ -30,6 +30,14 @@ describe('useNetworkIconStack', () => {
         })
     })
 
+    it('shows exactly three networks with no "+N"', () => {
+        const { result } = renderHook(() =>
+            useNetworkIconStack(chains('algorand', 'ethereum', 'base')),
+        )
+
+        expect(result.current.hiddenCount).toBe(0)
+    })
+
     it('shows three networks and counts the rest', () => {
         const { result } = renderHook(() =>
             useNetworkIconStack(

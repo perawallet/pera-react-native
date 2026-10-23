@@ -13,7 +13,6 @@
 import React, { useMemo } from 'react'
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
-import { ChainBadge } from '@components/ChainBadge'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
 import {
@@ -40,9 +39,7 @@ export type AssetListItemViewProps = {
     chainId: ChainId
     /** The account chain's native asset, which shows its currency symbol. */
     isNativeAsset: boolean
-    /** Shown beside the name when the list spans chains. */
-    chainName?: string
-    /** Listed under its group: names its network instead of the chain badge. */
+    /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
@@ -62,7 +59,6 @@ const AssetListItemViewBase = ({
     holding,
     chainId,
     isNativeAsset,
-    chainName,
     isGroupMember = false,
     convertFiat,
     onPress,
@@ -155,11 +151,6 @@ const AssetListItemViewBase = ({
         <AssetItemView
             asset={asset}
             right={balance}
-            titleAccessory={
-                chainName && !isGroupMember ? (
-                    <ChainBadge name={chainName} />
-                ) : undefined
-            }
             subtitle={
                 isGroupMember ? <NetworkLabel chainId={chainId} /> : undefined
             }

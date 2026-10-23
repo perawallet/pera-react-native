@@ -417,7 +417,6 @@ describe('useAccountAssetList', () => {
             )
 
             expect(result.current.chainFilterOptions).toEqual([])
-            expect(result.current.showChainBadges).toBe(false)
         })
 
         it('offers All and one chip per chain the account is on', () => {
@@ -434,7 +433,6 @@ describe('useAccountAssetList', () => {
                 'account_details.assets.network_filter_all',
             )
             expect(result.current.selectedChainId).toBeNull()
-            expect(result.current.showChainBadges).toBe(true)
             expect(lastQuerySources()).toHaveLength(2)
         })
 
@@ -466,7 +464,6 @@ describe('useAccountAssetList', () => {
             expect(result.current.items.map(item => item.kind)).toEqual([
                 'holding',
             ])
-            expect(result.current.showChainBadges).toBe(false)
         })
 
         it('folds grouped holdings under All', () => {

@@ -79,8 +79,6 @@ type UseAccountAssetListResult = {
     /** The chain the list is narrowed to; `null` is All. */
     selectedChainId: Nullable<ChainId>
     setSelectedChainId: (chainId: Nullable<ChainId>) => void
-    /** Rows name their network while the list spans chains. */
-    showChainBadges: boolean
     toggleGroupExpanded: (groupId: string) => void
     convertFiat: AssetFiatConverter
     isPending: boolean
@@ -469,7 +467,6 @@ export const useAccountAssetList = ({
         chainFilterOptions,
         selectedChainId,
         setSelectedChainId,
-        showChainBadges: selectedChainId === null && sources.length > 1,
         toggleGroupExpanded,
         convertFiat,
         isPending,
