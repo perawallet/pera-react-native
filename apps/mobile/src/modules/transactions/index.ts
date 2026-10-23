@@ -29,8 +29,6 @@ export type {
     SendTrailingSectionProps,
 } from './types/send-confirmation-display'
 export {
-    buildRecordListRows,
-    buildTransactionListRows,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,

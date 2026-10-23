@@ -24,7 +24,10 @@ import {
     type ChainScope,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
-import { useTransactionRecordsQuery } from '../useTransactionRecordsQuery'
+import {
+    MAX_RECORD_PAGE_READS,
+    useTransactionRecordsQuery,
+} from '../useTransactionRecordsQuery'
 
 const mocks = vi.hoisted(() => ({
     getTransactionHistoryWithPending: vi.fn(),
@@ -146,6 +149,108 @@ describe('useTransactionRecordsQuery', () => {
         )
         expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(2)
         expect(result.current.hasNextPage).toBe(true)
+    })
+
+    test('reads at most the cap per fetch, then asks for the next page itself', async () => {
+        for (let i = 1; i <= MAX_RECORD_PAGE_READS; i++) {
+            mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+                items: [],
+                next: { cursor: `c${i}` },
+            })
+        }
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [record('A', JAN_10)],
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(queryClient.getQueryCache().getAll()[0].state.data).toEqual(
+            expect.objectContaining({
+                pages: [
+                    {
+                        records: [],
+                        next: { cursor: `c${MAX_RECORD_PAGE_READS}` },
+                    },
+                    { records: [record('A', JAN_10)], next: null },
+                ],
+            }),
+        )
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenLastCalledWith(
+            ADDRESS,
+            SCOPE,
+            { cursor: `c${MAX_RECORD_PAGE_READS}` },
+        )
+    })
+
+    test('stops asking for pages after a failed one until a retry', async () => {
+        for (let i = 1; i <= MAX_RECORD_PAGE_READS; i++) {
+            mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+                items: [],
+                next: { cursor: `c${i}` },
+            })
+        }
+        mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(
+            new Error('history service refused'),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        const callsAtFailure =
+            mocks.getTransactionHistoryWithPending.mock.calls.length
+        expect(callsAtFailure).toBe(MAX_RECORD_PAGE_READS + 1)
+        expect(result.current.hasNextPage).toBe(true)
+
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [record('A', JAN_10)],
+        })
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
+            callsAtFailure + 1,
+        )
+    })
+
+    test('keeps fetchNextPage and refetch stable across renders', async () => {
+        mocks.getTransactionHistoryWithPending.mockResolvedValue({
+            items: [record('A', JAN_10)],
+        })
+
+        const { result, rerender } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        const { fetchNextPage, refetch } = result.current
+
+        rerender()
+
+        expect(result.current.fetchNextPage).toBe(fetchNextPage)
+        expect(result.current.refetch).toBe(refetch)
     })
 
     test('keeps only records that move the filtered asset', async () => {

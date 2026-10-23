@@ -220,6 +220,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    hasCachedHistoryRows: vi.fn(() => true),
     fetchTransactionHistory: vi.fn(() =>
         Promise.resolve({
             transactions: [],

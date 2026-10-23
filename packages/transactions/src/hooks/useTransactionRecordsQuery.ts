@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
 import type {
     ChainScope,
@@ -60,6 +60,13 @@ type RecordsPage = {
     next: Nullable<PageRef>
 }
 
+/**
+ * Backend pages one page fetch reads looking for a record the filters keep.
+ * Bounded so a long filtered stretch loads in steps: a failure keeps what was
+ * read, and an unmount stops it.
+ */
+export const MAX_RECORD_PAGE_READS = 5
+
 const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
     record.summary.amount?.assetRef.assetId === assetId ||
     (record.summary.balanceChanges ?? []).some(
@@ -91,7 +98,7 @@ export const useTransactionRecordsQuery = ({
             ? undefined
             : beforeDayMs + SECONDS_PER_DAY * 1000
 
-    // A record with no timestamp hasn't been mined, so no date range rules it out.
+    // A record with no timestamp has no time to rule it out by, so the date range keeps it.
     const isKept = (record: TransactionRecord): boolean =>
         (assetId === undefined || involvesAsset(record, assetId)) &&
         (record.timestamp === undefined ||
@@ -126,10 +133,9 @@ export const useTransactionRecordsQuery = ({
             }
 
             // A backend page can be empty and still have a next one, and a
-            // filtered page often is: an empty page would park the list on
-            // its skeleton with nothing on screen to scroll, so keep reading.
+            // filtered page often is, so read on up to the cap.
             let page = pageParam ?? undefined
-            for (;;) {
+            for (let read = 1; ; read++) {
                 signal.throwIfAborted()
                 const { items, next } = await getTransactionHistoryWithPending(
                     accountAddress,
@@ -145,7 +151,11 @@ export const useTransactionRecordsQuery = ({
                     )
                 const records = items.filter(isKept)
                 const nextPage = isPastRange ? undefined : next
-                if (records.length > 0 || !nextPage) {
+                if (
+                    records.length > 0 ||
+                    !nextPage ||
+                    read === MAX_RECORD_PAGE_READS
+                ) {
                     return { records, next: nextPage ?? null }
                 }
                 page = nextPage
@@ -162,15 +172,45 @@ export const useTransactionRecordsQuery = ({
         [query.data],
     )
 
+    // An empty list never fires `onEndReached`, so a capped read that found
+    // nothing would park the list on its skeleton. A failed page stops this
+    // until a retry.
+    const {
+        isFetched,
+        isFetching,
+        isError,
+        hasNextPage,
+        fetchNextPage,
+        refetch,
+    } = query
+    const hasNothingToShow = records.length === 0
+    useEffect(() => {
+        if (!isFetched || isFetching || isError) return
+        if (hasNothingToShow && hasNextPage) void fetchNextPage()
+    }, [
+        isFetched,
+        isFetching,
+        isError,
+        hasNothingToShow,
+        hasNextPage,
+        fetchNextPage,
+    ])
+
+    const handleFetchNextPage = useCallback(
+        () => void fetchNextPage(),
+        [fetchNextPage],
+    )
+    const handleRefetch = useCallback(() => void refetch(), [refetch])
+
     return {
         records,
         isLoading: query.isLoading,
-        isFetched: query.isFetched,
+        isFetched,
         isFetchingNextPage: query.isFetchingNextPage,
-        isError: query.isError,
+        isError,
         error: query.error,
-        hasNextPage: query.hasNextPage,
-        fetchNextPage: () => void query.fetchNextPage(),
-        refetch: () => void query.refetch(),
+        hasNextPage,
+        fetchNextPage: handleFetchNextPage,
+        refetch: handleRefetch,
     }
 }
