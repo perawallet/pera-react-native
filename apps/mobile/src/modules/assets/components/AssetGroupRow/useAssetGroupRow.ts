@@ -121,7 +121,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     return {
         icon: members[0]?.asset ?? null,
         verificationIcon: tier ? getVerificationIcon(tier) : null,
-        isSuspicious: tier === 'suspicious',
+        isSuspicious: tier === PeraAssetVerificationTier.suspicious,
         subtitle,
         chainIds,
         fiat,
