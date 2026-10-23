@@ -86,6 +86,11 @@ const isUserRejection = (error: Error): boolean =>
     error.name === 'UserCancelledError' ||
     dappRequestFailureOf(error) === 'user-rejected'
 
+// The one place a site's chain is compared: always against a chain the caller
+// passes, never a named one.
+const isOnChain = (connection: Eip1193Connection, chainId: ChainId): boolean =>
+    connection.metadata.chainId === chainId
+
 // EIP-3326 carries the target as `[{ chainId: '0x…' }]`.
 const requestedChainOf = (params: unknown): Eip155HexChainId | null => {
     const first: unknown = Array.isArray(params) ? params[0] : undefined
@@ -276,7 +281,9 @@ export const createEip1193ConnectionHandler = (
         const served = servedChains()
         const chain =
             served.find(
-                ({ scope }) => scope.chainId === existing?.metadata.chainId,
+                ({ scope }) =>
+                    existing !== undefined &&
+                    isOnChain(existing, scope.chainId),
             ) ?? served[0]
         if (!chain) {
             return release(
@@ -358,10 +365,7 @@ export const createEip1193ConnectionHandler = (
                 }
                 // Other tabs of the site learn the grant here; the requesting
                 // one also reads it off the answer.
-                if (
-                    existing &&
-                    existing.metadata.chainId !== chain.scope.chainId
-                ) {
+                if (existing && !isOnChain(existing, chain.scope.chainId)) {
                     await notifyOrigin(
                         origin,
                         EIP1193_EVENT.chainChanged,
@@ -635,14 +639,14 @@ export const createEip1193ConnectionHandler = (
         },
         restore,
         matchesChainScope: (connection, scope) =>
-            scope.chainId === connection.metadata.chainId,
+            isOnChain(connection, scope.chainId),
         methodsFor: () => [...EIP1193_PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const connection = await getConnectionById(id)
             if (!connection) return
             const origin = connection.origin.requesterOrigin
             if (notice.type === 'network-changed') {
-                if (notice.scope.chainId !== connection.metadata.chainId) return
+                if (!isOnChain(connection, notice.scope.chainId)) return
                 const hexChainId = eip155HexChainIdOf(notice.scope)
                 if (!hexChainId) return
                 await deps.transport.notify(origin, {
@@ -652,7 +656,7 @@ export const createEip1193ConnectionHandler = (
                 })
                 return
             }
-            if (notice.chainId !== connection.metadata.chainId) return
+            if (!isOnChain(connection, notice.chainId)) return
             if (!connection.accounts.some(a => notice.changed.includes(a))) {
                 return
             }

@@ -53,6 +53,16 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Matches whichever chain the handler was built for, never a named chain.',
     },
     {
+        file: 'packages/dapp/src/eip1193Handler.ts',
+        text: 'connection.metadata.chainId === chainId',
+        reason: "Checks a site's stored chain against whichever chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'apps/browser/src/content/eip1193-main.ts',
+        text: 'method === EIP1193_METHOD.chainId',
+        reason: 'Matches the eth_chainId method name, not a ChainId.',
+    },
+    {
         file: 'packages/walletconnect/src/v2/handler.ts',
         text: 'event.params.chainId !== activeChainId',
         reason: "WalletConnect's chainId is a CAIP-2 string, not a ChainId.",
