@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import type { ModalState } from '@hooks/useModalState'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { DAPP_KIND, EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
 import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+import type { ModalState } from '@hooks/useModalState'
 
 export type ConnectionKind = RegistryConnectionKind
 
@@ -29,6 +30,11 @@ export type UnifiedConnection = {
     subtitle: string
     iconUrl?: string
     connectedAt: number
+    /**
+     * The badge in place of the kind's own label: an EVM site names its chain,
+     * so a site connected through both providers shows two tellable rows.
+     */
+    badgeLabel?: string
     onRevoke: () => void
 }
 
@@ -44,16 +50,33 @@ export type UseConnectionsSettingsScreenResult = {
     canConnect: boolean
 }
 
-/** `onRevoke` is the list hook's fire-and-forget revoke with its own toast. */
+const badgeLabelOf = (
+    row: ConnectionSettingsRow,
+    chainNameOf: (chainId: ChainId) => string | undefined,
+): string | undefined => {
+    if (row.kind !== EIP1193_DAPP_KIND) return undefined
+    const [scope] = row.networks
+    return scope ? chainNameOf(scope.chainId) : undefined
+}
+
+/**
+ * `onRevoke` is the list hook's fire-and-forget revoke with its own toast;
+ * `chainNameOf` is undefined for a chain this build doesn't register.
+ */
 export const toUnifiedConnection = (
     row: ConnectionSettingsRow,
     revoke: (id: string) => void,
-): UnifiedConnection => ({
-    id: `connection-${row.id}`,
-    kind: row.kind,
-    title: row.title,
-    subtitle: row.subtitle,
-    iconUrl: row.iconUrl,
-    connectedAt: row.lastActiveAt || row.createdAt,
-    onRevoke: () => revoke(row.id),
-})
+    chainNameOf: (chainId: ChainId) => string | undefined,
+): UnifiedConnection => {
+    const badgeLabel = badgeLabelOf(row, chainNameOf)
+    return {
+        id: `connection-${row.id}`,
+        kind: row.kind,
+        title: row.title,
+        subtitle: row.subtitle,
+        iconUrl: row.iconUrl,
+        connectedAt: row.lastActiveAt || row.createdAt,
+        ...(badgeLabel ? { badgeLabel } : {}),
+        onRevoke: () => revoke(row.id),
+    }
+}

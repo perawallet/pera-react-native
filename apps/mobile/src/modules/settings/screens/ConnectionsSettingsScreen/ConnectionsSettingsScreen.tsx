@@ -69,11 +69,14 @@ const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                     </PWText>
                     <PWBadge
                         variant='secondary'
-                        value={t(
-                            isWalletConnect
-                                ? 'settings.connections.badge_wallet_connect'
-                                : 'settings.connections.badge_dapp',
-                        )}
+                        value={
+                            connection.badgeLabel ??
+                            t(
+                                isWalletConnect
+                                    ? 'settings.connections.badge_wallet_connect'
+                                    : 'settings.connections.badge_dapp',
+                            )
+                        }
                     />
                 </PWView>
                 <PWText

@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
@@ -48,7 +49,13 @@ export const useConnectionsSettingsScreen =
         const connections = useMemo(
             () =>
                 connectionRows
-                    .map(row => toUnifiedConnection(row, revokeConnection))
+                    .map(row =>
+                        toUnifiedConnection(
+                            row,
+                            revokeConnection,
+                            chainDisplayNameOf,
+                        ),
+                    )
                     .sort((a, b) => b.connectedAt - a.connectedAt),
             [connectionRows, revokeConnection],
         )
