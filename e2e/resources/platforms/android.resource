@@ -15,7 +15,7 @@ ${ANDROID_UDID}         ${EMPTY}
 # Give each device its own port when several run in parallel.
 ${ANDROID_SYSTEM_PORT}  8201
 ${WEBVIEW}             xpath=//android.webkit.WebView
-${MENU_TAB}             accessibility_id=Menu
+${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @content-desc='Menu' or @name='Menu']
 
 
 *** Keywords ***
@@ -61,7 +61,7 @@ Dismiss Keyboard
 Enter Recovery Phrase
     # The import screen spreads a pasted phrase across its word fields.
     [Arguments]    ${phrase}
-    Input Text    accessibility_id=import_account_word_input_0    ${phrase}
+    Input Text    xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']    ${phrase}
 
 Get Text In Container
     # A testID-only container is a resource-id on Android, with its text in following siblings.
@@ -70,16 +70,21 @@ Get Text In Container
     RETURN    ${text}
 
 Get Test ID
-    # UiAutomator2 reports an accessibility label as content-desc; its name attribute is empty.
+    # A bare testID is a resource-id here; content-desc only carries an accessibility label,
+    # and reading that instead returned the row's spoken text ("E2E, LNVFD...SWQRA, Algo, 0.00"),
+    # which then went into a deeplink as if it were an address.
     [Arguments]    ${element}
-    ${id}=    Get Element Attribute    ${element}    content-desc
+    ${id}=    Get Element Attribute    ${element}    resource-id
+    IF    not $id
+        ${id}=    Get Element Attribute    ${element}    content-desc
+    END
     RETURN    ${id}
 
 Scroll Into View
     [Documentation]    Scrolls the first scrollable until the element with this test ID is on screen,
     ...                in one driver call (UiScrollable) instead of a swipe-and-look loop. A bare
     ...                testID (no accessibility label) is a resource-id on Android: pass by=resourceId.
-    [Arguments]    ${test_id}    ${by}=description
+    [Arguments]    ${test_id}    ${by}=resourceId
     ${selector}=    Set Variable    new UiSelector().${by}("${test_id}")
     Wait Until Page Contains Element
     ...    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(${selector})    timeout=10s
@@ -146,3 +151,9 @@ Match Biometric
     Skip If    not $ANDROID_UDID.startswith('emulator-')
     ...    A physical Android device cannot be fed a fingerprint from the host.
     Adb    emu    finger    touch    1
+
+Rows With Prefix
+    [Documentation]    Every element whose testID begins with ${prefix}. See the iOS twin: there a
+    ...                predicate replaces the xpath for speed; UiAutomator2 handles the xpath fine.
+    [Arguments]    ${prefix}
+    RETURN    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@content-desc,'${prefix}')]

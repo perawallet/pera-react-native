@@ -96,6 +96,7 @@ export const TransactionConfirmationScreen = () => {
                         showSymbol
                         ignorePrivacyMode
                         value={amount ?? new Decimal(0)}
+                        testID='send_confirm_amount'
                     />
                     {!isCollectible && (
                         <PreferredAmount

@@ -11,24 +11,24 @@ ${WC_HARNESS_URL}                   %{WC_HARNESS_URL=}
 # The harness builds its transactions for this network; it must match the wallet's active one.
 ${WC_NETWORK}                       mainnet
 
-${WC_CONNECT_BUTTON}                accessibility_id=wc_connect_button
-${WC_REJECT_BUTTON}                 accessibility_id=wc_reject_button
-${WC_SUCCESS}                       accessibility_id=wc_connection_success
+${WC_CONNECT_BUTTON}                xpath=//*[@resource-id='wc_connect_button' or @name='wc_connect_button' or @content-desc='wc_connect_button']
+${WC_REJECT_BUTTON}                 xpath=//*[@resource-id='wc_reject_button' or @name='wc_reject_button' or @content-desc='wc_reject_button']
+${WC_SUCCESS}                       xpath=//*[@resource-id='wc_connection_success' or @name='wc_connection_success' or @content-desc='wc_connection_success']
 # Rows are suffixed with the internal account id, so only a prefix match finds them.
-${WC_ACCOUNT_ROW_ANY}               xpath=//*[starts-with(@name,'wc_account_row_') or starts-with(@content-desc,'wc_account_row_')]
-${SIGNING_REJECT_BUTTON}            accessibility_id=signing_reject_button
-${SIGNING_CONFIRM_SLIDE}            accessibility_id=signing-confirm-slide
-${ARBITRARY_CONFIRM_SLIDE}          accessibility_id=arbitrary-data-confirm-slide
-${ARBITRARY_REJECT_BUTTON}          accessibility_id=arbitrary-data-reject-button
+${WC_ACCOUNT_ROW_ANY}               xpath=//*[starts-with(@name,'wc_account_row_') or starts-with(@content-desc, 'wc_account_row_') or starts-with(@resource-id, 'wc_account_row_')]
+${SIGNING_REJECT_BUTTON}            xpath=//*[@resource-id='signing_reject_button' or @name='signing_reject_button' or @content-desc='signing_reject_button']
+${SIGNING_CONFIRM_SLIDE}            xpath=//*[@resource-id='signing-confirm-slide' or @name='signing-confirm-slide' or @content-desc='signing-confirm-slide']
+${ARBITRARY_CONFIRM_SLIDE}          xpath=//*[@resource-id='arbitrary-data-confirm-slide' or @name='arbitrary-data-confirm-slide' or @content-desc='arbitrary-data-confirm-slide']
+${ARBITRARY_REJECT_BUTTON}          xpath=//*[@resource-id='arbitrary-data-reject-button' or @name='arbitrary-data-reject-button' or @content-desc='arbitrary-data-reject-button']
 
-${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
-${SETTINGS_WC_SESSIONS}             accessibility_id=settings_item_walletconnect_sessions
-${WC_SESSION_ITEM}                  accessibility_id=wallet_connect_session_item
-${WC_EMPTY_CONNECT_BUTTON}          accessibility_id=wallet_connect_connect_button
-${WC_CLEAR_ALL_BUTTON}              accessibility_id=wallet_connect_clear_all_button
-${WC_DETAILS_DELETE_BUTTON}         accessibility_id=wallet_connect_details_delete_button
-${WC_DETAILS_CONFIRM_BUTTON}        accessibility_id=wallet_connect_details_confirm_delete_button
-${WC_DETAILS_CANCEL_BUTTON}         accessibility_id=wallet_connect_details_cancel_button
+${MENU_SETTINGS_BUTTON}             xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
+${SETTINGS_WC_SESSIONS}             xpath=//*[@resource-id='settings_item_walletconnect_sessions' or @name='settings_item_walletconnect_sessions' or @content-desc='settings_item_walletconnect_sessions']
+${WC_SESSION_ITEM}                  xpath=//*[@resource-id='wallet_connect_session_item' or @name='wallet_connect_session_item' or @content-desc='wallet_connect_session_item']
+${WC_EMPTY_CONNECT_BUTTON}          xpath=//*[@resource-id='wallet_connect_connect_button' or @name='wallet_connect_connect_button' or @content-desc='wallet_connect_connect_button']
+${WC_CLEAR_ALL_BUTTON}              xpath=//*[@resource-id='wallet_connect_clear_all_button' or @name='wallet_connect_clear_all_button' or @content-desc='wallet_connect_clear_all_button']
+${WC_DETAILS_DELETE_BUTTON}         xpath=//*[@resource-id='wallet_connect_details_delete_button' or @name='wallet_connect_details_delete_button' or @content-desc='wallet_connect_details_delete_button']
+${WC_DETAILS_CONFIRM_BUTTON}        xpath=//*[@resource-id='wallet_connect_details_confirm_delete_button' or @name='wallet_connect_details_confirm_delete_button' or @content-desc='wallet_connect_details_confirm_delete_button']
+${WC_DETAILS_CANCEL_BUTTON}         xpath=//*[@resource-id='wallet_connect_details_cancel_button' or @name='wallet_connect_details_cancel_button' or @content-desc='wallet_connect_details_cancel_button']
 # The delete-all dialog's confirm button has no testID, so match its label.
 ${WC_DELETE_ALL_CONFIRM}            xpath=//*[@text='Delete' or @label='Delete']
 

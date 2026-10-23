@@ -88,7 +88,8 @@ View Passphrase Reveals The Words
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
     Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
     FOR    ${i}    IN RANGE    4
-        Tap    ${PASSPHRASE_ACK_ROW}${i}
+        ${row_locator}=    Passphrase Ack Row    ${i}
+        Tap    ${row_locator}
     END
     Tap    ${PASSPHRASE_ACK_REVEAL}
     Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s
@@ -113,9 +114,8 @@ Confirmed Removal Drops The Account
     Add Account To Wallet
     ${before}=    Count Accounts
     Start Account Removal
-    Tap    ${REMOVE_CONFIRM_BUTTON}
     # Home stays in the tree under the sheet; the sheet leaving is what proves removal finished.
-    Wait Until Page Does Not Contain Element    ${REMOVE_CONFIRM_BUTTON}    timeout=30s
+    Confirm Removal Until The Sheet Goes
     ${after}=    Count Accounts
     Should Be Equal As Integers    ${after}    ${before - 1}
 
@@ -127,3 +127,8 @@ Funded Account Shows Portfolio And ALGO Holding
     Wait Until Page Contains Element    ${ACCOUNT_PORTFOLIO}    timeout=40s
     # A zero-balance account shows the deposit empty state instead of an ALGO row.
     Wait Until Page Contains Element    ${ALGO_HOLDING_ROW}    timeout=30s
+    # This account is funded, so the header has a number to show. A portfolio that renders
+    # 0.00 for a funded account passes every check that only asks whether it rendered.
+    ${total}=    Displayed Number Should Be At Least    portfolio_primary_value
+    Should Be True    ${total} > 0
+    ...    msg=The funded account's portfolio reads ${total}; a funded account should not show nothing.

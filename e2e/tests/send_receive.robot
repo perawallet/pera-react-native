@@ -75,6 +75,7 @@ Send Executes On Testnet
     Enter Amount    ${SEND_AMOUNT}
     Open Destination
     Choose Own Address As Recipient
+    Confirmation Should Show Amount    ${SEND_AMOUNT}
     Slide To Confirm    ${SEND_CONFIRM_SLIDE}
     Wait Until Page Contains Element    ${SEND_SUCCESS_DONE}    timeout=45s
 
