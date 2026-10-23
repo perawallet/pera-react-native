@@ -256,7 +256,7 @@ Quiz Option Locator
     ...                captured tree and in CI artifacts. So match on what the option displays.
     [Arguments]    ${index}    ${word}
     ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
-    RETURN    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
+    RETURN    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or @resource-id='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
 
 Quiz Option Words
     [Documentation]    The words item ${index} is offering, read off the options themselves.

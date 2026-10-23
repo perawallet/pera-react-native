@@ -59,7 +59,7 @@ ${REKEY_OPTION_LEDGER}                  xpath=//*[@resource-id='rekey_option_led
 ${IMPORT_ADD_BUTTON}                    xpath=//*[@resource-id='import-shared-account-add-button' or @name='import-shared-account-add-button' or @content-desc='import-shared-account-add-button']
 ${IMPORT_IGNORE_BUTTON}                 xpath=//*[@resource-id='import-shared-account-ignore-button' or @name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button']
 # The import screen once its lookup has answered: the account, or the error state.
-${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry']
+${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @resource-id='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry' or @resource-id='import-shared-account-retry']
 
 ${CREATION_BLOCKED}                     The build cannot register its device (the app showed 'An error occurred': POST /api/v3/devices returned 401, so no deviceId). Rebuild with BACKEND_API_KEY set.
 
@@ -76,7 +76,7 @@ Test Id Starting With
     [Documentation]    Locator for a labelled view whose ID ends in an address the test cannot know,
     ...                such as the wallet's own account.
     [Arguments]    ${prefix}
-    RETURN    xpath=//*[starts-with(@content-desc,'${prefix}') or starts-with(@name,'${prefix}')]
+    RETURN    xpath=//*[starts-with(@content-desc,'${prefix}') or starts-with(@resource-id, '${prefix}') or starts-with(@name,'${prefix}')]
 
 Tap Screen At
     [Documentation]    Taps a point given as fractions of the window, for backdrops with no element.

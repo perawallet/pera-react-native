@@ -19,7 +19,7 @@ ${ACCOUNT_OPTION_COPY_ADDRESS}          xpath=//*[@resource-id='account_network_
 ${ACCOUNT_ALGORAND_EXPAND}              xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
 # The switcher row and the header trigger take their testID as accessibility label, which on iOS
 # hides the account name inside them; only the options sheet's title shows it on both platforms.
-${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
+${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 ${MORE_BUTTON}                          xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
 ${SCAN_REKEYED_OPTION}                  xpath=//*[@resource-id='account_option_scan-rekeyed' or @name='account_option_scan-rekeyed' or @content-desc='account_option_scan-rekeyed']
 ${RESCAN_ADD_BUTTON}                    xpath=//*[@resource-id='rescan-rekeyed-add' or @name='rescan-rekeyed-add' or @content-desc='rescan-rekeyed-add']
@@ -50,7 +50,7 @@ ${SELECT_ADDRESSES_CONTINUE}            xpath=//*[@resource-id='import_select_ad
 ${SELECT_ADDRESSES_ALL}                 xpath=//*[@resource-id='import_select_addresses_select_all_checkbox' or @name='import_select_addresses_select_all_checkbox' or @content-desc='import_select_addresses_select_all_checkbox']
 ${REKEYED_CONTINUE}                     xpath=//*[@resource-id='import_rekeyed_addresses_continue_button' or @name='import_rekeyed_addresses_continue_button' or @content-desc='import_rekeyed_addresses_continue_button']
 ${REKEYED_SKIP}                         xpath=//*[@resource-id='import_rekeyed_addresses_skip_button' or @name='import_rekeyed_addresses_skip_button' or @content-desc='import_rekeyed_addresses_skip_button']
-${REKEYED_CHECKBOX_ANY}                 xpath=//*[starts-with(@content-desc,'import_rekeyed_addresses_item_checkbox_') or starts-with(@name,'import_rekeyed_addresses_item_checkbox_')]
+${REKEYED_CHECKBOX_ANY}                 xpath=//*[starts-with(@content-desc,'import_rekeyed_addresses_item_checkbox_') or starts-with(@resource-id, 'import_rekeyed_addresses_item_checkbox_') or starts-with(@name,'import_rekeyed_addresses_item_checkbox_')]
 ${ASB_INFO_CONTINUE}                    xpath=//*[@resource-id='asb_import_info_continue_button' or @name='asb_import_info_continue_button' or @content-desc='asb_import_info_continue_button']
 ${ASB_PICK_FILE_BUTTON}                 xpath=//*[@resource-id='asb_import_backup_pick_file_button' or @name='asb_import_backup_pick_file_button' or @content-desc='asb_import_backup_pick_file_button']
 
