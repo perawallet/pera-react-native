@@ -12,3 +12,4 @@
 
 // ConnectionsProvider is mounted once by the app shell: `@modules/connections/shell`.
 export { useConnectionPairing, type UseConnectionPairingResult } from './hooks'
+export { useNetworkSwitchPrompt } from './providers/useNetworkSwitchPrompt'

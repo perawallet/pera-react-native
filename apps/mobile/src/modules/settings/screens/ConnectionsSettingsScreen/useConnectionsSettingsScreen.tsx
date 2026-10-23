@@ -18,6 +18,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import {
+    isSiteConnectionKind,
     toUnifiedConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
@@ -56,7 +57,7 @@ export const useConnectionsSettingsScreen =
             async (connection: UnifiedConnection) => {
                 // A dapp connection revokes a site's page-level access, not a
                 // paired WalletConnect session, so the copy differs.
-                const isWalletConnect = connection.kind !== 'dapp'
+                const isWalletConnect = !isSiteConnectionKind(connection.kind)
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent

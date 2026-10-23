@@ -20,10 +20,7 @@ import {
     GenesisHashMismatchError,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import {
-    useAllAccounts,
-    useSigningAccounts,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     enqueueInboundRequest,
     isConnectionAlive,
@@ -37,6 +34,7 @@ import {
     resolveConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkSwitchPrompt } from '@modules/connections'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseSignRequestApprovalScreenResult = {
@@ -64,10 +62,10 @@ export const useSignRequestApprovalScreen =
         const transactionSigning = useChainTransactionSigning(LEGACY_CHAIN_ID)
         const { addSignRequest, removeSignRequest, currentRequest } =
             useSigningRequest()
-        const accounts = useSigningAccounts(LEGACY_CHAIN_ID)
         // The adapter matches a named signer against approved accounts' auth
-        // addresses, and useSigningAccounts filters a keyless one of those out.
+        // addresses, so it gets every account, keyless ones included.
         const allAccounts = useAllAccounts()
+        const confirmNetworkSwitch = useNetworkSwitchPrompt()
         const enqueuedRef = useRef(false)
         const [error, setError] = useState<string | null>(null)
 
@@ -78,7 +76,7 @@ export const useSignRequestApprovalScreen =
             // The accounts store rehydrates asynchronously; on a cold window
             // the resolver would throw against an empty set. Reaching this
             // screen required a granted account, so it hydrates non-empty.
-            if (accounts.length === 0) return
+            if (allAccounts.length === 0) return
             enqueuedRef.current = true
 
             // The grant on the message is the snapshot taken when the
@@ -124,6 +122,7 @@ export const useSignRequestApprovalScreen =
                 // One request per window, and an expiry withdraws the whole
                 // approval at the bridge rather than this one entry.
                 pendingRequests: new Map(),
+                confirmNetworkSwitch,
                 // Keep the window open so the reason is readable.
                 onError: err => setError(describeSignError(err, t)),
             })
@@ -133,8 +132,8 @@ export const useSignRequestApprovalScreen =
             transactionSigning,
             addSignRequest,
             removeSignRequest,
-            accounts,
             allAccounts,
+            confirmNetworkSwitch,
             t,
         ])
 

@@ -14,7 +14,10 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
-import { toUnifiedConnection } from '../connectionsSettingsHelpers'
+import {
+    isSiteConnectionKind,
+    toUnifiedConnection,
+} from '../connectionsSettingsHelpers'
 
 const row: ConnectionSettingsRow = {
     id: 'conn-1',
@@ -43,5 +46,14 @@ describe('toUnifiedConnection', () => {
         toUnifiedConnection(row, revoke).onRevoke()
 
         expect(revoke).toHaveBeenCalledWith('conn-1')
+    })
+})
+
+describe('isSiteConnectionKind', () => {
+    it('counts both injected providers as site connections and WalletConnect as neither', () => {
+        expect(isSiteConnectionKind('dapp')).toBe(true)
+        expect(isSiteConnectionKind('dapp-eip1193')).toBe(true)
+        expect(isSiteConnectionKind('walletconnect-v1')).toBe(false)
+        expect(isSiteConnectionKind('walletconnect-v2')).toBe(false)
     })
 })

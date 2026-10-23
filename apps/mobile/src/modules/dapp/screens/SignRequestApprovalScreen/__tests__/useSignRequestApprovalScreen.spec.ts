@@ -31,8 +31,8 @@ const mocks = vi.hoisted(() => {
         rejectApproval: vi.fn(),
         decodeWalletOperation: vi.fn(),
         encodeWalletOperationResult: vi.fn(),
-        useSigningAccounts: vi.fn(),
         useAllAccounts: vi.fn(),
+        confirmNetworkSwitch: vi.fn(),
     }
 })
 
@@ -49,8 +49,11 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSigningAccounts: mocks.useSigningAccounts,
     useAllAccounts: mocks.useAllAccounts,
+}))
+
+vi.mock('@modules/connections', () => ({
+    useNetworkSwitchPrompt: () => mocks.confirmNetworkSwitch,
 }))
 
 vi.mock('@perawallet/wallet-core-connections', () => ({
@@ -114,7 +117,6 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.addSignRequest.mockReset()
         mocks.useSigningRequest.mockReset()
         mocks.rejectApproval.mockReset()
-        mocks.useSigningAccounts.mockReset()
         mocks.useAllAccounts.mockReset()
         mocks.enqueueInboundRequest.mockReset()
         mocks.resolveConnectionRequest.mockReset()
@@ -147,7 +149,6 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.rejectApproval.mockResolvedValue(undefined)
         // Hydrated by default with the account the approval authorizes, so
         // cases exercise the post-hydration path unless they say otherwise.
-        mocks.useSigningAccounts.mockReturnValue([SIGNER])
         mocks.useAllAccounts.mockReturnValue([SIGNER])
 
         closeSpy = vi.fn()
@@ -162,7 +163,7 @@ describe('useSignRequestApprovalScreen', () => {
 
     describe('account hydration gate', () => {
         it('does not enqueue while accounts are unhydrated and stays loading', () => {
-            mocks.useSigningAccounts.mockReturnValue([])
+            mocks.useAllAccounts.mockReturnValue([])
 
             const { result } = renderHook(() => useSignRequestApprovalScreen())
 
@@ -172,13 +173,13 @@ describe('useSignRequestApprovalScreen', () => {
         })
 
         it('enqueues exactly once, once accounts hydrate on a later render', () => {
-            mocks.useSigningAccounts.mockReturnValue([])
+            mocks.useAllAccounts.mockReturnValue([])
             const { rerender } = renderHook(() =>
                 useSignRequestApprovalScreen(),
             )
             expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
 
-            mocks.useSigningAccounts.mockReturnValue([SIGNER])
+            mocks.useAllAccounts.mockReturnValue([SIGNER])
             rerender()
             rerender()
 
@@ -248,6 +249,42 @@ describe('useSignRequestApprovalScreen', () => {
 
         // The adapter matches a signer against approved accounts' auth
         // addresses, and the signing-accounts filter can hide a keyless one.
+        it('hands the adapter the network-switch prompt', () => {
+            renderHook(() => useSignRequestApprovalScreen())
+
+            const [, deps] = mocks.enqueueInboundRequest.mock.calls[0]
+            expect(deps.confirmNetworkSwitch).toBe(mocks.confirmNetworkSwitch)
+        })
+
+        it('enqueues a switch request from a wallet holding only EVM accounts', () => {
+            const evmOnly = {
+                id: 'evm',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xEVM', keyPairId: 'k' } },
+            }
+            mocks.useAllAccounts.mockReturnValue([evmOnly])
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'cr1',
+                approval: {
+                    ...CONNECTION_REQUEST_APPROVAL,
+                    chainId: 'base',
+                    operation: { type: 'switch-network', networkId: 'mainnet' },
+                    authorizedAccounts: ['0xEVM'],
+                },
+                isLoading: false,
+            })
+
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
+            expect(enqueuedMessage()).toMatchObject({
+                chainId: 'base',
+                operation: {
+                    decoded: { type: 'switch-network', networkId: 'mainnet' },
+                },
+            })
+        })
+
         it('gives the adapter every account, not only the signing ones', () => {
             mocks.useAllAccounts.mockReturnValue([SIGNER, AUTH_SIGNER])
 

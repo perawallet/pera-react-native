@@ -43,6 +43,8 @@ type UseWcConnectScreenResult = {
     requesterOriginLabel?: string
     /** True when the peer-asserted url is not the requesting tab, so the screen warns. */
     isRequesterOriginDistinct: boolean
+    /** The chain the proposal asks for; the listed accounts and addresses are on it. */
+    chainId: ChainId
     accounts: WalletAccount[]
     selected: Set<string>
     toggle: (address: string) => void
@@ -91,11 +93,12 @@ const isDistinctFromPeerUrl = (
 export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const { approval, isLoading, approve, reject, deliveryError } =
         useDappRequest()
-    const accounts = useSigningAccounts(LEGACY_CHAIN_ID)
-    const { selectedAccountId } = useSelectedAccountId()
-
     const proposal =
         approval?.kind === 'connection-proposal' ? approval : undefined
+    // Every proposal reaching this window names one chain.
+    const chainId = proposal?.requested.chains[0] ?? LEGACY_CHAIN_ID
+    const accounts = useSigningAccounts(chainId)
+    const { selectedAccountId } = useSelectedAccountId()
 
     const isArmed = useApprovalArming()
     const [selected, setSelected] = useState<Set<string>>(() => new Set())
@@ -109,10 +112,8 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         if (hasSeededRef.current || !proposal || accounts.length === 0) return
         hasSeededRef.current = true
         if (proposal.requesterOrigin) return
-        setSelected(
-            initialSelection(selectedAccountId, accounts, LEGACY_CHAIN_ID),
-        )
-    }, [proposal, selectedAccountId, accounts])
+        setSelected(initialSelection(selectedAccountId, accounts, chainId))
+    }, [proposal, selectedAccountId, accounts, chainId])
     const [isConnecting, setIsConnecting] = useState(false)
 
     const toggle = useCallback((address: string): void => {
@@ -155,6 +156,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
             proposal?.requesterOrigin,
             proposal?.origin ?? '',
         ),
+        chainId,
         accounts,
         selected,
         toggle,

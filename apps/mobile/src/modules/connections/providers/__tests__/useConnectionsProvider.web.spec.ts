@@ -66,8 +66,12 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 const createDappConnectionHandler = vi.fn((_deps: unknown) => ({
     kind: 'dapp',
 }))
+const createEip1193ConnectionHandler = vi.fn((_deps: unknown) => ({
+    kind: 'dapp-eip1193',
+}))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
+    createEip1193ConnectionHandler,
     createNoopDappTransport: () => ({
         onRequest: () => () => {},
         notify: async () => {},
@@ -101,6 +105,7 @@ describe('useConnectionsProvider.web', () => {
         createRemoteConnectionRegistry.mockClear()
         createWalletConnectV1Handler.mockClear()
         createDappConnectionHandler.mockClear()
+        createEip1193ConnectionHandler.mockClear()
         onLocalStorageKeyChanged.mockClear()
         unsubscribeStorage.mockClear()
         list.mockClear()
@@ -119,7 +124,11 @@ describe('useConnectionsProvider.web', () => {
         expect(result.current).toBe(fakeRegistry)
         expect(createRemoteConnectionRegistry).toHaveBeenCalledTimes(1)
         expect(createRemoteConnectionRegistry).toHaveBeenCalledWith({
-            handlers: [{ kind: 'walletconnect-v1' }, { kind: 'dapp' }],
+            handlers: [
+                { kind: 'walletconnect-v1' },
+                { kind: 'dapp' },
+                { kind: 'dapp-eip1193' },
+            ],
         })
     })
 
@@ -129,6 +138,19 @@ describe('useConnectionsProvider.web', () => {
         expect(createDappConnectionHandler).toHaveBeenCalledWith(
             expect.objectContaining({ chainId: 'algorand' }),
         )
+    })
+
+    // Descriptor-only: the offscreen host answers pages, so this one offers
+    // no chain and no account.
+    it('builds the EIP-1193 descriptor handler with nothing to serve', () => {
+        renderHook(() => useConnectionsProvider())
+
+        const deps = createEip1193ConnectionHandler.mock.calls[0]?.[0] as {
+            isDappConnectEnabled: (chainId: string) => boolean
+            getAccounts: (chainId: string) => unknown[]
+        }
+        expect(deps.isDappConnectEnabled('ethereum')).toBe(false)
+        expect(deps.getAccounts('ethereum')).toEqual([])
     })
 
     // `useDeleteAllData` also runs from the duress path above the provider.

@@ -106,6 +106,54 @@ describe('useWcConnectScreen', () => {
         expect(result.current.permissions).toEqual(['algo_signTxn'])
     })
 
+    it('offers the accounts that can sign on the proposal’s chain', () => {
+        const { result } = render(
+            proposalApproval({
+                connectionKind: 'dapp-eip1193',
+                requesterOrigin: 'https://dapp.example',
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['ethereum'],
+                    methods: ['eth_accounts'],
+                },
+            }),
+        )
+
+        expect(result.current.chainId).toBe('ethereum')
+        expect(mocks.useSigningAccounts).toHaveBeenLastCalledWith('ethereum')
+    })
+
+    it('stays on Algorand until a proposal has loaded', () => {
+        const { result } = render(null)
+
+        expect(result.current.chainId).toBe('algorand')
+        expect(mocks.useSigningAccounts).toHaveBeenLastCalledWith('algorand')
+    })
+
+    it('pre-selects the active account by its address on the proposal’s chain', () => {
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-evm',
+        })
+        mocks.useSigningAccounts.mockReturnValue([
+            {
+                ...ACCOUNT_A,
+                id: 'account-evm',
+                chains: { ethereum: { address: '0xEVM', keyPairId: 'key' } },
+            },
+        ])
+        const { result } = render(
+            proposalApproval({
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['ethereum'],
+                    methods: [],
+                },
+            }),
+        )
+
+        expect([...result.current.selected]).toEqual(['0xEVM'])
+    })
+
     it('cannot connect until an account is picked, then approves with exactly those accounts', () => {
         const { result } = render()
 

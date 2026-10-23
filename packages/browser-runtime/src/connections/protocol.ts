@@ -358,7 +358,7 @@ export type ConnectionApprovalRequest =
           connectionKind: ConnectionKind
           peer: ConnectionPeer
           /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
-          requested: { networks: string[]; methods: string[] }
+          requested: { networks: string[]; chains: ChainId[]; methods: string[] }
           expiresAt: number
           /** See `ConnectionsControlMessage`'s `pair.requesterOrigin`. */
           requesterOrigin?: string
@@ -437,6 +437,8 @@ export const isConnectionApprovalRequest = (
                 isPeer(value.peer) &&
                 isRecord(value.requested) &&
                 isStringArray(value.requested.networks) &&
+                Array.isArray(value.requested.chains) &&
+                value.requested.chains.every(isChainId) &&
                 isStringArray(value.requested.methods) &&
                 typeof value.expiresAt === 'number' &&
                 isOptionalString(value.requesterOrigin)
