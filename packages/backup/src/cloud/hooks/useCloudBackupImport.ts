@@ -829,13 +829,17 @@ const importBatch = async (
     const restoredAccountIds = new Set<string>()
     for (const entries of groups) {
         // Any entry the wallet already holds names the account, wherever the
-        // record lists it.
-        let groupHolder = entries
+        // record lists it. Kept by id: each entry can rename or extend the
+        // account, and a join spreads the copy it is handed.
+        let groupHolderId = entries
             .map(account => holderOf(context, account))
-            .find(holder => holder !== undefined)
+            .find(holder => holder !== undefined)?.id
         const restoredChains: ChainId[] = []
         let hasRestoredEntry = false
         for (const account of entries) {
+            const groupHolder = useAccountsStore
+                .getState()
+                .accounts.find(held => held.id === groupHolderId)
             try {
                 summary.imported += await importOneAccount(
                     context,
@@ -859,13 +863,13 @@ const importBatch = async (
                     summary.failed.push({ address: account.address, reason })
                 }
             }
-            groupHolder ??= holderOf(context, account)
+            groupHolderId ??= holderOf(context, account)?.id
         }
         // An account already on the device restored nothing, so it is left
         // to the probes it had when it was added.
-        if (groupHolder && hasRestoredEntry) {
-            restoredAccountIds.add(groupHolder.id)
-            stampRestoredEntries(context, groupHolder.id, restoredChains)
+        if (groupHolderId !== undefined && hasRestoredEntry) {
+            restoredAccountIds.add(groupHolderId)
+            stampRestoredEntries(context, groupHolderId, restoredChains)
         }
         if (createsAccount(entries)) {
             done += 1

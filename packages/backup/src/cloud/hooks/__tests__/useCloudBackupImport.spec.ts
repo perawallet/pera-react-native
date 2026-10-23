@@ -1748,40 +1748,62 @@ describe('useCloudBackupImport hardware on several chains', () => {
         expect(summary).toMatchObject({ imported: 1, failed: [] })
     })
 
-    test("joins a record's entry to the account holding another of its addresses, whatever the order", async () => {
-        const existing: WalletAccount = {
-            id: 'existing',
-            custody: {
-                kind: 'hardware',
-                device: LEDGER_DEVICE,
-                accountIndex: 0,
-            },
-            chains: { algorand: { address: 'LEDGER_ALGO' } },
-        }
-        storeState.accounts = [existing]
-        const { current } = renderImport()
-
-        const summary = await current.importAccounts([
-            { ...hardwareEntry('0xledger', 'ethereum'), group: 'record' },
-            { ...hardwareEntry('LEDGER_ALGO', 'algorand'), group: 'record' },
-        ])
-
-        expect(storeState.accounts).toEqual([
-            {
-                ...existing,
-                name: 'My Ledger',
-                chains: {
-                    algorand: { address: 'LEDGER_ALGO' },
-                    ethereum: { address: '0xledger', ...CREATED },
+    test.each([
+        ['after', ['ethereum', 'algorand']],
+        ['before', ['algorand', 'ethereum']],
+        ['around', ['ethereum', 'base', 'algorand']],
+    ] as const)(
+        "joins a record's entries to the account holding another of its addresses, listed %s it, keeping the backup's name",
+        async (_order, chains) => {
+            addressCodecs.register({
+                chainId: 'base',
+                isValid: isValidAddressMock,
+            } as never)
+            const existing: WalletAccount = {
+                id: 'existing',
+                custody: {
+                    kind: 'hardware',
+                    device: LEDGER_DEVICE,
+                    accountIndex: 0,
                 },
-            },
-        ])
-        expect(summary).toMatchObject({
-            imported: 0,
-            skippedDuplicate: 1,
-            failed: [],
-        })
-    })
+                chains: { algorand: { address: 'LEDGER_ALGO' } },
+            }
+            storeState.accounts = [existing]
+            const addressOn = {
+                algorand: 'LEDGER_ALGO',
+                ethereum: '0xledger',
+                base: '0xledger',
+            }
+            const { current } = renderImport()
+
+            const summary = await current.importAccounts(
+                chains.map(chain => ({
+                    ...hardwareEntry(addressOn[chain], chain),
+                    group: 'record',
+                })),
+            )
+
+            expect(storeState.accounts).toEqual([
+                {
+                    ...existing,
+                    name: 'My Ledger',
+                    chains: Object.fromEntries(
+                        chains.map(chain => [
+                            chain,
+                            chain === 'algorand'
+                                ? { address: 'LEDGER_ALGO' }
+                                : { address: addressOn[chain], ...CREATED },
+                        ]),
+                    ),
+                },
+            ])
+            expect(summary).toMatchObject({
+                imported: 0,
+                skippedDuplicate: 1,
+                failed: [],
+            })
+        },
+    )
 
     test('restores an entry sharing no address with the account at its device position as its own account', async () => {
         const existing: WalletAccount = {
@@ -1892,7 +1914,7 @@ const LEDGER_DEVICE = {
 
 function hardwareEntry(
     address: string,
-    chain: 'algorand' | 'ethereum',
+    chain: 'algorand' | 'ethereum' | 'base',
 ): PulledAccount {
     return {
         address,
