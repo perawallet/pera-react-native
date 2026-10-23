@@ -23,6 +23,7 @@ import {
     startRegisterVerification,
     fetchOnboardingDetails,
     submitPersonalDetails,
+    submitAdditionalDetails,
     submitAddress,
     submitMailingAddress,
     submitOnboardingConsent,
@@ -455,6 +456,39 @@ describe('onboarding endpoints', () => {
             expect(result).toEqual({ phase: null })
         },
     )
+
+    it('submits additional details and returns the next phase', async () => {
+        request.mockResolvedValue({
+            data: {
+                user: { id: 'ob_1', hasTin: true, phase: 'PHYSICAL_ADDRESS' },
+            },
+        })
+        const details = {
+            onboardingId: 'ob_1',
+            tin: '123456789',
+            tinCountry: 'PT',
+            occupation: 'other_specify_occupation',
+            occupationOther: 'Beekeeper',
+            sourceOfWealth: 'employment_salaried',
+            businessSector: 'information_and_communication',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT', 'ES'],
+        }
+
+        const result = await submitAdditionalDetails({
+            details,
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toEqual({ phase: OnboardingPhase.PhysicalAddress })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/additional-details',
+                data: details,
+            }),
+        )
+    })
 
     it('submits address and returns the access token, onboarding id, and user id', async () => {
         request.mockResolvedValue({

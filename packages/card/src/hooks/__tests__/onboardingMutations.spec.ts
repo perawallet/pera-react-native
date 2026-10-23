@@ -21,6 +21,7 @@ const api = vi.hoisted(() => ({
     sendPhoneVerification: vi.fn(),
     verifyPhone: vi.fn(),
     submitPersonalDetails: vi.fn(),
+    submitAdditionalDetails: vi.fn(),
     submitAddress: vi.fn(),
     submitMailingAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
@@ -43,6 +44,7 @@ import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
 import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
+import { useSubmitAdditionalDetailsMutation } from '../useSubmitAdditionalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
 import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
@@ -232,6 +234,96 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         })
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Address,
+        )
+    })
+
+    it('useSubmitPersonalDetailsMutation moves to additional details when Baanx asks for them', async () => {
+        api.submitPersonalDetails.mockResolvedValue({
+            phase: OnboardingPhase.AdditionalDetails,
+        })
+        const { result } = renderHook(
+            () => useSubmitPersonalDetailsMutation(SCOPE),
+            { wrapper },
+        )
+
+        result.current.mutate({
+            onboardingId: 'ob_1',
+            firstName: 'Jane',
+            lastName: 'Doe',
+            dateOfBirth: '2000-01-01',
+            countryOfNationality: 'PT',
+            countryOfBirth: 'PT',
+            employmentStatus: 'employed',
+            employmentSector: 'retail',
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.AdditionalDetails,
+        )
+    })
+
+    it('useSubmitAdditionalDetailsMutation posts the details and moves to the address step', async () => {
+        api.submitAdditionalDetails.mockResolvedValue({
+            phase: OnboardingPhase.PhysicalAddress,
+        })
+        const details = {
+            onboardingId: 'ob_1',
+            tin: '123456789',
+            tinCountry: 'PT',
+            occupation: 'it_or_technology_professional',
+            sourceOfWealth: 'employment_salaried',
+            businessSector: 'information_and_communication',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT'],
+        }
+        const { result } = renderHook(
+            () => useSubmitAdditionalDetailsMutation(SCOPE),
+            { wrapper },
+        )
+
+        result.current.mutate(details)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.submitAdditionalDetails).toHaveBeenCalledWith({
+            details,
+            scope: SCOPE,
+        })
+        expect(result.current.data).toEqual({
+            phase: OnboardingPhase.PhysicalAddress,
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Address,
+        )
+    })
+
+    it('useSubmitAdditionalDetailsMutation surfaces a failure without moving on', async () => {
+        useCardStore
+            .getState()
+            .setOnboardingStep(OnboardingStep.AdditionalDetails)
+        api.submitAdditionalDetails.mockRejectedValue({
+            response: { status: 503 },
+            data: { message: 'Risk standards are unavailable' },
+        })
+        const { result } = renderHook(
+            () => useSubmitAdditionalDetailsMutation(SCOPE),
+            { wrapper },
+        )
+
+        result.current.mutate({
+            onboardingId: 'ob_1',
+            tin: '1',
+            tinCountry: 'PT',
+            occupation: 'x',
+            sourceOfWealth: 'y',
+            businessSector: 'z',
+            estimatedAnnualIncome: '1',
+            incomeCountries: ['PT'],
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.AdditionalDetails,
         )
     })
 

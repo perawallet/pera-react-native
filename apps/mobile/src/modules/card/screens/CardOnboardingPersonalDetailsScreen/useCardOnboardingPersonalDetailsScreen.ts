@@ -17,6 +17,7 @@ import {
     getCardApiError,
     isDuplicateError,
     OnboardingNotVerifiedError,
+    OnboardingPhase,
     createPersonalDetailsSchema,
     US_ISO,
     useCardStore,
@@ -34,6 +35,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
     useCardOptionField,
+    usePreselectedCountryField,
     useRepeatedCountryField,
 } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -42,7 +44,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { toPersonalDetailsInput } from './toPersonalDetailsInput'
 import { usePersonalDetailsPrefill } from './usePersonalDetailsPrefill'
-import { usePreselectedCountryField } from './usePreselectedCountryField'
 
 /** ISO 3166-1 alpha-2 of Portugal; Baanx asks its residents about an investment scheme. */
 const PORTUGAL_ISO = 'PT'
@@ -279,14 +280,18 @@ export const useCardOnboardingPersonalDetailsScreen =
                 return
             }
             try {
-                await submitPersonalDetails.mutateAsync(
+                const { phase } = await submitPersonalDetails.mutateAsync(
                     toPersonalDetailsInput(values, {
                         onboardingId,
                         isUsResident,
                         isPortugalResident,
                     }),
                 )
-                navigation.navigate('CardOnboardingAddress')
+                navigation.navigate(
+                    phase === OnboardingPhase.AdditionalDetails
+                        ? 'CardOnboardingAdditionalDetails'
+                        : 'CardOnboardingAddress',
+                )
             } catch (error) {
                 // Checked before getCardApiError: the typed error carries no
                 // body, so it would otherwise fall through to the generic

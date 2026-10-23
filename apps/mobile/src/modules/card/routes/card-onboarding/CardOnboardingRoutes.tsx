@@ -23,6 +23,7 @@ import { CardOnboardingPasswordScreen } from '../../screens/CardOnboardingPasswo
 import { CardOnboardingPhoneScreen } from '../../screens/CardOnboardingPhoneScreen'
 import { CardOnboardingPhoneVerifyScreen } from '../../screens/CardOnboardingPhoneVerifyScreen'
 import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardingPersonalDetailsScreen'
+import { CardOnboardingAdditionalDetailsScreen } from '../../screens/CardOnboardingAdditionalDetailsScreen'
 import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
 import { CardOnboardingMailingAddressScreen } from '../../screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
@@ -87,6 +88,13 @@ export const CardOnboardingStackNavigator = () => {
                 component={CardOnboardingPersonalDetailsScreen}
                 options={{
                     title: 'peraCard.personal_details.navigation_title',
+                }}
+            />
+            <Stack.Screen
+                name='CardOnboardingAdditionalDetails'
+                component={CardOnboardingAdditionalDetailsScreen}
+                options={{
+                    title: 'peraCard.additional_details.navigation_title',
                 }}
             />
             <Stack.Screen

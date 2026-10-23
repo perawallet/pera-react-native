@@ -57,6 +57,20 @@ export const mockSubmitPersonalDetails = ({
     )
 }
 
+export const mockSubmitAdditionalDetails = ({
+    response = { user: { phase: 'PHYSICAL_ADDRESS' } },
+    status = 200,
+}: MockRegisterStepParams = {}): HttpHandler => {
+    validateMockResponse(
+        registerStepResponseSchema,
+        response,
+        'mockSubmitAdditionalDetails',
+    )
+    return http.post('*/v1/auth/register/additional-details', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
 // Consent create (step 1) returns the consent set id the link step binds; the
 // body is zod-parsed leniently, so the mock returns a realistic id by default.
 export type MockSubmitOnboardingConsentParams = {

@@ -39,6 +39,10 @@ export {
     type UseCardOptionFieldResult,
 } from './useCardOptionField'
 export {
+    usePreselectedCountryField,
+    type UsePreselectedCountryFieldResult,
+} from './usePreselectedCountryField'
+export {
     useRepeatedCountryField,
     type UseRepeatedCountryFieldResult,
 } from './useRepeatedCountryField'

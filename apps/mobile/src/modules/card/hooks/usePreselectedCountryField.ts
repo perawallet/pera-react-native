@@ -14,7 +14,7 @@ import { createElement, useCallback, useEffect, useRef, useState } from 'react'
 import type { SupportedCountry } from '@perawallet/wallet-core-card'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { CardCountryPickerContent } from '../components/CardCountryPicker'
 
 export type UsePreselectedCountryFieldParams = {
     /** ISO 3166-1 alpha-2 the onboarding record already holds. */

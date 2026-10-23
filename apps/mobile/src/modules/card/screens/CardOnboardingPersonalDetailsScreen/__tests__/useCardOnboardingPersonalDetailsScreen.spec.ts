@@ -199,7 +199,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockOnboardingDetails = undefined
         mockIsKycRequired = false
         mockIsRecordLoading = false
-        mockMutateAsync.mockResolvedValue(undefined)
+        mockMutateAsync.mockResolvedValue({ phase: 'PHYSICAL_ADDRESS' })
     })
 
     it('holds the form while the onboarding record is still loading', () => {
@@ -455,6 +455,26 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             }),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('continues to additional details when Baanx asks for them', async () => {
+        prefillValidForm()
+        mockMutateAsync.mockResolvedValueOnce({ phase: 'ADDITIONAL_DETAILS' })
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+        await pickEmployment(result)
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingAdditionalDetails',
+            ),
+        )
     })
 
     it("surfaces Baanx's own error message when the submit is rejected", async () => {

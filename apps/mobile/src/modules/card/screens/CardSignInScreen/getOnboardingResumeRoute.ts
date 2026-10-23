@@ -28,6 +28,7 @@ export type OnboardingResumeRoute = {
         | 'CardOnboardingEmail'
         | 'CardOnboardingPhone'
         | 'CardOnboardingPersonalDetails'
+        | 'CardOnboardingAdditionalDetails'
         | 'CardOnboardingVerification'
         | 'CardOnboardingAddress'
         | 'CardOnboardingMailingAddress'
@@ -83,9 +84,18 @@ export const getOnboardingResumeRoute = (
                       step: OnboardingStep.EmailSend,
                   }
         }
-        // No additional-details screen yet, so it resumes at the step before it.
-        case OnboardingPhase.PersonalInformation:
         case OnboardingPhase.AdditionalDetails: {
+            return isKycDone
+                ? {
+                      screen: 'CardOnboardingAdditionalDetails',
+                      step: OnboardingStep.AdditionalDetails,
+                  }
+                : {
+                      screen: 'CardOnboardingVerification',
+                      step: OnboardingStep.Verification,
+                  }
+        }
+        case OnboardingPhase.PersonalInformation: {
             return isKycDone
                 ? {
                       screen: 'CardOnboardingPersonalDetails',

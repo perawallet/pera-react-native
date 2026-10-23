@@ -20,6 +20,7 @@ import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
 import { OnboardingPhase, VerificationState } from '../../models'
 import type {
+    AdditionalDetailsInput,
     AddressInput,
     MailingAddressInput,
     PersonalDetailsInput,
@@ -156,6 +157,21 @@ export const submitPersonalDetails = async (
 ): Promise<RegisterStepResult> => {
     const response = await postRegisterStep(
         '/v1/auth/register/personal-details',
+        params.details,
+        params,
+    )
+    return toRegisterStepResult(response)
+}
+
+export type SubmitAdditionalDetailsParams = ScopeParams & {
+    details: AdditionalDetailsInput
+}
+/** Baanx answers 400 for anyone it didn't ask (non-BoP), and 503 while its lists load. */
+export const submitAdditionalDetails = async (
+    params: SubmitAdditionalDetailsParams,
+): Promise<RegisterStepResult> => {
+    const response = await postRegisterStep(
+        '/v1/auth/register/additional-details',
         params.details,
         params,
     )

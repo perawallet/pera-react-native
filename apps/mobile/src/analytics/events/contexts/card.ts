@@ -36,6 +36,7 @@ export enum CardEvent {
     CreateLogout = 'card_onboarding_create_logout', // Logged out during onboarding
     CreateVerifyAccountContinue = 'card_onb_create_verifyAcct_continue', // Submitted personal details
     CreateVerifyAccountContinue2 = 'card_onb_create_verifyAcct_continue2', // Submitted residential address
+    CreateAdditionalDetailsContinue = 'card_onb_create_addlDetails_continue', // Submitted additional details (BoP residents)
     CreateConnectWallet = 'card_onboarding_create_connectWallet', // Tapped connect account on the status checklist
     CreateVerifyAccount = 'card_onboarding_create_verifyAccount', // Tapped verify identity on the status checklist
     CreateVerifyAccountSelect = 'card_onb_create_verifyAcct_select', // Picked a funding account in the account sheet

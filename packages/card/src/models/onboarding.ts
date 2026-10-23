@@ -140,6 +140,31 @@ export type PersonalDetailsInput = {
     ssn?: string
 }
 
+/** Occupation key that requires `occupationOther`. */
+export const OTHER_OCCUPATION_KEY = 'other_specify_occupation'
+/** Source-of-wealth key that requires `sourceOfWealthOther`. */
+export const OTHER_SOURCE_OF_WEALTH_KEY = 'other_specify_source_of_wealth'
+
+/** BoP residents only, after personal details (`phase` = `ADDITIONAL_DETAILS`). */
+export type AdditionalDetailsInput = {
+    onboardingId: string
+    /** Tax identification number, at most 20 characters. */
+    tin: string
+    /** ISO 3166-1 alpha-2 of the issuing country; Baanx rejects `US`. */
+    tinCountry: string
+    /** Keys from the matching GET /v1/auth/settings lists. */
+    occupation: string
+    /** Only with {@link OTHER_OCCUPATION_KEY}. */
+    occupationOther?: string
+    sourceOfWealth: string
+    /** Only with {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
+    sourceOfWealthOther?: string
+    businessSector: string
+    estimatedAnnualIncome: string
+    /** ISO 3166-1 alpha-2, one to three. */
+    incomeCountries: string[]
+}
+
 export type AddressInput = {
     onboardingId: string
     addressLine1: string
@@ -456,3 +481,72 @@ export const mailingAddressSchema = z.object({
 })
 
 export type MailingAddressFormValues = z.infer<typeof mailingAddressSchema>
+
+// Format unconfirmed with Baanx: the spec's example is a band key with no list.
+export const estimatedAnnualIncomeSchema = z.string().trim().min(1).max(50)
+
+const TIN_MAX_LENGTH = 20
+const OTHER_TEXT_MAX_LENGTH = 100
+const MAX_INCOME_COUNTRIES = 3
+
+/** Validation for the additional-details onboarding step. */
+export const additionalDetailsSchema = z
+    .object({
+        tin: z.string().trim().min(1).max(TIN_MAX_LENGTH),
+        tinCountry: z.string().length(2),
+        occupation: z.string().min(1),
+        /** Empty unless the occupation is {@link OTHER_OCCUPATION_KEY}. */
+        occupationOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+        sourceOfWealth: z.string().min(1),
+        /** Empty unless the source is {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
+        sourceOfWealthOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+        businessSector: z.string().min(1),
+        estimatedAnnualIncome: estimatedAnnualIncomeSchema,
+        incomeCountries: z
+            .array(z.string().length(2))
+            .min(1)
+            .max(MAX_INCOME_COUNTRIES),
+    })
+    .superRefine((values, ctx) => {
+        if (values.tinCountry === US_ISO) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['tinCountry'],
+                message: 'tin-country-unsupported',
+            })
+        }
+        if (
+            values.occupation === OTHER_OCCUPATION_KEY &&
+            !values.occupationOther
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['occupationOther'],
+                message: 'occupation-other-required',
+            })
+        }
+        if (
+            values.sourceOfWealth === OTHER_SOURCE_OF_WEALTH_KEY &&
+            !values.sourceOfWealthOther
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['sourceOfWealthOther'],
+                message: 'source-of-wealth-other-required',
+            })
+        }
+        if (
+            new Set(values.incomeCountries).size !==
+            values.incomeCountries.length
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['incomeCountries'],
+                message: 'income-country-duplicate',
+            })
+        }
+    })
+
+export type AdditionalDetailsFormValues = z.infer<
+    typeof additionalDetailsSchema
+>

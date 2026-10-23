@@ -19,7 +19,7 @@ const mockRequest = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequest }),
 }))
-vi.mock('@modules/card/components/CardCountryPicker', () => ({
+vi.mock('../../components/CardCountryPicker', () => ({
     CardCountryPickerContent: () => null,
 }))
 

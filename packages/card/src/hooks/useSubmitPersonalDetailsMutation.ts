@@ -21,7 +21,11 @@ import {
     isNotVerifiedError,
     OnboardingNotVerifiedError,
 } from '../api/errors'
-import { OnboardingStep, type PersonalDetailsInput } from '../models'
+import {
+    OnboardingPhase,
+    OnboardingStep,
+    type PersonalDetailsInput,
+} from '../models'
 import { useCardStore } from '../store'
 import { cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -53,9 +57,14 @@ export const useSubmitPersonalDetailsMutation = (
                 throw error
             }
         },
-        // Personal details saved: advance to the address step.
-        onSuccess: () => {
-            useCardStore.getState().setOnboardingStep(OnboardingStep.Address)
+        onSuccess: ({ phase }) => {
+            useCardStore
+                .getState()
+                .setOnboardingStep(
+                    phase === OnboardingPhase.AdditionalDetails
+                        ? OnboardingStep.AdditionalDetails
+                        : OnboardingStep.Address,
+                )
         },
         onError: (error, variables) => {
             // The refusal proves our cached KYC state is optimistic, so

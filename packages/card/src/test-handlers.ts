@@ -101,6 +101,7 @@ export {
     mockSendPhoneVerification,
     mockVerifyPhone,
     mockSubmitPersonalDetails,
+    mockSubmitAdditionalDetails,
     mockSubmitAddress,
     mockSubmitMailingAddress,
     mockSubmitOnboardingConsent,

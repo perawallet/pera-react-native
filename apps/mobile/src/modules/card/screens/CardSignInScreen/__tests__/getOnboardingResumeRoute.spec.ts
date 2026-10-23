@@ -90,6 +90,12 @@ const CASES: Case[] = [
         step: OnboardingStep.PersonalDetails,
     },
     {
+        phase: OnboardingPhase.AdditionalDetails,
+        verificationState: VerificationState.Pending,
+        screen: 'CardOnboardingAdditionalDetails',
+        step: OnboardingStep.AdditionalDetails,
+    },
+    {
         phase: OnboardingPhase.PhysicalAddress,
         verificationState: VerificationState.Unverified,
         screen: 'CardOnboardingVerification',

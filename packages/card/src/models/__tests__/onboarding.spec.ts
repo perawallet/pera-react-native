@@ -22,6 +22,7 @@ import {
     isoDateToDob,
     passwordSetSchema,
     personalDetailsSchema,
+    additionalDetailsSchema,
 } from '../onboarding'
 
 const parse = (password: string, confirmPassword = password) =>
@@ -341,5 +342,83 @@ describe('addressSchema', () => {
                 usState: 'CA',
             }).success,
         ).toBe(true)
+    })
+})
+
+describe('additionalDetailsSchema', () => {
+    const valid = {
+        tin: '123456789',
+        tinCountry: 'PT',
+        occupation: 'it_or_technology_professional',
+        occupationOther: '',
+        sourceOfWealth: 'employment_salaried',
+        sourceOfWealthOther: '',
+        businessSector: 'information_and_communication',
+        estimatedAnnualIncome: '30000',
+        incomeCountries: ['PT'],
+    }
+
+    it('accepts a complete record', () => {
+        expect(additionalDetailsSchema.safeParse(valid).success).toBe(true)
+    })
+
+    it('accepts the "other" occupation and source when the free text is given', () => {
+        expect(
+            additionalDetailsSchema.safeParse({
+                ...valid,
+                occupation: 'other_specify_occupation',
+                occupationOther: 'Beekeeper',
+                sourceOfWealth: 'other_specify_source_of_wealth',
+                sourceOfWealthOther: 'Inheritance',
+                incomeCountries: ['PT', 'ES', 'FR'],
+            }).success,
+        ).toBe(true)
+    })
+
+    it.each([
+        ['an empty TIN', { tin: ' ' }, 'tin'],
+        ['a TIN over 20 characters', { tin: '1'.repeat(21) }, 'tin'],
+        ['a US TIN country', { tinCountry: 'US' }, 'tinCountry'],
+        [
+            'the other occupation without its text',
+            { occupation: 'other_specify_occupation' },
+            'occupationOther',
+        ],
+        [
+            'the other source of wealth without its text',
+            { sourceOfWealth: 'other_specify_source_of_wealth' },
+            'sourceOfWealthOther',
+        ],
+        [
+            'free text over 100 characters',
+            { occupationOther: 'a'.repeat(101) },
+            'occupationOther',
+        ],
+        ['no business sector', { businessSector: '' }, 'businessSector'],
+        ['no income', { estimatedAnnualIncome: '  ' }, 'estimatedAnnualIncome'],
+        [
+            'an income over 50 characters',
+            { estimatedAnnualIncome: '1'.repeat(51) },
+            'estimatedAnnualIncome',
+        ],
+        ['no income country', { incomeCountries: [] }, 'incomeCountries'],
+        [
+            'four income countries',
+            { incomeCountries: ['PT', 'ES', 'FR', 'DE'] },
+            'incomeCountries',
+        ],
+        [
+            'a repeated income country',
+            { incomeCountries: ['PT', 'PT'] },
+            'incomeCountries',
+        ],
+    ])('rejects %s', (_label, override, path) => {
+        const result = additionalDetailsSchema.safeParse({
+            ...valid,
+            ...override,
+        })
+
+        expect(result.success).toBe(false)
+        expect(result.error?.issues[0].path[0]).toBe(path)
     })
 })
