@@ -24,7 +24,9 @@ import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
     decodeFunctionData,
+    erc1155Abi,
     erc20Abi,
+    erc721Abi,
     getAddress,
     maxUint256,
     parseGwei,
@@ -37,6 +39,7 @@ import type {
     ReviewContext,
     TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
+import { getAssetById, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     getOpenSubmissionAttempts,
     type SubmissionAttempt,
@@ -64,6 +67,14 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     getOpenSubmissionAttempts: vi.fn(async () => []),
 }))
 
+// No stored asset by default, so only the NFT cases that seed one can build.
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    getAssetById: vi.fn(async () => null),
+}))
+
 const SENDER = '0x00000000000000000000000000000000000000aa'
 const RECIPIENT = getAddress('0x00000000000000000000000000000000000000bb')
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -83,6 +94,22 @@ const tokenIntent: TransferIntent = {
     assetRef: { chainId: 'ethereum', assetId: USDC },
     amount: new Decimal(250),
 }
+
+const NFT_CONTRACT = getAddress('0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d')
+const NFT_ID = `${NFT_CONTRACT}/7`
+const nftIntent = (amount: Decimal.Value): TransferIntent => ({
+    ...nativeIntent,
+    assetRef: { chainId: 'ethereum', assetId: NFT_ID },
+    amount: new Decimal(amount),
+})
+const storeNft = (standard: 'erc721' | 'erc1155') =>
+    vi.mocked(getAssetById).mockResolvedValue({
+        assetId: NFT_ID,
+        decimals: 0,
+        peraMetadata: {
+            collectible: { standard, collection: { name: 'Apes' } },
+        },
+    } as PeraAsset)
 
 const feeHistory = (
     base: bigint[],
@@ -330,6 +357,157 @@ describe('Ethereum transfer adapter', () => {
     })
 })
 
+describe('an NFT transfer', () => {
+    beforeEach(() => {
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([])
+        vi.mocked(getAssetById).mockResolvedValue(null)
+    })
+
+    it('builds an ERC-721 as safeTransferFrom to the NFT contract with no value', async () => {
+        storeNft('erc721')
+        let estimated: { to?: string; data?: string } = {}
+        useRpc({
+            eth_estimateGas: params => {
+                estimated = params[0] as typeof estimated
+                return '0x186a0'
+            },
+        })
+
+        const [built] = await adapter.build(nftIntent(1), context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.to).toBe(NFT_CONTRACT)
+        expect(transaction.value).toBe(0n)
+        expect(transaction.gas).toBe(100_000n)
+        expect(estimated.data).toBe(transaction.data)
+        expect(
+            decodeFunctionData({
+                abi: erc721Abi,
+                data: transaction.data as Hex,
+            }),
+        ).toEqual({
+            functionName: 'safeTransferFrom',
+            args: [getAddress(SENDER), RECIPIENT, 7n],
+        })
+    })
+
+    it('summarises it as an NFT send of the quantity, named by collection and token id', async () => {
+        storeNft('erc721')
+        useRpc()
+
+        const [built] = await adapter.build(nftIntent(1), context)
+
+        expect(built.summary).toEqual({
+            kind: 'nft-transfer',
+            title: { key: 'transactions.list_item.send' },
+            direction: 'out',
+            icon: 'send',
+            counterparty: RECIPIENT,
+            subtitle: {
+                key: 'transactions.list_item.nft_subtitle',
+                params: { collection: 'Apes', tokenId: '7' },
+            },
+            amount: {
+                assetRef: { chainId: 'ethereum', assetId: NFT_ID },
+                value: new Decimal(1),
+            },
+        })
+    })
+
+    it('summarises an NFT sent to its own sender as a self send', async () => {
+        storeNft('erc721')
+        useRpc()
+
+        const [built] = await adapter.build(
+            { ...nftIntent(1), to: SENDER },
+            context,
+        )
+
+        expect(built.summary).toMatchObject({
+            kind: 'nft-transfer',
+            direction: 'self',
+        })
+    })
+
+    it('builds an ERC-1155 as safeTransferFrom of the amount with empty data', async () => {
+        storeNft('erc1155')
+        useRpc()
+
+        const [built] = await adapter.build(nftIntent(2), context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.to).toBe(NFT_CONTRACT)
+        expect(transaction.value).toBe(0n)
+        expect(
+            decodeFunctionData({
+                abi: erc1155Abi,
+                data: transaction.data as Hex,
+            }),
+        ).toEqual({
+            functionName: 'safeTransferFrom',
+            args: [getAddress(SENDER), RECIPIENT, 7n, 2n, '0x'],
+        })
+        expect(built.summary.amount?.value).toEqual(new Decimal(2))
+    })
+
+    it('prices an ERC-1155 before an amount is entered', async () => {
+        storeNft('erc1155')
+        useRpc()
+
+        const estimate = await adapter.getFeeEstimate(nftIntent(0), context)
+
+        expect(estimate.amount.isPositive()).toBe(true)
+    })
+
+    it.each([
+        ['an ERC-721 of 2', 'erc721', 2],
+        ['an ERC-721 of 0', 'erc721', 0],
+        ['an ERC-1155 of 1.5', 'erc1155', 1.5],
+        ['an ERC-1155 of -1', 'erc1155', -1],
+    ] as const)(
+        'refuses %s before any request',
+        async (_, standard, amount) => {
+            storeNft(standard)
+
+            await expect(
+                adapter.build(nftIntent(amount), context),
+            ).rejects.toBeInstanceOf(InvalidSendParamsError)
+            await expect(
+                adapter.getFeeEstimate(nftIntent(amount), context),
+            ).rejects.toBeInstanceOf(InvalidSendParamsError)
+        },
+    )
+
+    it('refuses an NFT the asset store does not hold', async () => {
+        await expect(
+            adapter.build(nftIntent(1), context),
+        ).rejects.toBeInstanceOf(InvalidSendParamsError)
+    })
+
+    it.each([
+        ['build', () => adapter.build(nftIntent(1), context)],
+        ['getFeeEstimate', () => adapter.getFeeEstimate(nftIntent(1), context)],
+    ])(
+        'rejects %s with the revert reason when the recipient cannot receive it',
+        async (_, run) => {
+            storeNft('erc721')
+            useRpc({
+                eth_estimateGas: new EvmRpcErrorFixture(
+                    3,
+                    'execution reverted: ERC721: transfer to non ERC721Receiver implementer',
+                ),
+            })
+
+            const error = await run().catch((e: unknown) => e)
+
+            expect(isEvmError(error)).toBe(true)
+            expect(error).toMatchObject({
+                code: EvmErrorCode.REVERTED_WITH_REASON,
+            })
+        },
+    )
+})
+
 describe('a transfer the adapter builds, reviewed as the wallet built it', () => {
     const walletBuilt: ReviewContext = {
         scope: context.scope,
@@ -339,11 +517,15 @@ describe('a transfer the adapter builds, reviewed as the wallet built it', () =>
     }
 
     it.each([
-        ['a native transfer', nativeIntent, 'transfer'],
-        ['an ERC-20 transfer', tokenIntent, 'token-transfer'],
+        ['a native transfer', nativeIntent, 'transfer', undefined],
+        ['an ERC-20 transfer', tokenIntent, 'token-transfer', undefined],
+        ['an ERC-721 transfer', nftIntent(1), 'nft-transfer', 'erc721'],
+        ['an ERC-1155 transfer', nftIntent(2), 'nft-transfer', 'erc1155'],
     ] as const)(
         'reviews %s as the same summary it was built with, and auto-approves it',
-        async (_, intent, kind) => {
+        async (_, intent, kind, standard) => {
+            vi.mocked(getAssetById).mockResolvedValue(null)
+            if (standard) storeNft(standard)
             useRpc({ eth_estimateGas: '0xfde8' })
             const built = await adapter.build(intent, context)
 

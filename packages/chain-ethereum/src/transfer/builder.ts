@@ -37,18 +37,22 @@ import {
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { toEvmError } from '../blockchain/errors'
-import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import { eip155ChainIdOf, isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEvmFeeEstimate } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
+import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
 import { createEvmSpendableBalance } from './spendable-balance'
-import { sendSummary } from './summary'
+import { nftSendSubtitle, sendSummary } from './summary'
 
 const MAX_UINT256 = new Decimal(maxUint256.toString())
 
-/** The EVM call a transfer intent becomes. `value` is in wei; for an ERC-20 transfer `to` is the token contract. */
+/**
+ * The EVM call a transfer intent becomes. `value` is in wei; for an ERC-20 or
+ * NFT transfer `to` is the token's contract.
+ */
 export type EvmTransferCall = {
     chainId: number
     from: Address
@@ -57,21 +61,66 @@ export type EvmTransferCall = {
     data?: Hex
 }
 
+type EvmTransfer = { call: EvmTransferCall; summary: TransactionSummary }
+
+const ONE = new Decimal(1)
+
+// An ERC-1155 amount of 0 is allowed: the amount step prices the fee before the
+// user types one.
+const toNftTransfer = async (
+    chainId: number,
+    intent: TransferIntent,
+    context: BuildContext,
+): Promise<EvmTransfer> => {
+    const nft = await readEvmNftTransferAsset(
+        context.scope,
+        intent.assetRef.assetId,
+    )
+    if (!nft || (nft.standard === 'erc721' && !intent.amount.equals(ONE))) {
+        throw new InvalidSendParamsError()
+    }
+    const from = getAddress(intent.from)
+    const to = getAddress(intent.to)
+    return {
+        call: {
+            chainId,
+            from,
+            to: nft.contract,
+            value: 0n,
+            data: encodeEvmNftTransfer({
+                standard: nft.standard,
+                from,
+                to,
+                tokenId: nft.tokenId,
+                amount: toBigInt(intent.amount),
+            }),
+        },
+        summary: sendSummary(
+            'nft-transfer',
+            intent.from,
+            intent.to,
+            { assetRef: intent.assetRef, value: intent.amount },
+            nftSendSubtitle(nft.collectionName ?? nft.contract, nft.tokenId),
+        ),
+    }
+}
+
 // An intent's note is dropped: EVM has no memo, and calldata on a token
 // transfer would change the call.
-const toEvmTransferCall = (
+const toEvmTransfer = async (
     chain: EvmChain,
     intent: TransactionIntent,
     context: BuildContext,
-): EvmTransferCall => {
+): Promise<EvmTransfer> => {
     const chainId = eip155ChainIdOf(context.scope, chain)
     if (intent.kind !== 'transfer') {
         throw new UnsupportedTransactionIntentError(intent.kind, chain.row.id)
     }
     const isNative = isNativeAsset(intent.assetRef, chain.descriptor)
+    const isNft = !isNative && isEvmNftAssetId(intent.assetRef.assetId)
     if (
         intent.assetRef.chainId !== chain.row.id ||
-        (!isNative && !isAddress(intent.assetRef.assetId)) ||
+        (!isNative && !isNft && !isAddress(intent.assetRef.assetId)) ||
         !isAddress(intent.from) ||
         !isAddress(intent.to) ||
         !intent.amount.isInteger() ||
@@ -80,36 +129,34 @@ const toEvmTransferCall = (
     ) {
         throw new InvalidSendParamsError()
     }
+    if (isNft) return toNftTransfer(chainId, intent, context)
     const from = getAddress(intent.from)
     const to = getAddress(intent.to)
     const amount = toBigInt(intent.amount)
-    if (isNative) return { chainId, from, to, value: amount }
-    return {
-        chainId,
-        from,
-        to: getAddress(intent.assetRef.assetId),
-        value: 0n,
-        data: encodeFunctionData({
-            abi: erc20Abi,
-            functionName: 'transfer',
-            args: [to, amount],
-        }),
-    }
-}
-
-const transferSummary = (
-    intent: TransferIntent,
-    isNative: boolean,
-): TransactionSummary =>
-    sendSummary(
+    const summary = sendSummary(
         isNative ? 'transfer' : 'token-transfer',
         intent.from,
         intent.to,
-        {
-            assetRef: intent.assetRef,
-            value: intent.amount,
-        },
+        { assetRef: intent.assetRef, value: intent.amount },
     )
+    if (isNative) {
+        return { call: { chainId, from, to, value: amount }, summary }
+    }
+    return {
+        call: {
+            chainId,
+            from,
+            to: getAddress(intent.assetRef.assetId),
+            value: 0n,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'transfer',
+                args: [to, amount],
+            }),
+        },
+        summary,
+    }
+}
 
 const buildEvmTransfer = async (
     ctx: ChainContext,
@@ -117,7 +164,7 @@ const buildEvmTransfer = async (
     intent: TransactionIntent,
     context: BuildContext,
 ): Promise<UnsignedTransaction[]> => {
-    const call = toEvmTransferCall(chain, intent, context)
+    const { call, summary } = await toEvmTransfer(chain, intent, context)
     const client = createEvmClient(context.scope, ctx, chain)
     // The node's pending count and the ledger's open sends, not
     // context.chainState: a synced snapshot can lag the mempool.
@@ -150,11 +197,7 @@ const buildEvmTransfer = async (
         {
             scope: context.scope,
             payload,
-            // toEvmTransferCall only returns for a transfer intent.
-            summary: transferSummary(
-                intent as TransferIntent,
-                call.data === undefined,
-            ),
+            summary,
             chainData: { family: 'evm' },
         },
     ]
@@ -166,7 +209,7 @@ const estimateEvmTransferFee = async (
     intent: TransactionIntent,
     context: BuildContext,
 ): Promise<FeeEstimate> => {
-    const call = toEvmTransferCall(chain, intent, context)
+    const { call } = await toEvmTransfer(chain, intent, context)
     const client = createEvmClient(context.scope, ctx, chain)
     const fees = await readTransferFees(
         client,
