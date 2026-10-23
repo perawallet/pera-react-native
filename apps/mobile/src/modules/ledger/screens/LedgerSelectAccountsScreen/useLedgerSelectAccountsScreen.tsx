@@ -13,7 +13,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     chainAccountOf,
     type LedgerSelectableAccount,
@@ -23,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     type LedgerAccount,
-    LedgerProviderNotFoundError,
     classifyLedgerError,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
@@ -49,6 +47,7 @@ import {
 import {
     deserializeLedgerAccount,
     getLedgerErrorPreset,
+    requireLedgerProvider,
     serializeSelectableAccount,
 } from '@modules/ledger/utils'
 import { useLedgerFlowChainId } from '@modules/ledger/hooks'
@@ -294,16 +293,7 @@ export const useLedgerSelectAccountsScreen =
             setIsFetchingMore(true)
             try {
                 if (!transportRef.current) {
-                    const provider =
-                        getProvider().hardwareWalletRegistry.getProvider(
-                            'ledger',
-                            transportType,
-                        )
-                    if (!provider) {
-                        throw new LedgerProviderNotFoundError(
-                            `No Ledger provider registered for transport "${transportType}"`,
-                        )
-                    }
+                    const provider = requireLedgerProvider(transportType)
                     const connectPromise = provider.connect(
                         deviceId,
                         scope.chainId,
