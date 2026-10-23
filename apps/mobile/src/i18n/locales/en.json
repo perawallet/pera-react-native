@@ -3875,7 +3875,6 @@
             "upgrade_watch_confirm": "Upgrade",
             "same_wallet_title": "Add to your existing Ledger account?",
             "same_wallet_body": "An account from this Ledger is already in your wallet. Open the {{appName}} app on your Ledger so Pera can confirm both addresses come from the same Ledger, then continue. Or add this address as a separate account.",
-            "same_wallet_read_failed": "Couldn't read the {{appName}} app on your Ledger. Make sure it is open and unlocked, then try again. Or add this address as a separate account.",
             "same_wallet_confirm": "Continue",
             "same_wallet_separate": "Add as separate account"
         },

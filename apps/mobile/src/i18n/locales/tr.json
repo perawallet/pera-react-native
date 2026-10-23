@@ -3875,7 +3875,6 @@
             "upgrade_watch_confirm": "Yükselt",
             "same_wallet_title": "Mevcut Ledger hesabına eklensin mi?",
             "same_wallet_body": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Pera’nın iki adresin de aynı Ledger’dan geldiğini doğrulayabilmesi için Ledger’ında {{appName}} uygulamasını aç ve devam et. Ya da bu adresi ayrı bir hesap olarak ekle.",
-            "same_wallet_read_failed": "Ledger’ındaki {{appName}} uygulaması okunamadı. Uygulamanın açık ve kilidinin açık olduğundan emin ol, sonra tekrar dene. Ya da bu adresi ayrı bir hesap olarak ekle.",
             "same_wallet_confirm": "Devam et",
             "same_wallet_separate": "Ayrı hesap olarak ekle"
         },

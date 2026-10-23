@@ -3903,7 +3903,6 @@
             "upgrade_watch_confirm": "Atualizar",
             "same_wallet_title": "Adicionar à sua conta Ledger existente?",
             "same_wallet_body": "Uma conta deste Ledger já está na sua wallet. Abra o app {{appName}} no seu Ledger para que a Pera confirme que os dois endereços vêm do mesmo Ledger e depois continue. Ou adicione este endereço como uma conta separada.",
-            "same_wallet_read_failed": "Não foi possível ler o app {{appName}} no seu Ledger. Verifique se ele está aberto e desbloqueado e tente novamente. Ou adicione este endereço como uma conta separada.",
             "same_wallet_confirm": "Continuar",
             "same_wallet_separate": "Adicionar como conta separada"
         },

@@ -34,6 +34,7 @@ export const LedgerVerifyScreen = () => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isReadingDevice,
         isAddedInHandoffTab,
         handleDone,
         handleCancel,
@@ -91,6 +92,7 @@ export const LedgerVerifyScreen = () => {
                     onPress={handleAdd}
                     variant='primary'
                     isDisabled={!areAllVerified}
+                    isLoading={isReadingDevice}
                 />
             }
         >

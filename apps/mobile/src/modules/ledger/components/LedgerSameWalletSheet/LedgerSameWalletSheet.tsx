@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import type { LedgerErrorPreset } from '@modules/ledger/utils'
 
 /** `undefined` (cancel or swipe-away) abandons the add. */
 export type LedgerSameWalletChoice = 'read' | 'separate'
@@ -19,28 +21,31 @@ export type LedgerSameWalletChoice = 'read' | 'separate'
 export type LedgerSameWalletSheetProps = {
     /** The device app holding the chain the existing account is on. */
     appName: string
-    /** Whether the last read of that app failed. */
-    hasReadFailed: boolean
+    /** Why the last read of that app failed, if it did. */
+    failure: Nullable<LedgerErrorPreset>
 }
 
 export const LedgerSameWalletSheet = ({
     appName,
-    hasReadFailed,
+    failure,
 }: LedgerSameWalletSheetProps) => {
     const { t } = useLanguage()
+    const separateLabel = t('ledger.verify.same_wallet_separate')
+    // A failure a retry can't clear leaves the separate account as the way on.
+    const canRead = failure === null || failure.isRetryable
     return (
         <ConfirmActionContent<LedgerSameWalletChoice>
             icon='ledger'
             title={t('ledger.verify.same_wallet_title')}
-            message={t(
-                hasReadFailed
-                    ? 'ledger.verify.same_wallet_read_failed'
-                    : 'ledger.verify.same_wallet_body',
-                { appName },
-            )}
-            confirmLabel={t('ledger.verify.same_wallet_confirm')}
-            confirmValue='read'
-            tertiaryLabel={t('ledger.verify.same_wallet_separate')}
+            message={
+                failure?.body ??
+                t('ledger.verify.same_wallet_body', { appName })
+            }
+            confirmLabel={
+                canRead ? t('ledger.verify.same_wallet_confirm') : separateLabel
+            }
+            confirmValue={canRead ? 'read' : 'separate'}
+            tertiaryLabel={canRead ? separateLabel : undefined}
             tertiaryVariant='secondary'
             tertiaryValue='separate'
             cancelLabel={t('common.cancel.label')}

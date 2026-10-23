@@ -18,6 +18,8 @@ export type {
     ConnectAndDiscoverResult,
 } from './connectAndDiscover'
 export { verifyLedgerAddress } from './verifyAddress'
+export { ledgerReadableChainOf, readLedgerAddresses } from './readAddresses'
+export type { ReadLedgerAddressesOptions } from './readAddresses'
 export {
     ledgerTimeoutReason,
     withLedgerConfirmationTimeout,

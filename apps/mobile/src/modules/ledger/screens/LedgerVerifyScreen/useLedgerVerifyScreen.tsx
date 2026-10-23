@@ -31,13 +31,13 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    hasLedgerAppDriver,
     ledgerAppNameFor,
     type HardwareWalletDerivedAccount,
     type HardwareWalletTransport,
-    type LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
+    ledgerReadableChainOf,
+    readLedgerAddresses,
     verifyLedgerAddress,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
@@ -45,7 +45,11 @@ import {
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type AppError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
     type ChainId,
@@ -85,6 +89,8 @@ type UseLedgerVerifyScreenResult = {
     handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** True while the device reads an existing account's address before adding. */
+    isReadingDevice: boolean
     /** Set once accounts are added in a Ledger pairing tab, which then shows a result screen. */
     isAddedInHandoffTab: boolean
     handleDone: () => void
@@ -124,11 +130,10 @@ const claimsFor = (
         details,
         chainIds,
     ).flatMap(holder => {
-        const proofChain = (Object.keys(holder.chains) as ChainId[]).find(
-            id =>
-                chainAccountOf(holder, id) !== undefined &&
-                hasLedgerAppDriver(id) &&
-                addressCodecs.has(id),
+        const proofChain = ledgerReadableChainOf(
+            (Object.keys(holder.chains) as ChainId[]).filter(
+                id => chainAccountOf(holder, id) !== undefined,
+            ),
         )
         const address =
             proofChain && chainAccountOf(holder, proofChain)?.address
@@ -143,49 +148,6 @@ const claimsFor = (
               ]
             : []
     })
-
-/** The device's addresses at `accountIndices` in `chainId`'s app, unconfirmed on screen. */
-const readDeviceAddresses = async (
-    transportType: LedgerTransportType,
-    deviceId: string,
-    chainId: ChainId,
-    accountIndices: readonly number[],
-): Promise<Map<number, string>> => {
-    const provider = getProvider().hardwareWalletRegistry.getProvider(
-        'ledger',
-        transportType,
-    )
-    if (!provider) {
-        throw new LedgerProviderNotFoundError(
-            `No Ledger provider registered for transport "${transportType}"`,
-        )
-    }
-    const connectPromise = provider.connect(deviceId, chainId)
-    let transport: Nullable<HardwareWalletTransport> = null
-    try {
-        transport = await withLedgerConnectionTimeout(
-            connectPromise,
-            'Connect to Ledger',
-        )
-        const addresses = new Map<number, string>()
-        for (const accountIndex of new Set(accountIndices)) {
-            const { address } = await withLedgerConnectionTimeout(
-                transport.getAddress(accountIndex, false),
-                'Read Ledger address',
-            )
-            addresses.set(accountIndex, address)
-        }
-        return addresses
-    } finally {
-        if (transport) {
-            await transport.disconnect().catch(() => {})
-        } else {
-            connectPromise
-                .then(t => t.disconnect().catch(() => {}))
-                .catch(() => {})
-        }
-    }
-}
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -210,6 +172,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const chainId = useLedgerFlowChainId()
     const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
     const [isAddedInHandoffTab, setIsAddedInHandoffTab] = useState(false)
+    const [isReadingDevice, setIsReadingDevice] = useState(false)
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
         const byIndex = new Map<number, HardwareWalletDerivedAccount>()
@@ -332,14 +295,15 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 ])
             }
             for (const [claimChain, chainClaims] of claimsByChain) {
-                let hasReadFailed = false
+                const appName = ledgerAppNameFor(claimChain)
+                let failure: Nullable<LedgerErrorPreset> = null
                 for (;;) {
                     const choice =
                         await requestBottomSheet<LedgerSameWalletChoice>({
                             contents: (
                                 <LedgerSameWalletSheet
-                                    appName={ledgerAppNameFor(claimChain)}
-                                    hasReadFailed={hasReadFailed}
+                                    appName={appName}
+                                    failure={failure}
                                 />
                             ),
                             options: {
@@ -349,13 +313,26 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                         })
                     if (choice === undefined) return null
                     if (choice === 'separate') break
+                    setIsReadingDevice(true)
                     try {
-                        const read = await readDeviceAddresses(
-                            transportType,
+                        const provider =
+                            getProvider().hardwareWalletRegistry.getProvider(
+                                'ledger',
+                                transportType,
+                            )
+                        if (!provider) {
+                            throw new LedgerProviderNotFoundError(
+                                `No Ledger provider registered for transport "${transportType}"`,
+                            )
+                        }
+                        const read = await readLedgerAddresses({
+                            provider,
                             deviceId,
-                            claimChain,
-                            chainClaims.map(claim => claim.accountIndex),
-                        )
+                            chainId: claimChain,
+                            accountIndices: chainClaims.map(
+                                claim => claim.accountIndex,
+                            ),
+                        })
                         const codec = addressCodecs.get(claimChain)
                         for (const claim of chainClaims) {
                             const address = read.get(claim.accountIndex)
@@ -367,14 +344,21 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                             }
                         }
                         break
-                    } catch {
-                        hasReadFailed = true
+                    } catch (err) {
+                        const readError = classifyLedgerError(err)
+                        logger.warn('Ledger same-wallet read failed', {
+                            chainId: claimChain,
+                            error: readError,
+                        })
+                        failure = getLedgerErrorPreset(readError, t, appName)
+                    } finally {
+                        setIsReadingDevice(false)
                     }
                 }
             }
             return proven
         },
-        [deviceId, requestBottomSheet, transportType],
+        [deviceId, requestBottomSheet, t, transportType],
     )
 
     const runAdd = useCallback(async () => {
@@ -678,6 +662,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isReadingDevice,
         isAddedInHandoffTab,
         handleDone,
         handleCancel: isHandoffTab ? handleDone : undefined,

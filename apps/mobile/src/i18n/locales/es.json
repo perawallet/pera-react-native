@@ -3875,7 +3875,6 @@
             "upgrade_watch_confirm": "Actualizar",
             "same_wallet_title": "¿Añadir a tu cuenta Ledger existente?",
             "same_wallet_body": "Ya tienes en tu wallet una cuenta de este Ledger. Abre la app de {{appName}} en tu Ledger para que Pera confirme que ambas direcciones provienen del mismo Ledger y luego continúa. O añade esta dirección como una cuenta independiente.",
-            "same_wallet_read_failed": "No se pudo leer la app de {{appName}} en tu Ledger. Asegúrate de que está abierta y desbloqueada e inténtalo de nuevo. O añade esta dirección como una cuenta independiente.",
             "same_wallet_confirm": "Continuar",
             "same_wallet_separate": "Añadir como cuenta independiente"
         },
