@@ -205,6 +205,9 @@ relay → service worker (`pera-dapp-page-request`) → offscreen handler
 (`pera-dapp-page-response`); notifications are broadcast to every tab and the
 relay drops anything not for its own origin.
 
+The worker answers the top frame only (`frameId` 0), so the relay holds a
+prerendered page's requests until the page activates and becomes that frame.
+
 The service worker is the trust boundary: origin is `sender.origin`, must be a
 secure context, and the request must pass `isWithinDappPayloadBounds` before it
 is forwarded or held anywhere. That gate ships from the package's `./bounds`
@@ -229,8 +232,11 @@ than guessed at.
 
 ## EIP-1193 provider
 
-The same content script installs an EIP-1193 provider for EVM dApps. It is
-always announced through EIP-6963 (rdns `app.perawallet`). It takes
+In a build that serves an EVM chain, the same content script installs an
+EIP-1193 provider for EVM dApps; `scripts/build.mjs` bakes that decision in as
+`__PERA_SERVES_EVM__`, so a build that serves none never offers itself to EVM
+dApps and ships without the provider. It is always announced through EIP-6963
+(rdns `app.perawallet`). It takes
 `window.ethereum` only when nothing has claimed it, and leaves the property
 replaceable, so a wallet that injects after Pera still gets it. It sends
 nothing at install: a page load never wakes the offscreen document.

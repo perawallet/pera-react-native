@@ -224,6 +224,30 @@ describe('relay-isolated handshake hardening', () => {
         vi.unstubAllGlobals()
     })
 
+    it('holds a prerendered page’s requests until it activates', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        stubChrome(sendMessage)
+        Object.defineProperty(document, 'prerendering', {
+            value: true,
+            configurable: true,
+        })
+
+        await import('../relay-isolated')
+        dispatchHandshake('req-pre', 'res-pre')
+        dispatchRequest('req-pre', 'id-1')
+        expect(sendMessage).not.toHaveBeenCalled()
+
+        Object.defineProperty(document, 'prerendering', {
+            value: false,
+            configurable: true,
+        })
+        document.dispatchEvent(new Event('prerenderingchange'))
+        expect(sendMessage).toHaveBeenCalledTimes(1)
+
+        delete (document as { prerendering?: boolean }).prerendering
+        vi.unstubAllGlobals()
+    })
+
     it('drops a request with no known provider tag', async () => {
         const sendMessage = vi.fn<SendMessageMock>()
         stubChrome(sendMessage)

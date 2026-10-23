@@ -35,10 +35,28 @@ import {
 let requestEventName: string | null = null
 let responseEventName: string | null = null
 
+// A prerendered page is not frame 0 until it activates, and the worker answers
+// only the top frame, so its requests wait for activation instead of being refused.
+const whenActivated = (run: () => void): void => {
+    if (!(document as Document & { prerendering?: boolean }).prerendering) {
+        run()
+        return
+    }
+    document.addEventListener('prerenderingchange', run, { once: true })
+}
+
 const onRequest = (e: Event): void => {
     const { id, request, provider } = (e as CustomEvent)
         .detail as DappBridgeRequestEnvelope
     if (!isDappProvider(provider)) return
+    whenActivated(() => forwardSafely(id, request, provider))
+}
+
+const forwardSafely = (
+    id: string,
+    request: unknown,
+    provider: DappProvider,
+): void => {
     try {
         forwardRequest(id, request, provider)
     } catch {
