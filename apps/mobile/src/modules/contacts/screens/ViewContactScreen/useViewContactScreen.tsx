@@ -25,6 +25,7 @@ import {
     selectChainNetworkId,
     useNetworkStore,
     useSelectedScope,
+    useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -81,6 +82,7 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const customNetworksByChain = useNetworkStore(
         state => state.customNetworksByChain,
     )
+    const switchedOff = useSwitchedOffChainIds()
     const networkSelection = useMemo(
         () => ({ mode, selectedNetworkByChain, customNetworksByChain }),
         [mode, selectedNetworkByChain, customNetworksByChain],
@@ -93,11 +95,13 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const nfdName = nfdNames?.at(0)?.name
 
     // An address is shared by every chain of its family, but each chain has its
-    // own explorer on the network the user has selected for it.
+    // own explorer on the network the user has selected for it. A switched-off
+    // chain is left out, as every other chain picker does.
     const explorerLinks = useCallback(
         (family: ChainFamily, address: string): Map<ChainId, string> =>
             new Map(
                 chainsOfFamily(family).flatMap(({ id, explorer }) => {
+                    if (switchedOff.includes(id)) return []
                     const url = explorer.accountUrl(
                         selectChainNetworkId(networkSelection, id),
                         address,
@@ -105,7 +109,7 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
                     return url ? [[id, url] as const] : []
                 }),
             ),
-        [networkSelection],
+        [networkSelection, switchedOff],
     )
 
     const addressRows = useMemo(

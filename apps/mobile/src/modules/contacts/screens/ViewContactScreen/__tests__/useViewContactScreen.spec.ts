@@ -18,9 +18,11 @@ import {
     getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { evmCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { setChainEnabled } from '@test-utils/capability-overrides'
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
@@ -108,6 +110,7 @@ describe('useViewContactScreen', () => {
     })
 
     afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
         restoreAlgorandOnlyChains()
     })
 
@@ -192,6 +195,30 @@ describe('useViewContactScreen', () => {
             })
             expect(mocks.pushWebView).toHaveBeenCalledWith({
                 url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('leaves a switched-off chain out, opening the remaining one directly', async () => {
+            setChainEnabled(BASE_CHAIN_ID, false)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('hides the explorer when every chain of the family is switched off', () => {
+            setChainEnabled(ETHEREUM_CHAIN_ID, false)
+            setChainEnabled(BASE_CHAIN_ID, false)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            expect(result.current.addressRows).toContainEqual({
+                family: 'evm',
+                address: '0xA11CE',
+                hasExplorer: false,
             })
         })
 
