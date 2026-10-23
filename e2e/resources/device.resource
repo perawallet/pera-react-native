@@ -66,3 +66,15 @@ Turn Biometrics And Pin Off
     [Documentation]    Removing the PIN deletes the biometric unlock with it (usePinCode).
     Capture Failure Screenshot
     Turn Pin Off
+
+Leave Scanner To Home
+    [Documentation]    Home after the scanner, however many layers are still up.
+    FOR    ${attempt}    IN RANGE    3
+        ${home}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${MENU_TAB}    timeout=8s
+        IF    ${home}    RETURN
+        Run Keyword And Ignore Error    Tap Back
+    END
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=15s
+    ...    error=The scanner flow did not get back to Home; the screen is capture-protected, so a screenshot here is blank.
+

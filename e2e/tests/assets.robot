@@ -17,7 +17,10 @@ Add Asset Search Finds USDC
 
 Choosing A Search Result Asks To Confirm The Opt In
     [Tags]    id:assets.opt-in.confirmation    p1
-    Open Opt In Sheet    ${USDC_MAINNET_ROW}
+    # Which USDC the search returns depends on the node the wallet is on, and an earlier case
+    # can have moved it. The case is about the confirmation, not about one asset id.
+    ${row}=    Any USDC Row
+    Open Opt In Sheet    ${row}    already_listed=${True}
     # The sheet existing is not the point: the user is being asked to pay a fee, so read it.
     # An opt-in costs the minimum transaction fee, 0.001 ALGO.
     Displayed Number Should Be At Least    opt_in_fee    ${0.001}

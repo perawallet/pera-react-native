@@ -50,8 +50,8 @@ Search Assets For USDC
     Wait Until Page Contains Element    ${result}    timeout=30s
 
 Open Opt In Sheet
-    [Arguments]    ${result}
-    Search Assets For USDC    ${result}
+    [Arguments]    ${result}    ${already_listed}=${False}
+    IF    not ${already_listed}    Search Assets For USDC    ${result}
     Dismiss Keyboard
     # The row sits under the search sheet's layer and a tap there can be dropped; repeat while the
     # confirmation has not appeared.
@@ -135,3 +135,21 @@ Holds Testnet USDC
     Wait Until Page Contains Element    ${ALGO_ROW}    timeout=30s
     ${usdc}=    Run Keyword And Return Status    Page Should Contain Element    ${USDC_TESTNET_ROW}
     RETURN    ${usdc}
+
+Any USDC Row
+    [Documentation]    Whichever USDC the current node offers: mainnet and testnet carry different
+    ...                asset ids, and a case that switched the node leaves the other one listed.
+    ...                Searches once, and hands back the row that answered.
+    Wait Until Settled    ${ADD_ASSET_BUTTON}
+    Tap    ${ADD_ASSET_BUTTON}
+    Wait Until Page Contains Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    Input Text    ${ASSET_SEARCH_INPUT}    USDC
+    ${either}=    Set Variable
+    ...    xpath=//*[@resource-id='asset_row_31566704' or @name='asset_row_31566704' or @resource-id='asset_row_10458941' or @name='asset_row_10458941']
+    Wait Until Page Contains Element    ${either}    timeout=30s
+    ...    error=A USDC search returned neither the mainnet nor the testnet asset, so the remote lookup gave nothing to opt into.
+    ${mainnet}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${USDC_MAINNET_ROW}
+    IF    ${mainnet}    RETURN    ${USDC_MAINNET_ROW}
+    RETURN    ${USDC_TESTNET_ROW}
+
