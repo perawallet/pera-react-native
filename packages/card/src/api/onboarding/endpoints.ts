@@ -18,7 +18,7 @@ import {
 import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
-import { VerificationState } from '../../models'
+import { OnboardingPhase, VerificationState } from '../../models'
 import type {
     AddressInput,
     MailingAddressInput,
@@ -175,7 +175,12 @@ export type OnboardingDetails = {
      * consumers can tell "not yet verified" from "unknown server state".
      */
     verificationState: Nullable<VerificationState>
-    /** Profile fields prefilled into the personal-details form when present. */
+    /** The step Baanx expects next; null when absent or unmodelled. */
+    phase: Nullable<OnboardingPhase>
+    email: Nullable<string>
+    /** ISO 3166-1 alpha-2 residence fixed at the email step. */
+    countryOfResidence: Nullable<string>
+    /** Profile fields prefilled into the forms when present. */
     firstName: Nullable<string>
     lastName: Nullable<string>
     /** ISO datetime as returned by Baanx; the date part is the birth date. */
@@ -183,6 +188,18 @@ export type OnboardingDetails = {
     /** ISO 3166-1 alpha-2; null until the user provides it. */
     countryOfNationality: Nullable<string>
     countryOfBirth: Nullable<string>
+    /** ISO 3166-1 alpha-2, besides `countryOfNationality`. */
+    additionalNationalities: string[]
+    portugalInvestmentScheme: Nullable<boolean>
+    /** Keys from the matching GET /v1/auth/settings lists. */
+    occupation: Nullable<string>
+    occupationOther: Nullable<string>
+    sourceOfWealth: Nullable<string>
+    sourceOfWealthOther: Nullable<string>
+    businessSector: Nullable<string>
+    estimatedAnnualIncome: Nullable<string>
+    /** ISO 3166-1 alpha-2. */
+    incomeCountries: string[]
 }
 /** Pre-auth onboarding status — polled for KYC and read to prefill the form. */
 export const fetchOnboardingDetails = async (
@@ -203,11 +220,23 @@ export const fetchOnboardingDetails = async (
             VerificationState,
             parsed.verificationState,
         ),
+        phase: toEnumValueOrNull(OnboardingPhase, parsed.phase),
+        email: parsed.email ?? null,
+        countryOfResidence: parsed.countryOfResidence ?? null,
         firstName: parsed.firstName ?? null,
         lastName: parsed.lastName ?? null,
         dateOfBirth: parsed.dateOfBirth ?? null,
         countryOfNationality: parsed.countryOfNationality ?? null,
         countryOfBirth: parsed.countryOfBirth ?? null,
+        additionalNationalities: parsed.additionalNationalities ?? [],
+        portugalInvestmentScheme: parsed.portugalInvestmentScheme ?? null,
+        occupation: parsed.occupation ?? null,
+        occupationOther: parsed.occupationOther ?? null,
+        sourceOfWealth: parsed.sourceOfWealth ?? null,
+        sourceOfWealthOther: parsed.sourceOfWealthOther ?? null,
+        businessSector: parsed.businessSector ?? null,
+        estimatedAnnualIncome: parsed.estimatedAnnualIncome ?? null,
+        incomeCountries: parsed.incomeCountries ?? [],
     }
 }
 

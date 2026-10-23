@@ -22,6 +22,8 @@ export const OnboardingStep = {
     PhoneVerify: 'PHONE_VERIFY',
     Verification: 'VERIFICATION',
     PersonalDetails: 'PERSONAL_DETAILS',
+    /** BoP residents only; Baanx asks for it through `phase`. */
+    AdditionalDetails: 'ADDITIONAL_DETAILS',
     Address: 'ADDRESS',
     /** US residents shipping the card elsewhere; the address step withheld the token. */
     MailingAddress: 'MAILING_ADDRESS',
@@ -29,6 +31,14 @@ export const OnboardingStep = {
 } as const
 export type OnboardingStep =
     (typeof OnboardingStep)[keyof typeof OnboardingStep]
+
+/** Card issuer serving a country's residents, from GET /v1/auth/settings. */
+export const CardProvider = {
+    Monavate: 'monavate',
+    Galileo: 'galileo',
+    ConnectFinancial: 'connect_financial',
+} as const
+export type CardProvider = (typeof CardProvider)[keyof typeof CardProvider]
 
 /** A signup-eligible country from GET /v1/auth/settings. */
 export type SupportedCountry = {
@@ -39,6 +49,17 @@ export type SupportedCountry = {
     /** International dialing code without the leading '+'. */
     callingCode: string
     canSignUp: boolean
+    /** Null when Baanx sends none or a provider we don't model. */
+    cardProvider: Nullable<CardProvider>
+}
+
+/**
+ * A `{ key, name }` choice from GET /v1/auth/settings. The key is what the
+ * register endpoints accept; `name` is Baanx's English label, shown verbatim.
+ */
+export type RegistrationOption = {
+    key: string
+    name: string
 }
 
 /** A US state from GET /v1/auth/settings (US environments only). */
@@ -52,6 +73,11 @@ export type SupportedUsState = {
 export type RegistrationSettings = {
     countries: SupportedCountry[]
     usStates: SupportedUsState[]
+    occupations: RegistrationOption[]
+    sourcesOfWealth: RegistrationOption[]
+    businessSectors: RegistrationOption[]
+    employmentSectors: RegistrationOption[]
+    employmentStatuses: RegistrationOption[]
     /** Baanx-hosted T&C URLs by jurisdiction (US vs international). */
     termsAndConditionsUrls: {
         us: Nullable<string>

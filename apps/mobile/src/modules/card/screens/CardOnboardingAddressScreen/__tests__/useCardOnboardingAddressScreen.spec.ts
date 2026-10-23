@@ -192,6 +192,7 @@ const gb: SupportedCountry = {
     name: 'United Kingdom',
     callingCode: '44',
     canSignUp: true,
+    cardProvider: null,
 }
 const us: SupportedCountry = {
     id: 'us',
@@ -199,6 +200,7 @@ const us: SupportedCountry = {
     name: 'United States',
     callingCode: '1',
     canSignUp: true,
+    cardProvider: null,
 }
 const california: SupportedUsState = {
     id: 'ca',

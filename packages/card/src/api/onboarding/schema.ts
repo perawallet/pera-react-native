@@ -13,16 +13,24 @@
 import { z } from 'zod'
 import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
-// GET /v1/auth/settings. We model the country/state lists the signup UI needs
-// plus the per-jurisdiction T&C links used on the address step; the rest of the
-// `links`/`config` blocks are still ignored.
+// GET /v1/auth/settings. We model the country/state lists and the option lists
+// the signup forms need plus the per-jurisdiction T&C links used on the address
+// step; the rest of the `links`/`config` blocks are still ignored. Everything
+// added after the first release is nullish so older environments still parse.
 const supportedCountrySchema = z.object({
     id: z.string(),
     iso3166alpha2: z.string(),
     name: z.string(),
     callingCode: z.string(),
     canSignUp: z.boolean(),
+    cardProvider: z.string().nullish(),
 })
+
+const registrationOptionSchema = z.object({
+    key: z.string(),
+    name: z.string(),
+})
+const registrationOptionListSchema = z.array(registrationOptionSchema).nullish()
 
 const supportedUsStateSchema = z.object({
     id: z.string(),
@@ -40,6 +48,11 @@ const settingsLinkGroupSchema = z
 export const registrationSettingsResponseSchema = z.object({
     countries: z.array(supportedCountrySchema).optional().nullable(),
     usStates: z.array(supportedUsStateSchema).optional().nullable(),
+    occupations: registrationOptionListSchema,
+    sourcesOfWealth: registrationOptionListSchema,
+    businessSectors: registrationOptionListSchema,
+    employmentSectors: registrationOptionListSchema,
+    employmentStatuses: registrationOptionListSchema,
     links: z
         .object({
             us: settingsLinkGroupSchema,
@@ -77,12 +90,15 @@ export type RegisterVerificationApiResponse = z.infer<
 >
 
 // GET /v1/auth/register?onboardingId= — onboarding status. We model the KYC
-// state the verification screen polls plus the profile fields used to prefill
-// the personal-details form on resume; Zod strips the rest.
+// state the verification screen polls, the `phase` that routes the flow, and
+// the profile fields used to prefill the forms on resume; Zod strips the rest.
 export const onboardingDetailsResponseSchema = z.object({
     // Nullish so an absent/null state resolves to `null` via toEnumValueOrNull
     // (same "unknown" bucket as an unmodelled string) instead of throwing.
     verificationState: z.string().nullish(),
+    phase: z.string().nullish(),
+    email: z.string().nullish(),
+    countryOfResidence: z.string().nullish(),
     firstName: z.string().optional().nullable(),
     lastName: z.string().optional().nullable(),
     /** ISO datetime, e.g. `1997-11-08T00:00:00.000Z`. */
@@ -90,6 +106,15 @@ export const onboardingDetailsResponseSchema = z.object({
     /** ISO 3166-1 alpha-2; null until the user provides it. */
     countryOfNationality: z.string().optional().nullable(),
     countryOfBirth: z.string().optional().nullable(),
+    additionalNationalities: z.array(z.string()).nullish(),
+    portugalInvestmentScheme: z.boolean().nullish(),
+    occupation: z.string().nullish(),
+    occupationOther: z.string().nullish(),
+    sourceOfWealth: z.string().nullish(),
+    sourceOfWealthOther: z.string().nullish(),
+    businessSector: z.string().nullish(),
+    estimatedAnnualIncome: z.string().nullish(),
+    incomeCountries: z.array(z.string()).nullish(),
 })
 export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema

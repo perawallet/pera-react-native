@@ -83,7 +83,9 @@ export const getOnboardingResumeRoute = (
                       step: OnboardingStep.EmailSend,
                   }
         }
-        case OnboardingPhase.PersonalInformation: {
+        // No additional-details screen yet, so it resumes at the step before it.
+        case OnboardingPhase.PersonalInformation:
+        case OnboardingPhase.AdditionalDetails: {
             return isKycDone
                 ? {
                       screen: 'CardOnboardingPersonalDetails',

@@ -29,7 +29,7 @@ import {
     fetchRegistrationSettings,
     buildOnboardingConsentBody,
 } from '../endpoints'
-import { VerificationState } from '../../../models'
+import { OnboardingPhase, VerificationState } from '../../../models'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -253,14 +253,26 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        // Profile fields are null when the record has none yet.
+        // Profile fields are null (lists empty) when the record has none yet.
         expect(result).toEqual({
             verificationState: VerificationState.Pending,
+            phase: null,
+            email: null,
+            countryOfResidence: null,
             firstName: null,
             lastName: null,
             dateOfBirth: null,
             countryOfNationality: null,
             countryOfBirth: null,
+            additionalNationalities: [],
+            portugalInvestmentScheme: null,
+            occupation: null,
+            occupationOther: null,
+            sourceOfWealth: null,
+            sourceOfWealthOther: null,
+            businessSector: null,
+            estimatedAnnualIncome: null,
+            incomeCountries: [],
         })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -288,7 +300,7 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             verificationState: VerificationState.Verified,
             firstName: 'YASIN',
             lastName: 'ÇALIŞKAN',
@@ -296,6 +308,60 @@ describe('onboarding endpoints', () => {
             countryOfNationality: null,
             countryOfBirth: null,
         })
+    })
+
+    it('maps the phase and the additional-details fields', async () => {
+        request.mockResolvedValue({
+            data: {
+                id: 'ob_1',
+                verificationState: 'UNVERIFIED',
+                phase: 'ADDITIONAL_DETAILS',
+                email: 'john@example.com',
+                countryOfResidence: 'PT',
+                additionalNationalities: ['ES'],
+                portugalInvestmentScheme: false,
+                occupation: 'other_specify_occupation',
+                occupationOther: 'Beekeeper',
+                sourceOfWealth: 'employment_salaried',
+                sourceOfWealthOther: null,
+                businessSector: 'information_and_communication',
+                estimatedAnnualIncome: '30000',
+                incomeCountries: ['PT', 'ES'],
+            },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toMatchObject({
+            phase: OnboardingPhase.AdditionalDetails,
+            email: 'john@example.com',
+            countryOfResidence: 'PT',
+            additionalNationalities: ['ES'],
+            portugalInvestmentScheme: false,
+            occupation: 'other_specify_occupation',
+            occupationOther: 'Beekeeper',
+            sourceOfWealth: 'employment_salaried',
+            sourceOfWealthOther: null,
+            businessSector: 'information_and_communication',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT', 'ES'],
+        })
+    })
+
+    it('returns a null phase for one we do not model', async () => {
+        request.mockResolvedValue({
+            data: { id: 'ob_1', phase: 'SOMETHING_NEW' },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result.phase).toBeNull()
     })
 
     it('returns null for an unmodelled verification state', async () => {

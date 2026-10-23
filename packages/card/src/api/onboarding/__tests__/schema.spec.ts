@@ -16,6 +16,7 @@ import {
     consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
+    registrationSettingsResponseSchema,
 } from '../schema'
 
 describe('addressResponseSchema', () => {
@@ -100,5 +101,33 @@ describe('onboardingDetailsResponseSchema', () => {
             dateOfBirth: '1990-01-02T00:00:00.000Z',
             countryOfNationality: 'GB',
         })
+    })
+})
+
+describe('registrationSettingsResponseSchema', () => {
+    it('parses a settings body from before the option lists and card provider existed', () => {
+        const parsed = registrationSettingsResponseSchema.parse({
+            countries: [
+                {
+                    id: 'gb',
+                    iso3166alpha2: 'GB',
+                    name: 'United Kingdom',
+                    callingCode: '44',
+                    canSignUp: true,
+                },
+            ],
+            usStates: [],
+        })
+
+        expect(parsed.countries?.[0].cardProvider).toBeUndefined()
+        expect(parsed.occupations).toBeUndefined()
+    })
+
+    it('rejects an option without a key', () => {
+        expect(() =>
+            registrationSettingsResponseSchema.parse({
+                occupations: [{ name: 'Engineer' }],
+            }),
+        ).toThrow()
     })
 })
