@@ -14,11 +14,12 @@ import { Decimal } from 'decimal.js'
 import { isAddress, isHex } from 'viem'
 import type { Address, Hex } from 'viem'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type { EvmNftStandard } from '../blockchain/utils/caip19'
 import { isRecord } from './adapter'
 
 /** An Ethereum transaction as review and detail screens read it. */
 export type EthereumTransactionView = {
-    kind: 'transfer' | 'token-transfer' | 'contract-call'
+    kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
     from: Address
     /** Absent for a contract creation. */
     to?: Address
@@ -38,9 +39,27 @@ export type EthereumTransactionView = {
     }
     /** Only on a verified token transfer; `amount` in the token's base units. */
     token?: { contract: Address; to: Address; amount: Decimal }
+    /**
+     * Only on a verified NFT transfer. `assetId` is the app's NFT id, `tokenId`
+     * a decimal uint256 and `amount` the quantity in base units, which an NFT's
+     * zero decimals make its display units too.
+     */
+    nft?: {
+        assetId: string
+        contract: Address
+        tokenId: string
+        standard: EvmNftStandard
+        to: Address
+        amount: Decimal
+    }
 }
 
-const KINDS: readonly string[] = ['transfer', 'token-transfer', 'contract-call']
+const KINDS: readonly string[] = [
+    'transfer',
+    'token-transfer',
+    'nft-transfer',
+    'contract-call',
+]
 
 const isAddressValue = (value: unknown): value is Address =>
     typeof value === 'string' && isAddress(value)
@@ -56,6 +75,16 @@ const isOptional = <T>(
 const isToken = (value: unknown): boolean =>
     isRecord(value) &&
     isAddressValue(value.contract) &&
+    isAddressValue(value.to) &&
+    Decimal.isDecimal(value.amount)
+
+const isNft = (value: unknown): boolean =>
+    isRecord(value) &&
+    typeof value.assetId === 'string' &&
+    isAddressValue(value.contract) &&
+    typeof value.tokenId === 'string' &&
+    /^\d+$/.test(value.tokenId) &&
+    (value.standard === 'erc721' || value.standard === 'erc1155') &&
     isAddressValue(value.to) &&
     Decimal.isDecimal(value.amount)
 
@@ -77,7 +106,8 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     typeof value.nonce === 'number' &&
     typeof value.gas === 'bigint' &&
     isFee(value.fee) &&
-    (value.token === undefined || isToken(value.token))
+    (value.token === undefined || isToken(value.token)) &&
+    (value.nft === undefined || isNft(value.nft))
 
 export const toEthereumNative = (
     view: EthereumTransactionView,

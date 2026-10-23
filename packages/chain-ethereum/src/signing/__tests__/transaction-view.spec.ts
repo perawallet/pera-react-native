@@ -39,12 +39,34 @@ const VIEW: EthereumTransactionView = {
     token: { contract: TOKEN, to: RECIPIENT, amount: new Decimal(5) },
 }
 
+const NFT_CONTRACT = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+const NFT_VIEW: EthereumTransactionView = {
+    ...VIEW,
+    kind: 'nft-transfer',
+    to: NFT_CONTRACT,
+    data: '0x42842e0e',
+    selector: '0x42842e0e',
+    token: undefined,
+    nft: {
+        assetId: `${NFT_CONTRACT}/7`,
+        contract: NFT_CONTRACT,
+        tokenId: '7',
+        standard: 'erc721',
+        to: RECIPIENT,
+        amount: new Decimal(1),
+    },
+}
+
 describe('the Ethereum transaction view', () => {
     it('round-trips through its native form', () => {
         const native = toEthereumNative(VIEW)
 
         expect(native.family).toBe('evm')
         expect(readEthereumNative(native)).toEqual(VIEW)
+    })
+
+    it('round-trips an NFT transfer through its native form', () => {
+        expect(readEthereumNative(toEthereumNative(NFT_VIEW))).toEqual(NFT_VIEW)
     })
 
     it("refuses another family's transaction", () => {
@@ -60,6 +82,14 @@ describe('the Ethereum transaction view', () => {
         ['a value that is not a Decimal', { ...VIEW, value: '0' }],
         ['a recipient that is not an address', { ...VIEW, to: 'bob' }],
         ['a malformed token', { ...VIEW, token: { contract: TOKEN } }],
+        [
+            'an NFT with an unknown standard',
+            { ...NFT_VIEW, nft: { ...NFT_VIEW.nft, standard: 'erc404' } },
+        ],
+        [
+            'an NFT whose token id is not decimal',
+            { ...NFT_VIEW, nft: { ...NFT_VIEW.nft, tokenId: '0x7' } },
+        ],
     ])('refuses a view with %s', (_, transaction) => {
         expect(() =>
             readEthereumNative({ family: 'evm', transaction }),

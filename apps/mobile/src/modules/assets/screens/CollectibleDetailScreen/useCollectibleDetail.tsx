@@ -68,6 +68,7 @@ type UseCollectibleDetailResult = {
     isPending: boolean
     isReadOnly: boolean
     canManageAssets: boolean
+    canSend: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     hasImage: boolean
@@ -108,6 +109,9 @@ export const useCollectibleDetail = (
     const isReadOnly = !useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
         chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
+    const canSend = useCapability({
+        chain: { chainId: scope.chainId, capability: 'send' },
     })
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
@@ -435,6 +439,7 @@ export const useCollectibleDetail = (
         isPending,
         isReadOnly,
         canManageAssets,
+        canSend,
         traits,
         media,
         hasImage,

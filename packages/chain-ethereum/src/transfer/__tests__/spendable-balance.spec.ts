@@ -86,6 +86,10 @@ describe('readEthereumSpendableBalance', () => {
     describe('with open sends', () => {
         const ETH = { chainId: 'ethereum', assetId: 'native' } as const
         const TOKEN = { chainId: 'ethereum', assetId: USDC } as const
+        const NFT = {
+            chainId: 'ethereum',
+            assetId: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/7',
+        } as const
         const FEE = new Decimal(21)
 
         const givenNativeBalance = (amount: number, latestNonce = 0) => {
@@ -100,7 +104,7 @@ describe('readEthereumSpendableBalance', () => {
         }
 
         const read = (
-            asset: typeof ETH | typeof TOKEN,
+            asset: typeof ETH | typeof TOKEN | typeof NFT,
             inFlight: InFlightSpend[],
         ) =>
             readEthereumSpendableBalance({
@@ -156,6 +160,27 @@ describe('readEthereumSpendableBalance', () => {
                 reserved: new Decimal(40),
             })
             expect(ether.max).toEqual(new Decimal(949))
+        })
+
+        it("holds back an open NFT send's quantity from that NFT's holding", async () => {
+            givenNativeBalance(1000)
+            mocks.getAccountHoldings.mockResolvedValue([
+                { assetId: NFT.assetId, amount: new Decimal(3), native: null },
+            ])
+
+            const result = await read(NFT, [
+                {
+                    nonce: 0,
+                    outflows: [{ assetRef: NFT, value: new Decimal(2) }],
+                    maxFee: new Decimal(30),
+                },
+            ])
+
+            expect(result).toEqual({
+                balance: new Decimal(3),
+                max: new Decimal(1),
+                reserved: new Decimal(2),
+            })
         })
 
         it('matches the holding and the open send to the token whatever their casing', async () => {

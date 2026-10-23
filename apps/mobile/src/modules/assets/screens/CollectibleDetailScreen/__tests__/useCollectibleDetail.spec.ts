@@ -888,6 +888,17 @@ describe('useCollectibleDetail', () => {
         expect(result.current.canManageAssets).toBe(false)
     })
 
+    it('offers sending only while the send capability is on', () => {
+        const { result } = renderHook(() =>
+            useCollectibleDetail('123', 'algorand'),
+        )
+        expect(result.current.canSend).toBe(true)
+
+        act(() => setCapabilityOverrides({ send: false }))
+
+        expect(result.current.canSend).toBe(false)
+    })
+
     describe('share', () => {
         it("shares the chain descriptor's collectible URL for the scope", () => {
             const { result } = renderHook(() =>
