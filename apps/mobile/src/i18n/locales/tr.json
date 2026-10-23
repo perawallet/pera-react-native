@@ -265,6 +265,8 @@
             "empty_body": "İşlem bulunamadı",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
+            "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
+            "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
             "csv": "CSV"
         },
@@ -2172,6 +2174,7 @@
             "qr_scan_invalid_mnemonic_body": "Taranan QR kodundaki passphrase beklenmeyen sayıda kelime içeriyor",
             "watch_address_option_title": "Adres izle",
             "watch_address_option_description": "Adresini girerek bir Algorand adresini takip et",
+            "watch_address_option_description_generic": "Adresini girerek bir hesabı takip et",
             "create_universal_wallet_option_title": "Universal Wallet oluştur",
             "create_universal_wallet_option_description": "Aynı 24 kelimelik passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
             "create_algo25_option_title": "Algo25 hesabı oluştur",
@@ -2207,9 +2210,9 @@
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
             "pair_ledger_title": "Ledger’ı Bluetooth ile eşleştir",
-            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını Bluetooth ile kurtarmak istiyorum",
+            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir hesabı Bluetooth ile kurtarmak istiyorum",
             "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
-            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını USB kablosu ile kurtarmak istiyorum",
+            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir hesabı USB kablosu ile kurtarmak istiyorum",
             "pair_ledger_unsupported_description": "Bu tarayıcı veya cihaz tarafından desteklenmiyor",
             "pera_web_title": "Pera Web’den içe aktar",
             "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
@@ -2356,9 +2359,11 @@
             "info_button": "İzleme hesabı oluştur",
             "title": "İzleme hesabı\noluştur",
             "description": "Bir Algorand hesabının salt okunur bir görünümünü oluşturuyorsun.",
+            "description_generic": "Bir hesabın salt okunur bir görünümünü oluşturuyorsun.",
             "address_placeholder": "Hesap adresi veya kısa ad",
             "watch_button": "İzleme hesabı oluştur",
             "invalid_address": "Lütfen geçerli bir Algorand adresi gir",
+            "invalid_address_generic": "Lütfen geçerli bir adres gir",
             "duplicate_address": "Bu adres cüzdanına zaten eklenmiş"
         }
     },
@@ -2808,8 +2813,8 @@
             "title": "İşlem gönderiliyor",
             "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
-            "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol.",
-            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol."
+            "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
+            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol."
         },
         "success": {
             "title": "İşlem gerçekleşti",
@@ -3269,6 +3274,7 @@
             "more_impacts": "{{count}} tane daha göster",
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
+            "nft_subtitle": "{{collection}} #{{tokenId}}",
             "inner_transaction_count": "{{innerCount}} iç işlem"
         },
         "contract_call": {
@@ -3770,8 +3776,8 @@
         "how_does_it_work": {
             "title": "Ledger ile eşleştir",
             "step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
-            "step_2": "Algorand uygulamasını (1.2.9 veya üzeri sürüm) Ledger’ına yükle.",
-            "step_3": "Ledger cihazında eşleştirmeyi onayladıktan sonra Algorand uygulamasını aç.",
+            "step_2": "{{appName}} uygulamasının en son sürümünü Ledger’ına yükle.",
+            "step_3": "Ledger cihazında eşleştirmeyi onayladıktan sonra {{appName}} uygulamasını aç.",
             "step_4": "Telefonunda Bluetooth’un etkin olduğundan emin ol."
         },
         "connecting": {
@@ -3783,7 +3789,7 @@
             "title": "Ledger cihazını eşleştir",
             "description": "Ledger cihazını bağlamak için şu adımları izle:",
             "step_1": "Ledger cihazını aç",
-            "step_2": "Ledger’ında Algorand uygulamasını aç",
+            "step_2": "Ledger’ında {{appName}} uygulamasını aç",
             "step_3": "Ledger cihazını yakınında tut",
             "continue": "Devam et",
             "permission_required_title": "Bluetooth izni gerekli",
@@ -3792,7 +3798,7 @@
                 "title": "Ledger’ı USB ile bağla",
                 "description": "Ledger cihazını USB ile bağlamak için şu adımları izle:",
                 "step_1": "Ledger cihazını USB kablosuyla telefonuna bağla",
-                "step_2": "Ledger’ının kilidini aç ve Algorand uygulamasını aç",
+                "step_2": "Ledger’ının kilidini aç ve {{appName}} uygulamasını aç",
                 "step_3": "Telefonun sorarsa USB erişimine izin ver, ardından devam et’e dokun"
             }
         },
@@ -3868,7 +3874,11 @@
             "upgrade_watch_title_other": "İzleme hesapları yükseltilsin mi?",
             "upgrade_watch_body_one": "Bu adres cüzdanında zaten bir izleme hesabı olarak var. İçe aktarmak, onu işlem imzalayabilen bir Ledger hesabına yükseltir. Adı ve ayarları korunur.",
             "upgrade_watch_body_other": "Bu adreslerden {{count}} tanesi cüzdanında zaten izleme hesabı olarak var. İçe aktarmak, onları işlem imzalayabilen Ledger hesaplarına yükseltir. Adları ve ayarları korunur.",
-            "upgrade_watch_confirm": "Yükselt"
+            "upgrade_watch_confirm": "Yükselt",
+            "same_wallet_title": "Mevcut Ledger hesabına eklensin mi?",
+            "same_wallet_body": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Pera’nın iki adresin de aynı Ledger’dan geldiğini doğrulayabilmesi için Ledger’ında {{appName}} uygulamasını aç ve devam et. Ya da bu adresi ayrı bir hesap olarak ekle.",
+            "same_wallet_confirm": "Devam et",
+            "same_wallet_separate": "Ayrı hesap olarak ekle"
         },
         "signing": {
             "cancel": "İptal",
@@ -3889,8 +3899,10 @@
             }
         },
         "errors": {
-            "app_not_open": "Ledger cihazında Algorand uygulamasını aç. Ardından Pera’ya dönüp devam et.",
-            "app_not_open_title": "Algorand uygulamasını aç",
+            "app_not_open": "Ledger cihazında {{appName}} uygulamasını aç. Ardından Pera’ya dönüp devam et.",
+            "app_not_open_title": "{{appName}} uygulamasını aç",
+            "blind_signing_required": "Ledger cihazındaki {{appName}} uygulaması bu işlem için kör imzalamaya (blind signing) ihtiyaç duyuyor. Ledger cihazında uygulamanın ayarlarından Blind signing seçeneğini aç ve tekrar dene.",
+            "blind_signing_required_title": "Kör imzalamayı aç",
             "connection_lost": "Bağlantı koptu. Ledger cihazını yeniden bağla ve tekrar dene.",
             "connection_lost_title": "Bağlantı koptu",
             "user_rejected": "İstek iptal edildi. İşlem Ledger cihazında iptal edildi.",
@@ -3900,8 +3912,8 @@
             "bluetooth_permission_title": "İzin gerekli",
             "bluetooth_permission": "Yakındaki Ledger cihazlarını aramak için Bluetooth tarama izninin verilmesi gerekir.",
             "scan_timeout_title": "Ledger bulunamadı",
-            "scan_timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, Algorand uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
-            "connection_failed": "Ledger cihazına bağlanılamadı. Bluetooth’un açık, Ledger cihazının kilidinin açık ve Algorand uygulamasının açık olduğunu kontrol et, sonra tekrar dene.",
+            "scan_timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, {{appName}} uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
+            "connection_failed": "Ledger cihazına bağlanılamadı. Bluetooth’un açık, Ledger cihazının kilidinin açık ve {{appName}} uygulamasının açık olduğunu kontrol et, sonra tekrar dene.",
             "connection_failed_title": "Bağlanılamadı",
             "signing_failed_title": "İmzalama başarısız",
             "signing_failed": "İşlem imzalanamadı. Lütfen tekrar dene.",
@@ -3914,8 +3926,8 @@
             "unsupported_device_title": "Desteklenmeyen cihaz",
             "unsupported_device": "Bu Ledger cihazı desteklenmiyor.",
             "app_outdated_title": "Güncelleme gerekli",
-            "app_outdated": "Güncelleme gerekli. Ledger donanım yazılımını ve Algorand uygulamasını en son sürüme güncelle.",
-            "timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, Algorand uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
+            "app_outdated": "Güncelleme gerekli. Ledger donanım yazılımını ve {{appName}} uygulamasını en son sürüme güncelle.",
+            "timeout": "Bağlantı zaman aşımına uğradı. Tekrar denemeden önce Ledger cihazının kilidinin açık, {{appName}} uygulamasının açık ve Bluetooth’un etkin olduğundan emin ol.",
             "timeout_title": "Bağlantı zaman aşımına uğradı",
             "interrupted_title": "İmzalama kesintiye uğradı",
             "interrupted": "Uygulama imzalama sırasında arka plana geçti, bu yüzden oturum güvenlik için durduruldu. Ledger’ına yeniden bağlanıp tekrar imzalamak için yeniden dene.",
@@ -3952,8 +3964,8 @@
             "description": "Ledger cihazını eşleştirirken veya kullanırken sorun yaşıyorsan aşağıdaki adımları kontrol et.",
             "pairing_steps_title": "Eşleştirme adımları",
             "pairing_step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
-            "pairing_step_2": "Ledger’ında Algorand uygulamasını aç.",
-            "pairing_step_3": "Algorand uygulaması kurulu değilse Ledger Live’dan kur.",
+            "pairing_step_2": "Ledger’ında {{appName}} uygulamasını aç.",
+            "pairing_step_3": "{{appName}} uygulaması kurulu değilse Ledger Live’dan kur.",
             "common_issues_title": "Sık görülen sorunlar",
             "issue_unlocked": "Cihazın kilidinin açık olduğundan, yakında olduğundan ve Bluetooth’un etkin olduğundan emin ol. Sorun devam ederse cihazı telefonunun Bluetooth ayarlarından kaldır ve Pera Wallet talimatlarını izleyerek yeniden eşleştir.",
             "issue_bluetooth": "Yakındaki Ledger cihazlarını aramak için cihazında Bluetooth’un etkin olması gerekir.",
@@ -3963,7 +3975,7 @@
             "tip_unlocked": "Cihazın kilidinin açık olduğundan emin ol",
             "tip_nearby": "Cihazın yakında olduğundan emin ol",
             "tip_bluetooth": "Bluetooth’un etkin olduğundan emin ol",
-            "tip_app_open": "Ledger’ında Algorand uygulamasının açık olduğundan emin ol",
+            "tip_app_open": "Ledger’ında {{appName}} uygulamasının açık olduğundan emin ol",
             "tip_repair": "Sorun devam ederse cihazı Ayarlar’dan yeniden eşleştirmeyi dene"
         },
         "scan_header": {
@@ -3973,6 +3985,9 @@
         "handoff_added": {
             "title": "Ledger hesabı eklendi",
             "body": "Artık onu Pera uzantısında kullanabilirsin."
+        },
+        "select_chain": {
+            "title": "Ledger hesabın hangi blokzincirde?"
         }
     },
     "countries": {

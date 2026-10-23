@@ -4,6 +4,10 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 project_type: react-native
 app:
   envs:
+  # Every `bundle install` resolves strictly from Gemfile.lock (and its
+  # CHECKSUMS) rather than re-resolving, so a lockfile/Gemfile drift fails the
+  # build instead of pulling unreviewed gems onto the signing machine.
+  - BUNDLE_FROZEN: 'true'
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
 pipelines:
@@ -241,11 +245,31 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
-    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
     - USE_CACHE: 'true'
@@ -539,11 +563,31 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
-    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - ANDROID_FLAVOR: staging
     - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -975,11 +1019,31 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
-    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
     - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - WEB_INTEGRITY_MINT_ENABLED: 'true'
     - WEB_INTEGRITY_ENROL_ENABLED: 'true'
@@ -1150,6 +1214,51 @@ workflows:
             (cd "$BITRISE_DEPLOY_DIR" && sha256sum "$NAME" > "${NAME}.sha256")
             cat "${DEST}.sha256"
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
+    - script@1:
+        title: Sign extension CRX
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # This YAML runs for every branch and tag; a ref without the signer
+            # (an older support branch) skips the step.
+            if [ ! -f tools/release/sign-extension-crx.mjs ]; then
+              echo "No CRX signer on this ref"
+              exit 0
+            fi
+            # Without the key the zip stays the package, so this step can ship
+            # before the store's verified-CRX opt-in; the secret and the opt-in
+            # go live together.
+            if [ -z "${CWS_CRX_SIGNING_KEY_BASE64:-}" ]; then
+              echo "No CRX signing key, so the zip is the package"
+              exit 0
+            fi
+            node tools/release/sign-extension-crx.mjs "$BITRISE_EXTENSION_ZIP_PATH"
+            CRX="${BITRISE_EXTENSION_ZIP_PATH%.zip}.crx"
+            cat "${CRX}.sha256"
+            envman add --key BITRISE_EXTENSION_CRX_PATH --value "$CRX"
+    - script@1:
+        title: Upload to Chrome Web Store (draft)
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            if [ ! -f tools/release/upload-chrome-web-store.mjs ]; then
+              echo "No Chrome Web Store upload on this ref"
+              exit 0
+            fi
+            # rc tags only: a stable tag re-tags the rc's commit, whose package the
+            # store already holds as its draft or in review, and a branch run would
+            # replace the draft with an untagged build. Uploads never publish.
+            if [[ ! "${BITRISE_GIT_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+              echo "Not an rc tag, so no Chrome Web Store upload"
+              exit 0
+            fi
+            # A CRX exists only when CWS_CRX_SIGNING_KEY_BASE64 is set; once the
+            # store's verified-CRX opt-in is on it rejects the zip.
+            pnpm run release:upload-chrome-web-store "${BITRISE_EXTENSION_CRX_PATH:-$BITRISE_EXTENSION_ZIP_PATH}"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1174,7 +1283,24 @@ workflows:
               done
             fi
             envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
+  _strip-signing-files:
+    steps:
+    - script@1:
+        title: Remove signing files
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # The smoke harness is another repo's code at its branch tip, so
+            # nothing it runs may find the release keystore or store/upload
+            # credentials the build steps decoded onto disk.
+            rm -f apps/mobile/api_key.p8 \
+              apps/mobile/config/release.keystore \
+              apps/mobile/config/firebase-service-account.json \
+              apps/mobile/config/api-key.json
   _smoke-ios:
+    before_run:
+    - _strip-signing-files
     steps:
     - script@1:
         title: Patch IPA for BrowserStack
@@ -1232,6 +1358,8 @@ workflows:
             IOS_SMOKE_STATUS
             IOS_SMOKE_URL
   _smoke-android:
+    before_run:
+    - _strip-signing-files
     steps:
     - script@1:
         title: Run smoke gate

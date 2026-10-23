@@ -523,6 +523,34 @@ const attachWatchChain = (
     return true
 }
 
+/** A hardware account on several chains comes as one entry per chain; the
+ *  entry joins the account its record restored or already shares an address
+ *  with. Never another account at the same device position: a device id can
+ *  name a model or be shared by passphrase seeds, and a restore has no device
+ *  to read the seed from, so that entry is its own account. */
+const attachHardwareChain = (
+    context: ImportContext,
+    groupHolder: WalletAccount | undefined,
+    chainId: ChainId,
+    payload: HardwareAddressPayload,
+): boolean => {
+    if (
+        !groupHolder ||
+        !hasCustody(groupHolder, 'hardware') ||
+        chainAccountOf(groupHolder, chainId) !== undefined
+    )
+        return false
+    assertValidAddress(chainId, payload.address)
+    context.replaceAccount({
+        ...groupHolder,
+        chains: {
+            ...groupHolder.chains,
+            [chainId]: withEnablement({ address: payload.address }, 'created'),
+        },
+    })
+    return true
+}
+
 const chainOf = (context: ImportContext, account: PulledAccount): ChainId =>
     account.chain ?? context.scope.chainId
 
@@ -602,6 +630,15 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.hardware: {
+            if (
+                attachHardwareChain(
+                    context,
+                    groupHolder,
+                    chainId,
+                    addressPayload,
+                )
+            )
+                return 0
             context.appendAccount(buildHardwareAccount(chainId, addressPayload))
             return 1
         }
@@ -791,10 +828,18 @@ const importBatch = async (
 
     const restoredAccountIds = new Set<string>()
     for (const entries of groups) {
-        let groupHolder: WalletAccount | undefined
+        // Any entry the wallet already holds names the account, wherever the
+        // record lists it. Kept by id: each entry can rename or extend the
+        // account, and a join spreads the copy it is handed.
+        let groupHolderId = entries
+            .map(account => holderOf(context, account))
+            .find(holder => holder !== undefined)?.id
         const restoredChains: ChainId[] = []
         let hasRestoredEntry = false
         for (const account of entries) {
+            const groupHolder = useAccountsStore
+                .getState()
+                .accounts.find(held => held.id === groupHolderId)
             try {
                 summary.imported += await importOneAccount(
                     context,
@@ -818,13 +863,13 @@ const importBatch = async (
                     summary.failed.push({ address: account.address, reason })
                 }
             }
-            groupHolder ??= holderOf(context, account)
+            groupHolderId ??= holderOf(context, account)?.id
         }
         // An account already on the device restored nothing, so it is left
         // to the probes it had when it was added.
-        if (groupHolder && hasRestoredEntry) {
-            restoredAccountIds.add(groupHolder.id)
-            stampRestoredEntries(context, groupHolder.id, restoredChains)
+        if (groupHolderId !== undefined && hasRestoredEntry) {
+            restoredAccountIds.add(groupHolderId)
+            stampRestoredEntries(context, groupHolderId, restoredChains)
         }
         if (createsAccount(entries)) {
             done += 1

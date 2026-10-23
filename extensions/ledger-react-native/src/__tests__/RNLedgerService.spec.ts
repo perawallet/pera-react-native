@@ -85,12 +85,16 @@ import {
 const openedTransport: HardwareWalletTransport = {
     getAddress: vi.fn(),
     signTransaction: vi.fn(),
-    signData: vi.fn(),
+    signMessage: vi.fn(),
     getAppVersion: vi.fn(),
     disconnect: vi.fn(),
 }
 const driverOpenMock = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
-const fakeDriver: LedgerAppDriver = { chainId: 'test', open: driverOpenMock }
+const fakeDriver: LedgerAppDriver = {
+    chainId: 'test',
+    appName: 'Test',
+    open: driverOpenMock,
+}
 
 const createHwTransportError = (originCode: number): Error => {
     const error = new Error(`BleError. Origin: ${originCode}`)
@@ -302,6 +306,7 @@ describe('RNLedgerService', () => {
             )
             ledgerAppDriverRegistry.register({
                 chainId: 'other',
+                appName: 'Other',
                 open: otherOpen,
             })
 

@@ -52,6 +52,22 @@ esac
 : "${BROWSERSTACK_ACCESS_KEY:?BROWSERSTACK_ACCESS_KEY is required}"
 : "${SMOKE_HARNESS_GITHUB_TOKEN:?SMOKE_HARNESS_GITHUB_TOKEN is required}"
 
+# The harness below is another repo's code at its branch tip and inherits this
+# environment, where CI exposes every secret to every step. It needs none of
+# the signing or store credentials, so drop them before it runs.
+# ponytail: denylist, so a new secret leaks until listed; an `env -i` allowlist
+# around the harness closes that once its required vars are pinned down.
+unset ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
+  ANDROID_KEY_PASSWORD ANDROID_JSON_KEY_FILE FIREBASE_SERVICE_ACCOUNT_BASE64 \
+  APP_STORE_CONNECT_API_KEY_CONTENT APP_STORE_CONNECT_API_KEY_ISSUER_ID \
+  APP_STORE_CONNECT_API_KEY_KEY_ID BITRISE_CERTIFICATE_URL \
+  BITRISE_CERTIFICATE_PASSPHRASE BITRISE_PROVISION_URL BITRISE_KEYCHAIN_PASSWORD \
+  BITRISE_API_TOKEN SLACK_WEBHOOK_URL BACKEND_API_KEY TESTNET_BAANX_CLIENT_KEY
+# The per-environment originals that tools/dev/setup-env-secrets.sh aliases from.
+for var in $(compgen -v); do
+  case "$var" in STAGING_* | PRODUCTION_*) unset "$var" ;; esac
+done
+
 HARNESS_REF="${SMOKE_HARNESS_REF:-main}"
 # Its own tag rather than the harness's broader `smoke`: a release gate should
 # have exactly one reason to be red, and `smoke` also covers UI-inventory cases

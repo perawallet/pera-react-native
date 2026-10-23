@@ -13,6 +13,7 @@
 import {
     BLE_CLASS_ERROR_KINDS,
     classifyLedgerErrorKind,
+    ledgerAppNameOf,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
@@ -93,13 +94,16 @@ const ACTION_BY_KIND: Partial<
 export const getLedgerErrorPresetByKind = (
     kind: LedgerErrorPresetKind,
     t: Translate,
+    /** The device app the copy names: the error's own, else the chain's. */
+    appName: string,
 ): LedgerErrorPreset => {
     const action = ACTION_BY_KIND[kind]
+    const params = { appName }
 
     return {
         kind,
-        title: t(`ledger.errors.${kind}_title`),
-        body: t(`ledger.errors.${kind}`),
+        title: t(`ledger.errors.${kind}_title`, params),
+        body: t(`ledger.errors.${kind}`, params),
         isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
         isRetryable: !NON_RETRYABLE_KINDS.has(kind),
         action: action ? { kind: action.kind, label: t(action.key) } : null,
@@ -114,5 +118,11 @@ export const getLedgerErrorPresetByKind = (
 export const getLedgerErrorPreset = (
     error: unknown,
     t: Translate,
+    /** The chain's device app, named when the error names none. */
+    appName: string,
 ): LedgerErrorPreset =>
-    getLedgerErrorPresetByKind(classifyLedgerErrorKind(error), t)
+    getLedgerErrorPresetByKind(
+        classifyLedgerErrorKind(error),
+        t,
+        ledgerAppNameOf(error) ?? appName,
+    )

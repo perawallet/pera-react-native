@@ -17,7 +17,6 @@ export {
     createHardwareWalletRegistry,
     type HardwareWalletAdapterState,
     type HardwareWalletAppVersion,
-    type HardwareWalletArbitrarySignRequest,
     type HardwareWalletConnectionStatus,
     type HardwareWalletDerivedAccount,
     type HardwareWalletDevice,
@@ -29,5 +28,5 @@ export {
 } from '@perawallet/wallet-extension-hardware-wallet'
 export * from './constants'
 export { discoverAccounts, type DiscoverAccountsOptions } from './discovery'
-export { hasLedgerAppDriver } from './drivers'
+export { hasLedgerAppDriver, ledgerAppNameFor } from './drivers'
 export { verifyAddress } from './verify'

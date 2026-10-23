@@ -297,25 +297,6 @@ describe('useSigningActorLifecycle', () => {
         })
     })
 
-    test("hands the machine an encoder that returns the planner's unsigned bytes", async () => {
-        const bytes = new Uint8Array([9, 9])
-        const encodeUnsignedTransaction = vi.fn(() => bytes)
-        registerFakePlannerAdapter({ encodeUnsignedTransaction })
-        const actor = makeMockActor('tx-1')
-        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
-
-        renderHook(() => useSigningActorLifecycle())
-        act(() => {
-            useSigningStore.getState().addSignRequest(makeTxRequest())
-        })
-        await flushQueue()
-
-        const deps = vi.mocked(createSigningMachine).mock.calls[0][2]
-        const txn = { tag: 'TXN' } as never
-        expect(deps.encodeTransaction(txn)).toBe(bytes)
-        expect(encodeUnsignedTransaction).toHaveBeenCalledWith(txn)
-    })
-
     test('suppresses a re-presented request whose group is already submitted', async () => {
         mockIsRequestGroupAlreadySubmitted.mockResolvedValue(true)
         mockWasRestoredFromStorage.mockReturnValue(true)

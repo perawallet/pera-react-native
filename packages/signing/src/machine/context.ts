@@ -30,7 +30,6 @@ import type {
     LocalArbitrarySigningFunction,
     LocalAuthDataSigningFunction,
 } from '../chain-adapter'
-import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 import type {
     SignerCredential,
@@ -61,8 +60,6 @@ export type SigningMachineDeps = {
     hardwareWalletRegistry?: HardwareWalletRegistry
     /** Signs any bytes it is handed, so only `signPlannedGroups` may call it. */
     keyStore: Pick<ChainKeyStore, 'sign'>
-    /** For hardware wallet signing. */
-    encodeTransaction: EncodeTransactionFunction
 }
 
 /** One machine instance per SignRequest. */

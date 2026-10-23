@@ -304,7 +304,7 @@ A chain whose review reads only chain-neutral transactions registers a `Transact
 chain-contract's `transactionReviewers`, as with planners, and the signing pipeline bridges it into
 the machine's reviewer. A transaction's `summary` is the request's own claim, so a reviewer consults
 it only on a request the wallet built, and only once the chain proves it from the payload: Ethereum
-honours a token-transfer summary only when re-encoding it gives exactly the calldata, and every call
+honours a token or NFT transfer summary only when re-encoding it gives exactly the calldata, and every call
 it can't prove stays an unrecognised contract call that the app can't sign without review.
 
 A request's `signer` is the address whose key produces the signature, not the account it is for:

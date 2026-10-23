@@ -20,6 +20,7 @@ import {
     type PinRecord,
 } from '../pinRecord'
 import { migratePinRecordToV3 } from '../pinRecordMigration'
+import { withPinRecordLock } from '../pinRecordLock'
 import {
     PIN_RECORD_KEY_ID,
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
@@ -104,6 +105,7 @@ describe('migratePinRecordToV3', () => {
         expect(migrated!.duressEnabled).toBe(1)
         expect(migrated!.failedAttempts).toBe(3)
         expect(migrated!.lockoutEndTime).toBe(42)
+        expect(migrated!.monotonicLockout).toBeNull()
         await expect(verifyPinAgainstRecord('123456', migrated!)).resolves.toBe(
             true,
         )
@@ -135,6 +137,7 @@ describe('migratePinRecordToV3', () => {
             ...v3,
             failedAttempts: 5,
             lockoutEndTime: 42,
+            monotonicLockout: { bootId: 'boot-1', endElapsedMs: 9000 },
         })
         store.set(PIN_RECORD_KEY_ID, bytes)
         store.set(
@@ -146,7 +149,11 @@ describe('migratePinRecordToV3', () => {
 
         expect(result).toEqual({
             migrated: false,
-            lockout: { failedAttempts: 5, lockoutEndTime: 42 },
+            lockout: {
+                failedAttempts: 5,
+                lockoutEndTime: 42,
+                monotonicLockout: { bootId: 'boot-1', endElapsedMs: 9000 },
+            },
         })
         expect(commitSecret).not.toHaveBeenCalled()
         expect(store.get(PIN_RECORD_KEY_ID)).toEqual(bytes)
@@ -210,4 +217,27 @@ describe('migratePinRecordToV3', () => {
         expect(b).toEqual({ migrated: true })
         expect(commitSecret).toHaveBeenCalledTimes(1)
     }, 60_000)
+
+    test('waits for a record write already holding the lock', async () => {
+        const regular = await createPinRecord('123456')
+        store.set(PIN_RECORD_KEY_ID, legacyV2Bytes(regular))
+        let releaseWriter: () => void = () => undefined
+        const writer = withPinRecordLock(
+            () =>
+                new Promise<void>(resolve => {
+                    releaseWriter = resolve
+                }),
+        )
+        const base = kms()
+        const withSecret = vi.fn(base.withSecret)
+        const access = { ...base, withSecret }
+
+        const migration = migratePinRecordToV3(access)
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(withSecret).not.toHaveBeenCalled()
+
+        releaseWriter()
+        await Promise.all([writer, migration])
+        expect(withSecret).toHaveBeenCalled()
+    }, 30_000)
 })

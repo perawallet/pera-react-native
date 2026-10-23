@@ -29,7 +29,6 @@ const makeInput = (
     allAccounts: [],
     scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
-    encodeTransaction: vi.fn() as never,
     totalTxs: 1,
     deviceName: 'Nano X',
     operation: 'transaction',

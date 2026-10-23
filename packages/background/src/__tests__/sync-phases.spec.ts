@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     fetchAndPersistAssets: vi.fn(),
     fetchAndPersistPrices: vi.fn(),
     fetchAndPersistTransactions: vi.fn(),
+    hasCachedHistoryRows: vi.fn((chainId: string) => chainId === 'algorand'),
     warn: vi.fn(),
     concurrencyLimits: [] as number[],
     adapters: {} as Record<string, { maxConcurrentStateReads?: number }>,
@@ -45,6 +46,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     fetchAndPersistTransactions: mocks.fetchAndPersistTransactions,
+    hasCachedHistoryRows: mocks.hasCachedHistoryRows,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -214,6 +216,21 @@ describe('sync phases', () => {
                     subject: 'B',
                 }),
             )
+        })
+        it('reports neither success nor failure on a chain that keeps no history rows', async () => {
+            const result = await syncTransactionsPhase(
+                ['0xA', '0xB'],
+                ETHEREUM,
+                'transactions',
+            )
+
+            expect(mocks.fetchAndPersistTransactions).not.toHaveBeenCalled()
+            expect(result).toEqual({
+                results: [],
+                hasSuccess: false,
+                hasFailure: false,
+                isRateLimited: false,
+            })
         })
     })
 

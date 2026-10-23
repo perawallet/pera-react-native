@@ -10,9 +10,16 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { encodeFunctionData, erc20Abi, getAddress, maxUint256 } from 'viem'
+import {
+    encodeFunctionData,
+    erc1155Abi,
+    erc20Abi,
+    erc721Abi,
+    getAddress,
+    maxUint256,
+} from 'viem'
 import type { Address, Hex, TransactionSerializableEIP1559 } from 'viem'
 import {
     i18nKey,
@@ -23,11 +30,19 @@ import {
     type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import { getAssetById, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { createEthereumReviewer, type CallRecogniser } from '../review'
 import { readEthereumNative } from '../transaction-view'
 import { SENDER, TRANSFER } from './fixtures'
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    getAssetById: vi.fn(async () => null),
+}))
 
 const ethereumReviewerAdapter = createEthereumReviewer({ chain: ETHEREUM })
 
@@ -76,6 +91,39 @@ const TOKEN_TRANSFER: TransactionSerializableEIP1559 = {
     gas: 65_000n,
 }
 
+const NFT_CONTRACT: Address = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+const NFT_ID = `${NFT_CONTRACT}/7`
+
+const erc721Data = (from: Address, to: Address, tokenId: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc721Abi,
+        functionName: 'safeTransferFrom',
+        args: [from, to, tokenId],
+    })
+
+const erc1155Data = (
+    from: Address,
+    to: Address,
+    tokenId: bigint,
+    amount: bigint,
+): Hex =>
+    encodeFunctionData({
+        abi: erc1155Abi,
+        functionName: 'safeTransferFrom',
+        args: [from, to, tokenId, amount, '0x'],
+    })
+
+const nftTransfer = (data: Hex): TransactionSerializableEIP1559 => ({
+    ...TRANSFER,
+    to: NFT_CONTRACT,
+    value: 0n,
+    data,
+    gas: 100_000n,
+})
+
+const ERC721_TRANSFER = nftTransfer(erc721Data(SENDER, RECIPIENT, 7n))
+const ERC1155_TRANSFER = nftTransfer(erc1155Data(SENDER, RECIPIENT, 7n, 2n))
+
 const OPAQUE_SUMMARY: TransactionSummary = {
     kind: 'contract-call',
     title: { key: i18nKey('dapp.claimed') },
@@ -95,6 +143,27 @@ const tokenClaim = (
     amount: {
         assetRef: { chainId: 'ethereum', assetId: TOKEN },
         value: new Decimal(TOKEN_UNITS.toString()),
+    },
+    ...overrides,
+})
+
+// What the wallet's NFT send builds as its summary.
+const nftClaim = (
+    quantity: number,
+    overrides: Partial<TransactionSummary> = {},
+): TransactionSummary => ({
+    kind: 'nft-transfer',
+    title: { key: i18nKey('transactions.list_item.send') },
+    direction: 'out',
+    icon: 'send',
+    counterparty: RECIPIENT,
+    subtitle: {
+        key: i18nKey('transactions.list_item.nft_subtitle'),
+        params: { collection: 'Apes', tokenId: '7' },
+    },
+    amount: {
+        assetRef: { chainId: 'ethereum', assetId: NFT_ID },
+        value: new Decimal(quantity),
     },
     ...overrides,
 })
@@ -333,6 +402,163 @@ describe('ethereumReviewerAdapter', () => {
                 ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
             ).toBe(false)
         })
+    })
+
+    describe("the wallet's own NFT transfer", () => {
+        beforeEach(() => {
+            vi.mocked(getAssetById).mockResolvedValue({
+                assetId: NFT_ID,
+                peraMetadata: {
+                    collectible: {
+                        standard: 'erc721',
+                        collection: { name: 'Apes' },
+                    },
+                },
+            } as PeraAsset)
+        })
+
+        it.each([
+            ['an ERC-721', ERC721_TRANSFER, 1, 'erc721'],
+            ['an ERC-1155', ERC1155_TRANSFER, 2, 'erc1155'],
+        ] as const)(
+            'is %s send of the token the calldata carries, signed without review',
+            async (_, transaction, quantity, standard) => {
+                const { reviewed, summary, view } = await reviewOne(
+                    unsigned(transaction, { summary: nftClaim(quantity) }),
+                    WALLET_BUILT,
+                )
+
+                expect(summary).toEqual(nftClaim(quantity))
+                expect(view.kind).toBe('nft-transfer')
+                expect(view.nft).toEqual({
+                    assetId: NFT_ID,
+                    contract: NFT_CONTRACT,
+                    tokenId: '7',
+                    standard,
+                    to: RECIPIENT,
+                    amount: new Decimal(quantity),
+                })
+                expect(reviewed.warnings).toEqual([])
+                expect(
+                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+                ).toBe(true)
+            },
+        )
+
+        it('names the collection by its contract when the NFT is not stored', async () => {
+            vi.mocked(getAssetById).mockResolvedValue(null)
+
+            const { summary } = await reviewOne(
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
+                WALLET_BUILT,
+            )
+
+            expect(summary.subtitle).toEqual({
+                key: 'transactions.list_item.nft_subtitle',
+                params: { collection: NFT_CONTRACT, tokenId: '7' },
+            })
+        })
+
+        it('still verifies it, named by its contract, when the store read fails', async () => {
+            vi.mocked(getAssetById).mockRejectedValue(new Error('db closed'))
+
+            const { reviewed, summary } = await reviewOne(
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
+                WALLET_BUILT,
+            )
+
+            expect(summary.kind).toBe('nft-transfer')
+            expect(summary.subtitle?.params?.collection).toBe(NFT_CONTRACT)
+            expect(reviewed.warnings).toEqual([])
+        })
+
+        it('rebuilds the label from the store, never echoing the claim', async () => {
+            const { summary } = await reviewOne(
+                unsigned(ERC721_TRANSFER, {
+                    summary: nftClaim(1, {
+                        subtitle: { key: i18nKey('forged.subtitle') },
+                    }),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(summary.subtitle).toEqual(nftClaim(1).subtitle)
+        })
+    })
+
+    describe('a forged nft-transfer summary', () => {
+        const oneByteOff = (data: Hex): Hex =>
+            `${data.slice(0, -2)}${data.endsWith('00') ? '01' : '00'}` as Hex
+
+        it.each([
+            [
+                'on calldata one byte off',
+                unsigned(nftTransfer(oneByteOff(ERC721_TRANSFER.data!)), {
+                    summary: nftClaim(1),
+                }),
+                WALLET_BUILT,
+            ],
+            [
+                "on calldata moving another holder's token",
+                unsigned(nftTransfer(erc721Data(STRANGER, RECIPIENT, 7n)), {
+                    summary: nftClaim(1),
+                }),
+                WALLET_BUILT,
+            ],
+            [
+                'on another contract',
+                unsigned(
+                    { ...ERC721_TRANSFER, to: TOKEN },
+                    {
+                        summary: nftClaim(1),
+                    },
+                ),
+                WALLET_BUILT,
+            ],
+            [
+                'on a call that also sends ether',
+                unsigned(
+                    { ...ERC721_TRANSFER, value: 1n },
+                    {
+                        summary: nftClaim(1),
+                    },
+                ),
+                WALLET_BUILT,
+            ],
+            [
+                'claiming 2 of an ERC-721',
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(2) }),
+                WALLET_BUILT,
+            ],
+            [
+                'claiming another quantity of an ERC-1155',
+                unsigned(ERC1155_TRANSFER, { summary: nftClaim(3) }),
+                WALLET_BUILT,
+            ],
+            [
+                'on a request the app did not build',
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
+                CONTEXT,
+            ],
+        ])(
+            'is a contract call %s, with the warning',
+            async (_, transaction, context) => {
+                const { reviewed, summary, view } = await reviewOne(
+                    transaction,
+                    context,
+                )
+
+                expect(summary.kind).toBe('contract-call')
+                expect(view.kind).toBe('contract-call')
+                expect(view.nft).toBeUndefined()
+                expect(reviewed.warnings).toEqual([
+                    expect.objectContaining({ type: 'unknown-contract' }),
+                ])
+                expect(
+                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+                ).toBe(false)
+            },
+        )
     })
 
     describe('other calls', () => {

@@ -478,7 +478,6 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signAuthData: input.signAuthData,
     createTransport: input.createTransport,
     scope: input.scope,
-    encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
     keyStore: input.keyStore,
 })

@@ -69,18 +69,25 @@ describe('isPlannerSigned', () => {
         ).toBe(false)
     })
 
-    it.each(['hardware', 'multisig'] as const)(
-        'leaves %s custody to the chain',
-        custody => {
-            expect(
-                isPlannerSigned(
-                    neutralGroup(),
-                    { custody, scheme: 'ed25519' },
-                    'algorand',
-                ),
-            ).toBe(false)
-        },
-    )
+    it('signs a device in the scheme the planner plans', () => {
+        expect(
+            isPlannerSigned(
+                neutralGroup(),
+                { custody: 'hardware', scheme: 'ed25519' },
+                'algorand',
+            ),
+        ).toBe(true)
+    })
+
+    it('leaves multisig custody to the chain', () => {
+        expect(
+            isPlannerSigned(
+                neutralGroup(),
+                { custody: 'multisig', scheme: 'ed25519' },
+                'algorand',
+            ),
+        ).toBe(false)
+    })
 
     it("leaves a group marked for the chain's own signer to the chain", () => {
         const group: SignableGroup = {

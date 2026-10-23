@@ -11,9 +11,7 @@
  */
 
 import {
-    Address,
     aggregateTransactionWarnings,
-    encodeTransactionRaw,
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
     toAlgorandNative,
@@ -147,8 +145,6 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     useFetchSuggestedMinFee,
     useMinFeeForSender,
     useAssignFeeToGroup,
-    encodeUnsignedTransaction: transaction =>
-        encodeTransactionRaw(algorandTransactionsOf([transaction])[0]),
     unsignedTransactionBytesOf: unsignedAlgorandTransactionBytesOf,
     reviewGroupFees: (transactions, signableAddresses) => {
         const views = transactions.map(algorandViewOf)
@@ -223,6 +219,5 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
         isAuthDataWirePayload: isArc60WirePayload,
         parseAuthDataWireRequest: parseArc60WireRequest,
         buildSiwxAuthData,
-        signerPublicKey: address => Address.fromString(address).publicKey,
     },
 }

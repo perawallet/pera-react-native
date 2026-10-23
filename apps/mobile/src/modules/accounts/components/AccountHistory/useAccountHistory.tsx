@@ -29,7 +29,6 @@ import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
-    useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
@@ -50,7 +49,7 @@ import {
 import type { AppStackParamList } from '@routes/types'
 import { getFilterTimes } from './utils'
 import {
-    buildTransactionListRows,
+    useTransactionHistoryRows,
     type TransactionListRow,
 } from '@modules/transactions'
 import {
@@ -68,6 +67,18 @@ export type UseAccountHistoryResult = {
     isLoading: boolean
     /** Whether to render the cold-start skeleton (no read has resolved yet) */
     isInitialLoad: boolean
+    /** Nothing loaded and the read failed: a retry state, not the skeleton. */
+    isLoadFailed: boolean
+    /** The failure is a Pera service this network doesn't have, so retrying can't help. */
+    isLoadUnavailable: boolean
+    isLoadIntegrityBlocked: boolean
+    isLoadOffline: boolean
+    /** Re-requests the page that failed. */
+    handleRetry: () => void
+    isRetrying: boolean
+    /** The automatic search stopped after a run of empty pages, rows loaded or not; see `handleSearchOlder`. */
+    isSearchPaused: boolean
+    handleSearchOlder: () => void
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -154,32 +165,34 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     )
 
     const {
-        transactions,
+        rows,
+        transactionCount,
         isLoading,
         isFetched,
         isFetchingNextPage,
         isError,
         error,
         hasNextPage,
+        isSearchPaused,
         fetchNextPage,
-    } = useTransactionHistoryQuery({
-        accountAddress: accountAddress ?? '',
+        retry: handleRetry,
+        isRetrying,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+    } = useTransactionHistoryRows({
+        accountAddress,
         scope,
-        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
     })
 
-    const rows = useMemo(
-        () => buildTransactionListRows(transactions),
-        [transactions],
-    )
-
+    // A paused search waits for Search Older, not for the list's end.
     const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage) {
+        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
             fetchNextPage()
         }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
 
     const refreshAddresses = useMemo(
         () => (accountAddress ? [accountAddress] : []),
@@ -187,6 +200,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     const { t } = useLanguage()
@@ -255,13 +269,19 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
-    const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isEmpty = isFetched && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
-    const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
+    // The failed read happened offline, so it gets the offline copy, not the error one.
+    const isLoadOffline = isLoadFailed && !hasInternet
+    const isInitialLoad =
+        !isLoadFailed &&
+        !isSearchPaused &&
+        rows.length === 0 &&
+        (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
-    // `transactions.length > 0` rather than `!isEmpty` also keeps the button
+    // `transactionCount > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
     // avoiding a brief visible-then-gone flicker.
     // A chain whose build has no CSV export hides the action outright; one that
@@ -272,12 +292,20 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         'csvExport',
     )
     const isCsvExportVisible =
-        transactions.length > 0 && (hasCsvExport || isCsvExportRestricted)
+        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
 
     return {
         rows,
         isLoading,
         isInitialLoad,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
+        handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder: fetchNextPage,
         isFetchingNextPage,
         isError,
         error,

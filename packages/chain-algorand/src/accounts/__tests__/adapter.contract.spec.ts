@@ -71,6 +71,10 @@ accountsContractTests(() => algorandAccountsAdapter, {
                     ],
                 },
             }),
+            mockAccountFastLookup({
+                address: FUNDED,
+                response: { account_exists: true },
+            }),
         ],
         nativeAssetId: '0',
         nativeBalanceBaseUnits: new Decimal(2_500_000),
@@ -80,6 +84,10 @@ accountsContractTests(() => algorandAccountsAdapter, {
         address: EMPTY,
         handlers: [
             mockAlgodAccountInformation({ address: EMPTY, response: {} }),
+            mockAccountFastLookup({
+                address: EMPTY,
+                response: { account_exists: false },
+            }),
         ],
     },
     activity: {

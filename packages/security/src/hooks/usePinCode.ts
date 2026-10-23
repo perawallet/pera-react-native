@@ -10,15 +10,24 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useSecurityStore } from '../store'
 import {
     PIN_RECORD_KEY_ID,
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-    INITIAL_LOCKOUT_SECONDS,
     AUTO_LOCK_TIMEOUT_MS,
 } from '../constants'
+import {
+    CLEARED_LOCKOUT,
+    calculateLockoutSeconds,
+    createLockoutDeadline,
+    getLiveLockout,
+    getLockoutRemainingMs,
+    readLockoutClocks,
+    resolveLockout,
+    type LockoutDeadline,
+} from '../lockout'
 import {
     type PinRecord,
     applyDuressPin,
@@ -29,6 +38,7 @@ import {
     verifyPinAgainstRecord,
 } from '../pinRecord'
 import { hydrateLockoutState } from '../lockoutHydration'
+import { withPinRecordLock } from '../pinRecordLock'
 import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -38,9 +48,13 @@ type VerifyPinResult = { kind: 'ok' } | { kind: 'duress' } | { kind: 'fail' }
 
 type UsePinCodeResult = {
     failedAttempts: number
-    lockoutEndTime: Nullable<number>
+    lockout: Nullable<LockoutDeadline>
     isLockedOut: boolean
-    remainingLockoutSeconds: number
+    getRemainingLockoutSeconds: () => number
+    /** Re-reads the lockout from the PIN record, persisting an expiry or re-anchor. */
+    refreshLockout: () => Promise<void>
+    /** Store only: for a deadline already read from the PIN record. */
+    setLockout: (lockout: Nullable<LockoutDeadline>) => void
     checkAutoLock: () => Promise<boolean>
     checkPinEnabled: () => Promise<boolean>
     savePin: (pin: Nullable<string>) => Promise<void>
@@ -60,19 +74,10 @@ type UsePinCodeResult = {
      */
     verifyPin: (pin: string) => Promise<VerifyPinResult>
     resetFailedAttempts: () => Promise<void>
-    setLockoutEndTime: (date: Nullable<number>) => Promise<void>
     getLockoutDuration: () => number
     setAutoLockStartedAt: (date: Nullable<number>) => void
     saveDuressPin: (pin: Nullable<string>) => Promise<void>
     checkDuressPinEnabled: () => Promise<boolean>
-}
-
-const calculateLockoutSeconds = (failedAttempts: number): number => {
-    const lockoutBlock = Math.floor(
-        failedAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-    )
-    if (lockoutBlock === 0) return 0
-    return INITIAL_LOCKOUT_SECONDS * 2 ** (lockoutBlock - 1)
 }
 
 export const usePinCode = (): UsePinCodeResult => {
@@ -86,10 +91,8 @@ export const usePinCode = (): UsePinCodeResult => {
     const resetFailedAttemptsInStore = useSecurityStore(
         state => state.resetFailedAttempts,
     )
-    const lockoutEndTime = useSecurityStore(state => state.lockoutEndTime)
-    const setLockoutEndTimeInStore = useSecurityStore(
-        state => state.setLockoutEndTime,
-    )
+    const lockout = useSecurityStore(state => state.lockout)
+    const setLockoutInStore = useSecurityStore(state => state.setLockout)
     const autoLockStartedAt = useSecurityStore(state => state.autoLockStartedAt)
     const setAutoLockStartedAt = useSecurityStore(
         state => state.setAutoLockStartedAt,
@@ -97,14 +100,25 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const { disableBiometrics, completePendingBiometricRearm } = useBiometrics()
 
-    const isLockedOut = useMemo(
-        () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
-        [lockoutEndTime],
+    // Short-circuits before the clock read: every render of every consumer
+    // calls this, and the native read is a synchronous bridge call.
+    const getRemainingLockoutSeconds = useCallback(
+        () =>
+            lockout
+                ? Math.ceil(
+                      getLockoutRemainingMs(
+                          lockout,
+                          failedAttempts,
+                          readLockoutClocks(),
+                      ) / 1000,
+                  )
+                : 0,
+        [lockout, failedAttempts],
     )
 
-    const remainingLockoutSeconds = lockoutEndTime
-        ? Math.max(0, Math.ceil((lockoutEndTime - Date.now()) / 1000))
-        : 0
+    // Read on every render, not memoized: the deadline doesn't change while
+    // the time left on it does.
+    const isLockedOut = getRemainingLockoutSeconds() > 0
 
     const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
         return withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
@@ -144,7 +158,7 @@ export const usePinCode = (): UsePinCodeResult => {
             })
             if (cancelled || !lockout) return
             setFailedAttemptsInStore(lockout.failedAttempts)
-            setLockoutEndTimeInStore(lockout.lockoutEndTime)
+            setLockoutInStore(lockout.lockout)
         })()
         return () => {
             cancelled = true
@@ -154,7 +168,27 @@ export const usePinCode = (): UsePinCodeResult => {
         commitSecret,
         removeSecret,
         setFailedAttemptsInStore,
-        setLockoutEndTimeInStore,
+        setLockoutInStore,
+    ])
+
+    const refreshLockout = useCallback(async () => {
+        const state = await hydrateLockoutState({
+            withSecret,
+            commitSecret,
+            removeSecret,
+        })
+        if (!state) {
+            setLockoutInStore(null)
+            return
+        }
+        setFailedAttemptsInStore(state.failedAttempts)
+        setLockoutInStore(state.lockout)
+    }, [
+        withSecret,
+        commitSecret,
+        removeSecret,
+        setFailedAttemptsInStore,
+        setLockoutInStore,
     ])
 
     const checkPinEnabled = useCallback(async (): Promise<boolean> => {
@@ -168,62 +202,58 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const resetFailedAttempts = useCallback(async () => {
         resetFailedAttemptsInStore()
-        setLockoutEndTimeInStore(null)
-        const record = await loadRecord()
-        if (!record) return
-        if (record.failedAttempts === 0 && record.lockoutEndTime === null)
-            return
-        await writeRecord({
-            ...record,
-            failedAttempts: 0,
-            lockoutEndTime: null,
-        })
-    }, [
-        resetFailedAttemptsInStore,
-        setLockoutEndTimeInStore,
-        loadRecord,
-        writeRecord,
-    ])
-
-    const setLockoutEndTime = useCallback(
-        async (date: number | null) => {
-            setLockoutEndTimeInStore(date)
+        setLockoutInStore(null)
+        await withPinRecordLock(async () => {
             const record = await loadRecord()
             if (!record) return
-            if (record.lockoutEndTime === date) return
-            await writeRecord({ ...record, lockoutEndTime: date })
-        },
-        [setLockoutEndTimeInStore, loadRecord, writeRecord],
-    )
+            if (
+                record.failedAttempts === 0 &&
+                record.lockoutEndTime === null &&
+                record.monotonicLockout === null
+            )
+                return
+            await writeRecord({
+                ...record,
+                failedAttempts: 0,
+                ...CLEARED_LOCKOUT,
+            })
+        })
+    }, [resetFailedAttemptsInStore, setLockoutInStore, loadRecord, writeRecord])
 
     const savePin = useCallback(
         async (pin: Nullable<string>) => {
             if (pin) {
-                const existing = await loadRecord()
-                let record = await createPinRecord(pin)
-                // A PIN change must not silently disarm the duress PIN, which
-                // now lives inside the same record.
-                if (existing?.duressEnabled === 1) {
-                    record = {
-                        ...record,
-                        duressSalt: existing.duressSalt,
-                        duressHash: existing.duressHash,
-                        duressEnabled: 1,
+                await withPinRecordLock(async () => {
+                    const existing = await loadRecord()
+                    let record = await createPinRecord(pin)
+                    // A PIN change must not silently disarm the duress PIN,
+                    // which now lives inside the same record.
+                    if (existing?.duressEnabled === 1) {
+                        record = {
+                            ...record,
+                            duressSalt: existing.duressSalt,
+                            duressHash: existing.duressHash,
+                            duressEnabled: 1,
+                        }
                     }
-                }
-                await writeRecord(record)
+                    await writeRecord(record)
+                })
                 setFailedAttemptsInStore(0)
-                setLockoutEndTimeInStore(null)
+                setLockoutInStore(null)
                 // Nothing to re-bind: the biometric blob holds a random token, not a copy of
                 // the PIN record, so a new PIN neither invalidates nor needs to touch it.
             } else {
-                await removeSecret(PIN_RECORD_KEY_ID)
-                // The duress slot lives inside the record just removed; this
-                // clears the pre-migration standalone record, should teardown
-                // run before the launch migration has.
-                await removeSecret(LEGACY_DURESS_PIN_RECORD_KEY_ID)
+                // Locked so an attempt in flight can't write its charge back
+                // over the removal and resurrect the record.
+                await withPinRecordLock(async () => {
+                    await removeSecret(PIN_RECORD_KEY_ID)
+                    // The duress slot lives inside the record just removed;
+                    // this clears the pre-migration standalone record, should
+                    // teardown run before the launch migration has.
+                    await removeSecret(LEGACY_DURESS_PIN_RECORD_KEY_ID)
+                })
                 setFailedAttemptsInStore(0)
-                setLockoutEndTimeInStore(null)
+                setLockoutInStore(null)
                 // Unconditional: `checkBiometricsEnabled` reporting false no
                 // longer implies the blob is gone — it keeps one whose
                 // enrollment it could not confirm — and `disableBiometrics` is
@@ -239,97 +269,112 @@ export const usePinCode = (): UsePinCodeResult => {
             removeSecret,
             writeRecord,
             setFailedAttemptsInStore,
-            setLockoutEndTimeInStore,
+            setLockoutInStore,
             disableBiometrics,
         ],
     )
 
     const verifyPin = useCallback(
-        async (pin: string): Promise<VerifyPinResult> => {
-            const record = await loadRecord()
-            if (!record) return { kind: 'fail' }
-            // Enforce lockout from the authoritative record itself, not just
-            // the async-hydrated store flag — closes the startup race where a
-            // guess slips through before the in-memory lockout state loads.
-            // Fail closed: when the record says locked, the regular PIN cannot
-            // succeed. The duress slot below stays reachable on purpose.
-            const lockedByRecord =
-                record.lockoutEndTime !== null &&
-                Date.now() < record.lockoutEndTime
+        (pin: string): Promise<VerifyPinResult> =>
+            withPinRecordLock(async () => {
+                const record = await loadRecord()
+                if (!record) return { kind: 'fail' as const }
+                // Enforce lockout from the authoritative record itself, not
+                // just the async-hydrated store flag — closes the startup race
+                // where a guess slips through before the in-memory lockout
+                // state loads. Fail closed: when the record says locked, the
+                // regular PIN cannot succeed. The duress slot below stays
+                // reachable on purpose.
+                const clocks = readLockoutClocks()
+                const resolution = resolveLockout(record, clocks)
+                const lockedByRecord = resolution.remainingMs > 0
+                // The record as it stands once a reboot re-anchor or an expiry
+                // is applied; every write below builds on it, so a refund or
+                // duress revert can't drop the re-anchor.
+                const base: PinRecord = resolution.update
+                    ? { ...record, ...resolution.update }
+                    : record
 
-            // Only the record is charged up front; the store waits for a
-            // `fail`, or a correct PIN on a lockout boundary would flash the
-            // lockout screen while the hashes run.
-            const newAttempts = record.failedAttempts + 1
-            const triggerLockout =
-                newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
-            const charged: PinRecord = {
-                ...record,
-                failedAttempts: newAttempts,
-                lockoutEndTime: triggerLockout
-                    ? Date.now() + calculateLockoutSeconds(newAttempts) * 1000
-                    : record.lockoutEndTime,
-            }
-            await writeRecord(charged)
+                // Only the record is charged up front; the store waits for a
+                // `fail`, or a correct PIN on a lockout boundary would flash
+                // the lockout screen while the hashes run.
+                const newAttempts = base.failedAttempts + 1
+                const triggerLockout =
+                    newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
+                const charged: PinRecord = {
+                    ...base,
+                    failedAttempts: newAttempts,
+                    ...(triggerLockout
+                        ? createLockoutDeadline(
+                              calculateLockoutSeconds(newAttempts) * 1000,
+                              clocks,
+                          )
+                        : {}),
+                }
+                await writeRecord(charged)
 
-            // Both slots are hashed on EVERY attempt — the duress slot holds
-            // random fill when no duress PIN is set — so an attempt's cost
-            // never reveals whether the feature is configured. Do not
-            // short-circuit either comparison, including on a regular match:
-            // a duress unlock must be timing-indistinguishable from a normal
-            // one to someone watching the user enter it.
-            const regularOk = lockedByRecord
-                ? false
-                : await verifyPinAgainstRecord(pin, record)
-            // Overlaps the duress hash instead of lengthening the unlock, but
-            // settles before `ok` returns: a put awaits the Keychain and a
-            // remove does not, so a late refund would restore a removed record.
-            const refund = regularOk
-                ? writeRecord({
-                      ...record,
-                      failedAttempts: 0,
-                      lockoutEndTime: null,
-                  }).catch(error => {
-                      logger.warn(
-                          'PIN attempt refund failed; the attempt stays charged',
-                          { error },
-                      )
-                  })
-                : null
-            const duressOk = await verifyPinAgainstDuressSlot(pin, record)
+                // Both slots are hashed on EVERY attempt — the duress slot
+                // holds random fill when no duress PIN is set — so an
+                // attempt's cost never reveals whether the feature is
+                // configured. Do not short-circuit either comparison,
+                // including on a regular match: a duress unlock must be
+                // timing-indistinguishable from a normal one to someone
+                // watching the user enter it.
+                const regularOk = lockedByRecord
+                    ? false
+                    : await verifyPinAgainstRecord(pin, record)
+                // Overlaps the duress hash instead of lengthening the unlock,
+                // but settles before `ok` returns: a put awaits the Keychain
+                // and a remove does not, so a late refund would restore a
+                // removed record.
+                const refund = regularOk
+                    ? writeRecord({
+                          ...base,
+                          failedAttempts: 0,
+                          ...CLEARED_LOCKOUT,
+                      }).catch(error => {
+                          logger.warn(
+                              'PIN attempt refund failed; the attempt stays charged',
+                              { error },
+                          )
+                      })
+                    : null
+                const duressOk = await verifyPinAgainstDuressSlot(pin, record)
 
-            if (regularOk) {
-                await refund
-                resetFailedAttemptsInStore()
-                setLockoutEndTimeInStore(null)
-                // Not awaited, though that only helps so much: arming holds
-                // the Android keystore while it runs, so anything the unlock
-                // reads from it queues behind arming either way.
-                void completePendingBiometricRearm()
-                return { kind: 'ok' }
-            }
-            // The duress comparison deliberately bypasses the lockout gate
-            // (the caller's `isLockedOut` check) — duress must be reachable
-            // even mid-lockout, otherwise an attacker could lock the user out
-            // and then demand the regular PIN. The charge is reverted to the
-            // pre-attempt counter rather than zeroed: zeroing would let a
-            // duress entry clear an accumulated lockout on the settings path,
-            // where duress does not wipe.
-            // duress: do not emit telemetry on this branch.
-            if (duressOk) {
-                await writeRecord(record)
-                return { kind: 'duress' }
-            }
-            setFailedAttemptsInStore(newAttempts)
-            if (triggerLockout) setLockoutEndTimeInStore(charged.lockoutEndTime)
-            return { kind: 'fail' }
-        },
+                if (regularOk) {
+                    await refund
+                    resetFailedAttemptsInStore()
+                    setLockoutInStore(null)
+                    // Not awaited, though that only helps so much: arming
+                    // holds the Android keystore while it runs, so anything the
+                    // unlock reads from it queues behind arming either way.
+                    void completePendingBiometricRearm()
+                    return { kind: 'ok' as const }
+                }
+                // The duress comparison deliberately bypasses the lockout gate
+                // (the caller's `isLockedOut` check) — duress must be
+                // reachable even mid-lockout, otherwise an attacker could lock
+                // the user out and then demand the regular PIN. The charge is
+                // reverted to the pre-attempt counter rather than zeroed:
+                // zeroing would let a duress entry clear an accumulated
+                // lockout on the settings path, where duress does not wipe.
+                // duress: do not emit telemetry on this branch.
+                if (duressOk) {
+                    await writeRecord(base)
+                    return { kind: 'duress' as const }
+                }
+                setFailedAttemptsInStore(newAttempts)
+                setLockoutInStore(
+                    getLiveLockout(charged, resolveLockout(charged, clocks)),
+                )
+                return { kind: 'fail' as const }
+            }),
         [
             loadRecord,
             writeRecord,
             resetFailedAttemptsInStore,
             setFailedAttemptsInStore,
-            setLockoutEndTimeInStore,
+            setLockoutInStore,
             completePendingBiometricRearm,
         ],
     )
@@ -357,17 +402,19 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const saveDuressPin = useCallback(
         async (pin: Nullable<string>) => {
-            const record = await loadRecord()
-            if (!record) {
-                // Disarming with nothing stored is a no-op; arming without a
-                // regular PIN would strand a duress slot no lock screen can
-                // ever reach.
-                if (!pin) return
-                throw new Error(
-                    'Cannot configure a duress PIN before a regular PIN exists',
-                )
-            }
-            await writeRecord(await applyDuressPin(record, pin))
+            await withPinRecordLock(async () => {
+                const record = await loadRecord()
+                if (!record) {
+                    // Disarming with nothing stored is a no-op; arming without
+                    // a regular PIN would strand a duress slot no lock screen
+                    // can ever reach.
+                    if (!pin) return
+                    throw new Error(
+                        'Cannot configure a duress PIN before a regular PIN exists',
+                    )
+                }
+                await writeRecord(await applyDuressPin(record, pin))
+            })
             forceRefresh.current += 1
         },
         [loadRecord, writeRecord],
@@ -376,15 +423,16 @@ export const usePinCode = (): UsePinCodeResult => {
     return {
         checkPinEnabled,
         failedAttempts,
-        lockoutEndTime,
+        lockout,
         isLockedOut,
+        getRemainingLockoutSeconds,
+        refreshLockout,
+        setLockout: setLockoutInStore,
         checkAutoLock,
-        remainingLockoutSeconds,
         savePin,
         verifyPin,
         resetFailedAttempts,
         getLockoutDuration,
-        setLockoutEndTime,
         setAutoLockStartedAt,
         saveDuressPin,
         checkDuressPinEnabled,

@@ -135,6 +135,9 @@ export const planFromPayload = (
             scheme: 'ed25519',
             // Copied into this realm: jsdom's TextEncoder returns a foreign Uint8Array.
             payload: new Uint8Array(new TextEncoder().encode(from)),
+            devicePayload: new Uint8Array(
+                new TextEncoder().encode(`device:${from}`),
+            ),
         },
     ]
 }
@@ -172,6 +175,8 @@ export const fakeAlgorandTransactionPlanner = (): TransactionPlanner => ({
                 signer: authorizer ?? transaction.sender.toString(),
                 scheme: 'ed25519',
                 payload: transaction.bytesToSign(),
+                // `bytesToSign` without its `TX` signing-domain prefix.
+                devicePayload: transaction.bytesToSign().slice(2),
             },
         ]
     },

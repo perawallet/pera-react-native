@@ -177,6 +177,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     useEffect(() => {

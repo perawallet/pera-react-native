@@ -43,10 +43,13 @@ import {
     isAssetInboxQuery,
     transactionQueryKeys,
     invalidateTransactionQueriesForAddresses,
+    invalidateTransactionQueriesForScope,
 } from '../querykeys'
 
 const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const BASE = { chainId: 'base', networkId: 'mainnet' } as const
 const ALGO: AssetRef = { chainId: MAINNET.chainId, assetId: '0' }
 
 describe('transactionQueryKeys', () => {
@@ -241,7 +244,54 @@ describe('transactionQueryKeys', () => {
     })
 })
 
+describe('invalidateTransactionQueriesForScope', () => {
+    test("invalidates that scope's queries and leaves other chains and networks alone", () => {
+        const queryClient = new QueryClient()
+        const algorandKey = transactionQueryKeys.history('ADDR1', MAINNET)
+        const testnetKey = transactionQueryKeys.history('ADDR1', TESTNET)
+        const ethereumKey = transactionQueryKeys.records('0xabc', ETHEREUM, {})
+        for (const key of [algorandKey, testnetKey, ethereumKey]) {
+            queryClient.setQueryData(key, { value: 1 })
+        }
+
+        invalidateTransactionQueriesForScope(queryClient, MAINNET)
+
+        expect(queryClient.getQueryState(algorandKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(testnetKey)?.isInvalidated).toBe(false)
+        expect(queryClient.getQueryState(ethereumKey)?.isInvalidated).toBe(
+            false,
+        )
+    })
+
+    test("leaves another module's key on the same scope untouched", () => {
+        const queryClient = new QueryClient()
+        const foreignKey = ['accounts', 'balance', { scope: MAINNET }]
+        queryClient.setQueryData(foreignKey, { value: 1 })
+
+        invalidateTransactionQueriesForScope(queryClient, MAINNET)
+
+        expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(false)
+    })
+})
+
 describe('invalidateTransactionQueriesForAddresses', () => {
+    test('stops at the given scope, since EVM chains share addresses', () => {
+        const queryClient = new QueryClient()
+        const ethereumKey = transactionQueryKeys.records('0xabc', ETHEREUM, {})
+        const baseKey = transactionQueryKeys.records('0xabc', BASE, {})
+        queryClient.setQueryData(ethereumKey, { value: 1 })
+        queryClient.setQueryData(baseKey, { value: 2 })
+
+        invalidateTransactionQueriesForAddresses(
+            queryClient,
+            ['0xabc'],
+            ETHEREUM,
+        )
+
+        expect(queryClient.getQueryState(ethereumKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(baseKey)?.isInvalidated).toBe(false)
+    })
+
     test('invalidates only the targeted address histories', () => {
         const queryClient = new QueryClient()
         const targetKey = transactionQueryKeys.history('ADDR1', MAINNET)

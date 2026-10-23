@@ -87,7 +87,7 @@ describe('Flow: signing review safety warnings', () => {
     })
 
     it('surfaces the warning panel for an unusually high fee', async () => {
-        // 2 ALGO fee on a single payment — well over the 0.5 ALGO/tx budget.
+        // 2 ALGO fee on a single payment — well over the 0.5 ALGO group budget.
         const { request } = buildTransactionSignRequest({
             txs: [buildPaymentTransaction({ fee: 2_000_000n })],
         })

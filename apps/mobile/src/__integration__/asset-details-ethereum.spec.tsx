@@ -108,14 +108,12 @@ describe('Flow: Asset details on its own network', () => {
 
         renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
 
-        const lines = await screen.findAllByTestId('network_label_ethereum')
+        const lines = await screen.findAllByTestId('chain_label_ethereum')
         expect(lines).toHaveLength(2)
         expect(lines[0].textContent).toContain(
             'account_details.assets.chain_network',
         )
-        expect(screen.queryAllByTestId('network_label_algorand')).toHaveLength(
-            0,
-        )
+        expect(screen.queryAllByTestId('chain_label_algorand')).toHaveLength(0)
     })
 
     it('Given an Ethereum token, when Receive is pressed, then the Ethereum QR opens directly', async () => {
@@ -174,7 +172,7 @@ describe('Flow: Asset details on its own network', () => {
         })
 
         expect(await screen.findByTestId('asset_details_screen')).toBeTruthy()
-        expect(screen.queryAllByTestId(/^network_label_/)).toHaveLength(0)
+        expect(screen.queryAllByTestId(/^chain_label_/)).toHaveLength(0)
         expect(
             screen.getByText('asset_details.main_screen.holdings_tab'),
         ).toBeTruthy()

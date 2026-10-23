@@ -26,6 +26,7 @@ export {
     closeCurrentTab,
     consumeInitialExpandedFlow,
     getConsumedExpandedFlow,
+    getConsumedExpandedChainId,
     openExternalTab,
     type ExpandedFlow,
 } from './navigation'

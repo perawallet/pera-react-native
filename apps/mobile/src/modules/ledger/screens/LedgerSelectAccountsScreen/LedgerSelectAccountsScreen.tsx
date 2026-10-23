@@ -32,6 +32,7 @@ export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        chainId,
         selectableAccounts,
         isScanning,
         selectedAddresses,
@@ -63,6 +64,7 @@ export const LedgerSelectAccountsScreen = () => {
             <LedgerAccountSelectionRow
                 address={address}
                 accountIndex={accountIndex}
+                chainId={chainId}
                 variant={item.kind}
                 isSelected={isSelected}
                 isImported={isImported}

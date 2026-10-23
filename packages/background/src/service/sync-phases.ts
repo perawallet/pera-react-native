@@ -21,7 +21,10 @@ import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
-import { fetchAndPersistTransactions } from '@perawallet/wallet-core-transactions'
+import {
+    fetchAndPersistTransactions,
+    hasCachedHistoryRows,
+} from '@perawallet/wallet-core-transactions'
 import {
     logger,
     mapWithConcurrency,
@@ -133,6 +136,9 @@ export const syncTransactionsPhase = async (
     scope: ChainScope,
     phase: string,
 ): Promise<SyncPhaseResult<void>> => {
+    // There is no cache to fill. Empty rather than successful, so callers
+    // don't read it as new history to surface.
+    if (!hasCachedHistoryRows(scope.chainId)) return summarize([])
     const results = await mapWithConcurrency(
         addresses,
         ACCOUNT_FETCH_CONCURRENCY,

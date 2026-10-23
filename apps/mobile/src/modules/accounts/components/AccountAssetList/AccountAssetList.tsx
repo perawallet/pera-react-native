@@ -20,7 +20,6 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
@@ -61,7 +60,6 @@ export const AccountAssetList = ({
         chainFilterOptions,
         selectedChainId,
         setSelectedChainId,
-        showChainBadges,
         toggleGroupExpanded,
         convertFiat,
         isPending,
@@ -102,11 +100,6 @@ export const AccountAssetList = ({
                         findNativeAsset(chainId)?.assetId === row.assetId
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
-                    chainName={
-                        showChainBadges
-                            ? chainDisplayNameOf(chainId)
-                            : undefined
-                    }
                     isGroupMember={item.isGroupMember}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
@@ -114,13 +107,7 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [
-            renderItemProps,
-            convertFiat,
-            showChainBadges,
-            toggleGroupExpanded,
-            styles.groupItem,
-        ],
+        [renderItemProps, convertFiat, toggleGroupExpanded, styles.groupItem],
     )
 
     const chainFilter =

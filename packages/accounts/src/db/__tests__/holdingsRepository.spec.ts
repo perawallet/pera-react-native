@@ -364,6 +364,35 @@ describe('account holdings repository', () => {
             expect(result.map(r => r.assetId)).toEqual(['100'])
         })
 
+        it('keeps a retained holding the incoming set omits, and still removes the rest', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(10) },
+                    { assetId: 'kept/1', amount: new Decimal(1) },
+                    { assetId: '200', amount: new Decimal(20) },
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: new Decimal(10) }],
+                scope: MAINNET_SCOPE,
+                retain: assetId => assetId.startsWith('kept/'),
+            })
+            expect(changed).toBe(true)
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+            expect(result.map(r => r.assetId).sort()).toEqual(['100', 'kept/1'])
+        })
+
         it('writes a large holding set across multiple batches', async () => {
             const holdings = Array.from({ length: 450 }, (_, i) => ({
                 assetId: `${i + 1}`,

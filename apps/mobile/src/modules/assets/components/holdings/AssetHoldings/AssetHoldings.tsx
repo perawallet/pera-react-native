@@ -26,7 +26,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { NetworkLabel } from '../../AssetGroupRow'
+import { ChainLabel } from '../../AssetGroupRow'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
@@ -119,7 +119,7 @@ export const AssetHoldings = ({
                         </PWView>
                     </PWView>
                     {isNetworkLineVisible && (
-                        <NetworkLabel chainId={scope.chainId} />
+                        <ChainLabel chainId={scope.chainId} />
                     )}
 
                     <PWView style={styles.primaryValueContainer}>

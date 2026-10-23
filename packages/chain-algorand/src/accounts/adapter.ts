@@ -11,6 +11,7 @@
  */
 
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
+import { fetchAccountExists } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
 import { fetchAlgorandChangeSignal } from './change-signal'
@@ -24,11 +25,7 @@ import {
     ALGORAND_MAX_CONCURRENT_STATE_READS,
 } from './constants'
 import { hdDerivedKeyId } from './hd-derivation'
-import {
-    algorandAccountExists,
-    checkAlgorandActivity,
-    createXHDGetPublicKey,
-} from './discovery'
+import { checkAlgorandActivity, createXHDGetPublicKey } from './discovery'
 import { fetchAssetOptInRounds } from './information'
 import { describeAlgorandHolding } from './holdings'
 import {
@@ -76,8 +73,9 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
             currency,
             algorandNetworkOf(scope),
         ),
-    accountExists: (address, scope) =>
-        algorandAccountExists(address, algorandNetworkOf(scope)),
+    // Pera's fast lookup, not algod: it throws when unreachable, which the
+    // Ledger gap scan reads as "probe unavailable" rather than "no footprint".
+    accountExists: (address, scope) => fetchAccountExists(address, scope),
     checkActivity: (addresses, scope) =>
         checkAlgorandActivity(addresses, algorandNetworkOf(scope)),
     createPublicKeyGetter: createXHDGetPublicKey,

@@ -105,6 +105,11 @@ const mergeNewestFirst = (
     return [...merged, ...ledger.slice(next)]
 }
 
+export type HistoryPageWithPending = Page<TransactionRecord> & {
+    /** The chain's own records on this page, before the wallet's sends were merged in. */
+    minedItems: TransactionRecord[]
+}
+
 /**
  * The chain's history page, with this wallet's own broadcasts merged into
  * page one by time so a send shows before the backend lists it. A rejected mined page
@@ -115,14 +120,18 @@ export const getTransactionHistoryWithPending = async (
     address: string,
     scope: ChainScope,
     page?: PageRef,
-): Promise<Page<TransactionRecord>> => {
+): Promise<HistoryPageWithPending> => {
     const adapter = historyChainAdapters.get(scope.chainId)
     const mined = await adapter.getTransactionHistory(address, scope, page)
-    if (page) return mined
+    if (page) return { ...mined, minedItems: mined.items }
     const pending = await getPendingTransactionRecords({
         address,
         scope,
         listedIds: new Set(mined.items.map(record => record.id)),
     })
-    return { ...mined, items: mergeNewestFirst(pending, mined.items) }
+    return {
+        ...mined,
+        items: mergeNewestFirst(pending, mined.items),
+        minedItems: mined.items,
+    }
 }

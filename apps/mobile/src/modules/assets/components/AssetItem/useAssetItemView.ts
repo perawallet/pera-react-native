@@ -79,7 +79,7 @@ export const useAssetItemView = (
     const secondaryText = isAlgo
         ? (asset.unitName ?? '')
         : subtitleLeading
-          ? `${subtitleLeading} - ${asset.assetId}`
+          ? `${subtitleLeading} · ${asset.assetId}`
           : asset.assetId
 
     const copyAssetId = useCallback(

@@ -19,7 +19,9 @@ import type {
 
 export class RNAppLifecycleService implements AppLifecycleService {
     getCurrentState(): AppLifecycleState {
-        return AppState.currentState
+        // RN's strict types widen this to `string | null | undefined`; the runtime
+        // only reports AppStateStatus values, and null before the first native report.
+        return (AppState.currentState ?? 'unknown') as AppLifecycleState
     }
 
     addChangeListener(listener: AppLifecycleListener): () => void {

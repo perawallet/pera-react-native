@@ -80,6 +80,19 @@ const formatEntry = (
     if (hasCustody(account, 'watch')) {
         return { type: BackupAccountType.watch, address, customName: null }
     }
+    if (hasCustody(account, 'hardware')) {
+        const { device, accountIndex } = account.custody
+        return {
+            type: BackupAccountType.hardware,
+            address,
+            deviceId: device.deviceId,
+            deviceName: device.deviceName,
+            accountIndex,
+            manufacturer: device.manufacturer,
+            transportType: device.transportType,
+            customName: null,
+        }
+    }
     if (!hasCustody(account, 'local')) return null
     const index = hdIndexOf(account)
     if (index) {

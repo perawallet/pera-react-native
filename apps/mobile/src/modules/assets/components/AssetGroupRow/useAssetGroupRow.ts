@@ -12,9 +12,14 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    findNativeAsset,
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { IconName } from '@components/core'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
@@ -23,8 +28,28 @@ import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
+import { getVerificationIcon } from '../../utils/verification'
 
 const ONE = new Decimal(1)
+
+// `trusted` isn't a metadata tier: only a chain's native coin earns it, as on single rows.
+type GroupTier = PeraAssetVerificationTier | 'trusted'
+
+// Lowest first: a group shows its most cautious member's tier, so one
+// suspicious network is never hidden behind a verified one.
+const TIER_CAUTION_ORDER: readonly GroupTier[] = [
+    PeraAssetVerificationTier.suspicious,
+    PeraAssetVerificationTier.unverified,
+    PeraAssetVerificationTier.verified,
+    'trusted',
+]
+
+const cautionRankOf = (tier: GroupTier): number => {
+    const rank = TIER_CAUTION_ORDER.indexOf(tier)
+    return rank === -1
+        ? TIER_CAUTION_ORDER.indexOf(PeraAssetVerificationTier.unverified)
+        : rank
+}
 
 export type UseAssetGroupRowParams<T extends GroupableHolding> = {
     item: AssetGroupItem<T>
@@ -34,6 +59,11 @@ export type UseAssetGroupRowParams<T extends GroupableHolding> = {
 export type UseAssetGroupRowResult = {
     /** Null until the first member's metadata has synced. */
     icon: Nullable<PeraAsset>
+    /** Null until every member has synced, unless one is already suspicious. */
+    verificationIcon: Nullable<IconName>
+    isSuspicious: boolean
+    /** "SYMBOL · id" when every network shares one id, else the symbol alone. */
+    subtitle: string
     chainIds: ChainId[]
     /** Null value while any member's is unknown. */
     fiat: AssetFiatValue
@@ -43,7 +73,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     item,
     convertFiat,
 }: UseAssetGroupRowParams<T>): UseAssetGroupRowResult => {
-    const { members } = item
+    const { group, members } = item
 
     const chainIds = useMemo(
         () => members.map(member => member.holding.scope.chainId),
@@ -58,5 +88,48 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         [item.usdValue, convertFiat],
     )
 
-    return { icon: members[0]?.asset ?? null, chainIds, fiat }
+    // Suspicious shows at once, since no later member can rank lower; any other
+    // tier waits for every network, as the amounts do, so it never shows early
+    // and then turns out wrong.
+    const tier = useMemo((): Nullable<GroupTier> => {
+        const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
+            if (!asset) return null
+            const isNative =
+                findNativeAsset(holding.scope.chainId)?.assetId ===
+                holding.assetId
+            return isNative
+                ? 'trusted'
+                : (asset.peraMetadata?.verificationTier ??
+                      PeraAssetVerificationTier.unverified)
+        })
+        if (tiers.includes(PeraAssetVerificationTier.suspicious)) {
+            return PeraAssetVerificationTier.suspicious
+        }
+        const synced = tiers.filter((tier): tier is GroupTier => tier !== null)
+        if (synced.length < tiers.length) return null
+        return synced.reduce<Nullable<GroupTier>>(
+            (lowest, next) =>
+                lowest === null || cautionRankOf(next) < cautionRankOf(lowest)
+                    ? next
+                    : lowest,
+            null,
+        )
+    }, [members])
+
+    const subtitle = useMemo(() => {
+        const ids = new Set(members.map(({ holding }) => holding.assetId))
+        const [sharedId] = ids
+        return ids.size === 1 && sharedId
+            ? `${group.symbol} · ${sharedId}`
+            : group.symbol
+    }, [members, group.symbol])
+
+    return {
+        icon: members[0]?.asset ?? null,
+        verificationIcon: tier ? getVerificationIcon(tier) : null,
+        isSuspicious: tier === PeraAssetVerificationTier.suspicious,
+        subtitle,
+        chainIds,
+        fiat,
+    }
 }

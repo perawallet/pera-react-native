@@ -15,3 +15,7 @@ import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-w
 /** Whether a Ledger device app is registered for the chain. */
 export const hasLedgerAppDriver = (chainId: string): boolean =>
     ledgerAppDriverRegistry.has(chainId)
+
+/** The device app the user opens for the chain; throws `LedgerAppDriverNotRegisteredError` without a driver. */
+export const ledgerAppNameFor = (chainId: string): string =>
+    ledgerAppDriverRegistry.resolve(chainId).appName

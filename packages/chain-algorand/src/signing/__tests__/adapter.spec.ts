@@ -18,7 +18,6 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     Arc0001Error,
     Arc0001ErrorCode,
-    encodeAlgorandAddress,
     encodeTransactionRaw,
     groupTransactions,
     readAlgorandNative,
@@ -166,8 +165,7 @@ describe('algorandPlannerAdapter.assembleSignedTransaction', () => {
 
 describe('algorandPlannerAdapter.unsignedTransactionBytesOf', () => {
     test('is the unsigned encoding of the transaction an envelope carries, signed or not', () => {
-        const expected =
-            algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
+        const expected = encodeTransactionRaw(payment)
 
         expect(
             algorandPlannerAdapter.unsignedTransactionBytesOf(
@@ -264,15 +262,6 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
     })
 })
 
-describe('algorandPlannerAdapter.encodeUnsignedTransaction', () => {
-    test('is the wire encoding without the signing-domain prefix', () => {
-        const bytes = algorandPlannerAdapter.encodeUnsignedTransaction(unsigned)
-
-        expect(bytes).toEqual(encodeTransactionRaw(payment))
-        expect(new TextDecoder().decode(bytes.slice(0, 2))).not.toBe('TX')
-    })
-})
-
 describe('algorandReviewerAdapter.toTransactionNative', () => {
     const fivePayment = () =>
         asUnsignedAlgorandTransaction(
@@ -301,25 +290,6 @@ describe('algorandReviewerAdapter.toTransactionNative', () => {
                 makeUnsignedAlgorandTransaction(),
             ),
         ).toBeNull()
-    })
-})
-
-describe('algorandMessageSignerAdapter.authData.signerPublicKey', () => {
-    const authData = () => {
-        const leg = algorandMessageSignerAdapter.authData
-        if (!leg) throw new Error('Algorand signs auth data')
-        return leg
-    }
-
-    test('decodes an address to the 32-byte key it encodes', () => {
-        const key = authData().signerPublicKey(senderA.toString())
-
-        expect(key).toHaveLength(32)
-        expect(encodeAlgorandAddress(key)).toBe(senderA.toString())
-    })
-
-    test('throws on an invalid address', () => {
-        expect(() => authData().signerPublicKey('not-an-address')).toThrow()
     })
 })
 

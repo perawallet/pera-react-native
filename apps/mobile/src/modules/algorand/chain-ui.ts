@@ -11,7 +11,6 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import type {
     AssetAboutParams,
     AssetAboutDisplay,
@@ -88,5 +87,11 @@ export const algorandChainUi: ChainUi = {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
     },
-    icon: () => AlgoAssetIcon,
+    watchAccountCopy: {
+        optionDescriptionKey: i18nKey(
+            'onboarding.add_account.watch_address_option_description',
+        ),
+        descriptionKey: i18nKey('onboarding.watch_account.description'),
+        invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
+    },
 }

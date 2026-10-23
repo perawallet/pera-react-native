@@ -18,6 +18,7 @@ import {
     historyChainAdapters,
     useCsvExportMutation,
     useTransactionHistoryQuery,
+    useTransactionRecordsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -33,9 +34,14 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import {
     isPeraServiceUnavailableError,
-    type PeraServiceUnavailableError,
+    PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 const mockRequestBottomSheet = vi.fn()
 const mockUseNetworkStatus = vi.hoisted(() => vi.fn())
@@ -52,6 +58,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         typeof import('@perawallet/wallet-core-transactions')
     >()),
     useTransactionHistoryQuery: vi.fn(),
+    useTransactionRecordsQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
 
@@ -167,6 +174,20 @@ describe('useAssetTransactionList', () => {
             fetchNextPage: mockFetchNextPage,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
+
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+            records: [],
+            isLoading: false,
+            isFetched: false,
+            isFetching: false,
+            isFetchingNextPage: false,
+            isError: false,
+            error: null,
+            hasNextPage: false,
+            isSearchPaused: false,
+            fetchNextPage: mockFetchNextPage,
+            refetch: vi.fn(),
+        })
 
         vi.mocked(useCsvExportMutation).mockReturnValue({
             exportCsv: mockExportCsv,
@@ -1000,6 +1021,182 @@ describe('useAssetTransactionList', () => {
 
             expect(result.current.isError).toBe(true)
             expect(result.current.error).toBe(mockError)
+        })
+
+        it('shows a retry state instead of the skeleton when nothing loaded', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                hasNextPage: true,
+                fetchNextPage: mockFetchNextPage,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.isInitialLoad).toBe(false)
+            act(() => result.current.handleRetry())
+            expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
+        })
+        it('marks a read that failed offline so it gets the offline copy', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: false })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                error: new Error('network down'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isLoadFailed).toBe(true)
+            expect(result.current.isLoadOffline).toBe(true)
+        })
+
+        it('tells a Pera service this network lacks apart from a failure a retry can fix', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isFetched: true,
+                isError: true,
+                error: new PeraServiceUnavailableError(MAINNET_SCOPE),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isLoadUnavailable).toBe(true)
+            expect(result.current.isLoadIntegrityBlocked).toBe(false)
+        })
+    })
+
+    describe('on Ethereum', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const ETH_ADDRESS = `0x${'c'.repeat(40)}`
+        const ethAccount = {
+            ...mockAccount,
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        } as unknown as WalletAccount
+        const usdc = { ...mockAsset, assetId: '0xusdc' } as PeraAsset
+        const record: TransactionRecord = {
+            id: '0xhash',
+            scope: ETH_SCOPE,
+            status: 'confirmed',
+            timestamp: 1_704_067_200_000,
+            summary: {
+                kind: 'token-transfer',
+                title: { key: i18nKey('transactions.list_item.receive') },
+                direction: 'in',
+                icon: 'receive',
+            },
+            chainData: { family: 'evm' },
+        }
+
+        beforeEach(() => {
+            registerEthereumChain()
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+                records: [record],
+                isLoading: false,
+                isFetched: true,
+                isFetching: false,
+                isFetchingNextPage: false,
+                isError: false,
+                error: null,
+                hasNextPage: false,
+                isSearchPaused: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: vi.fn(),
+            })
+        })
+
+        it("lists the asset's records, filtered by asset, never the row cache", () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: ETH_SCOPE,
+                    account: ethAccount,
+                    asset: usdc,
+                }),
+            )
+
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ isEnabled: false }),
+            )
+            expect(useTransactionRecordsQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddress: ETH_ADDRESS,
+                    scope: ETH_SCOPE,
+                    assetId: '0xusdc',
+                    isEnabled: true,
+                }),
+            )
+            expect(result.current.rows).toEqual([
+                expect.objectContaining({ kind: 'header' }),
+                { kind: 'record', key: '0xhash', record },
+            ])
+        })
+
+        it('offers no CSV export on a chain whose build has none', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: ETH_SCOPE,
+                    account: ethAccount,
+                    asset: usdc,
+                }),
+            )
+
+            expect(result.current.isCsvExportVisible).toBe(false)
+        })
+
+        it('offers to search older history, not a skeleton, for a barely used token', () => {
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue({
+                records: [],
+                isLoading: false,
+                isFetched: true,
+                isFetching: false,
+                isFetchingNextPage: false,
+                isError: false,
+                error: null,
+                hasNextPage: true,
+                isSearchPaused: true,
+                fetchNextPage: mockFetchNextPage,
+                refetch: vi.fn(),
+            })
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    scope: ETH_SCOPE,
+                    account: ethAccount,
+                    asset: usdc,
+                }),
+            )
+
+            expect(result.current.isSearchPaused).toBe(true)
+            expect(result.current.isInitialLoad).toBe(false)
+            act(() => result.current.handleLoadMore())
+            expect(mockFetchNextPage).not.toHaveBeenCalled()
+
+            act(() => result.current.handleSearchOlder())
+            expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
         })
     })
 })

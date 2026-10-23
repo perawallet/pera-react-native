@@ -95,6 +95,9 @@ case "$PROFILE" in
   android)
     required_global+=(
       "ANDROID_KEYSTORE_BASE64"
+      "ANDROID_KEYSTORE_PASSWORD"
+      "ANDROID_KEY_ALIAS"
+      "ANDROID_KEY_PASSWORD"
       "SLACK_WEBHOOK_URL"
     )
     required_prefixed+=(
@@ -140,8 +143,8 @@ case "$PROFILE" in
     )
     ;;
   web)
-    # Zip-only build (no store/CWS upload yet), so no signing/upload
-    # credentials are required — just the same backend wiring as ios/android.
+    # The Chrome Web Store upload checks its own credentials, and only on an
+    # rc tag, so this needs just the same backend wiring as ios/android.
     required_global+=(
       "SLACK_WEBHOOK_URL"
     )

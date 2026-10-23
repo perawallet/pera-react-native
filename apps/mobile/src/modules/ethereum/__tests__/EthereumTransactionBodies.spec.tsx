@@ -21,6 +21,7 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     ETHEREUM_FIXTURE_APPROVE_DATA,
+    ETHEREUM_FIXTURE_NFT_ID,
     ETHEREUM_FIXTURE_RECIPIENT,
     ETHEREUM_FIXTURE_SENDER,
     ETHEREUM_FIXTURE_TOKEN,
@@ -104,6 +105,7 @@ describe('Ethereum transaction bodies', () => {
         for (const kind of [
             'transfer',
             'token-transfer',
+            'nft-transfer',
             'contract-call',
             'contract-creation',
         ] as const) {
@@ -143,6 +145,37 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_review_amount')).toMatch(/USDC.*5/)
             expect(textOf('ethereum_review_asset')).toContain('USDC')
             expect(textOf('ethereum_review_asset')).toContain(SHORT_TOKEN)
+        })
+
+        it('shows an NFT transfer as the NFT, with no fiat, contract-call details or warning', () => {
+            vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+                data: {
+                    assetId: ETHEREUM_FIXTURE_NFT_ID,
+                    decimals: 0,
+                    unitName: 'BAYC',
+                    peraMetadata: {
+                        collectible: { collection: { name: 'Apes' } },
+                    },
+                },
+                isPending: false,
+            } as unknown as ReturnType<typeof useSingleAssetDetailsQuery>)
+
+            render(
+                <TransactionReviewBody transaction={natives['nft-transfer']} />,
+            )
+
+            expect(screen.getByText('transactions.list_item.send')).toBeTruthy()
+            expect(screen.getByText(SHORT_RECIPIENT)).toBeTruthy()
+            expect(textOf('ethereum_review_amount')).toMatch(/BAYC.*1/)
+            expect(textOf('ethereum_review_nft')).toContain(
+                'transactions.list_item.nft_subtitle',
+            )
+            expect(
+                screen.queryByTestId('ethereum_contract_call_warning'),
+            ).toBeNull()
+            expect(
+                screen.queryByTestId('ethereum_contract_call_selector'),
+            ).toBeNull()
         })
 
         it('explains nothing about an unrecognised call and shows its raw facts', () => {

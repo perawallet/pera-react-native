@@ -22,15 +22,16 @@ import {
 import {
     addressCodecs,
     type ChainId,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
-import { useCapabilityCheck } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useWatchableChainIds } from '@modules/onboarding/hooks'
+import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
 type UseWatchAccountScreenResult = {
@@ -38,6 +39,8 @@ type UseWatchAccountScreenResult = {
     /** The chains an address can be watched on, for the field's scanner. */
     watchableChainIds: readonly ChainId[]
     resolvedAddress: string
+    descriptionKey: I18nKey
+    invalidAddressKey: I18nKey
     isValidAddress: boolean
     isDuplicateAddress: boolean
     isNfdResolved: boolean
@@ -66,18 +69,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
         useNfdResolve(address)
 
-    const checkCapability = useCapabilityCheck()
-    const { chains } = getProvider()
-    const watchableChainIds = addressCodecs
-        .list()
-        .map(codec => codec.chainId)
-        .filter(
-            chainId =>
-                chains.has(chainId) &&
-                checkCapability({
-                    chain: { chainId, capability: 'watchAccounts' },
-                }),
-        )
+    const watchableChainIds = useWatchableChainIds()
     // The default chain decides when several chains accept the same address.
     const watchChainId = preferDefaultChain(
         watchableChainIds.filter(chainId =>
@@ -85,6 +77,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         ),
     )
 
+    const { descriptionKey, invalidAddressKey } =
+        watchAccountCopyFor(watchableChainIds)
     const isValidAddress = watchChainId !== undefined
     const isDuplicateAddress =
         watchChainId !== undefined &&
@@ -138,6 +132,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         address,
         watchableChainIds,
         resolvedAddress,
+        descriptionKey,
+        invalidAddressKey,
         isValidAddress,
         isDuplicateAddress,
         isNfdResolved,

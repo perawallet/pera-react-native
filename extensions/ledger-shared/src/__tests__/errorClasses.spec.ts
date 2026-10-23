@@ -226,18 +226,6 @@ const ROWS: Record<string, Row> = {
         message: 'Blind signing must be enabled in the Ledger Fixture app',
         metadata: meta(MEDIUM, true, expected),
     },
-    LedgerOperationUnsupportedError: {
-        ErrorClass: ledgerErrors.LedgerOperationUnsupportedError,
-        args: [],
-        build: cause =>
-            new ledgerErrors.LedgerOperationUnsupportedError({
-                appName: 'Fixture',
-                operation: 'signData',
-                originalError: cause,
-            }),
-        message: 'The Ledger Fixture app does not support signData',
-        metadata: meta(MEDIUM, false),
-    },
 }
 
 const construct = (

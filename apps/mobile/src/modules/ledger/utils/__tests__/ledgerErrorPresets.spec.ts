@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerConnectionError,
     LedgerDisconnectedError,
     LedgerTimeoutError,
@@ -36,22 +37,93 @@ import {
 } from '../ledgerErrorPresets'
 
 const t = (key: string) => key
+const APP = 'Algorand'
 
 describe('getLedgerErrorPreset', () => {
     it('maps LedgerUserRejectedError to user_rejected preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerUserRejectedError(), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerUserRejectedError(),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('user_rejected')
         expect(preset.title).toBe('ledger.errors.user_rejected_title')
         expect(preset.body).toBe('ledger.errors.user_rejected')
     })
 
     it('maps LedgerAppNotOpenError to app_not_open preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerAppNotOpenError(), t)
+        const preset = getLedgerErrorPreset(new LedgerAppNotOpenError(), t, APP)
         expect(preset.kind).toBe('app_not_open')
     })
 
+    describe('copy that names the device app', () => {
+        // Echoes the key with its params, so a test sees what was interpolated.
+        const translate = (key: string, options?: Record<string, unknown>) =>
+            options ? `${key}(${JSON.stringify(options)})` : key
+
+        it('names the app an app-not-open error carries', () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerAppNotOpenError({ appName: 'Ethereum' }),
+                translate,
+                APP,
+            )
+
+            expect(preset.title).toBe(
+                'ledger.errors.app_not_open_title({"appName":"Ethereum"})',
+            )
+            expect(preset.body).toBe(
+                'ledger.errors.app_not_open({"appName":"Ethereum"})',
+            )
+        })
+
+        it("names the chain's app when the error carries none", () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerAppNotOpenError(),
+                translate,
+                'Ethereum',
+            )
+
+            expect(preset.title).toBe(
+                'ledger.errors.app_not_open_title({"appName":"Ethereum"})',
+            )
+        })
+
+        it("names the chain's app in connection copy", () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerTimeoutError('Sign Ledger transaction'),
+                translate,
+                'Ethereum',
+            )
+
+            expect(preset.body).toBe(
+                'ledger.errors.timeout({"appName":"Ethereum"})',
+            )
+        })
+
+        it('asks for blind signing in the app the refusal names, with a retry', () => {
+            const preset = getLedgerErrorPreset(
+                new LedgerBlindSigningRequiredError({ appName: 'Ethereum' }),
+                translate,
+                APP,
+            )
+
+            expect(preset).toEqual({
+                kind: 'blind_signing_required',
+                title: 'ledger.errors.blind_signing_required_title({"appName":"Ethereum"})',
+                body: 'ledger.errors.blind_signing_required({"appName":"Ethereum"})',
+                isTroubleshootable: false,
+                isRetryable: true,
+                action: null,
+            })
+        })
+    })
+
     it('maps LedgerDisconnectedError to connection_lost preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerDisconnectedError(), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerDisconnectedError(),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('connection_lost')
     })
 
@@ -59,6 +131,7 @@ describe('getLedgerErrorPreset', () => {
         const preset = getLedgerErrorPreset(
             new LedgerTimeoutError('Sign Ledger transaction'),
             t,
+            APP,
         )
         expect(preset.kind).toBe('timeout')
         expect(preset.title).toBe('ledger.errors.timeout_title')
@@ -71,6 +144,7 @@ describe('getLedgerErrorPreset', () => {
         const preset = getLedgerErrorPreset(
             new LedgerConnectionError('bt off'),
             t,
+            APP,
         )
         expect(preset.kind).toBe('connection_failed')
     })
@@ -79,6 +153,7 @@ describe('getLedgerErrorPreset', () => {
         const preset = getLedgerErrorPreset(
             new LedgerAddressMismatchError('EXPECTED_ADDR', 'ACTUAL_ADDR'),
             t,
+            APP,
         )
         expect(preset.kind).toBe('address_mismatch')
         expect(preset.title).toBe('ledger.errors.address_mismatch_title')
@@ -86,12 +161,12 @@ describe('getLedgerErrorPreset', () => {
     })
 
     it('falls back to connection_failed for plain Error', () => {
-        const preset = getLedgerErrorPreset(new Error('boom'), t)
+        const preset = getLedgerErrorPreset(new Error('boom'), t, APP)
         expect(preset.kind).toBe('connection_failed')
     })
 
     it('falls back to connection_failed for non-Error values', () => {
-        const preset = getLedgerErrorPreset('something-broke', t)
+        const preset = getLedgerErrorPreset('something-broke', t, APP)
         expect(preset.kind).toBe('connection_failed')
     })
 })
@@ -101,13 +176,21 @@ describe('LedgerErrorPreset flags', () => {
     const t: Translate = key => key
 
     it('returns isTroubleshootable=true for connection_failed', () => {
-        const preset = getLedgerErrorPreset(new LedgerConnectionError('x'), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerConnectionError('x'),
+            t,
+            APP,
+        )
         expect(preset.isTroubleshootable).toBe(true)
         expect(preset.isRetryable).toBe(true)
     })
 
     it('returns isTroubleshootable=false for user_rejected', () => {
-        const preset = getLedgerErrorPreset(new LedgerUserRejectedError(), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerUserRejectedError(),
+            t,
+            APP,
+        )
         expect(preset.isTroubleshootable).toBe(false)
         expect(preset.isRetryable).toBe(true) // can retry by re-initiating
     })
@@ -116,6 +199,7 @@ describe('LedgerErrorPreset flags', () => {
         const preset = getLedgerErrorPreset(
             new LedgerAddressMismatchError('A', 'B'),
             t,
+            APP,
         )
         expect(preset.isRetryable).toBe(false)
     })
@@ -183,7 +267,7 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
     it.each(cases)(
         '%s → kind=%s, flags as expected',
         (error, expectedKind, flags) => {
-            const preset = getLedgerErrorPreset(error, t)
+            const preset = getLedgerErrorPreset(error, t, APP)
             expect(preset.kind).toBe(expectedKind)
             expect(preset.isTroubleshootable).toBe(flags.trbl)
             expect(preset.isRetryable).toBe(flags.retry)
@@ -194,7 +278,11 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
         // LedgerScanTimeoutError does NOT extend LedgerTimeoutError, but
         // classifyLedgerErrorKind must check scan_timeout before timeout
         // so that future subclass relationships do not silently reclassify it.
-        const preset = getLedgerErrorPreset(new LedgerScanTimeoutError('x'), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerScanTimeoutError('x'),
+            t,
+            APP,
+        )
         expect(preset.kind).toBe('scan_timeout')
     })
 
@@ -202,6 +290,7 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
         const preset = getLedgerErrorPreset(
             new LedgerTimeoutError('Sign Ledger transaction'),
             t,
+            APP,
         )
         expect(preset.kind).toBe('timeout')
         expect(preset.isTroubleshootable).toBe(false)
@@ -209,7 +298,7 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
     })
 
     it('timeout kind is NOT in the troubleshootable set', () => {
-        const preset = getLedgerErrorPresetByKind('timeout', t)
+        const preset = getLedgerErrorPresetByKind('timeout', t, APP)
         expect(preset.isTroubleshootable).toBe(false)
     })
 })
@@ -223,7 +312,7 @@ describe('LedgerErrorPreset settings shortcut', () => {
         ['location_services_disabled', 'location'],
         ['device_picker_unavailable', 'open_in_tab'],
     ] as const)('offers the %s kind a %s shortcut', (kind, actionKind) => {
-        const preset = getLedgerErrorPresetByKind(kind, t)
+        const preset = getLedgerErrorPresetByKind(kind, t, APP)
         expect(preset.action?.kind).toBe(actionKind)
         expect(preset.action?.label).toBeTruthy()
     })
@@ -238,7 +327,7 @@ describe('LedgerErrorPreset settings shortcut', () => {
     ] as const)(
         'offers no shortcut for %s, which is resolved on the device',
         kind => {
-            expect(getLedgerErrorPresetByKind(kind, t).action).toBeNull()
+            expect(getLedgerErrorPresetByKind(kind, t, APP).action).toBeNull()
         },
     )
 })
@@ -247,7 +336,7 @@ describe('LedgerErrorPreset kinds added for the connection taxonomy', () => {
     const t = (key: string) => key
 
     it('device_not_found is retryable and links to troubleshooting', () => {
-        const preset = getLedgerErrorPresetByKind('device_not_found', t)
+        const preset = getLedgerErrorPresetByKind('device_not_found', t, APP)
         expect(preset.title).toBe('ledger.errors.device_not_found_title')
         expect(preset.body).toBe('ledger.errors.device_not_found')
         expect(preset.isRetryable).toBe(true)
@@ -258,13 +347,14 @@ describe('LedgerErrorPreset kinds added for the connection taxonomy', () => {
         const preset = getLedgerErrorPresetByKind(
             'device_picker_unavailable',
             t,
+            APP,
         )
         expect(preset.isRetryable).toBe(false)
         expect(preset.isTroubleshootable).toBe(false)
     })
 
     it('device_busy is retryable but not troubleshootable — its copy is the remedy', () => {
-        const preset = getLedgerErrorPresetByKind('device_busy', t)
+        const preset = getLedgerErrorPresetByKind('device_busy', t, APP)
         expect(preset.isRetryable).toBe(true)
         expect(preset.isTroubleshootable).toBe(false)
     })
@@ -275,8 +365,8 @@ describe('getLedgerErrorPresetByKind', () => {
 
     it('getLedgerErrorPresetByKind returns the same flags as the matcher-based classifier', () => {
         const t: Translate = key => key
-        const a = getLedgerErrorPresetByKind('connection_failed', t)
-        const b = getLedgerErrorPreset(new LedgerConnectionError('x'), t)
+        const a = getLedgerErrorPresetByKind('connection_failed', t, APP)
+        const b = getLedgerErrorPreset(new LedgerConnectionError('x'), t, APP)
         expect(a).toEqual(b)
     })
 })

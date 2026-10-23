@@ -176,7 +176,7 @@ export type TransactionWarning =
           targetAddress: string
       }
     // Group-level, so no sender/target: the total across signable
-    // transactions exceeded the type-aware budget (see detectHighGroupFee).
+    // transactions exceeded the per-group fee allowance (see detectHighGroupFee).
     | {
           type: 'high-fee'
           totalFee: bigint

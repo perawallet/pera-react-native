@@ -39,6 +39,13 @@ describe('openExpandedTab', () => {
         )
     })
 
+    it("carries a flow's chain as a chain query param", async () => {
+        await openExpandedTab('ledger-ble', 'ethereum')
+        expect(fake.createdTabs[0].url).toBe(
+            'chrome-extension://test-extension-id/expanded.html?flow=ledger-ble&chain=ethereum',
+        )
+    })
+
     it('opens expanded.html with the scan flow', async () => {
         await openExpandedTab('scan')
         expect(fake.createdTabs[0].url).toBe(
@@ -189,6 +196,43 @@ describe('consumeInitialExpandedFlow', () => {
         consumeInitialExpandedFlow()
 
         expect(getConsumedExpandedFlow()).toBe('ledger-usb')
+    })
+
+    it('reports the chain that came with the consumed flow', async () => {
+        ;(
+            globalThis as { __PERA_TEST_SEARCH__?: string }
+        ).__PERA_TEST_SEARCH__ = '?flow=ledger-ble&chain=ethereum'
+        const { consumeInitialExpandedFlow, getConsumedExpandedChainId } =
+            await import('../navigation')
+        expect(getConsumedExpandedChainId()).toBeNull()
+
+        consumeInitialExpandedFlow()
+
+        expect(getConsumedExpandedChainId()).toBe('ethereum')
+    })
+
+    it('strips the chain from the URL with the flow', async () => {
+        ;(
+            globalThis as { __PERA_TEST_SEARCH__?: string }
+        ).__PERA_TEST_SEARCH__ = '?flow=ledger-ble&chain=ethereum'
+        ;(globalThis as { location?: { href: string } }).location = {
+            href: 'chrome-extension://test-extension-id/expanded.html?flow=ledger-ble&chain=ethereum',
+        }
+        const replaceState = vi.fn()
+        ;(
+            globalThis as {
+                history?: { replaceState: (...args: unknown[]) => void }
+            }
+        ).history = { replaceState }
+        const { consumeInitialExpandedFlow } = await import('../navigation')
+
+        consumeInitialExpandedFlow()
+
+        expect(replaceState).toHaveBeenCalledWith(
+            null,
+            '',
+            'chrome-extension://test-extension-id/expanded.html',
+        )
     })
 
     it('rejects unknown flows', async () => {

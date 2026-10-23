@@ -439,8 +439,6 @@ export const signingMachine = setup({
                                     context.deps.hardwareWalletRegistry,
                                     'hardwareWalletRegistry',
                                 ),
-                                encodeTransaction:
-                                    context.deps.encodeTransaction,
                                 totalTxs: groups.reduce(
                                     (sum, g) =>
                                         sum +
@@ -524,7 +522,6 @@ export const signingMachine = setup({
                             signTransactions: context.deps.signTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
                             signAuthData: context.deps.signAuthData,
-                            encodeTransaction: context.deps.encodeTransaction,
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry,
                             scope: context.deps.scope,

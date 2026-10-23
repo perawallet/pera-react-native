@@ -35,8 +35,16 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
+import {
+    parseEvmNftAssetId,
+    type EvmNftStandard,
+} from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import { sendSummary } from '../transfer/summary'
+import {
+    encodeEvmNftTransfer,
+    readEvmNftTransferAsset,
+} from '../transfer/nft-transfer'
+import { nftSendSubtitle, sendSummary } from '../transfer/summary'
 import { readEvmTransaction } from './adapter'
 import {
     toEthereumNative,
@@ -60,6 +68,7 @@ const SELECTOR_SIZE = 4
 const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
     'transfer',
     'token-transfer',
+    'nft-transfer',
 ])
 
 const isAutoApproved = (transaction: ReviewedTransaction): boolean =>
@@ -141,7 +150,7 @@ const readCall = (
 const viewOf = (
     call: Call,
     kind: EthereumTransactionView['kind'],
-    token?: EthereumTransactionView['token'],
+    { token, nft }: Pick<EthereumTransactionView, 'token' | 'nft'> = {},
 ): EthereumTransactionView => ({
     kind,
     from: call.from,
@@ -159,6 +168,7 @@ const viewOf = (
         maxFee: toDecimal(call.gas * call.maxFeePerGas),
     },
     ...(token && { token }),
+    ...(nft && { nft }),
 })
 
 const nativeAmount = (chain: EvmChain, value: bigint) => ({
@@ -217,7 +227,61 @@ const verifiedTokenTransfer = (
     return { contract: call.to, to, amount: toDecimal(units) }
 }
 
-/** The view a review screen reads, or null for a payload review would refuse. Never a verified token transfer: that needs the request's summary. */
+const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']
+
+// The same proof as a token transfer, with `from` read from the payload: a
+// claim naming another holder must not match. The standard is whichever
+// encoding gives exactly the calldata; an ERC-721 only ever moves one.
+const verifiedNftTransfer = (
+    summary: TransactionSummary | undefined,
+    call: Call,
+): EthereumTransactionView['nft'] => {
+    if (summary?.kind !== 'nft-transfer' || !call.to || call.value !== 0n) {
+        return undefined
+    }
+    const { amount, counterparty } = summary
+    const nft =
+        typeof amount?.assetRef?.assetId === 'string'
+            ? parseEvmNftAssetId(amount.assetRef.assetId)
+            : null
+    if (
+        !amount ||
+        !nft ||
+        !areEvmAddressesEqual(call.to, nft.contract) ||
+        typeof counterparty !== 'string' ||
+        !isAddress(counterparty) ||
+        !Decimal.isDecimal(amount.value) ||
+        !amount.value.isInteger() ||
+        amount.value.lte(0) ||
+        amount.value.greaterThan(maxUint256.toString())
+    ) {
+        return undefined
+    }
+    const to = getAddress(counterparty)
+    const units = toBigInt(amount.value)
+    const standard = NFT_STANDARDS.find(
+        candidate =>
+            (candidate !== 'erc721' || units === 1n) &&
+            encodeEvmNftTransfer({
+                standard: candidate,
+                from: call.from,
+                to,
+                tokenId: nft.tokenId,
+                amount: units,
+            }).toLowerCase() === call.data.toLowerCase(),
+    )
+    if (!standard) return undefined
+    return {
+        assetId: amount.assetRef.assetId,
+        contract: nft.contract,
+        tokenId: nft.tokenId,
+        standard,
+        to,
+        amount: toDecimal(units),
+    }
+}
+
+/** The view a review screen reads, or null for a payload review would refuse. Never a verified token or NFT transfer: that needs the request's summary. */
 export const ethereumViewOf = (
     unsigned: UnsignedTransaction,
     chain: EvmChain,
@@ -247,19 +311,20 @@ export const ethereumCallSummary = (
           )
         : contractCallSummary(call, chain)
 
-const reviewCall = (
+const reviewCall = async (
     chain: EvmChain,
     call: Call,
-    summary: TransactionSummary | undefined,
+    unsigned: UnsignedTransaction,
     context: ReviewContext,
     recogniseCall: CallRecogniser,
-): ReviewedTransaction => {
+): Promise<ReviewedTransaction> => {
     if (call.to && size(call.data) === 0) {
         return {
             summary: ethereumCallSummary(call, chain),
             native: toEthereumNative(viewOf(call, 'transfer')),
         }
     }
+    const { summary } = unsigned
     const token = context.isWalletBuilt
         ? verifiedTokenTransfer(summary, call)
         : undefined
@@ -272,7 +337,34 @@ const reviewCall = (
                 },
                 value: token.amount,
             }),
-            native: toEthereumNative(viewOf(call, 'token-transfer', token)),
+            native: toEthereumNative(viewOf(call, 'token-transfer', { token })),
+        }
+    }
+    const nft = context.isWalletBuilt
+        ? verifiedNftTransfer(summary, call)
+        : undefined
+    if (nft) {
+        // A label only: the bytes above already proved the contract and token
+        // id, so a failed store read falls back to the contract, never fails review.
+        const stored = await readEvmNftTransferAsset(
+            unsigned.scope,
+            nft.assetId,
+        ).catch(() => null)
+        return {
+            summary: sendSummary(
+                'nft-transfer',
+                call.from,
+                nft.to,
+                {
+                    assetRef: { chainId: chain.row.id, assetId: nft.assetId },
+                    value: nft.amount,
+                },
+                nftSendSubtitle(
+                    stored?.collectionName ?? nft.contract,
+                    nft.tokenId,
+                ),
+            ),
+            native: toEthereumNative(viewOf(call, 'nft-transfer', { nft })),
         }
     }
     const recognised = context.capabilities.contractDecoding
@@ -285,7 +377,7 @@ const reviewCall = (
 }
 
 /**
- * Native transfers and the wallet's own token transfers are explained; every
+ * Native transfers and the wallet's own token and NFT transfers are explained; every
  * other call is unrecognised unless `recogniseCall` reads it, which it is
  * asked only while `contractDecoding` is on.
  */
@@ -301,23 +393,25 @@ export const createEthereumReviewer = ({
         decode: async (transactions, context): Promise<DecodedTransactions> => {
             const signable = new Set<string>()
             let totalFees = 0n
-            const reviewed = transactions.map(unsigned => {
-                const call = readCall(unsigned, chain, context)
-                const held = context.heldAddresses.find(address =>
-                    areEvmAddressesEqual(address, call.from),
-                )
-                if (held !== undefined) {
-                    signable.add(held)
-                    totalFees += call.gas * call.maxFeePerGas
-                }
-                return reviewCall(
-                    chain,
-                    call,
-                    unsigned.summary,
-                    context,
-                    recogniseCall,
-                )
-            })
+            const reviewed = await Promise.all(
+                transactions.map(unsigned => {
+                    const call = readCall(unsigned, chain, context)
+                    const held = context.heldAddresses.find(address =>
+                        areEvmAddressesEqual(address, call.from),
+                    )
+                    if (held !== undefined) {
+                        signable.add(held)
+                        totalFees += call.gas * call.maxFeePerGas
+                    }
+                    return reviewCall(
+                        chain,
+                        call,
+                        unsigned,
+                        context,
+                        recogniseCall,
+                    )
+                }),
+            )
             return {
                 totalFees: toDecimal(totalFees),
                 signableAddresses: [...signable],

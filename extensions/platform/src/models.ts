@@ -18,6 +18,7 @@ import type { BiometricsService } from './biometrics'
 import type { CloudFileStorageService } from './cloud-file-storage'
 import type { DeviceInfoService } from './device'
 import type { MigrationService } from './migration'
+import type { MonotonicClockService } from './monotonic-clock'
 import type {
     PushNotificationInitResult,
     PushNotificationService,
@@ -45,6 +46,7 @@ export interface PlatformServices {
     walletProvisioning: WalletProvisioningService
     cloudFileStorage: CloudFileStorageService
     widgets: WidgetsService
+    monotonicClock: MonotonicClockService
 }
 
 /**

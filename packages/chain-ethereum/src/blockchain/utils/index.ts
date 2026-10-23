@@ -10,6 +10,12 @@
  limitations under the License
  */
 
-export { InvalidCaip19Error, UnknownEvmNetworkError } from './caip19'
+export {
+    EVM_NFT_STANDARD_LABELS,
+    InvalidCaip19Error,
+    parseEvmNftAssetId,
+    UnknownEvmNetworkError,
+    type EvmNftStandard,
+} from './caip19'
 export { createEvmClient, UnconfiguredEvmRpcError } from './createEvmClient'
 export { evmHttpTransport } from './evmHttpTransport'

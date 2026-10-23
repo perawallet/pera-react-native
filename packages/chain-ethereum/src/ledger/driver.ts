@@ -13,6 +13,7 @@
 import Eth from '@ledgerhq/hw-app-eth'
 import type { LedgerAppDriver } from '@perawallet/wallet-extension-hardware-wallet'
 import type { EvmChain } from '../chains/types'
+import { ETHEREUM_LEDGER_APP } from './app'
 import { createEthereumLedgerTransport } from './transport'
 
 type EthAppTransport = ConstructorParameters<typeof Eth>[0]
@@ -21,6 +22,7 @@ type EthAppTransport = ConstructorParameters<typeof Eth>[0]
 // its own driver because the registry is keyed by chain.
 export const createEvmLedgerAppDriver = (chain: EvmChain): LedgerAppDriver => ({
     chainId: chain.row.id,
+    appName: ETHEREUM_LEDGER_APP.appName,
     open: (transport, classifyError) =>
         createEthereumLedgerTransport(
             transport,

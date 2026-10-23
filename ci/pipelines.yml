@@ -138,6 +138,44 @@ _web_secrets: &web_secrets
   - GA_MEASUREMENT_API_SECRET
   - SENTRY_DSN
 
+# The web list plus the Chrome Web Store upload's, which only web-production
+# runs. CWS_CRX_SIGNING_KEY_BASE64 may be stored empty: the daemon has no
+# optional secrets, and with an empty key ci/jobs/web.sh signs nothing and
+# uploads the zip. YAML cannot append to an anchored list, so a secret added to
+# _web_secrets goes here too.
+_web_production_secrets: &web_production_secrets
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_BAANX_CLIENT_KEY
+  - FIREBASE_API_KEY
+  - FIREBASE_AUTH_DOMAIN
+  - FIREBASE_DATABASE_URL
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_STORAGE_BUCKET
+  - FIREBASE_MESSAGING_SENDER_ID
+  - FIREBASE_APP_ID
+  - FIREBASE_MEASUREMENT_ID
+  # Must belong to the same Firebase project as FIREBASE_PROJECT_ID, or
+  # Chrome's push service rejects the subscription and no token is minted.
+  - FIREBASE_VAPID_KEY
+  - GA_MEASUREMENT_API_SECRET
+  - SENTRY_DSN
+  - CWS_SERVICE_ACCOUNT_BASE64
+  - CWS_PUBLISHER_ID
+  - CWS_ITEM_ID
+  - CWS_CRX_SIGNING_KEY_BASE64
+
 pipelines:
   release:
     on_tag: '^v\d+\.\d+\.\d+(-rc\.\d+)?$'
@@ -197,7 +235,7 @@ pipelines:
           # As android's: the same 1000, so the extension's build number stays
           # above Bitrise's and in step with the mobile builds of the tag.
           BUILD_NUMBER_OFFSET: '1000'
-        secrets: *web_secrets
+        secrets: *web_production_secrets
         timeout_minutes: 30
       notify:
         script: ci/jobs/notify.sh
@@ -219,6 +257,34 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # Staging ships every chain, as bitrise.yml's staging workflows do. A job
+          # sees only its declared env, so production keeps the config default
+          # (Algorand only) without a pin.
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+          ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
+          ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+          BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+          BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+          BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+          BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+          ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+          ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+          AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+          AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+          POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+          POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
           # Testers install on phones, so staging skips the x86 and x86_64
           # emulator builds of every native module: about half the native
           # compile. Production still builds every ABI for Play.
@@ -239,6 +305,32 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # See android-staging.
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+          ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
+          ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+          BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+          BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+          BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+          BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+          ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+          ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+          AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+          AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+          POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+          POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
           IOS_SCHEME: Pera7Staging
           # See ios-production.
           BUILD_NUMBER_OFFSET: '1000'
@@ -253,6 +345,32 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # See android-staging.
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
+          ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
+          ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com
+          BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com
+          BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com
+          BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com
+          BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com
+          ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com
+          ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com
+          AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com
+          AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com
+          POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
+          POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
           # See web-production, for both the integrity flags and the offset.
           WEB_INTEGRITY_MINT_ENABLED: 'true'
           WEB_INTEGRITY_ENROL_ENABLED: 'true'

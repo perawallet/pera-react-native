@@ -19,6 +19,7 @@ import {
     type HardwareChildSnapshot,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
+import { LedgerBlindSigningRequiredError } from '@perawallet/wallet-core-ledger'
 import { useLedgerSigningContent } from '../useLedgerSigningContent'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
@@ -31,6 +32,14 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-hardware-wallet')
+    >()),
+    ledgerAppNameFor: (chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
+}))
+
 type ChildSnapshotOverrides = {
     value?: 'error' | { active: 'searching' | 'awaiting_approval' | 'signing' }
     deviceName?: string | null
@@ -38,7 +47,9 @@ type ChildSnapshotOverrides = {
     totalTxs?: number | null
     operation?: 'transaction' | 'data'
     errorKind?: LedgerErrorPresetKind | null
+    errorCause?: unknown
     retryCount?: number
+    chainId?: string
 }
 
 // Lightweight stand-in for the real HardwareChildSnapshot — only the surface
@@ -59,12 +70,16 @@ const buildChildSnapshot = (
         value,
         matches,
         context: {
+            scope: {
+                chainId: overrides.chainId ?? 'algorand',
+                networkId: 'mainnet',
+            },
             deviceName: overrides.deviceName ?? 'Nano X',
             currentTx: overrides.currentTx ?? null,
             totalTxs: overrides.totalTxs ?? null,
             operation: overrides.operation ?? 'transaction',
             error: overrides.errorKind
-                ? { kind: overrides.errorKind, cause: undefined }
+                ? { kind: overrides.errorKind, cause: overrides.errorCause }
                 : null,
             retryCount: overrides.retryCount ?? 0,
         },
@@ -173,6 +188,54 @@ describe('useLedgerSigningContent', () => {
         expect(result.current.error?.kind).toBe('app_not_open')
         expect(result.current.error?.isRetryable).toBe(true)
         expect(result.current.error?.isTroubleshootable).toBe(false)
+    })
+
+    it.each([
+        [
+            'names the app',
+            new LedgerBlindSigningRequiredError({ appName: 'Ethereum' }),
+            'ledger.errors.blind_signing_required',
+        ],
+        [
+            "names the signing chain's app when the error names none",
+            new LedgerBlindSigningRequiredError(),
+            'ledger.errors.blind_signing_required',
+        ],
+    ])(
+        "%s from the error's cause for a blind-signing refusal",
+        (_name, cause, body) => {
+            mockPipeline({
+                snapshot: buildChildSnapshot({
+                    value: 'error',
+                    errorKind: 'blind_signing_required',
+                    errorCause: cause,
+                }),
+            })
+
+            const { result } = renderHook(() => useLedgerSigningContent())
+
+            expect(result.current.error).toMatchObject({
+                kind: 'blind_signing_required',
+                body,
+                isRetryable: true,
+            })
+        },
+    )
+
+    it("names the signing chain's device app", () => {
+        mockPipeline({ snapshot: buildChildSnapshot({ chainId: 'ethereum' }) })
+
+        const { result } = renderHook(() => useLedgerSigningContent())
+
+        expect(result.current.ledgerAppName).toBe('Ethereum')
+    })
+
+    it('names no app outside a hardware signing', () => {
+        mockPipeline({ snapshot: null })
+
+        const { result } = renderHook(() => useLedgerSigningContent())
+
+        expect(result.current.ledgerAppName).toBeNull()
     })
 
     it('onCancel sends ACKNOWLEDGE_HARDWARE_ERROR when the child is in error', () => {

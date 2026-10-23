@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { getAddress } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { evmHistoryItem } from '../api/msw-handlers'
+import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import { evmHistoryItemSchema, type EvmHistoryItem } from '../api/schema'
 import { summarizeEthereumHistoryItem } from '../summarize'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -325,5 +325,176 @@ describe('summarizeEthereumHistoryItem', () => {
                 value: new Decimal(-2),
             },
         ])
+    })
+
+    describe('NFT transfers', () => {
+        const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+        const APE = `${getAddress(BAYC)}/1234`
+        const SWORD = `${getAddress(BAYC)}/7`
+
+        it('reads an ERC-721 receive as an incoming NFT transfer named by its collection', () => {
+            const summary = summarize(
+                row({
+                    from: PEER,
+                    to: BAYC,
+                    method: '0x42842e0e',
+                    value: '0',
+                    nft_transfers: [evmNftTransferLeg({ from: PEER, to: ME })],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'nft-transfer',
+                title: { key: 'transactions.list_item.receive' },
+                icon: 'receive',
+                direction: 'in',
+                counterparty: getAddress(PEER),
+                subtitle: {
+                    key: 'transactions.list_item.nft_subtitle',
+                    params: {
+                        collection: 'Bored Ape Yacht Club',
+                        tokenId: '1234',
+                    },
+                },
+                amount: {
+                    assetRef: { chainId: 'ethereum', assetId: APE },
+                    display: { symbol: 'BAYC', decimals: 0 },
+                },
+            })
+            expect(summary.amount?.value).toEqual(new Decimal(1))
+        })
+
+        it('names an unnamed collection by its contract', () => {
+            const summary = summarize(
+                row({
+                    nft_transfers: [
+                        evmNftTransferLeg({
+                            from: PEER,
+                            to: ME,
+                            collection_name: null,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary.subtitle?.params?.collection).toBe(getAddress(BAYC))
+        })
+
+        it('reads an ERC-1155 send of three as outgoing', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: BAYC,
+                    nft_transfers: [
+                        evmNftTransferLeg({
+                            standard: 'erc1155',
+                            token_id: '7',
+                            quantity: '3',
+                            from: ME,
+                            to: PEER,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'nft-transfer',
+                direction: 'out',
+                title: { key: 'transactions.list_item.send' },
+                counterparty: getAddress(PEER),
+                amount: { assetRef: { assetId: SWORD } },
+            })
+            expect(summary.amount?.value).toEqual(new Decimal(3))
+        })
+
+        it('lists every NFT of a batch as a balance change', () => {
+            const summary = summarize(
+                row({
+                    nft_transfers: [
+                        evmNftTransferLeg({ from: PEER, to: ME }),
+                        evmNftTransferLeg({
+                            token_id: '7',
+                            from: PEER,
+                            to: ME,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary.kind).toBe('nft-transfer')
+            expect(summary.amount).toBeUndefined()
+            expect(
+                summary.balanceChanges?.map(c => [
+                    c.assetRef.assetId,
+                    c.value.toFixed(),
+                ]),
+            ).toEqual([
+                [APE, '1'],
+                [SWORD, '1'],
+            ])
+        })
+
+        it.each([
+            ['when the backend lists the NFT', true],
+            ['when the backend leaves the NFT out', false],
+        ])(
+            'reads a purchase as a call moving ETH out and the NFT in %s',
+            (_, isListed) => {
+                const summary = summarize(
+                    row({
+                        from: ME,
+                        to: PEER,
+                        method: '0xfb0f3ee1',
+                        value: '50000000000000000',
+                        nft_transfers: [
+                            evmNftTransferLeg({ from: PEER, to: ME }),
+                        ],
+                        balance_impacts: [
+                            { asset_id: ETH_ID, amount: '-50000000000000000' },
+                            ...(isListed
+                                ? [
+                                      {
+                                          asset_id: `eip155:1/erc721:${BAYC}/1234`,
+                                          amount: '1',
+                                      },
+                                  ]
+                                : []),
+                        ],
+                    }),
+                )
+
+                expect(summary.kind).toBe('contract-call')
+                expect(
+                    summary.balanceChanges?.map(c => [
+                        c.assetRef.assetId,
+                        c.value.toFixed(),
+                    ]),
+                ).toEqual([
+                    ['native', '-50000000000000000'],
+                    [APE, '1'],
+                ])
+                expect(summary.balanceChanges?.[1]?.display).toEqual({
+                    symbol: 'BAYC',
+                    decimals: 0,
+                })
+            },
+        )
+
+        it('drops an unreadable NFT leg, not the row', () => {
+            const parsed = evmHistoryItemSchema.safeParse(
+                evmHistoryItem({
+                    from: PEER,
+                    to: ME,
+                    value: '5',
+                    nft_transfers: [
+                        { ...evmNftTransferLeg(), token_id: 'not-a-number' },
+                    ],
+                }),
+            )
+
+            expect(parsed.success).toBe(true)
+            expect(parsed.data?.nft_transfers).toEqual([])
+            expect(summarize(parsed.data!).kind).toBe('transfer')
+        })
     })
 })

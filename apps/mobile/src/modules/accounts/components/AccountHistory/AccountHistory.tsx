@@ -17,8 +17,6 @@ import {
     PWRefreshControl,
     PWView,
 } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
-import { useLanguage } from '@hooks/useLanguage'
 import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
@@ -26,6 +24,8 @@ import { useAccountHistory } from './useAccountHistory'
 import {
     TransactionListItem,
     TransactionDateHeader,
+    TransactionHistoryLoadState,
+    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
@@ -37,10 +37,17 @@ export type AccountHistoryProps = {
 
 export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         rows,
         isInitialLoad,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
+        handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder,
         isFetchingNextPage,
         isEmpty,
         isOfflineEmpty,
@@ -58,6 +65,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         ({ item }: { item: TransactionListRow }) =>
             item.kind === 'header' ? (
                 <TransactionDateHeader title={item.title} />
+            ) : item.kind === 'record' ? (
+                <TransactionListItem record={item.record} />
             ) : (
                 <TransactionListItem
                     transaction={item.transaction}
@@ -75,8 +84,22 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 </PWView>
             )
         }
+        if (isSearchPaused) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <TransactionHistorySearchOlder
+                        onPress={handleSearchOlder}
+                    />
+                </PWView>
+            )
+        }
         return null
-    }, [isFetchingNextPage, styles.loadingFooter])
+    }, [
+        isFetchingNextPage,
+        isSearchPaused,
+        handleSearchOlder,
+        styles.loadingFooter,
+    ])
 
     const handleFilterPress = useCallback(() => {
         void handleOpenFilter()
@@ -96,31 +119,25 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     // account tab pager collapses to zero height on native, which blanked the
     // whole History tab — title included. The NFTs tab handles its
     // empty state the same way.
-    if (isInitialLoad || isEmpty) {
+    const isPausedWithNothing = isSearchPaused && rows.length === 0
+    if (isInitialLoad || isLoadFailed || isPausedWithNothing || isEmpty) {
         return (
             <PWView style={styles.container}>
                 <PWView style={styles.stateContainer}>
                     {titleBar}
                     {isInitialLoad ? (
                         <HistorySkeleton />
-                    ) : isOfflineEmpty ? (
-                        // Nothing cached and no way to fetch — saying "no
-                        // transactions found" here would assert an empty
-                        // history we haven't actually been able to read.
-                        <EmptyView
-                            title={t(
-                                'asset_details.transaction_list.offline_empty_title',
-                            )}
-                            body={t(
-                                'asset_details.transaction_list.offline_empty_body',
-                            )}
-                            style={styles.emptyView}
-                        />
                     ) : (
-                        <EmptyView
-                            body={t(
-                                'asset_details.transaction_list.empty_body',
-                            )}
+                        <TransactionHistoryLoadState
+                            isLoadFailed={isLoadFailed}
+                            isLoadUnavailable={isLoadUnavailable}
+                            isLoadIntegrityBlocked={isLoadIntegrityBlocked}
+                            isLoadOffline={isLoadOffline}
+                            isRetrying={isRetrying}
+                            onRetry={handleRetry}
+                            isSearchPaused={isSearchPaused}
+                            onSearchOlder={handleSearchOlder}
+                            isOfflineEmpty={isOfflineEmpty}
                             style={styles.emptyView}
                         />
                     )}
@@ -174,10 +191,7 @@ type RowSeparatorProps = {
 const RowSeparator = ({ leadingItem, trailingItem }: RowSeparatorProps) => {
     const styles = useStyles()
 
-    if (
-        leadingItem.kind !== 'transaction' ||
-        trailingItem.kind !== 'transaction'
-    ) {
+    if (leadingItem.kind === 'header' || trailingItem.kind === 'header') {
         return null
     }
 

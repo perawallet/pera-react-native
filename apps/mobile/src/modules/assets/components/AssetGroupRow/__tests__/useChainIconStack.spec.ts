@@ -13,15 +13,15 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkIconStack } from '../useNetworkIconStack'
+import { useChainIconStack } from '../useChainIconStack'
 
 // Only two chains are registered today; the stack has to cope with more.
 const chains = (...ids: string[]) => ids as ChainId[]
 
-describe('useNetworkIconStack', () => {
-    it('shows every network up to three', () => {
+describe('useChainIconStack', () => {
+    it('shows every chain up to three', () => {
         const { result } = renderHook(() =>
-            useNetworkIconStack(chains('algorand', 'ethereum')),
+            useChainIconStack(chains('algorand', 'ethereum')),
         )
 
         expect(result.current).toEqual({
@@ -30,9 +30,17 @@ describe('useNetworkIconStack', () => {
         })
     })
 
-    it('shows three networks and counts the rest', () => {
+    it('shows exactly three chains with no "+N"', () => {
         const { result } = renderHook(() =>
-            useNetworkIconStack(
+            useChainIconStack(chains('algorand', 'ethereum', 'base')),
+        )
+
+        expect(result.current.hiddenCount).toBe(0)
+    })
+
+    it('shows three chains and counts the rest', () => {
+        const { result } = renderHook(() =>
+            useChainIconStack(
                 chains('algorand', 'ethereum', 'base', 'polygon', 'solana'),
             ),
         )

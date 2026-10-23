@@ -408,8 +408,8 @@ function buildAppConfig(env) {
           android: {
             minSdkVersion: 29,
             targetSdkVersion: 36,
-            compileSdkVersion: 36,
-            buildToolsVersion: '36.0.0',
+            compileSdkVersion: 37,
+            buildToolsVersion: '37.0.0',
             // R8 minification + resource shrinking for release builds.
             // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
             // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`
@@ -524,8 +524,7 @@ function buildAppConfig(env) {
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
 
-      // Let R8 optimize (the template's proguard-android.txt sets -dontoptimize)
-      // and let the resource shrinker remove rather than stub. Must run after
+      // Let the resource shrinker remove rather than stub. Must run after
       // expo-build-properties, which owns minify/shrinkResources.
       './plugins/withAndroidR8Optimization',
 
@@ -540,9 +539,6 @@ function buildAppConfig(env) {
       // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
       // the React host is ready) by overriding it in MainActivity.
       './plugins/withAndroidUserLeaveHintFix',
-
-      // Turn on RN's fix for the findNextFocusableElement shadow-tree race.
-      './plugins/withAndroidFindShadowNodeRaceFix',
 
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',

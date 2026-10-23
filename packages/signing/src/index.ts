@@ -157,7 +157,18 @@ export {
     legacyArbitraryDataWireSchema,
 } from './utils/arbitrary-data-wire'
 export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
-export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
+export {
+    classifyLedgerErrorKind,
+    ledgerAppNameOf,
+} from './utils/classifyLedgerErrorKind'
+export {
+    signPlannedGroupOnDevice,
+    type PlannedDeviceSigningInput,
+} from './machine/actors/signers/signPlannedGroupOnDevice'
+export {
+    signMessageGroupOnDevice,
+    type DeviceMessageSigningInput,
+} from './machine/actors/signers/signMessageGroupOnDevice'
 export {
     arbitraryDataMessageRequest,
     authDataMessageRequest,
@@ -242,7 +253,6 @@ export {
 export { walletConnectHandoffs } from './pipeline/walletConnectHandoffs'
 export type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 export { createSigningStrategySelector } from './pipeline/signing/getSigningStrategy'
-export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
 export {

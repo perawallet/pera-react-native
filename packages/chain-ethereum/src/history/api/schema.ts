@@ -15,6 +15,28 @@ import { z } from 'zod'
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
 const amount = z.string().regex(/^\d+$/)
 
+const nftTransferSchema = z.object({
+    standard: z.enum(['erc721', 'erc1155']),
+    contract: address,
+    token_id: amount,
+    /** Base units: an NFT has no decimals. */
+    quantity: amount,
+    from: address,
+    to: address,
+    collection_name: z.string().nullable(),
+    collection_symbol: z.string().nullable(),
+})
+
+// Legs are checked one by one, so an unreadable leg drops itself, not the row.
+const nftTransfersSchema = z.array(z.unknown()).transform(legs =>
+    legs.flatMap(leg => {
+        const parsed = nftTransferSchema.safeParse(leg)
+        return parsed.success ? [parsed.data] : []
+    }),
+)
+
+export type EvmNftTransfer = z.output<typeof nftTransferSchema>
+
 /** Only the fields the adapter reads; the full wire shape is `EvmHistoryItemResponse`. */
 export const evmHistoryItemSchema = z.object({
     kind: z.enum(['transaction', 'withdrawal']),
@@ -36,7 +58,7 @@ export const evmHistoryItemSchema = z.object({
             value: amount,
         }),
     ),
-    nft_transfers: z.array(z.unknown()),
+    nft_transfers: nftTransfersSchema,
     withdrawals: z.array(z.object({ index: z.number().int().min(0) })),
     balance_impacts: z.array(
         z.object({

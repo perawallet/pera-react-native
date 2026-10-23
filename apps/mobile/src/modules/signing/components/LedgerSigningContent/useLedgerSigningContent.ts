@@ -12,12 +12,14 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    ledgerAppNameOf,
     useHardwareSigningStore,
     useSigningPipeline,
     useSigningRequest,
     type HardwareChildSnapshot,
     type HardwareSigningOperation,
 } from '@perawallet/wallet-core-signing'
+import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     getLedgerErrorPresetByKind,
@@ -57,6 +59,8 @@ export type UseLedgerSigningContentResult = {
     totalTxs: number | null
     operation: HardwareSigningOperation
     error: LedgerErrorPreset | null
+    /** The device app the signing chain opens; null outside a hardware signing. */
+    ledgerAppName: string | null
     onCancel: () => void
     onRetry: () => void
     isTroubleshootingVisible: boolean
@@ -121,10 +125,20 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         s => s.closeTroubleshooting,
     )
 
+    const signingChainId = hardware?.context.scope.chainId ?? null
+    const ledgerAppName = useMemo(
+        () => (signingChainId ? ledgerAppNameFor(signingChainId) : null),
+        [signingChainId],
+    )
+
     const error = useMemo<LedgerErrorPreset | null>(() => {
-        if (!errorPayload) return null
-        return getLedgerErrorPresetByKind(errorPayload.kind, t)
-    }, [errorPayload, t])
+        if (!errorPayload || !ledgerAppName) return null
+        return getLedgerErrorPresetByKind(
+            errorPayload.kind,
+            t,
+            ledgerAppNameOf(errorPayload.cause) ?? ledgerAppName,
+        )
+    }, [errorPayload, ledgerAppName, t])
 
     const onCancel = useCallback(() => {
         // Two distinct paths depending on where the child machine is:
@@ -170,6 +184,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         totalTxs,
         operation,
         error,
+        ledgerAppName,
         onCancel,
         onRetry,
         isTroubleshootingVisible: manualTroubleshootingOpen,

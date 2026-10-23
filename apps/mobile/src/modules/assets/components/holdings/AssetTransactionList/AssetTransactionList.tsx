@@ -23,12 +23,13 @@ import {
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
 import {
     TransactionListItem,
     TransactionDateHeader,
+    TransactionHistoryLoadState,
+    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
@@ -53,6 +54,14 @@ export const AssetTransactionList = ({
     const {
         rows,
         isInitialLoad,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
+        handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder,
         isOfflineEmpty,
         isFetchingNextPage,
         isRefreshing,
@@ -69,6 +78,8 @@ export const AssetTransactionList = ({
         ({ item }: { item: TransactionListRow }) =>
             item.kind === 'header' ? (
                 <TransactionDateHeader title={item.title} />
+            ) : item.kind === 'record' ? (
+                <TransactionListItem record={item.record} />
             ) : (
                 <TransactionListItem
                     transaction={item.transaction}
@@ -137,34 +148,32 @@ export const AssetTransactionList = ({
                     </PWView>
                 }
                 ListEmptyComponent={
-                    // Offline with nothing cached isn't the same claim as "this
-                    // asset has no transactions" — we were never able to read.
-                    isOfflineEmpty ? (
-                        <EmptyView
-                            style={styles.emptyView}
-                            title={t(
-                                'asset_details.transaction_list.offline_empty_title',
-                            )}
-                            body={t(
-                                'asset_details.transaction_list.offline_empty_body',
-                            )}
-                        />
-                    ) : (
-                        <EmptyView
-                            style={styles.emptyView}
-                            body={t(
-                                'asset_details.transaction_list.empty_body',
-                            )}
-                            isLoading={isInitialLoad}
-                        />
-                    )
+                    <TransactionHistoryLoadState
+                        isLoadFailed={isLoadFailed}
+                        isLoadUnavailable={isLoadUnavailable}
+                        isLoadIntegrityBlocked={isLoadIntegrityBlocked}
+                        isLoadOffline={isLoadOffline}
+                        isRetrying={isRetrying}
+                        onRetry={handleRetry}
+                        isSearchPaused={isSearchPaused}
+                        onSearchOlder={handleSearchOlder}
+                        isOfflineEmpty={isOfflineEmpty}
+                        isLoading={isInitialLoad}
+                        style={styles.emptyView}
+                    />
                 }
                 ListFooterComponent={
-                    !isFetchingNextPage ? null : (
+                    isFetchingNextPage ? (
                         <PWView style={styles.loadingFooter}>
                             <PWLoadingIndicator size='sm' />
                         </PWView>
-                    )
+                    ) : isSearchPaused && rows.length > 0 ? (
+                        <PWView style={styles.loadingFooter}>
+                            <TransactionHistorySearchOlder
+                                onPress={handleSearchOlder}
+                            />
+                        </PWView>
+                    ) : null
                 }
                 refreshControl={
                     <PWRefreshControl

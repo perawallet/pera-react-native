@@ -174,7 +174,7 @@ export const signOrReport = async (
     }
 }
 
-const planOrRefuse = (
+export const planOrRefuse = (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
 ): SigningRequest[] => {
@@ -186,7 +186,7 @@ const planOrRefuse = (
 }
 
 // The same signatures assemble the same way, so retrying can't help.
-const assembleOrRefuse = async (
+export const assembleOrRefuse = async (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
     signatures: Signature[],

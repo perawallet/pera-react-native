@@ -15,6 +15,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,7 +42,8 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const { view, amount, maxFee, signingAccount, scope } = presentation
+    const { view, amount, maxFee, signingAccount, scope, collectible } =
+        presentation
 
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
@@ -64,6 +66,37 @@ export const EthereumTransactionReviewBody = ({
                         address={view.token.contract}
                         displayType='address-only'
                     />
+                </PWView>
+            </KeyValueRow>
+        )
+    } else if (view.nft && collectible) {
+        details = (
+            <KeyValueRow
+                testID='ethereum_review_nft'
+                title={t('transactions.common.asset')}
+            >
+                <PWView style={styles.nft}>
+                    {!!amount?.asset && (
+                        <AssetIcon
+                            asset={amount.asset}
+                            shape='square'
+                            size='xl'
+                        />
+                    )}
+                    <PWView style={styles.asset}>
+                        <PWText>
+                            {t('transactions.list_item.nft_subtitle', {
+                                collection:
+                                    collectible.collectionName ??
+                                    view.nft.contract,
+                                tokenId: collectible.tokenId,
+                            })}
+                        </PWText>
+                        <AddressDisplay
+                            address={view.nft.contract}
+                            displayType='address-only'
+                        />
+                    </PWView>
                 </PWView>
             </KeyValueRow>
         )

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-ledger', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-ledger')
@@ -22,6 +22,11 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
 })
 
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    SENDER,
+    ethereumAddressCodec,
+} from '@perawallet/wallet-core-chain-ethereum/testing'
 import {
     createHardwareWalletRegistry,
     type HardwareWalletRegistry,
@@ -57,9 +62,8 @@ const makeTransport = (
         accountIndex: 3,
     }),
     signTransaction: vi.fn(),
-    signData: vi.fn(),
+    signMessage: vi.fn(),
     getAppVersion: vi.fn(),
-    assertCanSignData: vi.fn(),
     disconnect: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 })
@@ -203,6 +207,68 @@ describe('withLedgerSession', () => {
             expect.any(LedgerAddressMismatchError),
         )
         expect(transport.disconnect).toHaveBeenCalled()
+    })
+
+    describe('address check', () => {
+        const CHECKSUMMED = SENDER
+        const LOWERCASE = SENDER.toLowerCase()
+
+        beforeEach(() => {
+            addressCodecs.reset()
+            addressCodecs.register(ethereumAddressCodec)
+        })
+
+        afterEach(() => {
+            addressCodecs.reset()
+        })
+
+        it.each([
+            [
+                'a checksummed device address for a lowercase-stored account',
+                CHECKSUMMED,
+                LOWERCASE,
+            ],
+            [
+                'a lowercase device address for a checksummed account',
+                LOWERCASE,
+                CHECKSUMMED,
+            ],
+        ])('accepts %s', async (_name, device, stored) => {
+            vi.mocked(transport.getAddress).mockResolvedValue({
+                address: device,
+                publicKey: new Uint8Array(65),
+                accountIndex: 3,
+            })
+
+            await expect(
+                withLedgerSession(
+                    makeAccount(),
+                    stored,
+                    { registry, chainId: 'ethereum' },
+                    async () => 'signed',
+                ),
+            ).resolves.toBe('signed')
+        })
+
+        it('still refuses a different address', async () => {
+            vi.mocked(transport.getAddress).mockResolvedValue({
+                address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+                publicKey: new Uint8Array(65),
+                accountIndex: 3,
+            })
+            const operation = vi.fn()
+
+            await expect(
+                withLedgerSession(
+                    makeAccount(),
+                    LOWERCASE,
+                    { registry, chainId: 'ethereum' },
+                    operation,
+                ),
+            ).rejects.toBeInstanceOf(LedgerAddressMismatchError)
+            expect(operation).not.toHaveBeenCalled()
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
     })
 
     it('reports a connect that never completes as device-not-found', async () => {

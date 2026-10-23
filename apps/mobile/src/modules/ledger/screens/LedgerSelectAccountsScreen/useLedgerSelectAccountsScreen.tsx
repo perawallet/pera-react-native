@@ -13,7 +13,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     chainAccountOf,
     type LedgerSelectableAccount,
@@ -23,15 +22,17 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     type LedgerAccount,
-    LedgerProviderNotFoundError,
     classifyLedgerError,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
 } from '@perawallet/wallet-core-ledger'
-import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    ledgerAppNameFor,
+    type HardwareWalletTransport,
+} from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
@@ -46,8 +47,10 @@ import {
 import {
     deserializeLedgerAccount,
     getLedgerErrorPreset,
+    requireLedgerProvider,
     serializeSelectableAccount,
 } from '@modules/ledger/utils'
+import { useLedgerFlowChainId } from '@modules/ledger/hooks'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -55,6 +58,7 @@ type LedgerSelectAccountsRouteProp = RouteProp<
 >
 
 type UseLedgerSelectAccountsScreenResult = {
+    chainId: ChainId
     selectableAccounts: LedgerSelectableAccount[]
     isScanning: boolean
     selectedAddresses: Set<string>
@@ -91,7 +95,8 @@ export const useLedgerSelectAccountsScreen =
         const { errorToast } = useToast()
 
         const queryClient = useQueryClient()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const chainId = useLedgerFlowChainId()
+        const scope = useSelectedScope(chainId)
         const { request } = useBottomSheet()
         const { exitAccountFlow } = useExitAccountFlow()
 
@@ -264,6 +269,7 @@ export const useLedgerSelectAccountsScreen =
             }
 
             navigation.navigate('LedgerVerify', {
+                chainId,
                 deviceId,
                 deviceName,
                 transportType,
@@ -274,6 +280,7 @@ export const useLedgerSelectAccountsScreen =
             exitAccountFlow,
             selectableAccounts,
             selectedAddresses,
+            chainId,
             deviceId,
             deviceName,
             transportType,
@@ -286,16 +293,7 @@ export const useLedgerSelectAccountsScreen =
             setIsFetchingMore(true)
             try {
                 if (!transportRef.current) {
-                    const provider =
-                        getProvider().hardwareWalletRegistry.getProvider(
-                            'ledger',
-                            transportType,
-                        )
-                    if (!provider) {
-                        throw new LedgerProviderNotFoundError(
-                            `No Ledger provider registered for transport "${transportType}"`,
-                        )
-                    }
+                    const provider = requireLedgerProvider(transportType)
                     const connectPromise = provider.connect(
                         deviceId,
                         scope.chainId,
@@ -345,7 +343,11 @@ export const useLedgerSelectAccountsScreen =
                 transportRef.current = null
                 if (!isMounted()) return
                 const error = classifyLedgerError(err)
-                const preset = getLedgerErrorPreset(error, t)
+                const preset = getLedgerErrorPreset(
+                    error,
+                    t,
+                    ledgerAppNameFor(scope.chainId),
+                )
                 errorToast(preset.title, preset.body)
             } finally {
                 inFlightRef.current = false
@@ -367,19 +369,21 @@ export const useLedgerSelectAccountsScreen =
                         <LedgerAccountInfoContent
                             address={address}
                             accountIndex={accountIndex}
+                            chainId={chainId}
                             title={title}
                         />
                     ),
                     options: { size: 'modal', enablePanDownToClose: true },
                 })
             },
-            [request, selectableByAddress, t],
+            [request, selectableByAddress, chainId, t],
         )
 
         const canContinue =
             !isFetchingMore && (areAllImported || selectedAddresses.size > 0)
 
         return {
+            chainId,
             selectableAccounts,
             isScanning,
             selectedAddresses,

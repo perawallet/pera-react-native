@@ -37,6 +37,10 @@ import {
     type SpendableBalance,
 } from '@perawallet/wallet-core-transactions'
 import { useToast } from '@hooks/useToast'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 const mockNavigate = vi.fn()
 
@@ -183,9 +187,13 @@ const mockSendFundsState = {
     reset: vi.fn(),
 }
 
+const mockSendScope = vi.hoisted(() => ({
+    current: { chainId: 'algorand', networkId: 'mainnet' },
+}))
+
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(() => mockSendFundsState),
-    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useSendScope: () => mockSendScope.current,
 }))
 
 const RESERVE_NOTICE: ChainNotice = {
@@ -268,6 +276,7 @@ describe('useInputScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockSendScope.current = { chainId: 'algorand', networkId: 'mainnet' }
         mockSendFundsState.selectedAssetId = '0'
         mockSendFundsState.note = undefined
         mockSendFundsState.destination = undefined
@@ -716,6 +725,97 @@ describe('useInputScreen', () => {
                 result.current.handlePaste('3')
             })
             expect(result.current.cryptoValue).toBe('3')
+        })
+    })
+
+    describe('a holding of 3 of a non-unique collectible on another chain', () => {
+        const NFT_ID = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/7'
+
+        beforeEach(() => {
+            registerEthereumChain()
+            mockSendScope.current = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }
+            mockSendFundsState.selectedAssetId = NFT_ID
+            ;(useSelectedAccount as Mock).mockReturnValue({
+                id: 'test-account',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xSENDER' } },
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([
+                    [
+                        NFT_ID,
+                        {
+                            assetId: NFT_ID,
+                            decimals: 0,
+                            peraMetadata: {
+                                type: 'collectible',
+                                isUnique: false,
+                            },
+                        },
+                    ],
+                ]),
+            })
+            spendableOf({ balance: 3, max: 3 })
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('refuses a fractional quantity, typed or pasted', () => {
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.handleKey('1')
+            })
+            act(() => {
+                result.current.handleKey('.')
+            })
+            act(() => {
+                result.current.handleKey('5')
+            })
+            expect(result.current.cryptoValue).toBe('15')
+
+            const pasted = renderHook(() => useInputScreen())
+            act(() => {
+                pasted.result.current.handlePaste('1.5')
+            })
+            expect(pasted.result.current.cryptoValue).toBeUndefined()
+        })
+
+        it('refuses 4 before review', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('4')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.input.exceeds_max_title',
+                }),
+                expect.anything(),
+            )
+            expect(mockSetAmount).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('takes 2 on to the receiver', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('2')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe('2')
+            expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
         })
     })
 

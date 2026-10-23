@@ -29,6 +29,8 @@ updates:
         - "expo-*"
         - "@expo/*"
         - "babel-preset-expo"
+        - "noxcturnal"
+        - "@noxcturnal/*"
     labels:
       - dependencies
     groups:
@@ -63,6 +65,13 @@ updates:
       algorand:
         patterns:
           - "@algorandfoundation/*"
+      # One PR for the set the catalog pins together: @reown/walletkit pins its
+      # @walletconnect/core exactly, so a core bump only lands once walletkit
+      # ships against it.
+      walletconnect:
+        patterns:
+          - "@walletconnect/*"
+          - "@reown/*"
       vite-vitest:
         patterns:
           - vite
@@ -90,9 +99,9 @@ updates:
           - patch
     ignore:
       # Majors for framework-tier deps are migrations, not bumps — handled manually.
-      # react/react-dom are pinned to react-native 0.86.0's bundled renderer
-      # (19.2.3). RN does an exact React.version match at runtime, so even a patch
-      # bump (e.g. 19.2.7) red-screens with "Incompatible React versions". Ignore
+      # react/react-dom are pinned to react-native 0.88.0's bundled renderer
+      # (19.3.0). RN does an exact React.version match at runtime, so even a patch
+      # bump (e.g. 19.3.1) red-screens with "Incompatible React versions". Ignore
       # ALL update types — these move only when the RN/Expo SDK moves.
       - dependency-name: react
       - dependency-name: react-dom
@@ -105,10 +114,9 @@ updates:
       # symbols, not *changed struct layouts*, which instead corrupt the heap at
       # runtime.
       #
-      # Now aligned at 0.86.2 under Expo SDK 57.0.11 / expo-modules-core 57.0.10.
-      # The pin stays because the coupling is structural, not
-      # because of any one incident: RN and the Expo SDK move together or not at
-      # all. Bump this only as part of an SDK move, with a device launch test.
+      # RN and the Expo SDK move together or not at all: bump this only as part
+      # of an SDK move, to the version that SDK's bundledNativeModules.json
+      # names, with a device launch test.
       - dependency-name: react-native
         update-types:
           - version-update:semver-major
@@ -118,32 +126,28 @@ updates:
       # libraries: babel-preset compiles the app's JS for one runtime and
       # codegen emits native specs against one set of Fabric/JSI interfaces.
       # With react-native pinned above on every update type, letting these
-      # drift gives a 0.87 toolchain building against a 0.86.2 runtime. Nothing
+      # drift gives a newer toolchain building against an older runtime. Nothing
       # catches that — none of them declares a dependency on react-native — and
       # the app never loads @react-native/metro-config anyway (metro.config.js
       # uses expo/metro-config), so the only effect is risk.
       - dependency-name: "@react-native/*"
       # Same reasoning as react-native above, and for the same reason it lists
-      # patch: an `expo` patch is an SDK move. 57.0.17 bundles
-      # expo-modules-core ~57.0.14 against the 57.0.10 this tree is aligned on,
-      # so taking it either splits core or drags the whole native
-      # set forward. It also floors expo-constants at ~57.0.15, which the
-      # 57.0.9 override below contradicts — so pnpm resolves the conflict by
-      # keeping expo where it is, and the bump reopens every week having
-      # changed nothing. Move expo with the SDK, with a device launch test.
+      # patch: an `expo` patch is an SDK move. Each patch re-floors the
+      # expo-modules-core and expo-constants it bundles, so taking one either
+      # splits core or drags the whole native set forward, and contradicts the
+      # expo-constants override in pnpm-workspace.yaml. Move expo with the SDK,
+      # with a device launch test.
       - dependency-name: expo
         update-types:
           - version-update:semver-major
           - version-update:semver-minor
           - version-update:semver-patch
-      # Bundled by `expo` itself, through tilde floats rather than a pin
-      # (57.0.11 declares expo-asset ~57.0.9, expo-file-system ~57.0.2). A
+      # Bundled by `expo` itself, through tilde floats rather than a pin. A
       # direct spec ahead of what the installed SDK bundles doesn't upgrade the
       # module, it installs a *second* copy of it — the same
       # duplicate-diverging-from-the-prebuilt-pod problem the expo-constants
-      # and expo-build-properties overrides exist to prevent. Telling detail:
-      # the versions on offer, 57.0.15 and 57.0.6, are exactly the ones expo
-      # 57.0.17 bundles. These move when the SDK moves.
+      # and expo-build-properties overrides exist to prevent. These move when
+      # the SDK moves.
       - dependency-name: expo-asset
       - dependency-name: expo-file-system
       # Nothing here runs eslint — there is no eslint config in the repo and
@@ -154,11 +158,6 @@ updates:
       # plugin ships a release accepting ^10, or if it stops being loaded.
       - dependency-name: eslint
         update-types: [version-update:semver-major]
-      # WalletConnect is pinned to v1 on purpose — the whole @perawallet/wallet-core-walletconnect
-      # package targets the v1 protocol. v2 is a full protocol migration, not a dep bump.
-      - dependency-name: "@walletconnect/client"
-      - dependency-name: "@walletconnect/types"
-      - dependency-name: "@walletconnect/utils"
       # @types/node must track the Node runtime pinned in .tool-versions (currently 22).
       # Auto-bumping past the runtime LTS just produces red builds.
       - dependency-name: "@types/node"
@@ -180,19 +179,11 @@ updates:
       # no linker will catch. reanimated/worklets are a lockstep pair;
       # nitro-modules is also override-pinned to one ABI for all nitro consumers.
       #
-      # We run these *ahead* of the versions Expo bundles with SDK 57, on purpose
-      # and for some time. `expo install --check` therefore reports them as
-      # wanting a "downgrade" — that is the expected state here, not a finding,
-      # and it is why that check is not a CI gate. Do not "fix" it by pulling
-      # these back to the SDK's set without a device pass.
-      #
-      # Moved as a set: reanimated 4.5.3, worklets 0.10.3,
-      # nitro-modules 0.36.5, pager-view 8.0.4, keyboard-controller 1.22.2.
-      # Note worklets stays on the 0.10 line deliberately — expo-modules-core
-      # 57.0.10 peers it at `^0.7.4 || ^0.8.0 || ^0.9.0 || ^0.10.0` and rejects
-      # 0.11.x, while reanimated 4.5.3 accepts `0.10.x - 0.11.x`. Taking the
-      # 0.11 that Dependabot will keep offering installs *both*, which for a
-      # native module means two ABIs in one binary.
+      # Reanimated, worklets, pager-view and keyboard-controller sit at the
+      # versions the installed Expo SDK's bundledNativeModules.json names, and
+      # move with the SDK. Take worklets from that list too, never from
+      # Dependabot: expo-modules-core peers a specific worklets range, and a
+      # worklets outside it installs a second copy — two ABIs in one binary.
       - dependency-name: react-native-reanimated
       - dependency-name: react-native-worklets
       - dependency-name: react-native-nitro-modules
@@ -224,22 +215,16 @@ updates:
       # downloaded prebuilt, so it is linked against whatever
       # expo-modules-core existed when Expo published it — never against ours.
       # Nothing catches this: expo-image declares no dependency on
-      # expo-modules-core, and each artifact is fetched per-package.
-      #
-      # Now at 57.0.2 against core 57.0.10, which is the pairing it
-      # was built for — 57.0.2 needs the module-lifecycle API (didCreate,
-      # didStartListening, didStopListening, willDestroy) that core gained in
-      # 57.0.9. Still pinned exactly, and still moves only when the SDK does.
+      # expo-modules-core, and each artifact is fetched per-package. Pinned
+      # exactly to the SDK's bundled version; moves only when the SDK does.
       - dependency-name: expo-image
-      # Same lockstep class as expo-image: 57.0.2's iOS source calls
-      # `SceneGeometry.keyWindow()`, a helper expo-modules-core only gained in
-      # 57.0.11. This tree is aligned on 57.0.10 — verified: the installed core
-      # has no ios/Utilities/SceneGeometry.swift at all — so the Swift compile
-      # fails outright. Nothing declares the coupling (expo-screen-capture peers
-      # `expo: "*"` and depends on nothing), so taking it means moving core,
-      # which means moving the SDK. Revisit when the SDK moves.
+      # Same lockstep class at build time: a patch can call an
+      # expo-modules-core helper newer than the core this tree resolves (an
+      # expo-screen-capture patch once called `SceneGeometry.keyWindow()`
+      # before our core had it, failing the Swift compile). Nothing declares
+      # the coupling (it peers `expo: "*"`), so taking it means moving the SDK.
       - dependency-name: expo-screen-capture
-      # Inert while the `expo-build-properties: 57.0.9` override stands — pnpm
+      # Inert while the `expo-build-properties` override stands — pnpm
       # resolves the direct spec through the override, so Dependabot has been
       # reopening a bump that cannot change what installs. Move it with the
       # override, or not at all.
@@ -257,6 +242,10 @@ updates:
       time: "09:00"
       timezone: Europe/London
     open-pull-requests-limit: 5
+    # Same 7-day window as the npm entry, so a freshly published (possibly
+    # hijacked) gem waits out the usual yank period before it is proposed.
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
       - ci

@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { createHash } from 'crypto'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { MemoryMonotonicClockService } from '@test-utils/monotonic-clock'
 
 const kmsMocks = vi.hoisted(() => ({
     pinBytes: null as Uint8Array | null,
@@ -90,9 +91,14 @@ const keystoreMock = vi.hoisted(() => ({
     ready: Promise.resolve() as Promise<unknown>,
 }))
 
+const clockMock = vi.hoisted(() => ({
+    current: null as { now: () => unknown } | null,
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         biometrics: mockBiometricsService,
+        monotonicClock: { now: () => clockMock.current?.now() ?? null },
     }),
     getKeystore: () => keystoreMock,
 }))
@@ -101,6 +107,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 vi.mock('../../lockoutHydration', async () => {
     const { parsePinRecord } = await import('../../pinRecord')
     const { PIN_RECORD_KEY_ID: id } = await import('../../constants')
+    const { getLiveLockout, readLockoutClocks, resolveLockout } =
+        await import('../../lockout')
     return {
         hydrateLockoutState: ({
             withSecret,
@@ -115,7 +123,10 @@ vi.mock('../../lockoutHydration', async () => {
                 return record
                     ? {
                           failedAttempts: record.failedAttempts,
-                          lockoutEndTime: record.lockoutEndTime,
+                          lockout: getLiveLockout(
+                              record,
+                              resolveLockout(record, readLockoutClocks()),
+                          ),
                       }
                     : null
             }),
@@ -133,6 +144,7 @@ import {
     LEGACY_BIOMETRIC_BLOB_KEY_ID,
     MAX_BIOMETRIC_UNWRAP_FAILURES,
 } from '../../constants'
+import type { MonotonicLockout } from '../../lockout'
 import { PIN_RECORD_VERSION, serializePinRecord } from '../../pinRecord'
 import { useSecurityStore } from '../../store'
 
@@ -189,6 +201,7 @@ const renderAndSettle = async () => {
 describe('useBiometrics', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        clockMock.current = null
         kmsMocks.pinBytes = null
         kmsMocks.biometricBytes = null
         wireBlobMocks()
@@ -1337,7 +1350,10 @@ describe('useBiometrics', () => {
         const framed = (blob: string) =>
             Uint8Array.from([2, ...new TextEncoder().encode(blob)])
 
-        const lockedRecord = (lockoutEndTime: number) =>
+        const lockedRecord = (
+            lockoutEndTime: number,
+            monotonicLockout: MonotonicLockout | null = null,
+        ) =>
             serializePinRecord({
                 version: PIN_RECORD_VERSION,
                 salt: '00'.repeat(16),
@@ -1347,6 +1363,7 @@ describe('useBiometrics', () => {
                 duressEnabled: 0,
                 failedAttempts: 5,
                 lockoutEndTime,
+                monotonicLockout,
             })
 
         const storedBlob = (tokenHash: string) => {
@@ -1563,10 +1580,42 @@ describe('useBiometrics', () => {
                 result.current.unlockWithBiometrics(PROMPT),
             )
 
-            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout: null },
+            })
             expect(session.cancel).toHaveBeenCalled()
             expect(session.finish).not.toHaveBeenCalled()
             expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        })
+
+        test('refuses while the monotonic deadline holds, though the wall clock has passed it', async () => {
+            clockMock.current = new MemoryMonotonicClockService({
+                bootId: 'boot-1',
+                elapsedMs: 1000,
+            })
+            const lockoutEndTime = Date.now() - 1000
+            const monotonicLockout = { bootId: 'boot-1', endElapsedMs: 60_000 }
+            kmsMocks.withSecret.mockImplementation(
+                async (id: string, handler: (b: Uint8Array) => unknown) =>
+                    id === PIN_RECORD_KEY_ID
+                        ? handler(
+                              lockedRecord(lockoutEndTime, monotonicLockout),
+                          )
+                        : handler(framed('ct')),
+            )
+            const session = unlockSession(new Promise(() => undefined))
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout },
+            })
+            expect(session.finish).not.toHaveBeenCalled()
         })
 
         test('returns a refusal without waiting on a dismissed ceremony to report back', async () => {
@@ -1589,7 +1638,10 @@ describe('useBiometrics', () => {
                 result.current.unlockWithBiometrics(PROMPT),
             )
 
-            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout: null },
+            })
             expect(session.cancel).toHaveBeenCalled()
         })
 
@@ -1608,7 +1660,10 @@ describe('useBiometrics', () => {
                 result.current.unlockWithBiometrics(PROMPT),
             )
 
-            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout: null },
+            })
             expect(session.finish).not.toHaveBeenCalled()
             // Releases the key the ceremony authorised.
             expect(session.cancel).toHaveBeenCalled()
@@ -1653,7 +1708,10 @@ describe('useBiometrics', () => {
                 ).toHaveBeenCalled()
             })
             // A wrong PIN on the live pad lands after the record read.
-            useSecurityStore.getState().setLockoutEndTime(storeLockoutEndTime)
+            useSecurityStore.getState().setLockout({
+                lockoutEndTime: storeLockoutEndTime,
+                monotonicLockout: null,
+            })
 
             ceremony.release({ success: true })
             return { outcome: await act(() => unlock!), session }
@@ -1665,7 +1723,10 @@ describe('useBiometrics', () => {
             const { outcome, session } =
                 await unlockWithStoreLockoutDuringCeremony(lockoutEndTime)
 
-            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout: null },
+            })
             expect(session.finish).not.toHaveBeenCalled()
         })
 
@@ -2042,6 +2103,7 @@ describe('useBiometrics', () => {
                 duressEnabled: 0,
                 failedAttempts: 5,
                 lockoutEndTime,
+                monotonicLockout: null,
             })
             const { result } = await renderAndSettle()
 
@@ -2049,7 +2111,10 @@ describe('useBiometrics', () => {
                 result.current.unlockWithBiometrics(PROMPT),
             )
 
-            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(outcome).toEqual({
+                kind: 'locked',
+                lockout: { lockoutEndTime, monotonicLockout: null },
+            })
             expect(
                 mockBiometricsService.armBiometricBinding,
             ).not.toHaveBeenCalled()

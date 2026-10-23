@@ -14,6 +14,7 @@ import {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBlindSigningRequiredError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDeviceBusyError,
@@ -38,6 +39,7 @@ import {
     LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-core-ledger'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
 
 /**
@@ -69,6 +71,8 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerScanTimeoutError) return 'scan_timeout'
     if (error instanceof LedgerUserRejectedError) return 'user_rejected'
     if (error instanceof LedgerAppNotOpenError) return 'app_not_open'
+    if (error instanceof LedgerBlindSigningRequiredError)
+        return 'blind_signing_required'
     if (error instanceof LedgerAddressMismatchError) return 'address_mismatch'
     if (error instanceof LedgerSigningError) return 'signing_failed'
     if (error instanceof LedgerSigningFailedError) return 'signing_failed'
@@ -97,3 +101,10 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerConnectionError) return 'connection_failed'
     return 'connection_failed'
 }
+
+/** The device app an app-level error names, so its copy can name it too. */
+export const ledgerAppNameOf = (error: unknown): Optional<string> =>
+    error instanceof LedgerAppNotOpenError ||
+    error instanceof LedgerBlindSigningRequiredError
+        ? error.appName
+        : undefined

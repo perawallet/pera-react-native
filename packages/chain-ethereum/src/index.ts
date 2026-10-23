@@ -23,15 +23,18 @@ export {
 export { createEthereumAssetsAdapter } from './assets'
 export {
     createEvmClient,
+    EVM_NFT_STANDARD_LABELS,
     EvmError,
     EvmErrorCode,
     evmHttpTransport,
     InvalidCaip19Error,
     isEvmError,
+    parseEvmNftAssetId,
     toEvmError,
     UnconfiguredEvmRpcError,
     UnknownEvmNetworkError,
     type EvmErrorParams,
+    type EvmNftStandard,
 } from './blockchain'
 export { ETHEREUM_CHAIN_ID, EVM_CHAINS, evmChainOf } from './chains/table'
 export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'

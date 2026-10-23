@@ -44,6 +44,8 @@ const ENABLED = [
     'watchAccounts',
     'privateKeys',
     'dappConnect',
+    'ledger',
+    'nft',
     'cloudBackup',
 ]
 

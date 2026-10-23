@@ -33,7 +33,6 @@ import {
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
     LedgerNoAccountsFoundError,
-    LedgerOperationUnsupportedError,
     LedgerPermissionDeniedError,
     LedgerProviderNotFoundError,
     LedgerPublicKeyReadError,
@@ -416,13 +415,6 @@ describe('expected-error classification', () => {
             new LedgerProviderNotFoundError('no provider'),
         ],
         ['LedgerUsbMultipleDevicesError', new LedgerUsbMultipleDevicesError()],
-        [
-            'LedgerOperationUnsupportedError',
-            new LedgerOperationUnsupportedError({
-                appName: 'Fixture',
-                operation: 'signData',
-            }),
-        ],
     ]
 
     it.each(EXPECTED)('%s is expected', (_name, error) => {

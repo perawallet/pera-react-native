@@ -23,7 +23,7 @@ export const TransactionProcessingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { isHardwareSender, hardwareDeviceName } =
+    const { isHardwareSender, hardwareDeviceName, ledgerAppName } =
         useTransactionProcessingScreen()
 
     // Hardware-wallet sends start with a silent BLE-scan / connect phase
@@ -39,10 +39,9 @@ export const TransactionProcessingScreen = () => {
             ? i18nKey('send_funds.processing.subtitle_hardware')
             : i18nKey('send_funds.processing.subtitle_hardware_noDevice')
         : i18nKey('send_funds.processing.subtitle')
-    const subtitleParams =
-        isHardwareSender && hardwareDeviceName
-            ? { deviceName: hardwareDeviceName }
-            : undefined
+    const subtitleParams = isHardwareSender
+        ? { deviceName: hardwareDeviceName, appName: ledgerAppName }
+        : undefined
 
     return (
         <PWScreen scroll='never'>

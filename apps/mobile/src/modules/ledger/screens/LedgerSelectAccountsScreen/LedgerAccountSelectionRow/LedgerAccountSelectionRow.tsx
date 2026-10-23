@@ -11,14 +11,18 @@
  */
 
 import { useCallback } from 'react'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWChip, PWRoundIcon } from '@components/core'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { SelectableAccountCheckboxRow } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerAccountSelectionRowProps = {
     address: string
     accountIndex: number
+    chainId: ChainId
     variant?: 'derived' | 'delegated'
     isSelected: boolean
     isImported: boolean
@@ -32,6 +36,7 @@ export type LedgerAccountSelectionRowProps = {
 export const LedgerAccountSelectionRow = ({
     address,
     accountIndex,
+    chainId,
     variant = 'derived',
     isSelected,
     isImported,
@@ -55,7 +60,7 @@ export const LedgerAccountSelectionRow = ({
 
     return (
         <SelectableAccountCheckboxRow
-            title={truncateAlgorandAddress(address)}
+            title={addressCodecs.get(chainId).truncate(address)}
             leadingIcon={
                 // Same glyph resolution as useAccountIcon's hardware entry —
                 // theme-aware, unlike the light-theme SVG this replaced.

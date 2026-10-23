@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useLedgerFlowChainId } from '../../hooks'
 
 const PAIRING_STEP_KEYS: readonly I18nKey[] = [
     i18nKey('ledger.troubleshooting.pairing_step_1'),
@@ -31,6 +33,8 @@ const COMMON_ISSUE_KEYS: readonly I18nKey[] = [
 type UseLedgerTroubleshootingScreenResult = {
     pairingStepKeys: readonly I18nKey[]
     commonIssueKeys: readonly I18nKey[]
+    /** The device app the pairing steps name. */
+    appName: string
     handleDone: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -39,6 +43,8 @@ export const useLedgerTroubleshootingScreen =
     (): UseLedgerTroubleshootingScreenResult => {
         const { t } = useLanguage()
         const navigation = useNavigation()
+        const chainId = useLedgerFlowChainId()
+        const appName = useMemo(() => ledgerAppNameFor(chainId), [chainId])
 
         const handleDone = useCallback(() => {
             navigation.goBack()
@@ -47,6 +53,7 @@ export const useLedgerTroubleshootingScreen =
         return {
             pairingStepKeys: PAIRING_STEP_KEYS,
             commonIssueKeys: COMMON_ISSUE_KEYS,
+            appName,
             handleDone,
             t,
         }

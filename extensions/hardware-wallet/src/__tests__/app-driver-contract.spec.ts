@@ -20,11 +20,12 @@ const unused = () => Promise.reject(new Error('not exercised'))
 
 const driver: LedgerAppDriver = {
     chainId: 'fixture',
+    appName: 'Fixture',
     open: (transport, classifyError = error => error as never) =>
         ({
             getAddress: unused,
             signTransaction: unused,
-            signData: unused,
+            signMessage: unused,
             getAppVersion: async () => {
                 if (failure) throw classifyError(failure)
                 return { major: 1, minor: 0, patch: 0 }

@@ -138,6 +138,22 @@ describe('OfflineTolerantView', () => {
         expect(onRetry).toHaveBeenCalledTimes(1)
     })
 
+    it('swaps the retry label for a spinner while a retry is in flight', () => {
+        render(
+            <OfflineTolerantView
+                isOffline={false}
+                isError
+                onRetry={vi.fn()}
+                isRetrying
+            >
+                <Children />
+            </OfflineTolerantView>,
+        )
+
+        expect(screen.getByText('common.error.title')).toBeTruthy()
+        expect(screen.queryByText('common.retry.label')).toBeNull()
+    })
+
     it('uses the surface-specific retry label and error body when provided', () => {
         render(
             <OfflineTolerantView

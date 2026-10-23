@@ -37,7 +37,6 @@ import type {
     TransactionWarning,
 } from './models'
 import type { ExternalSignTxnTransport } from './hooks/useEnqueueDappSignRequest'
-import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     AnalysisContext,
     AnalysisWarning,
@@ -393,7 +392,6 @@ export type LocalKeySignerInput = {
 }
 
 export type MultisigSignerInput = LocalKeySignerInput & {
-    encodeTransaction: EncodeTransactionFunction
     hardwareWalletRegistry?: HardwareWalletRegistry
     signingCallbacks?: SigningCallbacks
 }
@@ -748,12 +746,7 @@ export interface PlannerChainAdapter {
      * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
      */
     useAssignFeeToGroup(): AssignFeeToGroup
-    /**
-     * Wire bytes without the signing-domain prefix. A hardware device signs
-     * these, adding the prefix itself, and the multisig backend stores them.
-     */
-    encodeUnsignedTransaction(transaction: UnsignedTransaction): Uint8Array
-    /** The transaction a signed envelope carries, encoded as `encodeUnsignedTransaction` encodes it. */
+    /** Wire bytes without the signing-domain prefix, as the multisig backend stores them. */
     unsignedTransactionBytesOf(signed: SignedTransaction): Uint8Array
     reviewGroupFees(
         transactions: TransactionNative[],

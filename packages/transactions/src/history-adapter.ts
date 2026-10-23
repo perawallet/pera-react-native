@@ -196,6 +196,15 @@ export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
         ? historyChainAdapters.get(chainId).resolveAssetFacts
         : undefined) ?? keepFacts
 
+/**
+ * False on a chain that reads its history as records through
+ * `getTransactionHistory` instead of caching rows, where every row-path
+ * call would reject with {@link TransactionHistoryRowsUnsupportedError}.
+ */
+export const hasCachedHistoryRows = (chainId: ChainId): boolean =>
+    historyChainAdapters.has(chainId) &&
+    historyChainAdapters.get(chainId).fetchHistory !== undefined
+
 /** Rejects with {@link TransactionHistoryRowsUnsupportedError} on a chain that declares no `fetchHistory`. */
 export const fetchTransactionHistory = async (
     params: FetchTransactionHistoryParams,

@@ -279,6 +279,44 @@ describe('account portfolio queries', () => {
             expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
             expect(totals.missingMetadataCount).toBe(1)
         })
+        it('adds nothing for an unpriced collectible and counts its metadata as present', async () => {
+            const collectible: PeraAsset = {
+                assetId: 'contract/7',
+                decimals: 0,
+                creator: { address: 'contract' },
+                totalSupply: new Decimal(0),
+                name: 'Ape #7',
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: PeraAssetType.collectible,
+                    isUnique: false,
+                },
+            }
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: FIXTURE_SCOPE,
+                holdings: [
+                    { assetId: 'native', amount: new Decimal(0) },
+                    { assetId: 'contract/7', amount: new Decimal(3) },
+                ],
+            })
+            await upsertAssets({
+                db,
+                scope: FIXTURE_SCOPE,
+                items: [FIXTURE_NATIVE, collectible],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                scope: FIXTURE_SCOPE,
+            })
+
+            expect(totals.nonNativeUsdValue.isZero()).toBe(true)
+            expect(totals.missingMetadataCount).toBe(0)
+        })
     })
 
     describe('getAccountFundedNetworks', () => {

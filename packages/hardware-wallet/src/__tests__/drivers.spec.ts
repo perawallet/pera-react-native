@@ -12,10 +12,11 @@
 
 import { afterEach, describe, expect, test } from 'vitest'
 import {
+    LedgerAppDriverNotRegisteredError,
     ledgerAppDriverRegistry,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
-import { hasLedgerAppDriver } from '../drivers'
+import { hasLedgerAppDriver, ledgerAppNameFor } from '../drivers'
 
 describe('hasLedgerAppDriver', () => {
     afterEach(() => {
@@ -32,5 +33,29 @@ describe('hasLedgerAppDriver', () => {
 
         expect(hasLedgerAppDriver('registered')).toBe(true)
         expect(hasLedgerAppDriver('other')).toBe(false)
+    })
+})
+
+describe('ledgerAppNameFor', () => {
+    afterEach(() => {
+        ledgerAppDriverRegistry.reset()
+    })
+
+    test("reads the device app's name from the chain's driver", () => {
+        ledgerAppDriverRegistry.register({
+            chainId: 'registered',
+            appName: 'Registered',
+            open: () => {
+                throw new Error('not opened in this test')
+            },
+        })
+
+        expect(ledgerAppNameFor('registered')).toBe('Registered')
+    })
+
+    test('throws for a chain with no driver', () => {
+        expect(() => ledgerAppNameFor('other')).toThrow(
+            LedgerAppDriverNotRegisteredError,
+        )
     })
 })

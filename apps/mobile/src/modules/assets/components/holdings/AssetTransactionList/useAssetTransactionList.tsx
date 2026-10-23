@@ -20,7 +20,6 @@ import {
 import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
-    useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
@@ -36,7 +35,7 @@ import {
 } from '@modules/accounts'
 import type { AppStackParamList } from '@routes/types'
 import {
-    buildTransactionListRows,
+    useTransactionHistoryRows,
     type TransactionListRow,
 } from '@modules/transactions'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
@@ -45,6 +44,10 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useIsCapabilityRestricted,
+} from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -61,6 +64,15 @@ export type UseAssetTransactionListResult = {
     isLoading: boolean
     /** Whether to render the cold-start skeleton (no read has resolved yet) */
     isInitialLoad: boolean
+    /** See `useAccountHistory` for these load states. */
+    isLoadFailed: boolean
+    isLoadUnavailable: boolean
+    isLoadIntegrityBlocked: boolean
+    isLoadOffline: boolean
+    handleRetry: () => void
+    isRetrying: boolean
+    isSearchPaused: boolean
+    handleSearchOlder: () => void
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
@@ -104,37 +116,40 @@ export const useAssetTransactionList = ({
     const assetId = asset.assetId
 
     const {
-        transactions,
+        rows,
+        transactionCount,
         isLoading,
         isFetched,
         isFetchingNextPage,
         isError,
         error,
         hasNextPage,
+        isSearchPaused,
         fetchNextPage,
-    } = useTransactionHistoryQuery({
+        retry: handleRetry,
+        isRetrying,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+    } = useTransactionHistoryRows({
         accountAddress,
         scope,
-        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
         assetId,
     })
 
-    const rows = useMemo(
-        () => buildTransactionListRows(transactions),
-        [transactions],
-    )
-
+    // A paused search waits for Search Older, not for the list's end.
     const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage) {
+        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
             fetchNextPage()
         }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
 
     const refreshAddresses = useMemo(() => [accountAddress], [accountAddress])
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
+        scope,
     })
 
     const { t } = useLanguage()
@@ -227,21 +242,42 @@ export const useAssetTransactionList = ({
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
-    const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isEmpty = isFetched && !hasNextPage && transactionCount === 0
     const isOfflineEmpty = isEmpty && !hasInternet
-    const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
+    // The failed read happened offline, so it gets the offline copy, not the error one.
+    const isLoadOffline = isLoadFailed && !hasInternet
+    const isInitialLoad =
+        !isLoadFailed &&
+        !isSearchPaused &&
+        rows.length === 0 &&
+        (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
-    // `transactions.length > 0` rather than `!isEmpty` also keeps the button
+    // `transactionCount > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
-    // avoiding a brief visible-then-gone flicker.
-    const isCsvExportVisible = transactions.length > 0
+    // avoiding a brief visible-then-gone flicker. Capability-gated as in
+    // `useAccountHistory`.
+    const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
+    const isCsvExportRestricted = useIsCapabilityRestricted(
+        scope.chainId,
+        'csvExport',
+    )
+    const isCsvExportVisible =
+        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
 
     return {
         rows,
         isLoading,
         isInitialLoad,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        isLoadOffline,
+        handleRetry,
+        isRetrying,
+        isSearchPaused,
+        handleSearchOlder: fetchNextPage,
         isFetchingNextPage,
         isError,
         error,

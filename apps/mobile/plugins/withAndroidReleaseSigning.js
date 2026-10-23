@@ -24,7 +24,10 @@ const { withAppBuildGradle } = require('expo/config-plugins');
  * Credentials are read from the environment at Gradle execution time (never
  * baked into the file) and the release buildType is gated on
  * ANDROID_KEYSTORE_PASSWORD so local builds without the secret keep falling
- * back to debug signing.
+ * back to debug signing. Under CI a missing secret fails any build that runs a
+ * release task instead: the debug key is public, so a debug-signed release is
+ * unshippable. The check waits for the task graph because Gradle configures the
+ * release buildType for every task, and debug or clean runs must not trip it.
  */
 const withAndroidReleaseSigning = (config) => {
   return withAppBuildGradle(config, (config) => {
@@ -46,11 +49,21 @@ function setReleaseSigningConfig(buildGradle) {
   }
 
   // Point the release buildType at the release signingConfig, but only when the
-  // keystore password is present (CI). Anchored inside buildTypes { release { }
-  // so the debug buildType's signingConfig is left untouched.
+  // keystore password is present. Anchored inside buildTypes { release { } so
+  // the debug buildType's signingConfig is left untouched.
   const swapped = buildGradle.replace(
-    /(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/,
-    "$1signingConfig System.getenv('ANDROID_KEYSTORE_PASSWORD') ? signingConfigs.release : signingConfigs.debug",
+    /(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?\n)([ \t]*)signingConfig signingConfigs\.debug/,
+    (_match, before, indent) =>
+      [
+        `${before}${indent}if (System.getenv('CI')?.toBoolean() && !System.getenv('ANDROID_KEYSTORE_PASSWORD')) {`,
+        `${indent}    gradle.taskGraph.whenReady { graph ->`,
+        `${indent}        if (graph.allTasks.any { it.name.contains('Release') }) {`,
+        `${indent}            throw new GradleException('CI release build without ANDROID_KEYSTORE_PASSWORD; refusing to sign with the debug key')`,
+        `${indent}        }`,
+        `${indent}    }`,
+        `${indent}}`,
+        `${indent}signingConfig System.getenv('ANDROID_KEYSTORE_PASSWORD') ? signingConfigs.release : signingConfigs.debug`,
+      ].join('\n'),
   );
 
   if (swapped === buildGradle) {

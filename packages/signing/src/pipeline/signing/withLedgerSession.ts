@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isSameAddress,
+    type HardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     HardwareWalletRegistry,
@@ -30,6 +33,7 @@ import {
     CannotSignError,
     HardwareSigningAbortedError,
     HardwareWalletError,
+    InvalidSignableDataError,
     SigningError,
 } from '../errors'
 import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
@@ -136,7 +140,7 @@ const connectAndVerify = async (
             'Verify Ledger address',
             ledgerTimeoutReason('Verify Ledger address'),
         )
-        if (fetchedAccount.address !== expectedAddress) {
+        if (!isSameAddress(chainId, fetchedAccount.address, expectedAddress)) {
             throw new LedgerAddressMismatchError(
                 expectedAddress,
                 fetchedAccount.address,
@@ -158,6 +162,7 @@ const connectAndVerify = async (
 const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
+        error instanceof InvalidSignableDataError ||
         error instanceof HardwareSigningAbortedError ||
         error instanceof HardwareWalletError ||
         isLedgerError(error)

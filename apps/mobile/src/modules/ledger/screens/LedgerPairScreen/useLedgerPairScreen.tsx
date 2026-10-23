@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
+import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useLedgerFlowChainId } from '@modules/ledger/hooks'
 
 import { LedgerHowItWorksContent } from '../../components/LedgerHowItWorksContent'
 
@@ -29,21 +31,23 @@ export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
+    const chainId = useLedgerFlowChainId()
+    const appName = useMemo(() => ledgerAppNameFor(chainId), [chainId])
 
     const handlePair = useCallback(() => {
-        navigation.navigate('LedgerScan')
-    }, [navigation])
+        navigation.navigate('LedgerScan', { chainId })
+    }, [navigation, chainId])
 
     const handleOpenHowDoesItWork = useCallback(() => {
         void requestBottomSheet({
-            contents: <LedgerHowItWorksContent />,
+            contents: <LedgerHowItWorksContent appName={appName} />,
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet])
+    }, [requestBottomSheet, appName])
 
     const handleOpenSupport = useCallback(() => {
         // oxlint-disable-next-line pera/no-unvalidated-open-url -- bundled translation string

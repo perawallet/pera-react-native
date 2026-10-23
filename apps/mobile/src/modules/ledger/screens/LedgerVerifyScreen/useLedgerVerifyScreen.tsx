@@ -12,12 +12,12 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     buildAccount,
     chainAccountOf,
     findAccountByAddressOn,
     hardwareDetailsOf,
+    hardwareJoinCandidates,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
     isLedgerAccount,
@@ -29,22 +29,31 @@ import {
     useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    HardwareWalletDerivedAccount,
-    HardwareWalletTransport,
+import {
+    ledgerAppNameFor,
+    type HardwareWalletDerivedAccount,
+    type HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
+    isLedgerClaimMetBy,
+    ledgerClaimsByChain,
+    ledgerHolderClaim,
+    proveLedgerHolders,
     verifyLedgerAddress,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
     LedgerAddressMismatchError,
-    LedgerProviderNotFoundError,
     classifyLedgerError,
+    type LedgerHolderClaim,
 } from '@perawallet/wallet-core-ledger'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type AppError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -59,9 +68,17 @@ import {
     deserializeSelectableAccount,
     getLedgerErrorPreset,
     type LedgerErrorPreset,
+    requireLedgerProvider,
 } from '@modules/ledger/utils'
 import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
-import { useLedgerExpandedTabHandoff } from '@modules/ledger/hooks'
+import {
+    LedgerSameWalletSheet,
+    type LedgerSameWalletChoice,
+} from '@modules/ledger/components/LedgerSameWalletSheet'
+import {
+    useLedgerExpandedTabHandoff,
+    useLedgerFlowChainId,
+} from '@modules/ledger/hooks'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
@@ -74,6 +91,8 @@ type UseLedgerVerifyScreenResult = {
     handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** True while the device reads an existing account's address before adding. */
+    isReadingDevice: boolean
     /** Set once accounts are added in a Ledger pairing tab, which then shows a result screen. */
     isAddedInHandoffTab: boolean
     handleDone: () => void
@@ -88,6 +107,39 @@ const authAccountOf = (
     s: LedgerSelectableAccount,
 ): HardwareWalletDerivedAccount =>
     s.kind === 'derived' ? s.account : s.authAccount
+
+/**
+ * An entry bound for a device position, the address the device verified for
+ * it, and the account it must not join.
+ */
+type JoinTarget = {
+    details: HardwareWalletDetails
+    chainIds: ChainId[]
+    verifiedAddress: string
+    movingId?: string
+}
+
+const claimsFor = (
+    accounts: readonly WalletAccount[],
+    { details, chainIds, movingId }: JoinTarget,
+): LedgerHolderClaim[] =>
+    hardwareJoinCandidates(
+        accounts.filter(account => account.id !== movingId),
+        details,
+        chainIds,
+    ).flatMap(holder => {
+        const addresses: Partial<Record<ChainId, string>> = {}
+        for (const id of Object.keys(holder.chains) as ChainId[]) {
+            const address = chainAccountOf(holder, id)?.address
+            if (address !== undefined) addresses[id] = address
+        }
+        const claim = ledgerHolderClaim({
+            id: holder.id,
+            accountIndex: holder.custody.accountIndex,
+            addresses,
+        })
+        return claim ? [claim] : []
+    })
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -109,8 +161,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { request: requestBottomSheet } = useBottomSheet()
     const navigation = useAppNavigation()
+    const chainId = useLedgerFlowChainId()
     const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
     const [isAddedInHandoffTab, setIsAddedInHandoffTab] = useState(false)
+    const [isReadingDevice, setIsReadingDevice] = useState(false)
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
         const byIndex = new Map<number, HardwareWalletDerivedAccount>()
@@ -138,17 +192,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             setError(null)
             setVerifiedIndices(new Set())
 
-            const provider = getProvider().hardwareWalletRegistry.getProvider(
-                'ledger',
-                transportType,
-            )
-            if (!provider) {
-                throw new LedgerProviderNotFoundError(
-                    `No Ledger provider registered for transport "${transportType}"`,
-                )
-            }
+            const provider = requireLedgerProvider(transportType)
 
-            const connectPromise = provider.connect(deviceId, LEGACY_CHAIN_ID)
+            const connectPromise = provider.connect(deviceId, chainId)
             try {
                 transport = await withLedgerConnectionTimeout(
                     connectPromise,
@@ -202,7 +248,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 await transport.disconnect().catch(() => {})
             }
         }
-    }, [deviceId, transportType, verifyTargets])
+    }, [chainId, deviceId, transportType, verifyTargets])
 
     // Run verify once on mount. The ref guards against React StrictMode's
     // dev-only double-invoke (a second call would race the first against a
@@ -215,18 +261,71 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // Resolves the proven holder ids, or null when the user abandons the add.
+    const proveClaims = useCallback(
+        async (
+            claims: readonly LedgerHolderClaim[],
+        ): Promise<Nullable<ReadonlySet<string>>> => {
+            const proven = new Set<string>()
+            for (const [claimChain, chainClaims] of ledgerClaimsByChain(
+                claims,
+            )) {
+                const appName = ledgerAppNameFor(claimChain)
+                let failure: Nullable<LedgerErrorPreset> = null
+                for (;;) {
+                    const choice =
+                        await requestBottomSheet<LedgerSameWalletChoice>({
+                            contents: (
+                                <LedgerSameWalletSheet
+                                    appName={appName}
+                                    failure={failure}
+                                />
+                            ),
+                            options: {
+                                size: 'auto',
+                                enablePanDownToClose: true,
+                            },
+                        })
+                    if (choice === undefined) return null
+                    if (choice === 'separate') break
+                    setIsReadingDevice(true)
+                    try {
+                        const read = await proveLedgerHolders({
+                            provider: requireLedgerProvider(transportType),
+                            deviceId,
+                            chainId: claimChain,
+                            claims: chainClaims,
+                        })
+                        for (const holderId of read) proven.add(holderId)
+                        break
+                    } catch (err) {
+                        const readError = classifyLedgerError(err)
+                        logger.warn('Ledger same-wallet read failed', {
+                            chainId: claimChain,
+                            error: readError,
+                        })
+                        failure = getLedgerErrorPreset(readError, t, appName)
+                    } finally {
+                        setIsReadingDevice(false)
+                    }
+                }
+            }
+            return proven
+        },
+        [deviceId, requestBottomSheet, t, transportType],
+    )
+
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
-        const byAddress = new Map(
-            current.flatMap(account => {
-                const address = chainAccountOf(
-                    account,
-                    LEGACY_CHAIN_ID,
-                )?.address
-                return address === undefined ? [] : [[address, account]]
-            }),
-        )
+        // Through the chain's codec: an EVM device reports a checksummed
+        // address the wallet may hold in another case.
+        const heldAt = (address: string) =>
+            findAccountByAddressOn(current, chainId, address)
         const added = new Set<string>()
+        const hardwareEntries: Array<{
+            address: string
+            details: HardwareWalletDetails
+        }> = []
         const batch: WalletAccount[] = []
         const authorities: Array<{
             address: string
@@ -239,6 +338,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }> = []
         const rebinds: Array<{
             id: string
+            address: string
             details: HardwareWalletDetails
         }> = []
 
@@ -258,9 +358,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         })
 
         const addHardware = (acc: HardwareWalletDerivedAccount) => {
-            if (!addressCodecs.get(LEGACY_CHAIN_ID).isValid(acc.address)) return
+            if (!addressCodecs.get(chainId).isValid(acc.address)) return
             if (added.has(acc.address)) return
-            const collision = byAddress.get(acc.address)
+            const collision = heldAt(acc.address)
             if (collision) {
                 if (isWatchAccount(collision)) {
                     if (!upgrades.some(u => u.address === acc.address)) {
@@ -281,23 +381,17 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     // same seed. The address match proves the same key.
                     rebinds.push({
                         id: collision.id,
+                        address: acc.address,
                         details: detailsFor(acc),
                     })
                 }
                 return
             }
             added.add(acc.address)
-            const { accountIndex, ...device } = detailsFor(acc)
-            batch.push(
-                buildAccount({
-                    name: t('ledger.default_account_name', {
-                        number: nextDefaultNameNumber++,
-                    }),
-                    custody: { kind: 'hardware', device, accountIndex },
-                    chainId: LEGACY_CHAIN_ID,
-                    chains: { [LEGACY_CHAIN_ID]: { address: acc.address } },
-                }),
-            )
+            hardwareEntries.push({
+                address: acc.address,
+                details: detailsFor(acc),
+            })
         }
 
         for (const sel of selectedAccounts) {
@@ -311,15 +405,15 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // present-but-watch auth can no longer slip through into an
                 // unsignable pair.
                 const authorityAddress = sel.authAccount.address
-                const presentAuth = byAddress.get(authorityAddress)
+                const presentAuth = heldAt(authorityAddress)
                 const authPresent =
                     added.has(authorityAddress) ||
                     upgrades.some(u => u.address === authorityAddress) ||
                     (presentAuth !== undefined && !isWatchAccount(presentAuth))
                 if (
                     authPresent &&
-                    addressCodecs.get(LEGACY_CHAIN_ID).isValid(sel.address) &&
-                    !byAddress.has(sel.address) &&
+                    addressCodecs.get(chainId).isValid(sel.address) &&
+                    !heldAt(sel.address) &&
                     !added.has(sel.address)
                 ) {
                     added.add(sel.address)
@@ -329,10 +423,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     batch.push(
                         buildAccount({
                             custody: { kind: 'watch' },
-                            chainId: LEGACY_CHAIN_ID,
-                            chains: {
-                                [LEGACY_CHAIN_ID]: { address: sel.address },
-                            },
+                            chainId,
+                            chains: { [chainId]: { address: sel.address } },
                         }),
                     )
                     authorities.push({
@@ -344,6 +436,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }
 
         if (
+            hardwareEntries.length === 0 &&
             batch.length === 0 &&
             upgrades.length === 0 &&
             rebinds.length === 0
@@ -363,22 +456,99 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (!confirmed) return
         }
 
+        const movingTarget = (
+            id: string,
+            details: HardwareWalletDetails,
+            verifiedAddress: string,
+        ): JoinTarget => ({
+            details,
+            chainIds: Object.keys(
+                current.find(account => account.id === id)?.chains ?? {},
+            ) as ChainId[],
+            verifiedAddress,
+            movingId: id,
+        })
+        const targets = [
+            ...upgrades.map(({ id, details, address }) =>
+                movingTarget(id, details, address),
+            ),
+            ...rebinds.map(({ id, details, address }) =>
+                movingTarget(id, details, address),
+            ),
+            ...hardwareEntries.map(({ details, address }) => ({
+                details,
+                chainIds: [chainId],
+                verifiedAddress: address,
+            })),
+        ]
+        const targetClaims = targets.map(target => claimsFor(current, target))
+        // An address just verified in the same device app proves its claim.
+        const met = targetClaims.flatMap((claims, i) =>
+            claims
+                .filter(claim =>
+                    isLedgerClaimMetBy(claim, targets[i].verifiedAddress),
+                )
+                .map(claim => claim.holderId),
+        )
+        const pending = targetClaims
+            .flat()
+            .filter(claim => !met.includes(claim.holderId))
+        // Only an import with a claim left to read waits on the device.
+        const read =
+            pending.length > 0 ? await proveClaims(pending) : new Set<string>()
+        if (!read) return
+        const proven = new Set([...met, ...read])
+        const joinIdOf = (targetClaims: readonly LedgerHolderClaim[]) =>
+            targetClaims.find(claim => proven.has(claim.holderId))?.holderId
+
         const store = useAccountsStore.getState()
-        for (const upgrade of upgrades) {
-            store.upgradeWatchAccountToHardware(upgrade.id, upgrade.details)
-        }
-        for (const rebind of rebinds) {
-            store.updateHardwareDetails(rebind.id, rebind.details)
+        upgrades.forEach((upgrade, i) => {
+            store.upgradeWatchAccountToHardware(
+                upgrade.id,
+                upgrade.details,
+                chainId,
+                joinIdOf(targetClaims[i]),
+            )
+        })
+        rebinds.forEach((rebind, i) => {
+            store.updateHardwareDetails(
+                rebind.id,
+                rebind.details,
+                chainId,
+                joinIdOf(targetClaims[upgrades.length + i]),
+            )
+        })
+        for (const [i, { address, details }] of hardwareEntries.entries()) {
+            const before = useAccountsStore.getState().accounts.length
+            store.addHardwareChainAccount(
+                details,
+                chainId,
+                address,
+                t('ledger.default_account_name', {
+                    number: nextDefaultNameNumber,
+                }),
+                undefined,
+                joinIdOf(targetClaims[upgrades.length + rebinds.length + i]),
+            )
+            // An entry joining the device's account keeps that account's
+            // name, so only a created account uses up a number.
+            if (useAccountsStore.getState().accounts.length > before) {
+                nextDefaultNameNumber++
+            }
         }
         if (batch.length > 0) {
-            const scope = getSelectedScope(LEGACY_CHAIN_ID)
+            const scope = getSelectedScope(chainId)
             for (const { address, authorityAddress } of authorities) {
                 recordAuthority(scope, address, authorityAddress)
             }
             setAccounts([...useAccountsStore.getState().accounts, ...batch])
         }
 
-        if (batch.length === 0 && upgrades.length === 0) {
+        if (
+            hardwareEntries.length === 0 &&
+            batch.length === 0 &&
+            upgrades.length === 0
+        ) {
             // Re-bind only: metadata refresh, not an import.
             exitAccountFlow()
             return
@@ -387,12 +557,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const firstDerived = selectedAccounts.find(s => s.kind === 'derived')
         const selectedAddress =
             firstDerived?.account.address ??
-            (batch[0] && chainAccountOf(batch[0], LEGACY_CHAIN_ID)?.address) ??
+            (batch[0] && chainAccountOf(batch[0], chainId)?.address) ??
             upgrades[0]?.address
         const selected = selectedAddress
             ? findAccountByAddressOn(
                   useAccountsStore.getState().accounts,
-                  LEGACY_CHAIN_ID,
+                  chainId,
                   selectedAddress,
               )
             : undefined
@@ -406,10 +576,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         setShouldPlayConfetti(true)
         exitAccountFlow()
     }, [
+        chainId,
         deviceId,
         deviceName,
         transportType,
         selectedAccounts,
+        proveClaims,
         requestBottomSheet,
         setAccounts,
         setSelectedAccountId,
@@ -434,8 +606,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     }, [verify])
 
     const handleTroubleshoot = useCallback(() => {
-        navigation.navigate('LedgerTroubleshooting')
-    }, [navigation])
+        navigation.navigate('LedgerTroubleshooting', { chainId })
+    }, [navigation, chainId])
 
     const handleDone = useCallback(() => {
         void closeHandoffTab()
@@ -444,9 +616,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const errorPreset = useMemo(
         () =>
             verificationState === 'error' && error !== null
-                ? getLedgerErrorPreset(error, t)
+                ? getLedgerErrorPreset(error, t, ledgerAppNameFor(chainId))
                 : null,
-        [error, verificationState, t],
+        [error, verificationState, t, chainId],
     )
 
     const areAllVerified =
@@ -462,6 +634,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isReadingDevice,
         isAddedInHandoffTab,
         handleDone,
         handleCancel: isHandoffTab ? handleDone : undefined,

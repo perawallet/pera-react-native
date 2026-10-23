@@ -166,3 +166,46 @@ describe('useSendFundsContent — deterministic initial route', () => {
         expect(useSendFundsStore.getState().selectedAsset).toEqual(token)
     })
 })
+
+describe('useSendFundsContent — a collectible on another chain', () => {
+    const NFT_ID = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/7'
+    const NFT = { chainId: 'ethereum', assetId: NFT_ID } as const
+    const nftAsset = (isUnique: boolean) => ({
+        assetId: NFT_ID,
+        decimals: 0,
+        peraMetadata: { type: 'collectible', isUnique },
+    })
+
+    beforeEach(async () => {
+        useSendFundsStore.getState().reset()
+        vi.clearAllMocks()
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-assets')
+        >('@perawallet/wallet-core-assets')
+        ;(isUniqueCollectible as Mock).mockImplementation(
+            actual.isUniqueCollectible,
+        )
+    })
+
+    it('prefills 1 for a unique collectible, so the amount step is skipped', () => {
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([[NFT_ID, nftAsset(true)]]),
+            isFetched: true,
+        })
+
+        renderHook(() => useSendFundsContent(NFT))
+
+        expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
+    })
+
+    it('leaves the quantity of a non-unique collectible to the amount step', () => {
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([[NFT_ID, nftAsset(false)]]),
+            isFetched: true,
+        })
+
+        renderHook(() => useSendFundsContent(NFT))
+
+        expect(useSendFundsStore.getState().amount).toBeUndefined()
+    })
+})

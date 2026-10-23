@@ -13,3 +13,4 @@
 export * from './ledgerErrorPresets'
 export * from './sanitizeDeviceName'
 export * from './serializedLedgerAccounts'
+export * from './requireLedgerProvider'

@@ -32,7 +32,6 @@ import { signingEventBus } from '../pipeline/signingEventBus'
 import { StaleSignRequestError } from '../pipeline/errors'
 import { isInteractiveSource } from '../pipeline/types'
 import { broadcasterChainAdapters, type StaleGroupReason } from '../broadcaster'
-import { plannerAdapterForScope } from '../chain-adapter'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 import { chainIdOfSignRequest } from '../models/chain'
@@ -287,12 +286,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     ...multisigAdaptersFor(scope),
                 }),
                 scope,
-                // Hardware-wallet actor consumes this. The device adds the
-                // signing-domain prefix itself, so the bytes are unprefixed.
-                encodeTransaction: txn =>
-                    plannerAdapterForScope(scope).encodeUnsignedTransaction(
-                        txn,
-                    ),
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
                 keyStore: kmsCore,
             }

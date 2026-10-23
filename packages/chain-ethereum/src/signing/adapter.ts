@@ -87,6 +87,9 @@ export const createEvmPlannerAdapter = (
                 signer: from,
                 scheme: 'secp256k1',
                 payload: transactionDigest(transaction).digest,
+                devicePayload: hexToBytes(
+                    serializeTransaction({ ...transaction, type: 'eip1559' }),
+                ),
             },
         ]
     },

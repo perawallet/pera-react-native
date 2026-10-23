@@ -18,13 +18,15 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
+import { isKeyedByPlanner, type SigningPhase } from '../../pipeline/types'
+import { signMessageGroupOnDevice } from '../actors/signers/signMessageGroupOnDevice'
+import { signPlannedGroupOnDevice } from '../actors/signers/signPlannedGroupOnDevice'
 import { resolveSigningAccount } from '../utils/resolveSigningAccount'
 import {
     classifyLedgerErrorKind,
     isLedgerError,
 } from '../../utils/classifyLedgerErrorKind'
 import type { LedgerErrorPresetKind } from '../../types/ledgerErrorPresetKind'
-import type { SigningPhase } from '../../pipeline/types'
 import type {
     HardwareSigningEvent,
     HardwareSigningInput,
@@ -82,20 +84,9 @@ export const hardwareSignActor = fromCallback<
     HardwareSigningEvent,
     HardwareSigningInput
 >(({ input, sendBack }) => {
-    const {
-        groups,
-        allAccounts,
-        hardwareWalletRegistry,
-        encodeTransaction,
-        scope,
-    } = input
+    const { groups, allAccounts, hardwareWalletRegistry, scope } = input
 
-    const strategy = createHardwareStrategy({
-        hardwareWalletRegistry,
-        encodeTransaction,
-        getAllAccounts: () => allAccounts,
-        chainId: scope.chainId,
-    })
+    const strategy = createHardwareStrategy({ chainId: scope.chainId })
 
     let cancelled = false
     // Aborting on stop reaches the BLE layer: the strategy stops sending
@@ -155,21 +146,43 @@ export const hardwareSignActor = fromCallback<
                 if (!signerAccount) {
                     throw new HardwareWalletError('signer_not_found')
                 }
-                const accountForSigning = resolveSigningAccount(
-                    signerAccount,
-                    group.source,
-                    group.data.type,
-                    allAccounts,
-                    scope.chainId,
-                )
+                // A group keyed by its planner already names the key holder.
+                const accountForSigning = isKeyedByPlanner(group.data)
+                    ? signerAccount
+                    : resolveSigningAccount(
+                          signerAccount,
+                          group.source,
+                          group.data.type,
+                          allAccounts,
+                          scope.chainId,
+                      )
                 if (!isHardwareWalletAccount(accountForSigning)) {
                     throw new HardwareWalletError('signer_not_found')
                 }
-                const result = await strategy.sign(
-                    group,
-                    accountForSigning,
-                    callbacks,
-                )
+                const { type } = group.data
+                const result =
+                    type === 'transactions'
+                        ? await signPlannedGroupOnDevice({
+                              group,
+                              account: accountForSigning,
+                              scope,
+                              registry: hardwareWalletRegistry,
+                              callbacks,
+                          })
+                        : type === 'message' || type === 'auth-data'
+                          ? await signMessageGroupOnDevice({
+                                group,
+                                account: accountForSigning,
+                                allAccounts,
+                                scope,
+                                registry: hardwareWalletRegistry,
+                                callbacks,
+                            })
+                          : await strategy.sign(
+                                group,
+                                accountForSigning,
+                                callbacks,
+                            )
                 if (cancelled) return
                 sendBack({ type: 'GROUP_SIGNED', result })
                 // Mirrors the parent's totalTxs accounting: transaction

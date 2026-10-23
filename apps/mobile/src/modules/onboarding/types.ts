@@ -25,3 +25,10 @@ export type AccountOption = {
     /** Optional "Learn more"-style link with its own press handler. */
     learnMore?: { labelKey: I18nKey; onPress: () => void }
 }
+
+/** Watch-flow copy that names a chain family, for the family to supply when it alone can watch accounts. */
+export type WatchAccountCopy = {
+    optionDescriptionKey: I18nKey
+    descriptionKey: I18nKey
+    invalidAddressKey: I18nKey
+}

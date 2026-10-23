@@ -61,6 +61,7 @@ const CollectibleDetailContent = ({
         isPending,
         isReadOnly,
         canManageAssets,
+        canSend,
         traits,
         media,
         hasImage,
@@ -173,13 +174,15 @@ const CollectibleDetailContent = ({
                 <PWView style={styles.contentContainer}>
                     {!isOptedInNotOwned && !isReadOnly && (
                         <PWView style={styles.actionButtonsContainer}>
-                            <RoundButton
-                                title={t('common.send')}
-                                icon='outflow'
-                                variant='primary'
-                                size='md'
-                                onPress={handleSendPressed}
-                            />
+                            {canSend && (
+                                <RoundButton
+                                    title={t('common.send')}
+                                    icon='outflow'
+                                    variant='primary'
+                                    size='md'
+                                    onPress={handleSendPressed}
+                                />
+                            )}
                             {hasImage && (
                                 <RoundButton
                                     title={t('common.copy')}

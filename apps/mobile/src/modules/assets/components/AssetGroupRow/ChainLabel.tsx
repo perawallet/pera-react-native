@@ -10,30 +10,31 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { AssetIcon } from '@components/AssetIcon'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import { getIconPixelSize, PWText, PWView } from '@components/core'
+import { ChainIcon } from '@modules/chain-ui/icon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type NetworkLabelProps = {
+export type ChainLabelProps = {
     chainId: ChainId
 }
 
-export const NetworkLabel = ({ chainId }: NetworkLabelProps) => {
+export const ChainLabel = ({ chainId }: ChainLabelProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <PWView
-            style={styles.networkLabel}
-            testID={`network_label_${chainId}`}
+            style={styles.chainLabel}
+            testID={`chain_label_${chainId}`}
         >
-            <AssetIcon
-                asset={nativeAssetFor(chainId)}
-                size='xs'
+            <ChainIcon
+                chainId={chainId}
+                size={getIconPixelSize(theme, 'xs')}
             />
             <PWText
                 variant='body'

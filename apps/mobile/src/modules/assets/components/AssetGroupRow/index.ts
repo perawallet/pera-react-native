@@ -11,4 +11,4 @@
  */
 
 export { AssetGroupRow, type AssetGroupRowProps } from './AssetGroupRow'
-export { NetworkLabel, type NetworkLabelProps } from './NetworkLabel'
+export { ChainLabel, type ChainLabelProps } from './ChainLabel'

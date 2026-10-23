@@ -13,17 +13,52 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
 import { createActor, setup } from 'xstate'
-import { LedgerBluetoothDisabledError } from '@perawallet/wallet-core-ledger'
+import {
+    LedgerBlindSigningRequiredError,
+    LedgerBluetoothDisabledError,
+} from '@perawallet/wallet-core-ledger'
 
 const mocks = vi.hoisted(() => ({
     sign: vi.fn(),
     createHardwareStrategy: vi.fn(),
+    strategySign: vi.fn(),
+    signPlannedGroupOnDevice: vi.fn(),
+    signMessageGroupOnDevice: vi.fn(),
 }))
 
+// Both legs answer through `mocks.sign`, so the callback translation is
+// pinned once; the per-leg spies pin which leg a group reaches.
 vi.mock('../../../pipeline/signing/createHardwareStrategy', () => ({
     createHardwareStrategy: (options: unknown) => {
         mocks.createHardwareStrategy(options)
-        return { sign: mocks.sign }
+        return {
+            sign: (...args: unknown[]) => {
+                mocks.strategySign(...args)
+                return mocks.sign(...args)
+            },
+        }
+    },
+}))
+
+vi.mock('../../actors/signers/signPlannedGroupOnDevice', () => ({
+    signPlannedGroupOnDevice: (input: {
+        group: unknown
+        account: unknown
+        callbacks: unknown
+    }) => {
+        mocks.signPlannedGroupOnDevice(input)
+        return mocks.sign(input.group, input.account, input.callbacks)
+    },
+}))
+
+vi.mock('../../actors/signers/signMessageGroupOnDevice', () => ({
+    signMessageGroupOnDevice: (input: {
+        group: unknown
+        account: unknown
+        callbacks: unknown
+    }) => {
+        mocks.signMessageGroupOnDevice(input)
+        return mocks.sign(input.group, input.account, input.callbacks)
     },
 }))
 
@@ -91,7 +126,6 @@ const makeInput = (
     allAccounts: [hardwareAccount],
     scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
-    encodeTransaction: vi.fn() as never,
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     totalTxs: 1,
     deviceName: 'Nano X',
@@ -143,6 +177,9 @@ const runActor = async (
 
 beforeEach(() => {
     mocks.sign.mockReset()
+    mocks.strategySign.mockReset()
+    mocks.signPlannedGroupOnDevice.mockReset()
+    mocks.signMessageGroupOnDevice.mockReset()
 })
 
 describe('hardwareSignActor', () => {
@@ -340,6 +377,117 @@ describe('hardwareSignActor', () => {
         expect(types.lastIndexOf('GROUP_SIGNED')).toBeLessThan(
             types.indexOf('ALL_DONE'),
         )
+    })
+
+    it("signs a transaction group through its planner on the signer's device, never the strategy", async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const registry = { getProvider: vi.fn() } as never
+        const input = makeInput({ hardwareWalletRegistry: registry })
+
+        const { stop } = await runActor(input)
+        stop()
+
+        expect(mocks.signPlannedGroupOnDevice).toHaveBeenCalledWith(
+            expect.objectContaining({
+                group: input.groups[0],
+                account: hardwareAccount,
+                scope: input.scope,
+                registry,
+            }),
+        )
+        expect(mocks.strategySign).not.toHaveBeenCalled()
+    })
+
+    it('signs a group its planner keys by signer on that signer, without following a rekey', async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const plannerKeyed = {
+            ...makeGroup(),
+            data: {
+                type: 'transactions',
+                transactions: [senderOnlyTransaction(HARDWARE_ADDRESS)],
+            },
+        } as AnalyzedSignableGroup
+
+        const { events, stop } = await runActor(
+            makeInput({ groups: [plannerKeyed] }),
+        )
+        stop()
+
+        expect(mocks.signPlannedGroupOnDevice).toHaveBeenCalledWith(
+            expect.objectContaining({ account: hardwareAccount }),
+        )
+        expect(events.some(e => e.type === 'ALL_DONE')).toBe(true)
+    })
+
+    it('routes auth data to the device message leg', async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const authData = {
+            ...makeGroup(),
+            data: {
+                type: 'auth-data',
+                authData: {
+                    data: '',
+                    signer: HARDWARE_ADDRESS,
+                    domain: 'example.io',
+                    authenticatorData: new Uint8Array(37),
+                },
+                metadata: { scope: 1, encoding: 'base64' },
+            },
+        } as AnalyzedSignableGroup
+
+        const { stop } = await runActor(makeInput({ groups: [authData] }))
+        stop()
+
+        expect(mocks.signMessageGroupOnDevice).toHaveBeenCalledWith(
+            expect.objectContaining({
+                group: authData,
+                allAccounts: expect.any(Array),
+            }),
+        )
+        expect(mocks.strategySign).not.toHaveBeenCalled()
+        expect(mocks.signPlannedGroupOnDevice).not.toHaveBeenCalled()
+    })
+
+    it('routes a chain-neutral message to the device message leg', async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const message = {
+            ...makeGroup(),
+            data: {
+                type: 'message',
+                request: {
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    method: 'personal_sign',
+                    signer: HARDWARE_ADDRESS,
+                    payload: {},
+                },
+            },
+        } as AnalyzedSignableGroup
+
+        const { stop } = await runActor(makeInput({ groups: [message] }))
+        stop()
+
+        expect(mocks.signMessageGroupOnDevice).toHaveBeenCalledTimes(1)
+        expect(mocks.strategySign).not.toHaveBeenCalled()
+    })
+
+    it("surfaces the device app's blind-signing refusal as its own retryable kind", async () => {
+        const refusal = new LedgerBlindSigningRequiredError({
+            appName: 'Ethereum',
+        })
+        mocks.sign.mockImplementation(
+            async (_g, _a, callbacks: SigningCallbacks) => {
+                callbacks.onError?.(refusal)
+                throw refusal
+            },
+        )
+
+        const { events, stop } = await runActor(makeInput())
+        stop()
+
+        expect(events).toContainEqual({
+            type: 'STRATEGY_ERROR',
+            error: { kind: 'blind_signing_required', cause: refusal },
+        })
     })
 
     it("builds the strategy and resolves the signer on the input scope's chain", async () => {

@@ -41,6 +41,8 @@ import { useCardSession } from '@perawallet/wallet-core-card'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig'
+import { useWatchableChainIds } from '@modules/onboarding/hooks'
+import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AccountOption } from '@modules/onboarding/types'
 import { trackChainOnboardingEvent } from '../../utils'
 
@@ -74,6 +76,7 @@ export const useAddAccountScreen = () => {
         anyChain: 'multisig',
     })
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
+    const watchAccountCopy = watchAccountCopyFor(useWatchableChainIds())
     const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',
@@ -348,9 +351,7 @@ export const useAddAccountScreen = () => {
                         titleKey: i18nKey(
                             'onboarding.add_account.watch_address_option_title',
                         ),
-                        descriptionKey: i18nKey(
-                            'onboarding.add_account.watch_address_option_description',
-                        ),
+                        descriptionKey: watchAccountCopy.optionDescriptionKey,
                         leftIcon: 'eye' as IconName,
                         onPress: handleWatchAddress,
                     },
@@ -372,6 +373,7 @@ export const useAddAccountScreen = () => {
         [
             hasHDWallet,
             canAddWatchAccount,
+            watchAccountCopy,
             handleWatchAddress,
             handleCreateUniversalWallet,
             createOptions,

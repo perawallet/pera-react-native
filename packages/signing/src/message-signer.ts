@@ -133,11 +133,6 @@ export interface AuthDataSigner {
     parseAuthDataForDisplay(data: string, encoding: string): ParsedAuthData
     isAuthDataWirePayload(params: unknown): boolean
     parseAuthDataWireRequest(rawParams: unknown): AuthDataPayload
-    /**
-     * The public key a hardware device signs auth data against.
-     * @throws when `address` is invalid on the chain.
-     */
-    signerPublicKey(address: string): Uint8Array
     /** Ready to sign: `signer` is the address, with domain, scope and encoding filled in. */
     buildSiwxAuthData(args: BuildSiwxAuthDataArgs): AuthDataPayload
 }
@@ -202,21 +197,6 @@ export const messageSignerFor = (
         )
     }
     return messageSignerChainAdapters.get(chainId)
-}
-
-/** @throws {CannotSignError} when the chain has no message signer, or one that signs no auth data. */
-export const authDataSignerFor = (
-    chainId: ChainId,
-    signerAddress: string,
-): AuthDataSigner => {
-    const { authData } = messageSignerFor(chainId, signerAddress)
-    if (!authData) {
-        throw new CannotSignError(
-            signerAddress,
-            `chain ${chainId} signs no auth data`,
-        )
-    }
-    return authData
 }
 
 const requireAuthData = (chainId: ChainId): AuthDataSigner => {

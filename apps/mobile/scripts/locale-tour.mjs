@@ -507,7 +507,7 @@ const renderTimingSection = (shots, errors) => {
     const p95 = percentile(deltas, 0.95)
     // Just under the app's real settle timeout, not an arbitrary round
     // number — a step landing this close to it almost certainly hit the
-    // timeout path rather than InteractionManager resolving on its own.
+    // timeout path rather than the idle callback resolving on its own.
     const timeoutThreshold = APP_SETTLE_TIMEOUT_MS - 100
     const overTimeout = deltas.filter(value => value >= timeoutThreshold).length
 
@@ -517,7 +517,7 @@ const renderTimingSection = (shots, errors) => {
         'event timestamps (not driver-measured, so screenshot/IPC overhead is not\n' +
         'included). This is a proxy for total step latency, not a direct read of\n' +
         `the settle timer — the app never marks whether a step's ${APP_SETTLE_TIMEOUT_MS}ms\n` +
-        'timeout (SETTLE_TIMEOUT_MS) actually fired vs. `InteractionManager`\n' +
+        'timeout (SETTLE_TIMEOUT_MS) actually fired vs. the idle callback\n' +
         'resolving early. Includes both captured and errored steps. These are\n' +
         'the same Metro log timestamps the "PNG attribution" section above\n' +
         'shows do not reliably reflect app-side timing — read the figures\n' +
