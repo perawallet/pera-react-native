@@ -21,7 +21,7 @@
  * `if (__DEV__)` at `:66`; the release `else` at `:267` never touches
  * `console`), and that dev replacement calls `String(args[0])` and
  * `originalConsoleWarn` outside its own `try` (`registerWarning`, `:243`/`:247`
- * vs the `try` at `:250`). Line numbers are `react-native@0.86.2`. Independent
+ * vs the `try` at `:250`). Line numbers are `react-native@0.88.0`. Independent
  * of build, a thrown non-`Error` value with a throwing
  * `toString`/`Symbol.toPrimitive` makes `String(error)` throw.
  *

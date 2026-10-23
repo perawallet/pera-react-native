@@ -28,7 +28,7 @@ const {
  * xcconfigs).
  *
  * Nitro HybridObjects only work under the React Native New Architecture
- * (Fabric / TurboModules). Expo SDK 57 (RN 0.86) defaults New Arch ON, and the
+ * (Fabric / TurboModules). Expo defaults New Arch ON, and the
  * app already ships other Nitro modules (react-native-mmkv keystore,
  * react-native-quick-crypto, react-native-nitro-image), so this is effectively
  * already true. This plugin pins the flag explicitly on both platforms so that

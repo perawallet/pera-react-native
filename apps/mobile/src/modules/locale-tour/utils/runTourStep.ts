@@ -11,7 +11,6 @@
  */
 
 import i18n from 'i18next'
-import { InteractionManager } from 'react-native'
 
 import {
     useBottomSheetStore,
@@ -46,10 +45,7 @@ export const SETTLE_TIMEOUT_MS = 5000
 const waitForSettle = (): Promise<void> =>
     new Promise(resolve => {
         const timer = setTimeout(resolve, SETTLE_TIMEOUT_MS)
-        // Callback form, not the returned handle: the app's real
-        // InteractionManager returns { then, done, cancel }, but the mock
-        // used under test invokes and returns the callback's result instead.
-        InteractionManager.runAfterInteractions(() => {
+        requestIdleCallback(() => {
             requestAnimationFrame(() => {
                 clearTimeout(timer)
                 resolve()

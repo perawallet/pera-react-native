@@ -30,7 +30,7 @@ const saveOnAndroid = async (
         if (isFilePickerCancellation(error)) return 'cancelled'
         throw error
     }
-    directory.createFile(fileName, JSON_MIME_TYPE).write(contents)
+    await directory.createFile(fileName, JSON_MIME_TYPE).write(contents)
     return 'saved'
 }
 

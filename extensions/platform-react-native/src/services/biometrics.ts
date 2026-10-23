@@ -109,7 +109,7 @@ const logUnwrapFailure = (error: unknown): BiometricUnwrapFailureReason => {
     return reason
 }
 
-// Backed by `expo-local-authentication` (Expo SDK 57), which on iOS uses
+// Backed by `expo-local-authentication`, which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
 // AndroidX BiometricPrompt. We force biometric-only by disabling the device
 // PIN/password fallback — Pera has its own PIN flow and the
