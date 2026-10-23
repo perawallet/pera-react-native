@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { createFakeChainRegistry } from './src/__tests__/fakeChains'
 
 const store = new Map<string, string>()
 
@@ -35,8 +36,11 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
+const chains = createFakeChainRegistry()
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        chains,
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
             setItem: (key: string, value: string) => store.set(key, value),

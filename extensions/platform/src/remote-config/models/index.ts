@@ -33,6 +33,7 @@ export const RemoteConfigKeys = {
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
+    enable_device_registration_v4: 'enable_device_registration_v4',
 } as const
 
 export type RemoteConfigKey =
@@ -104,6 +105,10 @@ export const RemoteConfigDefaults: Readonly<
     // detected as unreachable). Overridable via Remote Config without a
     // redeploy; defaults to Google's generate_204 interim.
     network_reachability_url: 'https://clients3.google.com/generate_204',
+    // Registers through the devices API's v4 route, which carries every chain.
+    // Off until the backend serves that route: while off, registration stays on
+    // v3, which takes only the accounts of chains a v3 registration carried.
+    enable_device_registration_v4: false,
 }
 
 export interface RemoteConfigService {

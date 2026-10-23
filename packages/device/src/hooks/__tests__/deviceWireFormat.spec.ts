@@ -11,6 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { createFakeChainRegistry } from '../../__tests__/fakeChains'
+import { registrationChainOf } from '../../registrations/registrationChain'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
@@ -24,8 +27,16 @@ import {
 
 // Round-trips through JSON so the comparison sees exactly what goes on the
 // wire: an `undefined` field is dropped there, and must not count here.
+const chains = createFakeChainRegistry()
+
 const onTheWire = (registration: DeviceRegistration): unknown =>
-    JSON.parse(JSON.stringify(toDeviceRegistrationRequest(registration)))
+    JSON.parse(
+        JSON.stringify(
+            toDeviceRegistrationRequest(registration, chainId =>
+                registrationChainOf(chains, chainId, 'live'),
+            ),
+        ),
+    )
 
 // The chain spells `accountType`; registration passes it through verbatim
 // and keeps `rank` off the wire.
@@ -33,7 +44,9 @@ const account = (
     address: string,
     accountType: string,
     receiveNotifications = true,
+    chainId: ChainId = 'algorand',
 ): DeviceAccountRegistration => ({
+    chainId,
     address,
     accountType,
     rank: 1,
@@ -58,6 +71,24 @@ describe('devices API wire format', () => {
                 account('MSIGADDR', types.multisig),
                 account('WATCHADDR', types.watch, false),
                 account('QUANTUMADDR', types.quantum),
+                account(
+                    '0x52908400098527886e0f7030069857d2e4169ee7',
+                    types.hdWallet,
+                    true,
+                    'ethereum',
+                ),
+                account(
+                    '0x8617e340b3d01fa5f11f306f4090fd50e238070d',
+                    types.hardware,
+                    true,
+                    'ethereum',
+                ),
+                account(
+                    '0xde709f2102306220921060314715629080e2fb77',
+                    types.watch,
+                    false,
+                    'ethereum',
+                ),
             ],
         }
 

@@ -17,6 +17,11 @@ import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { DeviceAccountRegistration } from '../../models'
 
 const mockRegisterDevice = vi.fn()
+const registrationApi = vi.hoisted(() => ({ isV4: false }))
+
+vi.mock('../registrationApi', () => ({
+    isDeviceRegistrationV4Enabled: () => registrationApi.isV4,
+}))
 const mockClearDevicePushToken = vi.fn()
 
 vi.mock('../useDevice', () => ({
@@ -43,13 +48,14 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-// Builds a v3 registration entry. Defaults to the most common real-world
+// Builds a registration entry. Defaults to the most common real-world
 // shape (a signing account, notifications on) so each test only spells out the field
 // it cares about.
 const registration = (
     address: string,
     overrides: Partial<DeviceAccountRegistration> = {},
 ): DeviceAccountRegistration => ({
+    chainId: 'algorand',
     address,
     accountType: 'signing-kind',
     rank: 2,
@@ -60,6 +66,7 @@ const registration = (
 describe('useDeviceRegistration', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
+        registrationApi.isV4 = false
         mockRegisterDevice.mockResolvedValue({ createdNew: false })
         mockClearDevicePushToken.mockResolvedValue(undefined)
         useNetworkStore.getState().resetState()
@@ -220,6 +227,85 @@ describe('useDeviceRegistration', () => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
         expect(mockRegisterDevice).toHaveBeenLastCalledWith(nextAccounts)
+    })
+
+    test('re-registers when an account gains and then loses an address on another chain', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const algorandOnly = [registration('ACCT')]
+        const withEthereum = [
+            ...algorandOnly,
+            registration('0xacct', { chainId: 'ethereum', rank: 0 }),
+        ]
+
+        const { rerender } = renderHook(
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: algorandOnly } },
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ accounts: withEthereum })
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(withEthereum)
+
+        rerender({ accounts: [...algorandOnly] })
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(algorandOnly)
+    })
+
+    test('re-registers when one address moves to another chain', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('0xshared')] } },
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({
+            accounts: [registration('0xshared', { chainId: 'ethereum' })],
+        })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    test('re-registers the same accounts when the v4 switch flips', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useRemoteConfigStore } =
+            await import('@perawallet/wallet-core-remote-config')
+        const accounts = [registration('ACCT')]
+
+        renderHook(() => useDeviceRegistration(accounts))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        act(() => {
+            registrationApi.isV4 = true
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_device_registration_v4', true)
+        })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(accounts)
+        useRemoteConfigStore.getState().resetState()
     })
 
     test('registers with an empty list when no accounts exist', async () => {

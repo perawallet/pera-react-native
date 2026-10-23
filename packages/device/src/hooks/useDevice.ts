@@ -12,16 +12,19 @@
 
 import { useCallback } from 'react'
 import {
-    isAlgoAssetName,
     isNotFoundError,
     isPeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import {
     networkTierForMode,
+    type ChainId,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
+import {
+    toFiatCurrencyPreference,
+    useCurrenciesStore,
+} from '@perawallet/wallet-core-currencies'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
@@ -32,6 +35,7 @@ import {
 } from '../store'
 import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
+import { withoutNewestChain } from '../registrations/withoutNewestChain'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
@@ -41,19 +45,35 @@ import type {
 const MIGRATED_DEVICE_ID_REPLACED_EVENT = 'migrated_device_id_replaced'
 
 /**
- * v3 returns 404 when the id we hold is unknown — it never auto-creates. A
+ * The API returns 404 when the id we hold is unknown — it never auto-creates. A
  * stale id (env reset, device deleted server-side) heals by registering again
  * without one.
  */
 const shouldRecreateDevice = (error: unknown): boolean => isNotFoundError(error)
 
 /**
- * v3 returns 400 when another device claimed this push token at the same
+ * The API returns 400 when another device claimed this push token at the same
  * moment. The documented remedy is a retry, not a re-create: re-creating on
  * this race leaves a duplicate device row behind.
  */
 const isPushTokenClaimedError = (error: unknown): boolean =>
     isPeraNetworkError(error) && error.status === 400
+
+const DEVICE_CHAIN_REFUSAL_CODES: readonly string[] = [
+    'unknown_chain',
+    'chain_not_enabled',
+]
+
+/**
+ * A 422 refusing a chain the request names rejects the whole registration,
+ * so a chain the backend doesn't know yet would otherwise keep every other
+ * chain's accounts unregistered too.
+ */
+const isChainRefusedError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    error.status === 422 &&
+    error.backendCode !== undefined &&
+    DEVICE_CHAIN_REFUSAL_CODES.includes(error.backendCode)
 
 type RegisterDeviceResult = { createdNew: boolean }
 
@@ -85,6 +105,14 @@ type RegisterDeviceResult = { createdNew: boolean }
 // always resolves last.
 const registrationQueues = new Map<WalletMode, Promise<void>>()
 
+// Chains a deployment refused this session, left out of later registrations
+// so each one doesn't pay a failing request first. A refusal names no chain,
+// so only the chain whose removal let a request through is recorded; one the
+// fallback dropped on the way is tried again next time. Deliberately kept
+// until relaunch, not retried on foreground or reconnect: those re-fires would
+// each pay the refusal again for a chain the backend rolls out by deploy.
+const refusedChainsByDeployment = new Map<WalletMode, ReadonlySet<ChainId>>()
+
 /**
  * Tests only — never call from production code. The map above is module
  * state, so without this a leaked, never-settled entry from one test (e.g.
@@ -94,6 +122,7 @@ const registrationQueues = new Map<WalletMode, Promise<void>>()
  */
 export const clearRegistrationQueuesForTests = (): void => {
     registrationQueues.clear()
+    refusedChainsByDeployment.clear()
 }
 
 const enqueueRegistration = (
@@ -128,17 +157,14 @@ export const useDevice = () => {
 
     const { mutateAsync: register } = useRegisterDeviceMutation()
 
-    // v3 requires push_token, locale and app_version on every call; there is
-    // no "omit to keep the stored value" path. A null token becomes '' — see
-    // the id rule on `registerDevice` for why that is safe.
+    // The API requires push_token, locale and app_version on every call;
+    // there is no "omit to keep the stored value" path. A null token becomes
+    // '' — see the id rule on `registerDevice` for why that is safe.
     //
-    // The resolved fiat, not the raw preference: the backend has no ALGO rate,
-    // so recording 'ALGO' renders USD anyway and logs a warning on every
-    // notification. Same rule as `useLocalCurrency`.
-    const notificationCurrency = useCurrenciesStore(state =>
-        isAlgoAssetName(state.preferredCurrency)
-            ? state.fallbackCurrency
-            : state.preferredCurrency,
+    // A fiat, not the raw preference: the backend renders notifications in
+    // fiat only, so a non-fiat preference would render USD anyway.
+    const notificationCurrency = useCurrenciesStore(
+        state => toFiatCurrencyPreference(state).preferredCurrency,
     )
 
     const buildPayload = useCallback(
@@ -168,9 +194,10 @@ export const useDevice = () => {
      * deployments. See `registerDevice`.
      *
      * Exactly one replay, and only for 400. Anything else — 404, 422, 5xx, a
-     * dropped connection — propagates on the first failure.
+     * dropped connection — propagates on the first failure; a chain refusal
+     * then narrows the payload in `submitRegistration`.
      */
-    const submitRegistration = useCallback(
+    const submitOnce = useCallback(
         async (
             targetDeployment: WalletMode,
             payload: DeviceRegistration,
@@ -189,6 +216,56 @@ export const useDevice = () => {
             }
         },
         [register],
+    )
+
+    /**
+     * Beyond the single 400 replay in `submitOnce`, a chain refusal re-submits
+     * without the newest chain until the backend accepts or only the oldest
+     * chain is left, so one unknown chain never keeps the rest unregistered.
+     * A refusal of that last chain propagates rather than registering no
+     * accounts: every request replaces the device's whole account list, so an
+     * empty one would unregister accounts the backend already holds.
+     */
+    const submitRegistration = useCallback(
+        async (
+            targetDeployment: WalletMode,
+            payload: DeviceRegistration,
+        ): Promise<DeviceResponse> => {
+            const refused =
+                refusedChainsByDeployment.get(targetDeployment) ??
+                new Set<ChainId>()
+            let accounts = payload.accounts.filter(
+                account => !refused.has(account.chainId),
+            )
+            let lastDropped: ReadonlySet<ChainId> = new Set()
+            for (;;) {
+                try {
+                    const response = await submitOnce(targetDeployment, {
+                        ...payload,
+                        accounts,
+                    })
+                    if (lastDropped.size > 0) {
+                        refusedChainsByDeployment.set(
+                            targetDeployment,
+                            new Set([...refused, ...lastDropped]),
+                        )
+                    }
+                    return response
+                } catch (error) {
+                    if (!isChainRefusedError(error)) throw error
+                    const narrowed = withoutNewestChain(accounts)
+                    if (narrowed === null) throw error
+                    const kept = new Set(narrowed.map(each => each.chainId))
+                    lastDropped = new Set(
+                        accounts
+                            .map(each => each.chainId)
+                            .filter(chainId => !kept.has(chainId)),
+                    )
+                    accounts = narrowed
+                }
+            }
+        },
+        [submitOnce],
     )
 
     // The one place that ever issues an id-less POST. Persists the id it gets
@@ -284,7 +361,7 @@ export const useDevice = () => {
      * attempt created a fresh device record (no prior id, or a 404 recreate)
      * versus updating an existing one.
      *
-     * **Once an id exists we always send it.** v3 mints a brand-new device for
+     * **Once an id exists we always send it.** The API mints a brand-new device for
      * every id-less call carrying an empty push token, so the only id-less
      * call is the first registration on a device whose FCM token hasn't
      * arrived (or was denied) — and the returned id is persisted immediately,
@@ -298,15 +375,15 @@ export const useDevice = () => {
      * and mint a second device row even though the store already holds one.
      *
      * No transport-level retry. ky's shared pera client leaves `retry.methods`
-     * at its default (`get`/`put`/`head`/`delete`/`options`/`trace`) and v3
-     * collapsed v1's `PUT` update into a `POST`, so a 5xx or a dropped
+     * at its default (`get`/`put`/`head`/`delete`/`options`/`trace`) and the
+     * API takes updates as a `POST`, so a 5xx or a dropped
      * connection here fails on its first attempt. That is deliberate:
      * `peraRetryConfig` is shared by every pera-backend POST, swap submission
      * included, so `'post'` must not be added to it. Registration is
      * best-effort — `useDeviceRegistration` re-fires on reconnect and
      * foreground, and `useIsDeviceRegistrationPending` keeps reporting until
-     * one attempt lands. The single 400 retry in `submitRegistration` is
-     * different in kind: it is a documented v3 write race, and ky would not
+     * one attempt lands. The single 400 retry in `submitOnce` is
+     * different in kind: it is a documented write race, and ky would not
      * retry a 400 for any method anyway.
      *
      * The whole attempt — id read included — runs inside `enqueueRegistration`

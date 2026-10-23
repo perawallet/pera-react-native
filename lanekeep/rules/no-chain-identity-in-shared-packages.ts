@@ -73,6 +73,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
+        file: 'packages/device/src/registrations/withoutNewestChain.ts',
+        text: 'account.chainId !== newest',
+        reason: 'Drops whichever chain was added most recently, never a named chain.',
+    },
+    {
         file: 'packages/accounts/src/credentials/accessors.ts',
         text: 'scope.chainId !== LEGACY_CHAIN_ID',
         reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
