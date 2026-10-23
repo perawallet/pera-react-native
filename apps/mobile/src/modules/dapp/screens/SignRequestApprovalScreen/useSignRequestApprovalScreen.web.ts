@@ -34,7 +34,7 @@ import {
     resolveConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNetworkSwitchPrompt } from '@modules/connections'
+import { useNetworkSwitchPrompt } from '@modules/connections/web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseSignRequestApprovalScreenResult = {

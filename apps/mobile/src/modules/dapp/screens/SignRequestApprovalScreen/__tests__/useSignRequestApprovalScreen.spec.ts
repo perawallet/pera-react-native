@@ -52,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: mocks.useAllAccounts,
 }))
 
-vi.mock('@modules/connections', () => ({
+vi.mock('@modules/connections/web', () => ({
     useNetworkSwitchPrompt: () => mocks.confirmNetworkSwitch,
 }))
 
