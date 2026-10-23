@@ -9,6 +9,7 @@ Resource            security.resource
 *** Variables ***
 # A valid address that is not in the suite wallet: the contacts fixture's (contacts.resource).
 ${LINK_ADDRESS}                 CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA
+${CONTACT_ADDRESS_ROW_ALGORAND}     xpath=//*[@resource-id='contact_address_row_algorand' or @name='contact_address_row_algorand' or @content-desc='contact_address_row_algorand']
 ${LINK_LABEL}                   E2E Link Contact
 ${LINK_LABEL_ENCODED}           E2E%20Link%20Contact
 # Links carry base units; the amount screen shows ALGO, which has 6 decimals.
@@ -73,11 +74,19 @@ Input Should Hold
     ...    timeout=${timeout}
 
 Add Contact Form Should Be Prefilled
-    [Documentation]    The link's label becomes the contact name.
+    [Documentation]    The link's label becomes the contact name, and its address arrives as a
+    ...                chain row rather than in the input: a contact holds one address per chain
+    ...                family now, and the input only appears while a new one is being added.
+    ...                The row truncates, so compare the ends it does show.
     [Arguments]    ${timeout}=15s
     Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=${timeout}
     Input Should Hold    contact_name_input    ${LINK_LABEL}
-    Input Should Hold    contact_address_input    ${LINK_ADDRESS}
+    Wait Until Page Contains Element    ${CONTACT_ADDRESS_ROW_ALGORAND}    timeout=${timeout}
+    ${shown}=    Get Text    ${CONTACT_ADDRESS_ROW_ALGORAND}
+    Should Contain    ${shown}    ${{ $LINK_ADDRESS[:5] }}
+    ...    msg=The prefilled address row reads "${shown}", which does not start with ${LINK_ADDRESS}.
+    Should Contain    ${shown}    ${{ $LINK_ADDRESS[-5:] }}
+    ...    msg=The prefilled address row reads "${shown}", which does not end with ${LINK_ADDRESS}.
 
 Send Amount Should Be Prefilled
     [Documentation]    The deeplink opens Send on the amount step with ALGO already chosen.
