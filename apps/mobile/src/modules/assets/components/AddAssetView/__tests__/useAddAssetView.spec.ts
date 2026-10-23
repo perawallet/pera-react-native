@@ -16,6 +16,15 @@ import { Decimal } from 'decimal.js'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 
 const mockAccount = {
     id: 'test-account',
@@ -109,7 +118,9 @@ const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
     }
     return {
         defaultGlobalSearchResult,
-        mockUseGlobalSearch: vi.fn(() => defaultGlobalSearchResult),
+        mockUseGlobalSearch: vi.fn(
+            (_scope?: unknown) => defaultGlobalSearchResult,
+        ),
     }
 })
 
@@ -123,7 +134,7 @@ const mockGlobalSearch = (
 }
 
 vi.mock('@perawallet/wallet-core-search', () => ({
-    useGlobalSearch: () => mockUseGlobalSearch(),
+    useGlobalSearch: (scope: unknown) => mockUseGlobalSearch(scope),
 }))
 
 let hasInternetMock = true
@@ -402,6 +413,135 @@ describe('useAddAssetView', () => {
 
         expect(result.current.isError).toBe(false)
         expect(result.current.isOffline).toBe(false)
+    })
+
+    describe('network chips', () => {
+        afterEach(() => {
+            act(() => useRemoteConfigStore.getState().resetState())
+            restoreAlgorandOnlyChains()
+        })
+
+        // Ethereum ships without asset search; tests that need a second chip
+        // switch it on, as the Feature Flags screen would.
+        const registerSearchableEthereum = () => {
+            registerEthereumChain()
+            act(() => setCapabilityOverrides({ assetSearch: true }, 'ethereum'))
+        }
+
+        it('offers no chips while only one chain is registered', () => {
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('algorand')
+        })
+
+        it('offers no chip for a chain that cannot search assets', () => {
+            registerEthereumChain()
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('algorand')
+        })
+
+        it('offers one chip per chain that can search assets, in registry order', () => {
+            registerSearchableEthereum()
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            expect(result.current.chainOptions).toEqual([
+                {
+                    value: 'algorand',
+                    label: 'Algorand',
+                    testID: 'add_asset_network_filter_algorand',
+                },
+                {
+                    value: 'ethereum',
+                    label: 'Ethereum',
+                    testID: 'add_asset_network_filter_ethereum',
+                },
+            ])
+        })
+
+        it('searches on the picked chain', () => {
+            registerSearchableEthereum()
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+            expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
+                expect.objectContaining({ chainId: 'algorand' }),
+            )
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
+                expect.objectContaining({ chainId: 'ethereum' }),
+            )
+        })
+
+        it('leaves a switched-off chain out and opens on the first offered chain instead', () => {
+            registerSearchableEthereum()
+            act(() => setChainEnabled('algorand', false))
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('ethereum')
+        })
+
+        it('offers adding only on a chain that can manage assets', () => {
+            registerSearchableEthereum()
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+            expect(result.current.canManageAssets).toBe(true)
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.canManageAssets).toBe(false)
+        })
+
+        it('shows an asset as added only on the chain it was added on', async () => {
+            registerSearchableEthereum()
+            mockRequestByType.mockResolvedValueOnce('confirm')
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+            expect(result.current.optedInAssetIds.has('999')).toBe(true)
+
+            act(() => result.current.handleSelectChain('ethereum'))
+            expect(result.current.optedInAssetIds.has('999')).toBe(false)
+
+            act(() => result.current.handleSelectChain('algorand'))
+            expect(result.current.optedInAssetIds.has('999')).toBe(true)
+        })
+
+        it('adds nothing on a chain that cannot manage assets', async () => {
+            act(() => setCapabilityOverrides({ manageAssets: false }))
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd('999')
+            })
+
+            expect(mockEnableChain).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+        })
     })
 
     it('collapses search error to offline when device has no internet', () => {

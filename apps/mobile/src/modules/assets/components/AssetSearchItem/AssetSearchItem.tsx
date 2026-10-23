@@ -21,7 +21,8 @@ type AssetSearchItemProps = {
     item: DisplayableAsset
     isOptedIn: boolean
     isOptingIn: boolean
-    onAdd: (assetId: string) => void
+    /** Omitted where the asset can't be added: the row shows no add action. */
+    onAdd?: (assetId: string) => void
 }
 
 export const AssetSearchItem = ({
@@ -32,33 +33,33 @@ export const AssetSearchItem = ({
 }: AssetSearchItemProps) => {
     const styles = useStyles()
 
-    const action = (
-        <PWView style={styles.actionButton}>
-            {isOptingIn ? (
-                <PWLoadingIndicator size='sm' />
-            ) : isOptedIn ? (
-                <PWIcon
-                    name='check'
-                    size='sm'
-                    variant='positive'
-                />
-            ) : (
-                <PWIcon
-                    name='plus'
-                    size='sm'
-                    variant='primary'
-                />
-            )}
-        </PWView>
-    )
+    const icon = isOptingIn ? (
+        <PWLoadingIndicator size='sm' />
+    ) : isOptedIn ? (
+        <PWIcon
+            name='check'
+            size='sm'
+            variant='positive'
+        />
+    ) : onAdd ? (
+        <PWIcon
+            name='plus'
+            size='sm'
+            variant='primary'
+            testID={`asset_search_item_add_${item.assetId}`}
+        />
+    ) : null
+    const action = icon ? (
+        <PWView style={styles.actionButton}>{icon}</PWView>
+    ) : undefined
 
     return (
         <>
             <AssetItemView
                 asset={item}
                 right={action}
-                onPress={() => onAdd(item.assetId)}
-                disabled={isOptedIn || isOptingIn}
+                onPress={onAdd ? () => onAdd(item.assetId) : undefined}
+                disabled={!onAdd || isOptedIn || isOptingIn}
                 style={styles.container}
             />
             <PWView style={styles.separator} />
