@@ -17,8 +17,10 @@ import type { EvmChain } from '../chains/types'
 
 /**
  * The only `account_type` values the v4 devices API accepts on an `eip155`
- * item; any other value 422s the whole registration. It has no type for a
- * raw private-key account, so such an account isn't registered on EVM chains.
+ * item; any other value 422s the whole registration. A raw private key goes
+ * as `hdWallet` too, the one signing type the contract has for EVM, so every
+ * EVM key the wallet holds is registered. Algorand-only key types (Algo25,
+ * post-quantum) never go on an EVM item.
  */
 export const EVM_DEVICE_ACCOUNT_TYPES = {
     hdWallet: 'hdWallet',
@@ -29,7 +31,10 @@ export const EVM_DEVICE_ACCOUNT_TYPES = {
 const evmDeviceAccountType = ({ custody }: WalletAccount): string | null => {
     if (custody.kind === 'hardware') return EVM_DEVICE_ACCOUNT_TYPES.hardware
     if (custody.kind === 'watch') return EVM_DEVICE_ACCOUNT_TYPES.watch
-    if (custody.kind === 'local' && custody.seed === SeedScheme.Bip39) {
+    if (
+        custody.kind === 'local' &&
+        (custody.seed === SeedScheme.Bip39 || custody.seed === null)
+    ) {
         return EVM_DEVICE_ACCOUNT_TYPES.hdWallet
     }
     return null

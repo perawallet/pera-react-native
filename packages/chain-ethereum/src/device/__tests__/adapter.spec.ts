@@ -47,6 +47,11 @@ describe('createEvmDeviceAdapter', () => {
             { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
             'hdWallet',
         ],
+        [
+            'a raw private-key account',
+            { kind: 'local', seed: null },
+            'hdWallet',
+        ],
         ['a hardware account', HARDWARE, 'hardware'],
         ['a watch account', { kind: 'watch' }, 'watch'],
     ] as [string, AccountCustody, string][])(
@@ -60,20 +65,12 @@ describe('createEvmDeviceAdapter', () => {
         },
     )
 
-    it('does not register a raw private-key account, which the devices API has no EVM account type for', () => {
-        expect(
-            createEvmDeviceAdapter(ETHEREUM).accountTypeOf(
-                accountWith({ kind: 'local', seed: null }),
-            ),
-        ).toBeNull()
-    })
-
     it.each([
         ['a multisig account', { kind: 'multisig' }],
         ['a post-quantum account', { kind: 'local', seed: 'quantum' }],
         ['an Algo25-seeded account', { kind: 'local', seed: 'algo25' }],
     ] as [string, AccountCustody][])(
-        'does not register %s, which has no EVM account type',
+        'does not register %s, whose type only exists on Algorand',
         (_label, custody) => {
             expect(
                 createEvmDeviceAdapter(ETHEREUM).accountTypeOf(
