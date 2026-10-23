@@ -11,6 +11,6 @@
  */
 
 export {
-    ContactSendNetworkContent,
-    type ContactSendNetworkContentProps,
-} from './ContactSendNetworkContent'
+    ContactNetworkContent,
+    type ContactNetworkContentProps,
+} from './ContactNetworkContent'
