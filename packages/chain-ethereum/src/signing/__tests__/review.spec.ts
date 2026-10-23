@@ -459,6 +459,19 @@ describe('ethereumReviewerAdapter', () => {
             })
         })
 
+        it('still verifies it, named by its contract, when the store read fails', async () => {
+            vi.mocked(getAssetById).mockRejectedValue(new Error('db closed'))
+
+            const { reviewed, summary } = await reviewOne(
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
+                WALLET_BUILT,
+            )
+
+            expect(summary.kind).toBe('nft-transfer')
+            expect(summary.subtitle?.params?.collection).toBe(NFT_CONTRACT)
+            expect(reviewed.warnings).toEqual([])
+        })
+
         it('rebuilds the label from the store, never echoing the claim', async () => {
             const { summary } = await reviewOne(
                 unsigned(ERC721_TRANSFER, {

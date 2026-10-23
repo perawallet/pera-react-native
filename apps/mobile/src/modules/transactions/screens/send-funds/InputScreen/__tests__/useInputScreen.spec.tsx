@@ -761,6 +761,10 @@ describe('useInputScreen', () => {
             spendableOf({ balance: 3, max: 3 })
         })
 
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
         it('refuses a fractional quantity, typed or pasted', () => {
             const { result } = renderHook(() => useInputScreen())
 
@@ -799,10 +803,6 @@ describe('useInputScreen', () => {
             )
             expect(mockSetAmount).not.toHaveBeenCalled()
             expect(mockNavigate).not.toHaveBeenCalled()
-        })
-
-        afterEach(() => {
-            restoreAlgorandOnlyChains()
         })
 
         it('takes 2 on to the receiver', async () => {

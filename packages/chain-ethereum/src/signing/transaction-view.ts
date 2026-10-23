@@ -41,7 +41,8 @@ export type EthereumTransactionView = {
     token?: { contract: Address; to: Address; amount: Decimal }
     /**
      * Only on a verified NFT transfer. `assetId` is the app's NFT id, `tokenId`
-     * a decimal uint256 and `amount` the quantity.
+     * a decimal uint256 and `amount` the quantity in base units, which an NFT's
+     * zero decimals make its display units too.
      */
     nft?: {
         assetId: string

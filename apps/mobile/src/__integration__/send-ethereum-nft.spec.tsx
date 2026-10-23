@@ -343,6 +343,12 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         prefillSend(APE_ID, 1)
 
         renderSendConfirmationStack()
+        // The amount row shows the NFT itself and no fiat value beside it.
+        await waitFor(() =>
+            expect(document.body.textContent).toContain(
+                'send_funds.confirmation.amountBORE1send_funds.confirmation.account',
+            ),
+        )
         await confirmSend()
 
         expect(sentRawTransactions).toHaveLength(1)

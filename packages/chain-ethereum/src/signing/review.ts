@@ -344,11 +344,12 @@ const reviewCall = async (
         ? verifiedNftTransfer(summary, call)
         : undefined
     if (nft) {
-        // A label only: the bytes above already proved the contract and token id.
+        // A label only: the bytes above already proved the contract and token
+        // id, so a failed store read falls back to the contract, never fails review.
         const stored = await readEvmNftTransferAsset(
             unsigned.scope,
             nft.assetId,
-        )
+        ).catch(() => null)
         return {
             summary: sendSummary(
                 'nft-transfer',
