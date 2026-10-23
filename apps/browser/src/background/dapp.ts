@@ -21,8 +21,10 @@ import {
     type DappPageResponseMessage,
 } from '@perawallet/wallet-core-browser-runtime'
 import {
+    EIP1193_ERROR_CODE,
     JsonRpcErrorCode,
     jsonRpcError,
+    type DappProvider,
 } from '@perawallet/wallet-core-dapp/wire'
 import { isWithinDappPayloadBounds } from '@perawallet/wallet-core-dapp/bounds'
 import { ensureOffscreenDocument } from './offscreen'
@@ -47,6 +49,23 @@ const deliverToTab = (
             return false
         },
     )
+
+// Each page provider answers in its own error vocabulary.
+const ERROR_CODES: Record<
+    DappProvider,
+    { unauthorized: number; invalidParams: number; internal: number }
+> = {
+    pera: {
+        unauthorized: JsonRpcErrorCode.Unauthorized,
+        invalidParams: JsonRpcErrorCode.InvalidParams,
+        internal: JsonRpcErrorCode.InternalError,
+    },
+    eip1193: {
+        unauthorized: EIP1193_ERROR_CODE.unauthorized,
+        invalidParams: EIP1193_ERROR_CODE.invalidParams,
+        internal: EIP1193_ERROR_CODE.internal,
+    },
+}
 
 // No `tabs` permission, so URLs are stripped from query results.
 const broadcastToTabs = (
@@ -81,7 +100,7 @@ export const installDappPageRequestRoute = ({
     chromeLike.runtime.onMessage.addListener(
         (message, sender, sendResponse: (ack: DappPageRequestAck) => void) => {
             if (!isDappPageRequestMessage(message)) return false
-            const { request, hasUserActivation } = message
+            const { provider, request, hasUserActivation } = message
             const refuse = (code: number, text: string): boolean => {
                 sendResponse({
                     ok: false,
@@ -92,15 +111,22 @@ export const installDappPageRequestRoute = ({
 
             const origin = sender?.origin
             const tabId = sender?.tab?.id
+            const codes = ERROR_CODES[provider]
             if (sender?.id !== chromeLike.runtime.id || tabId === undefined) {
-                return refuse(JsonRpcErrorCode.Unauthorized, 'Untrusted sender')
+                return refuse(codes.unauthorized, 'Untrusted sender')
+            }
+            // The content scripts run top-frame only; this holds however they
+            // are registered, so a framed page can't ask under its own origin
+            // from inside another site's tab.
+            if (sender.frameId !== 0) {
+                return refuse(codes.unauthorized, 'Sub-frames get no provider')
             }
             if (!isSecureDappOrigin(origin)) {
-                return refuse(JsonRpcErrorCode.Unauthorized, 'Insecure origin')
+                return refuse(codes.unauthorized, 'Insecure origin')
             }
             if (!isWithinDappPayloadBounds(request)) {
                 return refuse(
-                    JsonRpcErrorCode.InvalidParams,
+                    codes.invalidParams,
                     'Request exceeds size limits',
                 )
             }
@@ -113,6 +139,7 @@ export const installDappPageRequestRoute = ({
             const faviconUrl = sender.tab?.favIconUrl
             void sendDappHostRequest(
                 {
+                    provider,
                     origin,
                     hasUserActivation,
                     ...(faviconUrl ? { faviconUrl } : {}),
@@ -133,10 +160,11 @@ export const installDappPageRequestRoute = ({
                     tabId,
                     {
                         scope: DAPP_PAGE_RESPONSE_SCOPE,
+                        provider,
                         origin,
                         payload: jsonRpcError(
                             request.id,
-                            JsonRpcErrorCode.InternalError,
+                            codes.internal,
                             'Wallet unavailable',
                         ),
                     },
@@ -165,6 +193,7 @@ export const installDappHostResponseRoute = ({
             if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
             const outbound: DappPageResponseMessage = {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: message.provider,
                 origin: message.origin,
                 payload: message.payload,
             }

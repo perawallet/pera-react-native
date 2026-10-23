@@ -18,6 +18,7 @@ import {
     DAPP_PAGE_RESPONSE_SCOPE,
 } from '@perawallet/wallet-core-browser-runtime'
 import {
+    EIP1193_ERROR_CODE,
     JsonRpcErrorCode,
     MAX_DAPP_REQUEST_JSON_LENGTH,
 } from '@perawallet/wallet-core-dapp/wire'
@@ -67,11 +68,13 @@ const makeChromeMock = () => {
 const request = { jsonrpc: '2.0' as const, id: 'r1', method: 'connect' }
 const pageMessage = {
     scope: DAPP_PAGE_REQUEST_SCOPE,
+    provider: 'pera',
     request,
     hasUserActivation: true,
 }
 const contentSender = {
     id: 'ext-id',
+    frameId: 0,
     origin: 'https://a.example',
     url: 'https://a.example/app',
     tab: { id: 7, favIconUrl: 'https://a.example/f.ico' },
@@ -104,6 +107,7 @@ describe('installDappPageRequestRoute', () => {
         expect(ensureOffscreenDocumentLike).toHaveBeenCalled()
         expect(chromeMock.runtimeSendMessage).toHaveBeenCalledWith({
             scope: DAPP_HOST_REQUEST_SCOPE,
+            provider: 'pera',
             origin: 'https://a.example',
             hasUserActivation: true,
             faviconUrl: 'https://a.example/f.ico',
@@ -120,6 +124,33 @@ describe('installDappPageRequestRoute', () => {
         expect(ack.ok).toBe(false)
         expect(ack.response.error.code).toBe(JsonRpcErrorCode.Unauthorized)
         expect(chromeMock.runtimeSendMessage).not.toHaveBeenCalled()
+    })
+
+    it('refuses a sub-frame and forwards nothing', async () => {
+        const ack = (await chromeMock.deliver(pageMessage, {
+            ...contentSender,
+            frameId: 3,
+        })) as { ok: boolean; response: { error: { code: number } } }
+        expect(ack.ok).toBe(false)
+        expect(ack.response.error.code).toBe(JsonRpcErrorCode.Unauthorized)
+        expect(chromeMock.runtimeSendMessage).not.toHaveBeenCalled()
+    })
+
+    it('carries the EIP-1193 tag to the host and refuses that provider in its own codes', async () => {
+        await chromeMock.deliver(
+            { ...pageMessage, provider: 'eip1193' },
+            contentSender,
+        )
+        await vi.waitFor(() =>
+            expect(chromeMock.runtimeSendMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ provider: 'eip1193' }),
+            ),
+        )
+        const ack = (await chromeMock.deliver(
+            { ...pageMessage, provider: 'eip1193' },
+            { ...contentSender, origin: 'http://a.example' },
+        )) as { ok: boolean; response: { error: { code: number } } }
+        expect(ack.response.error.code).toBe(EIP1193_ERROR_CODE.unauthorized)
     })
 
     it("refuses a sender that is not this extension's content script", async () => {
@@ -175,6 +206,7 @@ describe('installDappPageRequestRoute', () => {
         vi.useRealTimers()
         expect(chromeMock.tabsSendMessage).toHaveBeenCalledWith(7, {
             scope: DAPP_PAGE_RESPONSE_SCOPE,
+            provider: 'pera',
             origin: 'https://a.example',
             payload: expect.objectContaining({
                 id: 'r1',
@@ -204,6 +236,7 @@ describe('installDappHostResponseRoute', () => {
         const ack = await chromeMock.deliver(
             {
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload,
                 returnTo: { tabId: 7 },
@@ -213,6 +246,7 @@ describe('installDappHostResponseRoute', () => {
         expect(ack).toEqual({ ok: true })
         expect(chromeMock.tabsSendMessage).toHaveBeenCalledWith(7, {
             scope: DAPP_PAGE_RESPONSE_SCOPE,
+            provider: 'pera',
             origin: 'https://a.example',
             payload,
         })
@@ -225,6 +259,7 @@ describe('installDappHostResponseRoute', () => {
         const ack = await chromeMock.deliver(
             {
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload,
                 returnTo: { tabId: 7 },
@@ -246,6 +281,7 @@ describe('installDappHostResponseRoute', () => {
         const ack = await chromeMock.deliver(
             {
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: notification,
             },
@@ -255,11 +291,29 @@ describe('installDappHostResponseRoute', () => {
         expect(chromeMock.tabsSendMessage).toHaveBeenCalledTimes(2)
     })
 
+    it('keeps the provider tag on the way to the tab', async () => {
+        await chromeMock.deliver(
+            {
+                scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'eip1193',
+                origin: 'https://a.example',
+                payload,
+                returnTo: { tabId: 7 },
+            },
+            swSender,
+        )
+        expect(chromeMock.tabsSendMessage).toHaveBeenCalledWith(
+            7,
+            expect.objectContaining({ provider: 'eip1193' }),
+        )
+    })
+
     it('ignores a host response from a content-script sender', async () => {
         expect(
             await chromeMock.deliver(
                 {
                     scope: DAPP_HOST_RESPONSE_SCOPE,
+                    provider: 'pera',
                     origin: 'https://a.example',
                     payload,
                     returnTo: { tabId: 7 },

@@ -14,3 +14,4 @@
 // module with runtime dependencies — see vite.config.ts.
 export * from './codec'
 export * from './protocol'
+export * from './eip1193Protocol'

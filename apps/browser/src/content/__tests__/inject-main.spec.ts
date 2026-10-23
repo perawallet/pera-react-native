@@ -12,12 +12,20 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Stands in for the flag scripts/build.mjs bakes into the bundle; read once,
+// when the module loads.
+vi.hoisted(() => {
+    ;(globalThis as { __PERA_SERVES_EVM__?: boolean }).__PERA_SERVES_EVM__ =
+        true
+})
 import { JsonRpcErrorCode } from '@perawallet/wallet-core-browser-runtime'
 import { CHANNEL_HANDSHAKE_EVENT, CHANNEL_RELAY_READY_EVENT } from '../channel'
 import { installMainProvider } from '../inject-main'
 
 type Sent = {
     id: string
+    provider: string
     request: { id: string; method: string; params?: unknown }
 }
 
@@ -42,13 +50,19 @@ const stubRelay = (answer: (sent: Sent) => unknown | undefined) => {
                 installMainProvider.__requestEventName,
                 handler,
             ),
-        notify: (notification: unknown) =>
+        notify: (notification: unknown, provider: string = 'pera') =>
             window.dispatchEvent(
                 new CustomEvent(installMainProvider.__responseEventName, {
-                    detail: { notification },
+                    detail: { provider, notification },
                 }),
             ),
     }
+}
+
+type EthereumLike = {
+    request(args: { method: string; params?: unknown }): Promise<unknown>
+    on(event: string, listener: (payload: unknown) => void): unknown
+    removeListener(event: string, listener: (payload: unknown) => void): unknown
 }
 
 describe('window.pera provider', () => {
@@ -253,6 +267,68 @@ describe('window.pera provider', () => {
         expect(next).toHaveBeenCalledWith({ accounts: [] })
         offThrower()
         offNext()
+        relay.detach()
+    })
+
+    it('tags its requests as window.pera', async () => {
+        const relay = stubRelay(sent => ({
+            jsonrpc: '2.0',
+            id: sent.request.id,
+            result: [],
+        }))
+        await window.pera.getAddresses()
+        expect(relay.sent[0].provider).toBe('pera')
+        relay.detach()
+    })
+
+    it('keeps each provider’s notifications to its own listeners', () => {
+        const relay = stubRelay(() => undefined)
+        const peraListener = vi.fn()
+        const ethereumListener = vi.fn()
+        const off = window.pera.on('accountsChanged', peraListener)
+        const ethereum = (window as unknown as { ethereum: EthereumLike })
+            .ethereum
+        ethereum.on('accountsChanged', ethereumListener)
+
+        relay.notify(
+            { jsonrpc: '2.0', method: 'accountsChanged', params: ['0xab'] },
+            'eip1193',
+        )
+        expect(peraListener).not.toHaveBeenCalled()
+        expect(ethereumListener).toHaveBeenCalledWith(['0xab'])
+
+        relay.notify({
+            jsonrpc: '2.0',
+            method: 'accountsChanged',
+            params: { accounts: [] },
+        })
+        expect(peraListener).toHaveBeenCalledTimes(1)
+        expect(ethereumListener).toHaveBeenCalledTimes(1)
+
+        relay.notify(
+            { jsonrpc: '2.0', method: 'accountsChanged', params: [] },
+            'unknown',
+        )
+        expect(peraListener).toHaveBeenCalledTimes(1)
+        expect(ethereumListener).toHaveBeenCalledTimes(1)
+
+        off()
+        ethereum.removeListener('accountsChanged', ethereumListener)
+        relay.detach()
+    })
+
+    it('sends EIP-1193 requests tagged as that provider and rejects with its error codes', async () => {
+        const relay = stubRelay(sent => ({
+            jsonrpc: '2.0',
+            id: sent.request.id,
+            error: { code: 4100, message: 'Not connected' },
+        }))
+        const ethereum = (window as unknown as { ethereum: EthereumLike })
+            .ethereum
+        await expect(
+            ethereum.request({ method: 'eth_requestAccounts' }),
+        ).rejects.toMatchObject({ code: 4100, message: 'Not connected' })
+        expect(relay.sent[0].provider).toBe('eip1193')
         relay.detach()
     })
 

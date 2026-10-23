@@ -15,6 +15,7 @@ import { sendDappHostRequest } from '../host-client'
 import { DAPP_HOST_REQUEST_SCOPE } from '../dapp-wire'
 
 const message = {
+    provider: 'pera' as const,
     origin: 'https://a.example',
     hasUserActivation: true,
     returnTo: { tabId: 2 },

@@ -25,6 +25,7 @@ import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { isSiteConnectionKind } from './connectionsSettingsHelpers'
 import {
     useConnectionsSettingsScreen,
     type UnifiedConnection,
@@ -39,7 +40,7 @@ type ConnectionRowProps = {
 const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const isWalletConnect = connection.kind !== 'dapp'
+    const isWalletConnect = !isSiteConnectionKind(connection.kind)
 
     return (
         <PWView
@@ -68,11 +69,14 @@ const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                     </PWText>
                     <PWBadge
                         variant='secondary'
-                        value={t(
-                            isWalletConnect
-                                ? 'settings.connections.badge_wallet_connect'
-                                : 'settings.connections.badge_dapp',
-                        )}
+                        value={
+                            connection.badgeLabel ??
+                            t(
+                                isWalletConnect
+                                    ? 'settings.connections.badge_wallet_connect'
+                                    : 'settings.connections.badge_dapp',
+                            )
+                        }
                     />
                 </PWView>
                 <PWText

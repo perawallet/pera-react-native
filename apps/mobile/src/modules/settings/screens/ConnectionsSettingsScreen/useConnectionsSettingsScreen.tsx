@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
@@ -18,6 +19,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import {
+    isSiteConnectionKind,
     toUnifiedConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
@@ -47,7 +49,13 @@ export const useConnectionsSettingsScreen =
         const connections = useMemo(
             () =>
                 connectionRows
-                    .map(row => toUnifiedConnection(row, revokeConnection))
+                    .map(row =>
+                        toUnifiedConnection(
+                            row,
+                            revokeConnection,
+                            chainDisplayNameOf,
+                        ),
+                    )
                     .sort((a, b) => b.connectedAt - a.connectedAt),
             [connectionRows, revokeConnection],
         )
@@ -56,7 +64,7 @@ export const useConnectionsSettingsScreen =
             async (connection: UnifiedConnection) => {
                 // A dapp connection revokes a site's page-level access, not a
                 // paired WalletConnect session, so the copy differs.
-                const isWalletConnect = connection.kind !== 'dapp'
+                const isWalletConnect = !isSiteConnectionKind(connection.kind)
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent

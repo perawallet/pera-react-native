@@ -52,6 +52,10 @@ const {
     createChromeDappTransport,
     dappHandler,
     createDappConnectionHandler,
+    eip1193Handler,
+    createEip1193ConnectionHandler,
+    watchWalletNotices,
+    chainCapabilities,
     importLegacyDappPermissions,
     registerChainAdapters,
     initializeSyncService,
@@ -62,6 +66,7 @@ const {
     const sessionKeys = { commit: vi.fn() }
     const dappTransport = { onRequest: vi.fn(), notify: vi.fn() }
     const dappHandler = { kind: 'dapp' }
+    const eip1193Handler = { kind: 'dapp-eip1193' }
     return {
         startConnectionsHost: vi.fn((_deps: ConnectionsHostDeps) => ({
             handleControlMessage,
@@ -89,9 +94,17 @@ const {
         canSignWith: vi.fn((_account: TestAccount) => true),
         getCustomNetworkConfig: vi.fn(),
         dappTransport,
-        createChromeDappTransport: vi.fn(() => dappTransport),
+        createChromeDappTransport: vi.fn(
+            (_options: { provider: string }) => dappTransport,
+        ),
         dappHandler,
         createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
+        eip1193Handler,
+        createEip1193ConnectionHandler: vi.fn(
+            (_options: unknown) => eip1193Handler,
+        ),
+        watchWalletNotices: vi.fn(() => () => {}),
+        chainCapabilities: vi.fn((_chainId: string) => ({ dappConnect: true })),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
         registerChainAdapters: vi.fn(),
         initializeSyncService: vi.fn(),
@@ -121,6 +134,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         connections: { store: connectionStore },
         keyValueStorage,
+        chains: {
+            has: (chainId: string) => chainId !== 'unregistered',
+            capabilities: chainCapabilities,
+        },
     }),
     // Never settles: this context registers no engine key source, so a boot
     // that awaited the keystore would strand the database host with it.
@@ -175,6 +192,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
+    createEip1193ConnectionHandler,
     importLegacyDappPermissions,
 }))
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
@@ -183,6 +201,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
     bootConnections,
+    watchWalletNotices,
 }))
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectV1Handler,
@@ -264,6 +283,9 @@ describe('runOffscreenApp connections wiring', () => {
             getCustomNetworkGenesisHash: () => string | undefined
         }
         expect(options.transport).toBe(dappTransport)
+        expect(createChromeDappTransport).toHaveBeenCalledWith({
+            provider: 'pera',
+        })
         expect(options.chainId).toBe('algorand')
         expect(options.getNetworkId('algorand')).toBe('mainnet')
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
@@ -305,6 +327,48 @@ describe('runOffscreenApp connections wiring', () => {
         ])
     })
 
+    it('registers the EIP-1193 handler over its own tagged transport, gated per chain', async () => {
+        chainCapabilities.mockImplementation((chainId: string) => ({
+            dappConnect: chainId !== 'base',
+        }))
+        canSignWith.mockImplementation(
+            (account: TestAccount) => account.id !== 'ADDR1',
+        )
+        await boot()
+
+        expect(registry.register).toHaveBeenCalledWith(eip1193Handler)
+        expect(createChromeDappTransport).toHaveBeenCalledWith({
+            provider: 'eip1193',
+        })
+        const options = createEip1193ConnectionHandler.mock.calls[0]?.[0] as {
+            transport: unknown
+            getNetworkId: (chainId: string) => string
+            isDappConnectEnabled: (chainId: string) => boolean
+            getAccounts: (chainId: string) => { address: string }[]
+        }
+        expect(options.transport).toBe(dappTransport)
+        expect(options.getNetworkId('ethereum')).toBe('mainnet')
+        expect(options.isDappConnectEnabled('ethereum')).toBe(true)
+        expect(options.isDappConnectEnabled('base')).toBe(false)
+        expect(options.isDappConnectEnabled('unregistered')).toBe(false)
+        expect(options.getAccounts('ethereum')).toEqual([
+            { address: '0xETH', name: '0xETH' },
+        ])
+        // ADDR1 holds an Algorand entry only and can't sign anyway.
+        expect(options.getAccounts('algorand')).toEqual([
+            { address: 'ADDR2', name: 'ADDR2' },
+        ])
+    })
+
+    it('feeds wallet notices to the registry once it has booted', async () => {
+        await boot()
+
+        expect(watchWalletNotices).toHaveBeenCalledWith(registry)
+        expect(bootConnections.mock.invocationCallOrder[0]).toBeLessThan(
+            watchWalletNotices.mock.invocationCallOrder[0] ?? 0,
+        )
+    })
+
     it("reads the v1 handler's network id off the network store", async () => {
         await boot()
 
@@ -335,7 +399,8 @@ describe('runOffscreenApp connections wiring', () => {
         const deps = startConnectionsHost.mock
             .calls[0]?.[0] as ConnectionsHostDeps
         expect(deps.activeNetworkId()).toBe('mainnet')
-        expect(deps.knownAddresses()).toEqual(['ADDR1', 'ADDR2'])
+        expect(deps.knownAddresses(['algorand'])).toEqual(['ADDR1', 'ADDR2'])
+        expect(deps.knownAddresses(['ethereum'])).toEqual(['0xETH'])
     })
 
     // The offscreen document has no vault: boot must not wait on a keystore,

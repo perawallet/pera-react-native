@@ -17,7 +17,9 @@ import {
     DAPP_NOTIFICATIONS,
     DAPP_PAGE_TIMEOUT_MS,
     DAPP_PROVIDER_VERSION,
+    DAPP_PROVIDERS,
     DAPP_REQUEST_TTL_MS,
+    isDappProvider,
 } from '../protocol'
 
 // These strings are the wire contract a shipped dApp integration compiles
@@ -39,6 +41,13 @@ describe('dapp protocol constants', () => {
             disconnect: 'disconnect',
         })
         expect(DAPP_PROVIDER_VERSION).toBe('1')
+    })
+
+    it('tags each page provider and recognises only those tags', () => {
+        expect([...DAPP_PROVIDERS]).toEqual(['pera', 'eip1193'])
+        expect(isDappProvider('eip1193')).toBe(true)
+        expect(isDappProvider('ethereum')).toBe(false)
+        expect(isDappProvider(undefined)).toBe(false)
     })
 
     it('leaves the page backstop losing the race to the handler expiry', () => {

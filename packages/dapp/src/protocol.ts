@@ -30,6 +30,17 @@ export const DAPP_NOTIFICATIONS = {
 
 export const DAPP_PROVIDER_VERSION = '1' as const
 
+/**
+ * The page providers sharing the one page-to-wallet channel. Every hop is
+ * tagged, because `window.pera` and EIP-1193 reuse event names
+ * (`accountsChanged`, `disconnect`) that must never cross between them.
+ */
+export const DAPP_PROVIDERS = ['pera', 'eip1193'] as const
+export type DappProvider = (typeof DAPP_PROVIDERS)[number]
+
+export const isDappProvider = (value: unknown): value is DappProvider =>
+    (DAPP_PROVIDERS as readonly unknown[]).includes(value)
+
 // A user deliberating over an approval, not a wire round-trip: minutes, not
 // the 8 s pairing budget WalletConnect uses for its handshake.
 export const DAPP_PROPOSAL_TTL_MS = 5 * 60_000

@@ -89,8 +89,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts',
     'apps/mobile/src/modules/contacts/screens/ViewContactScreen/useViewContactScreen.tsx',
     'apps/mobile/src/modules/dapp/screens/SignRequestApprovalScreen/useSignRequestApprovalScreen.web.ts',
-    'apps/mobile/src/modules/dapp/screens/WcConnectScreen/WcConnectHeader.tsx',
-    'apps/mobile/src/modules/dapp/screens/WcConnectScreen/WcConnectScreen.tsx',
     'apps/mobile/src/modules/dapp/screens/WcConnectScreen/useWcConnectScreen.ts',
     'apps/mobile/src/modules/messages/components/InboxItem/AsaInboxItem/AsaInboxItem.tsx',
     'apps/mobile/src/modules/messages/components/InboxItem/MultisigSignInboxItem/useMultisigSignInboxItem.ts',
