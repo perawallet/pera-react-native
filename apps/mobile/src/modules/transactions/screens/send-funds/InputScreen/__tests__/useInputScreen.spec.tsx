@@ -728,7 +728,7 @@ describe('useInputScreen', () => {
         })
     })
 
-    describe('an ERC-1155 holding of 3 on Ethereum', () => {
+    describe('a holding of 3 of a non-unique collectible on another chain', () => {
         const NFT_ID = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/7'
 
         beforeEach(() => {

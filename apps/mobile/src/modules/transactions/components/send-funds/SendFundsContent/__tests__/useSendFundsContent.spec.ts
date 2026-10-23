@@ -167,7 +167,7 @@ describe('useSendFundsContent — deterministic initial route', () => {
     })
 })
 
-describe('useSendFundsContent — an Ethereum NFT', () => {
+describe('useSendFundsContent — a collectible on another chain', () => {
     const NFT_ID = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/7'
     const NFT = { chainId: 'ethereum', assetId: NFT_ID } as const
     const nftAsset = (isUnique: boolean) => ({
@@ -187,7 +187,7 @@ describe('useSendFundsContent — an Ethereum NFT', () => {
         )
     })
 
-    it('prefills 1 for an ERC-721, so the amount step is skipped', () => {
+    it('prefills 1 for a unique collectible, so the amount step is skipped', () => {
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([[NFT_ID, nftAsset(true)]]),
             isFetched: true,
@@ -198,7 +198,7 @@ describe('useSendFundsContent — an Ethereum NFT', () => {
         expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
     })
 
-    it('leaves the quantity of an ERC-1155 to the amount step', () => {
+    it('leaves the quantity of a non-unique collectible to the amount step', () => {
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([[NFT_ID, nftAsset(false)]]),
             isFetched: true,
