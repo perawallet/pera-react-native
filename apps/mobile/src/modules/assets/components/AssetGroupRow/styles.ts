@@ -76,9 +76,12 @@ export const useStyles = makeStyles(theme => ({
         borderColor: theme.colors.background,
         borderRadius: theme.borderRadius.full,
     },
+    // Sits inside the same ring as the icons, so it matches their size and stays
+    // distinct from the icon it overlaps.
     moreChains: {
         width: CHAIN_ICON_SIZE,
         height: CHAIN_ICON_SIZE,
+        borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: theme.borders.sm,

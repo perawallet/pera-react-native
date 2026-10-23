@@ -178,13 +178,24 @@ describe('useAssetGroupRow', () => {
             expect(result.verificationIcon).toBe('assets/trusted')
         })
 
-        it('resolves from the members that have synced', () => {
+        it('shows a suspicious member before the other networks sync', () => {
             const result = badgeOf([
                 member('algorand', null),
                 member('ethereum', withTier('suspicious')),
             ])
 
             expect(result.verificationIcon).toBe('assets/suspicious')
+            expect(result.isSuspicious).toBe(true)
+        })
+
+        it('shows no other badge until every network has synced', () => {
+            const result = badgeOf([
+                member('algorand', withTier('verified')),
+                member('ethereum', null),
+            ])
+
+            expect(result.verificationIcon).toBeNull()
+            expect(result.isSuspicious).toBe(false)
         })
     })
 

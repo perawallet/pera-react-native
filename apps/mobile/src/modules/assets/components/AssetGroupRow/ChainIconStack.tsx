@@ -40,15 +40,17 @@ export const ChainIconStack = ({ chainIds }: ChainIconStackProps) => {
             ))}
             {hiddenCount > 0 && (
                 <PWView
-                    style={[styles.stackedChainIcon, styles.moreChains]}
+                    style={styles.stackedChainIcon}
                     testID='chain_icon_stack_more'
                 >
-                    <PWText
-                        variant='captionMedium'
-                        style={styles.moreChainsLabel}
-                    >
-                        {`+${hiddenCount}`}
-                    </PWText>
+                    <PWView style={styles.moreChains}>
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.moreChainsLabel}
+                        >
+                            {`+${hiddenCount}`}
+                        </PWText>
+                    </PWView>
                 </PWView>
             )}
         </PWView>

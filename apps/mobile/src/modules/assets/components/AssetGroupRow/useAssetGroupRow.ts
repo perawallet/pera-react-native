@@ -59,7 +59,7 @@ export type UseAssetGroupRowParams<T extends GroupableHolding> = {
 export type UseAssetGroupRowResult = {
     /** Null until the first member's metadata has synced. */
     icon: Nullable<PeraAsset>
-    /** From the members whose metadata has synced; null while none has. */
+    /** Null until every member has synced, unless one is already suspicious. */
     verificationIcon: Nullable<IconName>
     isSuspicious: boolean
     /** "SYMBOL · id" when every network shares one id, else the symbol alone. */
@@ -88,20 +88,26 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         [item.usdValue, convertFiat],
     )
 
-    const tier = useMemo(() => {
-        const tiers = members.flatMap(({ asset, holding }): GroupTier[] => {
-            if (!asset) return []
+    // Suspicious shows at once, since no later member can rank lower; any other
+    // tier waits for every network, as the amounts do, so it never shows early
+    // and then turns out wrong.
+    const tier = useMemo((): Nullable<GroupTier> => {
+        const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
+            if (!asset) return null
             const isNative =
                 findNativeAsset(holding.scope.chainId)?.assetId ===
                 holding.assetId
-            return [
-                isNative
-                    ? 'trusted'
-                    : (asset.peraMetadata?.verificationTier ??
-                      PeraAssetVerificationTier.unverified),
-            ]
+            return isNative
+                ? 'trusted'
+                : (asset.peraMetadata?.verificationTier ??
+                      PeraAssetVerificationTier.unverified)
         })
-        return tiers.reduce<Nullable<GroupTier>>(
+        if (tiers.includes(PeraAssetVerificationTier.suspicious)) {
+            return PeraAssetVerificationTier.suspicious
+        }
+        const synced = tiers.filter((tier): tier is GroupTier => tier !== null)
+        if (synced.length < tiers.length) return null
+        return synced.reduce<Nullable<GroupTier>>(
             (lowest, next) =>
                 lowest === null || cautionRankOf(next) < cautionRankOf(lowest)
                     ? next
