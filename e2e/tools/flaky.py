@@ -25,17 +25,38 @@ class _Collect(ResultVisitor):
 
 
 def collect(pass_dir):
-    """Every case verdict in one pass, across its per-suite output files."""
-    status = {}
-    for output in sorted(Path(pass_dir).glob("*/output.xml")):
-        visitor = _Collect()
-        ExecutionResult(str(output)).visit(visitor)
+    """Every case verdict in one pass, across its per-suite output files.
+
+    Reports the suites it could not read rather than returning a short list: a pass
+    that stopped halfway otherwise looks like a pass where those cases simply were
+    not flaky, and the comparison comes out clean on evidence that is not there.
+    """
+    status, unreadable = {}, []
+    outputs = sorted(Path(pass_dir).glob("*/output.xml"))
+    if not outputs:
+        unreadable.append(f"{pass_dir}: no suite output at all")
+    for output in outputs:
+        try:
+            visitor = _Collect()
+            ExecutionResult(str(output)).visit(visitor)
+        except Exception as error:                       # a truncated or still-being-written file
+            unreadable.append(f"{output.parent.name}: {type(error).__name__}")
+            continue
         status.update(visitor.status)
-    return status
+    return status, unreadable
 
 
 def main(dirs):
-    passes = [collect(d) for d in dirs]
+    collected = [collect(d) for d in dirs]
+    passes = [status for status, _ in collected]
+
+    broken = [(d, problems) for d, (_, problems) in zip(dirs, collected) if problems]
+    for pass_dir, problems in broken:
+        for problem in problems:
+            print(f"INCOMPLETE  {pass_dir}  {problem}")
+    if broken:
+        print("\nA pass that did not finish cannot be compared; rerun it.")
+        return 2
     seen = defaultdict(list)
     for name, verdicts in ((n, p) for p in passes for n in p):
         seen[name].append(verdicts[name])
