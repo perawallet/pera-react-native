@@ -69,12 +69,19 @@ Turn Biometrics And Pin Off
 
 Leave Scanner To Home
     [Documentation]    Home after the scanner, however many layers are still up.
+    ...
+    ...                Back alone was not enough: it reached Home on one pass and not the next,
+    ...                because a back press on the scanner can be swallowed and the screen is
+    ...                capture-protected, so the screenshot that follows is blank and says
+    ...                nothing. Fall back to the fixture reset, which is how every other suite
+    ...                gets to Home and does not depend on a press landing.
     FOR    ${attempt}    IN RANGE    3
         ${home}=    Run Keyword And Return Status
         ...    Wait Until Page Contains Element    ${MENU_TAB}    timeout=8s
         IF    ${home}    RETURN
         Run Keyword And Ignore Error    Tap Back
     END
+    Run Keyword And Ignore Error    Go Home
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=15s
-    ...    error=The scanner flow did not get back to Home; the screen is capture-protected, so a screenshot here is blank.
+    ...    error=Neither the back press nor a fixture reset got the scanner flow back to Home.
 

@@ -320,14 +320,24 @@ Finish Account
     # rises misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
-    FOR    ${i}    IN RANGE    30
+    # Poll fast. The toast is short-lived, and a two-second gap between looks let it come and
+    # go unseen: the same blocked build then reported SKIP on one run and "Finish did not leave
+    # the name screen" on the next, which made the suite's own results untrustworthy.
+    VAR    ${left}    ${False}
+    VAR    ${blocked}    ${False}
+    FOR    ${i}    IN RANGE    120
         ${left}=    Run Keyword And Return Status
-        ...    Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=2s
+        ...    Page Should Not Contain Element    ${ACCOUNT_FINISH_BUTTON}
         IF    ${left}    BREAK
-        ${blocked}=    Run Keyword And Return Status    Page Should Contain Text    An error occurred    loglevel=NONE
-        Skip If    ${blocked}    ${CREATION_BLOCKED}
+        ${toast}=    Run Keyword And Return Status
+        ...    Page Should Contain Text    An error occurred    loglevel=NONE
+        IF    ${toast}    VAR    ${blocked}    ${True}
+        IF    ${blocked}    BREAK
+        Sleep    0.5s
     END
-    Should Be True    ${left}    Finish did not leave the name screen.
+    Skip If    ${blocked}    ${CREATION_BLOCKED}
+    Should Be True    ${left}
+    ...    msg=Finish did not leave the name screen in 60s, and no backend error was shown either - so this is neither the known device-registration block nor a slow save.
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Create Shared Account
