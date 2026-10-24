@@ -43,10 +43,14 @@ Asset Freeze Support Toggles On And Off
 Theme Can Be Switched
     [Tags]    id:settings.theme.switch    p1
     Open Theme Settings
+    # Tapping all three and then checking a radio is on screen proves nothing: the radios are
+    # always on screen. Check that each tap took, and leave the theme as it was found.
     Tap    ${THEME_LIGHT_RADIO}
+    Theme Should Be Selected    light
     Tap    ${THEME_DARK_RADIO}
+    Theme Should Be Selected    dark
     Tap    ${THEME_SYSTEM_RADIO}
-    Wait Until Page Contains Element    ${THEME_LIGHT_RADIO}    timeout=10s
+    Theme Should Be Selected    system
 
 Notifications Settings Open
     [Tags]    id:settings.notifications.open    p1
