@@ -7,6 +7,11 @@
 #   tools/run.sh android [robot args...]
 #   tools/run.sh ios     [robot args...]
 #
+# SUITE=contacts runs one suite, and OUT_DIR puts the results somewhere you choose -
+# which is how a flaky hunt runs every suite separately without a second runner that
+# drifts away from this one. A hunt that skipped this script also skipped its
+# one-device-at-a-time rule, and the pass died of the memory that costs.
+#
 # Device selection comes from ANDROID_UDID / IOS_UDID, or pass --variable yourself.
 set -euo pipefail
 
@@ -15,7 +20,7 @@ shift || true
 
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-OUT="$E2E_DIR/results/$PLATFORM-$STAMP"
+OUT="${OUT_DIR:-$E2E_DIR/results/$PLATFORM-$STAMP}"
 SNAPSHOT="$(mktemp -d)/e2e"
 
 mkdir -p "$OUT"
@@ -31,6 +36,10 @@ find "$SNAPSHOT" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/nul
 case "$PLATFORM" in
   android)
     xcrun simctl shutdown all >/dev/null 2>&1 || true
+    # Shutting the simulator down is not enough: the xcodebuild that hosts
+    # WebDriverAgent outlives it and was still holding 6.3G, which is most of what
+    # the next Android pass needed. It is rebuilt on the next iOS run.
+    pkill -f "xcodebuild.*WebDriverAgent" >/dev/null 2>&1 || true
     if ! adb devices | grep -q "device$"; then
       echo "booting ${ANDROID_AVD:-Pixel_9}"
       nohup emulator -avd "${ANDROID_AVD:-Pixel_9}" -no-snapshot-save -no-boot-anim \
@@ -63,7 +72,7 @@ set +e
 "$E2E_DIR/.venv/bin/python" -m robot \
   --exclude slow --exclude needs-funded \
   --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
-  --outputdir "$OUT" "$SNAPSHOT/tests"
+  --outputdir "$OUT" "$SNAPSHOT/tests${SUITE:+/$SUITE.robot}"
 STATUS=$?
 set -e
 rm -rf "$(dirname "$SNAPSHOT")"

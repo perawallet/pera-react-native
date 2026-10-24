@@ -14,14 +14,23 @@ from pathlib import Path
 from robot.api import ExecutionResult, ResultVisitor
 
 
+# A device that dies mid-pass leaves readable output: every suite after it fails in
+# setup. Those are not verdicts about the cases, and comparing them against a healthy
+# pass reported a hundred and thirty-nine "flaky" cases that were nothing of the kind.
+DEAD_RUN_SHARE = 0.5
+
+
 class _Collect(ResultVisitor):
     def __init__(self):
         self.status = {}
+        self.setup_failures = 0
 
     def visit_test(self, test):
         ids = [t[3:] for t in test.tags if t.startswith("id:")] or [test.longname]
         for scenario in ids:
             self.status[scenario] = test.status
+        if test.status == "FAIL" and "suite setup failed" in (test.message or "").lower():
+            self.setup_failures += 1
 
 
 def collect(pass_dir):
@@ -32,6 +41,7 @@ def collect(pass_dir):
     not flaky, and the comparison comes out clean on evidence that is not there.
     """
     status, unreadable = {}, []
+    setup_failures = 0
     outputs = sorted(Path(pass_dir).glob("*/output.xml"))
     if not outputs:
         unreadable.append(f"{pass_dir}: no suite output at all")
@@ -43,6 +53,13 @@ def collect(pass_dir):
             unreadable.append(f"{output.parent.name}: {type(error).__name__}")
             continue
         status.update(visitor.status)
+        setup_failures += visitor.setup_failures
+
+    if status and setup_failures / len(status) > DEAD_RUN_SHARE:
+        unreadable.append(
+            f"{setup_failures} of {len(status)} cases failed in suite setup - "
+            "the device went away mid-pass, so these are not verdicts about the cases"
+        )
     return status, unreadable
 
 
