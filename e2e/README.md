@@ -40,11 +40,20 @@ not the ones before, and the failures that follow belong to neither version of t
 pip install -r e2e/requirements.txt
 (cd apps/mobile/android && E2E_FIXTURES=1 APP_ENV=development ./gradlew assembleRelease)
 (cd apps/mobile && E2E_FIXTURES=1 APP_ENV=development npx expo run:ios --configuration Release --device <simulator-udid> --no-bundler)
-robot --exclude slow --variable PLATFORM:android --outputdir e2e/results/android e2e/tests
-robot --exclude slow --variable PLATFORM:ios --outputdir e2e/results/ios e2e/tests
+appium &                                     # the suite talks to a device through this
+ANDROID_UDID=emulator-5554 OUT_DIR=e2e/results/android e2e/tools/run.sh android
+IOS_UDID=<simulator-udid>  OUT_DIR=e2e/results/ios     e2e/tools/run.sh ios
 python e2e/tools/parity.py e2e/results/android/output.xml e2e/results/ios/output.xml
 python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios/nav-flows.json
 ```
+
+`SUITE=contacts` runs one suite instead of all of them.
+
+- Start Appium first. Without it every case fails in `Suite Setup`, and a whole pass finishes in
+  under a minute looking like the suite collapsed rather than like nothing was listening. The same
+  wall of `Parent suite setup failed` is what a device dying mid-pass leaves behind, which is why
+  `e2e/tools/flaky.py` refuses to compare a pass where most cases failed there: those are not verdicts
+  about the cases.
 
 - Set `APP_ENV` explicitly: a local `.env.local` may say `production`, and Metro refuses to bundle
   the hook for production.
@@ -73,3 +82,19 @@ tracer's post-reset snapshot instead of a fixed delay.
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
 `e2e/tools/parity.py` fails unless every scenario passed on both platforms.
+
+## Checking the tooling itself
+
+`e2e/tools/` carries the comparisons a release decision leans on, so they have their own tests:
+
+```sh
+e2e/.venv/bin/python e2e/tools/test_parity.py
+e2e/.venv/bin/python e2e/tools/test_nav_trace.py
+```
+
+Each file runs its own checks under `__main__` rather than through pytest, which is not in
+`requirements.txt`: written pytest-style they import cleanly, exit 0, and assert nothing.
+
+`e2e/tools/flaky.py` takes two or more passes of the same platform and names the cases whose verdict
+changed between them. A case that is green twice is not yet proof of anything, but one that
+changes is a defect in the test, the app, or the device — and worth finding before CI does.
