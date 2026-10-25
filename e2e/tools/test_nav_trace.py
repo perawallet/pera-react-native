@@ -65,3 +65,11 @@ def test_ios_file_reader_returns_only_new_lines_and_survives_restart():
     assert len(trace._read_ios_file(driver)) == 1
     driver.data = lines([1])
     assert len(trace._read_ios_file(driver)) == 1
+
+
+if __name__ == "__main__":
+    for name, case in sorted(globals().items()):
+        if name.startswith("test_"):
+            case()
+            print(f"ok  {name}")
+    print("all nav-trace checks pass")
