@@ -441,9 +441,21 @@ Ensure Watch Account
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
 
 Open Import Link
+    [Documentation]    A deeplink is fire-and-forget: it is handed to the OS and nothing reports back
+    ...                whether the app acted on it. One fired at an app still settling after the
+    ...                previous screen left can be dropped, and then the import screen simply never
+    ...                arrives - which is how `Ignoring An Import Adds Nothing` failed, on its second
+    ...                link rather than its first. Re-fire once, at WARN, so a link that needed the
+    ...                second shot shows up in the log instead of being quietly absorbed.
     [Arguments]    ${address}
     Open Deeplink    ${IMPORT_LINK}${address}
-    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    ${arrived}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    IF    not ${arrived}
+        Log    The shared-account import link did not land in 20s; firing it once more.    level=WARN
+        Open Deeplink    ${IMPORT_LINK}${address}
+        Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    END
     ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${IMPORT_IGNORE_BUTTON}
     Skip If    not ${known}
     ...    The backend returned no shared account for ${address}: the import screen shows its error state, so there is nothing to import.
