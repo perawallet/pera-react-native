@@ -49,6 +49,13 @@ case "$PLATFORM" in
         sleep 10
       done
     fi
+    # A Pixel image shows the keyboard's "Try out your stylus" education over the field a few
+    # seconds after the keyboard opens. It is a full-screen InputMethod window, so Appium's dump
+    # returns a hierarchy with nothing in it and every locator on that screen disappears
+    # mid-test - which reads as the app blanking rather than as a system dialog. It fires on
+    # whichever screen happens to type next, so the suites it hits change from run to run.
+    adb ${ANDROID_UDID:+-s "$ANDROID_UDID"} shell settings put secure stylus_handwriting_enabled 0 \
+      >/dev/null 2>&1 || true
     ;;
   ios)
     adb emu kill >/dev/null 2>&1 || true
