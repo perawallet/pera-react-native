@@ -97,7 +97,7 @@ Switch State Locator
     [Arguments]    ${locator}    ${on}
     ${id}=    Bare Test Id    ${locator}
     IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1')]
+        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or (contains(@value,'checked') and not(contains(@value,'unchecked'))))]
     END
     RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0')]
 
@@ -224,11 +224,15 @@ Tap Backdrop Above
     AppiumLibrary.Tap    ${point}    duration=50ms
 
 Theme Should Be Selected
-    [Documentation]    PWRadioButton sets accessibilityState={{ checked: isSelected }}, which Android
-    ...                reports as checked and iOS as value - the same pair the switch helpers read.
+    [Documentation]    PWRadioButton sets accessibilityState={{ checked: isSelected }} with
+    ...                accessibilityRole='radio'. Android reports that as checked='true'. iOS does not
+    ...                carry it as a trait at all: RCTViewComponentView builds a spoken value instead,
+    ...                so the element reads 'radio button, checked' or 'radio button, unchecked'. The
+    ...                '1' that the switch helpers match is the Switch trait only, and plain
+    ...                contains(@value,'checked') is true of 'unchecked' as well - hence both halves.
     ...                This used to look for @selected, which nothing ever sets, so the check could
     ...                not pass and the cases around it proved only that a radio existed.
     [Arguments]    ${theme}
     Wait Until Page Contains Element
-    ...    xpath=//*[(@content-desc='settings_theme_${theme}_radio' or @resource-id='settings_theme_${theme}_radio' or @name='settings_theme_${theme}_radio') and (@checked='true' or @value='1')]
+    ...    xpath=//*[(@content-desc='settings_theme_${theme}_radio' or @resource-id='settings_theme_${theme}_radio' or @name='settings_theme_${theme}_radio') and (@checked='true' or (contains(@value,'checked') and not(contains(@value,'unchecked'))))]
     ...    timeout=10s
