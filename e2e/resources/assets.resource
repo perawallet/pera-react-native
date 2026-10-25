@@ -7,9 +7,12 @@ Resource            send_receive.resource
 *** Variables ***
 ${ADD_ASSET_BUTTON}             xpath=//*[@resource-id='add_asset_button' or @name='add_asset_button' or @content-desc='add_asset_button']
 ${ASSET_SEARCH_INPUT}           xpath=//*[@resource-id='searchable-list-search-input' or @name='searchable-list-search-input' or @content-desc='searchable-list-search-input']
-# USDC by asset id: the result list can show other assets above the match.
-${USDC_MAINNET_ROW}             xpath=//*[@resource-id='asset_row_31566704' or @name='asset_row_31566704' or @content-desc='asset_row_31566704']
-${USDC_TESTNET_ROW}             xpath=//*[@resource-id='asset_row_10458941' or @name='asset_row_10458941' or @content-desc='asset_row_10458941']
+# USDC by asset id: the result list can show other assets above the match. The id is also what
+# Scroll Into View takes, so it is named once here and the row locator is built from it.
+${USDC_MAINNET_ID}              asset_row_31566704
+${USDC_TESTNET_ID}              asset_row_10458941
+${USDC_MAINNET_ROW}             xpath=//*[@resource-id='${USDC_MAINNET_ID}' or @name='${USDC_MAINNET_ID}' or @content-desc='${USDC_MAINNET_ID}']
+${USDC_TESTNET_ROW}             xpath=//*[@resource-id='${USDC_TESTNET_ID}' or @name='${USDC_TESTNET_ID}' or @content-desc='${USDC_TESTNET_ID}']
 ${ALGO_ROW}                     xpath=//*[@resource-id='asset_row_0' or @name='asset_row_0' or @content-desc='asset_row_0']
 ${OPT_IN_CONFIRM}               xpath=//*[@resource-id='opt_in_confirm' or @name='opt_in_confirm' or @content-desc='opt_in_confirm']
 ${OPT_IN_FEE}                   xpath=//*[@resource-id='opt_in_fee' or @name='opt_in_fee' or @content-desc='opt_in_fee']
@@ -50,7 +53,7 @@ Search Assets For USDC
     Wait Until Page Contains Element    ${result}    timeout=30s
 
 Open Opt In Sheet
-    [Arguments]    ${result}    ${already_listed}=${False}
+    [Arguments]    ${result}    ${asset_id}    ${already_listed}=${False}
     IF    not ${already_listed}    Search Assets For USDC    ${result}
     Dismiss Keyboard
     # The row sits under the search sheet's layer and a tap there can be dropped; repeat while the
@@ -67,6 +70,12 @@ Open Opt In Sheet
             Run Keyword And Ignore Error
             ...    Wait Until Page Contains Element    ${result}    timeout=20s
         END
+        # Being in the tree is not being on screen. A result below the fold is still found by
+        # Page Should Contain Element, and Click Element then taps where the row is not - which is
+        # why three attempts miss identically. Which position USDC takes depends on what the remote
+        # lookup returns, so it is only sometimes off screen. Scroll once a tap has already failed,
+        # to leave the ordinary path exactly as it was.
+        IF    ${i} > 0    Run Keyword And Ignore Error    Scroll Into View    ${asset_id}
         Run Keyword And Ignore Error    Tap    ${result}
         ${open}=    Run Keyword And Return Status
         ...    Wait Until Page Contains Element    ${OPT_IN_CONFIRM}    timeout=5s
@@ -114,7 +123,7 @@ Open ALGO Detail
     Wait Until Page Contains Element    ${ASSET_DETAILS_SCREEN}    timeout=20s
 
 Opt In To Testnet USDC
-    Open Opt In Sheet    ${USDC_TESTNET_ROW}
+    Open Opt In Sheet    ${USDC_TESTNET_ROW}    ${USDC_TESTNET_ID}
     Slide To Confirm    ${OPT_IN_CONFIRM}
     Wait Until Page Does Not Contain Element    ${OPT_IN_CONFIRM}    timeout=90s
     Go Home
@@ -147,11 +156,11 @@ Any USDC Row
     Wait Until Page Contains Element    ${ASSET_SEARCH_INPUT}    timeout=15s
     Input Text    ${ASSET_SEARCH_INPUT}    USDC
     ${either}=    Set Variable
-    ...    xpath=//*[@resource-id='asset_row_31566704' or @name='asset_row_31566704' or @resource-id='asset_row_10458941' or @name='asset_row_10458941']
+    ...    xpath=//*[@resource-id='${USDC_MAINNET_ID}' or @name='${USDC_MAINNET_ID}' or @resource-id='${USDC_TESTNET_ID}' or @name='${USDC_TESTNET_ID}']
     Wait Until Page Contains Element    ${either}    timeout=30s
     ...    error=A USDC search returned neither the mainnet nor the testnet asset, so the remote lookup gave nothing to opt into.
     ${mainnet}=    Run Keyword And Return Status
     ...    Page Should Contain Element    ${USDC_MAINNET_ROW}
-    IF    ${mainnet}    RETURN    ${USDC_MAINNET_ROW}
-    RETURN    ${USDC_TESTNET_ROW}
+    IF    ${mainnet}    RETURN    ${USDC_MAINNET_ROW}    ${USDC_MAINNET_ID}
+    RETURN    ${USDC_TESTNET_ROW}    ${USDC_TESTNET_ID}
 
