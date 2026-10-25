@@ -149,7 +149,13 @@ Receive Picker Lists Swappable Assets
         Search Assets    USD
         Wait Until Page Contains Element    xpath=${RECEIVE_ASSET_ROW_ANY.replace('xpath=', '')} | ${NO_MATCHING_ASSETS.replace('xpath=', '')}
         ...    timeout=15s
-        Skip    The receive (DEX) asset list is empty on this run.
+        # Rows under a filter still show the picker listing what the DEX offers, which is all this
+        # case claims. Skipping on them too made it unpassable through this branch: it skipped
+        # whenever the unfiltered list was merely slow, and that is the half of its
+        # pass-one-run-skip-the-next that was ours rather than the backend's.
+        ${filtered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${RECEIVE_ASSET_ROW_ANY}
+        Skip If    not ${filtered}    The receive (DEX) asset list is empty on this run.
     END
     Close Picker Back To Form
 
