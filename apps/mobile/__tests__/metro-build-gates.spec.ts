@@ -19,6 +19,7 @@ import {
     E2E_FIXTURE_MODULES,
     EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isBenchBuild,
     isE2eFixturesIncluded,
     listsEvmChain,
     readBakedAppEnvironment,
@@ -199,5 +200,43 @@ describe('e2e fixture stubs', () => {
             expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
             expect(existsSync(stub)).toBe(true)
         }
+    })
+})
+
+describe('isBenchBuild', () => {
+    it('is on only when BENCH is exactly 1', () => {
+        expect(
+            isBenchBuild({ bench: '1', bakedAppEnvironment: 'staging' }),
+        ).toBe(true)
+    })
+
+    it.each([undefined, '', '0', 'true', 'yes', ' 1'])(
+        'is off for BENCH=%s',
+        bench => {
+            expect(
+                isBenchBuild({ bench, bakedAppEnvironment: 'staging' }),
+            ).toBe(false)
+        },
+    )
+
+    it.each([
+        ['production', undefined],
+        [undefined, 'production'],
+        ['staging', 'production'],
+    ])(
+        'refuses a production bundle (baked=%s, APP_ENV=%s)',
+        (baked, appEnv) => {
+            expect(() =>
+                isBenchBuild({
+                    bench: '1',
+                    bakedAppEnvironment: baked,
+                    appEnv,
+                }),
+            ).toThrow(/production/)
+        },
+    )
+
+    it('stays off for a production bundle that did not ask for it', () => {
+        expect(isBenchBuild({ bakedAppEnvironment: 'production' })).toBe(false)
     })
 })

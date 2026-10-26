@@ -1093,6 +1093,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.4.0
+      '@perawallet/benchmarks':
+        specifier: workspace:*
+        version: link:../benchmarks
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../../packages/devtools

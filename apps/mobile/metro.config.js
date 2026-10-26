@@ -24,6 +24,7 @@ const {
     E2E_FIXTURE_MODULES,
     EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isBenchBuild,
     isE2eFixturesIncluded,
     listsEvmChain,
     readBakedAppEnvironment,
@@ -252,7 +253,27 @@ console.log(
     `[metro] e2e fixtures: ${e2eFixturesIncluded ? 'included' : 'stubbed'} (E2E_FIXTURES=${process.env.E2E_FIXTURES ?? 'unset'})`,
 );
 
+// The benchmark app swaps the JS entry; native config comes from the same
+// project, built under the `bench` variant (see app.config.builder.js).
+const benchBuild = isBenchBuild({
+    bench: process.env.BENCH,
+    bakedAppEnvironment,
+    appEnv: process.env.APP_ENV,
+});
+
+console.log(
+    `[metro] bench: ${benchBuild ? 'entry swapped' : 'off'} (BENCH=${process.env.BENCH ?? 'unset'})`,
+);
+
 const buildStubs = {
+    ...(benchBuild
+        ? {
+              [path.resolve(projectRoot, 'entry.native.js')]: path.resolve(
+                  projectRoot,
+                  'entry.bench.js',
+              ),
+          }
+        : {}),
     ...(localeTourEnabled ? {} : localeTourStubs),
     ...(migrationDevToolsEnabled ? {} : migrationDevToolsStubs),
     ...(developerGalleryIncluded

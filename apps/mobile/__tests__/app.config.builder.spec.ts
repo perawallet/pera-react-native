@@ -649,3 +649,78 @@ describe('buildAppConfig — iOS linkage', () => {
         expect(ios.forceStaticLinking).toContain('MMKVCore')
     })
 })
+
+describe('buildAppConfig — bench variant', () => {
+    const bench = build({ BENCH: '1', APP_ENV: 'development' })
+    const pluginNames = bench.plugins.map(plugin =>
+        Array.isArray(plugin) ? plugin[0] : plugin,
+    )
+
+    it('installs beside, never over, a wallet build', () => {
+        expect(bench.extra.appVariant).toBe('bench')
+        expect(bench.name).toBe('Pera Bench')
+        expect(bench.ios.bundleIdentifier).toBe('com.algorandllc.perarn.bench')
+        expect(bench.android.package).toBe('com.algorand.perarn')
+    })
+
+    it('asks for no entitlement and ships no passkey extension', () => {
+        expect(bench.ios.entitlements).toEqual({})
+        expect(pluginNames).not.toContain(PASSKEY_PLUGIN)
+        expect(pluginNames).not.toContain(
+            './plugins/withAutofillExtensionBundleId',
+        )
+        expect(pluginNames).not.toContain('./plugins/withPasskeyAutofillFixes')
+    })
+
+    it('leaves out the iCloud and Google sign-in plugins even when their settings are present', () => {
+        const withSettings = build({
+            BENCH: '1',
+            APP_ENV: 'development',
+            IOS_ICLOUD_CONTAINER_ID: 'iCloud.example.bench',
+            GOOGLE_IOS_CLIENT_ID: 'example.apps.googleusercontent.com',
+        })
+        const names = withSettings.plugins.map(plugin =>
+            Array.isArray(plugin) ? plugin[0] : plugin,
+        )
+
+        expect(withSettings.ios.entitlements).toEqual({})
+        expect(names).not.toContain('react-native-cloud-storage')
+        expect(names).not.toContain('@react-native-google-signin/google-signin')
+        // A wallet build with the same settings still carries both.
+        const wallet = build({
+            APP_ENV: 'staging',
+            IOS_ICLOUD_CONTAINER_ID: 'iCloud.example.bench',
+            GOOGLE_IOS_CLIENT_ID: 'example.apps.googleusercontent.com',
+        })
+        const walletNames = wallet.plugins.map(plugin =>
+            Array.isArray(plugin) ? plugin[0] : plugin,
+        )
+        expect(walletNames).toContain('react-native-cloud-storage')
+    })
+
+    it('keeps the plugins the app itself needs', () => {
+        expect(pluginNames).toContain('@react-native-firebase/app')
+    })
+
+    it('refuses a production bundle', () => {
+        expect(() => build({ BENCH: '1', APP_ENV: 'production' })).toThrow(
+            /production/,
+        )
+    })
+
+    it('leaves the other variants alone', () => {
+        const staging = build({ APP_ENV: 'staging' })
+
+        expect(staging.extra.appVariant).toBe('staging')
+        expect(Object.keys(staging.ios.entitlements).length).toBeGreaterThan(0)
+        expect(
+            staging.plugins.map(plugin =>
+                Array.isArray(plugin) ? plugin[0] : plugin,
+            ),
+        ).toContain(PASSKEY_PLUGIN)
+    })
+
+    it.each(['0', 'true', undefined])('ignores BENCH=%s', value => {
+        expect(build({ BENCH: value }).extra.appVariant).toBe('dev')
+    })
+})

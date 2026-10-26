@@ -115,6 +115,22 @@ const isE2eFixturesIncluded = ({ e2eFixtures, bakedAppEnvironment, appEnv }) => 
 }
 
 /**
+ * Opt-in only, like the E2E fixtures: `BENCH` must EQUAL '1'. The benchmark
+ * app wipes and reseeds its storage, so a production bundle that asks for it
+ * throws instead of quietly building the wrong app.
+ *
+ * @param {{ bench?: string, bakedAppEnvironment?: string, appEnv?: string }} sources
+ * @returns {boolean}
+ */
+const isBenchBuild = ({ bench, bakedAppEnvironment, appEnv }) => {
+    if (bench !== '1') return false
+    if (bakedAppEnvironment === 'production' || appEnv === 'production') {
+        throw new Error('BENCH=1 is refused for a production bundle.')
+    }
+    return true
+}
+
+/**
  * Maps each module's resolved `.ts` path to its sibling `.stub.ts`.
  *
  * @param {string} projectRoot
@@ -134,6 +150,7 @@ module.exports = {
     E2E_FIXTURE_MODULES,
     EVM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isBenchBuild,
     isE2eFixturesIncluded,
     listsEvmChain,
     readBakedAppEnvironment,
