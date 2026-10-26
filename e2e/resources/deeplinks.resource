@@ -9,7 +9,7 @@ Resource            security.resource
 *** Variables ***
 # A valid address that is not in the suite wallet: the contacts fixture's (contacts.resource).
 ${LINK_ADDRESS}                 CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA
-${CONTACT_ADDRESS_ROW_ALGORAND}     xpath=//*[@resource-id='contact_address_row_algorand' or @name='contact_address_row_algorand' or @content-desc='contact_address_row_algorand']
+${CONTACT_ADDRESS_ROW_ALGORAND}     tid=contact_address_row_algorand
 ${LINK_LABEL}                   E2E Link Contact
 ${LINK_LABEL_ENCODED}           E2E%20Link%20Contact
 # Links carry base units; the amount screen shows ALGO, which has 6 decimals.
@@ -27,17 +27,17 @@ ${UNKNOWN_PATH_LINK}            perawallet://app/no-such-screen
 # Fails ARC-90 address validation, so the listener drops it before dispatch.
 ${INVALID_ALGORAND_LINK}        algorand://NOT-AN-ADDRESS?amount=1
 
-${SETTINGS_ITEM_SECURITY}       xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
-${SEND_NEXT}                    xpath=//*[@resource-id='send_input_next_button' or @name='send_input_next_button' or @content-desc='send_input_next_button']
-${SEND_CONFIRM}                 xpath=//*[@resource-id='send_confirm_button' or @name='send_confirm_button' or @content-desc='send_confirm_button']
+${SETTINGS_ITEM_SECURITY}       tid=settings_item_security
+${SEND_NEXT}                    tid=send_input_next_button
+${SEND_CONFIRM}                 tid=send_confirm_button
 # The send-info sheet over the numpad has no testID on its button.
 ${SEND_INFO_UNDERSTAND}         xpath=//*[@text='I Understand' or @label='I Understand']
 # iOS merges the toast's title and body into one label, and keeps earlier toasts in the tree
 # parked off screen, so only a visible one counts there.
 ${INSUFFICIENT_BALANCE}         xpath=//*[@text='Insufficient Balance' or (starts-with(@label,'Insufficient Balance') and @visible='true')]
 ${OPT_IN_ACCOUNT_ROW}           xpath=(//*[starts-with(@resource-id,'opt_in_account-') or starts-with(@name,'opt_in_account-')])[1]
-${OPT_IN_CONFIRM}               xpath=//*[@resource-id='opt_in_confirm' or @name='opt_in_confirm' or @content-desc='opt_in_confirm']
-${OPT_IN_COPY_ID}               xpath=//*[@resource-id='opt_in_copy_id' or @name='opt_in_copy_id' or @content-desc='opt_in_copy_id']
+${OPT_IN_CONFIRM}               tid=opt_in_confirm
+${OPT_IN_COPY_ID}               tid=opt_in_copy_id
 
 
 *** Keywords ***

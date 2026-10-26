@@ -5,38 +5,38 @@ Resource            send_receive.resource
 
 
 *** Variables ***
-${ADD_ASSET_BUTTON}             xpath=//*[@resource-id='add_asset_button' or @name='add_asset_button' or @content-desc='add_asset_button']
-${ASSET_SEARCH_INPUT}           xpath=//*[@resource-id='searchable-list-search-input' or @name='searchable-list-search-input' or @content-desc='searchable-list-search-input']
+${ADD_ASSET_BUTTON}             tid=add_asset_button
+${ASSET_SEARCH_INPUT}           tid=searchable-list-search-input
 # USDC by asset id: the result list can show other assets above the match.
-${USDC_MAINNET_ROW}             xpath=//*[@resource-id='asset_row_31566704' or @name='asset_row_31566704' or @content-desc='asset_row_31566704']
-${USDC_TESTNET_ROW}             xpath=//*[@resource-id='asset_row_10458941' or @name='asset_row_10458941' or @content-desc='asset_row_10458941']
-${ALGO_ROW}                     xpath=//*[@resource-id='asset_row_0' or @name='asset_row_0' or @content-desc='asset_row_0']
-${OPT_IN_CONFIRM}               xpath=//*[@resource-id='opt_in_confirm' or @name='opt_in_confirm' or @content-desc='opt_in_confirm']
-${OPT_IN_FEE}                   xpath=//*[@resource-id='opt_in_fee' or @name='opt_in_fee' or @content-desc='opt_in_fee']
-${OPT_OUT_CONFIRM}              xpath=//*[@resource-id='opt_out_confirm' or @name='opt_out_confirm' or @content-desc='opt_out_confirm']
+${USDC_MAINNET_ROW}             tid=asset_row_31566704
+${USDC_TESTNET_ROW}             tid=asset_row_10458941
+${ALGO_ROW}                     tid=asset_row_0
+${OPT_IN_CONFIRM}               tid=opt_in_confirm
+${OPT_IN_FEE}                   tid=opt_in_fee
+${OPT_OUT_CONFIRM}              tid=opt_out_confirm
 
-${MANAGE_ASSETS_BUTTON}         xpath=//*[@resource-id='manage_assets_button' or @name='manage_assets_button' or @content-desc='manage_assets_button']
-${MANAGE_SORT}                  xpath=//*[@resource-id='manage_assets_sort' or @name='manage_assets_sort' or @content-desc='manage_assets_sort']
-${MANAGE_FILTER}                xpath=//*[@resource-id='manage_assets_filter' or @name='manage_assets_filter' or @content-desc='manage_assets_filter']
-${MANAGE_REMOVE}                xpath=//*[@resource-id='manage_assets_remove' or @name='manage_assets_remove' or @content-desc='manage_assets_remove']
-${SORT_DEFAULT}                 xpath=//*[@resource-id='asset_sort_option_balanceDesc' or @name='asset_sort_option_balanceDesc' or @content-desc='asset_sort_option_balanceDesc']
-${SORT_ALPHABETICAL}            xpath=//*[@resource-id='asset_sort_option_alphabeticalAsc' or @name='asset_sort_option_alphabeticalAsc' or @content-desc='asset_sort_option_alphabeticalAsc']
-${SORT_APPLY}                   xpath=//*[@resource-id='asset_sort_apply_button' or @name='asset_sort_apply_button' or @content-desc='asset_sort_apply_button']
-${FILTER_HIDE_ZERO}             xpath=//*[@resource-id='asset_filter_hide_zero_balance' or @name='asset_filter_hide_zero_balance' or @content-desc='asset_filter_hide_zero_balance']
-${FILTER_DISPLAY_NFTS}          xpath=//*[@resource-id='asset_filter_display_nfts' or @name='asset_filter_display_nfts' or @content-desc='asset_filter_display_nfts']
-${FILTER_APPLY}                 xpath=//*[@resource-id='asset_filter_apply_button' or @name='asset_filter_apply_button' or @content-desc='asset_filter_apply_button']
-${REMOVE_SELECT_ALL}            xpath=//*[@resource-id='remove_assets_select_all_button' or @name='remove_assets_select_all_button' or @content-desc='remove_assets_select_all_button']
+${MANAGE_ASSETS_BUTTON}         tid=manage_assets_button
+${MANAGE_SORT}                  tid=manage_assets_sort
+${MANAGE_FILTER}                tid=manage_assets_filter
+${MANAGE_REMOVE}                tid=manage_assets_remove
+${SORT_DEFAULT}                 tid=asset_sort_option_balanceDesc
+${SORT_ALPHABETICAL}            tid=asset_sort_option_alphabeticalAsc
+${SORT_APPLY}                   tid=asset_sort_apply_button
+${FILTER_HIDE_ZERO}             tid=asset_filter_hide_zero_balance
+${FILTER_DISPLAY_NFTS}          tid=asset_filter_display_nfts
+${FILTER_APPLY}                 tid=asset_filter_apply_button
+${REMOVE_SELECT_ALL}            tid=remove_assets_select_all_button
 
-${DETAIL_SEND}                  xpath=//*[@resource-id='asset_detail_send_button' or @name='asset_detail_send_button' or @content-desc='asset_detail_send_button']
-${DETAIL_RECEIVE}               xpath=//*[@resource-id='asset_detail_receive_button' or @name='asset_detail_receive_button' or @content-desc='asset_detail_receive_button']
-${DETAIL_SWAP}                  xpath=//*[@resource-id='asset_detail_swap_button' or @name='asset_detail_swap_button' or @content-desc='asset_detail_swap_button']
-${NFTS_TAB}                     xpath=//*[@resource-id='tab_nfts' or @name='tab_nfts' or @content-desc='tab_nfts']
+${DETAIL_SEND}                  tid=asset_detail_send_button
+${DETAIL_RECEIVE}               tid=asset_detail_receive_button
+${DETAIL_SWAP}                  tid=asset_detail_swap_button
+${NFTS_TAB}                     tid=tab_nfts
 ${FIRST_COLLECTIBLE}            xpath=(//*[starts-with(@content-desc, 'collectible_row_') or starts-with(@resource-id, 'collectible_row_') or starts-with(@name,'collectible_row_')])[1]
 # Screen containers carry a bare testID (no accessibility label), which Android exposes as
 # resource-id only; iOS exposes it as name.
-${ASSET_DETAILS_SCREEN}         xpath=//*[@resource-id='asset_details_screen' or @name='asset_details_screen']
-${REMOVE_ASSETS_SCREEN}         xpath=//*[@resource-id='remove_assets_screen' or @name='remove_assets_screen']
-${COLLECTIBLE_DETAIL_SCREEN}    xpath=//*[@resource-id='collectible_detail_screen' or @name='collectible_detail_screen']
+${ASSET_DETAILS_SCREEN}         tid=asset_details_screen
+${REMOVE_ASSETS_SCREEN}         tid=remove_assets_screen
+${COLLECTIBLE_DETAIL_SCREEN}    tid=collectible_detail_screen
 
 
 *** Keywords ***

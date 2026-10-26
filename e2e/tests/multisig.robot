@@ -104,9 +104,9 @@ Watch Account Is Refused As A Participant
     Open Create Shared Account
     Open Participant Search
     Input Text    ${ADDRESS_SEARCH_INPUT}    ${WATCH_ADDRESS}
-    Tap    xpath=//*[@resource-id='account_result_row_${WATCH_ADDRESS}' or @name='account_result_row_${WATCH_ADDRESS}' or @content-desc='account_result_row_${WATCH_ADDRESS}']
+    Tap    tid=account_result_row_${WATCH_ADDRESS}
     Wait Until Page Contains    Cannot add watch account    timeout=10s
-    Page Should Not Contain Element    xpath=//*[@resource-id='participant_item_0_${WATCH_ADDRESS}' or @name='participant_item_0_${WATCH_ADDRESS}' or @content-desc='participant_item_0_${WATCH_ADDRESS}']
+    Page Should Not Contain Element    tid=participant_item_0_${WATCH_ADDRESS}
 
 Shared Account Is Refused As A Participant
     [Tags]    id:multisig.participant.reject-shared    p1
@@ -116,7 +116,7 @@ Shared Account Is Refused As A Participant
     ${add}=    Test Id    address-search-add-icon
     Wait Until Page Contains Element    ${add}    timeout=10s
     Tap    ${add}
-    ${added}=    Set Variable    xpath=//*[@resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}']
+    ${added}=    Set Variable    tid=participant_item_0_${KNOWN_SHARED_ADDRESS}
     Wait Until Page Contains Element    xpath=//*[contains(@text,'Cannot add shared account') or contains(@label,'Cannot add shared account') or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}']    timeout=20s
     ${plain}=    Run Keyword And Return Status    Page Should Contain Element    ${added}
     # Only the backend's account lookup marks an address as shared; when it answers 404 or fails,
@@ -138,7 +138,7 @@ External Participant Opens Edit Name
     [Tags]    id:multisig.participant.edit    p2
     Open Create Shared Account
     Add Participant    ${PARTICIPANT_1}
-    Tap    xpath=//*[@resource-id='participant_edit_0_${PARTICIPANT_1}' or @name='participant_edit_0_${PARTICIPANT_1}' or @content-desc='participant_edit_0_${PARTICIPANT_1}']
+    Tap    tid=participant_edit_0_${PARTICIPANT_1}
     Wait Until Page Contains Element    ${EDIT_PARTICIPANT_NAME_INPUT}    timeout=15s
 
 Continue Needs Two Participants

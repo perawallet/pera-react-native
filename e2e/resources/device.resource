@@ -9,14 +9,14 @@ Resource            security.resource
 
 *** Variables ***
 # Bare testIDs on a touchable: a resource-id on Android, a name on iOS.
-${QR_SCANNER_BUTTON}            xpath=//*[@resource-id='account_screen_qr_scanner_button' or @name='account_screen_qr_scanner_button']
+${QR_SCANNER_BUTTON}            tid=account_screen_qr_scanner_button
 # The scanner's no-camera/denied view has no testID; its title is the handle (camera.no_camera_device_found).
 ${CAMERA_DENIED_TITLE}          xpath=//*[@text='No camera device found or missing permissions.' or @label='No camera device found or missing permissions.']
 ${CAMERA_DENIED_CLOSE}          xpath=//*[@text='Close' or @label='Close']
 # The offline pill has no testID either (common.offline_mode).
 ${OFFLINE_BANNER}               xpath=//*[@text='Offline Mode' or @label='Offline Mode']
 ${BIOMETRIC_TOGGLE_ID}          settings_security_biometric_toggle
-${BIOMETRIC_TOGGLE}             xpath=//*[@resource-id='${BIOMETRIC_TOGGLE_ID}' or @name='${BIOMETRIC_TOGGLE_ID}' or @content-desc='${BIOMETRIC_TOGGLE_ID}']
+${BIOMETRIC_TOGGLE}             tid=${BIOMETRIC_TOGGLE_ID}
 
 
 *** Keywords ***

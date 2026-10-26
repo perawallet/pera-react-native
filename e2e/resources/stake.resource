@@ -6,17 +6,17 @@ Resource            discover.resource
 
 
 *** Variables ***
-${MENU_STAKING_BUTTON}          xpath=//*[@resource-id='menu_staking_button' or @name='menu_staking_button' or @content-desc='menu_staking_button']
-${STAKING_SUBTITLE}             xpath=//*[@resource-id='staking-subtitle' or @name='staking-subtitle' or @content-desc='staking-subtitle']
-${STAKING_HELP_BUTTON}          xpath=//*[@resource-id='staking-help-button' or @name='staking-help-button' or @content-desc='staking-help-button']
-${STAKING_HELP_TITLE}           xpath=//*[@resource-id='staking-help-sheet-title' or @name='staking-help-sheet-title' or @content-desc='staking-help-sheet-title']
+${MENU_STAKING_BUTTON}          tid=menu_staking_button
+${STAKING_SUBTITLE}             tid=staking-subtitle
+${STAKING_HELP_BUTTON}          tid=staking-help-button
+${STAKING_HELP_TITLE}           tid=staking-help-sheet-title
 ${STAKING_ERROR_TITLE}          xpath=//*[@resource-id='staking-error-title' or @name='staking-error-title' or @content-desc='staking-error-title' or @resource-id='staking-error-title']
 # Card ids come from remote config, so match the prefix on either platform's id attribute.
 ${STAKING_FIRST_CARD}           xpath=(//*[starts-with(@content-desc, 'staking-project-card-') or starts-with(@resource-id, 'staking-project-card-') or starts-with(@name,'staking-project-card-')])[1]
-${STAKING_DISCLAIMER_TITLE}     xpath=//*[@resource-id='staking-disclaimer-title' or @name='staking-disclaimer-title' or @content-desc='staking-disclaimer-title']
-${STAKING_DISCLAIMER_ACCEPT}    xpath=//*[@resource-id='staking-disclaimer-accept-button' or @name='staking-disclaimer-accept-button' or @content-desc='staking-disclaimer-accept-button']
-${WEBVIEW_CLOSE_BUTTON}         xpath=//*[@resource-id='webview_close_button' or @name='webview_close_button' or @content-desc='webview_close_button']
-${STAKING_EMPTY_VIEW}           xpath=//*[@resource-id='staking-empty-view' or @name='staking-empty-view' or @content-desc='staking-empty-view']
+${STAKING_DISCLAIMER_TITLE}     tid=staking-disclaimer-title
+${STAKING_DISCLAIMER_ACCEPT}    tid=staking-disclaimer-accept-button
+${WEBVIEW_CLOSE_BUTTON}         tid=webview_close_button
+${STAKING_EMPTY_VIEW}           tid=staking-empty-view
 ${STAKING_SETTLED}              xpath=//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@resource-id,'staking-project-card-') or starts-with(@name,'staking-project-card-') or @content-desc='staking-error-title' or @resource-id='staking-error-title' or @name='staking-error-title' or @resource-id='staking-empty-view' or @name='staking-empty-view']
 
 

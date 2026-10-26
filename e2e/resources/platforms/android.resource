@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Android adapter. Everything platform-specific lives in this file and its iOS twin;
 ...                 tests and shared keywords never branch on the platform.
-Library             AppiumLibrary    run_on_failure=Nothing
+Library             ../libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             Collections
 Library             Process
 
@@ -63,7 +63,7 @@ Dismiss Keyboard
 Enter Recovery Phrase
     # The import screen spreads a pasted phrase across its word fields.
     [Arguments]    ${phrase}
-    Input Text    xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']    ${phrase}
+    Input Text    tid=import_account_word_input_0    ${phrase}
 
 Get Text In Container
     # A testID-only container is a resource-id on Android, with its text in following siblings.

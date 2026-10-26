@@ -80,7 +80,7 @@ QR Sheet Opens From The Contact Screen
 QR Sheet Opens From The Contact Row
     [Tags]    id:contacts.qr.from-row    p2
     Start With One Contact
-    Tap    xpath=//*[@resource-id='contact_row_qr_button_${FIXTURE_CONTACT_ADDRESS}' or @name='contact_row_qr_button_${FIXTURE_CONTACT_ADDRESS}' or @content-desc='contact_row_qr_button_${FIXTURE_CONTACT_ADDRESS}']
+    Tap    tid=contact_row_qr_button_${FIXTURE_CONTACT_ADDRESS}
     Contact QR Sheet Should Be Open
     Close Sheet
     Wait Until Page Contains Element    ${CONTACTS_SEARCH_INPUT}    timeout=15s

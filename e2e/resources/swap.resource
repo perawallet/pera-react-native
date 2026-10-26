@@ -4,32 +4,32 @@ Resource            discover.resource
 
 
 *** Variables ***
-${SWAP_TAB}                         xpath=//*[@resource-id='Swap' or @name='Swap' or @content-desc='Swap']
-${SWAP_INTRO_START_BUTTON}          xpath=//*[@resource-id='swap-intro-start-button' or @name='swap-intro-start-button' or @content-desc='swap-intro-start-button']
-${SWAP_INFO_BUTTON}                 xpath=//*[@content-desc='swap_info_button' or @resource-id='swap_info_button' or @name='swap_info_button']
-${WEBVIEW_CLOSE_BUTTON}             xpath=//*[@resource-id='webview_close_button' or @name='webview_close_button' or @content-desc='webview_close_button']
-${ACCOUNT_DRAWER}                   xpath=//*[@content-desc='pw_drawer_gesture_surface' or @resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
+${SWAP_TAB}                         tid=Swap
+${SWAP_INTRO_START_BUTTON}          tid=swap-intro-start-button
+${SWAP_INFO_BUTTON}                 tid=swap_info_button
+${WEBVIEW_CLOSE_BUTTON}             tid=webview_close_button
+${ACCOUNT_DRAWER}                   tid=pw_drawer_gesture_surface
 ${ACCOUNT_ROW_ANY}                  xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@resource-id,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 
-${SWAP_PAY_INPUT}                   xpath=//*[@resource-id='swap-pay-input' or @name='swap-pay-input' or @content-desc='swap-pay-input']
-${SWAP_RECEIVE_AMOUNT}              xpath=//*[@resource-id='swap-receive-amount' or @name='swap-receive-amount' or @content-desc='swap-receive-amount']
-${SWAP_BUTTON}                      xpath=//*[@resource-id='swap-button' or @name='swap-button' or @content-desc='swap-button']
-${SWAP_MAX_BUTTON}                  xpath=//*[@resource-id='swap-max-button' or @name='swap-max-button' or @content-desc='swap-max-button']
-${SWAP_FLIP_BUTTON}                 xpath=//*[@resource-id='swap-flip-button' or @name='swap-flip-button' or @content-desc='swap-flip-button']
-${SWAP_CONFIGURE_BUTTON}            xpath=//*[@resource-id='swap-configure-button' or @name='swap-configure-button' or @content-desc='swap-configure-button']
-${SWAP_PROVIDER_ROW}                xpath=//*[@resource-id='swap-provider-row' or @name='swap-provider-row' or @content-desc='swap-provider-row']
-${SWAP_PAY_ASSET_SELECTOR}          xpath=//*[@resource-id='swap-pay-asset-selector' or @name='swap-pay-asset-selector' or @content-desc='swap-pay-asset-selector']
-${SWAP_RECEIVE_ASSET_SELECTOR}      xpath=//*[@resource-id='swap-receive-asset-selector' or @name='swap-receive-asset-selector' or @content-desc='swap-receive-asset-selector']
+${SWAP_PAY_INPUT}                   tid=swap-pay-input
+${SWAP_RECEIVE_AMOUNT}              tid=swap-receive-amount
+${SWAP_BUTTON}                      tid=swap-button
+${SWAP_MAX_BUTTON}                  tid=swap-max-button
+${SWAP_FLIP_BUTTON}                 tid=swap-flip-button
+${SWAP_CONFIGURE_BUTTON}            tid=swap-configure-button
+${SWAP_PROVIDER_ROW}                tid=swap-provider-row
+${SWAP_PAY_ASSET_SELECTOR}          tid=swap-pay-asset-selector
+${SWAP_RECEIVE_ASSET_SELECTOR}      tid=swap-receive-asset-selector
 # PWView containers expose their testID as resource-id on Android, not as an accessibility id.
-${SWAP_QUOTE_ERROR}                 xpath=//*[@resource-id='swap_quote_error' or @name='swap_quote_error']
-${SWAP_INSUFFICIENT_BALANCE}        xpath=//*[@resource-id='swap_insufficient_balance' or @name='swap_insufficient_balance']
+${SWAP_QUOTE_ERROR}                 tid=swap_quote_error
+${SWAP_INSUFFICIENT_BALANCE}        tid=swap_insufficient_balance
 # The amount follows the label after an asset glyph ("¦" on Android, "Algo" on iOS).
 ${SWAP_BALANCE_VALUE}               xpath=(//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*/descendant-or-self::*[contains(translate(@text,'0123456789','##########'),'#') or contains(translate(@label,'0123456789','##########'),'#')])[1]
 ${SWAP_SELECT_ASSET_LABEL}          xpath=//*[@text='Select' or @label='Select']
 # iOS labels the toast with its title and body together, and keeps a hidden one in the tree.
 ${NOTHING_TO_SWAP_TOAST}            xpath=//*[(starts-with(@text,'Nothing to swap') or starts-with(@label,'Nothing to swap')) and not(@visible='false')]
 
-${ASSET_SEARCH_INPUT}               xpath=//*[@resource-id='searchable-list-search-input' or @name='searchable-list-search-input' or @content-desc='searchable-list-search-input']
+${ASSET_SEARCH_INPUT}               tid=searchable-list-search-input
 ${PAY_ASSET_ROW_ANY}                xpath=//*[starts-with(@content-desc,'asset-list-item-') or starts-with(@resource-id,'asset-list-item-') or starts-with(@name,'asset-list-item-')]
 ${PAY_ASSET_ROW_PREFIX}             asset-list-item-
 ${RECEIVE_ASSET_ROW_ANY}            xpath=//*[starts-with(@content-desc,'swap-asset-item-') or starts-with(@resource-id,'swap-asset-item-') or starts-with(@name,'swap-asset-item-')]
@@ -37,41 +37,41 @@ ${NO_MATCHING_ASSETS}               xpath=//*[@text='No Matching Assets' or @lab
 ${NO_MATCH_SEARCH}                  ZZQXNOMATCH9999
 # Mainnet USDC: verified and pooled against ALGO, so a stable probe for the receive list.
 ${USDC_ASSET_ID}                    31566704
-${USDC_RECEIVE_ROW}                 xpath=//*[@content-desc='swap-asset-item-31566704' or @resource-id='swap-asset-item-31566704' or @name='swap-asset-item-31566704']
+${USDC_RECEIVE_ROW}                 tid=swap-asset-item-31566704
 # Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
 # would match a bare USDC text anywhere.
 ${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
 
-${CONFIG_APPLY}                     xpath=//*[@resource-id='swap-config-apply' or @name='swap-config-apply' or @content-desc='swap-config-apply']
-${CONFIG_SLIPPAGE_INPUT}            xpath=//*[@resource-id='swap-config-slippage-input' or @name='swap-config-slippage-input' or @content-desc='swap-config-slippage-input']
-${CONFIG_SLIPPAGE_CUSTOM}           xpath=//*[@resource-id='swap-config-slippage-chip-custom' or @name='swap-config-slippage-chip-custom' or @content-desc='swap-config-slippage-chip-custom']
-${CONFIG_SLIPPAGE_CHIP_1}           xpath=//*[@resource-id='swap-config-slippage-chip-1' or @name='swap-config-slippage-chip-1' or @content-desc='swap-config-slippage-chip-1']
-${CONFIG_BALANCE_INPUT}             xpath=//*[@resource-id='swap-config-balance-input' or @name='swap-config-balance-input' or @content-desc='swap-config-balance-input']
-${CONFIG_BALANCE_CHIP_50}           xpath=//*[@resource-id='swap-config-balance-chip-50' or @name='swap-config-balance-chip-50' or @content-desc='swap-config-balance-chip-50']
-${CONFIG_LOCAL_CURRENCY_TOGGLE}     xpath=//*[@resource-id='swap_local_currency_toggle' or @name='swap_local_currency_toggle' or @content-desc='swap_local_currency_toggle']
+${CONFIG_APPLY}                     tid=swap-config-apply
+${CONFIG_SLIPPAGE_INPUT}            tid=swap-config-slippage-input
+${CONFIG_SLIPPAGE_CUSTOM}           tid=swap-config-slippage-chip-custom
+${CONFIG_SLIPPAGE_CHIP_1}           tid=swap-config-slippage-chip-1
+${CONFIG_BALANCE_INPUT}             tid=swap-config-balance-input
+${CONFIG_BALANCE_CHIP_50}           tid=swap-config-balance-chip-50
+${CONFIG_LOCAL_CURRENCY_TOGGLE}     tid=swap_local_currency_toggle
 ${CONFIG_SLIPPAGE_ERROR}            xpath=//*[starts-with(@text,'Slippage must be between') or starts-with(@label,'Slippage must be between')]
 ${CONFIG_BALANCE_ERROR}             xpath=//*[starts-with(@text,'Balance percentage must be between') or starts-with(@label,'Balance percentage must be between')]
 
-${PROVIDER_APPLY}                   xpath=//*[@resource-id='swap-provider-apply' or @name='swap-provider-apply' or @content-desc='swap-provider-apply']
-${PROVIDER_OPTION_AUTO}             xpath=//*[@resource-id='swap-provider-option-auto' or @name='swap-provider-option-auto' or @content-desc='swap-provider-option-auto']
+${PROVIDER_APPLY}                   tid=swap-provider-apply
+${PROVIDER_OPTION_AUTO}             tid=swap-provider-option-auto
 # Each option holds an <option>-radio view, which iOS also names; the first non-auto row is wanted.
 ${PROVIDER_OPTION_OTHER}            xpath=(//*[((starts-with(@content-desc,'swap-provider-option-') or starts-with(@resource-id,'swap-provider-option-')) and not(starts-with(@content-desc,'swap-provider-option-auto') or starts-with(@resource-id,'swap-provider-option-auto'))) or (starts-with(@name,'swap-provider-option-') and not(starts-with(@name,'swap-provider-option-auto')) and not(contains(@name,'-radio')))])[1]
 ${PROVIDER_TITLE_AUTO}              xpath=//*[@text='Provider (Best price available)' or @label='Provider (Best price available)']
 ${PROVIDER_TITLE_MANUAL}            xpath=//*[@text='Provider' or @label='Provider']
 
-${TOP_PAIRS}                        xpath=//*[@resource-id='swap-top-pairs' or @name='swap-top-pairs']
+${TOP_PAIRS}                        tid=swap-top-pairs
 ${TOP_PAIRS_TITLE}                  xpath=//*[@text='Top 5 Swaps' or @label='Top 5 Swaps']
 # The trailing hyphen keeps the swap-top-pairs-skeleton-N placeholders out.
 ${TOP_PAIR_FIRST}                   xpath=(//*[starts-with(@content-desc, 'swap-top-pair-') or starts-with(@resource-id, 'swap-top-pair-') or starts-with(@name,'swap-top-pair-')])[1]
-${HISTORY_WIDGET}                   xpath=//*[@resource-id='swap-pair-history-widget' or @name='swap-pair-history-widget']
-${HISTORY_SEE_ALL}                  xpath=//*[@resource-id='swap-pair-history-see-all' or @name='swap-pair-history-see-all' or @content-desc='swap-pair-history-see-all']
-${HISTORY_LIST}                     xpath=//*[@resource-id='swap-history-list' or @name='swap-history-list']
+${HISTORY_WIDGET}                   tid=swap-pair-history-widget
+${HISTORY_SEE_ALL}                  tid=swap-pair-history-see-all
+${HISTORY_LIST}                     tid=swap-history-list
 ${HISTORY_EMPTY}                    xpath=//*[@text='No swaps yet' or @label='No swaps yet']
 ${HISTORY_ROW_FIRST}                xpath=(//*[starts-with(@content-desc, 'swap-history-item-') or starts-with(@resource-id, 'swap-history-item-') or starts-with(@name,'swap-history-item-')])[1]
 
-${CONFIRM_SLIDE}                    xpath=//*[@resource-id='swap-confirm-slide' or @name='swap-confirm-slide' or @content-desc='swap-confirm-slide']
-${CONFIRM_WARNING}                  xpath=//*[@resource-id='swap-confirm-warning' or @name='swap-confirm-warning' or @content-desc='swap-confirm-warning']
-${CONFIRM_CLOSE}                    xpath=//*[@content-desc='swap-confirm-close' or @resource-id='swap-confirm-close' or @name='swap-confirm-close']
+${CONFIRM_SLIDE}                    tid=swap-confirm-slide
+${CONFIRM_WARNING}                  tid=swap-confirm-warning
+${CONFIRM_CLOSE}                    tid=swap-confirm-close
 ${CONFIRM_TITLE}                    xpath=//*[@text='Confirm Swap' or @label='Confirm Swap']
 @{CONFIRM_LABELS}                   Rate    Minimum Received    Pera Fee    Price Impact    Slippage Tolerance
 @{CONFIRM_VALUE_IDS}                swap-confirm-rate    swap-confirm-provider    swap-confirm-slippage

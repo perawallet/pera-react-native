@@ -5,6 +5,11 @@ and `resources/`; everything that differs by platform (session capabilities, dee
 sheet dismissal, tab selectors) lives in `resources/platforms/`. A test never branches on the
 platform: add the difference to both adapters instead.
 
+Locate a view by its testID with `tid=<id>` (`resources/libraries/PeraAppiumLibrary.py`). Android
+resolves it natively; iOS keeps an XPath lookup, the only one WDA makes wait for animations to
+finish. Write XPath yourself only for what a testID cannot say: prefixes, siblings, text and
+several IDs at once.
+
 ## Fixtures
 
 Each case starts from a named app state loaded through

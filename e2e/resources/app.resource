@@ -2,33 +2,33 @@
 Documentation       Shared session, wallet and fixture keywords. The platform adapter is chosen by
 ...                 PLATFORM (android or ios) and supplies Open Pera (attached, past any dev-client intro), Restart Pera, Open Deeplink,
 ...                 Close Sheet and ${MENU_TAB}.
-Library             AppiumLibrary    run_on_failure=Nothing
+Library             libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             libraries/NavTrace.py
 Resource            platforms/${PLATFORM}.resource
 
 
 *** Variables ***
-${CREATE_WALLET_BUTTON}         xpath=//*[@resource-id='onboarding_create_wallet_button' or @name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button']
-${TERMS_AGREE_BUTTON}           xpath=//*[@resource-id='terms_agree_button' or @name='terms_agree_button' or @content-desc='terms_agree_button']
-${ACCOUNT_NAME_INPUT}           xpath=//*[@resource-id='name_account_name_input' or @name='name_account_name_input' or @content-desc='name_account_name_input']
-${ACCOUNT_FINISH_BUTTON}        xpath=//*[@resource-id='name_account_finish_button' or @name='name_account_finish_button' or @content-desc='name_account_finish_button']
-${PIN_PROMPT_DONT_ASK}          xpath=//*[@resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='pin_security_prompt_dont_ask_button']
-${BANNERS_MODAL_CLOSE}          xpath=//*[@resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banners_carousel_modal_close']
-${BANNER_PROMPT_CLOSE}          xpath=//*[@resource-id='banner_prompt_close' or @name='banner_prompt_close' or @content-desc='banner_prompt_close']
-${ANALYTICS_CONSENT_DECLINE}    xpath=//*[@resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button' or @content-desc='analytics_consent_prompt_decline_button']
+${CREATE_WALLET_BUTTON}         tid=onboarding_create_wallet_button
+${TERMS_AGREE_BUTTON}           tid=terms_agree_button
+${ACCOUNT_NAME_INPUT}           tid=name_account_name_input
+${ACCOUNT_FINISH_BUTTON}        tid=name_account_finish_button
+${PIN_PROMPT_DONT_ASK}          tid=pin_security_prompt_dont_ask_button
+${BANNERS_MODAL_CLOSE}          tid=banners_carousel_modal_close
+${BANNER_PROMPT_CLOSE}          tid=banner_prompt_close
+${ANALYTICS_CONSENT_DECLINE}    tid=analytics_consent_prompt_decline_button
 ${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banner_prompt_close' or @resource-id='banner_prompt_close' or @name='banner_prompt_close' or @content-desc='analytics_consent_prompt_decline_button' or @resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
-${NAVIGATION_BACK_BUTTON}       xpath=//*[@resource-id='navigation_back_button' or @name='navigation_back_button' or @content-desc='navigation_back_button']
-${MENU_SETTINGS_BUTTON}         xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
-${SETTINGS_SCREEN}              xpath=//*[@resource-id='settings_screen' or @name='settings_screen']
-${SETTINGS_SECURITY_ITEM}       xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
-${DELETE_ALL_SUCCESS_SHEET}     xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
+${NAVIGATION_BACK_BUTTON}       tid=navigation_back_button
+${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
+${SETTINGS_SCREEN}              tid=settings_screen
+${SETTINGS_SECURITY_ITEM}       tid=settings_item_security
+${DELETE_ALL_SUCCESS_SHEET}     tid=settings_delete_all_success_bottom_sheet
 # Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
 ${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_')]
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @resource-id='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @resource-id='tab_menu_button' or @name='numpad_key_1' or @content-desc='numpad_key_1' or @resource-id='numpad_key_1']
-${PIN_PAD_KEY}                  xpath=//*[@resource-id='numpad_key_1' or @name='numpad_key_1' or @content-desc='numpad_key_1']
-${ACCOUNT_DRAWER_SLIVER}        xpath=//*[@resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
-${SHEET_BACKDROP}                xpath=//*[@content-desc='Bottom sheet backdrop' or @name='Bottom sheet backdrop']
+${PIN_PAD_KEY}                  tid=numpad_key_1
+${ACCOUNT_DRAWER_SLIVER}        tid=pw_drawer_gesture_surface
+${SHEET_BACKDROP}                tid=Bottom sheet backdrop
 # The only PINs any suite sets (security.robot). A run that dies with one set leaves the next cold
 # start on the lock screen, so every relaunch unlocks with them rather than failing there.
 @{E2E_PINS}                     123456    445566
@@ -66,10 +66,10 @@ Unlock With Known Pins
         IF    not ${locked}    RETURN
         # The pad keeps digits across attempts; one lost or doubled tap would shift every PIN after it.
         FOR    ${_}    IN RANGE    6
-            Click Element    xpath=//*[@resource-id='numpad_key_delete' or @name='numpad_key_delete' or @content-desc='numpad_key_delete']
+            Click Element    tid=numpad_key_delete
         END
         FOR    ${digit}    IN    @{{ list($pin) }}
-            Tap    xpath=//*[@resource-id='numpad_key_${digit}' or @name='numpad_key_${digit}' or @content-desc='numpad_key_${digit}']
+            Tap    tid=numpad_key_${digit}
         END
         # A Logging in overlay hides the pad while the PIN is checked; a wrong PIN brings the pad
         # back, a right one lands on Home. Then the loop tries the next PIN or returns.
@@ -227,9 +227,9 @@ Remove All Accounts
     [Documentation]    Settings > Remove all accounts, through to a settled onboarding screen.
     Open Settings
     Scroll Into View    settings_remove_all_accounts_button
-    Tap    xpath=//*[@resource-id='settings_remove_all_accounts_button' or @name='settings_remove_all_accounts_button' or @content-desc='settings_remove_all_accounts_button']
-    Wait Until Settled    xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
-    Tap    xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
+    Tap    tid=settings_remove_all_accounts_button
+    Wait Until Settled    tid=settings_delete_all_confirm_button
+    Tap    tid=settings_delete_all_confirm_button
     # The app routes back to onboarding only once the success sheet is closed.
     Wait Until Page Contains Element    ${DELETE_ALL_SUCCESS_SHEET}    timeout=30s
     # A backdrop tap while the sheet still slides up is lost, and onboarding under it then
@@ -313,7 +313,7 @@ Displayed Value
     ...                the accessibility label to the testID, which hides the rendered value; fail on
     ...                that rather than assert against the id.
     [Arguments]    ${test_id}
-    ${text}=    Get Text    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']
+    ${text}=    Get Text    tid=${test_id}
     Skip If    $text.strip() == $test_id
     ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
     RETURN    ${text}
