@@ -916,9 +916,9 @@ describe('createEip1193ConnectionHandler', () => {
             await flush()
 
             expect(errorOf(await next)?.code).toBe(EIP1193_ERROR_CODE.internal)
-            expect(messages.filter(({ kind }) => kind === 'request')).toHaveLength(
-                2,
-            )
+            expect(
+                messages.filter(({ kind }) => kind === 'request'),
+            ).toHaveLength(2)
         })
 
         it('answers a signing method no page backstop covers with 4200', async () => {

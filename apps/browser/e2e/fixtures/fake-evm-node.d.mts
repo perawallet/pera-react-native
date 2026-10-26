@@ -20,6 +20,9 @@ export type FakeEvmNode = {
     methods: string[]
     setChainId: (chainId: number) => void
     respond: (body: unknown) => unknown
+    reply: (body: unknown) => Promise<unknown>
+    /** Records broadcasts on arrival but answers none until the returned release is called. */
+    holdBroadcasts: () => () => void
 }
 
 export declare const evmTxHashOf: (raw: string) => string

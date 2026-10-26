@@ -160,7 +160,8 @@ export const declineConnectionRequest = async (
 /**
  * Hands a signed send to the host, which broadcasts it and answers the dApp,
  * and resolves with what the broadcast did. Throws `ApprovalDeliveryError`
- * only when nothing was handed off: the request is still the caller's to answer.
+ * when no outcome came back; if the bridge had already settled the approval,
+ * the caller's decline that follows changes nothing.
  */
 export const submitConnectionRequest = async (
     requestId: string,

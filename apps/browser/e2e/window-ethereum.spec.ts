@@ -491,6 +491,50 @@ test.describe('signing from a connected dApp', () => {
         expect(approvalErrors, 'approval threw an uncaught error').toEqual([])
     })
 
+    // The broadcast belongs to the offscreen document once the window hands
+    // the signed send over, so closing the window mid-send changes nothing.
+    test('closing the approval after Approve still answers the hash and keeps the site queue', async () => {
+        const message = `0x${Buffer.from('Sign in to the e2e dApp').toString('hex')}`
+        const broadcastsBefore = node.rawTransactions.length
+        await startRequest('held-send', {
+            method: 'eth_sendTransaction',
+            params: [
+                {
+                    from: address,
+                    to: '0x000000000000000000000000000000000000dEaD',
+                    value: '0x1',
+                },
+            ],
+        })
+        await startRequest('after-held-send', {
+            method: 'personal_sign',
+            params: [message, address],
+        })
+        const release = node.holdBroadcasts()
+        const { approvalPage } = await openApproval()
+        const confirm = approvalPage.getByTestId('signing-confirm-slide')
+        await expect(confirm).toBeVisible({ timeout: 20_000 })
+        await tapToConfirm(approvalPage, confirm)
+        await expect
+            .poll(() => node.rawTransactions.length, { timeout: 20_000 })
+            .toBe(broadcastsBefore + 1)
+
+        await approvalPage.close()
+        release()
+
+        const sent = await outcomeOf('held-send')
+        expect(sent.code, sent.message).toBeUndefined()
+        expect(sent.result).toBe(
+            evmTxHashOf(node.rawTransactions[broadcastsBefore]),
+        )
+        const { approvalPage: next } = await openApproval()
+        await expect(
+            next.getByTestId('message-signing-confirm-slide'),
+        ).toBeVisible({ timeout: 20_000 })
+        await next.close()
+        expect((await outcomeOf('after-held-send')).code).toBe(4001)
+    })
+
     test('closing the approval rejects the request and the queued ones with 4001', async () => {
         const message = `0x${Buffer.from('Sign in to the e2e dApp').toString('hex')}`
         await startRequest('first', {

@@ -148,11 +148,6 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
-/**
- * Writes each transaction's ledger row before sending it, so a send that gets
- * no answer still holds its nonce. A ledger write failure never blocks the
- * send.
- */
 /** The entry the send's build put on its unsigned transaction, read back from the signed bytes. */
 export const historyEntryOfSigned = async (
     serializedTransaction: TransactionSerialized,
@@ -174,6 +169,11 @@ export const historyEntryOfSigned = async (
     }
 }
 
+/**
+ * Writes each transaction's ledger row before sending it, so a send that gets
+ * no answer still holds its nonce. A ledger write failure never blocks the
+ * send.
+ */
 export const submitAndRecordEthereumTransactions = async ({
     client,
     chain,

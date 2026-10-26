@@ -445,7 +445,10 @@ describe('startConnectionsHost', () => {
                 expect(
                     await submit([
                         {
-                            scope: { chainId: 'algorand', networkId: 'mainnet' },
+                            scope: {
+                                chainId: 'algorand',
+                                networkId: 'mainnet',
+                            },
                             id: '0xh',
                             bytes: 'AQID',
                         },

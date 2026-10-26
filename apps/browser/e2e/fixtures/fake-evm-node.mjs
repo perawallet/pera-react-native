@@ -116,6 +116,14 @@ export const createFakeEvmNode = () => {
         return { jsonrpc: '2.0', id, result: result(params ?? []) }
     }
 
+    const respond = body =>
+        Array.isArray(body) ? body.map(answer) : answer(body)
+    const isBroadcast = body =>
+        (Array.isArray(body) ? body : [body]).some(
+            call => call?.method === 'eth_sendRawTransaction',
+        )
+    let held = null
+
     return {
         rawTransactions,
         unansweredMethods,
@@ -124,8 +132,27 @@ export const createFakeEvmNode = () => {
             chainId = id
         },
         /** Answers one JSON-RPC body, single or batched. */
-        respond: body =>
-            Array.isArray(body) ? body.map(answer) : answer(body),
+        respond,
+        /** As `respond`, but a broadcast waits while `holdBroadcasts` holds it. */
+        reply: async body => {
+            const reply = respond(body)
+            if (held && isBroadcast(body)) await held
+            return reply
+        },
+        /**
+         * Records broadcasts on arrival but answers none until the returned
+         * release is called.
+         */
+        holdBroadcasts: () => {
+            let release = () => {}
+            held = new Promise(resolve => {
+                release = resolve
+            })
+            return () => {
+                held = null
+                release()
+            }
+        },
     }
 }
 
@@ -155,11 +182,13 @@ export const serveFakeEvmNode = async (node, { port }) => {
                 response.writeHead(400, CORS_HEADERS).end()
                 return
             }
-            response.writeHead(200, {
-                ...CORS_HEADERS,
-                'Content-Type': 'application/json',
+            void node.reply(body).then(reply => {
+                response.writeHead(200, {
+                    ...CORS_HEADERS,
+                    'Content-Type': 'application/json',
+                })
+                response.end(JSON.stringify(reply))
             })
-            response.end(JSON.stringify(node.respond(body)))
         })
     })
     await new Promise((resolve, reject) => {

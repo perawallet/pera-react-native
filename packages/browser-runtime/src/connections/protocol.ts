@@ -259,7 +259,11 @@ export const isWireWalletOperationResult = (
 export const CONNECTIONS_CONTROL_SCOPE = 'pera-connections-control' as const
 
 /** A signed transaction on its way to be broadcast; `bytes` is base64. */
-export type WireSignedTransaction = { scope: ChainScope; id: string; bytes: string }
+export type WireSignedTransaction = {
+    scope: ChainScope
+    id: string
+    bytes: string
+}
 
 export const encodeSignedTransactions = (
     signed: readonly SignedTransaction[],

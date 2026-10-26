@@ -624,7 +624,11 @@ const enqueueSendTransactionRequest = (
                               })
                               forgetRequest(deps, message)
                           },
-                    ...requestLifecycle(lifecycleMessage, deps, () => signRequest),
+                    ...requestLifecycle(
+                        lifecycleMessage,
+                        deps,
+                        () => signRequest,
+                    ),
                 }
                 addSignRequest(signRequest)
                 settleTrackedRequest(deps, message, signRequest)
@@ -733,10 +737,13 @@ export type EnqueueInboundRequestDeps = {
     /**
      * Set by a surface that must not broadcast (the extension's approval
      * window): the signed send goes here, and the receiver broadcasts it and
-     * answers the peer. Resolves once the receiver took it; rejects only when
-     * it never left, so the request is still this surface's to answer.
+     * answers the peer. Resolves with the receiver's outcome; a rejection
+     * means no outcome came back, so this surface still answers the peer, and
+     * a receiver that did take the send ignores that late answer.
      */
-    submitSignedSend?: (signed: SignedTransaction[]) => Promise<SignedSendOutcome>
+    submitSignedSend?: (
+        signed: SignedTransaction[],
+    ) => Promise<SignedSendOutcome>
 }
 
 export type SignedSendOutcome =

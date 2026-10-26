@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     registerHardwareWalletTransports: vi.fn(),
     registerChainAdapters: vi.fn(),
     markDatabaseResetNoticePending: vi.fn(),
+    submitAndAutoRefresh: vi.fn(() => Promise.resolve(['0xh'])),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome/bootstrap', () => ({
@@ -41,6 +42,9 @@ vi.mock('../bootstrap/databaseResetNotice', () => ({
 vi.mock('../bootstrap/chain-adapters', () => ({
     registerChainAdapters: mocks.registerChainAdapters,
 }))
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    submitAndAutoRefresh: mocks.submitAndAutoRefresh,
+}))
 
 describe('App (web) on the offscreen surface', () => {
     it('hands the app chain registration to the offscreen document after hydration', async () => {
@@ -52,9 +56,30 @@ describe('App (web) on the offscreen surface', () => {
         expect(mocks.runOffscreenApp).toHaveBeenCalledWith({
             registerChainAdapters: mocks.registerChainAdapters,
             onDatabaseReset: mocks.markDatabaseResetNoticePending,
+            submitSignedTransactions: expect.any(Function),
         })
         expect(mocks.hydratePlatform.mock.invocationCallOrder[0]).toBeLessThan(
             mocks.runOffscreenApp.mock.invocationCallOrder[0],
         )
+    })
+
+    it('hands the offscreen document a broadcast on the signed transactions’ own scope', async () => {
+        render(<App />)
+        await waitFor(() =>
+            expect(mocks.runOffscreenApp).toHaveBeenCalledOnce(),
+        )
+        const [{ submitSignedTransactions }] = mocks.runOffscreenApp.mock
+            .calls[0] as unknown as [
+            {
+                submitSignedTransactions: (
+                    signed: unknown[],
+                ) => Promise<string[]>
+            },
+        ]
+        const scope = { chainId: 'ethereum', networkId: 'sepolia' }
+        const signed = [{ scope, id: '0xh', bytes: new Uint8Array([1]) }]
+
+        await expect(submitSignedTransactions(signed)).resolves.toEqual(['0xh'])
+        expect(mocks.submitAndAutoRefresh).toHaveBeenCalledWith(scope, signed)
     })
 })

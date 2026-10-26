@@ -103,6 +103,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
     },
     {
+        file: 'apps/browser/src/offscreen/connections/connectionsHost.ts',
+        text: 'scope.chainId !== request.chainId',
+        reason: "Refuses a handed-off send signed for another chain than its own request's; compares two passed values, never a named chain.",
+    },
+    {
         file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
         text: 'assetScope.chainId === currencyScope.chainId',
         reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",

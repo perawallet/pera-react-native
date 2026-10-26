@@ -184,10 +184,7 @@ const validateSignTypedData = (
     }
     // Signed without a chain, a permit is valid on every chain whose token
     // leaves the chain out of its domain separator.
-    if (
-        !hasDomainChainId(typedData) &&
-        isPermitTypedData(typedData)
-    ) {
+    if (!hasDomainChainId(typedData) && isPermitTypedData(typedData)) {
         return invalid('eth_signTypedData_v4 permit domain names no chainId')
     }
     return {

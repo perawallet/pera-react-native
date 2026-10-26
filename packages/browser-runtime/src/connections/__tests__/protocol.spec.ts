@@ -364,9 +364,7 @@ describe('isConnectionsControlMessage', () => {
             kind: 'submit-send',
             connectionId: 'c1',
             correlationId: '7',
-            signedTransactions: [
-                { scope: SCOPE, id: '0xabc', bytes: 'AQID' },
-            ],
+            signedTransactions: [{ scope: SCOPE, id: '0xabc', bytes: 'AQID' }],
             ...fields,
         })
 
@@ -377,9 +375,7 @@ describe('isConnectionsControlMessage', () => {
             ),
         ).toBe(false)
         expect(
-            isConnectionsControlMessage(
-                submitSend({ signedTransactions: [] }),
-            ),
+            isConnectionsControlMessage(submitSend({ signedTransactions: [] })),
         ).toBe(false)
     })
 

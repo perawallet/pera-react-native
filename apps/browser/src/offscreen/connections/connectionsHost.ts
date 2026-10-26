@@ -397,10 +397,13 @@ export const startConnectionsHost = (
         } catch (error) {
             const failure = toError(error)
             await request.reject(failure).catch((rejectError: unknown) => {
-                logger.warn('[connections-host] send failure never reached the peer', {
-                    key,
-                    error: rejectError,
-                })
+                logger.warn(
+                    '[connections-host] send failure never reached the peer',
+                    {
+                        key,
+                        error: rejectError,
+                    },
+                )
             })
             return ok({
                 failure: {
@@ -416,10 +419,13 @@ export const startConnectionsHost = (
         await request
             .respond({ type: 'send-transaction', txId })
             .catch((error: unknown) => {
-                logger.warn('[connections-host] send answer never reached the peer', {
-                    key,
-                    error,
-                })
+                logger.warn(
+                    '[connections-host] send answer never reached the peer',
+                    {
+                        key,
+                        error,
+                    },
+                )
             })
         return ok({ txIds: [txId] })
     }

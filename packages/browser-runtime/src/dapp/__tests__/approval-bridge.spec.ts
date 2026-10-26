@@ -221,6 +221,46 @@ describe('ApprovalWindowBridge', () => {
             expect(getPlatformInfoMock).toHaveBeenCalledTimes(3)
         })
 
+        it('keeps the worker alive while a submitted send awaits its outcome, and stops once it is reported', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'k-send')
+            await vi.advanceTimersByTimeAsync(0)
+            void fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'submit-connection-request',
+                    requestId: 'k-send',
+                    signedTransactions: [
+                        {
+                            scope: {
+                                chainId: 'ethereum',
+                                networkId: 'mainnet',
+                            },
+                            id: '0xh',
+                            bytes: 'AQID',
+                        },
+                    ],
+                },
+                trustedSender,
+            )
+            const { reportOutcome } =
+                (await decision) as ConnectionRequestSubmitted
+            getPlatformInfoMock.mockClear()
+
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 2,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(2)
+
+            reportOutcome({ ok: true, txId: '0xh' })
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 2,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(2)
+        })
+
         it('lets the worker idle out once an approval has been pending past the cap', async () => {
             const { chromeLike } = makeChrome()
             const bridge = new ApprovalWindowBridge(chromeLike)

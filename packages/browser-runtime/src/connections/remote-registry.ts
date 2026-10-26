@@ -27,7 +27,6 @@ import { rebuildWireError, type ConnectionsEvent } from './protocol'
 type ProposalListener = (proposal: ConnectionProposal) => void
 type ErrorListener = (error: Error, scope?: ConnectionErrorScope) => void
 
-
 /**
  * URI claims, `describeUri`, `scopesFor` and `methodsFor` are answered locally from
  * un-initialized handler instances; every lifecycle call goes to the offscreen

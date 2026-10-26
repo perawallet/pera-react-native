@@ -243,6 +243,9 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     private popupAttemptRequestId: string | null = null
     private keepAliveTimer: ReturnType<typeof setInterval> | null = null
     private keepAliveSince = 0
+    // A submitted send is settled but still owes its window an outcome; an
+    // idled worker would drop that reply while the host broadcasts.
+    private submissionsAwaitingOutcome = 0
 
     constructor(private readonly chromeLike: typeof chrome = chrome) {}
 
@@ -378,7 +381,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         if (this.keepAliveTimer !== null) return
         this.keepAliveTimer = setInterval(() => {
             if (
-                this.pending.size === 0 ||
+                this.isIdle() ||
                 Date.now() - this.keepAliveSince > APPROVAL_KEEPALIVE_MAX_MS
             ) {
                 this.stopKeepAlive()
@@ -386,6 +389,10 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             }
             void this.chromeLike.runtime.getPlatformInfo().catch(() => {})
         }, APPROVAL_KEEPALIVE_INTERVAL_MS)
+    }
+
+    private isIdle(): boolean {
+        return this.pending.size === 0 && this.submissionsAwaitingOutcome === 0
     }
 
     private stopKeepAlive(): void {
@@ -653,12 +660,16 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 }
                 // Settled now, so nothing the surface does from here (a close,
                 // a pagehide reject) can answer the dApp; the host owns the send.
+                this.submissionsAwaitingOutcome++
                 this.finish(
                     msg.requestId!,
                     {
                         submitted: msg.signedTransactions,
-                        reportOutcome: outcome =>
-                            sendResponse({ ok: true, outcome }),
+                        reportOutcome: outcome => {
+                            this.submissionsAwaitingOutcome--
+                            if (this.isIdle()) this.stopKeepAlive()
+                            sendResponse({ ok: true, outcome })
+                        },
                     } satisfies ConnectionRequestSubmitted,
                     { keepSurface: true },
                 )
@@ -727,7 +738,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
-        if (this.pending.size === 0) this.stopKeepAlive()
+        if (this.isIdle()) this.stopKeepAlive()
         // Settled by any route; the unclaimed timer has nothing left to guard.
         if (entry.unclaimedTimer !== undefined) {
             clearTimeout(entry.unclaimedTimer)
