@@ -45,6 +45,7 @@ const toRecords = (
             status: item.status === 'success' ? 'confirmed' : 'failed',
             timestamp: Date.parse(item.block_time),
             fee: item.fee === null ? undefined : new Decimal(item.fee),
+            ...(item.from !== null && { initiator: item.from }),
             summary: summarizeEthereumHistoryItem(item, address, scope, chain),
             chainData: { family: 'evm' },
         },

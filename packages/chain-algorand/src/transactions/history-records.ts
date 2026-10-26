@@ -34,6 +34,7 @@ const toAlgorandTransactionRecord = (
         status: item.status ?? 'confirmed',
         timestamp: item.roundTime > 0 ? item.roundTime * 1000 : undefined,
         fee: item.fee,
+        initiator: item.sender,
         summary: summarizeAlgorandHistoryItem(item, address),
         chainData: {
             family: 'algorand',

@@ -261,6 +261,11 @@ export interface TransactionRecord {
     timestamp?: number
     /** In the native asset. */
     fee?: Decimal
+    /**
+     * The address that signed the transaction; absent when the history doesn't
+     * say. A `direction: 'out'` summary alone doesn't prove the account sent it.
+     */
+    initiator?: string
     summary: TransactionSummary
     chainData: ChainTransactionData
 }
