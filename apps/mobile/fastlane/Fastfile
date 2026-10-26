@@ -136,6 +136,10 @@ platform :ios do
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
     extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]
+    # Home-screen widget extension (targets/widget, bundle id suffix set in its
+    # expo-target.config.js). Needs its own App ID in the app's App Group.
+    widget_bundle_id = "#{bundle_id}.widget"
+    widget_profile = ENV["IOS_WIDGET_PROVISIONING_PROFILE_NAME"]
 
     export_options = {}
     xcargs_list = ["CODE_SIGN_STYLE='Manual'"]
@@ -166,6 +170,20 @@ platform :ios do
         export_options[:provisioningProfiles][extension_bundle_id] = extension_profile
       else
         UI.important("IOS_AUTOFILL_PROVISIONING_PROFILE_NAME not set — the AutoFill extension target won't be signed and the archive will fail.")
+      end
+
+      if widget_profile
+        update_code_signing_settings(
+          path: get_xcodeproj_path,
+          use_automatic_signing: false,
+          team_id: ENV["IOS_TEAM_ID"],
+          code_sign_identity: "Apple Distribution",
+          targets: ["PeraWidgetExtension"],
+          profile_name: widget_profile
+        )
+        export_options[:provisioningProfiles][widget_bundle_id] = widget_profile
+      else
+        UI.important("IOS_WIDGET_PROVISIONING_PROFILE_NAME not set — the widget extension target won't be signed and the archive will fail.")
       end
 
       xcargs_list << "CODE_SIGN_IDENTITY='Apple Distribution'"

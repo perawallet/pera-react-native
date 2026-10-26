@@ -92,6 +92,7 @@ fresh_host() { # $1: the default keychain the user starts with, or empty for non
 export IOS_CERTIFICATE_P12_BASE64 IOS_CERTIFICATE_PASSWORD=pw
 IOS_CERTIFICATE_P12_BASE64=$(printf 'p12' | base64)
 IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64=""
+IOS_WIDGET_PROVISIONING_PROFILE_BASE64=""
 PROFILE=$(printf 'a signed profile' | base64)
 
 # A job user that has never logged in has no default keychain at all.

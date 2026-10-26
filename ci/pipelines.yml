@@ -75,10 +75,12 @@ _ios_secrets: &ios_secrets
   - IOS_CERTIFICATE_PASSWORD
   - IOS_PROVISIONING_PROFILE_BASE64
   - IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64
+  - IOS_WIDGET_PROVISIONING_PROFILE_BASE64
   # Read by the Fastfile to pin each target's profile; must name the profiles
-  # decoded from the two blobs above.
+  # decoded from the three blobs above.
   - IOS_PROVISIONING_PROFILE_NAME
   - IOS_AUTOFILL_PROVISIONING_PROFILE_NAME
+  - IOS_WIDGET_PROVISIONING_PROFILE_NAME
   - IOS_GOOGLE_SERVICE_INFO_BASE64
   - APP_STORE_APPLE_ID
   - SLACK_WEBHOOK_URL

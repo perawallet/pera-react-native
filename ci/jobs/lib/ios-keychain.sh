@@ -5,7 +5,8 @@
 #
 # Expects in the environment:
 #   IOS_CERTIFICATE_P12_BASE64, IOS_CERTIFICATE_PASSWORD
-#   IOS_PROVISIONING_PROFILE_BASE64, IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64
+#   IOS_PROVISIONING_PROFILE_BASE64, IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64,
+#   IOS_WIDGET_PROVISIONING_PROFILE_BASE64
 
 PERA_KEYCHAIN=""
 PERA_TMPDIR=""
@@ -152,6 +153,10 @@ ios_keychain_setup() {
     return 1
   fi
   if ! _install_profile "${IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64:-}"; then
+    if [ "$had_x" -eq 1 ]; then set -x; fi
+    return 1
+  fi
+  if ! _install_profile "${IOS_WIDGET_PROVISIONING_PROFILE_BASE64:-}"; then
     if [ "$had_x" -eq 1 ]; then set -x; fi
     return 1
   fi
