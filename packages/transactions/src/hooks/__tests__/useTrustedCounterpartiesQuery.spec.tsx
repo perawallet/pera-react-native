@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import {
     onlineManager,
     QueryClient,
@@ -24,7 +24,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { fetchTrustedCounterparties } from '../../address-safety'
 import { fakeCodec } from '../../address-safety/__tests__/fakeCodecs'
-import { useTrustedCounterpartiesQuery } from '../useTrustedCounterpartiesQuery'
+import {
+    TRUSTED_COUNTERPARTIES_DEADLINE_MS,
+    useTrustedCounterpartiesQuery,
+} from '../useTrustedCounterpartiesQuery'
 
 vi.mock('../../address-safety', () => ({
     fetchTrustedCounterparties: vi.fn(),
@@ -147,12 +150,68 @@ describe('useTrustedCounterpartiesQuery', () => {
         )
     })
 
+    it("reports that the sender's history loaded", async () => {
+        vi.mocked(fetchTrustedCounterparties).mockResolvedValue([])
+
+        const { result } = render(['A'])
+
+        await waitFor(() => expect(result.current.hasSenderHistory).toBe(true))
+    })
+
+    it("reports no sender history when the sender's read fails", async () => {
+        vi.mocked(fetchTrustedCounterparties).mockImplementation(
+            async ({ accountAddress }) => {
+                if (accountAddress === 'A') throw new Error('history down')
+                return []
+            },
+        )
+
+        const { result } = render(['A', 'B'])
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.hasSenderHistory).toBe(false)
+    })
+
+    describe('with a deadline', () => {
+        beforeEach(() => {
+            vi.useFakeTimers({ shouldAdvanceTime: true })
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it("stops holding Confirm once the sender's read runs past the deadline", async () => {
+            let readSignal: AbortSignal | undefined
+            vi.mocked(fetchTrustedCounterparties).mockImplementation(
+                ({ signal }) => {
+                    readSignal = signal
+                    return never()
+                },
+            )
+
+            const { result } = render(['A'])
+            expect(result.current.isPending).toBe(true)
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(
+                    TRUSTED_COUNTERPARTIES_DEADLINE_MS,
+                )
+            })
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            expect(result.current.hasSenderHistory).toBe(false)
+            expect(readSignal?.aborted).toBe(true)
+        })
+    })
+
     it('does not wait on history while offline', () => {
         onlineManager.setOnline(false)
 
         const { result } = render(['A'])
 
         expect(result.current.isPending).toBe(false)
+        expect(result.current.hasSenderHistory).toBe(false)
         expect(result.current.data).toEqual([])
         expect(fetchTrustedCounterparties).not.toHaveBeenCalled()
     })

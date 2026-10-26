@@ -25,10 +25,39 @@ import { transactionQueryKeys } from './querykeys'
 // Long enough to cover a whole send flow, which reopens its confirmation step.
 const TRUSTED_COUNTERPARTIES_STALE_TIME_MS = 10 * 60_000
 
+/** Past this the read gives up and counts as failed, so Confirm never waits longer. */
+export const TRUSTED_COUNTERPARTIES_DEADLINE_MS = 10_000
+
 export type UseTrustedCounterpartiesQueryResult = {
     data: TrustedCounterparty[]
     /** Only the sender's history; the other accounts' arrive when they do. */
     isPending: boolean
+    /** False when the sender's history failed, timed out or waits offline. */
+    hasSenderHistory: boolean
+}
+
+// A history page has no abort of its own, so the deadline rejects at once and
+// the abort stops any further pages.
+const withDeadline = async <T>(
+    read: (signal: AbortSignal) => Promise<T>,
+    querySignal: AbortSignal,
+): Promise<T> => {
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    querySignal.addEventListener('abort', abort)
+    let timer: Optional<ReturnType<typeof setTimeout>>
+    const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+            controller.abort()
+            reject(new Error('Trusted counterparty lookup timed out'))
+        }, TRUSTED_COUNTERPARTIES_DEADLINE_MS)
+    })
+    try {
+        return await Promise.race([read(controller.signal), deadline])
+    } finally {
+        clearTimeout(timer)
+        querySignal.removeEventListener('abort', abort)
+    }
 }
 
 export const useTrustedCounterpartiesQuery = ({
@@ -55,24 +84,35 @@ export const useTrustedCounterpartiesQuery = ({
                 scope,
             ),
             queryFn: ({ signal }: { signal: AbortSignal }) =>
-                fetchTrustedCounterparties({ accountAddress, scope, signal }),
+                withDeadline(
+                    deadlineSignal =>
+                        fetchTrustedCounterparties({
+                            accountAddress,
+                            scope,
+                            signal: deadlineSignal,
+                        }),
+                    signal,
+                ),
             staleTime: TRUSTED_COUNTERPARTIES_STALE_TIME_MS,
             enabled: isEnabled,
             retry: false,
         })),
-        // Only the sender's own history holds Confirm. An errored or
-        // offline-paused read counts as settled with no history, and another
+        // Only the sender's own history holds Confirm. An errored, timed-out
+        // or offline-paused read counts as settled with no history, and another
         // account's read can only add what it finds once it lands.
-        combine: results => ({
-            data: results.flatMap(result => result.data ?? []),
-            isPending:
-                isEnabled &&
-                results.some(
-                    (result, index) =>
-                        isSender(accountAddresses[index]) &&
-                        result.isPending &&
-                        !result.isPaused,
-                ),
-        }),
+        combine: results => {
+            const sender = results.find((_, index) =>
+                isSender(accountAddresses[index]),
+            )
+            return {
+                data: results.flatMap(result => result.data ?? []),
+                isPending:
+                    isEnabled &&
+                    !!sender &&
+                    sender.isPending &&
+                    !sender.isPaused,
+                hasSenderHistory: !!sender?.isSuccess,
+            }
+        },
     })
 }
