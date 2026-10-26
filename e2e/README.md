@@ -46,6 +46,11 @@ python e2e/tools/parity.py e2e/results/android/output.xml e2e/results/ios/output
 python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios/nav-flows.json
 ```
 
+- Run Appium 3.5.2 with UiAutomator2 8.1.1 and XCUITest 12.0.0, the versions BrowserStack runs for
+  the `appiumVersion` in `browserstack-<platform>.yml`, so a case behaves the same on both.
+- Keep the device at its default font and display size. A larger one pushes rows below the fold,
+  where UiAutomator does not report them until scrolled to.
+
 - Set `APP_ENV` explicitly: a local `.env.local` may say `production`, and Metro refuses to bundle
   the hook for production.
 - Build iOS through `expo run:ios`: an unsigned `xcodebuild` (`CODE_SIGNING_ALLOWED=NO`) drops the
@@ -72,6 +77,12 @@ an `.ipa` must be patched by `tools/qa/patch-ipa-for-browserstack.sh` first.
   which has reported success for a failed run.
 - Cases tagged `device-shell` need `adb` or `simctl` on the machine that runs Robot. A cloud device
   is not attached to it, so those cases run only locally.
+- An `.apk` or `.ipa` is uploaded under a custom id derived from its content, so a later run with the
+  same file reuses the upload instead of sending it again.
+- `E2E_PARALLEL=<n>` runs n suites at once, each in its own session. Keep it within the plan's
+  parallel limit, or the extra sessions queue.
+- Failure screenshots are embedded in `log.html`; the session's Appium and device logs are on its
+  BrowserStack dashboard page.
 
 The release smoke gate (`tools/qa/smoke-test.sh`) runs the `release-gate` case this way, and the
 "E2E / BrowserStack" workflow runs the whole suite against uploaded E2E builds.

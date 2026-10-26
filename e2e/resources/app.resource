@@ -185,6 +185,13 @@ Reset To Fresh Wallet
     [Documentation]    Suite Teardown for suites that import, add or remove accounts: removes every
     ...                account and creates one new unfunded wallet, so later suites start from the
     ...                state Start Pera With Wallet assumes instead of whatever this suite left.
+    # A teardown runs every step even after one fails, so from a wrong screen each later step
+    # would spend its full wait, minutes per failed suite. Stop at the first failure instead.
+    [Tags]    robot:recursive-stop-on-failure
+    # Nothing to reset when the suite never reached the app. Only a suite teardown has the message;
+    # tests call this too.
+    ${suite_message}=    Get Variable Value    \${SUITE MESSAGE}    ${EMPTY}
+    IF    'Suite setup failed' in $suite_message    RETURN
     # A case that failed after removing every account leaves onboarding up, where fixtures do nothing.
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
     IF    not ${onboarding}    Remove All Accounts

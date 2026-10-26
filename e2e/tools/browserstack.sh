@@ -36,13 +36,25 @@ OUT="$(cd "$OUT" && pwd)"
 
 if [[ "$APP" != bs://* ]]; then
   [[ -f "$APP" ]] || { echo "neither a bs:// app id nor a file: $APP" >&2; exit 2; }
+  # Keyed by content, so a build already uploaded (BrowserStack keeps uploads 30 days) is reused
+  # rather than sent again; a staging APK is hundreds of MB.
+  HASH=$({ sha256sum "$APP" 2>/dev/null || shasum -a 256 "$APP"; } | cut -c1-16)
+  CUSTOM_ID="pera-rn-e2e-$PLATFORM-$HASH"
+  REUSED=$(curl --silent -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+    "https://api-cloud.browserstack.com/app-automate/recent_apps/$CUSTOM_ID" |
+    jq -r 'if type == "array" then .[0].app_url // empty else empty end' 2>/dev/null || true)
+fi
+if [[ -n "${REUSED:-}" ]]; then
+  echo "--- $(basename "$APP") is already on BrowserStack as $REUSED"
+  APP="$REUSED"
+elif [[ "$APP" != bs://* ]]; then
   echo "--- Uploading $(basename "$APP") to BrowserStack"
   # Inside `if !`: under set -e a bare assignment exits on the HTTP error and drops the body,
   # the only text that says why (bad key, app quota, oversized artifact).
   if ! RESPONSE=$(curl --silent --show-error --fail-with-body \
     -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
     -X POST https://api-cloud.browserstack.com/app-automate/upload \
-    -F "file=@$APP" -F "custom_id=pera-rn-e2e-$PLATFORM"); then
+    -F "file=@$APP" -F "custom_id=$CUSTOM_ID"); then
     echo "BrowserStack upload failed: $RESPONSE" >&2
     exit 1
   fi
@@ -71,14 +83,34 @@ for arg in "$@"; do
 done
 [ "${#SUITES[@]}" -gt 0 ] || SUITES=("$E2E_DIR"/tests/*.robot)
 
-OUTPUTS=()
-for suite in "${SUITES[@]}"; do
+run_suite() {
+  local suite="$1" name
   name=$(basename "$suite" .robot)
   mkdir -p "$OUT/$name" "$WORK_DIR/$name"
   (cd "$WORK_DIR/$name" && "$VENV/bin/browserstack-sdk" robot \
     --variable "PLATFORM:$PLATFORM" \
     --exclude slow --exclude needs-funded --exclude excludefromci --exclude device-shell \
     ${ARGS[@]+"${ARGS[@]}"} --outputdir "$OUT/$name" "$suite") || true
+}
+
+# E2E_PARALLEL suites at once, each its own BrowserStack session; keep it within the plan's
+# parallel limit or the extra sessions queue.
+# ponytail: runs in batches, so a batch waits for its slowest suite; a job pool if that bites.
+PARALLEL="${E2E_PARALLEL:-1}"
+RUNNING=0
+for suite in "${SUITES[@]}"; do
+  run_suite "$suite" &
+  RUNNING=$((RUNNING + 1))
+  if [ "$RUNNING" -ge "$PARALLEL" ]; then
+    wait
+    RUNNING=0
+  fi
+done
+wait
+
+OUTPUTS=()
+for suite in "${SUITES[@]}"; do
+  name=$(basename "$suite" .robot)
   # pabot's merge can crash after the cases ran, leaving only its per-process outputs.
   if [ -f "$OUT/$name/output.xml" ]; then
     OUTPUTS+=("$OUT/$name/output.xml")

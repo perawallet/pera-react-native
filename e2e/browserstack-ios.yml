@@ -13,4 +13,7 @@ browserstackLocal: false
 # Android) rejects commands the suite drives, such as mobile: terminateApp and clickGesture.
 appiumVersion: "3.5.2"
 deviceLogs: true
+# The one log that names the command a failed run stopped on; a session without it cannot be
+# diagnosed after the fact.
+appiumLogs: true
 idleTimeout: 300
