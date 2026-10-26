@@ -23,6 +23,12 @@ export type FixtureNetwork = {
     unhandledRequests: () => string[]
 }
 
+// NetInfo polls this on its own schedule (the bench never applies the app's
+// configured URL). Refusing it would read as offline, and counting it would let
+// a tick that did nothing pass the request-count check.
+const isReachabilityProbe = (request: Request): boolean =>
+    new URL(request.url).pathname === '/generate_204'
+
 /**
  * Every request the scenarios make is answered here. An unanswered one is
  * recorded and refused, so a scenario can never reach a real backend.
@@ -40,6 +46,9 @@ export const startFixtureNetwork = (): FixtureNetwork => {
 
     globalThis.fetch = async (input, init) => {
         const request = new Request(input, init)
+        if (isReachabilityProbe(request)) {
+            return new Response(null, { status: 204 })
+        }
         requests += 1
         const response = await getResponse(handlers, request)
         if (!response) {

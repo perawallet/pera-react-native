@@ -51,6 +51,17 @@ describe('startFixtureNetwork', () => {
         expect(await response.json()).toBe(true)
     })
 
+    it('answers the connectivity probe without counting it as app traffic', async () => {
+        const response = await fetch(
+            'https://clients3.google.com/generate_204',
+            { method: 'HEAD' },
+        )
+
+        expect(response.status).toBe(204)
+        expect(network.requestCount()).toBe(0)
+        expect(network.unhandledRequests()).toEqual([])
+    })
+
     it('refuses and records a request no handler answers, and reset clears it all', async () => {
         await expect(fetch('https://backend.test/missing')).rejects.toThrow(
             TypeError,
