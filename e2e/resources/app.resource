@@ -159,6 +159,25 @@ Tap
     END
     Fail    ${locator} kept going stale: ${error}
 
+Tap Until
+    [Documentation]    Tap, and tap again if the screen it should have opened does not arrive.
+    ...
+    ...                A tap that silently does nothing is this suite's most common failure: the
+    ...                failure screenshot shows the button on screen and enabled, and waiting longer
+    ...                finds nothing because nothing was ever on the way. One run sat 75s for a
+    ...                screen that a second tap opened at once. So spend the budget on taps rather
+    ...                than on waiting, and say in the log when one had to be repeated - a screen
+    ...                that regularly needs the second tap is worth knowing about, not absorbing.
+    [Arguments]    ${locator}    ${anchor}    ${timeout}=15s
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${locator}
+        ${arrived}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${anchor}    timeout=${timeout}
+        IF    ${arrived}    RETURN
+        Log    ${locator} did not bring up ${anchor} in ${timeout}; tapping it again.    level=WARN
+    END
+    Fail    ${locator} did not bring up ${anchor} over three taps.
+
 Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can
     ...                be on screen: Android blacks those screens out, but iOS does not.

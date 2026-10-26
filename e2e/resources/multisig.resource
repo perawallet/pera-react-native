@@ -180,8 +180,7 @@ Open Multisig Introduction
 
 Open Create Shared Account
     ${accounts}=    Open Multisig Introduction
-    Tap    ${MULTISIG_INTRO_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${ADD_PARTICIPANT_BUTTON}    timeout=15s
+    Tap Until    ${MULTISIG_INTRO_CONTINUE_BUTTON}    ${ADD_PARTICIPANT_BUTTON}
     RETURN    ${accounts}
 
 Register New Account
@@ -284,8 +283,7 @@ Participant Should Be Listed
     Wait Until Page Contains Element    xpath=//*[@resource-id='participant_item_${index}_${address}' or @name='participant_item_${index}_${address}' or @content-desc='participant_item_${index}_${address}']    timeout=10s
 
 Open Set Threshold
-    Tap    ${CREATE_MULTISIG_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${SET_THRESHOLD_CONTINUE_BUTTON}    timeout=15s
+    Tap Until    ${CREATE_MULTISIG_CONTINUE_BUTTON}    ${SET_THRESHOLD_CONTINUE_BUTTON}
 
 Threshold Should Be
     [Arguments]    ${expected}
@@ -299,12 +297,11 @@ Participant Count Should Be
     Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${count}    ${expected}
 
 Open Before You Create
-    Tap    ${SET_THRESHOLD_CONTINUE_BUTTON}
+    Tap Until    ${SET_THRESHOLD_CONTINUE_BUTTON}    ${BEFORE_CREATE_PROCEED_BUTTON}
     Wait Until Settled    ${BEFORE_CREATE_PROCEED_BUTTON}
 
 Open Name Shared Account
-    Tap    ${BEFORE_CREATE_PROCEED_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
+    Tap Until    ${BEFORE_CREATE_PROCEED_BUTTON}    ${ACCOUNT_FINISH_BUTTON}
 
 Enter Account Name
     [Arguments]    ${name}
