@@ -93,7 +93,12 @@ export type RecipientWarningInput = {
 }
 
 export type AddressPoisoningRules = {
-    /** Leading plus trailing characters a different known address must share to read as a look-alike. */
+    /**
+     * Leading plus trailing characters a different known address must share
+     * to read as a look-alike. Addresses are compared as raw strings, so a
+     * chain whose addresses share a prefix (EVM's `0x`) or vary in case must
+     * normalise them before it opts in.
+     */
     lookalikeMatchedChars: number
     /** Base units of the native asset; an incoming native transfer at or below it reads as dust. */
     dustCeiling: Decimal
