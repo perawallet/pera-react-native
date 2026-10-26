@@ -129,7 +129,6 @@ const DeviceRegistrar = () => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
@@ -146,7 +145,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // Accounts added mid-session get an immediate fetch: the background poll never
     // picks up an account whose activity predates its checkpoint. Gated on
     // migration because syncing before the migrated device id lands caches favorites as false.
-    useSyncNewAccounts(scope, { isEnabled: !migrationInProgress })
+    useSyncNewAccounts({ isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {
