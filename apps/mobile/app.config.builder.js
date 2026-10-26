@@ -441,7 +441,7 @@ function buildAppConfig(env) {
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
             ].join('\n'),
-            kotlinVersion: '2.1.20',
+            kotlinVersion: '2.2.10',
             // Package-visibility (API 30+) declarations so Linking.canOpenURL
             // can see the social apps the in-app browser hands off to
             // (PWWebView navigation guard).
