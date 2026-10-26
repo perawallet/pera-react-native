@@ -42,6 +42,21 @@ export type ReviewGroup = Omit<
     transactions: UnsignedTransaction[]
 }
 
+// Keyed by request so repeated reads return the same arrays: the signing
+// sheet's display cache compares them by identity.
+const followingGroups = new WeakMap<TransactionSignRequest, ReviewGroup>()
+
+const withFollowing = (request: TransactionSignRequest): ReviewGroup => {
+    const cached = followingGroups.get(request)
+    if (cached) return cached
+    const group: ReviewGroup = {
+        transactions: [...request.txs, ...(request.followingTxs ?? [])],
+        signableIndices: request.txs.map((_, index) => index),
+    }
+    followingGroups.set(request, group)
+    return group
+}
+
 // A chain with no planner adapter sends no facts beside its transactions.
 export const reviewGroupOf = (request: TransactionSignRequest): ReviewGroup => {
     if (isUnsignedTransactionRequest(request)) {
@@ -50,5 +65,7 @@ export const reviewGroupOf = (request: TransactionSignRequest): ReviewGroup => {
             return plannerChainAdapters.get(chainId).reviewGroupOf(request)
         }
     }
-    return { transactions: request.txs }
+    return request.followingTxs?.length
+        ? withFollowing(request)
+        : { transactions: request.txs }
 }

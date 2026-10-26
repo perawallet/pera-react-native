@@ -59,11 +59,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
 import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
+import { ZERO_FEE } from '../utils'
 import {
     asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
+    SECOND_CHAIN_SCOPE,
 } from '../../__tests__/transactions'
 import {
     useSigningPipeline,
@@ -162,6 +164,26 @@ describe('useSigningPipeline', () => {
 
         expect(result.current.allTransactions).toEqual([])
         expect(mockMapToDisplayable).not.toHaveBeenCalled()
+    })
+
+    test('lists a planner-less request with following transactions, marking only the first signable', () => {
+        registerFakeReviewerAdapter({
+            chainId: SECOND_CHAIN_SCOPE.chainId,
+            toTransactionNative: tx => tx as unknown as TransactionNative,
+        })
+        mockSigningRequest.currentRequest = {
+            id: 'req-batch',
+            type: 'transactions',
+            transport: 'callback',
+            txs: [makeUnsignedTransaction('0xFROM')],
+            followingTxs: [makeUnsignedTransaction('0xFROM')],
+        } satisfies TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.allTransactions).toHaveLength(2)
+        expect([...result.current.signableIndices]).toEqual([0])
+        expect(result.current.totalFee).toEqual(ZERO_FEE)
     })
 
     describe('on an Algorand chain-neutral request', () => {

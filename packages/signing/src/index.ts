@@ -83,6 +83,8 @@ export {
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
     reviewGroupOf,
+    type ReviewApproval,
+    type ReviewApprovalRef,
     type ReviewGroup,
     type SignRequestGroupFacts,
     type UnsignedTransactionSignRequest,
@@ -322,6 +324,7 @@ export {
 } from './db'
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
+export { signTransactionsInBackground } from './background-signing'
 export { isSignRequestPending, rehydrateSigningStore } from './store'
 
 export {

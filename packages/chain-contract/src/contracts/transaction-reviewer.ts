@@ -90,6 +90,16 @@ export interface TransactionReviewer {
     policy: {
         /** Whether a request the app built itself may sign without a review screen. */
         autoApproveLocal(review: TransactionReview): boolean
+        /**
+         * Whether `transaction` does exactly what `preview`, shown on a review
+         * the user approved, said it would; only what the chain fills in once
+         * it is reached (sequence number, fees) may differ. Omitted by a chain
+         * that shows no previews, whose requests then always need a review.
+         */
+        matchesApprovedPreview?(
+            transaction: UnsignedTransaction,
+            preview: UnsignedTransaction,
+        ): boolean
     }
 }
 

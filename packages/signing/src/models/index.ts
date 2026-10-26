@@ -61,6 +61,19 @@ export type SignRequestSource = {
  */
 export type SignRequestTransport = 'network' | 'callback' | 'submit-and-answer'
 
+/**
+ * A review the user approved, recorded by the pipeline when they approved it:
+ * every transaction it listed, `txs` first, then `followingTxs`.
+ */
+export type ReviewApproval = { token: string }
+
+/**
+ * Index-aligned with a request's `txs`: where in an approved review each one
+ * was shown. Only the pipeline mints tokens, so a caller can't vouch for a
+ * transaction the user never saw.
+ */
+export type ReviewApprovalRef = { token: string; positions: number[] }
+
 /** A request whose caller holds in-memory callbacks, which can't be persisted and must hear a rejection. */
 export const answersCaller = (transport: SignRequestTransport): boolean =>
     transport !== 'network'
@@ -101,12 +114,26 @@ export type UnsignedTransactionSignRequest = TransactionRequestCallbacks & {
      */
     chainData?: unknown
     /**
+     * Shown after `txs` on the same review and never signed by this request:
+     * the caller builds and signs each one later, once the ones before it land.
+     * Set, even empty, on every batch, so approving it records the review.
+     */
+    followingTxs?: UnsignedTransaction[]
+    /**
+     * A request with no review screen that its chain wouldn't sign unreviewed
+     * is signed only when the chain confirms each transaction does what the
+     * approved review showed at its position.
+     */
+    reviewApproval?: ReviewApprovalRef
+    /**
      * Entries are `Nullable` because enqueue pads the slots the wallet doesn't
-     * sign with `null`, preserving the dApp's slot order.
+     * sign with `null`, preserving the dApp's slot order. `approval` is set when
+     * the user approved a review that listed `followingTxs`.
      */
     approve?: (
         signed: Nullable<SignedTransaction>[],
         submission?: SubmissionReceipt,
+        approval?: ReviewApproval,
     ) => Promise<void>
     approveSignedBytes?: SourceCallbacks['approveSignedBytes']
     onProposed?: SourceCallbacks['onProposed']

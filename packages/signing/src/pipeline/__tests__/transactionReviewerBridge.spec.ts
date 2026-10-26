@@ -316,5 +316,37 @@ describe('bridgeTransactionReviewer', () => {
                 warnings: [WARNING],
             })
         })
+
+        it('asks the chain whether a transaction matches the preview it was approved as', () => {
+            const matchesApprovedPreview = vi.fn(() => true)
+            const reviewer: TransactionReviewer = {
+                ...fakeTransactionReviewer(),
+                policy: {
+                    autoApproveLocal: vi.fn(() => false),
+                    matchesApprovedPreview,
+                },
+            }
+            const [transaction, preview] = [
+                { id: 'built' },
+                { id: 'preview' },
+            ] as unknown as UnsignedTransaction[]
+
+            const policy = bridgeTransactionReviewer(reviewer).policy
+
+            expect(policy.matchesApprovedPreview?.(transaction, preview)).toBe(
+                true,
+            )
+            expect(matchesApprovedPreview).toHaveBeenCalledWith(
+                transaction,
+                preview,
+            )
+        })
+
+        it('matches no preview for a chain that shows none', () => {
+            expect(
+                bridgeTransactionReviewer(fakeTransactionReviewer()).policy
+                    .matchesApprovedPreview,
+            ).toBeUndefined()
+        })
     })
 })

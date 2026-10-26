@@ -126,6 +126,11 @@ export interface ReviewPolicy {
      * One it may not is refused, since a local request has no review screen.
      */
     autoApproveLocal(analysis: SignableAnalysis): boolean
+    /** See `TransactionReviewer.policy.matchesApprovedPreview`. */
+    matchesApprovedPreview?(
+        transaction: UnsignedTransaction,
+        preview: UnsignedTransaction,
+    ): boolean
 }
 
 /** The chain-specific legs of reviewing a sign request; registered by the chain package. */
