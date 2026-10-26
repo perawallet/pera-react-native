@@ -28,7 +28,7 @@ import {
 import type { LocalAccount } from '../models/accounts'
 import { useAccountsStore, withDefaultChains } from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
-import { hdIndexOf } from '../credentials'
+import { chainAccountOf, findAddressHolder, hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
@@ -77,9 +77,22 @@ export const useHDImportSession = (
                 getPublicKey,
                 walletKeyId: pending.walletKeyId,
             })
+            // Only the indexes the user can pick: one the wallet already holds
+            // is shown disabled, and must not read as declined later.
+            const { accounts } = useAccountsStore.getState()
             useHDImportSessionStore.getState().recordDiscovered(
                 pending.walletKeyId,
-                discovered.flatMap(account => hdIndexOf(account) ?? []),
+                discovered.flatMap(account => {
+                    const address = chainAccountOf(
+                        account,
+                        scope.chainId,
+                    )?.address
+                    const isHeld =
+                        address !== undefined &&
+                        findAddressHolder(accounts, scope, address) !==
+                            undefined
+                    return isHeld ? [] : (hdIndexOf(account) ?? [])
+                }),
             )
             return discovered
         },

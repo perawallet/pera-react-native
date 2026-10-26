@@ -318,6 +318,28 @@ describe('useHDImportSession', () => {
         ).toEqual([{ account: 0, keyIndex: 0 }])
     })
 
+    test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        let found: LocalAccount[] = []
+        await act(async () => {
+            found = await result.current.discoverImportAccounts({
+                walletKeyId: 'w-1',
+            })
+        })
+        useAccountsStore.setState({ accounts: [{ ...found[0], id: 'held' }] })
+
+        await act(async () => {
+            await result.current.discoverImportAccounts({ walletKeyId: 'w-1' })
+        })
+
+        expect(
+            useHDImportSessionStore.getState().pending?.discoveredIndexes,
+        ).toEqual([])
+    })
+
     test('discoverImportAccounts refuses a wallet the session did not prepare', async () => {
         const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
 
