@@ -52,6 +52,8 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 
 Bitrise runs the YAML stored on bitrise.io; `.bitrise/bitrise.yml` mirrors it. The dashboard editor saves Ruby's `YAML.dump` of the config with every key sorted and drops YAML comments, so keep the mirror in that text: `pnpm format:bitrise` writes it, and `pnpm check:bitrise-yml` (pre-push and CI) fails on anything else. A paste into the editor then diffs only real changes. Put rationale inside a step's script, where it survives a save.
 
+`android-staging` builds native code for `arm64-v8a` only (`ORG_GRADLE_PROJECT_reactNativeArchitectures`), a quarter of the native compile. Its APK reaches only Firebase testers and the BrowserStack smoke gate, and every device Crashlytics saw on the last 20 staging builds was a 64-bit ARM phone. It does not install on an x86 emulator or a 32-bit-only phone. Production keeps all four ABIs.
+
 ### Required Bitrise secrets
 
 <!-- doc-hygiene-ignore-next-line stale-path reason: written by CI at build time, never committed -->

@@ -1232,6 +1232,7 @@ workflows:
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - ANDROID_FLAVOR: staging
     - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
+    - ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
     - USE_CACHE: 'true'
     - DISTRIBUTION: firebase
     - VALIDATE_PROFILE: android
