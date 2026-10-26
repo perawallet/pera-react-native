@@ -13,6 +13,7 @@
 import { Decimal } from 'decimal.js'
 import {
     refreshAccountHoldings,
+    upsertAccountChainState,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -46,10 +47,12 @@ export type SeedWalletOptions = {
 }
 
 const NATIVE_BALANCE_MICROALGOS = 5_000_000_000
+const BASE_MIN_BALANCE_MICROALGOS = 100_000
 
 /**
  * Writes a wallet through the production stores and repositories: watch
- * accounts, the asset universe, prices for two assets in three, and holdings.
+ * accounts, the asset universe, prices for two assets in three, holdings, and
+ * the chain-state row the sync keeps per account (which startup hydrates).
  * The heavy account holds every asset; the rest hold a rotating slice, so
  * accounts share assets the way real wallets do.
  */
@@ -84,15 +87,27 @@ export const seedWallet = async (
         amount: new Decimal(NATIVE_BALANCE_MICROALGOS),
     }
     for (const [index, account] of accounts.entries()) {
+        const accountAddress = account.chains.algorand?.address ?? ''
+        const held = assetsHeldBy(index, scale.assetsPerAccount, universe)
         await refreshAccountHoldings({
-            accountAddress: account.chains.algorand?.address ?? '',
-            holdings: [
-                native,
-                ...benchHoldings(
-                    assetsHeldBy(index, scale.assetsPerAccount, universe),
-                ),
-            ],
+            accountAddress,
+            holdings: [native, ...benchHoldings(held)],
             scope,
+        })
+        await upsertAccountChainState({
+            accountAddress,
+            scope,
+            nativeBalance: native.amount,
+            chainData: {
+                family: 'algorand',
+                minBalance: new Decimal(
+                    BASE_MIN_BALANCE_MICROALGOS * (held.length + 1),
+                ),
+                status: 'Offline',
+                totalAssetsOptedIn: held.length,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
         })
     }
 

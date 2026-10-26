@@ -12,6 +12,7 @@
 
 import {
     getAccountHoldingsPage,
+    getAllAccountChainStateRows,
     hydrateAccountChainStates,
     rehydrateAccountsStore,
     useAccountsStore,
@@ -27,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { runBenchBootstrap } from '../bootstrapSteps'
-import type { Scenario } from '../runner/types'
+import type { BenchScale, Scenario, ScenarioContext } from '../runner/types'
 import { seeded, type SeededState } from './seeded'
 
 const ALL_SCALES = ['S', 'M', 'L', 'XL'] as const
@@ -53,6 +54,21 @@ const QUERY_CACHE_ROWS_PER_ENTRY = 200
 
 // The name packages/database opens; it keeps the constant private.
 const DATABASE_NAME = 'pera.db'
+
+/** Hydrating an empty chain-state table would time a no-op at every scale. */
+const seededWithChainState = async (
+    ctx: ScenarioContext,
+    scale: BenchScale,
+): Promise<SeededState> => {
+    const state = await seeded()(ctx, scale)
+    const rows = await getAllAccountChainStateRows()
+    if (rows.length < scale.accounts) {
+        throw new Error(
+            `Seeded ${rows.length} chain-state rows for ${scale.accounts} accounts: hydrate would read nothing`,
+        )
+    }
+    return state
+}
 
 const databaseInit: Scenario<void> = {
     id: 'startup.database-init',
@@ -90,7 +106,7 @@ const chainStateHydrate: Scenario<SeededState> = {
     group: 'startup',
     title: 'Hydrate every account chain state from the database',
     scales: ALL_SCALES,
-    setup: seeded(),
+    setup: seededWithChainState,
     run: () => hydrateAccountChainStates(),
 }
 
@@ -131,7 +147,7 @@ const bootstrap: Scenario<SeededState> = {
     group: 'startup',
     title: 'The bootstrap sequence from a closed database, over a wallet already on the device',
     scales: ALL_SCALES,
-    setup: seeded(),
+    setup: seededWithChainState,
     run: async () => {
         // The platform service keeps an opened database cached, so without
         // this the run would skip the open that a real launch pays for.
