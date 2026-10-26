@@ -162,12 +162,18 @@ Tap
 Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can
     ...                be on screen: Android blacks those screens out, but iOS does not.
+    ...
+    ...                Pass the path. Called with no arguments the keyword reports success and writes
+    ...                nothing, so every failure this suite has ever had came without a picture - and
+    ...                a message like "neither the disclaimer nor the project page appeared" is a
+    ...                description of two absences, which is the least useful thing a failure can say.
     IF    '${TEST STATUS}' != 'FAIL'    RETURN
     ${secret}=    Run Keyword And Return Status    Page Should Contain Element    ${SECRET_SCREEN}
     IF    ${secret}
         Log    Screenshot skipped: a recovery phrase may be on screen.    level=WARN
     ELSE
-        Run Keyword And Ignore Error    Capture Page Screenshot
+        ${name}=    Evaluate    re.sub(r'[^A-Za-z0-9]+', '-', $TEST_NAME).strip('-')    modules=re
+        Run Keyword And Ignore Error    Capture Page Screenshot    ${OUTPUT DIR}/failed-${name}.png
     END
 
 Reset To Fresh Wallet
