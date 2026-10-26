@@ -1223,6 +1223,9 @@ export const useAccountsStore: UseBoundStore<
                             logger.warn(
                                 `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
                             )
+                        } finally {
+                            // Only the probes read it; the adds derive through the keystore.
+                            zeroBytes(options.rootKey)
                         }
                         for (const { index, derived, active } of probed) {
                             const additions = declined.has(hdPathKey(index))
@@ -1304,7 +1307,7 @@ export const useAccountsStore: UseBoundStore<
                             changedIds.has(account.id),
                         )
                     }),
-                ).finally(() => zeroBytes(options.rootKey)),
+                ),
             addChainAccount: async (
                 walletId,
                 chainId,

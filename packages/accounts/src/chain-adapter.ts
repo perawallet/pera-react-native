@@ -462,9 +462,9 @@ export const hdDeriveOpts = (scope: ChainScope): DeriveOpts => {
 
 /**
  * Runs `derive`, which saves the HD child at `index` of `seedKeyId` on
- * `chainId` for an account that will hold it, claimed so a discovery walk's
- * cleanup leaves the key alone until that account is stored. Every flow that
- * derives an HD key and stores its account afterwards must go through this.
+ * `chainId` for an account that will hold it, claimed as {@link deriveClaimedKey}
+ * describes. Every flow that derives an HD key and stores its account
+ * afterwards must go through this.
  */
 export const deriveClaimedHdKey = <T extends { keyPairId: string }>(
     chainId: ChainId,

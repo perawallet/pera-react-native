@@ -234,10 +234,19 @@ describe('discoverWalletAccounts', () => {
         expect(removed()).not.toContain(sharedKey)
     })
 
-    test('saves the key of an index found in memory only when adding it, and zeroes the root key when the walk ends', async () => {
+    test('saves the key of an index found in memory only when adding it, with the root key already zeroed', async () => {
         deriveInMemoryOn(ALGORAND)
         activeAt(ALGORAND, [{ account: 1, keyIndex: 0 }])
         const rootKey = new Uint8Array([1, 2, 3])
+        const deriveAccount = vi.mocked(
+            families.derivations.get(ALGORAND)!.deriveAccount,
+        )
+        const derive = deriveAccount.getMockImplementation()!
+        let rootKeyAtAdd: number[] = []
+        deriveAccount.mockImplementation(async (...args) => {
+            rootKeyAtAdd = [...rootKey]
+            return derive(...args)
+        })
 
         await state().discoverWalletAccounts(SEED, { rootKey })
 
@@ -256,7 +265,7 @@ describe('discoverWalletAccounts', () => {
             address: familyHdAddress('algorand', 1, 0),
             keyPairId: familyHdKeyId(SEED, 'algorand', 1, 0),
         })
-        expect([...rootKey]).toEqual([0, 0, 0])
+        expect(rootKeyAtAdd).toEqual([0, 0, 0])
     })
 
     test('removes the key a failed add of an index found in memory derived', async () => {

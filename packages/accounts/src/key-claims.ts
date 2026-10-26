@@ -31,9 +31,11 @@ const recordDuringWalk = (keyPairId: string, owner?: ClaimOwner) => {
 }
 
 /**
- * Derives a key a flow will store on an account, keeping it out of every
- * discovery walk's cleanup: the account referencing it is only stored after
- * the derivation, possibly after a walk has already listed the key as unused.
+ * Derives a key a flow will store on an account, keeping it out of the cleanup
+ * of every walk running while it derives or when it resolves, until all of
+ * them end: the account is only stored after the derivation, possibly after a
+ * walk has listed the key as unused. A walk that starts after the derive
+ * resolves sees the key as unclaimed until its account is stored.
  * `expectedKeyPairId` covers the derivation in flight, before its id is known.
  */
 export const deriveClaimedKey = async <T extends { keyPairId: string }>(

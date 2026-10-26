@@ -46,6 +46,7 @@ export async function discoverAccounts({
     const addressOf = (account: WalletAccount) =>
         account.chains[scope.chainId]?.address ?? ''
     const built = new Map<string, LocalAccount>()
+    let hasProbeResolved = false
 
     const probe: HdBatchProbe = async indices => {
         const accounts: LocalAccount[] = []
@@ -71,6 +72,7 @@ export async function discoverAccounts({
             accounts.map(addressOf),
             scope,
         )
+        hasProbeResolved = true
         return accounts.map(
             account => activity.get(addressOf(account)) ?? false,
         )
@@ -82,6 +84,9 @@ export async function discoverAccounts({
         keyIndexGapLimit,
     })
 
+    // With no probe answered, "no activity" is unknown, not empty: return
+    // nothing so the caller fails rather than offering 0/0 as the whole seed.
+    if (!hasProbeResolved) return []
     if (active.length === 0) {
         const zeroAccount = built.get(hdPathKey({ account: 0, keyIndex: 0 }))
         return zeroAccount ? [zeroAccount] : []

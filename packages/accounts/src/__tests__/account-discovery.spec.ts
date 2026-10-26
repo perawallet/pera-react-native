@@ -122,6 +122,18 @@ describe('discoverAccounts', () => {
         )
     })
 
+    it('returns nothing when every activity probe rejects, rather than the first account', async () => {
+        mockFetchAccountFastLookup.mockRejectedValue(new Error('offline'))
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+        })
+
+        expect(accounts).toEqual([])
+    })
+
     it('should sort accounts by account index first, then by key index', async () => {
         mockFetchAccountFastLookup.mockResolvedValue([
             { address: 'ADDRESS_1_0', accountExists: true },

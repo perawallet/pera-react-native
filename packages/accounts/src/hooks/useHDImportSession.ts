@@ -165,7 +165,9 @@ export const useHDImportSession = (
                 index => !selected.has(hdPathKey(index)),
             )
             // Not awaited: the walk across every chain shouldn't hold the import.
-            // It gets its own copy of the root key, as the reset below zeroes the session's.
+            // It gets its own copy of the root key, as the reset below zeroes the
+            // session's: Algorand probes derive from it in memory rather than save
+            // a key per index, and the walk zeroes it once probing ends.
             void useAccountsStore
                 .getState()
                 .discoverWalletAccounts(pending.walletKeyId, {
