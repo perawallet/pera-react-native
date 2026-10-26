@@ -51,7 +51,10 @@ export const PeraCardVisual = ({
     } = usePeraCardVisual({ secureImageUrl, isOpen, onSecureImageLoad })
 
     return (
-        <PWView style={[styles.cardContainer, isDimmed && styles.disabled]}>
+        <PWView
+            style={[styles.cardContainer, isDimmed && styles.disabled]}
+            testID='pera_card_visual'
+        >
             {/* Front (masked) face — rotates away as the card flips open. */}
             <Animated.View style={[styles.cardFace, frontAnimatedStyle]}>
                 <PWImage
@@ -64,6 +67,7 @@ export const PeraCardVisual = ({
                         variant='bodyLarge'
                         weight={600}
                         style={styles.pan}
+                        testID='pera_card_masked_pan'
                     >
                         {maskedPan}
                     </PWText>

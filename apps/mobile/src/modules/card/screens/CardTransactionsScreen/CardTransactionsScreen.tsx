@@ -124,6 +124,7 @@ export const CardTransactionsScreen = () => {
             <EmptyView
                 body={t('peraCard.account.transactions_empty')}
                 style={styles.emptyView}
+                testID='card_transactions_empty'
             />
         )
     }, [
