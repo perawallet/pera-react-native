@@ -191,6 +191,7 @@ describe('assessAddressPoisoning', () => {
     const OWN = pad('OWNA', 'OWNZ', 'O')
     const CONTACT = pad('CONT', 'ACTZ', 'C')
     const SENT_TO = pad('SENT', 'TOZZ', 'S')
+    const WATCHED = pad('WTCH', 'WTCZ', 'W')
 
     const input = (
         recipient: string,
@@ -198,7 +199,8 @@ describe('assessAddressPoisoning', () => {
     ): AddressPoisoningInput => ({
         recipient,
         scope: SCOPE,
-        ownAddresses: [OWN],
+        ownAddresses: [OWN, WATCHED],
+        senders: [OWN],
         contactAddresses: [CONTACT],
         ...overrides,
     })
@@ -280,7 +282,7 @@ describe('assessAddressPoisoning', () => {
         expect(risk).toEqual({ kind: 'dustOnly' })
         expect(getCounterpartyTransfers).toHaveBeenCalledWith({
             scope: SCOPE,
-            ownAddresses: [OWN],
+            ownAddresses: [OWN, WATCHED],
             counterparty: pad('MMMM', 'NNNN'),
         })
     })
@@ -291,6 +293,15 @@ describe('assessAddressPoisoning', () => {
         const risk = await assessAddressPoisoning(input(pad('CONT', 'MMMM')))
 
         expect(risk).toEqual({ kind: 'lookalike', similarTo: CONTACT })
+    })
+
+    it("reads the paid-before list from the user's signing accounts only", async () => {
+        await assessAddressPoisoning(input(pad('MMMM', 'NNNN')))
+
+        expect(getSentToAddresses).toHaveBeenCalledWith({
+            scope: SCOPE,
+            senders: [OWN],
+        })
     })
 
     it('lets an unknown address with no history through', async () => {

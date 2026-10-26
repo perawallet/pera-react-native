@@ -36,7 +36,10 @@ export type AddressPoisoningRisk =
 export type AddressPoisoningInput = {
     recipient: string
     scope: ChainScope
+    /** Every account the user holds on the chain, watch accounts included. */
     ownAddresses: readonly string[]
+    /** The accounts the user can sign for: only their payees count as paid before. */
+    senders: readonly string[]
     contactAddresses: readonly string[]
 }
 
@@ -131,6 +134,7 @@ export const assessAddressPoisoning = async ({
     recipient,
     scope,
     ownAddresses,
+    senders,
     contactAddresses,
 }: AddressPoisoningInput): Promise<Nullable<AddressPoisoningRisk>> => {
     const rules = transferChainAdapters.has(scope.chainId)
@@ -140,9 +144,7 @@ export const assessAddressPoisoning = async ({
 
     const hasHistory = hasCachedHistoryRows(scope.chainId)
     const sentTo = hasHistory
-        ? await readOrEmpty(() =>
-              getSentToAddresses({ scope, senders: ownAddresses }),
-          )
+        ? await readOrEmpty(() => getSentToAddresses({ scope, senders }))
         : []
     const known = [...ownAddresses, ...contactAddresses, ...sentTo]
 

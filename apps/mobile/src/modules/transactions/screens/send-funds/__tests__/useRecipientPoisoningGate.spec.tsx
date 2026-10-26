@@ -26,11 +26,15 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendScope: () => SCOPE,
 }))
 
+const SIGNABLE = { chains: { algorand: { address: 'OWN' } } }
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [
-        { chains: { algorand: { address: 'OWN' } } },
+        SIGNABLE,
+        { chains: { algorand: { address: 'WATCHED' } } },
         { chains: { ethereum: { address: '0xOWN' } } },
     ],
+    useSigningAccounts: () => [SIGNABLE],
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },
@@ -85,13 +89,14 @@ describe('useRecipientPoisoningGate', () => {
         expect(mocks.request).not.toHaveBeenCalled()
     })
 
-    it("screens against the chain's own addresses and contacts only", async () => {
+    it("screens against the chain's own addresses and contacts only, with only signing accounts as senders", async () => {
         await screen()
 
         expect(mocks.assessRecipient).toHaveBeenCalledWith({
             recipient: RECIPIENT,
             scope: SCOPE,
-            ownAddresses: ['OWN'],
+            ownAddresses: ['OWN', 'WATCHED'],
+            senders: ['OWN'],
             contactAddresses: ['CONTACT'],
         })
     })

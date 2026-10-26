@@ -29,6 +29,7 @@ const INPUT: AddressPoisoningInput = {
     recipient: 'RECEIVER',
     scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
     ownAddresses: ['OWN'],
+    senders: ['OWN'],
     contactAddresses: ['CONTACT'],
 }
 

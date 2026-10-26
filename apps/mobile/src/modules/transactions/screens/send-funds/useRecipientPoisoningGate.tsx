@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { addressOn, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    useAllAccounts,
+    useSigningAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -36,6 +40,7 @@ export const useRecipientPoisoningGate =
     (): UseRecipientPoisoningGateResult => {
         const scope = useSendScope()
         const accounts = useAllAccounts()
+        const signingAccounts = useSigningAccounts(scope.chainId)
         const { contacts } = useContacts()
         const { assessRecipient } = useAddressPoisoningQuery()
         const { request } = useBottomSheet()
@@ -44,6 +49,15 @@ export const useRecipientPoisoningGate =
         const ownAddresses = useMemo(
             () => accounts.flatMap(account => addressOn(account, scope) ?? []),
             [accounts, scope],
+        )
+        // A watch account's payees aren't the user's: counting them would
+        // wave through every address a watched exchange ever paid.
+        const senders = useMemo(
+            () =>
+                signingAccounts.flatMap(
+                    account => addressOn(account, scope) ?? [],
+                ),
+            [signingAccounts, scope],
         )
         const contactAddresses = useMemo(() => {
             const family = getChainDescriptor(scope.chainId).family
@@ -59,6 +73,7 @@ export const useRecipientPoisoningGate =
                         recipient: address,
                         scope,
                         ownAddresses,
+                        senders,
                         contactAddresses,
                     })
                 } catch (error) {
@@ -84,7 +99,14 @@ export const useRecipientPoisoningGate =
                 })
                 return decision === 'continue'
             },
-            [assessRecipient, scope, ownAddresses, contactAddresses, request],
+            [
+                assessRecipient,
+                scope,
+                ownAddresses,
+                senders,
+                contactAddresses,
+                request,
+            ],
         )
 
         return { screenRecipient, isScreeningRecipient }
