@@ -67,7 +67,6 @@
     "@expo/app-integrity",
     "@joe-p/react-native-falcon",
     "@ledgerhq/react-native-hid",
-    "@react-native-google-signin/google-signin",
     "expo-font",
     "expo-local-authentication",
     "expo-sqlite",
