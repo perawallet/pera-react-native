@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import {
     useCloudBackupContactImport,
@@ -26,7 +26,13 @@ import { resetBenchState } from './data/resetBenchState'
 import type { FixtureNetwork } from './network/fixtureNetwork'
 import type { ScenarioContext } from './runner/types'
 
-/** The production hooks the scenarios call, gathered once per render. */
+/**
+ * The production hooks the scenarios call, behind one context that never
+ * changes identity. A scenario keeps the context from before its setup, and the
+ * hooks close over reactive snapshots (the keystore's key list among them), so
+ * each call goes to the latest render's function: a key minted in setup is then
+ * visible to the signer in `run`.
+ */
 export const useScenarioContext = (
     network: FixtureNetwork,
 ): ScenarioContext => {
@@ -41,31 +47,49 @@ export const useScenarioContext = (
     const resolveMnemonic = useResolveMnemonicForBackup(LEGACY_CHAIN_ID)
     const resolveHd = useResolveHdSeedForBackup(LEGACY_CHAIN_ID)
 
+    const latest = useRef({
+        signTransactions,
+        createHdWalletAccount,
+        createSingleKeyAccount,
+        restoreCloudBackup,
+        importAccounts,
+        importContacts,
+        resolveMnemonic,
+        resolveHd,
+    })
+    latest.current = {
+        signTransactions,
+        createHdWalletAccount,
+        createSingleKeyAccount,
+        restoreCloudBackup,
+        importAccounts,
+        importContacts,
+        resolveMnemonic,
+        resolveHd,
+    }
+
     return useMemo(
-        () => ({
+        (): ScenarioContext => ({
             network,
-            signTransactions,
-            createHdWalletAccount,
-            createSingleKeyAccount,
-            restoreCloudBackup,
+            signTransactions: (...args) =>
+                latest.current.signTransactions(...args),
+            createHdWalletAccount: (...args) =>
+                latest.current.createHdWalletAccount(...args),
+            createSingleKeyAccount: (...args) =>
+                latest.current.createSingleKeyAccount(...args),
+            restoreCloudBackup: variables =>
+                latest.current.restoreCloudBackup(variables),
             backupSyncDeps: {
-                importAccounts,
-                importContacts,
-                resolveMnemonic,
-                resolveHd,
+                importAccounts: (...args) =>
+                    latest.current.importAccounts(...args),
+                importContacts: (...args) =>
+                    latest.current.importContacts(...args),
+                resolveMnemonic: (...args) =>
+                    latest.current.resolveMnemonic(...args),
+                resolveHd: (...args) => latest.current.resolveHd(...args),
             },
             resetState: () => resetBenchState(network),
         }),
-        [
-            network,
-            signTransactions,
-            createHdWalletAccount,
-            createSingleKeyAccount,
-            restoreCloudBackup,
-            importAccounts,
-            importContacts,
-            resolveMnemonic,
-            resolveHd,
-        ],
+        [network],
     )
 }
