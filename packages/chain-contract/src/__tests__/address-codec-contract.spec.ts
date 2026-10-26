@@ -18,6 +18,10 @@ addressCodecContractTests(() => fixtureCodec, {
     publicKey: new Uint8Array(32).fill(0xab),
     deriveOpts: { scheme: 'ed25519', networkId: 'testnet' },
     equivalentSpellings: [`tfx${'ab'.repeat(20)}`, `TFX${'AB'.repeat(20)}`],
+    lookAlikePair: [
+        `tfxcdcd${'00'.repeat(16)}cdcd`,
+        `tfxcdcd${'11'.repeat(16)}cdcd`,
+    ],
     invalid: [`fx${'ab'.repeat(19)}`, `fx${'zz'.repeat(20)}`, 'not-an-address'],
     foreignUri: `otherchain:fx${'ab'.repeat(20)}`,
     paymentUriOpts: {

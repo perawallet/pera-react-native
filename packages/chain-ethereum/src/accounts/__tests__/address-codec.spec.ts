@@ -50,6 +50,10 @@ for (const chain of EVM_TEST_CHAINS) {
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
             '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
         ],
+        lookAlikePair: [
+            '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed',
+            '0x5aae00000000000000000000000000000000eaed',
+        ],
         invalid: [
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeD',
             '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA',
@@ -131,6 +135,32 @@ describe('truncate', () => {
 
     it('leaves a string already that short as it is', () => {
         expect(codec.truncate('0x1234abcd')).toBe('0x1234abcd')
+    })
+})
+
+describe('resembles', () => {
+    it('takes an address sharing the shown ends in another case for a look-alike', () => {
+        expect(
+            codec.resembles(
+                HARDHAT_ADDRESS,
+                '0xF39F000000000000000000000000000000002266',
+            ),
+        ).toBe(true)
+    })
+
+    it('treats a checksummed and a lower-case spelling as the same address', () => {
+        expect(
+            codec.resembles(HARDHAT_ADDRESS, HARDHAT_ADDRESS.toLowerCase()),
+        ).toBe(false)
+    })
+
+    it('does not take an address with a different tail for a look-alike', () => {
+        expect(
+            codec.resembles(
+                HARDHAT_ADDRESS,
+                '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92267',
+            ),
+        ).toBe(false)
     })
 })
 

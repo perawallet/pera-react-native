@@ -20,6 +20,10 @@ const VALID = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 addressCodecContractTests(() => algorandAddressCodec, {
     publicKey: new Uint8Array(32).fill(9),
     deriveOpts: { scheme: 'ed25519', networkId: 'mainnet' },
+    lookAlikePair: [
+        '2SSSXMFNG55PKDGKJB7MLTGIRSIYAXFCJAWSQFD6C3M7L6JLG5NJIBTGAA',
+        '2SSSXMBXVWYMJ33BCFI5PED5O7LMFJZWXXSAJCU44W5M4NP4Q5YIJBTGAA',
+    ],
     invalid: [
         VALID.toLowerCase(),
         `${VALID.slice(0, -1)}A`,
