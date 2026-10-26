@@ -61,14 +61,14 @@ catalog:
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
-  "@walletconnect/core": 2.26.0
+  "@walletconnect/core": 2.25.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
-  "@walletconnect/react-native-compat": 2.26.0
+  "@walletconnect/react-native-compat": 2.25.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
-  "@walletconnect/utils": 2.26.0
+  "@walletconnect/utils": 2.25.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
