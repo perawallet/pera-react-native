@@ -4,6 +4,7 @@ Documentation       Android adapter. Everything platform-specific lives in this 
 Library             AppiumLibrary    run_on_failure=Nothing
 Library             Collections
 Library             Process
+Library             ../libraries/DeviceProbe.py    ${ANDROID_UDID}    ${ANDROID_PACKAGE}
 
 
 *** Variables ***
@@ -157,3 +158,32 @@ Rows With Prefix
     ...                predicate replaces the xpath for speed; UiAutomator2 handles the xpath fine.
     [Arguments]    ${prefix}
     RETURN    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@content-desc,'${prefix}')]
+
+Reset Frame Stats
+    [Documentation]    Stress readings: frame counters restart from zero, so Read Frame Stats covers only
+    ...                what ran since.
+    Android Reset Frame Stats
+
+Read Frame Stats
+    ${stats}=    Android Frame Stats
+    RETURN    ${stats}
+
+Read Memory Kb
+    ${kb}=    Android Memory Pss Kb
+    RETURN    ${kb}
+
+Cold Start Ms
+    [Documentation]    Force-stops the app and times a cold launch; relaunch through Relaunch Pera after.
+    ${ms}=    Android Cold Start Ms    ${ANDROID_ACTIVITY}
+    RETURN    ${ms}
+
+Read Cpu Pct
+    ${pct}=    Android Cpu Pct
+    RETURN    ${pct}
+
+Clear Crash Log
+    Android Clear Crash Log
+
+Read Crash Evidence
+    ${events}=    Android Crash Events
+    RETURN    ${events}

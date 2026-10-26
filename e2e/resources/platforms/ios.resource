@@ -3,6 +3,7 @@ Documentation       iOS adapter; see android.resource.
 Library             AppiumLibrary    run_on_failure=Nothing
 Library             Collections
 Library             Process
+Library             ../libraries/DeviceProbe.py    ${IOS_UDID}    ${EMPTY}    ${IOS_BUNDLE_ID}    ${IOS_PROCESS_NAME}
 Library             String
 
 
@@ -10,6 +11,11 @@ Library             String
 ${APPIUM_URL}           http://127.0.0.1:4723
 ${IOS_BUNDLE_ID}        com.algorandllc.perarn.staging
 ${IOS_UDID}             ${EMPTY}
+# What a jetsam report calls the app: the executable, which Expo names from the app name with the
+# spaces removed ("Pera 7 Staging" in apps/mobile/app.config.builder.js). Override for another variant.
+${IOS_PROCESS_NAME}     Pera7Staging
+# Set by Clear Crash Log; zero until then, so Read Crash Evidence never meets an undefined variable.
+${IOS_CRASH_SINCE}      ${0}
 # One WebDriverAgent port per simulator when several run in parallel.
 ${IOS_WDA_PORT}         8100
 # A dev client's own link to its Metro server, e.g. exp+pera-dev://expo-development-client/?url=...
@@ -167,3 +173,30 @@ Rows With Prefix
     ...                the whole session with it, which then failed the two suites after it too.
     [Arguments]    ${prefix}
     RETURN    predicate=name BEGINSWITH '${prefix}'
+
+Reset Frame Stats
+    [Documentation]    iOS has no command-line frame counter; hitches are read in Instruments.
+    No Operation
+
+Read Frame Stats
+    &{none}=    Create Dictionary
+    RETURN    ${none}
+
+Read Memory Kb
+    [Documentation]    Memory is read in Instruments on iOS; there is no command-line reading.
+    RETURN    ${NONE}
+
+Cold Start Ms
+    RETURN    ${NONE}
+
+Read Cpu Pct
+    RETURN    ${NONE}
+
+Clear Crash Log
+    [Documentation]    Remembers when the run began; Read Crash Evidence reports what the device wrote after.
+    ${now}=    Evaluate    time.time()    modules=time
+    Set Suite Variable    ${IOS_CRASH_SINCE}    ${now}
+
+Read Crash Evidence
+    ${reports}=    Ios Pull Crash Reports    ${OUTPUT DIR}${/}ios-crash    ${IOS_CRASH_SINCE}
+    RETURN    ${reports}

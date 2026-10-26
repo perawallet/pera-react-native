@@ -7,6 +7,9 @@ Resource            app.resource
 ${FIXTURE_CONTACT_NAME}             AutoTestContact
 ${FIXTURE_CONTACT_ADDRESS}          CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA
 
+# Rows are suffixed with the address, so only a prefix match finds an arbitrary one.
+${CONTACT_ROW_ANY}                  xpath=//*[starts-with(@content-desc,'contact_row_') or starts-with(@name,'contact_row_')]
+
 ${MENU_CONTACTS_BUTTON}             xpath=//*[@resource-id='menu_contacts_button' or @name='menu_contacts_button' or @content-desc='menu_contacts_button']
 ${CONTACTS_SEARCH_INPUT}            xpath=//*[@resource-id='contacts_search_input' or @name='contacts_search_input' or @content-desc='contacts_search_input']
 ${CONTACTS_EMPTY_ADD_BUTTON}        xpath=//*[@resource-id='contacts_empty_add_button' or @name='contacts_empty_add_button' or @content-desc='contacts_empty_add_button']
@@ -33,6 +36,13 @@ Start With No Contacts
 Start With One Contact
     Load Fixture    contacts-one
     Contact Row Should Be Listed    ${FIXTURE_CONTACT_ADDRESS}
+
+Start With Stress Contacts
+    [Documentation]    The contacts-<count> fixtures, which the app builds in useE2eFixtureDeeplink.ts
+    ...                (apps/mobile/src/modules/deeplink/e2e-fixture-names.ts lists the counts).
+    [Arguments]    ${count}
+    Load Fixture    contacts-${count}
+    Wait Until Page Contains Element    ${CONTACT_ROW_ANY}    timeout=30s
 
 Open Contacts From Menu
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
