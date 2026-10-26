@@ -17,7 +17,7 @@ import {
     useOnDeploymentSwitch,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, useActiveLocale } from '@perawallet/wallet-core-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 
 import { useDevice } from './useDevice'
@@ -91,6 +91,10 @@ export const useDeviceRegistration = (
     const accountsRef = useRef(accounts)
     accountsRef.current = accounts
 
+    // The device record carries the app's language, so changing it in Settings
+    // must re-register or pushes keep arriving in the old one.
+    const locale = useActiveLocale()
+
     // Stop the server pushing to the deployment we just left.
     useOnDeploymentSwitch(previousDeployment => {
         clearDevicePushToken(previousDeployment).catch(error => {
@@ -109,8 +113,8 @@ export const useDeviceRegistration = (
     const inFlightRef = useRef(false)
     const attemptIdRef = useRef(0)
 
-    // (Re)register on mount, when the account set changes, and on the new
-    // deployment after a switch.
+    // (Re)register on mount, when the account set or app language changes, and
+    // on the new deployment after a switch.
     useEffect(() => {
         const attemptId = ++attemptIdRef.current
         const isCurrent = () => attemptIdRef.current === attemptId
@@ -133,7 +137,14 @@ export const useDeviceRegistration = (
             .finally(() => {
                 if (isCurrent()) inFlightRef.current = false
             })
-    }, [accountsKey, deployment, isV4, registerDevice, setRegistrationPending])
+    }, [
+        accountsKey,
+        locale,
+        deployment,
+        isV4,
+        registerDevice,
+        setRegistrationPending,
+    ])
 
     // A failed registration used to stay silently unregistered (no push
     // notifications) until the account set or deployment changed. While one is

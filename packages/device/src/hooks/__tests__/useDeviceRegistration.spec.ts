@@ -156,6 +156,32 @@ describe('useDeviceRegistration', () => {
         expect(mockClearDevicePushToken).not.toHaveBeenCalled()
     })
 
+    test('re-registers when the app language changes, and not when it is set to the same one', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { setActiveLocale } =
+            await import('@perawallet/wallet-core-shared')
+        setActiveLocale('en')
+
+        renderHook(() => useDeviceRegistration([registration('acct-1')]))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        act(() => setActiveLocale('de'))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+
+        act(() => setActiveLocale('de'))
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+
+        setActiveLocale('en')
+    })
+
     test('does not re-register when a new array carries the same accounts', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
