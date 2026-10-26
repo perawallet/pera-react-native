@@ -154,10 +154,15 @@ export type AccountsState = BaseStoreState & {
      * Enables, as `'discovery'`, each chain active at an index of seed
      * `walletId`'s HD tree, creating the account there if none holds it.
      * `declinedIndexes` stay untouched on every chain. Never rejects.
+     * `rootKey`, the seed's XHD root, lets chains that derive from it skip a
+     * keystore save per probed index; the walk zeroes it when it ends.
      */
     discoverWalletAccounts: (
         walletId: string,
-        options?: { declinedIndexes?: readonly HdIndex[] },
+        options?: {
+            declinedIndexes?: readonly HdIndex[]
+            rootKey?: Uint8Array
+        },
     ) => Promise<WalletAccount[]>
     /**
      * Adds `chainId`'s entry to the account at `index` in wallet `walletId`

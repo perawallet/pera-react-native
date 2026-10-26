@@ -27,7 +27,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains, ChainAccount, HdIndex } from './models'
 import { seedMintableScheme } from './credentials'
-import { accountsChainAdapters } from './chain-adapter'
+import { accountsChainAdapters, type GetPublicKey } from './chain-adapter'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -161,7 +161,7 @@ export async function walkHdTree({
 
 export type ProbedHdIndex = {
     index: HdIndex
-    /** Every chain's entry at `index`, derived through the keystore. */
+    /** Every chain's entry at `index`; one derived in memory has no `keyPairId`, as nothing was saved. */
     derived: AccountChains
     /** The chains with activity at `index`; empty when none or past the walk's gap. */
     active: AccountChains
@@ -175,6 +175,11 @@ type DiscoverWalletActivityParams = {
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
     /** The highest account index the wallet already holds; the walk always reaches past it. */
     heldAccountIndex?: number
+    /**
+     * The seed's in-memory XHD root key. A chain that derives public keys from
+     * it is probed without saving a key per index; the caller keeps ownership.
+     */
+    rootKey?: Uint8Array
     accountGapLimit?: number
     keyIndexGapLimit?: number
 }
@@ -190,6 +195,7 @@ export async function discoverWalletActivity({
     chainIds,
     onUnusedKeys,
     heldAccountIndex = -1,
+    rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
@@ -231,6 +237,22 @@ export async function discoverWalletActivity({
         return key
     }
 
+    // Keystore saves are slow on device, so a chain that can derive in memory
+    // never goes through one; only the keys the caller adds get saved.
+    const getters = new Map<ChainId, GetPublicKey | undefined>()
+    const inMemoryGetter = (chainId: ChainId): GetPublicKey | undefined => {
+        if (!rootKey) return undefined
+        if (!getters.has(chainId)) {
+            getters.set(
+                chainId,
+                accountsChainAdapters
+                    .get(chainId)
+                    .createPublicKeyGetter?.(rootKey),
+            )
+        }
+        return getters.get(chainId)
+    }
+
     const deriveOn = async (
         scope: ChainScope,
         indices: readonly HdIndex[],
@@ -239,8 +261,20 @@ export async function discoverWalletActivity({
         if (scheme === undefined) return indices.map(() => undefined)
         const opts = { scheme, networkId: scope.networkId }
         const codec = addressCodecs.get(scope.chainId)
+        const getPublicKey = inMemoryGetter(scope.chainId)
         const entries: (ChainAccount | undefined)[] = []
         for (const index of indices) {
+            if (getPublicKey) {
+                const publicKey = await getPublicKey(index).catch(
+                    () => undefined,
+                )
+                const entry = publicKey && {
+                    address: codec.fromPublicKey(publicKey, opts),
+                }
+                if (entry) probedAt(index).derived[scope.chainId] = entry
+                entries.push(entry)
+                continue
+            }
             const key = await keyAt(scope.chainId, index, opts)
             if (!key) {
                 entries.push(undefined)

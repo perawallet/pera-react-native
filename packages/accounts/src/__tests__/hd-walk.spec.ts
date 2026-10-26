@@ -22,6 +22,7 @@ import type { HdIndex } from '../models'
 import {
     ALGORAND,
     BASE,
+    deriveInMemoryOn,
     ETHEREUM,
     familyHdAddress,
     familyHdKeyId,
@@ -309,6 +310,39 @@ describe('discoverWalletActivity', () => {
                 ],
             ],
         ])
+    })
+
+    it('derives a chain that reads public keys from the root key in memory, saving no key for it', async () => {
+        const families = registerChainFamilies([ALGORAND, ETHEREUM])
+        const { createPublicKeyGetter } = deriveInMemoryOn(ALGORAND)
+        activeOn(families, ALGORAND, [familyHdAddress('algorand', 0, 0)])
+        const rootKey = new Uint8Array([1, 2, 3])
+
+        const probed = await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND, ETHEREUM],
+            rootKey,
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+        })
+
+        expect(createPublicKeyGetter).toHaveBeenCalledExactlyOnceWith(rootKey)
+        expect(
+            families.derivations.get(ALGORAND)!.deriveAccount,
+        ).not.toHaveBeenCalled()
+        expect(
+            families.derivations.get(ETHEREUM)!.deriveAccount,
+        ).toHaveBeenCalled()
+        expect(probed[0].derived).toEqual({
+            [ALGORAND]: { address: familyHdAddress('algorand', 0, 0) },
+            [ETHEREUM]: {
+                address: familyHdAddress('evm', 0, 0),
+                keyPairId: familyHdKeyId('seed', 'evm', 0, 0),
+            },
+        })
+        expect(probed[0].active).toEqual({
+            [ALGORAND]: { address: familyHdAddress('algorand', 0, 0) },
+        })
     })
 
     it('derives each key once per index, however many chains of its family share it', async () => {

@@ -1208,6 +1208,7 @@ export const useAccountsStore: UseBoundStore<
                                 walletId,
                                 chainIds: hdDiscoveryChains(),
                                 onUnusedKeys: removeUnclaimedKeys,
+                                rootKey: options.rootKey,
                                 heldAccountIndex: Math.max(
                                     -1,
                                     ...get().accounts.flatMap(account =>
@@ -1275,16 +1276,20 @@ export const useAccountsStore: UseBoundStore<
                                     }
                                     // The failed add's own claim would keep the
                                     // key forever; another flow's claim must not.
+                                    // An entry derived in memory has no id, but
+                                    // the add saved its key all the same.
+                                    const keyPairId = accountsChainAdapters
+                                        .get(chainId)
+                                        .hdKeyPairId(walletId, index)
                                     if (
-                                        entry.keyPairId &&
                                         !isKeyClaimedByOthers(
-                                            entry.keyPairId,
+                                            keyPairId,
                                             walkClaims,
                                         )
                                     ) {
                                         await removeUnreferencedKey(
                                             get().accounts,
-                                            entry.keyPairId,
+                                            keyPairId,
                                         )
                                     }
                                 }
@@ -1299,7 +1304,7 @@ export const useAccountsStore: UseBoundStore<
                             changedIds.has(account.id),
                         )
                     }),
-                ),
+                ).finally(() => zeroBytes(options.rootKey)),
             addChainAccount: async (
                 walletId,
                 chainId,

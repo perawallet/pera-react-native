@@ -180,7 +180,29 @@ describe('useHDImportSession', () => {
 
         expect(discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith('w-1', {
             declinedIndexes: [],
+            rootKey: expect.any(Uint8Array),
         })
+    })
+
+    test("commitImport hands the walk its own copy of the root key, untouched by the session's reset", async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const sessionRootKey =
+            useHDImportSessionStore.getState().pending!.rootKey
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        const walkRootKey = discoverWalletAccounts.mock.calls[0][1]?.rootKey
+        expect(walkRootKey).not.toBe(sessionRootKey)
+        expect(walkRootKey).toEqual(new Uint8Array(96).fill(7))
+        expect(sessionRootKey.every(byte => byte === 0)).toBe(true)
     })
 
     test('commitImport passes the offered indexes the user left unselected as declined', async () => {
@@ -206,6 +228,7 @@ describe('useHDImportSession', () => {
                 { account: 0, keyIndex: 0 },
                 { account: 1, keyIndex: 3 },
             ],
+            rootKey: expect.any(Uint8Array),
         })
     })
 

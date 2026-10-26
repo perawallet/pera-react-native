@@ -24,6 +24,7 @@ import {
     familyHdKeyId,
     familyHdPublicKey,
     registerChainFamilies,
+    deriveInMemoryOn,
     type ChainFamilies,
 } from '../../__tests__/chainFamilies'
 import { hdIndexOf } from '../../credentials'
@@ -231,6 +232,48 @@ describe('discoverWalletAccounts', () => {
         await walking
 
         expect(removed()).not.toContain(sharedKey)
+    })
+
+    test('saves the key of an index found in memory only when adding it, and zeroes the root key when the walk ends', async () => {
+        deriveInMemoryOn(ALGORAND)
+        activeAt(ALGORAND, [{ account: 1, keyIndex: 0 }])
+        const rootKey = new Uint8Array([1, 2, 3])
+
+        await state().discoverWalletAccounts(SEED, { rootKey })
+
+        expect(
+            vi
+                .mocked(families.derivations.get(ALGORAND)!.deriveAccount)
+                .mock.calls.map(([, , account, keyIndex]) => [
+                    account,
+                    keyIndex,
+                ]),
+        ).toEqual([[1, 0]])
+        expect(
+            state().accounts.find(account => hdIndexOf(account)?.account === 1)
+                ?.chains[ALGORAND],
+        ).toMatchObject({
+            address: familyHdAddress('algorand', 1, 0),
+            keyPairId: familyHdKeyId(SEED, 'algorand', 1, 0),
+        })
+        expect([...rootKey]).toEqual([0, 0, 0])
+    })
+
+    test('removes the key a failed add of an index found in memory derived', async () => {
+        deriveInMemoryOn(ALGORAND)
+        activeAt(ALGORAND, [{ account: 2, keyIndex: 0 }])
+        const watcher = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { [ALGORAND]: { address: familyHdAddress('algorand', 2, 0) } },
+            { id: 'watcher' },
+        )
+        state().setAccounts([watcher])
+
+        await state().discoverWalletAccounts(SEED, {
+            rootKey: new Uint8Array([1]),
+        })
+
+        expect(removed()).toContain(familyHdKeyId(SEED, 'algorand', 2, 0))
     })
 
     test('removes the keys of inactive chains and keeps the ones accounts reference', async () => {

@@ -165,10 +165,12 @@ export const useHDImportSession = (
                 index => !selected.has(hdPathKey(index)),
             )
             // Not awaited: the walk across every chain shouldn't hold the import.
+            // It gets its own copy of the root key, as the reset below zeroes the session's.
             void useAccountsStore
                 .getState()
                 .discoverWalletAccounts(pending.walletKeyId, {
                     declinedIndexes,
+                    rootKey: new Uint8Array(pending.rootKey),
                 })
 
             useHDImportSessionStore.getState().resetState()
