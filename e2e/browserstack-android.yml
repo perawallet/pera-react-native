@@ -9,8 +9,13 @@ projectName: Pera Wallet
 buildName: e2e android
 parallelsPerPlatform: 1
 browserstackLocal: false
+# The newest BrowserStack offers, and the major the suite runs on locally. Its default (1.22 on
+# Android) rejects commands the suite drives, such as mobile: terminateApp and clickGesture.
+appiumVersion: "3.5.2"
 autoGrantPermissions: true
-debug: true
-networkLogs: true
 # NavTrace reads the app's navigation trace from logcat.
 deviceLogs: true
+# BrowserStack ends a session after this long without an Appium command (default 90s); the
+# import cases wait longer than that between commands, and a session pulled mid-test reads
+# as a product failure.
+idleTimeout: 300

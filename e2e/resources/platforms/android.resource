@@ -36,8 +36,10 @@ Open Pera
     IF    $ANDROID_UDID    Set To Dictionary    ${caps}    udid=${ANDROID_UDID}
     Open Application    ${APPIUM_URL}    &{caps}
     # autoGrantPermissions only covers installs Appium makes; an adb-installed build would raise
-    # the notification dialog over the app on its next launch.
-    Execute Script    mobile: changePermissions    permissions=all    appPackage=${ANDROID_PACKAGE}    action=grant
+    # the notification dialog over the app on its next launch. BrowserStack installs through
+    # Appium and refuses this adb grant, which would otherwise fail every suite's setup.
+    Run Keyword And Ignore Error
+    ...    Execute Script    mobile: changePermissions    permissions=all    appPackage=${ANDROID_PACKAGE}    action=grant
 
 Dismiss Dev Client Intro
     # First launch of a dev client opens its developer menu over the app; Continue leaves the menu up.

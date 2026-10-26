@@ -4,11 +4,13 @@ app: bs://unset
 platforms:
   - platformName: ios
     platformVersion: "17"
-    deviceName: iPhone 15
+    deviceName: iPhone 15 Pro
 projectName: Pera Wallet
 buildName: e2e ios
 parallelsPerPlatform: 1
 browserstackLocal: false
-debug: true
-networkLogs: true
+# The newest BrowserStack offers, and the major the suite runs on locally. Its default (1.22 on
+# Android) rejects commands the suite drives, such as mobile: terminateApp and clickGesture.
+appiumVersion: "3.5.2"
 deviceLogs: true
+idleTimeout: 300

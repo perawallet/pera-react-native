@@ -14,8 +14,9 @@ ${ACCOUNT_NAME_INPUT}           xpath=//*[@resource-id='name_account_name_input'
 ${ACCOUNT_FINISH_BUTTON}        xpath=//*[@resource-id='name_account_finish_button' or @name='name_account_finish_button' or @content-desc='name_account_finish_button']
 ${PIN_PROMPT_DONT_ASK}          xpath=//*[@resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='pin_security_prompt_dont_ask_button']
 ${BANNERS_MODAL_CLOSE}          xpath=//*[@resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banners_carousel_modal_close']
+${BANNER_PROMPT_CLOSE}          xpath=//*[@resource-id='banner_prompt_close' or @name='banner_prompt_close' or @content-desc='banner_prompt_close']
 ${ANALYTICS_CONSENT_DECLINE}    xpath=//*[@resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button' or @content-desc='analytics_consent_prompt_decline_button']
-${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='analytics_consent_prompt_decline_button' or @resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
+${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banner_prompt_close' or @resource-id='banner_prompt_close' or @name='banner_prompt_close' or @content-desc='analytics_consent_prompt_decline_button' or @resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
 ${NAVIGATION_BACK_BUTTON}       xpath=//*[@resource-id='navigation_back_button' or @name='navigation_back_button' or @content-desc='navigation_back_button']
 ${MENU_SETTINGS_BUTTON}         xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
 ${SETTINGS_SCREEN}              xpath=//*[@resource-id='settings_screen' or @name='settings_screen']
@@ -85,7 +86,15 @@ Go Home
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
     # The reset only starts the last test's sheet sliding out; a sheet requested before it has
     # gone is dropped with it.
-    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
+    ${closed}=    Run Keyword And Return Status
+    ...    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
+    # A build without the fixture hook (the staging build the smoke gate runs) ignores the link and
+    # leaves the sheet up; a relaunch is the only other way back to a bare Home.
+    IF    not ${closed}
+        Restart Pera
+        Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
+        Wait Clear Of Startup Prompts
+    END
 
 Create Wallet
     # Onboarding slides in after Remove All; a tap while it moves misses the button.
@@ -111,14 +120,16 @@ Create Wallet
 
 Wait Clear Of Startup Prompts
     [Documentation]    The PIN, analytics-consent and banner prompts arrive about 3s after Home and swallow taps.
+    ...                A backend with announcements (staging) also raises the banner prompt sheet.
     ...                Dismiss them until none has shown for longer than that delay.
-    ...                One probe covers all three, so a quiet round costs one driver call instead of three.
+    ...                One probe covers them all, so a quiet round costs one driver call.
     ${quiet_since}=    Evaluate    time.time()    modules=time
     FOR    ${i}    IN RANGE    90
         ${any}=    Run Keyword And Return Status    Page Should Contain Element    ${STARTUP_PROMPT_ANY}
         IF    ${any}
             Tap If Present    ${PIN_PROMPT_DONT_ASK}
             Tap If Present    ${BANNERS_MODAL_CLOSE}
+            Tap If Present    ${BANNER_PROMPT_CLOSE}
             Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
             ${quiet_since}=    Evaluate    time.time()    modules=time
         ELSE IF    ${{time.time() - $quiet_since}} > 4

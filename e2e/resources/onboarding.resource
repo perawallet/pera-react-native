@@ -16,6 +16,9 @@ ${IMPORT_ACCOUNT_BUTTON}                xpath=//*[@resource-id='onboarding_impor
 ${ACCOUNT_SELECTION_BUTTON}             xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
 ${ACCOUNT_MENU_ADD_BUTTON}              xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
 ${ACCOUNT_OPTION_COPY_ADDRESS}          xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
+# Every wallet account offers rename, whatever its chains; a multi-chain build can fold Algorand's
+# network row behind "See all", so that row cannot mark the sheet as open.
+${ACCOUNT_OPTION_RENAME}                xpath=//*[@resource-id='account_option_rename-account' or @name='account_option_rename-account' or @content-desc='account_option_rename-account']
 ${ACCOUNT_ALGORAND_EXPAND}              xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
 # The switcher row and the header trigger take their testID as accessibility label, which on iOS
 # hides the account name inside them; only the options sheet's title shows it on both platforms.
@@ -234,12 +237,12 @@ Selected Account Should Be Named
     # While a new account's overview loads, a skeleton overlay (no testID) covers the button panel and
     # takes taps without effect, so tap until the sheet opens.
     Wait Until Keyword Succeeds    30s    0.5s    Open Account Options Sheet
-    Wait Until Settled    ${ACCOUNT_OPTION_COPY_ADDRESS}
+    Wait Until Settled    ${ACCOUNT_OPTION_RENAME}
     Wait Until Page Contains    ${name}    timeout=10s
 
 Open Account Options Sheet
     Tap    ${MORE_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_OPTION_COPY_ADDRESS}    timeout=2s
+    Wait Until Page Contains Element    ${ACCOUNT_OPTION_RENAME}    timeout=2s
 
 Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s

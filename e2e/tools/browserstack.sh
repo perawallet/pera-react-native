@@ -21,6 +21,8 @@ shift 2
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "$E2E_DIR/.." && pwd)"
 VENV="${E2E_VENV:-$E2E_DIR/.venv}"
+# The SDK runs Robot under pabot, which starts `browserstack-sdk` again by name.
+export PATH="$VENV/bin:$PATH"
 case "$PLATFORM" in
   android | ios) ;;
   *) echo "unknown platform: $PLATFORM" >&2; exit 2 ;;
