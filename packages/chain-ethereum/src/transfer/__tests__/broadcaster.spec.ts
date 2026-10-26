@@ -27,6 +27,7 @@ import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
+    SubmissionError,
     getUnsyncedSubmissionSpends,
     getSubmissionAttemptsWithHistoryEntry,
     SubmissionAttemptsSchema,
@@ -41,7 +42,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { EvmErrorCode } from '../../blockchain/errors'
+import { EvmErrorCode, evmErrorCodeOf } from '../../blockchain/errors'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import {
     EvmRpcErrorFixture,
@@ -50,7 +51,12 @@ import {
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import {
+    SENDER,
+    VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_0_SPED_UP,
+    VIEM_TRANSFER_NONCE_0_UNDERPRICED,
+} from '../../signing/__tests__/fixtures'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 import { submitEthereumTransactions } from '../submission'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -282,6 +288,113 @@ describe('Ethereum broadcaster adapter', () => {
                 ),
             ).rejects.toBeInstanceOf(TransportError)
             expect(await rows()).toHaveLength(0)
+        })
+    })
+
+    describe('a replacement at a nonce an open send holds', () => {
+        const sendBytes = (hex: `0x${string}`) =>
+            adapter.createSubmitTransport(SCOPE).send(
+                signed({
+                    type: 'signed-transactions',
+                    signed: [
+                        {
+                            scope: SCOPE,
+                            id: keccak256(hex),
+                            bytes: hexToBytes(hex),
+                        },
+                    ],
+                    historyEntries: [HISTORY_ENTRY],
+                }),
+                SOURCE,
+            )
+        const sends = vi.fn()
+        const useCountingRpc = (responses: EvmRpcFixtures['responses'] = {}) =>
+            useRpc({
+                eth_sendRawTransaction: params => {
+                    sends(params[0])
+                    return keccak256(params[0] as `0x${string}`)
+                },
+                ...responses,
+            })
+
+        beforeEach(() => {
+            sends.mockClear()
+        })
+
+        it('records the bytes and links the attempt it replaces', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+
+            await sendBytes(VIEM_TRANSFER_NONCE_0_SPED_UP)
+
+            const [original, replacement] = await rows()
+            expect(original).toMatchObject({
+                rawTransaction: VIEM_TRANSFER_NONCE_0,
+                replacesAttemptId: null,
+            })
+            expect(replacement).toMatchObject({
+                txIdsJson: JSON.stringify([
+                    keccak256(VIEM_TRANSFER_NONCE_0_SPED_UP),
+                ]),
+                nonce: 0,
+                rawTransaction: VIEM_TRANSFER_NONCE_0_SPED_UP,
+                replacesAttemptId: original!.id,
+            })
+        })
+
+        it('links nothing on a resend of the same bytes', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+
+            expect((await rows()).map(row => row.replacesAttemptId)).toEqual([
+                null,
+                null,
+            ])
+        })
+
+        it('refuses a replacement under the 10% bump without sending or recording it', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+            sends.mockClear()
+
+            const error = await sendBytes(
+                VIEM_TRANSFER_NONCE_0_UNDERPRICED,
+            ).catch((caught: unknown) => caught)
+
+            expect(error).toBeInstanceOf(SubmissionError)
+            expect(error).toMatchObject({ classification: 'rejected-by-node' })
+            expect(evmErrorCodeOf((error as SubmissionError).nodeError)).toBe(
+                EvmErrorCode.REPLACEMENT_UNDERPRICED,
+            )
+            expect(sends).not.toHaveBeenCalled()
+            expect(await rows()).toHaveLength(1)
+        })
+
+        it('says the transaction already confirmed when the node finds the nonce used', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+            useCountingRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+                eth_getTransactionByHash: null,
+            })
+
+            const error = await sendBytes(VIEM_TRANSFER_NONCE_0_SPED_UP).catch(
+                (caught: unknown) => caught,
+            )
+
+            expect(error).toBeInstanceOf(SubmissionError)
+            expect(evmErrorCodeOf((error as SubmissionError).nodeError)).toBe(
+                EvmErrorCode.REPLACED_TRANSACTION_CONFIRMED,
+            )
+            expect((await rows()).map(row => row.status)).toEqual([
+                'submitted',
+                'failed',
+            ])
         })
     })
 

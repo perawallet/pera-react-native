@@ -26,6 +26,8 @@ import type { Database } from '@perawallet/wallet-core-database'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     getOpenSubmissionAttempts,
+    getSubmissionAttemptsAtNonce,
+    OPEN_SUBMISSION_STATUSES,
     resolveSubmissionAttempt,
     type ReconcileSummary,
     type SubmissionAttempt,
@@ -95,6 +97,38 @@ const probe = async (
     return landedPast ? 'replaced' : 'failed'
 }
 
+const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
+    a.createdAt < b.createdAt || (a.createdAt === b.createdAt && a.id < b.id)
+
+/**
+ * Settles an attempt whose nonce was mined under another hash. When that hash
+ * is a sibling at the same nonce recorded before this one, this attempt was a
+ * replacement that came too late: it failed rather than being replaced.
+ * Anything else that took the nonce (a newer replacement, another wallet)
+ * replaced it.
+ */
+const loserVerdict = async (
+    attempt: SubmissionAttempt,
+    scope: ChainScope,
+    client: PublicClient,
+    db: Database | undefined,
+): Promise<'replaced' | 'failed'> => {
+    const { sender, nonce } = attempt
+    if (sender === null || nonce === null) return 'replaced'
+    const siblings = (
+        await getSubmissionAttemptsAtNonce({ db, scope, sender, nonce })
+    ).filter(sibling => sibling.id !== attempt.id)
+    let winner = siblings.find(sibling => sibling.status === 'confirmed')
+    for (const sibling of siblings) {
+        if (winner) break
+        const hash = sibling.txIds[0] as Hex | undefined
+        if (hash === undefined) continue
+        if (!OPEN_SUBMISSION_STATUSES.includes(sibling.status)) continue
+        if (await readReceipt(client, hash)) winner = sibling
+    }
+    return winner && isOlder(winner, attempt) ? 'failed' : 'replaced'
+}
+
 const notifySettled = async (
     settleHandlers: SubmissionSettledHandlers,
     attempt: SubmissionAttempt,
@@ -162,8 +196,11 @@ export const reconcileEthereumSubmissions = async ({
                     clients.set(scopeKey, client)
                 }
                 summary.probed++
-                const verdict = await probe(attempt, client)
+                let verdict = await probe(attempt, client)
                 if (verdict === null) return
+                if (verdict === 'replaced') {
+                    verdict = await loserVerdict(attempt, scope, client, db)
+                }
                 await notifySettled(settleHandlers, attempt, scope, verdict)
                 await resolveSubmissionAttempt({
                     db,

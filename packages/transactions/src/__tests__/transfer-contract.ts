@@ -45,6 +45,8 @@ export interface TransferContractFixtures {
         /** False on a chain that holds nothing back, where MAX is exactly the balance less the fee. */
         hasReserve: boolean
     }
+    /** The chain descriptor's `protocol.supportsReplacement`. */
+    supportsReplacement: boolean
     /** Installs the node handlers and synced state each test needs. */
     arrange(): void
 }
@@ -80,6 +82,12 @@ export const transferContractTests = (
     describe(`TransferChainAdapter contract: ${makeAdapter().chainId}`, () => {
         beforeEach(() => {
             fixtures.arrange()
+        })
+
+        it('re-prices pending transactions exactly when its chain supports replacement', () => {
+            expect(typeof makeAdapter().buildReplacement === 'function').toBe(
+                fixtures.supportsReplacement,
+            )
         })
 
         it("builds for its own chain's scopes", () => {

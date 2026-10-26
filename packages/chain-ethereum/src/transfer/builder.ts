@@ -44,6 +44,7 @@ import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEvmFeeEstimate } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
 import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
+import { buildEvmReplacement } from './replacement'
 import { createEvmSpendableBalance } from './spendable-balance'
 import { nftSendSubtitle, sendSummary } from './summary'
 
@@ -239,4 +240,6 @@ export const createEvmTransferAdapter = (
     getFeeEstimate: (intent, context) =>
         estimateEvmTransferFee(ctx, chain, intent, context),
     spendableBalance: createEvmSpendableBalance(chain),
+    buildReplacement: (request, context) =>
+        buildEvmReplacement(ctx, chain, request, context),
 })
