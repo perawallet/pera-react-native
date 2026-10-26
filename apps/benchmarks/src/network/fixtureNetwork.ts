@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import type { RequestHandler } from 'msw'
-import { setupServer } from 'msw/native'
+import { getResponse, type RequestHandler } from 'msw'
 
 export type FixtureNetwork = {
-    /** Handlers served from now until `reset()`. */
+    /** Handlers served from now until `reset()`; later ones take precedence. */
     use: (...handlers: RequestHandler[]) => void
     /** Drops every handler `use` added and zeroes the counters. */
     reset: () => void
@@ -27,26 +26,36 @@ export type FixtureNetwork = {
 /**
  * Every request the scenarios make is answered here. An unanswered one is
  * recorded and refused, so a scenario can never reach a real backend.
+ *
+ * Replaces `fetch` rather than using `msw/native`'s interceptors: they rebuild
+ * the mocked response from `response.body`, which RN's whatwg-fetch `Response`
+ * does not have, so every fixture reached the app with an empty body. The
+ * handler's own `Response` is returned untouched. The app's ky clients read
+ * `globalThis.fetch` per request, so replacing it after import still applies.
  */
 export const startFixtureNetwork = (): FixtureNetwork => {
+    let handlers: RequestHandler[] = []
     let requests = 0
     let unhandled: string[] = []
 
-    const server = setupServer()
-    server.events.on('request:start', () => {
+    globalThis.fetch = async (input, init) => {
+        const request = new Request(input, init)
         requests += 1
-    })
-    server.listen({
-        onUnhandledRequest: (request, print) => {
-            unhandled.push(`${request.method} ${request.url}`)
-            print.error()
-        },
-    })
+        const response = await getResponse(handlers, request)
+        if (!response) {
+            const line = `${request.method} ${request.url}`
+            unhandled.push(line)
+            throw new TypeError(`No fixture answers ${line}`)
+        }
+        return response
+    }
 
     return {
-        use: (...handlers) => server.use(...handlers),
+        use: (...added) => {
+            handlers = [...added, ...handlers]
+        },
         reset: () => {
-            server.resetHandlers()
+            handlers = []
             requests = 0
             unhandled = []
         },
