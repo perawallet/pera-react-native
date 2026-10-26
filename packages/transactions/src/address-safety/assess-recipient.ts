@@ -19,6 +19,7 @@ import type {
 
 const LOOK_ALIKE_PRIORITY: readonly KnownAddressSource[] = [
     'own-account',
+    'watched-account',
     'contact',
     'history',
 ]

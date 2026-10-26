@@ -111,6 +111,38 @@ describe('assessRecipient', () => {
         })
     })
 
+    it('flags a look-alike of a watched account, after own accounts and before contacts', () => {
+        const knownAddresses: readonly KnownAddress[] = [
+            { address: 'SAME222222222222XEND', source: 'contact', name: 'B' },
+            {
+                address: 'SAME555555555555XEND',
+                source: 'watched-account',
+                name: 'Cold',
+            },
+        ]
+
+        expect(
+            assessRecipient({
+                recipient: 'SAME444444444444XEND',
+                chainId: STRICT,
+                knownAddresses,
+            }),
+        ).toEqual({ kind: 'look-alike', knownAddress: knownAddresses[1] })
+        expect(
+            assessRecipient({
+                recipient: 'SAME444444444444XEND',
+                chainId: STRICT,
+                knownAddresses: [
+                    ...knownAddresses,
+                    { address: 'SAME333333333333XEND', source: 'own-account' },
+                ],
+            }),
+        ).toMatchObject({
+            kind: 'look-alike',
+            knownAddress: { source: 'own-account' },
+        })
+    })
+
     it('lets an exact match on a counterparty the account paid win over a look-alike', () => {
         const knownAddresses: readonly KnownAddress[] = [
             { address: lookAlikeOf(OWN), source: 'history' },

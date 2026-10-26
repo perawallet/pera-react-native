@@ -17,7 +17,12 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
-export type KnownAddressSource = 'own-account' | 'contact' | 'history'
+/** `watched-account` is in the wallet but nothing held locally can sign for it. */
+export type KnownAddressSource =
+    | 'own-account'
+    | 'watched-account'
+    | 'contact'
+    | 'history'
 
 export interface KnownAddress {
     address: string
