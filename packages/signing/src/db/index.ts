@@ -11,6 +11,13 @@
  */
 
 export {
+    DuplicateTransactionBatchError,
+    findTransactionBatch,
+    getRunningTransactionBatches,
+    getTransactionBatch,
+    recordTransactionBatch,
+    retireReviewApproval,
+    updateTransactionBatch,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getUnsyncedSubmissionSpends,
@@ -22,10 +29,11 @@ export {
     resolveSubmissionAttempt,
 } from './repository'
 export { subscribeToSubmissionLedger } from './ledger-events'
-export { SubmissionAttemptsSchema } from './schema'
+export { SubmissionAttemptsSchema, TransactionBatchesSchema } from './schema'
 export {
     LANDABLE_SUBMISSION_STATUSES,
     OPEN_SUBMISSION_STATUSES,
+    REVIEW_APPROVAL_TTL_MS,
     STALE_OPEN_ATTEMPT_MS,
     type IntentKey,
     type UnsyncedSubmissionSpend,
@@ -34,4 +42,6 @@ export {
     type SubmissionFlow,
     type SubmissionHistoryEntry,
     type SubmissionStatus,
+    type TransactionBatch,
+    type TransactionBatchOutcome,
 } from './types'

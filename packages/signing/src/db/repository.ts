@@ -32,13 +32,19 @@ import {
 } from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
+    parseScopeKey,
     toScopeKey,
     type ChainId,
     type ChainScope,
     type ChainSubmissionData,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { notifySubmissionLedgerChanged } from './ledger-events'
-import { SubmissionAttemptsSchema } from './schema'
+import {
+    ReviewApprovalsSchema,
+    SubmissionAttemptsSchema,
+    TransactionBatchesSchema,
+} from './schema'
 import {
     OPEN_SUBMISSION_STATUSES,
     SUBMISSION_HISTORY_ENTRY_VERSION,
@@ -49,6 +55,8 @@ import {
     type SubmissionHistoryEntry,
     type SubmissionFlow,
     type SubmissionStatus,
+    type TransactionBatch,
+    type TransactionBatchOutcome,
 } from './types'
 
 type SubmissionAttemptRow = typeof SubmissionAttemptsSchema.$inferSelect
@@ -469,4 +477,313 @@ export const pruneResolvedSubmissionAttempts = async ({
         )
         .run()
     return stale.length
+}
+
+/** The sender already has a batch with this id. */
+export class DuplicateTransactionBatchError extends Error {
+    constructor(batchId: string) {
+        super(`A batch with id ${batchId} already exists for this sender`)
+        this.name = 'DuplicateTransactionBatchError'
+    }
+}
+
+type TransactionBatchRow = typeof TransactionBatchesSchema.$inferSelect
+
+const batchFromDb = (row: TransactionBatchRow): TransactionBatch => ({
+    id: row.id,
+    batchId: row.batchId,
+    scope: parseScopeKey(row.scope),
+    sender: row.sender,
+    approvalToken: row.approvalToken,
+    payload: JSON.parse(row.payloadJson) as unknown,
+    txIds: JSON.parse(row.txIdsJson) as string[],
+    signedRaw: row.signedRaw,
+    position: row.position,
+    outcome: row.outcome as TransactionBatchOutcome,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+})
+
+// The driver wraps SQLite's error, so the cause chain is searched too.
+const isUniqueViolation = (error: unknown): boolean => {
+    for (
+        let current: unknown = error;
+        current instanceof Error;
+        current = current.cause
+    ) {
+        if (current.message.includes('UNIQUE constraint failed')) return true
+    }
+    return false
+}
+
+export type RecordTransactionBatchParams = {
+    db?: Database
+    scope: ChainScope
+    sender: string
+    batchId: string
+    /** The review the user approved the batch on. */
+    approvalToken: string
+    /** JSON-serialisable; owned by the recording chain. */
+    payload: unknown
+    txIds: string[]
+    /** Hex of the signed first transaction, kept until it lands. */
+    signedRaw?: string
+}
+
+/** Starts a batch at position 0, running. */
+export const recordTransactionBatch = async ({
+    db = getDatabase(),
+    scope,
+    sender,
+    batchId,
+    approvalToken,
+    payload,
+    txIds,
+    signedRaw,
+}: RecordTransactionBatchParams): Promise<TransactionBatch> => {
+    const now = Date.now()
+    const row: TransactionBatchRow = {
+        id: generateOrderedUniqueId(),
+        batchId,
+        scope: toScopeKey(scope),
+        sender,
+        approvalToken,
+        payloadJson: JSON.stringify(payload),
+        txIdsJson: JSON.stringify(txIds),
+        signedRaw: signedRaw ?? null,
+        position: 0,
+        outcome: 'running',
+        createdAt: now,
+        updatedAt: now,
+    }
+    try {
+        await db.insert(TransactionBatchesSchema).values(row).run()
+    } catch (error) {
+        if (isUniqueViolation(error)) {
+            throw new DuplicateTransactionBatchError(batchId)
+        }
+        throw error
+    }
+    return batchFromDb(row)
+}
+
+export type FindTransactionBatchParams = {
+    db?: Database
+    /** Omitted to match on every chain, as ids are unique per sender whatever the chain. */
+    chainId?: ChainId
+    batchId: string
+    /** Matched exactly, so pass them in the form the chain recorded. */
+    senders: readonly string[]
+}
+
+/** The batch with this id sent by any of `senders`, on any network of the chain when one is named. */
+export const findTransactionBatch = async ({
+    db = getDatabase(),
+    chainId,
+    batchId,
+    senders,
+}: FindTransactionBatchParams): Promise<TransactionBatch | null> => {
+    if (senders.length === 0) return null
+    const row = await db
+        .select()
+        .from(TransactionBatchesSchema)
+        .where(
+            and(
+                eq(TransactionBatchesSchema.batchId, batchId),
+                inArray(TransactionBatchesSchema.sender, [...senders]),
+                chainId === undefined
+                    ? undefined
+                    : like(TransactionBatchesSchema.scope, `${chainId}/%`),
+            ),
+        )
+        .get()
+    return row ? batchFromDb(row) : null
+}
+
+/** The batch as the database holds it now, or null for an id it doesn't hold. */
+export const getTransactionBatch = async ({
+    db = getDatabase(),
+    id,
+}: {
+    db?: Database
+    id: string
+}): Promise<TransactionBatch | null> => {
+    const row = await db
+        .select()
+        .from(TransactionBatchesSchema)
+        .where(eq(TransactionBatchesSchema.id, id))
+        .get()
+    return row ? batchFromDb(row) : null
+}
+
+export type UpdateTransactionBatchParams = {
+    db?: Database
+    id: string
+    txIds: string[]
+    signedRaw: string | null
+    position: number
+    outcome: TransactionBatchOutcome
+}
+
+export const updateTransactionBatch = async ({
+    db = getDatabase(),
+    id,
+    txIds,
+    signedRaw,
+    position,
+    outcome,
+}: UpdateTransactionBatchParams): Promise<void> => {
+    await db
+        .update(TransactionBatchesSchema)
+        .set({
+            txIdsJson: JSON.stringify(txIds),
+            signedRaw,
+            position,
+            outcome,
+            updatedAt: Date.now(),
+        })
+        .where(eq(TransactionBatchesSchema.id, id))
+        .run()
+}
+
+export type GetRunningTransactionBatchesParams = {
+    db?: Database
+    chainId: ChainId
+}
+
+/** Batches on the chain still running, oldest first. */
+export const getRunningTransactionBatches = async ({
+    db = getDatabase(),
+    chainId,
+}: GetRunningTransactionBatchesParams): Promise<TransactionBatch[]> => {
+    const rows = await db
+        .select()
+        .from(TransactionBatchesSchema)
+        .where(
+            and(
+                eq(TransactionBatchesSchema.outcome, 'running'),
+                like(TransactionBatchesSchema.scope, `${chainId}/%`),
+            ),
+        )
+        // Ids are ordered, so they break same-millisecond ties.
+        .orderBy(
+            TransactionBatchesSchema.createdAt,
+            TransactionBatchesSchema.id,
+        )
+        .all()
+    return rows.map(batchFromDb)
+}
+
+// Chain payloads carry bigints (wei, gas), which JSON can't hold; Decimals are
+// tagged by the database's own codec.
+const BIGINT_TAG = '__bigint'
+
+const tagBigints = (value: unknown): unknown => {
+    if (typeof value === 'bigint') return { [BIGINT_TAG]: value.toString() }
+    if (Array.isArray(value)) return value.map(tagBigints)
+    if (
+        typeof value === 'object' &&
+        value !== null &&
+        Object.getPrototypeOf(value) === Object.prototype
+    ) {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, item]) => [key, tagBigints(item)]),
+        )
+    }
+    return value
+}
+
+const untagBigints = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(untagBigints)
+    if (
+        typeof value === 'object' &&
+        value !== null &&
+        Object.getPrototypeOf(value) === Object.prototype
+    ) {
+        const record = value as Record<string, unknown>
+        const keys = Object.keys(record)
+        if (
+            keys.length === 1 &&
+            keys[0] === BIGINT_TAG &&
+            typeof record[BIGINT_TAG] === 'string'
+        ) {
+            return BigInt(record[BIGINT_TAG])
+        }
+        return Object.fromEntries(
+            keys.map(key => [key, untagBigints(record[key])]),
+        )
+    }
+    return value
+}
+
+/**
+ * Records what a review the user approved listed and returns its token. Only
+ * the signing pipeline calls this, on the user's approval: it is what vouches
+ * for a transaction later signed with no review screen.
+ */
+export const recordReviewApproval = async ({
+    db = getDatabase(),
+    scope,
+    transactions,
+}: {
+    db?: Database
+    scope: ChainScope
+    transactions: readonly UnsignedTransaction[]
+}): Promise<string> => {
+    const id = generateOrderedUniqueId()
+    await db
+        .insert(ReviewApprovalsSchema)
+        .values({
+            id,
+            scope: toScopeKey(scope),
+            transactionsJson: stringifyDecimalJson(tagBigints(transactions)),
+            createdAt: Date.now(),
+        })
+        .run()
+    return id
+}
+
+/** The transactions an approved review listed, or null for a token none recorded. */
+export const getReviewApproval = async ({
+    db = getDatabase(),
+    token,
+}: {
+    db?: Database
+    token: string
+}): Promise<{
+    scope: ChainScope
+    transactions: UnsignedTransaction[]
+    /** Unix ms. */
+    createdAt: number
+} | null> => {
+    const row = await db
+        .select()
+        .from(ReviewApprovalsSchema)
+        .where(eq(ReviewApprovalsSchema.id, token))
+        .get()
+    if (!row) return null
+    return {
+        scope: parseScopeKey(row.scope),
+        transactions: untagBigints(
+            parseDecimalJson<unknown>(row.transactionsJson),
+        ) as UnsignedTransaction[],
+        createdAt: row.createdAt,
+    }
+}
+
+/**
+ * Withdraws an approval, as once its batch has settled. Only ever narrows what
+ * can be signed, so any caller may.
+ */
+export const retireReviewApproval = async ({
+    db = getDatabase(),
+    token,
+}: {
+    db?: Database
+    token: string
+}): Promise<void> => {
+    await db
+        .delete(ReviewApprovalsSchema)
+        .where(eq(ReviewApprovalsSchema.id, token))
+        .run()
 }

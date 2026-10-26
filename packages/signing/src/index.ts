@@ -288,6 +288,17 @@ export {
 } from './broadcaster'
 
 export {
+    DuplicateTransactionBatchError,
+    findTransactionBatch,
+    getRunningTransactionBatches,
+    getTransactionBatch,
+    recordTransactionBatch,
+    retireReviewApproval,
+    REVIEW_APPROVAL_TTL_MS,
+    updateTransactionBatch,
+    TransactionBatchesSchema,
+    type TransactionBatch,
+    type TransactionBatchOutcome,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getUnsyncedSubmissionSpends,

@@ -96,7 +96,7 @@ describe('clearCustomNetworkCache', () => {
         )
     })
 
-    test('deletes custom-scope rows from all ten network-partitioned tables, leaving other networks untouched', async () => {
+    test('deletes custom-scope rows from all twelve network-partitioned tables, leaving other networks untouched', async () => {
         const custom = storedValue('custom')
         const testnet = storedValue('testnet')
         // `transactions` and `submission_attempts` key on `id` alone, so each
@@ -143,10 +143,20 @@ describe('clearCustomNetworkCache', () => {
             VALUES ('ATTEMPT_CUSTOM', ${custom}, '[]', 'send', 'open', 1),
                    ('ATTEMPT_TESTNET', ${testnet}, '[]', 'send', 'open', 1)
         `)
+        await db.run(sql`
+            INSERT INTO transaction_batches (id, batch_id, scope, sender, approval_token, payload_json, tx_ids_json, position, outcome, created_at, updated_at)
+            VALUES ('BATCH_CUSTOM', 'b', ${custom}, 'A', 't', '{}', '[]', 0, 'running', 1, 1),
+                   ('BATCH_TESTNET', 'b', ${testnet}, 'B', 't', '{}', '[]', 0, 'running', 1, 1)
+        `)
+        await db.run(sql`
+            INSERT INTO review_approvals (id, scope, transactions_json, created_at)
+            VALUES ('APPROVAL_CUSTOM', ${custom}, '[]', 1),
+                   ('APPROVAL_TESTNET', ${testnet}, '[]', 1)
+        `)
 
         await clearCustomNetworkCache(queryClient, db)
 
-        expect(NETWORK_PARTITIONED_TABLES).toHaveLength(10)
+        expect(NETWORK_PARTITIONED_TABLES).toHaveLength(12)
         for (const table of NETWORK_PARTITIONED_TABLES) {
             const customRows = await db.values<[number]>(
                 sql`SELECT 1 FROM ${sql.raw(table)} WHERE scope = ${custom}`,
