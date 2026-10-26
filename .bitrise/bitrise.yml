@@ -960,7 +960,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # The smoke harness is another repo's code at its branch tip, so
+            # The smoke gate installs and runs third-party test tooling, so
             # nothing it runs may find the release keystore or store/upload
             # credentials the build steps decoded onto disk.
             rm -f apps/mobile/api_key.p8 \

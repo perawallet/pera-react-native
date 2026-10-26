@@ -1,0 +1,16 @@
+# BrowserStack App Automate settings for tools/browserstack.sh, which runs from a copy with `app` set.
+framework: robot
+app: bs://unset
+platforms:
+  - platformName: android
+    platformVersion: "14.0"
+    deviceName: Samsung Galaxy S24
+projectName: Pera Wallet
+buildName: e2e android
+parallelsPerPlatform: 1
+browserstackLocal: false
+autoGrantPermissions: true
+debug: true
+networkLogs: true
+# NavTrace reads the app's navigation trace from logcat.
+deviceLogs: true

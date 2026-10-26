@@ -1,0 +1,77 @@
+name: E2E / BrowserStack
+
+# Runs the device suite (e2e/) on BrowserStack App Automate against builds already uploaded there, by
+# their bs:// ids: E2E builds (E2E_FIXTURES=1, which must never reach a store), the iOS one patched by
+# tools/qa/patch-ipa-for-browserstack.sh. The job's result is the suite's verdict, not the SDK's.
+
+on:
+    workflow_dispatch:
+        inputs:
+            android_app:
+                description: bs:// id of the Android E2E build (empty skips Android)
+                required: false
+            ios_app:
+                description: bs:// id of the iOS E2E build (empty skips iOS)
+                required: false
+            include:
+                description: Run only the cases with this Robot tag (empty runs every suite)
+                required: false
+
+permissions:
+    contents: read
+
+jobs:
+    e2e:
+        name: ${{ matrix.platform }}
+        runs-on: ubuntu-24.04
+        # Suites run one after another, each in its own BrowserStack session.
+        timeout-minutes: 240
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [android, ios]
+        steps:
+            - name: Pick the build
+              id: app
+              env:
+                  PLATFORM: ${{ matrix.platform }}
+                  ANDROID_APP: ${{ inputs.android_app }}
+                  IOS_APP: ${{ inputs.ios_app }}
+              run: |
+                  if [ "$PLATFORM" = android ]; then app="$ANDROID_APP"; else app="$IOS_APP"; fi
+                  echo "app=$app" >>"$GITHUB_OUTPUT"
+
+            - name: Checkout
+              if: steps.app.outputs.app != ''
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install the e2e venv
+              if: steps.app.outputs.app != ''
+              run: |
+                  python3 -m venv e2e/.venv
+                  e2e/.venv/bin/pip install --quiet -r e2e/requirements-browserstack.txt
+
+            - name: Run the suite
+              if: steps.app.outputs.app != ''
+              env:
+                  BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+                  BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+                  BROWSERSTACK_BUILD_NAME: e2e ${{ matrix.platform }} ${{ github.ref_name }}
+                  E2E_RESULTS_DIR: ${{ github.workspace }}/e2e-results
+                  PLATFORM: ${{ matrix.platform }}
+                  APP: ${{ steps.app.outputs.app }}
+                  INCLUDE: ${{ inputs.include }}
+              run: |
+                  args=()
+                  if [ -n "$INCLUDE" ]; then args=(--include "$INCLUDE"); fi
+                  e2e/tools/browserstack.sh "$PLATFORM" "$APP" ${args[@]+"${args[@]}"}
+
+            - name: Upload the results
+              if: always() && steps.app.outputs.app != ''
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: e2e-${{ matrix.platform }}
+                  path: e2e-results
+                  if-no-files-found: warn

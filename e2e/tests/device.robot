@@ -12,7 +12,7 @@ Test Tags           device
 
 *** Test Cases ***
 Denied Camera Shows The Scanner's Permission State
-    [Tags]    id:device.camera.denied    p1
+    [Tags]    id:device.camera.denied    p1    device-shell
     Deny Camera Permission
     Relaunch Pera
     Go Home
@@ -27,7 +27,7 @@ Denied Camera Shows The Scanner's Permission State
     [Teardown]    Restore Camera Permission
 
 Passphrase Screen Is Capture Protected
-    [Tags]    id:device.capture-protection.passphrase    p0
+    [Tags]    id:device.capture-protection.passphrase    p0    device-shell
     Screen Should Not Be Capture Protected
     Open Passphrase
     Screen Should Be Capture Protected

@@ -59,6 +59,23 @@ Adapters read `APPIUM_URL`, `ANDROID_UDID`, `ANDROID_PACKAGE`, `ANDROID_SYSTEM_P
 `ANDROID_SYSTEM_PORT` and each simulator its own `IOS_WDA_PORT`. Credentials for a device cloud go
 in the CI secret store and reach the run as environment variables; never commit them here.
 
+## BrowserStack
+
+`e2e/tools/browserstack.sh <android|ios> <bs:// app id, .apk or .ipa> [robot args]` runs the suite on
+BrowserStack App Automate with the device and options in `browserstack-<platform>.yml`. It needs
+`BROWSERSTACK_USERNAME`, `BROWSERSTACK_ACCESS_KEY` and a venv from `requirements-browserstack.txt`;
+an `.ipa` must be patched by `tools/qa/patch-ipa-for-browserstack.sh` first.
+
+- Each suite runs in its own SDK process: the SDK kills any process at one hour whatever
+  `--processtimeout` says, and every case left in it then reports an error.
+- The verdict comes from the result files (`tools/qa/smoke-verdict.sh`), not the SDK's exit code,
+  which has reported success for a failed run.
+- Cases tagged `device-shell` need `adb` or `simctl` on the machine that runs Robot. A cloud device
+  is not attached to it, so those cases run only locally.
+
+The release smoke gate (`tools/qa/smoke-test.sh`) runs the `release-gate` case this way, and the
+"E2E / BrowserStack" workflow runs the whole suite against uploaded E2E builds.
+
 ## Navigation trace
 
 E2E builds log every screen mount/unmount, focus/blur and app foreground/background

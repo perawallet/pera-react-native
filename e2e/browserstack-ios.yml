@@ -1,0 +1,14 @@
+# BrowserStack App Automate settings for tools/browserstack.sh, which runs from a copy with `app` set.
+framework: robot
+app: bs://unset
+platforms:
+  - platformName: ios
+    platformVersion: "17"
+    deviceName: iPhone 15
+projectName: Pera Wallet
+buildName: e2e ios
+parallelsPerPlatform: 1
+browserstackLocal: false
+debug: true
+networkLogs: true
+deviceLogs: true
