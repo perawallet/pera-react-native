@@ -93,11 +93,14 @@ Open From Settings
     Wait Until Page Contains Element    ${anchor}    timeout=15s
 
 Switch State Locator
-    [Documentation]    Android exposes a switch's state as checked, iOS as value 1/0.
+    [Documentation]    Android exposes a switch's state as checked, iOS as value 1/0. A radio is not
+    ...                the same: iOS has no radio trait and reports a spoken value instead, which is
+    ...                why Theme Should Be Selected matches on different text. Keep the two apart -
+    ...                they read the same accessibilityState and report it differently.
     [Arguments]    ${locator}    ${on}
     ${id}=    Bare Test Id    ${locator}
     IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or (contains(@value,'checked') and not(contains(@value,'unchecked'))))]
+        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1')]
     END
     RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0')]
 
