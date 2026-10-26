@@ -327,8 +327,7 @@ export const useSigningPipeline = (
     const displayData = useMemo(() => {
         if (!txRequest) return EMPTY_DISPLAY_DATA
         return plannerChainAdapters.has(chainIdOfSignRequest(txRequest)) ||
-            reviewGroupOf(txRequest).transactions.length >
-                txRequest.txs.length
+            reviewGroupOf(txRequest).transactions.length > txRequest.txs.length
             ? getSharedDisplayData(txRequest, accounts)
             : computeReviewOnlyDisplayData(txRequest, accounts)
     }, [txRequest, accounts])

@@ -92,7 +92,6 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useSigningStore } from '@packages/signing/src/store'
-import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
