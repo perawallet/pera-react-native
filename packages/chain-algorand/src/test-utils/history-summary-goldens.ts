@@ -17,10 +17,7 @@ import {
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    flatHistoryItem,
-    type FlatHistoryItem,
-} from '../history-cache/__tests__/history-item'
+import { flatHistoryItem, type FlatHistoryItem } from './history-item'
 
 export type HistorySummaryGolden = {
     name: string
