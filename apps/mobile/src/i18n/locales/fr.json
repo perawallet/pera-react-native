@@ -3203,7 +3203,8 @@
             "title": "Vous ne pouvez pas signer pour ce compte",
             "body": "Il s’agit d’un compte partagé et aucun de ses comptes signataires ne se trouve dans votre wallet. Ajoutez un compte signataire pour signer des transactions en son nom.",
             "rekeyed_auth_missing_body": "Ce compte a fait l’objet d’un rekey vers {{authAddress}}, qui ne se trouve pas dans ce wallet ; il ne peut donc pas signer de transactions. Importez le compte auth pour signer en son nom.",
-            "rekeyed_auth_watch_body": "Ce compte a fait l’objet d’un rekey vers un compte de suivi, qui ne détient aucune clé de signature. Importez la clé du compte auth pour signer en son nom."
+            "rekeyed_auth_watch_body": "Ce compte a fait l’objet d’un rekey vers un compte de suivi, qui ne détient aucune clé de signature. Importez la clé du compte auth pour signer en son nom.",
+            "signer_missing_body": "Cette demande doit être signée par un compte absent de votre wallet, elle ne peut donc pas être signée ici."
         },
         "transaction_request_faq": {
             "title": "FAQ sur les demandes de transaction",

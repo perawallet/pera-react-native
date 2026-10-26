@@ -3195,7 +3195,8 @@
             "title": "Du kannst dieses Konto nicht signieren",
             "body": "Dies ist ein Gemeinschaftskonto, und keines seiner Signier-Konten befindet sich in deinem Wallet. Füge ein Signier-Konto hinzu, um Transaktionen dafür zu signieren.",
             "rekeyed_auth_missing_body": "Dieses Konto ist zu {{authAddress}} rekeyed, das sich nicht in diesem Wallet befindet, daher kann es keine Transaktionen signieren. Importiere das Auth-Konto, um dafür zu signieren.",
-            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren."
+            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren.",
+            "signer_missing_body": "Diese Anfrage braucht eine Signatur von einem Konto, das nicht in deinem Wallet ist, daher kann sie hier nicht signiert werden."
         },
         "transaction_request_faq": {
             "title": "FAQ zu Transaktionsanfragen",

@@ -3220,7 +3220,8 @@
             "title": "Você não pode assinar por esta conta",
             "body": "Esta é uma conta compartilhada e nenhuma das contas signatárias está na sua wallet. Adicione uma conta signatária para assinar transações por ela.",
             "rekeyed_auth_missing_body": "Esta conta passou por rekey para {{authAddress}}, que não está nesta wallet, então ela não pode assinar transações. Importe a conta de autorização para assinar por ela.",
-            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela."
+            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela.",
+            "signer_missing_body": "Esta solicitação precisa da assinatura de uma conta que não está na sua wallet, então não pode ser assinada aqui."
         },
         "transaction_request_faq": {
             "title": "Perguntas frequentes sobre solicitações de transação",

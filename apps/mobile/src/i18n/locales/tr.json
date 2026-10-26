@@ -3203,7 +3203,8 @@
             "title": "Bu hesap için imzalayamazsın",
             "body": "Bu bir paylaşılan hesap ve imzalayan hesaplarından hiçbiri cüzdanında yok. Bu hesap için işlem imzalamak üzere bir imzalayan hesap ekle.",
             "rekeyed_auth_missing_body": "Bu hesap şu adrese rekey edilmiş: {{authAddress}}. Bu adres bu cüzdanda olmadığı için hesap işlem imzalayamaz. Bu hesap için imzalamak üzere auth hesabını içe aktar.",
-            "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar."
+            "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar.",
+            "signer_missing_body": "Bu istek, cüzdanında olmayan bir hesabın imzasını gerektiriyor, bu yüzden burada imzalanamaz."
         },
         "transaction_request_faq": {
             "title": "İşlem isteği SSS",

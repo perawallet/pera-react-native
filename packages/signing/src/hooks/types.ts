@@ -79,6 +79,13 @@ export type SigningPipeline = {
     warnings: TransactionWarning[]
     distinctWarnings: TransactionWarning[]
     requestStructure: RequestStructure
+    /**
+     * Set when signing would refuse the request outright: on a chain reviewed
+     * without a planner, a transaction whose signer the wallet doesn't hold
+     * or that its chain can't read. A planned chain answers through its own
+     * checks, so it is always false there.
+     */
+    hasUnsignableTransaction: boolean
 
     /**
      * Fees the pipeline raised to a required minimum (each record carries

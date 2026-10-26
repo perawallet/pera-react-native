@@ -20,6 +20,7 @@ import type { AnyActorRef } from 'xstate'
 import {
     canSignWith,
     chainAccountOf,
+    isSameAddress,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -162,6 +163,7 @@ const computeDisplayData = (
         warnings,
         distinctWarnings,
         requestStructure,
+        hasUnsignableTransaction: false,
     }
 }
 
@@ -176,12 +178,14 @@ const EMPTY_DISPLAY_DATA: DisplayData = {
     warnings: EMPTY_WARNINGS,
     distinctWarnings: EMPTY_WARNINGS,
     requestStructure: 'single',
+    hasUnsignableTransaction: false,
 }
 
 /**
  * A chain without a planner (Ethereum) reviews each transaction in its own
- * body, so the sheet needs only the review models and who can sign: there is
- * no planner-built list, fee total or warning set to show.
+ * body, so the sheet needs only the review models, the list its reviewer
+ * builds, and which transactions the wallet can sign: no planner-built fee
+ * total or warning set.
  */
 const computeReviewOnlyDisplayData = (
     txRequest: TransactionSignRequest,
@@ -190,17 +194,45 @@ const computeReviewOnlyDisplayData = (
     const chainId = chainIdOfSignRequest(txRequest)
     if (!reviewerChainAdapters.has(chainId)) return EMPTY_DISPLAY_DATA
     const reviewer = reviewerChainAdapters.get(chainId)
-    const allTransactions = txRequest.txs
-        .map(tx => reviewer.toTransactionNative(tx))
-        .filter((tx): tx is TransactionNative => !!tx)
+    const signableAddresses = addressesOn(
+        accounts.filter(a => canSignWith(a, accounts, chainId)),
+        chainId,
+    )
+    // The reviewer resolves signers per request, so ask it one transaction at a time.
+    const isHeld = (tx: TransactionSignRequest['txs'][number]): boolean =>
+        reviewer
+            .resolveAllSignerAddresses({ ...txRequest, txs: [tx] })
+            .some(signer =>
+                [...signableAddresses].some(held =>
+                    isSameAddress(chainId, held, signer),
+                ),
+            )
+    const reviewed = txRequest.txs.flatMap(tx => {
+        const native = reviewer.toTransactionNative(tx)
+        return native ? [{ native, isSignable: isHeld(tx) }] : []
+    })
+    const allTransactions = reviewed.map(({ native }) => native)
+    const signableIndices = new Set(
+        reviewed.flatMap(({ isSignable }, index) =>
+            isSignable ? [index] : [],
+        ),
+    )
+    const listItems = createTransactionListItems(
+        chainId,
+        allTransactions,
+        signableIndices,
+    )
     return {
         ...EMPTY_DISPLAY_DATA,
         allTransactions,
-        signableIndices: new Set(allTransactions.map((_, i) => i)),
-        signableAddresses: addressesOn(
-            accounts.filter(a => canSignWith(a, accounts, chainId)),
-            chainId,
-        ),
+        listItems,
+        signableAddresses,
+        signableIndices,
+        requestStructure: classifyRequestStructure(chainId, listItems),
+        // Signing refuses the whole request at its first unheld or unreadable transaction.
+        hasUnsignableTransaction:
+            reviewed.length < txRequest.txs.length ||
+            signableIndices.size < reviewed.length,
     }
 }
 
@@ -515,6 +547,8 @@ export const useSigningPipeline = (
             ? displayData.distinctWarnings
             : EMPTY_WARNINGS,
         requestStructure: txRequest ? displayData.requestStructure : 'single',
+        hasUnsignableTransaction:
+            !!txRequest && displayData.hasUnsignableTransaction,
         feeAdjustments:
             (txRequest && reviewGroupOf(txRequest).feeAdjustments) ??
             EMPTY_FEE_ADJUSTMENTS,
