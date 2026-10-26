@@ -29,7 +29,7 @@ import { getArc59Config } from '@perawallet/wallet-core-config'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -93,6 +93,9 @@ export const useSendDestinationRouter = () => {
     const { t } = useLanguage()
     const { screenRecipient, isScreeningRecipient } =
         useRecipientPoisoningGate()
+    // A second pick while the first awaits the warning would stack another
+    // sheet, and cancelling it could clear the receiver the first one set.
+    const isScreeningRef = useRef(false)
 
     // ARC-59 needs the router contract + Pera backend, which only exist on
     // Pera-backed networks. Block the route up front instead of landing the
@@ -154,8 +157,16 @@ export const useSendDestinationRouter = () => {
                 return
             }
 
+            if (isScreeningRef.current) return
             // Before any route, so every kind of send gets the same warning.
-            if (!(await screenRecipient(address))) {
+            isScreeningRef.current = true
+            let isApproved: boolean
+            try {
+                isApproved = await screenRecipient(address)
+            } finally {
+                isScreeningRef.current = false
+            }
+            if (!isApproved) {
                 setDestination(undefined)
                 return
             }

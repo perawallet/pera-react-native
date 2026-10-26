@@ -161,6 +161,32 @@ describe('useSendDestinationRouter', () => {
 
         expect(mocks.screenRecipient).toHaveBeenCalledWith(RECEIVER)
         expect(mocks.setDestination).toHaveBeenCalledWith(RECEIVER)
+        expect(mocks.screenRecipient.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.navigate.mock.invocationCallOrder[0] ?? 0,
+        )
+    })
+
+    it('ignores a second receiver while the first is still being screened', async () => {
+        let approve: (isApproved: boolean) => void = () => {}
+        mocks.screenRecipient.mockReturnValue(
+            new Promise(resolve => {
+                approve = resolve
+            }),
+        )
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        let first: Promise<void> = Promise.resolve()
+        await act(async () => {
+            first = result.current.resolveDestination(RECEIVER)
+            await result.current.resolveDestination(RECEIVER)
+        })
+        await act(async () => {
+            approve(true)
+            await first
+        })
+
+        expect(mocks.screenRecipient).toHaveBeenCalledTimes(1)
+        expect(mocks.navigate).toHaveBeenCalledTimes(1)
     })
 
     it('clears the receiver and stays put when the user backs out of the warning', async () => {
