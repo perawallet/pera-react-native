@@ -33,6 +33,7 @@ import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
+import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
 import {
     MAX_VISIBLE_AMOUNTS,
     summaryAmountsOf,
@@ -45,7 +46,8 @@ export type UseTransactionListItemParams =
           transaction: TransactionHistoryItem
           onPress?: (transaction: TransactionHistoryItem) => void
       }
-    // Opens nothing: the details screen reads a cached history row, which a record has none of.
+    // The details screen reads a cached history row, which a record has none of;
+    // a pending one this wallet can re-price opens speed up and cancel instead.
     | { record: TransactionRecord }
 
 export type UseTransactionListItemResult = {
@@ -130,6 +132,12 @@ export const useTransactionListItem = (
         if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
 
+    const { canReplace, handleReplace } = useReplaceTransaction(record)
+    const handleRecordPress = useCallback(() => {
+        void handleReplace()
+    }, [handleReplace])
+    const recordPress = canReplace ? handleRecordPress : undefined
+
     const handleLongPress = useCallback(
         () => void copyToClipboard(id),
         [copyToClipboard, id],
@@ -145,7 +153,7 @@ export const useTransactionListItem = (
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
         notice,
-        handlePress: record ? undefined : handleTransactionPress,
+        handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
     }
 }

@@ -59,6 +59,14 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
+const mockReplace = vi.hoisted(() => ({
+    canReplace: false,
+    handleReplace: vi.fn(async () => undefined),
+}))
+vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
+    useReplaceTransaction: () => mockReplace,
+}))
+
 vi.mock('../../../hooks/history/useCounterpartyName', () => ({
     useCounterpartyName: vi.fn(() => 'Counterparty'),
 }))
@@ -306,6 +314,7 @@ describe('useTransactionListItem with a record', () => {
         vi.clearAllMocks()
         historyChainAdapters.reset()
         stored([])
+        mockReplace.canReplace = false
     })
 
     it("renders the record's own summary without a history adapter", () => {
@@ -328,5 +337,14 @@ describe('useTransactionListItem with a record', () => {
         expect(row.handlePress).toBeUndefined()
         row.handleLongPress()
         expect(mockCopyToClipboard).toHaveBeenCalledWith('0xhash')
+    })
+
+    it('offers speed up and cancel on press when the wallet can re-price it', () => {
+        mockReplace.canReplace = true
+        const row = renderRecord()
+
+        row.handlePress?.()
+
+        expect(mockReplace.handleReplace).toHaveBeenCalled()
     })
 })
