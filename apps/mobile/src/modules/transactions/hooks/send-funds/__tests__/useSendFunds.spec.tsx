@@ -108,6 +108,22 @@ describe('useSendFundsStore', () => {
         expect(result.current.destination).toBe('ALGO_ADDRESS')
     })
 
+    it('drops the recipient acknowledgement when the destination changes', () => {
+        const { result } = renderHook(() => useSendFundsStore())
+
+        act(() => {
+            result.current.setDestination('ALGO_ADDRESS')
+            result.current.setIsRecipientAcknowledged(true)
+        })
+        expect(result.current.isRecipientAcknowledged).toBe(true)
+
+        act(() => {
+            result.current.setDestination('OTHER_ADDRESS')
+        })
+
+        expect(result.current.isRecipientAcknowledged).toBe(false)
+    })
+
     it('resets all state to initial values', () => {
         const { result } = renderHook(() => useSendFundsStore())
 

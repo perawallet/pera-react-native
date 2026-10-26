@@ -60,7 +60,12 @@ import { bottomSheetNotifier } from '@components/core'
 import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
-import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import {
+    useRecipientSafety,
+    useSendFunds,
+    useSendScope,
+    type UseRecipientSafetyResult,
+} from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { chainUiFor } from '@modules/chain-ui'
 import type { SendTrailingSectionProps } from '../../../types/send-confirmation-display'
@@ -97,6 +102,7 @@ type useTransactionConfirmationScreenResult = {
     isCloseAccount: boolean
     recipientWarning: Optional<ChainNotice>
     isRecipientInfoPending: boolean
+    recipientSafety: UseRecipientSafetyResult
     isSigning: boolean
 }
 
@@ -204,6 +210,11 @@ export const useTransactionConfirmationScreen =
         )
         const { data: recipientWarning, isPending: isRecipientInfoPending } =
             useRecipientWarningQuery(recipientInput)
+        const recipientSafety = useRecipientSafety({
+            recipient: destination,
+            senderAddress: selectedAddress,
+            scope,
+        })
 
         // A node refuses a send its native balance can't cover at the selected
         // preset's worst-case fee, so check that before signing. Algorand's
@@ -239,7 +250,7 @@ export const useTransactionConfirmationScreen =
         }, [isFocused])
 
         const handleConfirm = () => {
-            if (isRecipientInfoPending) {
+            if (isRecipientInfoPending || recipientSafety.isConfirmBlocked) {
                 return
             }
 
@@ -374,6 +385,7 @@ export const useTransactionConfirmationScreen =
             isCloseAccount,
             recipientWarning,
             isRecipientInfoPending,
+            recipientSafety,
             isSigning,
         }
     }

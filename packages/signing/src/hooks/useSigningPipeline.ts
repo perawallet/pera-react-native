@@ -20,6 +20,7 @@ import type { AnyActorRef } from 'xstate'
 import {
     canSignWith,
     chainAccountOf,
+    isSameAddress,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -110,11 +111,9 @@ const computeDisplayData = (
 
     const userAccountAddresses = addressesOn(accounts, chainId)
 
-    const { totalFee, highFeeWarning } = plannerChainAdapters.has(chainId)
-        ? plannerChainAdapters
-              .get(chainId)
-              .reviewGroupFees(allTransactions, signableAddresses)
-        : { totalFee: ZERO_FEE, highFeeWarning: null }
+    const { totalFee, highFeeWarning } = plannerChainAdapters
+        .get(chainId)
+        .reviewGroupFees(allTransactions, signableAddresses)
 
     // Gate warnings on the authorizing entity, not the raw sender: a dApp
     // can set a foreign `sender` it never imported while signing with an
@@ -164,6 +163,7 @@ const computeDisplayData = (
         warnings,
         distinctWarnings,
         requestStructure,
+        hasUnsignableTransaction: false,
     }
 }
 
@@ -178,6 +178,62 @@ const EMPTY_DISPLAY_DATA: DisplayData = {
     warnings: EMPTY_WARNINGS,
     distinctWarnings: EMPTY_WARNINGS,
     requestStructure: 'single',
+    hasUnsignableTransaction: false,
+}
+
+/**
+ * A chain without a planner (Ethereum) reviews each transaction in its own
+ * body, so the sheet needs only the review models, the list its reviewer
+ * builds, and which transactions the wallet can sign: no planner-built fee
+ * total or warning set.
+ */
+const computeReviewOnlyDisplayData = (
+    txRequest: TransactionSignRequest,
+    accounts: WalletAccount[],
+): DisplayData => {
+    const chainId = chainIdOfSignRequest(txRequest)
+    if (!reviewerChainAdapters.has(chainId)) return EMPTY_DISPLAY_DATA
+    const reviewer = reviewerChainAdapters.get(chainId)
+    const signableAddresses = addressesOn(
+        accounts.filter(a => canSignWith(a, accounts, chainId)),
+        chainId,
+    )
+    // The reviewer resolves signers per request, so ask it one transaction at a time.
+    const isHeld = (tx: TransactionSignRequest['txs'][number]): boolean =>
+        reviewer
+            .resolveAllSignerAddresses({ ...txRequest, txs: [tx] })
+            .some(signer =>
+                [...signableAddresses].some(held =>
+                    isSameAddress(chainId, held, signer),
+                ),
+            )
+    const reviewed = txRequest.txs.flatMap(tx => {
+        const native = reviewer.toTransactionNative(tx)
+        return native ? [{ native, isSignable: isHeld(tx) }] : []
+    })
+    const allTransactions = reviewed.map(({ native }) => native)
+    const signableIndices = new Set(
+        reviewed.flatMap(({ isSignable }, index) =>
+            isSignable ? [index] : [],
+        ),
+    )
+    const listItems = createTransactionListItems(
+        chainId,
+        allTransactions,
+        signableIndices,
+    )
+    return {
+        ...EMPTY_DISPLAY_DATA,
+        allTransactions,
+        listItems,
+        signableAddresses,
+        signableIndices,
+        requestStructure: classifyRequestStructure(chainId, listItems),
+        // Signing refuses the whole request at its first unheld or unreadable transaction.
+        hasUnsignableTransaction:
+            reviewed.length < txRequest.txs.length ||
+            signableIndices.size < reviewed.length,
+    }
 }
 
 // Module-level single-entry cache. Only one sign request is active at a time
@@ -263,14 +319,14 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
-    const displayData = useMemo(
-        () =>
-            txRequest &&
-            reviewerChainAdapters.has(chainIdOfSignRequest(txRequest))
-                ? getSharedDisplayData(txRequest, accounts)
-                : EMPTY_DISPLAY_DATA,
-        [txRequest, accounts],
-    )
+    // Fees and the list come from the chain's planner, so a chain without one
+    // (Ethereum) is reviewed by its own body alone.
+    const displayData = useMemo(() => {
+        if (!txRequest) return EMPTY_DISPLAY_DATA
+        return plannerChainAdapters.has(chainIdOfSignRequest(txRequest))
+            ? getSharedDisplayData(txRequest, accounts)
+            : computeReviewOnlyDisplayData(txRequest, accounts)
+    }, [txRequest, accounts])
 
     // Release the shared cache once no transaction request is active — i.e.
     // when the queue drains as the signing sheet closes. While a request is
@@ -491,6 +547,8 @@ export const useSigningPipeline = (
             ? displayData.distinctWarnings
             : EMPTY_WARNINGS,
         requestStructure: txRequest ? displayData.requestStructure : 'single',
+        hasUnsignableTransaction:
+            !!txRequest && displayData.hasUnsignableTransaction,
         feeAdjustments:
             (txRequest && reviewGroupOf(txRequest).feeAdjustments) ??
             EMPTY_FEE_ADJUSTMENTS,

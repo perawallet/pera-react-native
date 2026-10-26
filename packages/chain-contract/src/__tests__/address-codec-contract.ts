@@ -19,6 +19,8 @@ export interface AddressCodecContractFixtures {
     deriveOpts: DeriveOpts
     /** Spellings of one address that must compare equal, e.g. case or checksum variants. */
     equivalentSpellings?: readonly [string, string, ...string[]]
+    /** Two different valid addresses whose `truncate` forms read alike. */
+    lookAlikePair: readonly [string, string]
     invalid: readonly string[]
     /** A payment URI of another scheme, which the codec must decline. */
     foreignUri: string
@@ -78,6 +80,34 @@ export const addressCodecContractTests = (
             const [head, tail] = truncated.split('...')
             expect(address.startsWith(head)).toBe(true)
             expect(address.endsWith(tail)).toBe(true)
+        })
+
+        it('finds a look-alike pair resembling each other both ways', () => {
+            const codec = makeCodec()
+            const [a, b] = fixtures.lookAlikePair
+
+            expect(codec.isValid(a)).toBe(true)
+            expect(codec.isValid(b)).toBe(true)
+            expect(codec.resembles(a, b)).toBe(true)
+            expect(codec.resembles(b, a)).toBe(true)
+        })
+
+        it('never takes an address, or another spelling of it, for a look-alike', () => {
+            const codec = makeCodec()
+            const spellings = fixtures.equivalentSpellings ?? [derive(codec)]
+
+            for (const a of spellings) {
+                for (const b of spellings) {
+                    expect(codec.resembles(a, b)).toBe(false)
+                }
+            }
+        })
+
+        it('does not take addresses that read differently for look-alikes', () => {
+            const codec = makeCodec()
+            const [lookAlike] = fixtures.lookAlikePair
+
+            expect(codec.resembles(lookAlike, derive(codec))).toBe(false)
         })
 
         it('rejects the empty string and every invalid fixture', () => {

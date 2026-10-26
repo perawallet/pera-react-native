@@ -20,6 +20,24 @@ const VALID = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 const ASA = { chainId: ALGORAND_CHAIN_ID, assetId: '31566704' }
 const { toPaymentUri, parsePaymentUri } = algorandAddressCodec
 
+describe('algorandAddressCodec.resembles', () => {
+    const KNOWN = '2SSSXMFNG55PKDGKJB7MLTGIRSIYAXFCJAWSQFD6C3M7L6JLG5NJIBTGAA'
+    const LOOK_ALIKE =
+        '2SSSXMBXVWYMJ33BCFI5PED5O7LMFJZWXXSAJCU44W5M4NP4Q5YIJBTGAA'
+
+    it('takes an address differing only between the shown ends for a look-alike', () => {
+        expect(algorandAddressCodec.resembles(LOOK_ALIKE, KNOWN)).toBe(true)
+    })
+
+    it('does not take the address itself for a look-alike', () => {
+        expect(algorandAddressCodec.resembles(KNOWN, KNOWN)).toBe(false)
+    })
+
+    it('does not take an address with different shown ends for a look-alike', () => {
+        expect(algorandAddressCodec.resembles(VALID, KNOWN)).toBe(false)
+    })
+})
+
 describe('algorandAddressCodec payment URIs', () => {
     describe('round trip', () => {
         const awkward = 'a b & = ? # % + / é 😀'

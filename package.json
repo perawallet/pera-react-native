@@ -38,6 +38,8 @@
     "lint:bundle": "bash tools/qa/check-prod-bundle.sh",
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
     "check:patch-pins": "node tools/check-patch-pins.mjs",
+    "check:bitrise-yml": "bash tools/release/bitrise-yml.sh --check",
+    "format:bitrise": "bash tools/release/bitrise-yml.sh",
     "check:single-algosdk": "node tools/check-single-algosdk.mjs",
     "release:upload-chrome-web-store": "node tools/release/upload-chrome-web-store.mjs",
     "check:autodraw-hash": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-autodraw-template-hash.mjs",

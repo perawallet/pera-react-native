@@ -28,11 +28,13 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
-    getOpenSubmissionAttempts,
+    getSubmissionAttemptsAtNonce,
     markSubmissionUnknown,
+    OPEN_SUBMISSION_STATUSES,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     SubmissionError,
+    type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
@@ -44,6 +46,7 @@ import {
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
+import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently.
 const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
@@ -146,6 +149,67 @@ const maxFeeOf = ({
         ? undefined
         : new Decimal((gas * maxFeePerGas).toString())
 
+// The newest open attempt of the sender at this nonce under another hash; a
+// transport retry of the same bytes shares the hash, so it replaces nothing.
+const findReplacedAttempt = async (
+    db: Database | undefined,
+    scope: ChainScope,
+    sender: string,
+    nonce: number,
+    hash: string,
+): Promise<SubmissionAttempt | undefined> => {
+    const open = await getSubmissionAttemptsAtNonce({
+        db,
+        scope,
+        sender,
+        nonce,
+        statuses: OPEN_SUBMISSION_STATUSES,
+    })
+    return open.filter(attempt => attempt.txIds[0] !== hash).at(-1)
+}
+
+// Refused before the node sees it, so the bytes are provably not on chain.
+const underpricedReplacement = (hash: string) =>
+    new SubmissionError(
+        [hash],
+        'rejected-by-node',
+        new EvmError(EvmErrorCode.REPLACEMENT_UNDERPRICED),
+    )
+
+const isUnderpricedReplacement = (
+    replaced: SubmissionAttempt | undefined,
+    parsed: ReturnType<typeof parseTransaction>,
+): boolean => {
+    const original =
+        replaced?.rawTransaction != null
+            ? readReplaceableTransaction(replaced.rawTransaction)
+            : null
+    if (!original) return false
+    const { maxFeePerGas, maxPriorityFeePerGas } = parsed
+    return (
+        maxFeePerGas === undefined ||
+        maxPriorityFeePerGas === undefined ||
+        !meetsReplacementBump(original, { maxFeePerGas, maxPriorityFeePerGas })
+    )
+}
+
+// "nonce too low" on a replacement means the transaction it re-priced, or one
+// at the same nonce, confirmed first.
+const asReplacementOutcome = (error: unknown): unknown =>
+    error instanceof SubmissionError &&
+    error.classification === 'rejected-by-node' &&
+    evmErrorCodeOf(error.nodeError) === EvmErrorCode.NONCE_TOO_LOW
+        ? new SubmissionError(
+              error.txIds,
+              error.classification,
+              new EvmError(
+                  EvmErrorCode.REPLACED_TRANSACTION_CONFIRMED,
+                  {},
+                  error.nodeError,
+              ),
+          )
+        : error
+
 const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     try {
         await write()
@@ -154,32 +218,35 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
-// Two sends built before either was recorded pick the same nonce. Sending the
-// second would fail at the node at best, or replace the first if its fees are
-// 10% higher, leaving the first's dApp with a hash that never mines.
-const isNonceHeldByAnotherSend = async ({
-    db,
-    scope,
-    sender,
-    nonce,
-    hash,
-}: {
-    db?: Database
-    scope: ChainScope
-    sender: string
-    nonce: number | undefined
-    hash: Hex
-}): Promise<boolean> => {
-    if (nonce === undefined) return false
-    try {
-        const open = await getOpenSubmissionAttempts({ db, scope, sender })
-        return open.some(
-            attempt => attempt.nonce === nonce && !attempt.txIds.includes(hash),
-        )
-    } catch (error) {
-        logger.warn('ethereum submission ledger: nonce check failed', { error })
-        return false
-    }
+const isSameAddress = (a: string | null | undefined, b: string): boolean =>
+    a != null && getAddress(a) === getAddress(b)
+
+// Two sends built before either was recorded pick the same nonce, and the
+// second would replace the first, leaving its dApp a hash that never mines.
+// A speed-up resends the original's call and a cancel sends nothing to the
+// sender; any other transaction at a held nonce is that collision.
+const isNonceCollision = (
+    replaced: SubmissionAttempt | undefined,
+    parsed: ReturnType<typeof parseTransaction>,
+    sender: string,
+): boolean => {
+    if (!replaced) return false
+    const original =
+        replaced.rawTransaction != null
+            ? readReplaceableTransaction(replaced.rawTransaction)
+            : null
+    if (!original) return true
+    const value = parsed.value ?? 0n
+    const data = (parsed.data ?? '0x').toLowerCase()
+    const isSpeedUp =
+        (original.to == null
+            ? parsed.to == null
+            : isSameAddress(parsed.to, original.to)) &&
+        value === (original.value ?? 0n) &&
+        data === (original.data ?? '0x').toLowerCase()
+    const isCancel =
+        isSameAddress(parsed.to, sender) && value === 0n && data === '0x'
+    return !isSpeedUp && !isCancel
 }
 
 /** The entry the send's build put on its unsigned transaction, read back from the signed bytes. */
@@ -206,7 +273,10 @@ export const historyEntryOfSigned = async (
 /**
  * Writes each transaction's ledger row before sending it, so a send that gets
  * no answer still holds its nonce. A ledger write failure never blocks the
- * send.
+ * send. A speed-up or cancel at a nonce an open attempt already holds replaces
+ * it: the row links the two, and one that doesn't outbid the original by the
+ * node's minimum bump is refused without being sent. Any other send at a held
+ * nonce is refused the same way.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
@@ -228,9 +298,19 @@ export const submitAndRecordEthereumTransactions = async ({
             serializedTransaction,
         })
         const hash = keccak256(serializedTransaction)
-        if (
-            await isNonceHeldByAnotherSend({ db, scope, sender, nonce, hash })
-        ) {
+        let replaced: SubmissionAttempt | undefined
+        if (nonce !== undefined) {
+            await bestEffort('replacement lookup', async () => {
+                replaced = await findReplacedAttempt(
+                    db,
+                    scope,
+                    sender,
+                    nonce,
+                    hash,
+                )
+            })
+        }
+        if (isNonceCollision(replaced, parsed, sender)) {
             throw new SubmissionError(
                 [hash],
                 'rejected-by-node',
@@ -238,6 +318,9 @@ export const submitAndRecordEthereumTransactions = async ({
                     symbol: chain.row.nativeAsset.symbol,
                 }),
             )
+        }
+        if (isUnderpricedReplacement(replaced, parsed)) {
+            throw underpricedReplacement(hash)
         }
         let attemptId: string | undefined
         await bestEffort('record', async () => {
@@ -250,13 +333,16 @@ export const submitAndRecordEthereumTransactions = async ({
                 nonce,
                 maxFee: fee,
                 historyEntry: entry && { ...entry, ...(fee && { fee }) },
+                rawTransaction: serializedTransaction,
+                replacesAttemptId: replaced?.id,
             })
         })
         try {
             txIds.push(
                 ...(await submitEthereumTransactions(client, [bytes], chain)),
             )
-        } catch (error) {
+        } catch (caught) {
+            const error = replaced ? asReplacementOutcome(caught) : caught
             const id = attemptId
             if (id !== undefined) {
                 await bestEffort('settle', () =>

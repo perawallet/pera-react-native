@@ -91,6 +91,16 @@ export const transactionQueryKeys = {
             { accountAddress: address, asset, scope, fee: fee.toFixed() },
         ] as const,
 
+    trustedCounterparties: (accountAddress: string, scope: ChainScope) =>
+        [
+            MODULE_PREFIX,
+            'trusted-counterparties',
+            { accountAddress, scope },
+        ] as const,
+
+    addressPoisoning: (recipient: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'address-poisoning', { recipient, scope }] as const,
+
     /** `amount` is in base units, carried as plain text like `fee` above. */
     recipientWarning: (
         recipient: string,
@@ -186,6 +196,11 @@ export function invalidateTransactionQueriesForAddresses(
             }),
     })
 }
+
+export const getReplaceableTransactionQueryKey = (
+    scope: ChainScope,
+    txId: string,
+) => [MODULE_PREFIX, 'replaceable', { scope, txId }] as const
 
 // Its own prefix, and deliberately not 'transactions': the app's query
 // persistence classifies this one (an inbox request list survives a restart).

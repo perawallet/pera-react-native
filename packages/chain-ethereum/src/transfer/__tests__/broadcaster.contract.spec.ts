@@ -22,7 +22,10 @@ import {
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import {
+    VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_0_SPED_UP,
+} from '../../signing/__tests__/fixtures'
 import { EVM_TEST_CHAINS, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 
@@ -32,6 +35,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 const HASH = keccak256(VIEM_TRANSFER_NONCE_0)
+const REPLACEMENT_HASH = keccak256(VIEM_TRANSFER_NONCE_0_SPED_UP)
 
 const useRpc = (responses: EvmRpcFixtures['responses'] = {}) =>
     server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL, responses }))
@@ -74,5 +78,24 @@ for (const chain of EVM_TEST_CHAINS) {
             }),
         arrangeNeverConfirmed: () =>
             useRpc({ eth_getTransactionReceipt: null }),
+        replacement: {
+            signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0_SPED_UP)],
+            txIds: [REPLACEMENT_HASH],
+            arrangeUnderpriced: () =>
+                useRpc({
+                    eth_sendRawTransaction: new EvmRpcErrorFixture(
+                        -32000,
+                        'replacement transaction underpriced',
+                    ),
+                }),
+            arrangeOriginalLanded: () =>
+                useRpc({
+                    eth_sendRawTransaction: new EvmRpcErrorFixture(
+                        -32000,
+                        'nonce too low',
+                    ),
+                    eth_getTransactionByHash: null,
+                }),
+        },
     })
 }

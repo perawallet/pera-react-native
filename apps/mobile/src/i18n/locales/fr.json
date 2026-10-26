@@ -1134,7 +1134,11 @@
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
             },
-            "invalid_private_key": "Saisissez une clé privée valide : 64 caractères hexadécimaux, avec ou sans 0x."
+            "invalid_private_key": "Saisissez une clé privée valide : 64 caractères hexadécimaux, avec ou sans 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transaction déjà confirmée",
+                "body": "La transaction que vous vouliez accélérer ou annuler a été confirmée avant, rien n’a donc été remplacé."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Impossible de retirer cet actif",
                 "body": "Ce compte a créé cet actif et ne peut donc pas le retirer."
+            },
+            "not_replaceable": {
+                "title": "Transaction plus en attente",
+                "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
             }
         },
         "kms": {
@@ -2726,6 +2734,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Vérification du destinataire…",
+            "look_alike_title": "Cette adresse ressemble à une adresse que vous connaissez",
+            "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
+            "look_alike_recipient_label": "Vous envoyez à",
+            "look_alike_known_label_own_account": "Votre compte {{name}}",
+            "look_alike_known_label_watched_account": "Le compte {{name}} de votre portefeuille",
+            "look_alike_known_label_contact": "Votre contact {{name}}",
+            "look_alike_known_label_history": "Une adresse de votre historique",
+            "look_alike_acknowledge": "J'ai vérifié l'adresse complète et je veux y envoyer",
+            "first_send_title": "Premier envoi à cette adresse",
+            "first_send_body": "Vous n'avez jamais envoyé à cette adresse sur ce réseau. Vérifiez que c'est la bonne."
+        },
         "input_view": {
             "title": "Envoyer {{asset}}"
         },
@@ -2780,6 +2801,16 @@
             "nfd_unavailable_body": "Le registre NFD est injoignable pour vérifier ce nom. Réessayez ou collez l'adresse directement.",
             "invalid_address_title": "Adresse invalide",
             "invalid_address_body": "Il ne s’agit pas d’une adresse {{chain}} valide."
+        },
+        "address_poisoning": {
+            "title": "Vérifiez cette adresse",
+            "lookalike_body": "Cette adresse ressemble à une adresse que vous connaissez, mais ce n’est pas la même. Les escrocs créent des adresses qui commencent ou se terminent par les mêmes caractères pour vous inciter à copier la leur. Comparez chaque caractère avant de continuer.",
+            "dust_body": "Cette adresse ne vous a envoyé que de très petits montants, et vous ne lui avez jamais rien envoyé. Les escrocs procèdent ainsi pour que leur adresse apparaisse dans votre historique, en espérant que vous la copiiez par erreur.",
+            "recipient_label": "Envoi à",
+            "similar_to_label": "Similaire à",
+            "acknowledge": "J’ai vérifié l’adresse complète",
+            "confirm": "Continuer",
+            "cancel": "Annuler"
         },
         "fee": {
             "slow": "Lente",
@@ -3195,7 +3226,8 @@
             "title": "Vous ne pouvez pas signer pour ce compte",
             "body": "Il s’agit d’un compte partagé et aucun de ses comptes signataires ne se trouve dans votre wallet. Ajoutez un compte signataire pour signer des transactions en son nom.",
             "rekeyed_auth_missing_body": "Ce compte a fait l’objet d’un rekey vers {{authAddress}}, qui ne se trouve pas dans ce wallet ; il ne peut donc pas signer de transactions. Importez le compte auth pour signer en son nom.",
-            "rekeyed_auth_watch_body": "Ce compte a fait l’objet d’un rekey vers un compte de suivi, qui ne détient aucune clé de signature. Importez la clé du compte auth pour signer en son nom."
+            "rekeyed_auth_watch_body": "Ce compte a fait l’objet d’un rekey vers un compte de suivi, qui ne détient aucune clé de signature. Importez la clé du compte auth pour signer en son nom.",
+            "signer_missing_body": "Cette demande doit être signée par un compte absent de votre wallet, elle ne peut donc pas être signée ici."
         },
         "transaction_request_faq": {
             "title": "FAQ sur les demandes de transaction",
@@ -3256,7 +3288,8 @@
         "notice": {
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
-            "replaced": "Remplacée par une autre transaction"
+            "replaced": "Remplacée par une autre transaction",
+            "replacement_not_needed": "Inutile : la transaction d’origine a été confirmée avant"
         },
         "list_item": {
             "send": "Envoi",
@@ -3276,7 +3309,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} transactions internes"
+            "inner_transaction_count": "{{innerCount}} transactions internes",
+            "cancel_transaction": "Annulation"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
@@ -3419,6 +3453,13 @@
             "last_week": "Semaine dernière",
             "last_month": "Mois dernier",
             "custom_range": "Période personnalisée"
+        },
+        "replacement": {
+            "title": "Transaction en attente",
+            "body": "Accélérer la renvoie avec des frais de réseau plus élevés. Annuler la remplace par un transfert vide vers vous-même, qui coûte aussi des frais de réseau. Si l’originale est confirmée avant, rien n’est remplacé.",
+            "speed_up": "Accélérer",
+            "cancel": "Annuler la transaction",
+            "review_notice": "Remplace la transaction {{txId}}"
         }
     },
     "tabbar": {
