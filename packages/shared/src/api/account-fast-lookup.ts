@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { settleBatch } from '../utils/async'
 import { queryClient } from './query-client'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
@@ -69,21 +70,13 @@ export const fetchAccountFastLookup = async (
     addresses: string[],
     scope: ChainScope,
 ): Promise<AccountFastLookupResponse> => {
-    const lookups = await Promise.allSettled(
-        addresses.map(address => fetchAccountExists(address, scope)),
+    const exists = await settleBatch(
+        addresses,
+        address => fetchAccountExists(address, scope),
+        false,
     )
-    const [first] = lookups
-    if (
-        first?.status === 'rejected' &&
-        lookups.every(lookup => lookup.status === 'rejected')
-    ) {
-        throw first.reason
-    }
-    return addresses.map((address, i) => {
-        const lookup = lookups[i]
-        return {
-            address,
-            accountExists: lookup.status === 'fulfilled' && lookup.value,
-        }
-    })
+    return addresses.map((address, i) => ({
+        address,
+        accountExists: exists[i],
+    }))
 }

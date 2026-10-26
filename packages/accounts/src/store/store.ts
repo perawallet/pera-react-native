@@ -1190,11 +1190,6 @@ export const useAccountsStore: UseBoundStore<
             discoverWalletAccounts: (walletId, options = {}) =>
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
-                        const declined = new Set(
-                            (options.declinedIndexes ?? []).map(hdPathKey),
-                        )
-                        const changedIds = new Set<string>()
-                        const walkClaims = {}
                         // Every flow deriving a key for an account claims it,
                         // as it stores the account only after deriving.
                         const removeUnclaimedKeys = (keyPairIds: string[]) =>
@@ -1203,6 +1198,8 @@ export const useAccountsStore: UseBoundStore<
                                 keyPairIds.filter(id => !isKeyClaimed(id)),
                             )
                         let probed: ProbedHdIndex[] = []
+                        // Only the probes read the root key; the adds derive
+                        // through the keystore, so it is zeroed before them.
                         try {
                             probed = await discoverWalletActivity({
                                 walletId,
@@ -1224,9 +1221,13 @@ export const useAccountsStore: UseBoundStore<
                                 `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
                             )
                         } finally {
-                            // Only the probes read it; the adds derive through the keystore.
                             zeroBytes(options.rootKey)
                         }
+                        const declined = new Set(
+                            (options.declinedIndexes ?? []).map(hdPathKey),
+                        )
+                        const changedIds = new Set<string>()
+                        const walkClaims = {}
                         for (const { index, derived, active } of probed) {
                             const additions = declined.has(hdPathKey(index))
                                 ? []

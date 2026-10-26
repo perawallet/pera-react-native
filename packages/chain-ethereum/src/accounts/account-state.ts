@@ -24,6 +24,7 @@ import type {
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
+    settleBatch,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
@@ -384,24 +385,14 @@ export const createEthereumAccountStateOps = (
     accountExists: (address, scope) =>
         readFootprint(ctx, chain, address, scope),
     checkActivity: async (addresses, scope) => {
-        const reads = await Promise.allSettled(
-            addresses.map(address => readFootprint(ctx, chain, address, scope)),
+        // A failed read beside ones that answered reads as inactive, so one
+        // flaky call doesn't discard the batch's other answers.
+        const active = await settleBatch(
+            addresses,
+            address => readFootprint(ctx, chain, address, scope),
+            false,
         )
-        // A read that failed beside ones that answered reads as inactive, so
-        // one flaky call doesn't discard the batch's other answers.
-        const [first] = reads
-        if (
-            first?.status === 'rejected' &&
-            reads.every(read => read.status === 'rejected')
-        ) {
-            throw first.reason
-        }
-        return new Map(
-            addresses.map((address, i) => {
-                const read = reads[i]
-                return [address, read.status === 'fulfilled' && read.value]
-            }),
-        )
+        return new Map(addresses.map((address, i) => [address, active[i]]))
     },
     fetchChangeSignal: fetchChangeSignal(ctx, chain),
 })
