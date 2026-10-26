@@ -282,7 +282,7 @@ workflows:
     - _smoke-ios
     meta:
       bitrise.io:
-        stack: osx-xcode-26.2.x
+        stack: osx-xcode-27.1.x
         machine_type_id: g2.mac.large
   ios-production:
     description: Build and deploy iOS Production to TestFlight
@@ -300,7 +300,7 @@ workflows:
     - _publish-result
     meta:
       bitrise.io:
-        stack: osx-xcode-26.2.x
+        stack: osx-xcode-27.1.x
         machine_type_id: g2.mac.large
   _ios-build:
     steps:
@@ -321,6 +321,9 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             asdf plugin add ruby || true
+            # The macOS 27 SDK declares dup3/pipe2 but this stack's macOS 26 host lacks them, so
+            # a Ruby configured against the SDK crashes mid-build (bugs.ruby-lang.org/issues/22311).
+            export ac_cv_func_dup3=no ac_cv_func_pipe2=no
             asdf install ruby
     - restore-cache@3:
         inputs:
@@ -624,7 +627,7 @@ workflows:
         stack: ubuntu-noble-24.04-bitrise-2025-android
   _android-build:
     envs:
-    - ANDROID_NDK_VERSION: 27.0.12077973
+    - ANDROID_NDK_VERSION: 27.1.12297006
     steps:
     - git-clone@8:
         inputs:
@@ -859,10 +862,10 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -euo pipefail
-            # Gradle otherwise auto-installs this NDK while configuring
-            # react-native-falcon, and a truncated download takes the whole
-            # build down at configuration time with "Archive is not a ZIP
-            # archive". Installing it here costs a retry instead of the build.
+            # Gradle otherwise auto-installs these while configuring the native
+            # modules, and a truncated download takes the whole build down at
+            # configuration time with "Archive is not a ZIP archive". Installing
+            # them here costs a retry instead of the build.
             SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
             if [ -z "$SDK_ROOT" ]; then
               echo "Neither ANDROID_HOME nor ANDROID_SDK_ROOT is set" >&2
@@ -872,19 +875,25 @@ workflows:
             SDKMANAGER=$(command -v sdkmanager \
               || echo "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager")
 
-            for attempt in 1 2 3; do
-              if [ -x "$NDK_DIR/ndk-build" ]; then break; fi
-              echo "Installing NDK $ANDROID_NDK_VERSION (attempt $attempt)"
-              # sdkmanager treats a half-written dir as installed, so clear it.
-              rm -rf "$NDK_DIR"
-              yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
-                --install "ndk;$ANDROID_NDK_VERSION" || true
-            done
+            # <package> <install dir> <file only a complete install has>
+            install_package() {
+              for attempt in 1 2 3; do
+                if [ -e "$2/$3" ]; then return 0; fi
+                echo "Installing $1 (attempt $attempt)"
+                # sdkmanager treats a half-written dir as installed, so clear it.
+                rm -rf "$2"
+                yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "$1" || true
+              done
+              if [ ! -e "$2/$3" ]; then
+                echo "$1 unavailable after 3 attempts" >&2
+                exit 1
+              fi
+            }
 
-            if [ ! -x "$NDK_DIR/ndk-build" ]; then
-              echo "NDK $ANDROID_NDK_VERSION unavailable after 3 attempts" >&2
-              exit 1
-            fi
+            install_package "ndk;$ANDROID_NDK_VERSION" "$NDK_DIR" ndk-build
+            # The versions AGP falls back to for modules that pin none.
+            install_package "cmake;3.22.1" "$SDK_ROOT/cmake/3.22.1" bin/cmake
+            install_package "build-tools;36.0.0" "$SDK_ROOT/build-tools/36.0.0" aapt2
             envman add --key ANDROID_NDK_HOME --value "$NDK_DIR"
     - script@1:
         title: Verify Android production identity
