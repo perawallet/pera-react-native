@@ -19,6 +19,18 @@ import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useSendFunds } from '@modules/transactions/hooks'
 
 const mockNavigate = vi.fn()
+const { recipientSafety } = vi.hoisted(() => ({
+    recipientSafety: {
+        current: {
+            assessment: undefined,
+            isPending: false,
+            isAcknowledged: false,
+            toggleAcknowledged: () => {},
+            isConfirmBlocked: false,
+        } as Record<string, unknown>,
+    },
+}))
+
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 const mockSetAssetInboxQuote = vi.fn()
@@ -55,6 +67,10 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
     useSelectedAccount: vi.fn(() => ({
         id: 'sender',
         custody: { kind: 'watch' },
@@ -157,6 +173,7 @@ vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
     useSendScope: () => sendScope.current,
+    useRecipientSafety: () => recipientSafety.current,
 }))
 
 // Base units of the native asset.
@@ -177,6 +194,10 @@ const mockSummary = { quote: { opaque: true }, fundingAmount: 300_000n }
 describe('useAssetInboxSendSummaryScreen', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
+        recipientSafety.current = {
+            ...recipientSafety.current,
+            isConfirmBlocked: false,
+        }
         sendScope.current = { chainId: 'algorand', networkId: 'mainnet' }
         mockRequestBottomSheet.mockResolvedValue(undefined)
         ;(useSendFunds as Mock).mockReturnValue({
@@ -231,6 +252,21 @@ describe('useAssetInboxSendSummaryScreen', () => {
         // Slider stays in its slid/loading state through to the processing
         // screen — it is not reset on confirm.
         expect(result.current.isProcessing).toBe(true)
+    })
+
+    it('neither warns nor navigates while the recipient check blocks the send', async () => {
+        recipientSafety.current = {
+            ...recipientSafety.current,
+            isConfirmBlocked: true,
+        }
+        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
+
+        await act(async () => {
+            result.current.handleSend()
+        })
+
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('does not navigate when warning is dismissed', async () => {

@@ -19,7 +19,10 @@ import {
     useSpendableBalanceQuery,
     type AssetInboxSendSummary,
 } from '@perawallet/wallet-core-transactions'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
     useNativeAsset,
@@ -33,9 +36,15 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import {
+    useRecipientSafety,
+    useSendFunds,
+    useSendScope,
+    type UseRecipientSafetyResult,
+} from '@modules/transactions/hooks'
 import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
@@ -50,6 +59,8 @@ type UseAssetInboxSendSummaryScreenResult = {
     isIntegrityBlocked: boolean
     assetId: string
     recipientAddress: string
+    scope: ChainScope
+    recipientSafety: UseRecipientSafetyResult
     amount: Nullable<Decimal>
     /** Display units of the native asset. */
     fee: Nullable<Decimal>
@@ -77,6 +88,13 @@ export const useAssetInboxSendSummaryScreen =
 
         const assetId = selectedAssetId ?? ''
         const receiverAddress = destination ?? ''
+        const recipientSafety = useRecipientSafety({
+            recipient: destination,
+            senderAddress: selectedAccount
+                ? chainAccountOf(selectedAccount, scope.chainId)?.address
+                : undefined,
+            scope,
+        })
 
         const {
             data: summaryData,
@@ -169,8 +187,9 @@ export const useAssetInboxSendSummaryScreen =
         }, [requestBottomSheet, navigation])
 
         const handleSend = useCallback(() => {
+            if (recipientSafety.isConfirmBlocked) return
             void showWarningSheet()
-        }, [showWarningSheet])
+        }, [recipientSafety.isConfirmBlocked, showWarningSheet])
 
         const handleClose = useCallback(() => {
             navigation.goBack()
@@ -190,6 +209,8 @@ export const useAssetInboxSendSummaryScreen =
             isIntegrityBlocked,
             assetId,
             recipientAddress: receiverAddress,
+            scope,
+            recipientSafety,
             fee,
             nativeAsset,
             amount: amount ?? null,
