@@ -60,13 +60,45 @@ const readReceipt = async (client: PublicClient, hash: Hex) => {
     }
 }
 
+/** What one probe reads through; `receiptOf` reads each hash once per pass. */
+type ProbeContext = {
+    client: PublicClient
+    scope: ChainScope
+    db: Database | undefined
+    receiptOf: (hash: Hex) => ReturnType<typeof readReceipt>
+}
+
+const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
+    a.createdAt < b.createdAt || (a.createdAt === b.createdAt && a.id < b.id)
+
+// A newer open attempt at the same nonce means this one was re-priced, and the
+// node evicts a re-priced transaction, so its absence there is not a drop.
+const hasNewerOpenSibling = async (
+    attempt: SubmissionAttempt,
+    scope: ChainScope,
+    db: Database | undefined,
+): Promise<boolean> => {
+    const { sender, nonce } = attempt
+    if (sender === null || nonce === null) return false
+    const open = await getSubmissionAttemptsAtNonce({
+        db,
+        scope,
+        sender,
+        nonce,
+        statuses: OPEN_SUBMISSION_STATUSES,
+    })
+    return open.some(
+        sibling => sibling.id !== attempt.id && isOlder(attempt, sibling),
+    )
+}
+
 /**
  * Null while the node gives no proof either way. Every read that fails
  * throws, so an RPC error, timeout or rate limit leaves the row open.
  */
 const probe = async (
     attempt: SubmissionAttempt,
-    client: PublicClient,
+    { client, scope, db, receiptOf }: ProbeContext,
 ): Promise<Verdict | null> => {
     const hash = attempt.txIds[0] as Hex | undefined
     if (hash === undefined) return null
@@ -82,7 +114,7 @@ const probe = async (
               })
             : null
 
-    const receipt = await readReceipt(client, hash)
+    const receipt = await receiptOf(hash)
     if (receipt) return receipt.status === 'success' ? 'confirmed' : 'failed'
 
     const landedPast = mined !== null && nonce !== null && mined > nonce
@@ -93,12 +125,13 @@ const probe = async (
     // ours with a lagging receipt index on a load-balanced RPC is not a
     // replacement. A dropped or replaced one is gone from the node.
     if (await isTransactionKnownToNode(client, hash)) return null
+    if (landedPast) return 'replaced'
+    // A re-priced original waits for its nonce to be mined, when the winner
+    // decides between replaced and failed.
+    if (await hasNewerOpenSibling(attempt, scope, db)) return null
     // Settling a dropped row `failed` frees its nonce for the next send.
-    return landedPast ? 'replaced' : 'failed'
+    return 'failed'
 }
-
-const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
-    a.createdAt < b.createdAt || (a.createdAt === b.createdAt && a.id < b.id)
 
 /**
  * Settles an attempt whose nonce was mined under another hash. When that hash
@@ -109,9 +142,7 @@ const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
  */
 const loserVerdict = async (
     attempt: SubmissionAttempt,
-    scope: ChainScope,
-    client: PublicClient,
-    db: Database | undefined,
+    { scope, db, receiptOf }: ProbeContext,
 ): Promise<'replaced' | 'failed'> => {
     const { sender, nonce } = attempt
     if (sender === null || nonce === null) return 'replaced'
@@ -119,12 +150,14 @@ const loserVerdict = async (
         await getSubmissionAttemptsAtNonce({ db, scope, sender, nonce })
     ).filter(sibling => sibling.id !== attempt.id)
     let winner = siblings.find(sibling => sibling.status === 'confirmed')
+    // A sibling settled `failed` can still hold the nonce: a reverted
+    // transaction is mined, so only its receipt tells. One settled `replaced`
+    // already lost the nonce to another hash.
     for (const sibling of siblings) {
         if (winner) break
         const hash = sibling.txIds[0] as Hex | undefined
-        if (hash === undefined) continue
-        if (!OPEN_SUBMISSION_STATUSES.includes(sibling.status)) continue
-        if (await readReceipt(client, hash)) winner = sibling
+        if (hash === undefined || sibling.status === 'replaced') continue
+        if (await receiptOf(hash)) winner = sibling
     }
     return winner && isOlder(winner, attempt) ? 'failed' : 'replaced'
 }
@@ -184,22 +217,35 @@ export const reconcileEthereumSubmissions = async ({
     }
 
     const clients = new Map<ChainScopeKey, PublicClient>()
+    // Siblings at one nonce read each other's receipts, so a pass reads each once.
+    const receipts = new Map<string, ReturnType<typeof readReceipt>>()
     // Parallel, so a black-holed RPC costs one timeout per tick, not one per row.
     await Promise.all(
         open.map(async attempt => {
             try {
                 const scope = parseScopeKey(attempt.network)
                 const scopeKey = toScopeKey(scope)
-                let client = clients.get(scopeKey)
-                if (!client) {
-                    client = getClient(scope)
-                    clients.set(scopeKey, client)
+                const client = clients.get(scopeKey) ?? getClient(scope)
+                clients.set(scopeKey, client)
+                const context: ProbeContext = {
+                    client,
+                    scope,
+                    db,
+                    receiptOf: hash => {
+                        const key = `${scopeKey}:${hash.toLowerCase()}`
+                        let receipt = receipts.get(key)
+                        if (!receipt) {
+                            receipt = readReceipt(client, hash)
+                            receipts.set(key, receipt)
+                        }
+                        return receipt
+                    },
                 }
                 summary.probed++
-                let verdict = await probe(attempt, client)
+                let verdict = await probe(attempt, context)
                 if (verdict === null) return
                 if (verdict === 'replaced') {
-                    verdict = await loserVerdict(attempt, scope, client, db)
+                    verdict = await loserVerdict(attempt, context)
                 }
                 await notifySettled(settleHandlers, attempt, scope, verdict)
                 await resolveSubmissionAttempt({
