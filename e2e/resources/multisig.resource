@@ -412,7 +412,8 @@ Ensure Watch Account
     ...                in which case the app keeps the submit button disabled.
     Open Add Account
     Tap If Present    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
-    Wait Until Page Contains Element    ${ADD_ACCOUNT_WATCH_BUTTON}    timeout=15s
+    # Below the fold at a large font scale, where UiAutomator does not report it until scrolled to.
+    Scroll Until Tappable    ${ADD_ACCOUNT_WATCH_BUTTON}
     # The option opens at the bottom edge, partly under the system navigation bar that takes the tap.
     Swipe By Percent    50    70    50    40
     Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}

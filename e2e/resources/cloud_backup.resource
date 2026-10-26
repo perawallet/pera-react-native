@@ -219,7 +219,8 @@ Read Passphrase
     FOR    ${n}    IN    @{cells}
         @{segment}=    Get Regexp Matches    ${src}    (?s)passphrase_word_${n}"((?:(?!passphrase_word_\\d+").)*)    1
         @{texts}=    Get Regexp Matches    ${segment}[0]    \\s(?:text|label)="([^"]+)"    1
-        ${word}=    Evaluate    ([t for i, t in enumerate($texts) if i == 0 or t != $texts[i - 1]] + ['', ''])[1]
+        # Through a lambda: before Python 3.12 a comprehension has its own scope and cannot see $texts.
+        ${word}=    Evaluate    (lambda texts: ([t for i, t in enumerate(texts) if i == 0 or t != texts[i - 1]] + ['', ''])[1])($texts)
         Append To List    ${words}    ${word}
     END
     RETURN    @{words}
