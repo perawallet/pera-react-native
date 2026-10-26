@@ -66,7 +66,7 @@ const forwardSafely = (
         // below already has. Without it every dApp request after an update
         // raises an uncaught exception in the PAGE's console (attributed to
         // the site, not the wallet). Swallowed deliberately: MAIN's own
-        // DAPP_PAGE_TIMEOUT_MS backstop rejects the call with -32004, exactly
+        // dappPageTimeoutMs backstop rejects the call with -32004, exactly
         // as in the worker-died case handled inside the callback.
     }
 }

@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { DAPP_APPROVAL_TTL_MS } from '@perawallet/wallet-core-dapp/wire'
 import {
     APPROVAL_KEEPALIVE_INTERVAL_MS,
     APPROVAL_KEEPALIVE_MAX_MS,
@@ -236,6 +237,15 @@ describe('ApprovalWindowBridge', () => {
 
             expect(getPlatformInfoMock.mock.calls.length).toBeLessThanOrEqual(
                 callsAtCap + 1,
+            )
+        })
+
+        // Past the keepalive an idled worker forgets the approval, and an
+        // Approve sent then never reaches the dApp; the handler must withdraw
+        // the window first.
+        it('outlasts the EIP-1193 handler expiry of a request on screen', () => {
+            expect(APPROVAL_KEEPALIVE_MAX_MS).toBeGreaterThan(
+                DAPP_APPROVAL_TTL_MS,
             )
         })
     })

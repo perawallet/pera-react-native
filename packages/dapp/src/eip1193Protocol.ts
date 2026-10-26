@@ -30,6 +30,17 @@ export const EIP1193_METHOD = {
     signTypedDataV4: 'eth_signTypedData_v4',
 } as const
 
+/**
+ * The methods that wait on the user's approval, and so on the longer page
+ * backstop. The handler queues only these, so a chain that adds a signing
+ * method is refused until it is named here too.
+ */
+export const EIP1193_SIGNING_METHODS: readonly string[] = [
+    EIP1193_METHOD.sendTransaction,
+    EIP1193_METHOD.personalSign,
+    EIP1193_METHOD.signTypedDataV4,
+]
+
 export const EIP1193_EVENT = {
     connect: 'connect',
     disconnect: 'disconnect',

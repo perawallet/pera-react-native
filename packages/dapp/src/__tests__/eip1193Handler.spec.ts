@@ -181,6 +181,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
         now: () => 1_000_000,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
+        approvalTtlMs: 60_000,
     })
     const registry = createConnectionRegistry({ store })
     registry.register(handler)
@@ -809,7 +810,7 @@ describe('createEip1193ConnectionHandler', () => {
 
         // An expiry would withdraw the window under a broadcast that still
         // goes out, telling the page no to a transaction already on chain.
-        it('never expires a request on screen, and takes its late answer', async () => {
+        it('keeps a request on screen past the queue TTL, and takes its late answer', async () => {
             const { pending, message, messages } = await raise()
             vi.advanceTimersByTime(10_000)
             await flush()
@@ -823,6 +824,58 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             expect(resultOf(await pending)).toBe('0x01')
+        })
+
+        it('expires a request on screen after approvalTtlMs and withdraws its window', async () => {
+            const { pending, message, messages } = await raise()
+            vi.advanceTimersByTime(60_000)
+            await flush()
+
+            expect(errorOf(await pending)).toEqual({
+                code: EIP1193_ERROR_CODE.internal,
+                message: 'The wallet did not answer in time',
+            })
+            expect(messages).toContainEqual(
+                expect.objectContaining({
+                    kind: 'request-expired',
+                    correlationId: message.correlationId,
+                }),
+            )
+            await expect(
+                message.respond({
+                    type: 'sign-message',
+                    signature: Uint8Array.of(1),
+                }),
+            ).rejects.toThrow()
+        })
+
+        it('answers a signing method no page backstop covers with 4200', async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    v2: {
+                        methods: [],
+                        signingMethods: ['eth_signUserOperation'],
+                        handleRequest: () => ({
+                            kind: 'operation',
+                            type: 'sign-message',
+                            params: [],
+                        }),
+                    },
+                },
+            })
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_signUserOperation'))
+                    ?.code,
+            ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
+            expect(messages).toHaveLength(0)
         })
 
         it('refuses an answer that arrives after the request was answered', async () => {
@@ -1193,10 +1246,11 @@ describe('createEip1193ConnectionHandler', () => {
             expect(raisedOf(messages)).toHaveLength(1)
         })
 
-        it('teardown answers every queued request with 4900', async () => {
-            const { handler, sign } = await connected()
+        it('teardown answers every queued request with 4900 and withdraws the one on screen', async () => {
+            const { handler, messages, sign } = await connected()
             const all = [sign(), sign()]
             await flush()
+            const [head] = raisedOf(messages)
 
             await handler.teardown()
             await flush()
@@ -1207,6 +1261,29 @@ describe('createEip1193ConnectionHandler', () => {
                     EIP1193_ERROR_CODE.disconnected,
                 ],
             )
+            expect(
+                messages.filter(({ kind }) => kind === 'request-expired'),
+            ).toEqual([
+                expect.objectContaining({
+                    correlationId: head!.correlationId,
+                }),
+            ])
+        })
+
+        it('a request on screen whose answer is lost frees the queue after approvalTtlMs', async () => {
+            const { messages, sign } = await connected()
+            const lost = sign()
+            await flush()
+
+            vi.advanceTimersByTime(60_000)
+            await flush()
+            expect(errorOf(lost.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
         })
     })
 

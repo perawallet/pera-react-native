@@ -152,7 +152,8 @@ required nor read, where the webview takes a single `data` object and requires
   `-32004`, and settles any approval surface still open for it, so no approval
   can be accepted afterwards. `DAPP_PAGE_TIMEOUT_MS` is that budget plus ten
   seconds (5 min 10 s), so the page's backstop loses the race and the wallet's
-  own terminal answer is what a dApp sees.
+  own terminal answer is what a dApp sees. EIP-1193 signing requests wait
+  longer; see [EIP-1193 provider](#eip-1193-provider).
 
 ## Errors
 
@@ -263,10 +264,16 @@ under prompts: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
 -32005, rejecting the one on screen answers the rest 4001, revoking the site
 answers every one 4100 (the approval window only withdraws its own), and one
 still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A request on
-screen never expires: closing the window answers it, and an expiry could close
-the window under a broadcast that still goes out. The connection, chain and
-granted accounts are read when a request reaches the approval, not when it
-arrives.
+screen is answered by its window; `DAPP_APPROVAL_TTL_MS` (14 minutes) expires it
+only so a window whose answer was lost, such as one a restarted service worker
+forgot, cannot hold the site's queue forever, since an earlier expiry could
+close the window under a broadcast that still goes out. It stays under the
+approval bridge's `APPROVAL_KEEPALIVE_MAX_MS`, so the window is withdrawn while
+the service worker is still alive to hear its answer. The page's backstop for
+these methods (`EIP1193_SIGNING_METHODS`) is both TTLs plus ten seconds, and the
+handler queues only methods on that list, so a chain that adds a signing method
+answers 4200 until the list names it. The connection, chain and granted
+accounts are read when a request reaches the approval, not when it arrives.
 
 Only the user's Reject, or closing the approval, answers 4001. The approval
 window sends any other refusal (a build the node rejects, a grant revoked while

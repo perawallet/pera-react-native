@@ -12,7 +12,12 @@
 
 import { describe, expect, it } from 'vitest'
 import { stringToHex } from 'viem'
-import { MAIL_TYPED_DATA, SENDER } from '../../signing/__tests__/fixtures'
+import {
+    EIP2612_PERMIT_TYPED_DATA,
+    MAIL_TYPED_DATA,
+    PERMIT2_SINGLE_TYPED_DATA,
+    SENDER,
+} from '../../signing/__tests__/fixtures'
 import {
     MAX_MESSAGE_LENGTH,
     MAX_TYPED_DATA_DEPTH,
@@ -206,6 +211,26 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         )
 
         expect(result.ok).toBe(true)
+    })
+
+    it.each([
+        ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+        ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+    ])('refuses %s with no domain chainId', (_name, permit) => {
+        const { chainId: _chainId, ...domain } = permit.domain
+
+        const result = validate('sign-typed-data', [
+            SENDER,
+            { ...permit, domain },
+        ])
+
+        expect(result).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('accepts a permit bound to the connected chain', () => {
+        expect(
+            validate('sign-typed-data', [SENDER, EIP2612_PERMIT_TYPED_DATA]).ok,
+        ).toBe(true)
     })
 
     it('refuses typed data with a chainId when the network has no EIP-155 id', () => {

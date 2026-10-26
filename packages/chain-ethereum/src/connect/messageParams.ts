@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isAddress, isHex, stringToHex } from 'viem'
+import { isAddress, isHex, stringToHex, type TypedDataDefinition } from 'viem'
 import type {
     DappMessageRequest,
     DappRequestChainAdapter,
@@ -21,6 +21,7 @@ import {
     normalizeEvmAddress,
 } from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
+import { isPermitTypedData } from '../signing/permits'
 import {
     parseDomainChainId,
     type EthereumPersonalSignPayload,
@@ -131,6 +132,9 @@ const validatePersonalSign = (
 
 export type EthereumMessageSession = { eip155ChainId: number | undefined }
 
+const hasDomainChainId = (typedData: Record<string, unknown>): boolean =>
+    isRecord(typedData.domain) && typedData.domain.chainId !== undefined
+
 // A malformed chainId counts as another chain: `plan` would refuse it later.
 const isBoundToOtherChain = (
     typedData: Record<string, unknown>,
@@ -177,6 +181,14 @@ const validateSignTypedData = (
         return invalid(
             'eth_signTypedData_v4 domain chainId is not the connected chain',
         )
+    }
+    // Signed without a chain, a permit is valid on every chain whose token
+    // leaves the chain out of its domain separator.
+    if (
+        !hasDomainChainId(typedData) &&
+        isPermitTypedData(typedData as unknown as TypedDataDefinition)
+    ) {
+        return invalid('eth_signTypedData_v4 permit domain names no chainId')
     }
     return {
         ok: true,

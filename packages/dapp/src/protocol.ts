@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { EIP1193_SIGNING_METHODS } from './eip1193Protocol'
+
 export const DAPP_KIND = 'dapp' as const
 
 export const DAPP_METHODS = [
@@ -45,8 +47,25 @@ export const isDappProvider = (value: unknown): value is DappProvider =>
 // the 8 s pairing budget WalletConnect uses for its handshake.
 export const DAPP_PROPOSAL_TTL_MS = 5 * 60_000
 export const DAPP_REQUEST_TTL_MS = 5 * 60_000
-// Page-side backstop; strictly longer than the handler's own expiry so the
-// handler's terminal answer always wins when both are racing.
+// How long an EIP-1193 signing request may stay on screen. Only a lost
+// approval window should reach it: expiring sooner could withdraw the window
+// under a broadcast that still goes out. Kept under the approval bridge's
+// service-worker keepalive, so the window is withdrawn before an idled worker
+// can drop an Approve whose send has already gone out.
+export const DAPP_APPROVAL_TTL_MS = 14 * 60_000
+// Page-side backstops; strictly longer than the handler's own expiry so the
+// handler's terminal answer always wins when both are racing. An EIP-1193
+// signing request can wait out its queue TTL and then its approval TTL.
 export const DAPP_PAGE_TIMEOUT_MS = DAPP_REQUEST_TTL_MS + 10_000
+export const DAPP_SIGNING_PAGE_TIMEOUT_MS =
+    DAPP_REQUEST_TTL_MS + DAPP_APPROVAL_TTL_MS + 10_000
+
+export const dappPageTimeoutMs = (
+    provider: DappProvider,
+    method: string,
+): number =>
+    provider === 'eip1193' && EIP1193_SIGNING_METHODS.includes(method)
+        ? DAPP_SIGNING_PAGE_TIMEOUT_MS
+        : DAPP_PAGE_TIMEOUT_MS
 
 export const MAX_DAPP_REQUEST_JSON_LENGTH = 1_048_576

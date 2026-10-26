@@ -332,6 +332,30 @@ describe('window.pera provider', () => {
         relay.detach()
     })
 
+    it('waits out a queued and reviewed EIP-1193 signing request before timing out', async () => {
+        vi.useFakeTimers()
+        const relay = stubRelay(() => undefined)
+        const ethereum = (window as unknown as { ethereum: EthereumLike })
+            .ethereum
+        const settled = vi.fn()
+        void ethereum
+            .request({ method: 'eth_sendTransaction', params: [{}] })
+            .catch(settled)
+        const chainId = ethereum
+            .request({ method: 'eth_chainId' })
+            .catch((e: { code: number }) => e.code)
+
+        await vi.advanceTimersByTimeAsync(5 * 60_000 + 10_001)
+        expect(await chainId).toBe(-32_603)
+        expect(settled).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(14 * 60_000)
+        expect(settled).toHaveBeenCalledWith(
+            expect.objectContaining({ code: -32_603 }),
+        )
+        relay.detach()
+    })
+
     it('ignores a response for an unknown id', () => {
         expect(() =>
             window.dispatchEvent(

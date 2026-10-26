@@ -50,6 +50,7 @@ import {
     EIP1193_EVENT,
     EIP1193_METHOD,
     EIP1193_PERMISSION_METHODS,
+    EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
 import {
     eip1193ConnectionIdOf,
@@ -60,7 +61,11 @@ import {
     type DappTransport,
     type Eip1193Connection,
 } from './models'
-import { DAPP_PROPOSAL_TTL_MS, DAPP_REQUEST_TTL_MS } from './protocol'
+import {
+    DAPP_APPROVAL_TTL_MS,
+    DAPP_PROPOSAL_TTL_MS,
+    DAPP_REQUEST_TTL_MS,
+} from './protocol'
 
 export type Eip1193HandlerDeps = {
     transport: DappTransport
@@ -75,6 +80,7 @@ export type Eip1193HandlerDeps = {
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
+    approvalTtlMs?: number
 }
 
 type QueuedSigning = {
@@ -99,9 +105,10 @@ const isUserRejection = (error: Error): boolean =>
     error.name === 'UserCancelledError' ||
     dappRequestFailureOf(error) === 'user-rejected'
 
-// Read per request: the eip155 chains' own v2 tables decide what asks the
-// user, so the handler names no method a chain might drop or add.
+// Both lists must name it: the chains' v2 tables decide what asks the user,
+// and the page gives only the named ones a backstop long enough to wait.
 const isSigningMethod = (method: string): boolean =>
+    EIP1193_SIGNING_METHODS.includes(method) &&
     eip155ChainIds().some(
         chainId =>
             dappRequestChainAdapters
@@ -133,6 +140,7 @@ export const createEip1193ConnectionHandler = (
     const now = deps.now ?? (() => Date.now())
     const proposalTtlMs = deps.proposalTtlMs ?? DAPP_PROPOSAL_TTL_MS
     const requestTtlMs = deps.requestTtlMs ?? DAPP_REQUEST_TTL_MS
+    const approvalTtlMs = deps.approvalTtlMs ?? DAPP_APPROVAL_TTL_MS
 
     const kit = createHandlerKit(EIP1193_DAPP_KIND, {
         logTag: '[eip1193]',
@@ -637,11 +645,24 @@ export const createEip1193ConnectionHandler = (
             )
         }
 
-        // On screen the window owns the lifetime: every way out of it answers
-        // the page, and an expiry here would close it mid-broadcast.
+        // On screen the window owns the lifetime, so the queue TTL stops here.
+        // The approval TTL only frees the site's queue if the window's answer
+        // is lost (a restarted service worker forgets it).
         clearTimeout(entry.timer)
         pendingTimers.delete(entry.timer)
         entry.raised = { connectionId: connection.id, correlationId }
+        entry.timer = setTimeout(() => {
+            void finishQueued(
+                entry,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.internal,
+                    'The wallet did not answer in time',
+                ),
+            )
+            requireContext().onRequestExpired(connection.id, correlationId)
+        }, approvalTtlMs)
+        pendingTimers.add(entry.timer)
         requireContext().onMessage({
             kind: 'request',
             chainId,
@@ -976,16 +997,24 @@ export const createEip1193ConnectionHandler = (
             const queued = [...signingQueues.values()].flat()
             signingQueues.clear()
             await Promise.all(
-                queued.map(entry =>
-                    answerQueued(
+                queued.map(entry => {
+                    // Left open, the window could still broadcast a send whose
+                    // page was just told the wallet closed.
+                    if (entry.raised) {
+                        kit.currentContext()?.onRequestExpired(
+                            entry.raised.connectionId,
+                            entry.raised.correlationId,
+                        )
+                    }
+                    return answerQueued(
                         entry,
                         jsonRpcError(
                             entry.request.id,
                             EIP1193_ERROR_CODE.disconnected,
                             'The wallet closed the connection',
                         ),
-                    ),
-                ),
+                    )
+                }),
             )
             pendingTimers.forEach(timer => clearTimeout(timer))
             pendingTimers.clear()
