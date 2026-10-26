@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useRecipientPoisoningGate } from './useRecipientPoisoningGate'
 
 /**
  * Given a chosen receiver address, decides the correct next send screen
@@ -41,11 +42,12 @@ import { useToast } from '@hooks/useToast'
  * path used when a deeplink already carries the destination, so the routing
  * rules live in exactly one place.
  *
- * Most branches resolve synchronously. An unknown external receiver needs an
- * on-chain opt-in lookup, so `resolveDestination` defers that case and the
- * effect below completes it once the query settles — `isResolvingDestination`
- * is `true` for the duration so the caller can show a spinner instead of the
- * picker.
+ * Every receiver is first screened for address poisoning, which may ask the
+ * user to confirm it. An unknown external receiver then needs an on-chain
+ * opt-in lookup, so `resolveDestination` defers that case and the effect below
+ * completes it once the query settles — `isResolvingDestination` is `true`
+ * while screening and during the lookup so the caller can show a spinner
+ * instead of the picker.
  */
 export const useSendDestinationRouter = () => {
     const scope = useSendScope()
@@ -89,6 +91,8 @@ export const useSendDestinationRouter = () => {
     })
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { screenRecipient, isScreeningRecipient } =
+        useRecipientPoisoningGate()
 
     // ARC-59 needs the router contract + Pera backend, which only exist on
     // Pera-backed networks. Block the route up front instead of landing the
@@ -135,7 +139,7 @@ export const useSendDestinationRouter = () => {
     ])
 
     const resolveDestination = useCallback(
-        (address: string) => {
+        async (address: string) => {
             // A deeplink or another screen can prefill a receiver the picker
             // never validated, possibly one on another chain.
             if (!addressCodecs.get(scope.chainId).isValid(address)) {
@@ -147,6 +151,12 @@ export const useSendDestinationRouter = () => {
                     }),
                     type: 'error',
                 })
+                return
+            }
+
+            // Before any route, so every kind of send gets the same warning.
+            if (!(await screenRecipient(address))) {
+                setDestination(undefined)
                 return
             }
 
@@ -213,6 +223,7 @@ export const useSendDestinationRouter = () => {
             scope.chainId,
             showToast,
             t,
+            screenRecipient,
         ],
     )
 
@@ -238,9 +249,10 @@ export const useSendDestinationRouter = () => {
     return {
         selectedAsset,
         resolveDestination,
-        // True while an unknown external receiver's opt-in status is being
-        // resolved on-chain; navigation happens in the effect once it settles.
-        isResolvingDestination: isCheckingExternalOptIn,
+        // True while the receiver is screened, and while an unknown external
+        // receiver's opt-in status is resolved on-chain; navigation for the
+        // latter happens in the effect once it settles.
+        isResolvingDestination: isCheckingExternalOptIn || isScreeningRecipient,
         isReady,
         isAssetUnavailable,
     }

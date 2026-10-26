@@ -156,6 +156,13 @@ vi.mock('@perawallet/wallet-core-transactions', async () => {
     }
 })
 
+vi.mock('../../useRecipientPoisoningGate', () => ({
+    useRecipientPoisoningGate: () => ({
+        screenRecipient: () => Promise.resolve(true),
+        isScreeningRecipient: false,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
