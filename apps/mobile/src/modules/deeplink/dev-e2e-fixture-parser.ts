@@ -17,6 +17,7 @@ import {
     parseQueryParams,
 } from '@perawallet/wallet-core-deeplinks'
 
+import { E2E_STRESS_CONTACT_COUNTS } from './e2e-fixture-names'
 import type {
     AppDeeplink,
     DevE2eFixtureDeeplink,
@@ -29,6 +30,9 @@ const FIXTURE_NAMES: ReadonlySet<string> = new Set<E2eFixtureName>([
     'home',
     'contacts-empty',
     'contacts-one',
+    ...E2E_STRESS_CONTACT_COUNTS.map(
+        (count): E2eFixtureName => `contacts-${count}`,
+    ),
 ])
 
 /** Parses `perawallet://app/dev/e2e-fixture?name=<fixture>`; an unknown name is unrecognized input. */

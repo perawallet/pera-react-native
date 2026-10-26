@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 
 const {
     mockSetState,
@@ -112,6 +113,30 @@ describe('useE2eFixtureDeeplink', () => {
             selectedContact: null,
         })
     })
+
+    it.each([50, 250, 500, 1000] as const)(
+        'seeds %i distinct contacts and lands on the contacts list',
+        count => {
+            const { result } = renderHook(() => useE2eFixtureDeeplink())
+
+            result.current({ fixture: `contacts-${count}` })
+
+            const { contacts, selectedContact } = mockSetState.mock
+                .calls[0][0] as { contacts: Contact[]; selectedContact: null }
+            expect(selectedContact).toBeNull()
+            expect(contacts).toHaveLength(count)
+            expect(new Set(contacts.map(c => c.id)).size).toBe(count)
+            expect(new Set(contacts.map(c => c.addresses.algorand)).size).toBe(
+                count,
+            )
+            expect(
+                contacts.every(c => c.addresses.algorand?.length === 58),
+            ).toBe(true)
+            expect(mockReset).toHaveBeenCalledWith(
+                expect.objectContaining({ index: 1 }),
+            )
+        },
+    )
 
     it('lands on Home without touching contacts', () => {
         const { result } = renderHook(() => useE2eFixtureDeeplink())
