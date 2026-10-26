@@ -258,9 +258,10 @@ session: `eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go
 to the approval as `sourceType: 'injected'`, and a route the chain refuses is
 answered with its error unchanged. Everything else answers 4200, a signing
 request from a site with no connection 4100, and a connection whose chain is no
-longer served 4901. Signing requests from one site, across all its tabs, wait in
-one queue and reach the approval one at a time, so a page cannot bury the user
-under prompts: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
+longer served 4901. Signing requests and chain switches from one site, across
+all its tabs, wait in one queue and reach the approval one at a time, so a page
+cannot bury the user under prompts, and a switch can never move the site's chain
+under a request already on screen: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
 -32005, rejecting the one on screen answers the rest 4001, revoking the site
 answers every one 4100 (the approval window only withdraws its own), and one
 still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A request on
@@ -269,10 +270,11 @@ only so a window whose answer was lost, such as one a restarted service worker
 forgot, cannot hold the site's queue forever, since an earlier expiry could
 close the window under a broadcast that still goes out. It stays under the
 approval bridge's `APPROVAL_KEEPALIVE_MAX_MS`, so the window is withdrawn while
-the service worker is still alive to hear its answer. The page's backstop for
-these methods (`EIP1193_SIGNING_METHODS`) is both TTLs plus ten seconds, and the
-handler queues only methods on that list, so a chain that adds a signing method
-answers 4200 until the list names it. The connection, chain and granted
+the service worker is still alive to hear its answer. A switch on screen keeps
+`DAPP_REQUEST_TTL_MS`, since it broadcasts nothing. The page's backstop for the
+queued methods (`EIP1193_QUEUED_METHODS`) is both TTLs plus ten seconds, and the
+handler queues only signing methods on `EIP1193_SIGNING_METHODS`, so a chain
+that adds a signing method answers 4200 until the list names it. The connection, chain and granted
 accounts are read when a request reaches the approval, not when it arrives.
 
 Only the user's Reject, or closing the approval, answers 4001. The approval

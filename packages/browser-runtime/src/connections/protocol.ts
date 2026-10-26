@@ -31,6 +31,8 @@ import {
 import {
     decodeFromBase64,
     encodeToBase64,
+    parseTypedJson,
+    stringifyTypedJson,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -69,7 +71,11 @@ export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
     | Extract<WalletOperation, { type: MessageOperationType }>
     | Extract<WalletOperation, { type: 'switch-network' }>
-    | { type: 'send-transaction'; request: unknown }
+    | {
+          type: 'send-transaction'
+          /** `stringifyTypedJson` of the request, whose bigints JSON drops. */
+          request: string
+      }
     | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
@@ -90,46 +96,13 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
-const BIGINT_KEY = '$bigint'
-
-// The request is opaque to this package, so bigints can't be encoded per field.
-const encodeOpaque = (value: unknown): unknown => {
-    if (typeof value === 'bigint') return { [BIGINT_KEY]: value.toString() }
-    if (Array.isArray(value)) return value.map(encodeOpaque)
-    if (value === null || typeof value !== 'object') {
-        if (typeof value === 'function' || typeof value === 'symbol') {
-            throw new TypeError('Opaque value is not wire-safe')
-        }
-        return value
-    }
-    const proto = Object.getPrototypeOf(value)
-    if (proto !== Object.prototype && proto !== null) {
-        throw new TypeError('Opaque value is not wire-safe')
-    }
-    return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, encodeOpaque(item)]),
-    )
-}
-
-const decodeOpaque = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(decodeOpaque)
-    if (!isRecord(value)) return value
-    const keys = Object.keys(value)
-    if (keys.length === 1 && keys[0] === BIGINT_KEY) {
-        return BigInt(value[BIGINT_KEY] as string)
-    }
-    return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, decodeOpaque(item)]),
-    )
-}
-
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
     if (operation.type === 'send-transaction') {
         return {
             type: 'send-transaction',
-            request: encodeOpaque(operation.request),
+            request: stringifyTypedJson(operation.request),
         }
     }
     if (operation.type !== 'sign-data') return operation
@@ -157,7 +130,7 @@ export const decodeWalletOperation = (
     if (operation.type === 'send-transaction') {
         return {
             type: 'send-transaction',
-            request: decodeOpaque(operation.request),
+            request: parseTypedJson(operation.request),
         }
     }
     if (operation.type !== 'sign-data') return operation
@@ -230,7 +203,7 @@ export const isWireWalletOperation = (
             return typeof value.networkId === 'string'
         }
         case 'send-transaction': {
-            return isRecord(value.request)
+            return typeof value.request === 'string'
         }
         case 'sign-message':
         case 'sign-typed-data': {
@@ -312,8 +285,8 @@ export type ConnectionsControlMessage = {
                     /** Reaches the dApp; never wallet-private. */
                     message: string
                     isUserRejection?: boolean
-                    /** Mapped to the dApp's wire code; absent answers a generic internal error. */
-                    failure?: DappRequestFailure
+                    /** Mapped to the dApp's wire code; absent answers a generic internal error. A decline is `isUserRejection`, never this. */
+                    failure?: Exclude<DappRequestFailure, 'user-rejected'>
                 }
       }
 )
@@ -360,7 +333,8 @@ const isRespondOutcome = (
         (value.isUserRejection === undefined ||
             typeof value.isUserRejection === 'boolean') &&
         (value.failure === undefined ||
-            DAPP_REQUEST_FAILURES.some(known => known === value.failure))
+            (value.failure !== 'user-rejected' &&
+                DAPP_REQUEST_FAILURES.some(known => known === value.failure)))
     )
 }
 

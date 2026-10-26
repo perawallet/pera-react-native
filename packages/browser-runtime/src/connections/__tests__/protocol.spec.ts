@@ -322,6 +322,10 @@ describe('isConnectionsControlMessage', () => {
         )
         expect(isConnectionsControlMessage(withFailure('made-up'))).toBe(false)
         expect(isConnectionsControlMessage(withFailure(4001))).toBe(false)
+        // A decline travels only as `isUserRejection`, which clears the site's queue.
+        expect(isConnectionsControlMessage(withFailure('user-rejected'))).toBe(
+            false,
+        )
     })
 
     it('rejects another scope, an unknown kind and a non-object', () => {

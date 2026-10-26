@@ -20,7 +20,7 @@ import {
     DAPP_PROVIDER_VERSION,
     DAPP_PROVIDERS,
     DAPP_REQUEST_TTL_MS,
-    DAPP_SIGNING_PAGE_TIMEOUT_MS,
+    DAPP_QUEUED_PAGE_TIMEOUT_MS,
     dappPageTimeoutMs,
     isDappProvider,
 } from '../protocol'
@@ -55,14 +55,17 @@ describe('dapp protocol constants', () => {
 
     it('leaves the page backstop losing the race to the handler expiry', () => {
         expect(DAPP_PAGE_TIMEOUT_MS).toBeGreaterThan(DAPP_REQUEST_TTL_MS)
-        expect(DAPP_SIGNING_PAGE_TIMEOUT_MS).toBeGreaterThan(
+        expect(DAPP_QUEUED_PAGE_TIMEOUT_MS).toBeGreaterThan(
             DAPP_REQUEST_TTL_MS + DAPP_APPROVAL_TTL_MS,
         )
     })
 
-    it('gives only EIP-1193 signing methods the signing backstop', () => {
+    it('gives only queued EIP-1193 methods the queued backstop', () => {
         expect(dappPageTimeoutMs('eip1193', 'eth_sendTransaction')).toBe(
-            DAPP_SIGNING_PAGE_TIMEOUT_MS,
+            DAPP_QUEUED_PAGE_TIMEOUT_MS,
+        )
+        expect(dappPageTimeoutMs('eip1193', 'wallet_switchEthereumChain')).toBe(
+            DAPP_QUEUED_PAGE_TIMEOUT_MS,
         )
         expect(dappPageTimeoutMs('eip1193', 'eth_chainId')).toBe(
             DAPP_PAGE_TIMEOUT_MS,

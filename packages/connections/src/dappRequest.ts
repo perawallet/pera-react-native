@@ -56,6 +56,23 @@ export class DappRequestRejectedError extends Error {
     }
 }
 
+/**
+ * The wallet refused the request without the user declining it. Absent a
+ * `failure`, the dApp gets its namespace's generic internal error.
+ */
+export class DappRequestFailedError extends Error {
+    readonly failure?: Exclude<DappRequestFailure, 'user-rejected'>
+
+    constructor(
+        message: string,
+        failure?: Exclude<DappRequestFailure, 'user-rejected'>,
+    ) {
+        super(message)
+        this.name = 'DappRequestFailedError'
+        this.failure = failure
+    }
+}
+
 export class PendingRequestCapacityError extends Error {
     readonly failure = 'limit-exceeded' as const
 

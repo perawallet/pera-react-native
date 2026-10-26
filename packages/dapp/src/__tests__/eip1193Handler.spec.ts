@@ -748,7 +748,10 @@ describe('createEip1193ConnectionHandler', () => {
             await registry.initialize()
             expect(
                 errorOf(await transport.send(ORIGIN, 'personal_sign')),
-            ).toEqual({ code: -32_602, message: 'Bad params' })
+            ).toEqual({
+                code: -32_602,
+                message: 'Bad params',
+            })
             expect(messages).toHaveLength(0)
         })
 
@@ -952,6 +955,111 @@ describe('createEip1193ConnectionHandler', () => {
                 faviconUrl: `${ORIGIN}/b.ico`,
             })
             await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a switch waits behind the request on screen, so the chain never moves under it', async () => {
+            const { transport, messages, store, sign } = await connected()
+            const send = sign()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+            expect((await store.get(ID))?.metadata.chainId).toBe('ethereum')
+
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+            expect(resultOf(send.response!)).toBe('0xabc')
+            const prompt = raisedOf(messages)[1]!
+            expect(prompt.operation).toEqual({
+                type: 'switch-network',
+                networkId: 'mainnet',
+            })
+
+            await prompt.respond({ type: 'switch-network' })
+            await flush()
+            expect(resultOf(switched.response!)).toBeNull()
+            expect((await store.get(ID))?.metadata.chainId).toBe('base')
+        })
+
+        it('a request queued behind a switch is raised on the chain switched to', async () => {
+            const { transport, messages, sign } = await connected()
+            void transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                { chainId: '0x2105' },
+            ])
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+
+            await raisedOf(messages)[0]!.respond({ type: 'switch-network' })
+            await flush()
+            expect(raisedOf(messages)[1]?.chainId).toBe('base')
+        })
+
+        it('declining a switch rejects the requests queued behind it', async () => {
+            const { transport, messages, sign } = await connected()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            const send = sign()
+            await flush()
+
+            await raisedOf(messages)[0]!.reject(new DappRequestRejectedError())
+            await flush()
+
+            expect(errorOf(switched.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+            expect(errorOf(send.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a switch whose answer throws and is never declined still frees the queue', async () => {
+            const { transport, messages, networks, sign } = await connected()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            await flush()
+            networks.base = 'sepolia'
+            await expect(
+                raisedOf(messages)[0]!.respond({ type: 'switch-network' }),
+            ).rejects.toThrow()
+
+            vi.advanceTimersByTime(1_000)
+            await flush()
+            expect(errorOf(switched.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('a switch already satisfied by the one ahead of it answers without a prompt', async () => {
+            const { transport, messages } = await connected()
+            const toBase = () =>
+                track(
+                    transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                        { chainId: '0x2105' },
+                    ]),
+                )
+            toBase()
+            const second = toBase()
+            await flush()
+
+            await raisedOf(messages)[0]!.respond({ type: 'switch-network' })
+            await flush()
+            expect(resultOf(second.response!)).toBeNull()
             expect(raisedOf(messages)).toHaveLength(1)
         })
 

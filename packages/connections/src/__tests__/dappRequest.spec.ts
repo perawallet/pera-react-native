@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { ConnectionsError, type ConnectionsErrorCode } from '../errors'
 import {
+    DappRequestFailedError,
     DappRequestRejectedError,
     dappRelayableErrorNames,
     dappRequestChainAdapters,
@@ -118,6 +119,17 @@ describe('dappRequestFailureOf', () => {
         expect(dappRequestFailureOf(error)).toBe('user-rejected')
         expect(error.message).toBe('User rejected')
         expect(error.name).toBe('DappRequestRejectedError')
+    })
+
+    it('reads a wallet-side failure, and nothing when it names no kind', () => {
+        expect(
+            dappRequestFailureOf(
+                new DappRequestFailedError('Request failed', 'invalid-params'),
+            ),
+        ).toBe('invalid-params')
+        expect(
+            dappRequestFailureOf(new DappRequestFailedError('Request failed')),
+        ).toBeUndefined()
     })
 
     it('reads nothing from a plain error or a forged failure', () => {

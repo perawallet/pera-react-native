@@ -200,7 +200,7 @@ describe('useSignRequestApprovalScreen', () => {
         const SEND_APPROVAL = {
             ...CONNECTION_REQUEST_APPROVAL,
             chainId: 'base',
-            operation: { type: 'send-transaction', request: { to: '0x1' } },
+            operation: { type: 'send-transaction', request: '{"to":"0x1"}' },
         }
 
         it('holds a send until the database is ready, then enqueues it once', () => {

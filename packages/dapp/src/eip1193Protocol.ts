@@ -31,14 +31,23 @@ export const EIP1193_METHOD = {
 } as const
 
 /**
- * The methods that wait on the user's approval, and so on the longer page
- * backstop. The handler queues only these, so a chain that adds a signing
- * method is refused until it is named here too.
+ * The signing methods the handler queues for the user's approval; a chain
+ * that adds a signing method is refused until it is named here too.
  */
 export const EIP1193_SIGNING_METHODS: readonly string[] = [
     EIP1193_METHOD.sendTransaction,
     EIP1193_METHOD.personalSign,
     EIP1193_METHOD.signTypedDataV4,
+]
+
+/**
+ * Every method that waits in a site's approval queue, and so on the longer
+ * page backstop. A switch queues with the signing requests so it can never
+ * move the site's chain under a request already on screen.
+ */
+export const EIP1193_QUEUED_METHODS: readonly string[] = [
+    ...EIP1193_SIGNING_METHODS,
+    EIP1193_METHOD.switchChain,
 ]
 
 export const EIP1193_EVENT = {
