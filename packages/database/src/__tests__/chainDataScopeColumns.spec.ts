@@ -22,6 +22,10 @@ const TAG = '0019_chain_data_scope_columns'
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// A later migration that adds a column would otherwise change every dump.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const TABLES = [
     'account_asset_holdings',
     'account_chain_state',
@@ -122,7 +126,7 @@ describe('chain data and scope columns migration', () => {
         await runMigrations(db, migrationsBefore(TAG))
         await seed(db)
         before = await dumpAll(db)
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(TAG))
     })
 
     afterEach(() => {
@@ -203,7 +207,7 @@ describe('chain data and scope columns migration', () => {
     it('changes nothing on a second cold start', async () => {
         const migrated = await dumpAll(db)
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(TAG))
 
         expect(await dumpAll(db)).toEqual(migrated)
         const [[applied]] = await db.values<[number]>(

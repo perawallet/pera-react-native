@@ -49,6 +49,8 @@ export {
     type SpendableBalanceInput,
     type InFlightSpend,
     type RecipientWarningInput,
+    type TransactionReplacementKind,
+    type TransactionReplacementRequest,
     type AddressPoisoningRules,
 } from './transfer-adapter'
 export {
@@ -119,6 +121,7 @@ export {
     NonZeroBalanceError,
     CreatorCannotOptOutError,
     AssetFrozenError,
+    TransactionNotReplaceableError,
     RekeyError,
     type RekeyErrorReason,
 } from './errors'

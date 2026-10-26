@@ -1134,7 +1134,11 @@
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             },
-            "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan."
+            "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan.",
+            "replaced_transaction_confirmed": {
+                "title": "İşlem zaten onaylandı",
+                "body": "Hızlandırmaya veya iptal etmeye çalıştığın işlem önce onaylandı, bu yüzden hiçbir şey değiştirilmedi."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Bu varlık kaldırılamaz",
                 "body": "Bu varlığı bu hesap oluşturdu, bu yüzden hesap varlığı kaldıramaz."
+            },
+            "not_replaceable": {
+                "title": "İşlem artık beklemede değil",
+                "body": "Bu işlem zaten onaylandı veya değiştirildi; artık hızlandırılamaz ya da iptal edilemez."
             }
         },
         "kms": {
@@ -3218,7 +3226,8 @@
             "title": "Bu hesap için imzalayamazsın",
             "body": "Bu bir paylaşılan hesap ve imzalayan hesaplarından hiçbiri cüzdanında yok. Bu hesap için işlem imzalamak üzere bir imzalayan hesap ekle.",
             "rekeyed_auth_missing_body": "Bu hesap şu adrese rekey edilmiş: {{authAddress}}. Bu adres bu cüzdanda olmadığı için hesap işlem imzalayamaz. Bu hesap için imzalamak üzere auth hesabını içe aktar.",
-            "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar."
+            "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar.",
+            "signer_missing_body": "Bu istek, cüzdanında olmayan bir hesabın imzasını gerektiriyor, bu yüzden burada imzalanamaz."
         },
         "transaction_request_faq": {
             "title": "İşlem isteği SSS",
@@ -3279,7 +3288,8 @@
         "notice": {
             "pending": "Beklemede, başlangıç zamanı: {{since}}",
             "failed": "Başarısız",
-            "replaced": "Başka bir işlemle değiştirildi"
+            "replaced": "Başka bir işlemle değiştirildi",
+            "replacement_not_needed": "Gerek kalmadı: asıl işlem önce onaylandı"
         },
         "list_item": {
             "send": "Gönder",
@@ -3299,7 +3309,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} iç işlem"
+            "inner_transaction_count": "{{innerCount}} iç işlem",
+            "cancel_transaction": "İşlem iptali"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
@@ -3442,6 +3453,13 @@
             "last_week": "Geçen hafta",
             "last_month": "Geçen ay",
             "custom_range": "Özel aralık"
+        },
+        "replacement": {
+            "title": "Bekleyen işlem",
+            "body": "Hızlandır, işlemi daha yüksek bir ağ ücretiyle yeniden gönderir. İptal et, işlemi kendine yapılan boş bir transferle değiştirir; bu da bir ağ ücreti gerektirir. Asıl işlem önce onaylanırsa hiçbir şey değiştirilmez.",
+            "speed_up": "Hızlandır",
+            "cancel": "İşlemi iptal et",
+            "review_notice": "{{txId}} işleminin yerini alır"
         }
     },
     "tabbar": {

@@ -56,6 +56,8 @@ const attempt = (
     nonce: 0,
     createdAt: CREATED_AT,
     resolvedAt: null,
+    rawTransaction: null,
+    replacesAttemptId: null,
     historyEntry: {
         summary: {
             kind: 'transfer',
@@ -199,6 +201,50 @@ describe('getPendingTransactionRecords', () => {
         )
 
         expect(await pendingRecords()).toHaveLength(MAX_PENDING_HISTORY_ROWS)
+    })
+
+    it('says a failed replacement was not needed once the transaction it re-priced confirmed', async () => {
+        ledger(
+            attempt({
+                id: 'speed-up-2',
+                txIds: ['0xc'],
+                status: 'failed',
+                replacesAttemptId: 'speed-up-1',
+            }),
+            attempt({
+                id: 'speed-up-1',
+                txIds: ['0xb'],
+                status: 'failed',
+                replacesAttemptId: 'original',
+            }),
+            attempt({ id: 'original', txIds: ['0xa'], status: 'confirmed' }),
+        )
+
+        const records = await pendingRecords()
+
+        expect(records.map(r => [r.id, r.summary.notice?.title.key])).toEqual([
+            ['0xc', 'transactions.notice.replacement_not_needed'],
+            ['0xb', 'transactions.notice.replacement_not_needed'],
+            ['0xa', undefined],
+        ])
+    })
+
+    it('keeps a failed replacement as failed when nothing it re-priced confirmed', async () => {
+        ledger(
+            attempt({
+                id: 'speed-up',
+                txIds: ['0xb'],
+                status: 'failed',
+                replacesAttemptId: 'original',
+            }),
+            attempt({ id: 'original', txIds: ['0xa'], status: 'submitted' }),
+        )
+
+        const [replacement] = await pendingRecords()
+
+        expect(replacement.summary.notice?.title.key).toBe(
+            'transactions.notice.failed',
+        )
     })
 })
 

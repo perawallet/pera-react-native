@@ -19,11 +19,15 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSubmissionAttemptsWithHistoryEntry,
+    type SubmissionAttemptWithHistoryEntry,
     type SubmissionStatus,
 } from '@perawallet/wallet-core-signing'
 import { historyChainAdapters } from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
-import { transactionStatusNotice } from './utils/statusNotice'
+import {
+    replacementNotNeededNotice,
+    transactionStatusNotice,
+} from './utils/statusNotice'
 
 /**
  * Ceiling on synthesized pending rows per first-page fetch. Concurrent
@@ -34,6 +38,25 @@ export const MAX_PENDING_HISTORY_ROWS = 50
 
 const historyStatusOf = (status: SubmissionStatus): TransactionHistoryStatus =>
     status === 'submitted' || status === 'unknown' ? 'pending' : status
+
+// A failed replacement whose chain of re-priced attempts ends in a confirmed one
+// failed only because that transaction landed first.
+const isReplacementNotNeeded = (
+    attempt: SubmissionAttemptWithHistoryEntry,
+    byId: ReadonlyMap<string, SubmissionAttemptWithHistoryEntry>,
+): boolean => {
+    if (attempt.status !== 'failed') return false
+    const visited = new Set<string>([attempt.id])
+    let replaced = attempt.replacesAttemptId
+    while (replaced !== null && !visited.has(replaced)) {
+        visited.add(replaced)
+        const ancestor = byId.get(replaced)
+        if (!ancestor) return false
+        if (ancestor.status === 'confirmed') return true
+        replaced = ancestor.replacesAttemptId
+    }
+    return false
+}
 
 export type GetPendingTransactionRecordsParams = {
     address: string
@@ -56,6 +79,7 @@ export const getPendingTransactionRecords = async ({
     listedIds,
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
+    const byId = new Map(attempts.map(attempt => [attempt.id, attempt]))
     const records: TransactionRecord[] = []
     // A transport retry records the same hash twice; newest-first, so the newest status wins.
     const seen = new Set<string>()
@@ -71,7 +95,9 @@ export const getPendingTransactionRecords = async ({
         }
         for (const id of txIds) seen.add(id)
         const status = historyStatusOf(attempt.status)
-        const notice = transactionStatusNotice(status, attempt.createdAt)
+        const notice = isReplacementNotNeeded(attempt, byId)
+            ? replacementNotNeededNotice()
+            : transactionStatusNotice(status, attempt.createdAt)
         records.push({
             id: txIds[0],
             scope,

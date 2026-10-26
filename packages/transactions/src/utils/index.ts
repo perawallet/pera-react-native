@@ -11,4 +11,7 @@
  */
 
 export { getDebitedAddress, isOutgoingFor } from './direction'
-export { transactionStatusNotice } from './statusNotice'
+export {
+    replacementNotNeededNotice,
+    transactionStatusNotice,
+} from './statusNotice'

@@ -1126,7 +1126,11 @@
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
             },
-            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x."
+            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transaktion bereits bestätigt",
+                "body": "Die Transaktion, die du beschleunigen oder stornieren wolltest, wurde zuerst bestätigt. Es wurde nichts ersetzt."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1199,6 +1203,10 @@
             "creator_cannot_opt_out": {
                 "title": "Asset kann nicht entfernt werden",
                 "body": "Dieses Konto hat das Asset erstellt und kann sich daher nicht davon abmelden."
+            },
+            "not_replaceable": {
+                "title": "Transaktion nicht mehr ausstehend",
+                "body": "Diese Transaktion wurde bereits bestätigt oder ersetzt und kann nicht mehr beschleunigt oder storniert werden."
             }
         },
         "kms": {
@@ -3210,7 +3218,8 @@
             "title": "Du kannst dieses Konto nicht signieren",
             "body": "Dies ist ein Gemeinschaftskonto, und keines seiner Signier-Konten befindet sich in deinem Wallet. Füge ein Signier-Konto hinzu, um Transaktionen dafür zu signieren.",
             "rekeyed_auth_missing_body": "Dieses Konto ist zu {{authAddress}} rekeyed, das sich nicht in diesem Wallet befindet, daher kann es keine Transaktionen signieren. Importiere das Auth-Konto, um dafür zu signieren.",
-            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren."
+            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren.",
+            "signer_missing_body": "Diese Anfrage braucht eine Signatur von einem Konto, das nicht in deinem Wallet ist, daher kann sie hier nicht signiert werden."
         },
         "transaction_request_faq": {
             "title": "FAQ zu Transaktionsanfragen",
@@ -3271,7 +3280,8 @@
         "notice": {
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
-            "replaced": "Durch eine andere Transaktion ersetzt"
+            "replaced": "Durch eine andere Transaktion ersetzt",
+            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt"
         },
         "list_item": {
             "send": "Senden",
@@ -3291,7 +3301,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} innere Transaktionen"
+            "inner_transaction_count": "{{innerCount}} innere Transaktionen",
+            "cancel_transaction": "Transaktion stornieren"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
@@ -3434,6 +3445,13 @@
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
             "custom_range": "Benutzerdefinierter Zeitraum"
+        },
+        "replacement": {
+            "title": "Ausstehende Transaktion",
+            "body": "Beschleunigen sendet sie erneut mit einer höheren Netzwerkgebühr. Stornieren ersetzt sie durch eine leere Überweisung an dich selbst, die ebenfalls eine Netzwerkgebühr kostet. Wird die ursprüngliche Transaktion zuerst bestätigt, wird nichts ersetzt.",
+            "speed_up": "Beschleunigen",
+            "cancel": "Transaktion stornieren",
+            "review_notice": "Ersetzt Transaktion {{txId}}"
         }
     },
     "tabbar": {

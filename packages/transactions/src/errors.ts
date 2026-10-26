@@ -66,6 +66,22 @@ export class UnsupportedTransactionIntentError extends TransactionError {
     }
 }
 
+const NOT_REPLACEABLE_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.not_replaceable.title'),
+    bodyKey: i18nKey('errors.transaction.not_replaceable.body'),
+}
+
+/** The transaction is no longer pending, or this wallet holds nothing it can re-price. */
+export class TransactionNotReplaceableError extends TransactionError {
+    constructor() {
+        super('The transaction can no longer be replaced', undefined, {
+            titleKey: NOT_REPLACEABLE_KEYS.titleKey,
+            messageKey: NOT_REPLACEABLE_KEYS.bodyKey,
+        })
+        this.name = 'TransactionNotReplaceableError'
+    }
+}
+
 const ALREADY_OPTED_IN_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('errors.transaction.already_opted_in.title'),
     bodyKey: i18nKey('errors.transaction.already_opted_in.body'),

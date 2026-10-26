@@ -197,6 +197,11 @@ export function invalidateTransactionQueriesForAddresses(
     })
 }
 
+export const getReplaceableTransactionQueryKey = (
+    scope: ChainScope,
+    txId: string,
+) => [MODULE_PREFIX, 'replaceable', { scope, txId }] as const
+
 // Its own prefix, and deliberately not 'transactions': the app's query
 // persistence classifies this one (an inbox request list survives a restart).
 const ASSET_INBOX_MODULE_PREFIX = 'asa-inbox'

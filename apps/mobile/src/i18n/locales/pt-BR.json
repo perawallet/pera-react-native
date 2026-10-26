@@ -1134,7 +1134,11 @@
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             },
-            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x."
+            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transação já confirmada",
+                "body": "A transação que você tentou acelerar ou cancelar foi confirmada antes, então nada foi substituído."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Não é possível remover este ativo",
                 "body": "Esta conta criou este ativo, então não pode removê-lo."
+            },
+            "not_replaceable": {
+                "title": "Transação não está mais pendente",
+                "body": "Esta transação já foi confirmada ou substituída, então não pode ser acelerada nem cancelada."
             }
         },
         "kms": {
@@ -3235,7 +3243,8 @@
             "title": "Você não pode assinar por esta conta",
             "body": "Esta é uma conta compartilhada e nenhuma das contas signatárias está na sua wallet. Adicione uma conta signatária para assinar transações por ela.",
             "rekeyed_auth_missing_body": "Esta conta passou por rekey para {{authAddress}}, que não está nesta wallet, então ela não pode assinar transações. Importe a conta de autorização para assinar por ela.",
-            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela."
+            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela.",
+            "signer_missing_body": "Esta solicitação precisa da assinatura de uma conta que não está na sua wallet, então não pode ser assinada aqui."
         },
         "transaction_request_faq": {
             "title": "Perguntas frequentes sobre solicitações de transação",
@@ -3296,7 +3305,8 @@
         "notice": {
             "pending": "Pendente desde {{since}}",
             "failed": "Falhou",
-            "replaced": "Substituída por outra transação"
+            "replaced": "Substituída por outra transação",
+            "replacement_not_needed": "Não foi necessária: a transação original foi confirmada antes"
         },
         "list_item": {
             "send": "Enviar",
@@ -3316,7 +3326,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} transações internas"
+            "inner_transaction_count": "{{innerCount}} transações internas",
+            "cancel_transaction": "Cancelar transação"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
@@ -3464,6 +3475,13 @@
             "last_week": "Semana passada",
             "last_month": "Mês passado",
             "custom_range": "Período personalizado"
+        },
+        "replacement": {
+            "title": "Transação pendente",
+            "body": "Acelerar envia de novo com uma taxa de rede mais alta. Cancelar substitui por uma transferência vazia para você mesmo, que também custa uma taxa de rede. Se a original for confirmada antes, nada é substituído.",
+            "speed_up": "Acelerar",
+            "cancel": "Cancelar transação",
+            "review_notice": "Substitui a transação {{txId}}"
         }
     },
     "tabbar": {

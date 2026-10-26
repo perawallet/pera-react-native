@@ -116,7 +116,8 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
 
     const pipeline = useSigningPipeline({ onEvent: handleEvent })
 
-    const { allTransactions, warnings, isLoading } = pipeline
+    const { allTransactions, hasUnsignableTransaction, warnings, isLoading } =
+        pipeline
 
     const guardedWarningType = useMemo(() => {
         const presentTypes: GuardedWarningType[] = []
@@ -149,6 +150,13 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             currentRequest,
             allAccounts,
         )
+        // Signing would refuse the whole request, so Approve could only fail.
+        if (hasUnsignableTransaction) {
+            return {
+                title: t('signing.cannot_sign.title'),
+                body: t('signing.cannot_sign.signer_missing_body'),
+            }
+        }
         if (delegatedReason) {
             return {
                 title: t('signing.cannot_sign.title'),
@@ -161,7 +169,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             }
         }
         return undefined
-    }, [currentRequest, allAccounts, t])
+    }, [currentRequest, allAccounts, hasUnsignableTransaction, t])
 
     // WalletConnect transaction confirm/decline analytics. Only dapp-originated
     // (`walletconnect`) requests carry these events; in-app/local signing is

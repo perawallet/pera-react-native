@@ -21,6 +21,7 @@ import {
     type FeeEstimate,
     type LocalizedText,
     type TransactionIntent,
+    type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -92,6 +93,17 @@ export type RecipientWarningInput = {
     scope: ChainScope
 }
 
+export type TransactionReplacementKind = 'speed-up' | 'cancel'
+
+/** A pending transaction to re-price at its own sequence number. */
+export type TransactionReplacementRequest = {
+    kind: TransactionReplacementKind
+    /** The pending transaction as the submission ledger stores it, in its chain's own encoding. */
+    rawTransaction: string
+    /** The pending transaction's history summary, which a speed-up keeps; absent when the ledger holds none. */
+    summary?: TransactionSummary
+}
+
 export type AddressPoisoningRules = {
     /**
      * Leading plus trailing characters a different known address must share
@@ -128,6 +140,15 @@ export interface TransferChainAdapter {
     ): Promise<Optional<ChainNotice>>
     /** Base units of the native asset an account must lock to hold one more asset. */
     holdingReserve?(scope: ChainScope): Optional<Decimal>
+    /**
+     * Re-prices a pending transaction at its own sequence number, so it never
+     * takes a new one. Only on a chain whose descriptor sets
+     * `protocol.supportsReplacement`.
+     */
+    buildReplacement?(
+        request: TransactionReplacementRequest,
+        context: BuildContext,
+    ): Promise<UnsignedTransaction[]>
     /**
      * Read on every screening, so a chain can retune it remotely. Absent on a
      * chain that doesn't screen recipients for address poisoning.

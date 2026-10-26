@@ -26,6 +26,7 @@ import { hexToBytes, keccak256, type Hex, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     recordSubmissionAttempt,
+    resolveSubmissionAttempt,
     SubmissionAttemptsSchema,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -287,5 +288,187 @@ describe('reconcileEthereumSubmissions', () => {
 
         await expect(reconcile()).resolves.toMatchObject({ confirmed: 1 })
         expect(await statuses()).toEqual(['failed', 'confirmed'])
+    })
+
+    describe('a replacement at the same nonce', () => {
+        const ORIGINAL = `0x${'0a'.repeat(32)}` as Hex
+        const REPLACEMENT = `0x${'0b'.repeat(32)}` as Hex
+
+        const recordPair = async () => {
+            const original = await record({ txIds: [ORIGINAL] })
+            vi.setSystemTime(Date.now() + 1_000)
+            const replacement = await record({
+                txIds: [REPLACEMENT],
+                replacesAttemptId: original,
+            })
+            return { original, replacement }
+        }
+
+        // The nonce is mined, and only `winner` has a receipt.
+        const minedAs = (winner: Hex) =>
+            node({
+                latest: 1,
+                eth_getTransactionReceipt: params =>
+                    params[0] === winner
+                        ? evmTransactionReceipt({ transactionHash: winner })
+                        : null,
+            })
+
+        const statusOf = async (id: string) =>
+            (await db.select().from(SubmissionAttemptsSchema).all()).find(
+                row => row.id === id,
+            )?.status
+
+        it('marks the original replaced and the replacement confirmed when the replacement lands', async () => {
+            const { original, replacement } = await recordPair()
+            minedAs(REPLACEMENT)
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('replaced')
+            expect(await statusOf(replacement)).toBe('confirmed')
+        })
+
+        it('marks the original confirmed and the replacement failed when the original lands', async () => {
+            const handler = vi.fn()
+            settleHandlers.set('pipeline', handler)
+            const { original, replacement } = await recordPair()
+            minedAs(ORIGINAL)
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('confirmed')
+            expect(await statusOf(replacement)).toBe('failed')
+            expect(handler).toHaveBeenCalledWith(
+                [REPLACEMENT],
+                'mainnet',
+                'failed',
+            )
+        })
+
+        it("reads each hash's receipt once per pass, though the loser's check reads its sibling's again", async () => {
+            const { original, replacement } = await recordPair()
+            const receiptReads: unknown[] = []
+            node({
+                latest: 1,
+                eth_getTransactionReceipt: params => {
+                    receiptReads.push(params[0])
+                    return params[0] === ORIGINAL
+                        ? evmTransactionReceipt({ transactionHash: ORIGINAL })
+                        : null
+                },
+            })
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('confirmed')
+            expect(await statusOf(replacement)).toBe('failed')
+            expect(receiptReads.filter(hash => hash === ORIGINAL)).toHaveLength(
+                1,
+            )
+        })
+
+        it('fails a replacement whose original an earlier pass confirmed', async () => {
+            const { original, replacement } = await recordPair()
+            await resolveSubmissionAttempt({
+                db,
+                id: original,
+                status: 'confirmed',
+            })
+            minedAs(ORIGINAL)
+
+            await reconcile()
+
+            expect(await statusOf(replacement)).toBe('failed')
+        })
+
+        it('replaces an original whose replacement an earlier pass confirmed', async () => {
+            const { original, replacement } = await recordPair()
+            await resolveSubmissionAttempt({
+                db,
+                id: replacement,
+                status: 'confirmed',
+            })
+            minedAs(REPLACEMENT)
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('replaced')
+        })
+
+        it('keeps a re-priced original open past the grace window until its nonce is mined, then marks it replaced', async () => {
+            const { original, replacement } = await recordPair()
+            pastGraceWindow()
+            // Not mined yet; the node has evicted the original for its replacement.
+            node({
+                latest: 0,
+                eth_getTransactionByHash: params =>
+                    params[0] === REPLACEMENT ? HELD_BY_NODE : null,
+            })
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('submitted')
+            expect(await statusOf(replacement)).toBe('submitted')
+
+            minedAs(REPLACEMENT)
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('replaced')
+            expect(await statusOf(replacement)).toBe('confirmed')
+        })
+
+        it('fails a re-priced original once its replacement is dropped too, so the nonce frees up', async () => {
+            const { original, replacement } = await recordPair()
+            pastGraceWindow()
+            // Neither is mined, and the node holds neither.
+            node({ latest: 0, eth_getTransactionByHash: null })
+
+            await reconcile()
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('failed')
+            expect(await statusOf(replacement)).toBe('failed')
+            await expect(
+                allocateEthereumNonce({
+                    client: getClient(SCOPE),
+                    scope: SCOPE,
+                    sender: SENDER,
+                    db,
+                }),
+            ).resolves.toBe(0)
+        })
+
+        it('fails a replacement whose original was mined reverted and already settled failed', async () => {
+            const { original, replacement } = await recordPair()
+            await resolveSubmissionAttempt({
+                db,
+                id: original,
+                status: 'failed',
+            })
+            node({
+                latest: 1,
+                eth_getTransactionReceipt: params =>
+                    params[0] === ORIGINAL
+                        ? evmTransactionReceipt({
+                              transactionHash: ORIGINAL,
+                              status: '0x0',
+                          })
+                        : null,
+            })
+
+            await reconcile()
+
+            expect(await statusOf(replacement)).toBe('failed')
+        })
+
+        it('replaces an attempt whose nonce another wallet took', async () => {
+            const original = await record({ txIds: [ORIGINAL] })
+            minedAs(HASH)
+
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('replaced')
+        })
     })
 })
