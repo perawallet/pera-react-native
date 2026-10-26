@@ -140,7 +140,7 @@ export const assessAddressPoisoning = async ({
     contactAddresses,
 }: AddressPoisoningInput): Promise<Nullable<AddressPoisoningRisk>> => {
     const rules = transferChainAdapters.has(scope.chainId)
-        ? transferChainAdapters.get(scope.chainId).addressPoisoning
+        ? transferChainAdapters.get(scope.chainId).addressPoisoning?.()
         : undefined
     if (!rules) return null
 

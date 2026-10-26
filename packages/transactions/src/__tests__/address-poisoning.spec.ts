@@ -218,10 +218,10 @@ describe('assessAddressPoisoning', () => {
             spendableBalance: vi.fn(),
             ...(withRules
                 ? {
-                      addressPoisoning: {
+                      addressPoisoning: () => ({
                           lookalikeMatchedChars: 4,
                           dustCeiling: DUST_CEILING,
-                      },
+                      }),
                   }
                 : {}),
         })

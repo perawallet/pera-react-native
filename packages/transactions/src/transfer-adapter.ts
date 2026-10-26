@@ -123,8 +123,11 @@ export interface TransferChainAdapter {
     ): Promise<Optional<ChainNotice>>
     /** Base units of the native asset an account must lock to hold one more asset. */
     holdingReserve?(scope: ChainScope): Optional<Decimal>
-    /** Absent on a chain that doesn't screen recipients for address poisoning. */
-    addressPoisoning?: AddressPoisoningRules
+    /**
+     * Read on every screening, so a chain can retune it remotely. Absent on a
+     * chain that doesn't screen recipients for address poisoning.
+     */
+    addressPoisoning?(): AddressPoisoningRules
 }
 
 export const transferChainAdapters =

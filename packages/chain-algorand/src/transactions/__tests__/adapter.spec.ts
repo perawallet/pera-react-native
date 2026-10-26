@@ -34,6 +34,7 @@ import {
     algorandSendFlowAdapter,
     algorandTransferAdapter,
 } from '../adapter'
+import { getAlgorandAddressPoisoningRules } from '../address-poisoning'
 import {
     EMPTY_ALGORAND_HISTORY_DATA,
     type AlgorandHistoryData,
@@ -242,15 +243,9 @@ describe('algorandHistoryAdapter', () => {
 })
 
 describe('algorandTransferAdapter address poisoning', () => {
-    it('treats incoming payments up to 0.001 ALGO as dust', () => {
-        const rules = algorandTransferAdapter.addressPoisoning
-
-        expect(rules?.dustCeiling.equals(new Decimal(1000))).toBe(true)
-    })
-
-    it('flags addresses sharing four leading plus trailing characters', () => {
-        expect(
-            algorandTransferAdapter.addressPoisoning?.lookalikeMatchedChars,
-        ).toBe(4)
+    it('screens recipients with the remotely tunable Algorand rules', () => {
+        expect(algorandTransferAdapter.addressPoisoning).toBe(
+            getAlgorandAddressPoisoningRules,
+        )
     })
 })

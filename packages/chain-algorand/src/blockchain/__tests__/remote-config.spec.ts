@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     AlgorandRemoteConfigKeys,
     algorandRemoteConfigDefaults,
+    readAlgorandAddressPoisoningRules,
     readAlgorandFeeConfig,
 } from '../remote-config'
 
@@ -31,6 +32,9 @@ describe('algorandRemoteConfigDefaults', () => {
             enable_quantum_swap: 'enable_quantum_swap',
             enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
             enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
+            address_poisoning_lookalike_chars:
+                'address_poisoning_lookalike_chars',
+            address_poisoning_dust_ceiling: 'address_poisoning_dust_ceiling',
         })
         expect(algorandRemoteConfigDefaults).toEqual({
             fee_min_txn_fee: 1000,
@@ -40,6 +44,8 @@ describe('algorandRemoteConfigDefaults', () => {
             enable_quantum_swap: false,
             enable_quantum_dapp_warning: true,
             enable_ssl_pinning_algod: false,
+            address_poisoning_lookalike_chars: 4,
+            address_poisoning_dust_ceiling: 1000,
         })
     })
 })
@@ -119,5 +125,73 @@ describe('readAlgorandFeeConfig', () => {
         )
 
         expect(readAlgorandFeeConfig(remoteConfig).minTxnFee).toBe(1501n)
+    })
+})
+
+describe('readAlgorandAddressPoisoningRules', () => {
+    it('defaults to four matched characters and a 0.001 ALGO dust ceiling', () => {
+        const rules = readAlgorandAddressPoisoningRules(remoteConfig)
+
+        expect(rules.lookalikeMatchedChars).toBe(4)
+        expect(rules.dustCeiling.equals(1000)).toBe(true)
+    })
+
+    it('takes both thresholds from remote config', () => {
+        const values: Record<string, number> = {
+            address_poisoning_lookalike_chars: 6,
+            address_poisoning_dust_ceiling: 2000,
+        }
+        getNumberValueMock.mockImplementation((key: string) => values[key])
+
+        const rules = readAlgorandAddressPoisoningRules(remoteConfig)
+
+        expect(rules.lookalikeMatchedChars).toBe(6)
+        expect(rules.dustCeiling.equals(2000)).toBe(true)
+    })
+
+    it.each([0, -1, 2.5, Number.NaN])(
+        'falls back to four matched characters for %s',
+        value => {
+            getNumberValueMock.mockImplementation(
+                (key: string, fallback: number) =>
+                    key === 'address_poisoning_lookalike_chars'
+                        ? value
+                        : fallback,
+            )
+
+            expect(
+                readAlgorandAddressPoisoningRules(remoteConfig)
+                    .lookalikeMatchedChars,
+            ).toBe(4)
+        },
+    )
+
+    it.each([-1, Number.POSITIVE_INFINITY, Number.NaN])(
+        'falls back to a 1000 microAlgo dust ceiling for %s',
+        value => {
+            getNumberValueMock.mockImplementation(
+                (key: string, fallback: number) =>
+                    key === 'address_poisoning_dust_ceiling' ? value : fallback,
+            )
+
+            expect(
+                readAlgorandAddressPoisoningRules(
+                    remoteConfig,
+                ).dustCeiling.equals(1000),
+            ).toBe(true)
+        },
+    )
+
+    it('accepts a zero dust ceiling from remote config', () => {
+        getNumberValueMock.mockImplementation(
+            (key: string, fallback: number) =>
+                key === 'address_poisoning_dust_ceiling' ? 0 : fallback,
+        )
+
+        expect(
+            readAlgorandAddressPoisoningRules(
+                remoteConfig,
+            ).dustCeiling.isZero(),
+        ).toBe(true)
     })
 })

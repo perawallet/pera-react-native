@@ -287,7 +287,7 @@ export const transferContractTests = (
 
         if (makeAdapter().addressPoisoning) {
             it('screens recipients with a positive whole look-alike threshold and a non-negative dust ceiling', () => {
-                const rules = makeAdapter().addressPoisoning
+                const rules = makeAdapter().addressPoisoning?.()
 
                 expect(Number.isInteger(rules?.lookalikeMatchedChars)).toBe(
                     true,

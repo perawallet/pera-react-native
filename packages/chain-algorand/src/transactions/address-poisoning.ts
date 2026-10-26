@@ -10,11 +10,18 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import {
+    readRemoteConfigWithOverrides,
+    useRemoteConfigStore,
+} from '@perawallet/wallet-core-remote-config'
 import type { AddressPoisoningRules } from '@perawallet/wallet-core-transactions'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { readAlgorandAddressPoisoningRules } from '../blockchain/remote-config'
 
-export const ALGORAND_ADDRESS_POISONING_RULES: AddressPoisoningRules = {
-    lookalikeMatchedChars: 4,
-    // 1000 microAlgos is 0.001 ALGO.
-    dustCeiling: new Decimal(1000),
-}
+export const getAlgorandAddressPoisoningRules = (): AddressPoisoningRules =>
+    readAlgorandAddressPoisoningRules(
+        readRemoteConfigWithOverrides(
+            getProvider().remoteConfig,
+            useRemoteConfigStore.getState().configOverrides,
+        ),
+    )
