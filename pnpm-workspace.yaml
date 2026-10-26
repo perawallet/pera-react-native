@@ -117,7 +117,9 @@ catalog:
   vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
-  zod: ^4.4.3
+  # 4.6.6 is the GHSA-mrhx-c7xc-m3w5 floor; the audit ignore for that advisory
+  # relies on this range keeping our own copy patched.
+  zod: ^4.6.7
   zustand: ^5.0.12
 
 packageExtensions:
@@ -145,6 +147,10 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+    # zod 3.x has no patched release (fixed only in 4.6.6). The 3.x copy is
+    # @expo/cli's, which never ships to a device; everything else resolves the
+    # patched catalog zod. Drop this entry once @expo/cli moves to zod 4.
+    - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -197,6 +203,10 @@ minimumReleaseAgeExclude:
   - '@react-native-firebase/crashlytics@27.0.0'
   - '@react-native-firebase/messaging@27.0.0'
   - '@react-native-firebase/remote-config@27.0.0'
+  # The fast-uri audit floor (see the override). Same six fastify maintainers as
+  # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
+  # stops applying once 4.2.3 clears the gate on its own.
+  - fast-uri@4.2.3
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -365,10 +375,11 @@ overrides:
   # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
   # confusion via an unclosed bracket), patched in 4.1.4; then
   # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
-  # patched in 4.1.5. Pinned to the lowest patched version rather than latest so
-  # the resolution stays behind the minimumReleaseAge window without an exclude
-  # entry.
-  fast-uri@<4.1.5: 4.1.5
+  # patched in 4.1.5; then GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr,
+  # GHSA-xhq7-xmqj-769h and GHSA-333x-w4r6-6crp (scheme spoofing, host
+  # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
+  # the lowest patched version rather than latest.
+  fast-uri@<4.2.3: 4.2.3
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
