@@ -210,6 +210,18 @@ describe('transactionQueryKeys', () => {
         })
     })
 
+    describe('addressPoisoning', () => {
+        test('keys on the recipient and scope', () => {
+            expect(
+                transactionQueryKeys.addressPoisoning('RECEIVER', MAINNET),
+            ).toEqual([
+                'transactions',
+                'address-poisoning',
+                { recipient: 'RECEIVER', scope: MAINNET },
+            ])
+        })
+    })
+
     describe('recipientWarning', () => {
         test('carries the base-unit amount as plain text', () => {
             const key = transactionQueryKeys.recipientWarning(

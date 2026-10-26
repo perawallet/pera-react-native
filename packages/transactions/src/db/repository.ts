@@ -19,6 +19,8 @@ import {
     lt,
     lte,
     gte,
+    inArray,
+    or,
     sql,
     notExists,
     type SQL,
@@ -35,7 +37,11 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '../models/types'
+import type { Decimal } from 'decimal.js'
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+} from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 import {
     assetFactsResolverFor,
@@ -452,6 +458,100 @@ export async function getLatestTransactionRoundTime({
         .all()
 
     return rows[0]?.maxRoundTime ?? null
+}
+
+// A failed or replaced send never reached the receiver, so it isn't history
+// between the two addresses.
+const SETTLED_OR_IN_FLIGHT = [
+    TransactionHistoryStatuses.CONFIRMED,
+    TransactionHistoryStatuses.PENDING,
+]
+
+type GetSentToAddressesParams = {
+    db?: Database
+    scope: ChainScope
+    senders: readonly string[]
+}
+
+/** Every receiver any of `senders` has paid in `scope`, as far as the cache reaches. */
+export async function getSentToAddresses({
+    db = getDatabase(),
+    scope,
+    senders,
+}: GetSentToAddressesParams): Promise<string[]> {
+    if (senders.length === 0) return []
+
+    const rows = await db
+        .selectDistinct({ receiver: TransactionsSchema.receiver })
+        .from(TransactionsSchema)
+        .where(
+            and(
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
+                inArray(TransactionsSchema.sender, [...senders]),
+                isNotNull(TransactionsSchema.receiver),
+                inArray(TransactionsSchema.status, SETTLED_OR_IN_FLIGHT),
+            ),
+        )
+        .all()
+
+    return rows.flatMap(row => (row.receiver ? [row.receiver] : []))
+}
+
+export type CounterpartyTransfer = {
+    direction: 'incoming' | 'outgoing'
+    /** Null when the row names no asset. */
+    assetId: Nullable<string>
+    /** Base units; null when the row records no amount. */
+    amount: Nullable<Decimal>
+}
+
+type GetCounterpartyTransfersParams = {
+    db?: Database
+    scope: ChainScope
+    ownAddresses: readonly string[]
+    counterparty: string
+}
+
+/** The cached transfers between any of `ownAddresses` and `counterparty`, in either direction. */
+export async function getCounterpartyTransfers({
+    db = getDatabase(),
+    scope,
+    ownAddresses,
+    counterparty,
+}: GetCounterpartyTransfersParams): Promise<CounterpartyTransfer[]> {
+    if (ownAddresses.length === 0) return []
+
+    const own = [...ownAddresses]
+    const rows = await db
+        .select({
+            sender: TransactionsSchema.sender,
+            amount: TransactionsSchema.amount,
+            assetId: jsonPathAsText(TransactionsSchema.assetJson, '$.assetId'),
+        })
+        .from(TransactionsSchema)
+        .where(
+            and(
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
+                inArray(TransactionsSchema.status, SETTLED_OR_IN_FLIGHT),
+                or(
+                    and(
+                        eq(TransactionsSchema.sender, counterparty),
+                        inArray(TransactionsSchema.receiver, own),
+                    ),
+                    and(
+                        inArray(TransactionsSchema.sender, own),
+                        eq(TransactionsSchema.receiver, counterparty),
+                    ),
+                ),
+            ),
+        )
+        .all()
+
+    return rows.map(row => ({
+        direction: row.sender === counterparty ? 'incoming' : 'outgoing',
+        assetId: row.assetId,
+        amount: row.amount,
+    }))
 }
 
 type DeleteTransactionsForAccountParams = {

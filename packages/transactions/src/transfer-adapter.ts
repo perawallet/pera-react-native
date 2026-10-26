@@ -92,6 +92,13 @@ export type RecipientWarningInput = {
     scope: ChainScope
 }
 
+export type AddressPoisoningRules = {
+    /** Leading plus trailing characters a different known address must share to read as a look-alike. */
+    lookalikeMatchedChars: number
+    /** Base units of the native asset; an incoming native transfer at or below it reads as dust. */
+    dustCeiling: Decimal
+}
+
 /** Turns what the user asked for into a chain's transactions, and prices it. */
 export interface TransferChainAdapter {
     chainId: ChainId
@@ -116,6 +123,8 @@ export interface TransferChainAdapter {
     ): Promise<Optional<ChainNotice>>
     /** Base units of the native asset an account must lock to hold one more asset. */
     holdingReserve?(scope: ChainScope): Optional<Decimal>
+    /** Absent on a chain that doesn't screen recipients for address poisoning. */
+    addressPoisoning?: AddressPoisoningRules
 }
 
 export const transferChainAdapters =

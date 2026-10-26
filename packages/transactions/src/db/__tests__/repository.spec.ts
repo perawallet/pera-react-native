@@ -27,6 +27,8 @@ import {
     getRowsByChainData,
     getChainDataValue,
     setChainDataValue,
+    getSentToAddresses,
+    getCounterpartyTransfers,
 } from '../repository'
 import { AccountTransactionsSchema, TransactionsSchema } from '../schema'
 import {
@@ -40,7 +42,10 @@ import {
     fixtureHistoryAdapter,
     type FixtureChainData,
 } from '../../__tests__/fixture-chain-data'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 describe('transaction repository', () => {
     let db: Database
@@ -1244,6 +1249,151 @@ describe('transaction repository', () => {
                     scope: ethereum,
                     assetId: '0',
                 }),
+            ).resolves.toEqual([])
+        })
+    })
+
+    describe('counterparty reads', () => {
+        const SCOPE = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
+
+        const store = (
+            items: TransactionHistoryItem[],
+            scope: ChainScope = SCOPE,
+        ) =>
+            upsertTransactions({ db, items, accountAddress: 'OWN1', scope })
+
+        it('lists the distinct receivers the given senders paid', async () => {
+            await store([
+                makeTx({ id: 'A', sender: 'OWN1', receiver: 'FRIEND' }),
+                makeTx({ id: 'B', sender: 'OWN2', receiver: 'FRIEND' }),
+                makeTx({ id: 'C', sender: 'OWN1', receiver: 'SHOP' }),
+                makeTx({ id: 'D', sender: 'STRANGER', receiver: 'OWN1' }),
+                makeTx({ id: 'E', sender: 'OWN1', receiver: null }),
+            ])
+
+            const receivers = await getSentToAddresses({
+                db,
+                scope: SCOPE,
+                senders: ['OWN1', 'OWN2'],
+            })
+
+            expect([...receivers].sort()).toEqual(['FRIEND', 'SHOP'])
+        })
+
+        it('leaves out failed and replaced sends', async () => {
+            await store([
+                makeTx({
+                    id: 'A',
+                    sender: 'OWN1',
+                    receiver: 'FAILED',
+                    status: 'failed',
+                }),
+                makeTx({
+                    id: 'B',
+                    sender: 'OWN1',
+                    receiver: 'REPLACED',
+                    status: 'replaced',
+                }),
+                makeTx({
+                    id: 'C',
+                    sender: 'OWN1',
+                    receiver: 'PENDING',
+                    status: 'pending',
+                    confirmedRound: undefined,
+                }),
+            ])
+
+            const receivers = await getSentToAddresses({
+                db,
+                scope: SCOPE,
+                senders: ['OWN1'],
+            })
+
+            expect(receivers).toEqual(['PENDING'])
+        })
+
+        it('reads only the given scope', async () => {
+            await store(
+                [makeTx({ id: 'A', sender: 'OWN1', receiver: 'FRIEND' })],
+                { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            )
+
+            await expect(
+                getSentToAddresses({ db, scope: SCOPE, senders: ['OWN1'] }),
+            ).resolves.toEqual([])
+            await expect(
+                getCounterpartyTransfers({
+                    db,
+                    scope: SCOPE,
+                    ownAddresses: ['OWN1'],
+                    counterparty: 'FRIEND',
+                }),
+            ).resolves.toEqual([])
+        })
+
+        it('reads transfers both ways between own addresses and a counterparty', async () => {
+            await store([
+                makeTx({
+                    id: 'IN',
+                    sender: 'DUSTER',
+                    receiver: 'OWN1',
+                    amount: new Decimal(1),
+                }),
+                makeTx({
+                    id: 'OUT',
+                    sender: 'OWN2',
+                    receiver: 'DUSTER',
+                    amount: new Decimal(7),
+                    asset: {
+                        assetId: '31566704',
+                        name: 'USDC',
+                        unitName: 'USDC',
+                        decimals: 6,
+                    },
+                }),
+                makeTx({ id: 'OTHER', sender: 'OWN1', receiver: 'FRIEND' }),
+                makeTx({
+                    id: 'FAILED',
+                    sender: 'DUSTER',
+                    receiver: 'OWN1',
+                    status: 'failed',
+                }),
+            ])
+
+            const transfers = await getCounterpartyTransfers({
+                db,
+                scope: SCOPE,
+                ownAddresses: ['OWN1', 'OWN2'],
+                counterparty: 'DUSTER',
+            })
+
+            expect(transfers).toHaveLength(2)
+            expect(transfers).toEqual(
+                expect.arrayContaining([
+                    {
+                        direction: 'incoming',
+                        assetId: null,
+                        amount: new Decimal(1),
+                    },
+                    {
+                        direction: 'outgoing',
+                        assetId: '31566704',
+                        amount: new Decimal(7),
+                    },
+                ]),
+            )
+        })
+
+        it('reads nothing for no own addresses', async () => {
+            await store([
+                makeTx({ id: 'A', sender: 'OWN1', receiver: 'FRIEND' }),
+            ])
+
+            await expect(
+                getSentToAddresses({ db, scope: SCOPE, senders: [] }),
             ).resolves.toEqual([])
         })
     })
