@@ -88,7 +88,23 @@ Open Opt In Sheet
         ...    Wait Until Page Contains Element    ${OPT_IN_CONFIRM}    timeout=5s
         IF    ${open}    BREAK
     END
+    IF    not ${open}    Skip If Asset Search Errored
     Wait Until Settled    ${OPT_IN_CONFIRM}
+
+Skip If Asset Search Errored
+    [Documentation]    The asset list is a remote lookup, and when it fails the sheet replaces the
+    ...                results with the app's shared error view - search text still in the box, no
+    ...                rows, and no way back to them. A row that was there a second ago is then gone
+    ...                for good, which reads as a tap that missed rather than as a backend that
+    ...                stopped answering. This is the line the currency list and the DEX list
+    ...                already draw: an environment that cannot supply the data is not a defect in
+    ...                the case. The sheet carries no testID for that view, so the title is what
+    ...                there is to match on; SettingsCurrencyScreen's errorTestID is the shape to
+    ...                copy when the screen gets one.
+    ${errored}=    Run Keyword And Return Status
+    ...    Page Should Contain Text    An error has occurred    loglevel=NONE
+    Skip If    ${errored}
+    ...    The asset search returned its error state: the remote lookup stopped answering, so there is nothing to opt into.
 
 Open Manage Sheet
     # Home is still laying out after the reset, and a tap at a moving button misses it.
@@ -164,8 +180,11 @@ Any USDC Row
     Input Text    ${ASSET_SEARCH_INPUT}    USDC
     ${either}=    Set Variable
     ...    xpath=//*[@resource-id='${USDC_MAINNET_ID}' or @name='${USDC_MAINNET_ID}' or @resource-id='${USDC_TESTNET_ID}' or @name='${USDC_TESTNET_ID}']
-    Wait Until Page Contains Element    ${either}    timeout=30s
-    ...    error=A USDC search returned neither the mainnet nor the testnet asset, so the remote lookup gave nothing to opt into.
+    ${found}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${either}    timeout=30s
+    IF    not ${found}    Skip If Asset Search Errored
+    Should Be True    ${found}
+    ...    msg=A USDC search returned neither the mainnet nor the testnet asset, so the remote lookup gave nothing to opt into.
     ${mainnet}=    Run Keyword And Return Status
     ...    Page Should Contain Element    ${USDC_MAINNET_ROW}
     IF    ${mainnet}    RETURN    ${USDC_MAINNET_ROW}    ${USDC_MAINNET_ID}

@@ -18,6 +18,9 @@ Denied Camera Shows The Scanner's Permission State
     Go Home
     Tap    ${QR_SCANNER_BUTTON}
     Wait Until Page Contains Element    ${CAMERA_DENIED_TITLE}    timeout=15s
+    # The sheet is still animating in, and Tap only rides out 0.6s of staleness before giving up:
+    # the element it found is replaced under it while the sheet settles.
+    Wait Until Settled    ${CAMERA_DENIED_CLOSE}
     Tap    ${CAMERA_DENIED_CLOSE}
     Wait Until Page Does Not Contain Element    ${CAMERA_DENIED_TITLE}    timeout=10s
     # Closing the permission sheet leaves the scanner screen itself open, which is
