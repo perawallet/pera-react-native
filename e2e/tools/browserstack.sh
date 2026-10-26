@@ -70,7 +70,16 @@ echo "--- Running $PLATFORM against $APP"
 WORK_DIR=$(mktemp -d)
 trap 'rm -rf "$WORK_DIR"' EXIT
 export BROWSERSTACK_CONFIG_FILE="$WORK_DIR/browserstack.yml"
-sed "s|^app:.*|app: $APP|" "$E2E_DIR/browserstack-$PLATFORM.yml" >"$BROWSERSTACK_CONFIG_FILE"
+SED=(-e "s|^app:.*|app: $APP|")
+# E2E_DEVICE="<deviceName>@<platformVersion>", spelled as BrowserStack's device list spells them,
+# runs on that device instead of the one in the config.
+if [ -n "${E2E_DEVICE:-}" ]; then
+  [[ "$E2E_DEVICE" =~ ^[A-Za-z0-9\ ._()-]+@[0-9.]+$ ]] ||
+    { echo "E2E_DEVICE must be <device name>@<os version>: $E2E_DEVICE" >&2; exit 2; }
+  SED+=(-e "s|deviceName:.*|deviceName: ${E2E_DEVICE%@*}|"
+    -e "s|platformVersion:.*|platformVersion: \"${E2E_DEVICE##*@}\"|")
+fi
+sed "${SED[@]}" "$E2E_DIR/browserstack-$PLATFORM.yml" >"$BROWSERSTACK_CONFIG_FILE"
 
 ARGS=()
 SUITES=()
@@ -93,18 +102,14 @@ run_suite() {
     ${ARGS[@]+"${ARGS[@]}"} --outputdir "$OUT/$name" "$suite") || true
 }
 
-# E2E_PARALLEL suites at once, each its own BrowserStack session; keep it within the plan's
-# parallel limit or the extra sessions queue.
-# ponytail: runs in batches, so a batch waits for its slowest suite; a job pool if that bites.
+# Up to E2E_PARALLEL suites at once, each its own BrowserStack session. The plan's parallel limit
+# is shared by everything on the account; past it sessions queue, and past the queue they fail.
 PARALLEL="${E2E_PARALLEL:-1}"
-RUNNING=0
+[[ "$PARALLEL" =~ ^[1-9][0-9]*$ ]] || { echo "E2E_PARALLEL must be a positive number: $PARALLEL" >&2; exit 2; }
 for suite in "${SUITES[@]}"; do
+  # Polls rather than `wait -n`, which the macOS bash 3.2 lacks.
+  while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do sleep 5; done
   run_suite "$suite" &
-  RUNNING=$((RUNNING + 1))
-  if [ "$RUNNING" -ge "$PARALLEL" ]; then
-    wait
-    RUNNING=0
-  fi
 done
 wait
 

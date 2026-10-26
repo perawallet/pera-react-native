@@ -16,15 +16,26 @@ on:
             include:
                 description: Run only the cases with this Robot tag (empty runs every suite)
                 required: false
+            android_device:
+                description: Android device as <name>@<os version>, e.g. Google Pixel 8@14.0 (empty keeps the config's)
+                required: false
+            ios_device:
+                description: iOS device as <name>@<os version>, e.g. iPhone SE 2022@15 (empty keeps the config's)
+                required: false
 
 permissions:
     contents: read
+
+# The BrowserStack plan's parallel sessions are shared by the whole account, the release smoke
+# gates included, so a second run waits for this one rather than piling sessions into the queue.
+concurrency:
+    group: e2e-browserstack
+    cancel-in-progress: false
 
 jobs:
     e2e:
         name: ${{ matrix.platform }}
         runs-on: ubuntu-24.04
-        # Suites run one after another, each in its own BrowserStack session.
         timeout-minutes: 240
         strategy:
             fail-fast: false
@@ -37,9 +48,12 @@ jobs:
                   PLATFORM: ${{ matrix.platform }}
                   ANDROID_APP: ${{ inputs.android_app }}
                   IOS_APP: ${{ inputs.ios_app }}
+                  ANDROID_DEVICE: ${{ inputs.android_device }}
+                  IOS_DEVICE: ${{ inputs.ios_device }}
               run: |
-                  if [ "$PLATFORM" = android ]; then app="$ANDROID_APP"; else app="$IOS_APP"; fi
+                  if [ "$PLATFORM" = android ]; then app="$ANDROID_APP" device="$ANDROID_DEVICE"; else app="$IOS_APP" device="$IOS_DEVICE"; fi
                   echo "app=$app" >>"$GITHUB_OUTPUT"
+                  echo "device=$device" >>"$GITHUB_OUTPUT"
 
             - name: Checkout
               if: steps.app.outputs.app != ''
@@ -60,6 +74,9 @@ jobs:
                   BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
                   BROWSERSTACK_BUILD_NAME: e2e ${{ matrix.platform }} ${{ github.ref_name }}
                   E2E_RESULTS_DIR: ${{ github.workspace }}/e2e-results
+                  E2E_DEVICE: ${{ steps.app.outputs.device }}
+                  # Two per platform: four of the plan's five sessions, one left for a smoke gate.
+                  E2E_PARALLEL: 2
                   PLATFORM: ${{ matrix.platform }}
                   APP: ${{ steps.app.outputs.app }}
                   INCLUDE: ${{ inputs.include }}

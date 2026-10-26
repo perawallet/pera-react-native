@@ -79,8 +79,11 @@ an `.ipa` must be patched by `tools/qa/patch-ipa-for-browserstack.sh` first.
   is not attached to it, so those cases run only locally.
 - An `.apk` or `.ipa` is uploaded under a custom id derived from its content, so a later run with the
   same file reuses the upload instead of sending it again.
-- `E2E_PARALLEL=<n>` runs n suites at once, each in its own session. Keep it within the plan's
-  parallel limit, or the extra sessions queue.
+- `E2E_PARALLEL=<n>` runs n suites at once, each in its own session. The plan's parallel limit is
+  shared by every run on the account, the release smoke gates included: past it sessions queue, and
+  past the queue they are refused.
+- `E2E_DEVICE="<device name>@<os version>"`, spelled as BrowserStack's device list spells them, runs
+  on another device than the one in `browserstack-<platform>.yml`.
 - Failure screenshots are embedded in `log.html`; the session's Appium and device logs are on its
   BrowserStack dashboard page.
 
