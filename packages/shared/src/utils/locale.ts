@@ -24,7 +24,19 @@ let activeLocale: string = DEFAULT_LOCALE
  */
 export const getActiveLocale = (): string => activeLocale
 
+const listeners = new Set<() => void>()
+
 /** Only the app's i18n init/listener should call this — see {@link getActiveLocale}. */
 export const setActiveLocale = (locale: string): void => {
+    if (locale === activeLocale) return
     activeLocale = locale
+    listeners.forEach(listener => listener())
+}
+
+/** Notifies `listener` after each change; returns the unsubscribe. */
+export const subscribeActiveLocale = (listener: () => void): (() => void) => {
+    listeners.add(listener)
+    return () => {
+        listeners.delete(listener)
+    }
 }

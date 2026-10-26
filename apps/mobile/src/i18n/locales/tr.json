@@ -2789,6 +2789,16 @@
             "invalid_address_title": "Geçersiz adres",
             "invalid_address_body": "Bu, geçerli bir {{chain}} adresi değil."
         },
+        "address_poisoning": {
+            "title": "Bu adresi kontrol et",
+            "lookalike_body": "Bu adres tanıdığın bir adrese benziyor ama aynı değil. Dolandırıcılar, kendi adreslerini kopyalaman için aynı karakterlerle başlayan veya biten adresler oluşturur. Devam etmeden önce her karakteri karşılaştır.",
+            "dust_body": "Bu adres sana yalnızca çok küçük tutarlar gönderdi ve sen ona hiç gönderim yapmadın. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve yanlışlıkla kopyalayasın diye yapar.",
+            "recipient_label": "Alıcı",
+            "similar_to_label": "Benzer adres",
+            "acknowledge": "Adresin tamamını kontrol ettim",
+            "confirm": "Devam et",
+            "cancel": "İptal"
+        },
         "fee": {
             "slow": "Yavaş",
             "normal": "Normal",

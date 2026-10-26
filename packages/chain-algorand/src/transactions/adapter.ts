@@ -24,6 +24,7 @@ import type {
     TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { algorandAssetInbox } from '../asa-inbox/adapter'
+import { getAlgorandAddressPoisoningRules } from './address-poisoning'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { getAlgorandTransactionHistory } from './history-records'
@@ -96,6 +97,7 @@ export const algorandTransferAdapter: TransferChainAdapter = {
     spendableBalance: readAlgorandSpendableBalance,
     recipientWarning: readAlgorandRecipientWarning,
     holdingReserve: algorandHoldingReserve,
+    addressPoisoning: getAlgorandAddressPoisoningRules,
 }
 
 export const algorandHistoryAdapter = {

@@ -22,7 +22,7 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.10.0
+  "@ledgerhq/hw-app-eth": 7.11.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
@@ -113,11 +113,11 @@ catalog:
   uuid: 14.0.3
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
-  viem: 2.57.6
-  vite: ~8.2.4
+  viem: 2.57.7
+  vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
-  zod: ^4.4.3
+  zod: ^4.6.7
   zustand: ^5.0.12
 
 packageExtensions:
@@ -145,6 +145,10 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+    # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
+    # @expo/cli's, which never ships to a device; the zod override floors every
+    # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
+    - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -197,6 +201,10 @@ minimumReleaseAgeExclude:
   - '@react-native-firebase/crashlytics@27.0.0'
   - '@react-native-firebase/messaging@27.0.0'
   - '@react-native-firebase/remote-config@27.0.0'
+  # The fast-uri audit floor (see the override). Same six fastify maintainers as
+  # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
+  # stops applying once 4.2.3 clears the gate on its own.
+  - fast-uri@4.2.3
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -355,10 +363,6 @@ overrides:
   # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
   # Stay on the 0.8 line — 0.9 changed the package's API surface.
   '@xmldom/xmldom': 0.8.15
-  # hw-app-eth 7.10.0 pins axios 1.13.5, which carries GHSA-3pq3-5fj3-cg6v and
-  # GHSA-542g-h47m-68v8, fixed only in 1.20.0. Drop once hw-app-eth resolves
-  # 1.20.0 itself.
-  axios@<1.20.0: 1.20.0
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -369,10 +373,11 @@ overrides:
   # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
   # confusion via an unclosed bracket), patched in 4.1.4; then
   # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
-  # patched in 4.1.5. Pinned to the lowest patched version rather than latest so
-  # the resolution stays behind the minimumReleaseAge window without an exclude
-  # entry.
-  fast-uri@<4.1.5: 4.1.5
+  # patched in 4.1.5; then GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr,
+  # GHSA-xhq7-xmqj-769h and GHSA-333x-w4r6-6crp (scheme spoofing, host
+  # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
+  # the lowest patched version rather than latest.
+  fast-uri@<4.2.3: 4.2.3
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
@@ -392,6 +397,9 @@ overrides:
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
   yaml@2: 2.8.3
+  # GHSA-mrhx-c7xc-m3w5 floor for every 4.x copy, so that advisory's audit
+  # ignore can only ever cover the unpatchable 3.x line.
+  zod@>=4.0.0 <4.6.6: ^4.6.7
 
 supportedArchitectures:
   cpu: [x64, arm64]
