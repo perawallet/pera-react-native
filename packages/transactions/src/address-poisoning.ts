@@ -97,7 +97,9 @@ export const isDustOnlyCounterparty = (
         transfer =>
             transfer.direction === 'incoming' &&
             isNative(transfer.assetId) &&
-            (transfer.amount === null || transfer.amount.lte(dustCeiling)),
+            // An unknown amount is no evidence of dust.
+            transfer.amount !== null &&
+            transfer.amount.lte(dustCeiling),
     )
 
 /** Characters past the shorter string count as different. */

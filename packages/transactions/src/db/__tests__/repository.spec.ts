@@ -43,8 +43,10 @@ import {
     type FixtureChainData,
 } from '../../__tests__/fixture-chain-data'
 import {
+    i18nKey,
     LEGACY_CHAIN_ID,
     type ChainScope,
+    type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 
 describe('transaction repository', () => {
@@ -1264,6 +1266,43 @@ describe('transaction repository', () => {
             scope: ChainScope = SCOPE,
         ) => upsertTransactions({ db, items, accountAddress: 'OWN1', scope })
 
+        // Mirrors a chain summary: a close-out sweeps closeAmount to closeTo
+        // on top of the paid amount, and a row that moves nothing has none.
+        const summarize = (
+            item: TransactionHistoryItem,
+            address: string,
+        ): TransactionSummary => {
+            const { closeTo, closeAmount } = fixtureDataOf(item)
+            const swept =
+                closeTo === address ? (closeAmount ?? new Decimal(0)) : null
+            const value =
+                item.amount === null && swept === null
+                    ? null
+                    : (item.amount ?? new Decimal(0)).add(swept ?? 0)
+            return {
+                kind: 'transfer',
+                title: { key: i18nKey('common.ok.label') },
+                direction: 'in',
+                icon: 'receive',
+                ...(value
+                    ? {
+                          amount: {
+                              assetRef: {
+                                  chainId: LEGACY_CHAIN_ID,
+                                  assetId: item.asset?.assetId ?? '0',
+                              },
+                              value,
+                          },
+                      }
+                    : {}),
+            }
+        }
+
+        beforeEach(() => {
+            historyChainAdapters.reset()
+            historyChainAdapters.register(fixtureHistoryAdapter({ summarize }))
+        })
+
         it('lists the distinct receivers the given senders paid', async () => {
             await store([
                 makeTx({ id: 'A', sender: 'OWN1', receiver: 'FRIEND' }),
@@ -1374,7 +1413,7 @@ describe('transaction repository', () => {
                 expect.arrayContaining([
                     {
                         direction: 'incoming',
-                        assetId: null,
+                        assetId: '0',
                         amount: new Decimal(1),
                     },
                     {
@@ -1384,6 +1423,56 @@ describe('transaction repository', () => {
                     },
                 ]),
             )
+        })
+
+        it('reads a close-out into an own account at the amount it swept in', async () => {
+            await store([
+                makeTx({
+                    id: 'CLOSE',
+                    sender: 'CLOSER',
+                    receiver: 'OWN1',
+                    amount: new Decimal(0),
+                    closeTo: 'OWN1',
+                    closeAmount: new Decimal(5_000_000),
+                }),
+            ])
+
+            const transfers = await getCounterpartyTransfers({
+                db,
+                scope: SCOPE,
+                ownAddresses: ['OWN1'],
+                counterparty: 'CLOSER',
+            })
+
+            expect(transfers).toEqual([
+                {
+                    direction: 'incoming',
+                    assetId: '0',
+                    amount: new Decimal(5_000_000),
+                },
+            ])
+        })
+
+        it('reads a row that moves nothing as having no amount', async () => {
+            await store([
+                makeTx({
+                    id: 'CALL',
+                    sender: 'CALLER',
+                    receiver: 'OWN1',
+                    amount: null,
+                }),
+            ])
+
+            const transfers = await getCounterpartyTransfers({
+                db,
+                scope: SCOPE,
+                ownAddresses: ['OWN1'],
+                counterparty: 'CALLER',
+            })
+
+            expect(transfers).toEqual([
+                { direction: 'incoming', assetId: null, amount: null },
+            ])
         })
 
         it('reads nothing for no own addresses', async () => {

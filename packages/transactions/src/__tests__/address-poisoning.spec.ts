@@ -151,16 +151,20 @@ describe('isDustOnlyCounterparty', () => {
         ).toBe(false)
     })
 
-    it('reads a transfer with no amount as zero', () => {
+    it('does not count a transfer with no amount as dust', () => {
         const noAmount: CounterpartyTransfer = {
             direction: 'incoming',
             assetId: null,
             amount: null,
         }
 
-        expect(isDustOnlyCounterparty([noAmount], DUST_CEILING, isNative)).toBe(
-            true,
-        )
+        expect(
+            isDustOnlyCounterparty(
+                [incoming(1), noAmount],
+                DUST_CEILING,
+                isNative,
+            ),
+        ).toBe(false)
     })
 })
 

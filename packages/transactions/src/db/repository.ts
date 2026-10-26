@@ -47,6 +47,7 @@ import {
     assetFactsResolverFor,
     chainDataCodecFor,
     chainDataCodecOf,
+    summarizeHistoryItem,
 } from '../history-adapter'
 import { fromDb, toDb } from './mappers'
 
@@ -499,9 +500,9 @@ export async function getSentToAddresses({
 
 export type CounterpartyTransfer = {
     direction: 'incoming' | 'outgoing'
-    /** Null when the row names no asset. */
+    /** Null when the transfer moves no amount. */
     assetId: Nullable<string>
-    /** Base units; null when the row records no amount. */
+    /** Base units the own account sent or received, as the chain reads the row from its side; null when it moves no amount. */
     amount: Nullable<Decimal>
 }
 
@@ -533,8 +534,18 @@ export async function getCounterpartyTransfers({
     const rows = await db
         .select({
             isIncoming: sql<number>`CASE WHEN ${incoming} THEN 1 ELSE 0 END`,
+            id: TransactionsSchema.id,
+            txType: TransactionsSchema.txType,
+            sender: TransactionsSchema.sender,
+            receiver: TransactionsSchema.receiver,
+            status: TransactionsSchema.status,
+            fee: TransactionsSchema.fee,
             amount: TransactionsSchema.amount,
-            assetId: jsonPathAsText(TransactionsSchema.assetJson, '$.assetId'),
+            assetSender: TransactionsSchema.assetSender,
+            assetJson: TransactionsSchema.assetJson,
+            interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
+            balanceImpactsJson: TransactionsSchema.balanceImpactsJson,
+            chainData: TransactionsSchema.chainData,
         })
         .from(TransactionsSchema)
         .where(
@@ -546,11 +557,36 @@ export async function getCounterpartyTransfers({
         )
         .all()
 
-    return rows.map(row => ({
-        direction: row.isIncoming === 1 ? 'incoming' : 'outgoing',
-        assetId: row.assetId,
-        amount: row.amount,
-    }))
+    if (rows.length === 0) return []
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
+    const codec = chainDataCodecFor(scope.chainId)
+    return rows.flatMap(({ isIncoming, ...row }): CounterpartyTransfer[] => {
+        const isIn = isIncoming === 1
+        const ownSide = isIn ? row.receiver : row.sender
+        if (!ownSide) return []
+        try {
+            // The row's own amount misses what a chain moves besides it, such
+            // as the balance an Algorand close-out sweeps into the account.
+            const moved = summarizeHistoryItem(
+                fromDb(row, resolveAssetFacts, codec),
+                ownSide,
+                scope.chainId,
+            ).amount
+            return [
+                {
+                    direction: isIn ? 'incoming' : 'outgoing',
+                    assetId: moved?.assetRef.assetId ?? null,
+                    amount: moved?.value ?? null,
+                },
+            ]
+        } catch (error) {
+            logger.warn('history: skipped a cached row that would not parse', {
+                error,
+                id: row.id,
+            })
+            return []
+        }
+    })
 }
 
 type DeleteTransactionsForAccountParams = {

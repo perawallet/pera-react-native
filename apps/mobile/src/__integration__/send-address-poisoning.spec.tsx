@@ -47,6 +47,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { EMPTY_ALGORAND_HISTORY_DATA } from '@perawallet/wallet-core-chain-algorand/transactions'
 import { useSendFundsStore } from '@modules/transactions'
 import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 
@@ -88,6 +89,19 @@ const DUST_PAYMENT: TransactionHistoryItem = {
     amount: new Decimal(1),
     asset: null,
     balanceImpacts: [],
+}
+
+// Pays nothing directly but sweeps its whole balance into the sender, so it
+// is a real transfer, not dust.
+const CLOSE_OUT: TransactionHistoryItem = {
+    ...DUST_PAYMENT,
+    id: 'TXCLOSE00000000000000000000000000000000000000000000001',
+    amount: new Decimal(0),
+    chainData: {
+        ...EMPTY_ALGORAND_HISTORY_DATA,
+        closeTo: ALGO25_TEST_ADDRESS,
+        closeAmount: new Decimal(5_000_000),
+    },
 }
 
 const ConfirmStub = () => <Text>confirm-transaction-screen</Text>
@@ -249,6 +263,20 @@ describe('Flow: warn before sending to a poisoned address', () => {
         fireEvent.click(continueButton())
 
         await waitFor(() => expect(isOnConfirm()).toBe(true))
+    })
+
+    it('Given an address that closed its account into the user, when the user sends ALGO to it, then no dust warning shows', async () => {
+        await upsertTransactions({
+            items: [CLOSE_OUT],
+            accountAddress: ALGO25_TEST_ADDRESS,
+            scope: MAINNET_SCOPE,
+        })
+        prefillSend('0', DUSTER_ADDRESS)
+
+        renderDestinationStep()
+
+        await waitFor(() => expect(isOnConfirm()).toBe(true))
+        expect(screen.queryByTestId('address_poisoning_warning')).toBeNull()
     })
 
     it("Given a contact, when the user sends to the contact's exact address, then the send goes straight to confirmation with no warning", async () => {
