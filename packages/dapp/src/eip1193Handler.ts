@@ -594,7 +594,7 @@ export const createEip1193ConnectionHandler = (
     }
 
     // A user who declines one request has answered for the site's backlog
-    // too; otherwise a page could re-prompt as fast as it is dismissed.
+    // too, so a burst costs one Reject rather than one each.
     const rejectSiteQueue = (
         entry: QueuedSigning,
         response: JsonRpcResponse,
@@ -637,6 +637,10 @@ export const createEip1193ConnectionHandler = (
             )
         }
 
+        // On screen the window owns the lifetime: every way out of it answers
+        // the page, and an expiry here would close it mid-broadcast.
+        clearTimeout(entry.timer)
+        pendingTimers.delete(entry.timer)
         entry.raised = { connectionId: connection.id, correlationId }
         requireContext().onMessage({
             kind: 'request',
@@ -649,9 +653,8 @@ export const createEip1193ConnectionHandler = (
             verifiedOrigin: ctx.origin,
             rawOperation: operation,
             // Answered before delivery, unlike `handleSign`: a sent
-            // transaction is already on chain, so a tab gone meanwhile must
-            // not later turn it into an expiry. A signature for a closed tab
-            // is therefore dropped, not retried.
+            // transaction is already on chain, so a result for a closed tab
+            // is dropped, not retried.
             respond: async result => {
                 if (entry.isAnswered) {
                     throw new Error('The request is no longer pending')
@@ -767,8 +770,7 @@ export const createEip1193ConnectionHandler = (
     }
 
     // Synchronous on purpose: two requests in one task must not both pass the
-    // cap, and the TTL counts from arrival because the page gives up on its
-    // own clock, not the wallet's.
+    // cap. The TTL bounds only the wait in the queue.
     const enqueueSigning = (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
@@ -794,16 +796,10 @@ export const createEip1193ConnectionHandler = (
                     entry,
                     jsonRpcError(
                         request.id,
-                        EIP1193_ERROR_CODE.userRejected,
-                        'The request expired',
+                        EIP1193_ERROR_CODE.internal,
+                        'The wallet did not answer in time',
                     ),
                 )
-                if (entry.raised) {
-                    requireContext().onRequestExpired(
-                        entry.raised.connectionId,
-                        entry.raised.correlationId,
-                    )
-                }
             }, requestTtlMs),
             isAnswered: false,
             isRaising: false,

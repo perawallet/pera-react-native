@@ -807,21 +807,27 @@ describe('createEip1193ConnectionHandler', () => {
             expect(error?.message).not.toContain('keystore')
         })
 
-        it('answers an unanswered request as expired once its time is up, and tells the wallet', async () => {
-            const { pending, messages } = await raise()
-            vi.advanceTimersByTime(1_000)
-            expect(errorOf(await pending)).toEqual({
-                code: EIP1193_ERROR_CODE.userRejected,
-                message: 'The request expired',
-            })
-            expect(messages.map(({ kind }) => kind)).toContain(
+        // An expiry would withdraw the window under a broadcast that still
+        // goes out, telling the page no to a transaction already on chain.
+        it('never expires a request on screen, and takes its late answer', async () => {
+            const { pending, message, messages } = await raise()
+            vi.advanceTimersByTime(10_000)
+            await flush()
+            expect(messages.map(({ kind }) => kind)).not.toContain(
                 'request-expired',
             )
+
+            await message.respond({
+                type: 'sign-message',
+                signature: Uint8Array.of(1),
+            })
+
+            expect(resultOf(await pending)).toBe('0x01')
         })
 
-        it('refuses an answer that arrives after expiry', async () => {
+        it('refuses an answer that arrives after the request was answered', async () => {
             const { pending, message } = await raise()
-            vi.advanceTimersByTime(1_000)
+            await message.reject(new DappRequestRejectedError())
             await pending
             await expect(
                 message.respond({
@@ -979,9 +985,10 @@ describe('createEip1193ConnectionHandler', () => {
             expect(raisedOf(messages)).toHaveLength(2)
         })
 
-        it('a queued request expires with 4001 after requestTtlMs from arrival', async () => {
+        // Only the user's own decline answers 4001.
+        it('a queued request expires with -32603 after requestTtlMs from arrival', async () => {
             const { messages, sign } = await connected()
-            sign()
+            const head = sign()
             const queued = sign()
             await flush()
 
@@ -989,51 +996,31 @@ describe('createEip1193ConnectionHandler', () => {
             await flush()
 
             expect(errorOf(queued.response!)).toEqual({
-                code: EIP1193_ERROR_CODE.userRejected,
-                message: 'The request expired',
+                code: EIP1193_ERROR_CODE.internal,
+                message: 'The wallet did not answer in time',
             })
+            expect(head.response).toBeUndefined()
             expect(raisedOf(messages)).toHaveLength(1)
         })
 
-        it('a request raised late still expires requestTtlMs after it arrived', async () => {
+        it('a request that reaches the screen with its time nearly gone stays until answered', async () => {
             const { messages, sign } = await connected()
             sign()
             vi.advanceTimersByTime(400)
             const queued = sign()
             await flush()
-            vi.advanceTimersByTime(400)
+            vi.advanceTimersByTime(500)
             await raisedOf(messages)[0]!.respond(signed)
             await flush()
             expect(raisedOf(messages)).toHaveLength(2)
 
-            vi.advanceTimersByTime(600)
+            vi.advanceTimersByTime(5_000)
             await flush()
+            expect(queued.response).toBeUndefined()
 
-            expect(errorOf(queued.response!)?.code).toBe(
-                EIP1193_ERROR_CODE.userRejected,
-            )
-        })
-
-        it('an expired head is withdrawn and the next request is raised', async () => {
-            const { messages, sign } = await connected()
-            const head = sign()
-            vi.advanceTimersByTime(500)
-            const next = sign()
+            await raisedOf(messages)[1]!.respond(signed)
             await flush()
-
-            vi.advanceTimersByTime(500)
-            await flush()
-
-            expect(errorOf(head.response!)?.code).toBe(
-                EIP1193_ERROR_CODE.userRejected,
-            )
-            expect(messages).toContainEqual({
-                kind: 'request-expired',
-                connectionId: ID,
-                correlationId: raisedOf(messages)[0]!.correlationId,
-            })
-            expect(raisedOf(messages)).toHaveLength(2)
-            expect(next.response).toBeUndefined()
+            expect(resultOf(queued.response!)).toBe('0xabc')
         })
 
         it('the queue advances when the page is gone', async () => {

@@ -261,10 +261,12 @@ longer served 4901. Signing requests from one site, across all its tabs, wait in
 one queue and reach the approval one at a time, so a page cannot bury the user
 under prompts: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
 -32005, rejecting the one on screen answers the rest 4001, revoking the site
-answers every one 4100 (the approval window only withdraws its own), and each
-expires `DAPP_REQUEST_TTL_MS` after it arrived, queued or not, because the page
-stops waiting on its own clock. The connection, chain and granted accounts are
-read when a request reaches the approval, not when it arrives.
+answers every one 4100 (the approval window only withdraws its own), and one
+still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A request on
+screen never expires: closing the window answers it, and an expiry could close
+the window under a broadcast that still goes out. The connection, chain and
+granted accounts are read when a request reaches the approval, not when it
+arrives.
 
 Only the user's Reject, or closing the approval, answers 4001. The approval
 window sends any other refusal (a build the node rejects, a grant revoked while
