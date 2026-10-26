@@ -1,0 +1,50 @@
+{
+  "name": "@perawallet/benchmarks",
+  "private": true,
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-assets": "workspace:*",
+    "@perawallet/wallet-core-background": "workspace:*",
+    "@perawallet/wallet-core-backup": "workspace:*",
+    "@perawallet/wallet-core-chain-algorand": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
+    "@perawallet/wallet-core-chain-ethereum": "workspace:*",
+    "@perawallet/wallet-core-chain-shared": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-database": "workspace:*",
+    "@perawallet/wallet-core-device": "workspace:*",
+    "@perawallet/wallet-core-kms": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "decimal.js": "catalog:",
+    "expo-clipboard": "58.0.4",
+    "expo-device": "catalog:",
+    "expo-file-system": "58.0.10",
+    "expo-splash-screen": "58.0.11",
+    "msw": "catalog:",
+    "react": "catalog:",
+    "react-native": "catalog:"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@types/react": "catalog:",
+    "algosdk": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -67,6 +67,10 @@ export const TEST_PATHS: ExemptPath[] = [
         reason: 'integration harness: registers the real chain for flow tests, never bundled',
     },
     {
+        glob: '**/apps/benchmarks/**',
+        reason: "benchmark app: times the chain packages' own code directly, and is bundled only into a BENCH=1 build",
+    },
+    {
         glob: '**/conformance/src/**',
         reason: 'conformance harness: runs the real chain code against LocalNet, never bundled',
     },

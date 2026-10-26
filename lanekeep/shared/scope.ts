@@ -56,4 +56,6 @@ export const TEST_SUPPORT: readonly string[] = [
     '**/test-utils/**',
     '**/msw-handlers.ts',
     '**/test-handlers.ts',
+    // Measurement tooling: bundled only into a BENCH=1 build, never a shipped one.
+    '**/apps/benchmarks/**',
 ]
