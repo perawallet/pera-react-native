@@ -21,6 +21,7 @@ import type {
 } from '@perawallet/wallet-core-transactions'
 import {
     PWCheckbox,
+    PWLoadingIndicator,
     PWRoundIcon,
     PWText,
     PWTouchableOpacity,
@@ -37,6 +38,7 @@ import { useStyles } from './styles'
 
 export type RecipientSafetyNoticeProps = {
     assessment: Optional<RecipientAssessment>
+    isChecking: boolean
     recipient: string
     scope: ChainScope
     isAcknowledged: boolean
@@ -46,6 +48,8 @@ export type RecipientSafetyNoticeProps = {
 const KNOWN_LABEL_KEYS = {
     'own-account':
         'send_funds.recipient_safety.look_alike_known_label_own_account',
+    'watched-account':
+        'send_funds.recipient_safety.look_alike_known_label_watched_account',
     contact: 'send_funds.recipient_safety.look_alike_known_label_contact',
     history: 'send_funds.recipient_safety.look_alike_known_label_history',
 } as const satisfies Record<KnownAddress['source'], string>
@@ -93,6 +97,7 @@ const ComparedAddress = ({
 
 export const RecipientSafetyNotice = ({
     assessment,
+    isChecking,
     recipient,
     scope,
     isAcknowledged,
@@ -100,6 +105,20 @@ export const RecipientSafetyNotice = ({
 }: RecipientSafetyNoticeProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+
+    if (isChecking) {
+        return (
+            <PWView
+                style={styles.checking}
+                testID='recipient_safety_checking'
+            >
+                <PWLoadingIndicator />
+                <PWText style={styles.label}>
+                    {t('send_funds.recipient_safety.checking')}
+                </PWText>
+            </PWView>
+        )
+    }
 
     if (assessment?.kind === 'first-send') {
         return (

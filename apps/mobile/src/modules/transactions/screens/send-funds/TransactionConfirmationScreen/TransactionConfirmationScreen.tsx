@@ -81,6 +81,7 @@ export const TransactionConfirmationScreen = () => {
                     {!!destination && (
                         <RecipientSafetyNotice
                             assessment={recipientSafety.assessment}
+                            isChecking={recipientSafety.isPending}
                             recipient={destination}
                             scope={scope}
                             isAcknowledged={recipientSafety.isAcknowledged}

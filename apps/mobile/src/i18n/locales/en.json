@@ -2727,10 +2727,12 @@
     },
     "send_funds": {
         "recipient_safety": {
+            "checking": "Checking the recipient…",
             "look_alike_title": "This address looks like one you know",
             "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
             "look_alike_recipient_label": "You're sending to",
             "look_alike_known_label_own_account": "Your account {{name}}",
+            "look_alike_known_label_watched_account": "Account {{name}} in your wallet",
             "look_alike_known_label_contact": "Your contact {{name}}",
             "look_alike_known_label_history": "An address in your history",
             "look_alike_acknowledge": "I've checked the full address and want to send to it",

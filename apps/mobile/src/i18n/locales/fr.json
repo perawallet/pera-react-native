@@ -2727,10 +2727,12 @@
     },
     "send_funds": {
         "recipient_safety": {
+            "checking": "Vérification du destinataire…",
             "look_alike_title": "Cette adresse ressemble à une adresse que vous connaissez",
             "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
             "look_alike_recipient_label": "Vous envoyez à",
             "look_alike_known_label_own_account": "Votre compte {{name}}",
+            "look_alike_known_label_watched_account": "Le compte {{name}} de votre portefeuille",
             "look_alike_known_label_contact": "Votre contact {{name}}",
             "look_alike_known_label_history": "Une adresse de votre historique",
             "look_alike_acknowledge": "J'ai vérifié l'adresse complète et je veux y envoyer",

@@ -21,6 +21,7 @@ import { useSendFundsStore } from '../useSendFunds'
 
 type FakeAccount = {
     name?: string
+    isWatch?: boolean
     chains: Record<string, { address: string }>
 }
 
@@ -29,6 +30,7 @@ const mocks = vi.hoisted(() => ({
     contacts: [] as { name: string; addresses: Record<string, string> }[],
     counterparties: [] as { address: string; hasBeenPaid: boolean }[],
     isCounterpartiesPending: false,
+    hasSenderHistory: true,
     counterpartiesQuery: vi.fn(),
 }))
 
@@ -39,6 +41,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAllAccounts: () => mocks.accounts,
     chainAccountOf: (account: FakeAccount, chainId: string) =>
         account.chains[chainId],
+    canSignWith: (account: FakeAccount) => !account.isWatch,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', async importOriginal => ({
@@ -59,6 +62,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         return {
             data: mocks.counterparties,
             isPending: mocks.isCounterpartiesPending,
+            hasSenderHistory: mocks.hasSenderHistory,
         }
     },
 }))
@@ -98,6 +102,7 @@ describe('useRecipientSafety', () => {
         mocks.contacts = []
         mocks.counterparties = []
         mocks.isCounterpartiesPending = false
+        mocks.hasSenderHistory = true
         mocks.counterpartiesQuery.mockClear()
         useSendFundsStore.getState().reset()
     })
@@ -243,6 +248,69 @@ describe('useRecipientSafety', () => {
                 accountAddresses: [EVM_KNOWN, EVM_NEW],
             }),
         )
+    })
+
+    it("shows no first-send notice when the sender's history couldn't load", () => {
+        mocks.hasSenderHistory = false
+
+        const { result } = render(EVM_NEW, ETHEREUM)
+
+        expect(result.current.assessment).toBeUndefined()
+        expect(result.current.isConfirmBlocked).toBe(false)
+    })
+
+    it("still flags a look-alike when the sender's history couldn't load", () => {
+        mocks.hasSenderHistory = false
+        mocks.contacts = [{ name: 'Alice', addresses: { evm: EVM_KNOWN } }]
+
+        const { result } = render(EVM_LOOK_ALIKE, ETHEREUM)
+
+        expect(result.current.assessment?.kind).toBe('look-alike')
+        expect(result.current.isConfirmBlocked).toBe(true)
+    })
+
+    describe('with a watched address in the wallet', () => {
+        beforeEach(() => {
+            mocks.accounts = [
+                {
+                    name: 'Cold wallet',
+                    isWatch: true,
+                    chains: { ethereum: { address: EVM_KNOWN } },
+                },
+                { chains: { ethereum: { address: EVM_NEW } } },
+            ]
+        })
+
+        it('flags a look-alike of it', () => {
+            const { result } = render(EVM_LOOK_ALIKE, ETHEREUM)
+
+            expect(result.current.assessment).toMatchObject({
+                kind: 'look-alike',
+                knownAddress: {
+                    address: EVM_KNOWN,
+                    source: 'watched-account',
+                    name: 'Cold wallet',
+                },
+            })
+            expect(result.current.isConfirmBlocked).toBe(true)
+        })
+
+        it('passes it quietly', () => {
+            const { result } = render(EVM_KNOWN, ETHEREUM)
+
+            expect(result.current.assessment).toEqual({
+                kind: 'known',
+                source: 'watched-account',
+            })
+        })
+
+        it('does not read its history', () => {
+            render(EVM_LOOK_ALIKE, ETHEREUM)
+
+            expect(mocks.counterpartiesQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ accountAddresses: [EVM_NEW] }),
+            )
+        })
     })
 
     it('blocks Confirm while history is still loading', () => {

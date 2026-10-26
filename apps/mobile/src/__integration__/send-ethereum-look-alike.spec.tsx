@@ -62,6 +62,7 @@ setTestTheme(getTheme('light'))
 const { fireEvent, screen, waitFor } = await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
 const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
+const { SeedScheme } = await import('@perawallet/wallet-core-kms')
 const { nativeAssetFor, upsertAssetPrices, upsertAssets } =
     await import('@perawallet/wallet-core-assets')
 const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
@@ -96,8 +97,12 @@ const lookAlikeOf = (address: string, filler: string) =>
 
 const ETHEREUM_SENDER: WalletAccount = {
     id: 'eth-sender',
-    custody: { kind: 'watch' },
-    chains: { ethereum: { address: SENDER } },
+    custody: {
+        kind: 'local',
+        seed: SeedScheme.Bip39,
+        hd: { account: 0, keyIndex: 0 },
+    },
+    chains: { ethereum: { address: SENDER, keyPairId: 'eth-key' } },
     name: 'Eth sender',
 }
 

@@ -56,4 +56,10 @@ export const useStyles = makeStyles(theme => ({
     firstSend: {
         marginVertical: theme.spacing.lg,
     },
+    checking: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        marginVertical: theme.spacing.lg,
+    },
 }))

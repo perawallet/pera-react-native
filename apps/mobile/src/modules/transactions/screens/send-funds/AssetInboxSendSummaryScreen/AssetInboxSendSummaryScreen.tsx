@@ -75,6 +75,7 @@ export const AssetInboxSendSummaryScreen = () => {
                 <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>
                     <RecipientSafetyNotice
                         assessment={recipientSafety.assessment}
+                        isChecking={recipientSafety.isPending}
                         recipient={recipientAddress}
                         scope={scope}
                         isAcknowledged={recipientSafety.isAcknowledged}

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    canSignWith,
     chainAccountOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -54,13 +55,23 @@ export const useRecipientSafety = ({
         state => state.setIsRecipientAcknowledged,
     )
 
-    const ownAddresses = useMemo<KnownAddress[]>(
+    // Every wallet address is one the user compares by its ends, but only the
+    // ones they sign for vouch for their counterparties: a watched address's
+    // history would make a stranger's payees look trusted.
+    const walletAddresses = useMemo<KnownAddress[]>(
         () =>
             accounts.flatMap(account => {
                 const address = chainAccountOf(account, scope.chainId)?.address
-                return address
-                    ? [{ address, source: 'own-account', name: account.name }]
-                    : []
+                if (!address) return []
+                return [
+                    {
+                        address,
+                        source: canSignWith(account, accounts, scope.chainId)
+                            ? 'own-account'
+                            : 'watched-account',
+                        name: account.name,
+                    },
+                ]
             }),
         [accounts, scope.chainId],
     )
@@ -76,10 +87,17 @@ export const useRecipientSafety = ({
     }, [contacts, scope.chainId])
 
     const accountAddresses = useMemo(
-        () => ownAddresses.map(({ address }) => address),
-        [ownAddresses],
+        () =>
+            walletAddresses.flatMap(({ address, source }) =>
+                source === 'own-account' ? [address] : [],
+            ),
+        [walletAddresses],
     )
-    const { data: counterparties, isPending } = useTrustedCounterpartiesQuery({
+    const {
+        data: counterparties,
+        isPending,
+        hasSenderHistory,
+    } = useTrustedCounterpartiesQuery({
         senderAddress,
         accountAddresses,
         scope,
@@ -88,11 +106,11 @@ export const useRecipientSafety = ({
 
     const assessment = useMemo(() => {
         if (!recipient || isPending) return undefined
-        return assessRecipient({
+        const result = assessRecipient({
             recipient,
             chainId: scope.chainId,
             knownAddresses: [
-                ...ownAddresses,
+                ...walletAddresses,
                 ...contactAddresses,
                 ...counterparties.map(
                     ({ address, hasBeenPaid }): KnownAddress => ({
@@ -103,11 +121,17 @@ export const useRecipientSafety = ({
                 ),
             ],
         })
+        // Without the sender's history a regular payee looks new, and a false
+        // "never sent" notice teaches people to ignore it.
+        return result.kind === 'first-send' && !hasSenderHistory
+            ? undefined
+            : result
     }, [
         recipient,
         isPending,
+        hasSenderHistory,
         scope.chainId,
-        ownAddresses,
+        walletAddresses,
         contactAddresses,
         counterparties,
     ])
