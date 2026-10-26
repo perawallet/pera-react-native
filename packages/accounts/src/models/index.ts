@@ -23,6 +23,7 @@ import type {
 import type { ChainEnabledBy, HdIndex } from './credentials'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
+import type { ClaimOwner } from '../key-claims'
 
 export * from './accounts'
 export * from './credentials'
@@ -40,6 +41,8 @@ export type EnableChainOptions = {
     deviceAddress?: string
     /** The address the caller holds for the account there; a different derived address throws before anything is written. */
     expectedAddress?: string
+    /** Who the derived key's claim belongs to; a discovery walk passes its own. */
+    claimOwner?: ClaimOwner
 }
 
 export type PrivateKeyImportOptions = {
@@ -164,6 +167,7 @@ export type AccountsState = BaseStoreState & {
      * chain entry is already held, and `AddressMismatchError` before any write
      * when the derived address isn't `expectedAddress`. `name` applies only to
      * a new account. The new entry is stamped `enabledBy` (default `'created'`).
+     * The derived key's claim belongs to `claimOwner`.
      */
     addChainAccount: (
         walletId: string,
@@ -172,6 +176,7 @@ export type AccountsState = BaseStoreState & {
         name?: string,
         expectedAddress?: string,
         enabledBy?: ChainEnabledBy,
+        claimOwner?: ClaimOwner,
     ) => Promise<WalletAccount>
     /**
      * Adds `chainId`'s entry for the device position at `details` to the

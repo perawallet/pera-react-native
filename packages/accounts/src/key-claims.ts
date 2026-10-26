@@ -10,14 +10,24 @@
  limitations under the License
  */
 
+/** Who made a claim, so a walk can tell the claims its own adds made from other flows'. */
+export type ClaimOwner = object
+
 let activeWalks = 0
 const derivingNow = new Map<string, number>()
-const derivedDuringWalks = new Set<string>()
+const claimedDuringWalks = new Map<string, Set<ClaimOwner | undefined>>()
 
 const claim = (keyPairId: string, delta: 1 | -1) => {
     const count = (derivingNow.get(keyPairId) ?? 0) + delta
     if (count > 0) derivingNow.set(keyPairId, count)
     else derivingNow.delete(keyPairId)
+}
+
+const recordDuringWalk = (keyPairId: string, owner?: ClaimOwner) => {
+    if (activeWalks === 0) return
+    const owners = claimedDuringWalks.get(keyPairId) ?? new Set()
+    owners.add(owner)
+    claimedDuringWalks.set(keyPairId, owners)
 }
 
 /**
@@ -29,23 +39,34 @@ const claim = (keyPairId: string, delta: 1 | -1) => {
 export const deriveClaimedKey = async <T extends { keyPairId: string }>(
     expectedKeyPairId: string | undefined,
     derive: () => Promise<T>,
+    owner?: ClaimOwner,
 ): Promise<T> => {
     if (expectedKeyPairId !== undefined) claim(expectedKeyPairId, 1)
     try {
         const derived = await derive()
-        if (activeWalks > 0) derivedDuringWalks.add(derived.keyPairId)
+        recordDuringWalk(derived.keyPairId, owner)
         return derived
     } finally {
         if (expectedKeyPairId !== undefined) {
             claim(expectedKeyPairId, -1)
-            if (activeWalks > 0) derivedDuringWalks.add(expectedKeyPairId)
+            recordDuringWalk(expectedKeyPairId, owner)
         }
     }
 }
 
-/** Whether a flow other than a walk is deriving the key, or derived it since the running walks started. */
+/** Whether a flow is deriving the key, or claimed it since the running walks started. */
 export const isKeyClaimed = (keyPairId: string): boolean =>
-    derivingNow.has(keyPairId) || derivedDuringWalks.has(keyPairId)
+    derivingNow.has(keyPairId) || claimedDuringWalks.has(keyPairId)
+
+/** Whether a flow other than `owner` is deriving the key, or claimed it since the running walks started. */
+export const isKeyClaimedByOthers = (
+    keyPairId: string,
+    owner: ClaimOwner,
+): boolean =>
+    derivingNow.has(keyPairId) ||
+    [...(claimedDuringWalks.get(keyPairId) ?? [])].some(
+        claimant => claimant !== owner,
+    )
 
 /** Runs a discovery walk, recording the keys other flows derive until every walk ends. */
 export const trackWalk = async <T>(run: () => Promise<T>): Promise<T> => {
@@ -54,6 +75,6 @@ export const trackWalk = async <T>(run: () => Promise<T>): Promise<T> => {
         return await run()
     } finally {
         activeWalks--
-        if (activeWalks === 0) derivedDuringWalks.clear()
+        if (activeWalks === 0) claimedDuringWalks.clear()
     }
 }

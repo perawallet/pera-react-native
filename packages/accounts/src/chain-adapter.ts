@@ -46,7 +46,7 @@ import type {
     LocalCustody,
     WalletAccount,
 } from './models'
-import { deriveClaimedKey } from './key-claims'
+import { deriveClaimedKey, type ClaimOwner } from './key-claims'
 import type { SignerResolution } from './signer-resolution'
 
 /**
@@ -471,12 +471,14 @@ export const deriveClaimedHdKey = <T extends { keyPairId: string }>(
     seedKeyId: string,
     index: HdIndex,
     derive: () => Promise<T>,
+    owner?: ClaimOwner,
 ): Promise<T> =>
     deriveClaimedKey(
         accountsChainAdapters.has(chainId)
             ? accountsChainAdapters.get(chainId).hdKeyPairId(seedKeyId, index)
             : undefined,
         derive,
+        owner,
     )
 
 /** Derives the HD child at `index` through the chain's registered `KeyDerivation`, claimed. */
@@ -485,11 +487,17 @@ export const deriveHdKeyForAccount = async (
     seedKeyId: string,
     { account, keyIndex }: HdIndex,
     opts: DeriveOpts,
+    owner?: ClaimOwner,
 ) =>
-    deriveClaimedHdKey(chainId, seedKeyId, { account, keyIndex }, () =>
-        keyDerivations
-            .get(chainId)
-            .deriveAccount(kmsCore, seedKeyId, account, keyIndex, opts),
+    deriveClaimedHdKey(
+        chainId,
+        seedKeyId,
+        { account, keyIndex },
+        () =>
+            keyDerivations
+                .get(chainId)
+                .deriveAccount(kmsCore, seedKeyId, account, keyIndex, opts),
+        owner,
     )
 
 /** Derives the HD child through the chain's registered `KeyDerivation`. */

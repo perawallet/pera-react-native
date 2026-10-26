@@ -11,7 +11,12 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import { deriveClaimedKey, isKeyClaimed, trackWalk } from '../key-claims'
+import {
+    deriveClaimedKey,
+    isKeyClaimed,
+    isKeyClaimedByOthers,
+    trackWalk,
+} from '../key-claims'
 
 const deferred = () => {
     let resolve!: () => void
@@ -70,6 +75,21 @@ describe('key claims', () => {
         walk.resolve()
 
         await expect(walking).resolves.toBe(true)
+    })
+
+    test("tells a walk its own claims from another flow's", async () => {
+        const walk = deferred()
+        const walkClaims = {}
+        const walking = trackWalk(() => walk.promise)
+
+        await deriveClaimedKey('own', derivation('own'), walkClaims)
+        await deriveClaimedKey('shared', derivation('shared'), walkClaims)
+        await deriveClaimedKey('shared', derivation('shared'))
+
+        expect(isKeyClaimedByOthers('own', walkClaims)).toBe(false)
+        expect(isKeyClaimedByOthers('shared', walkClaims)).toBe(true)
+        walk.resolve()
+        await walking
     })
 
     test('releases the claim when the derivation fails', async () => {

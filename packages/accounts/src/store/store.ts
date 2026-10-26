@@ -92,7 +92,7 @@ import {
     hdPathKey,
     type ProbedHdIndex,
 } from '../hd-walk'
-import { isKeyClaimed, trackWalk } from '../key-claims'
+import { isKeyClaimed, isKeyClaimedByOthers, trackWalk } from '../key-claims'
 import { useAccountChainStateStore } from './accountChainState'
 import {
     isHardwareWalletAccount,
@@ -579,7 +579,7 @@ const firstHeldAddress = (account: WalletAccount): string | undefined =>
 const resolveChainEntry = async (
     account: WalletAccount,
     chainId: ChainId,
-    { deviceAddress }: EnableChainOptions = {},
+    { deviceAddress, claimOwner }: EnableChainOptions = {},
 ): Promise<ChainAccount> => {
     const { networkId } = scopeOn(chainId)
     const { custody } = account
@@ -594,6 +594,7 @@ const resolveChainEntry = async (
             walletId,
             custody.hd,
             { scheme, networkId },
+            claimOwner,
         )
         return { address, keyPairId }
     }
@@ -1193,6 +1194,7 @@ export const useAccountsStore: UseBoundStore<
                             (options.declinedIndexes ?? []).map(hdPathKey),
                         )
                         const changedIds = new Set<string>()
+                        const walkClaims = {}
                         // Every flow deriving a key for an account claims it,
                         // as it stores the account only after deriving.
                         const removeUnclaimedKeys = (keyPairIds: string[]) =>
@@ -1247,6 +1249,7 @@ export const useAccountsStore: UseBoundStore<
                                               {
                                                   expectedAddress:
                                                       entry.address,
+                                                  claimOwner: walkClaims,
                                               },
                                           )
                                         : await get().addChainAccount(
@@ -1256,6 +1259,7 @@ export const useAccountsStore: UseBoundStore<
                                               undefined,
                                               entry.address,
                                               'discovery',
+                                              walkClaims,
                                           )
                                     changedIds.add(account.id)
                                 } catch (error) {
@@ -1267,6 +1271,20 @@ export const useAccountsStore: UseBoundStore<
                                     ) {
                                         logger.warn(
                                             `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                        )
+                                    }
+                                    // The failed add's own claim would keep the
+                                    // key forever; another flow's claim must not.
+                                    if (
+                                        entry.keyPairId &&
+                                        !isKeyClaimedByOthers(
+                                            entry.keyPairId,
+                                            walkClaims,
+                                        )
+                                    ) {
+                                        await removeUnreferencedKey(
+                                            get().accounts,
+                                            entry.keyPairId,
                                         )
                                     }
                                 }
@@ -1289,6 +1307,7 @@ export const useAccountsStore: UseBoundStore<
                 name,
                 expectedAddress,
                 enabledBy = 'created',
+                claimOwner,
             ) => {
                 const scheme = seedMintableScheme(chainId)
                 if (
@@ -1306,6 +1325,7 @@ export const useAccountsStore: UseBoundStore<
                     walletId,
                     index,
                     { scheme, networkId },
+                    claimOwner,
                 )
 
                 assertExpectedAddress(chainId, address, expectedAddress)

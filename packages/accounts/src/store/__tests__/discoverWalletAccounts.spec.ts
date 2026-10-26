@@ -27,6 +27,7 @@ import {
     type ChainFamilies,
 } from '../../__tests__/chainFamilies'
 import { hdIndexOf } from '../../credentials'
+import { deriveClaimedKey } from '../../key-claims'
 import type { HdIndex } from '../../models'
 import { useAccountsStore } from '../store'
 
@@ -181,6 +182,55 @@ describe('discoverWalletAccounts', () => {
 
         expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
         expect(removed()).toContain(familyHdKeyId(SEED, 'evm', 0, 0))
+    })
+
+    test('creates nothing at an unheld index whose address another account holds, and removes the key its failed add derived', async () => {
+        activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+        activeAt(ETHEREUM, [{ account: 2, keyIndex: 0 }])
+        const watcher = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { [ETHEREUM]: { address: familyHdAddress('evm', 2, 0) } },
+            { id: 'watcher' },
+        )
+        state().setAccounts([pathHolder({ account: 0, keyIndex: 0 }), watcher])
+
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+
+        expect(
+            state().accounts.some(account => hdIndexOf(account)?.account === 2),
+        ).toBe(false)
+        expect(removed()).toContain(familyHdKeyId(SEED, 'evm', 2, 0))
+    })
+
+    test("keeps the key another flow claimed during the walk when the walk's own add of it fails", async () => {
+        activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+        activeAt(ETHEREUM, [{ account: 2, keyIndex: 0 }])
+        const watcher = buildTestAccount(
+            TEST_CUSTODY.watch,
+            { [ETHEREUM]: { address: familyHdAddress('evm', 2, 0) } },
+            { id: 'watcher' },
+        )
+        state().setAccounts([pathHolder({ account: 0, keyIndex: 0 }), watcher])
+        const algorandProbe = families.checkActivity.get(ALGORAND)!
+        const probeActivity = algorandProbe.getMockImplementation()!
+        let resumeWalk: (() => void) | undefined
+        algorandProbe.mockImplementationOnce(async (probed: string[]) => {
+            await new Promise<void>(resolve => {
+                resumeWalk = resolve
+            })
+            return probeActivity(probed)
+        })
+        const sharedKey = familyHdKeyId(SEED, 'evm', 2, 0)
+
+        const walking = state().discoverWalletAccounts(SEED)
+        await vi.waitFor(() => expect(resumeWalk).toBeDefined())
+        await deriveClaimedKey(sharedKey, async () => ({
+            keyPairId: sharedKey,
+        }))
+        resumeWalk!()
+        await walking
+
+        expect(removed()).not.toContain(sharedKey)
     })
 
     test('removes the keys of inactive chains and keeps the ones accounts reference', async () => {
