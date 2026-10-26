@@ -276,6 +276,7 @@ overrides:
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
   yaml@2: 2.8.3
+  zod@>=4.0.0 <4.6.6: ^4.6.7
 
 packageExtensionsChecksum: sha256-+jNlaQ2J/EWEnXBumiZ7VW7HDP3EgxkgdV6s+edL7yc=
 
@@ -5859,7 +5860,7 @@ packages:
       valibot: '>=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc'
       vest: '>=6.0.0'
       yup: ^1.0.0
-      zod: ^3.25.0 || ^4.0.0
+      zod: ^4.6.7
     peerDependenciesMeta:
       '@sinclair/typebox':
         optional: true
@@ -7688,7 +7689,7 @@ packages:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
     peerDependencies:
       typescript: '>=5.0.4'
-      zod: ^3.22.0 || ^4.0.0
+      zod: ^4.6.7
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -7699,7 +7700,7 @@ packages:
     resolution: {integrity: sha512-fk6Te+bojIFrMvMZrnOO+SxCB+RUksTGOzq/60ZRvs1L+BVzvi2bqt9L3W/17ZLdZsyM1FuYf65P5nlmoiH1Bg==}
     peerDependencies:
       typescript: '>=5.0.4'
-      zod: ^3.22.0 || ^4.0.0
+      zod: ^4.6.7
     peerDependenciesMeta:
       typescript:
         optional: true

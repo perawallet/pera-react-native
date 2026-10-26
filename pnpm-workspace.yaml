@@ -117,8 +117,6 @@ catalog:
   vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
-  # 4.6.6 is the GHSA-mrhx-c7xc-m3w5 floor; the audit ignore for that advisory
-  # relies on this range keeping our own copy patched.
   zod: ^4.6.7
   zustand: ^5.0.12
 
@@ -147,9 +145,9 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
-    # zod 3.x has no patched release (fixed only in 4.6.6). The 3.x copy is
-    # @expo/cli's, which never ships to a device; everything else resolves the
-    # patched catalog zod. Drop this entry once @expo/cli moves to zod 4.
+    # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
+    # @expo/cli's, which never ships to a device; the zod override floors every
+    # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
     - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
@@ -399,6 +397,9 @@ overrides:
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
   yaml@2: 2.8.3
+  # GHSA-mrhx-c7xc-m3w5 floor for every 4.x copy, so that advisory's audit
+  # ignore can only ever cover the unpatchable 3.x line.
+  zod@>=4.0.0 <4.6.6: ^4.6.7
 
 supportedArchitectures:
   cpu: [x64, arm64]
