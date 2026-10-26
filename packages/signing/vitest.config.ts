@@ -53,6 +53,17 @@ export default defineConfig({
                 __dirname,
                 '../deeplinks/src/index.ts',
             ),
+            // The chain sources above also import signing itself, whose dist
+            // turbo builds in parallel with this suite (`test` waits only on
+            // `^build`). Constants first: the barrel key prefix-matches it.
+            '@perawallet/wallet-core-signing/constants': path.resolve(
+                __dirname,
+                'src/constants.ts',
+            ),
+            '@perawallet/wallet-core-signing': path.resolve(
+                __dirname,
+                'src/index.ts',
+            ),
             '@perawallet/wallet-core-walletconnect/shared/deeplink':
                 path.resolve(
                     __dirname,
