@@ -18,6 +18,7 @@ export const name = '@perawallet/wallet-core-transactions'
 
 export * from './models'
 export * from './hooks'
+export * from './address-safety'
 export {
     sendFlowChainAdapters,
     sendFlowFeatureFor,

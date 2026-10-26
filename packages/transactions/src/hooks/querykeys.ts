@@ -91,6 +91,13 @@ export const transactionQueryKeys = {
             { accountAddress: address, asset, scope, fee: fee.toFixed() },
         ] as const,
 
+    trustedCounterparties: (accountAddress: string, scope: ChainScope) =>
+        [
+            MODULE_PREFIX,
+            'trusted-counterparties',
+            { accountAddress, scope },
+        ] as const,
+
     /** `amount` is in base units, carried as plain text like `fee` above. */
     recipientWarning: (
         recipient: string,
