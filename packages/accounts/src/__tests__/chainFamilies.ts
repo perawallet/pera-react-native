@@ -103,6 +103,7 @@ const codecFor = (chainId: ChainId, family: string): AddressCodec => ({
     areEqual: (a: string, b: string) =>
         family === 'evm' ? a.toLowerCase() === b.toLowerCase() : a === b,
     truncate: (address: string) => address,
+    resembles: () => false,
     toPaymentUri: (address: string) => `${chainId}:${address}`,
     parsePaymentUri: () => undefined,
 })

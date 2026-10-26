@@ -177,6 +177,7 @@ describe('algorandHistoryAdapter', () => {
                     status: 'confirmed',
                     timestamp: 1_700_000_000_000,
                     fee: new Decimal(1000),
+                    initiator: 'ADDR',
                     summary: expect.objectContaining({ kind: 'transfer' }),
                     chainData: {
                         family: 'algorand',

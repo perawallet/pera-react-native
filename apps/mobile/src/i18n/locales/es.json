@@ -2726,6 +2726,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Comprobando el destinatario…",
+            "look_alike_title": "Esta dirección se parece a una que conoces",
+            "look_alike_body": "Empieza y termina como una dirección que conoces, pero los caracteres del medio son distintos. Los estafadores crean direcciones parecidas para engañarte. Compara las direcciones completas a continuación.",
+            "look_alike_recipient_label": "Vas a enviar a",
+            "look_alike_known_label_own_account": "Tu cuenta {{name}}",
+            "look_alike_known_label_watched_account": "La cuenta {{name}} de tu billetera",
+            "look_alike_known_label_contact": "Tu contacto {{name}}",
+            "look_alike_known_label_history": "Una dirección de tu historial",
+            "look_alike_acknowledge": "He revisado la dirección completa y quiero enviar a ella",
+            "first_send_title": "Primer envío a esta dirección",
+            "first_send_body": "Nunca has enviado a esta dirección en esta red. Asegúrate de que sea la correcta."
+        },
         "input_view": {
             "title": "Enviar {{asset}}"
         },

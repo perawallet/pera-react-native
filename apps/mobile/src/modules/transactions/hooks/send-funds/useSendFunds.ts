@@ -36,6 +36,8 @@ type SendFundsState = {
     pendingAmountBaseUnits?: string
     note?: string
     destination?: string
+    /** Cleared whenever the destination changes, so it never carries over. */
+    isRecipientAcknowledged: boolean
     onFinished?: () => void
     sendMode: SendMode
     assetInboxQuote?: AssetInboxQuote
@@ -56,6 +58,7 @@ type SendFundsActions = {
     setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    setIsRecipientAcknowledged: (isAcknowledged: boolean) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setAssetInboxQuote: (quote?: AssetInboxQuote) => void
@@ -75,6 +78,7 @@ const initialState: SendFundsState = {
     pendingAmountBaseUnits: undefined,
     note: undefined,
     destination: undefined,
+    isRecipientAcknowledged: false,
     onFinished: undefined,
     sendMode: 'normal',
     assetInboxQuote: undefined,
@@ -90,7 +94,10 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setAmount: amount => set({ amount }),
     setPendingAmountBaseUnits: raw => set({ pendingAmountBaseUnits: raw }),
     setNote: note => set({ note }),
-    setDestination: address => set({ destination: address }),
+    setDestination: address =>
+        set({ destination: address, isRecipientAcknowledged: false }),
+    setIsRecipientAcknowledged: isAcknowledged =>
+        set({ isRecipientAcknowledged: isAcknowledged }),
     setOnFinished: fn => set({ onFinished: fn }),
     setSendMode: mode => set({ sendMode: mode }),
     setAssetInboxQuote: quote => set({ assetInboxQuote: quote }),
@@ -119,6 +126,7 @@ type UseSendFundsResult = {
     pendingAmountBaseUnits?: string
     note?: string
     destination?: string
+    isRecipientAcknowledged: boolean
     onFinished?: () => void
     sendMode: SendMode
     assetInboxQuote?: AssetInboxQuote
@@ -131,6 +139,7 @@ type UseSendFundsResult = {
     setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    setIsRecipientAcknowledged: (isAcknowledged: boolean) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setAssetInboxQuote: (quote?: AssetInboxQuote) => void
@@ -149,6 +158,12 @@ export const useSendFunds = (): UseSendFundsResult => {
     )
     const note = useSendFundsStore(state => state.note)
     const destination = useSendFundsStore(state => state.destination)
+    const isRecipientAcknowledged = useSendFundsStore(
+        state => state.isRecipientAcknowledged,
+    )
+    const setIsRecipientAcknowledged = useSendFundsStore(
+        state => state.setIsRecipientAcknowledged,
+    )
     const onFinished = useSendFundsStore(state => state.onFinished)
     const sendMode = useSendFundsStore(state => state.sendMode)
     const assetInboxQuote = useSendFundsStore(state => state.assetInboxQuote)
@@ -189,6 +204,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         pendingAmountBaseUnits,
         note,
         destination,
+        isRecipientAcknowledged,
         onFinished,
         sendMode,
         assetInboxQuote,
@@ -201,6 +217,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setPendingAmountBaseUnits,
         setNote,
         setDestination,
+        setIsRecipientAcknowledged,
         setOnFinished,
         setSendMode,
         setAssetInboxQuote,

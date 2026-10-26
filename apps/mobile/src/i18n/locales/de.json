@@ -2718,6 +2718,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Empfänger wird geprüft…",
+            "look_alike_title": "Diese Adresse ähnelt einer, die du kennst",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "look_alike_recipient_label": "Du sendest an",
+            "look_alike_known_label_own_account": "Dein Konto {{name}}",
+            "look_alike_known_label_watched_account": "Konto {{name}} in deinem Wallet",
+            "look_alike_known_label_contact": "Dein Kontakt {{name}}",
+            "look_alike_known_label_history": "Eine Adresse aus deinem Verlauf",
+            "look_alike_acknowledge": "Ich habe die vollständige Adresse geprüft und möchte an sie senden",
+            "first_send_title": "Erste Sendung an diese Adresse",
+            "first_send_body": "Du hast in diesem Netzwerk noch nie an diese Adresse gesendet. Stelle sicher, dass es die richtige ist."
+        },
         "input_view": {
             "title": "{{asset}} senden"
         },

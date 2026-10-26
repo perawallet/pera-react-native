@@ -2742,6 +2742,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Verificando o destinatário…",
+            "look_alike_title": "Este endereço parece um que você conhece",
+            "look_alike_body": "Ele começa e termina como um endereço que você conhece, mas os caracteres do meio são diferentes. Golpistas criam endereços parecidos para enganar você. Compare os endereços completos abaixo.",
+            "look_alike_recipient_label": "Você está enviando para",
+            "look_alike_known_label_own_account": "Sua conta {{name}}",
+            "look_alike_known_label_watched_account": "A conta {{name}} da sua carteira",
+            "look_alike_known_label_contact": "Seu contato {{name}}",
+            "look_alike_known_label_history": "Um endereço do seu histórico",
+            "look_alike_acknowledge": "Verifiquei o endereço completo e quero enviar para ele",
+            "first_send_title": "Primeiro envio para este endereço",
+            "first_send_body": "Você nunca enviou para este endereço nesta rede. Confirme que é o endereço certo."
+        },
         "input_view": {
             "title": "Enviar {{asset}}"
         },

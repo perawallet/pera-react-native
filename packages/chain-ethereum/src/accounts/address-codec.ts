@@ -49,16 +49,24 @@ export const evmAddressFromPublicKey: AddressCodec['fromPublicKey'] = (
 export const areEvmAddressesEqual = (a: string, b: string): boolean =>
     a.toLowerCase() === b.toLowerCase()
 
+const truncateEvmAddress = (address: string): string =>
+    address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
+        ? address
+        : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`
+
+// Checksum case is noise to a reader, so the short forms compare case-blind.
+const doEvmAddressesResemble = (a: string, b: string): boolean =>
+    !areEvmAddressesEqual(a, b) &&
+    truncateEvmAddress(a).toLowerCase() === truncateEvmAddress(b).toLowerCase()
+
 export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
     chainId: chain.row.id,
     fromPublicKey: evmAddressFromPublicKey,
     isValid: address => isAddress(address),
     normalize: normalizeEvmAddress,
     areEqual: areEvmAddressesEqual,
-    truncate: address =>
-        address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
-            ? address
-            : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`,
+    truncate: truncateEvmAddress,
+    resembles: doEvmAddressesResemble,
     toPaymentUri: (address, opts) => toEip681Uri(chain, address, opts),
     // A link for another EVM chain is that chain's codec's to read.
     parsePaymentUri: uri => {

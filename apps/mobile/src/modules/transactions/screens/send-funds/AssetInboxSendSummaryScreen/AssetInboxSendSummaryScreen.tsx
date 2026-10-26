@@ -20,6 +20,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { AssetTitle } from '@modules/assets'
 import { LoadingView } from '@components/LoadingView'
+import { RecipientSafetyNotice } from '../RecipientSafetyNotice'
 
 export const AssetInboxSendSummaryScreen = () => {
     const styles = useStyles()
@@ -33,6 +34,8 @@ export const AssetInboxSendSummaryScreen = () => {
         amount,
         assetId,
         recipientAddress,
+        scope,
+        recipientSafety,
         fee,
         nativeAsset,
         asset,
@@ -70,11 +73,23 @@ export const AssetInboxSendSummaryScreen = () => {
         <PWScreen
             footer={
                 <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>
+                    <RecipientSafetyNotice
+                        assessment={recipientSafety.assessment}
+                        isChecking={recipientSafety.isPending}
+                        recipient={recipientAddress}
+                        scope={scope}
+                        isAcknowledged={recipientSafety.isAcknowledged}
+                        onToggleAcknowledged={
+                            recipientSafety.toggleAcknowledged
+                        }
+                    />
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}
                         isLoading={isProcessing}
-                        isDisabled={!summary}
+                        isDisabled={
+                            !summary || recipientSafety.isConfirmBlocked
+                        }
                         testID='asset_inbox_send_confirm_slide'
                     />
                     <PWButton
@@ -136,7 +151,12 @@ export const AssetInboxSendSummaryScreen = () => {
                                 'send_funds.asset_inbox_summary.recipient_label',
                             )}
                         </PWText>
-                        <AddressDisplay address={recipientAddress} />
+                        <AddressDisplay
+                            address={recipientAddress}
+                            addressFormat='full'
+                            scope={scope}
+                            showSecondaryAddress
+                        />
                     </PWView>
 
                     <PWView style={styles.divider} />

@@ -2726,6 +2726,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Alıcı kontrol ediliyor…",
+            "look_alike_title": "Bu adres tanıdığın bir adrese benziyor",
+            "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
+            "look_alike_recipient_label": "Gönderdiğin adres",
+            "look_alike_known_label_own_account": "Hesabın: {{name}}",
+            "look_alike_known_label_watched_account": "Cüzdanındaki {{name}} hesabı",
+            "look_alike_known_label_contact": "Kişin: {{name}}",
+            "look_alike_known_label_history": "Geçmişindeki bir adres",
+            "look_alike_acknowledge": "Tam adresi kontrol ettim ve bu adrese göndermek istiyorum",
+            "first_send_title": "Bu adrese ilk gönderim",
+            "first_send_body": "Bu ağda bu adrese daha önce hiç göndermedin. Doğru adres olduğundan emin ol."
+        },
         "input_view": {
             "title": "{{asset}} gönder"
         },
