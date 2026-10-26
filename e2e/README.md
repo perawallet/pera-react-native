@@ -73,3 +73,14 @@ tracer's post-reset snapshot instead of a fixed delay.
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
 `e2e/tools/parity.py` fails unless every scenario passed on both platforms.
+
+## Stress runs
+
+`tests/stress_setup.robot` and `tests/stress.robot` exercise the release app at a data tier from
+`stress-tiers.json` and write `stress-metrics.json` next to Robot's output; `e2e/tools/stress_report.py`
+turns those into a results table. Both suites carry `slow`, so the default run skips them.
+The Python behind them (the crash classifier, the parsers, the metrics library and the report) has
+tests in `e2e/tools`. Run them with `pnpm test:e2e-tools` after `pip install -r e2e/requirements.txt pytest`;
+they are not part of `pnpm test`, which does not install Python packages. The
+procedure, the seeding script and what the numbers can and cannot say are in
+[docs/STRESS_TESTING.md](../docs/STRESS_TESTING.md).
