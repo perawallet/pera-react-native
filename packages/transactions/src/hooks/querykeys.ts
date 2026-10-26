@@ -98,6 +98,9 @@ export const transactionQueryKeys = {
             { accountAddress, scope },
         ] as const,
 
+    addressPoisoning: (recipient: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'address-poisoning', { recipient, scope }] as const,
+
     /** `amount` is in base units, carried as plain text like `fee` above. */
     recipientWarning: (
         recipient: string,

@@ -2786,6 +2786,16 @@
             "invalid_address_title": "Ungültige Adresse",
             "invalid_address_body": "Das ist keine gültige {{chain}}-Adresse."
         },
+        "address_poisoning": {
+            "title": "Prüfe diese Adresse",
+            "lookalike_body": "Diese Adresse sieht aus wie eine, die du kennst, ist aber nicht dieselbe. Betrüger erstellen Adressen, die mit denselben Zeichen beginnen oder enden, damit du versehentlich ihre kopierst. Vergleiche jedes Zeichen, bevor du fortfährst.",
+            "dust_body": "Diese Adresse hat dir nur winzige Beträge gesendet, und du hast ihr noch nie etwas gesendet. Betrüger machen das, damit ihre Adresse in deinem Verlauf erscheint und du sie versehentlich kopierst.",
+            "recipient_label": "Senden an",
+            "similar_to_label": "Ähnlich wie",
+            "acknowledge": "Ich habe die vollständige Adresse geprüft",
+            "confirm": "Weiter",
+            "cancel": "Abbrechen"
+        },
         "fee": {
             "slow": "Langsam",
             "normal": "Normal",

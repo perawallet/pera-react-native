@@ -2794,6 +2794,16 @@
             "invalid_address_title": "Adresse invalide",
             "invalid_address_body": "Il ne s’agit pas d’une adresse {{chain}} valide."
         },
+        "address_poisoning": {
+            "title": "Vérifiez cette adresse",
+            "lookalike_body": "Cette adresse ressemble à une adresse que vous connaissez, mais ce n’est pas la même. Les escrocs créent des adresses qui commencent ou se terminent par les mêmes caractères pour vous inciter à copier la leur. Comparez chaque caractère avant de continuer.",
+            "dust_body": "Cette adresse ne vous a envoyé que de très petits montants, et vous ne lui avez jamais rien envoyé. Les escrocs procèdent ainsi pour que leur adresse apparaisse dans votre historique, en espérant que vous la copiiez par erreur.",
+            "recipient_label": "Envoi à",
+            "similar_to_label": "Similaire à",
+            "acknowledge": "J’ai vérifié l’adresse complète",
+            "confirm": "Continuer",
+            "cancel": "Annuler"
+        },
         "fee": {
             "slow": "Lente",
             "normal": "Normale",

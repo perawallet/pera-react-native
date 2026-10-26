@@ -49,7 +49,14 @@ export {
     type SpendableBalanceInput,
     type InFlightSpend,
     type RecipientWarningInput,
+    type AddressPoisoningRules,
 } from './transfer-adapter'
+export {
+    diffAddressCharacters,
+    type AddressPoisoningInput,
+    type AddressPoisoningRisk,
+    type AddressSegment,
+} from './address-poisoning'
 export { getInFlightSpends } from './in-flight'
 export {
     historyChainAdapters,

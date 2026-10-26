@@ -2794,6 +2794,16 @@
             "invalid_address_title": "Invalid address",
             "invalid_address_body": "This isn't a valid {{chain}} address."
         },
+        "address_poisoning": {
+            "title": "Check this address",
+            "lookalike_body": "This address looks like one you know, but it isn't the same. Scammers create addresses that start or end with the same characters to trick you into copying theirs. Compare every character before you continue.",
+            "dust_body": "This address has only sent you tiny amounts, and you've never sent anything to it. Scammers do this so their address shows up in your history, hoping you'll copy it by mistake.",
+            "recipient_label": "Sending to",
+            "similar_to_label": "Similar to",
+            "acknowledge": "I've checked the full address",
+            "confirm": "Continue",
+            "cancel": "Cancel"
+        },
         "fee": {
             "slow": "Slow",
             "normal": "Normal",

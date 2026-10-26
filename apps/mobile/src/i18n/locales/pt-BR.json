@@ -2810,6 +2810,16 @@
             "invalid_address_title": "Endereço inválido",
             "invalid_address_body": "Este não é um endereço válido de {{chain}}."
         },
+        "address_poisoning": {
+            "title": "Confira este endereço",
+            "lookalike_body": "Este endereço parece com um que você conhece, mas não é o mesmo. Golpistas criam endereços que começam ou terminam com os mesmos caracteres para que você copie o deles por engano. Compare cada caractere antes de continuar.",
+            "dust_body": "Este endereço só enviou valores muito pequenos para você, e você nunca enviou nada para ele. Golpistas fazem isso para que o endereço deles apareça no seu histórico e você o copie por engano.",
+            "recipient_label": "Enviando para",
+            "similar_to_label": "Parecido com",
+            "acknowledge": "Conferi o endereço completo",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        },
         "fee": {
             "slow": "Lenta",
             "normal": "Normal",

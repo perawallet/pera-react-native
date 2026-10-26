@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import { getActiveLocale, setActiveLocale } from '../locale'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import {
+    getActiveLocale,
+    setActiveLocale,
+    subscribeActiveLocale,
+} from '../locale'
 
 describe('utils/locale', () => {
     afterEach(() => {
@@ -28,5 +32,25 @@ describe('utils/locale', () => {
 
         setActiveLocale('pt-BR')
         expect(getActiveLocale()).toBe('pt-BR')
+    })
+
+    it('notifies subscribers on a change but not when the same locale is set again', () => {
+        const listener = vi.fn()
+        const unsubscribe = subscribeActiveLocale(listener)
+
+        setActiveLocale('de')
+        setActiveLocale('de')
+
+        expect(listener).toHaveBeenCalledTimes(1)
+        unsubscribe()
+    })
+
+    it('stops notifying after unsubscribe', () => {
+        const listener = vi.fn()
+        subscribeActiveLocale(listener)()
+
+        setActiveLocale('tr')
+
+        expect(listener).not.toHaveBeenCalled()
     })
 })

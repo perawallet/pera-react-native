@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     setSendMode: vi.fn(),
     setDestination: vi.fn(),
     isValidAddress: vi.fn<(address: string) => boolean>(),
+    screenRecipient: vi.fn<(address: string) => Promise<boolean>>(),
 }))
 
 const RECEIVER = 'R'.repeat(58)
@@ -70,6 +71,13 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mocks.navigate }),
 }))
 
+vi.mock('../useRecipientPoisoningGate', () => ({
+    useRecipientPoisoningGate: () => ({
+        screenRecipient: mocks.screenRecipient,
+        isScreeningRecipient: false,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mocks.showToast }),
 }))
@@ -79,6 +87,7 @@ describe('useSendDestinationRouter', () => {
         vi.clearAllMocks()
         useRemoteConfigStore.getState().resetState()
         mocks.isValidAddress.mockReturnValue(true)
+        mocks.screenRecipient.mockResolvedValue(true)
         addressCodecs.register({
             ...fixtureCodec,
             chainId: 'algorand',
@@ -96,11 +105,11 @@ describe('useSendDestinationRouter', () => {
         sendFlowChainAdapters.reset()
     })
 
-    it("refuses a receiver the send chain's codec rejects and clears it", () => {
+    it("refuses a receiver the send chain's codec rejects and clears it", async () => {
         mocks.isValidAddress.mockReturnValue(false)
         const { result } = renderHook(() => useSendDestinationRouter())
 
-        act(() => result.current.resolveDestination('0xabc'))
+        await act(() => result.current.resolveDestination('0xabc'))
 
         expect(mocks.setDestination).toHaveBeenCalledWith(undefined)
         expect(mocks.navigate).not.toHaveBeenCalled()
@@ -112,11 +121,11 @@ describe('useSendDestinationRouter', () => {
         )
     })
 
-    it('sends any asset as a plain transfer on a chain without opt-in routing', () => {
+    it('sends any asset as a plain transfer on a chain without opt-in routing', async () => {
         sendFlowChainAdapters.reset()
         const { result } = renderHook(() => useSendDestinationRouter())
 
-        act(() => result.current.resolveDestination(RECEIVER))
+        await act(() => result.current.resolveDestination(RECEIVER))
 
         expect(mocks.setSendMode).toHaveBeenCalledWith('normal')
         expect(mocks.navigate).toHaveBeenCalledWith('ConfirmTransaction')
@@ -124,24 +133,80 @@ describe('useSendDestinationRouter', () => {
 
     // A local receiver that holds no opt-in and can't be signed for has only
     // the ARC-59 inbox as a way to receive the asset.
-    it('routes an un-opted-in local receiver through the asset inbox', () => {
+    it('routes an un-opted-in local receiver through the asset inbox', async () => {
         const { result } = renderHook(() => useSendDestinationRouter())
 
-        act(() => result.current.resolveDestination(RECEIVER))
+        await act(() => result.current.resolveDestination(RECEIVER))
 
         expect(mocks.navigate).toHaveBeenCalledWith('AssetInboxSendSummary')
         expect(mocks.showToast).not.toHaveBeenCalled()
     })
 
-    it('refuses the inbox route with a notice while the assetInbox capability is off', () => {
+    it('refuses the inbox route with a notice while the assetInbox capability is off', async () => {
         setCapabilityOverrides({ assetInbox: false })
         const { result } = renderHook(() => useSendDestinationRouter())
 
-        act(() => result.current.resolveDestination(RECEIVER))
+        await act(() => result.current.resolveDestination(RECEIVER))
 
         expect(mocks.navigate).not.toHaveBeenCalled()
         expect(mocks.showToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
         )
+    })
+
+    it('screens the receiver before routing it', async () => {
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        await act(() => result.current.resolveDestination(RECEIVER))
+
+        expect(mocks.screenRecipient).toHaveBeenCalledWith(RECEIVER)
+        expect(mocks.setDestination).toHaveBeenCalledWith(RECEIVER)
+        expect(mocks.screenRecipient.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.navigate.mock.invocationCallOrder[0] ?? 0,
+        )
+    })
+
+    it('ignores a second receiver while the first is still being screened', async () => {
+        let approve: (isApproved: boolean) => void = () => {}
+        mocks.screenRecipient.mockReturnValue(
+            new Promise(resolve => {
+                approve = resolve
+            }),
+        )
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        let first: Promise<void> = Promise.resolve()
+        await act(async () => {
+            first = result.current.resolveDestination(RECEIVER)
+            await result.current.resolveDestination(RECEIVER)
+        })
+        await act(async () => {
+            approve(true)
+            await first
+        })
+
+        expect(mocks.screenRecipient).toHaveBeenCalledTimes(1)
+        expect(mocks.navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the receiver and stays put when the user backs out of the warning', async () => {
+        mocks.screenRecipient.mockResolvedValue(false)
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        await act(() => result.current.resolveDestination(RECEIVER))
+
+        expect(mocks.setDestination).toHaveBeenCalledWith(undefined)
+        expect(mocks.setDestination).not.toHaveBeenCalledWith(RECEIVER)
+        expect(mocks.navigate).not.toHaveBeenCalled()
+        expect(mocks.setSendMode).not.toHaveBeenCalled()
+    })
+
+    it('never screens an address the codec rejects', async () => {
+        mocks.isValidAddress.mockReturnValue(false)
+        const { result } = renderHook(() => useSendDestinationRouter())
+
+        await act(() => result.current.resolveDestination('0xabc'))
+
+        expect(mocks.screenRecipient).not.toHaveBeenCalled()
     })
 })

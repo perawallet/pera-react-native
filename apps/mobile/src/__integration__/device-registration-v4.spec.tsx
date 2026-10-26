@@ -59,6 +59,7 @@ import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
+import { i18n } from '@i18n/index'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
@@ -150,8 +151,9 @@ describe('Device registration', () => {
     // Unmount first: resetting the accounts store under a mounted registrar
     // fires one more registration, with no accounts, that lands in the next
     // test's handler and can be the body it asserts on.
-    afterEach(() => {
+    afterEach(async () => {
         cleanup()
+        await i18n.changeLanguage('en')
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
@@ -418,6 +420,33 @@ describe('Device registration', () => {
                     receive_notifications: false,
                 }),
             ]),
+        )
+    })
+
+    it("re-registers with the app's new language when the user switches it", async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v4/devices/', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([watchedAccount])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(bodies[bodies.length - 1].locale).toBe('en')
+
+        await act(async () => {
+            await i18n.changeLanguage('de')
+        })
+
+        await waitFor(
+            () => expect(bodies[bodies.length - 1].locale).toBe('de'),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
     })
 

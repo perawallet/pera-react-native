@@ -2794,6 +2794,16 @@
             "invalid_address_title": "Dirección no válida",
             "invalid_address_body": "Esta no es una dirección válida de {{chain}}."
         },
+        "address_poisoning": {
+            "title": "Revisa esta dirección",
+            "lookalike_body": "Esta dirección se parece a una que conoces, pero no es la misma. Los estafadores crean direcciones que empiezan o terminan con los mismos caracteres para que copies la suya por error. Compara cada carácter antes de continuar.",
+            "dust_body": "Esta dirección solo te ha enviado cantidades muy pequeñas y nunca le has enviado nada. Los estafadores hacen esto para que su dirección aparezca en tu historial y la copies por error.",
+            "recipient_label": "Enviar a",
+            "similar_to_label": "Similar a",
+            "acknowledge": "He revisado la dirección completa",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        },
         "fee": {
             "slow": "Lenta",
             "normal": "Normal",
