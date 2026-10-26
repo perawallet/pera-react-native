@@ -4394,5 +4394,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum ve EVM ağları"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Ücret, bu çağrının sırası geldiğinde tahmin edilir"
+        }
     }
 }

@@ -4394,5 +4394,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum & EVM-Netzwerke"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Gebühr wird geschätzt, wenn dieser Aufruf an der Reihe ist"
+        }
     }
 }

@@ -37,14 +37,26 @@ export type EthereumTransactionPayload = {
     from: Address
     /** Value and fees in wei, gas in gas units. */
     transaction: TransactionSerializableEIP1559
+    /**
+     * A batch transaction not yet reached: it carries no nonce, gas or fees
+     * and is reviewed only, never signed.
+     */
+    isPreview?: true
+    /**
+     * On a preview, in wei: the most per gas the call may be signed at once
+     * reached, since its fee can't be quoted on the review.
+     */
+    maxFeePerGasCeiling?: bigint
 }
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
-// `payload` is `unknown` and may come from a dApp, so this is the trust boundary
-// for both `plan` and `assemble`.
-export const readEvmTransaction = (
+/**
+ * Reads a payload for review, previews included. Anything that signs reads it
+ * through {@link readEvmTransaction} instead.
+ */
+export const readEvmReviewTransaction = (
     unsigned: UnsignedTransaction,
     chain: EvmChain,
 ): EthereumTransactionPayload => {
@@ -71,7 +83,29 @@ export const readEvmTransaction = (
             `The transaction is for EIP-155 chain ${transaction.chainId}, not ${scope.networkId}`,
         )
     }
-    return { from: getAddress(payload.from), transaction }
+    const ceiling = payload.maxFeePerGasCeiling
+    if (ceiling !== undefined && typeof ceiling !== 'bigint') {
+        throw new Error('The EVM transaction payload is malformed')
+    }
+    return {
+        from: getAddress(payload.from),
+        transaction,
+        ...(payload.isPreview === true && { isPreview: true }),
+        ...(ceiling !== undefined && { maxFeePerGasCeiling: ceiling }),
+    }
+}
+
+// `payload` is `unknown` and may come from a dApp, so this is the trust boundary
+// for both `plan` and `assemble`.
+export const readEvmTransaction = (
+    unsigned: UnsignedTransaction,
+    chain: EvmChain,
+): EthereumTransactionPayload => {
+    const payload = readEvmReviewTransaction(unsigned, chain)
+    if (payload.isPreview) {
+        throw new Error('A batch preview is never signed')
+    }
+    return payload
 }
 
 export const createEvmPlannerAdapter = (
