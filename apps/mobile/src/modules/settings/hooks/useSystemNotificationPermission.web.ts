@@ -29,12 +29,9 @@ const CHROME_NOTIFICATION_SETTINGS_URL =
     'chrome://settings/content/notifications'
 
 /**
- * Web twin. The native hook reads notifee, whose web shim is a hardcoded
- * `DENIED` stub — it was written while push was capability-gated off on web,
- * so consuming it here would render the system-notifications switch
- * permanently off even though declaring the `notifications` manifest
- * permission auto-grants `Notification.permission` on extension pages.
- * Report the browser's real state instead.
+ * Web twin. Declaring the `notifications` manifest permission auto-grants
+ * `Notification.permission` on extension pages, so report the browser's own
+ * state rather than the OS permission the native hook reads.
  */
 export const useSystemNotificationPermission =
     (): UseSystemNotificationPermissionResult => {

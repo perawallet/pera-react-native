@@ -199,9 +199,8 @@ append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 append_config "APP_STORE_APPLE_ID" "appStoreAppID" "string"
 append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNumber" "string"
 
-# Google OAuth client ids for the Drive credential store (public identifiers).
+# Google's iOS OAuth client id for the Drive credential store (a public identifier).
 append_config "GOOGLE_IOS_CLIENT_ID" "googleIosClientId" "string"
-append_config "GOOGLE_WEB_CLIENT_ID" "googleWebClientId" "string"
 
 # Firebase Web SDK config (browser extension Remote Config)
 append_config "FIREBASE_API_KEY" "firebaseApiKey" "string"

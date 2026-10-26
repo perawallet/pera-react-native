@@ -43,9 +43,8 @@ beforeEach(() => {
 })
 
 describe('useSystemNotificationPermission (web)', () => {
-    // The notifee web shim this replaces is a hardcoded DENIED stub, which
-    // would have rendered the switch off even though the manifest's
-    // `notifications` permission auto-grants it.
+    // The manifest's `notifications` permission auto-grants it on extension
+    // pages.
     it('reports enabled when the browser has granted notifications', async () => {
         setPermission('granted')
 

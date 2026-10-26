@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export * from './useActiveLocale'
 export * from './useDebouncedValue'
 export * from './useStableIdList'

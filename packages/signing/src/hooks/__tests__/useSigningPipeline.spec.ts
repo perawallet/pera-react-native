@@ -58,12 +58,17 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
+import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../__tests__/fakeReviewerAdapter'
+import { reviewerChainAdapters } from '../../chain-adapter'
 import {
     asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
+    SECOND_CHAIN_SCOPE,
 } from '../../__tests__/transactions'
 import {
     useSigningPipeline,
@@ -147,21 +152,131 @@ describe('useSigningPipeline', () => {
         const { result } = renderHook(() => useSigningPipeline())
         // `allTransactions` comes from mapToDisplayableTransaction which passes through
         expect(result.current.allTransactions).toHaveLength(1)
+        // A planned chain answers signability through its own checks.
+        expect(result.current.hasUnsignableTransaction).toBe(false)
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
-    test('shows nothing for a request on a chain with no planner, which its own body reviews', () => {
-        mockSigningRequest.currentRequest = {
+    describe('on a chain with no planner, which its own body reviews', () => {
+        const request = {
             id: 'req-neutral',
             type: 'transactions',
             transport: 'network',
             txs: [makeUnsignedTransaction('0xFROM')],
         } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        test("reviews each transaction through its chain's reviewer, and signs only those whose signer the wallet holds", () => {
+            const LIST_ITEMS = [{ type: 'transaction' }] as never
+            const createTransactionListItems = vi.fn(() => LIST_ITEMS)
+            reviewerChainAdapters.register({
+                ...fakeReviewerAdapter({
+                    toTransactionNative: tx =>
+                        mockMapToDisplayable(tx) as TransactionNative,
+                    resolveAllSignerAddresses: req =>
+                        'txs' in req
+                            ? req.txs.map(
+                                  tx => (tx.payload as { from: string }).from,
+                              )
+                            : [],
+                    createTransactionListItems,
+                    classifyRequestStructure: () => 'list',
+                }),
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+            })
+            mockAllAccounts.mockReturnValue([
+                {
+                    id: 'eth',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xHELD' } },
+                } as WalletAccount,
+            ])
+            const twoSigners = {
+                ...request,
+                txs: [
+                    makeUnsignedTransaction('0xHELD'),
+                    makeUnsignedTransaction('0xFOREIGN'),
+                ],
+            } satisfies TransactionSignRequest
+            mockSigningRequest.currentRequest = twoSigners
 
-        expect(result.current.allTransactions).toEqual([])
-        expect(mockMapToDisplayable).not.toHaveBeenCalled()
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.allTransactions).toEqual(twoSigners.txs)
+            expect([...result.current.signableIndices]).toEqual([0])
+            expect(createTransactionListItems).toHaveBeenCalledWith(
+                twoSigners.txs,
+                new Set([0]),
+            )
+            expect(result.current.listItems).toBe(LIST_ITEMS)
+            expect(result.current.requestStructure).toBe('list')
+            expect(result.current.totalFee.isZero()).toBe(true)
+            expect(result.current.hasUnsignableTransaction).toBe(true)
+        })
+
+        test('flags a transaction its chain cannot read, though every one it reads is signable', () => {
+            const unreadable = makeUnsignedTransaction('0xHELD')
+            reviewerChainAdapters.register({
+                ...fakeReviewerAdapter({
+                    toTransactionNative: tx =>
+                        tx === unreadable
+                            ? null
+                            : (tx as unknown as TransactionNative),
+                    resolveAllSignerAddresses: () => ['0xHELD'],
+                }),
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+            })
+            mockAllAccounts.mockReturnValue([
+                {
+                    id: 'eth',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xHELD' } },
+                } as WalletAccount,
+            ])
+            const readable = makeUnsignedTransaction('0xHELD')
+            mockSigningRequest.currentRequest = {
+                ...request,
+                txs: [readable, unreadable],
+            } satisfies TransactionSignRequest
+
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.allTransactions).toEqual([readable])
+            expect([...result.current.signableIndices]).toEqual([0])
+            expect(result.current.hasUnsignableTransaction).toBe(true)
+        })
+
+        test('flags nothing when the wallet holds every signer', () => {
+            reviewerChainAdapters.register({
+                ...fakeReviewerAdapter({
+                    resolveAllSignerAddresses: () => ['0xHELD'],
+                }),
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+            })
+            mockAllAccounts.mockReturnValue([
+                {
+                    id: 'eth',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xHELD' } },
+                } as WalletAccount,
+            ])
+            mockSigningRequest.currentRequest = {
+                ...request,
+                txs: [makeUnsignedTransaction('0xHELD')],
+            } satisfies TransactionSignRequest
+
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.hasUnsignableTransaction).toBe(false)
+        })
+
+        test('shows nothing when no reviewer reads its chain', () => {
+            mockSigningRequest.currentRequest = request
+
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.allTransactions).toEqual([])
+            expect(mockMapToDisplayable).not.toHaveBeenCalled()
+        })
     })
 
     describe('on an Algorand chain-neutral request', () => {

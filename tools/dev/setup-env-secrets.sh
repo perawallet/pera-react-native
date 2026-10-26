@@ -17,7 +17,7 @@ set -e
 #   FIREBASE_APP_ID_ANDROID,
 #   APP_STORE_APPLE_ID, PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER,
 #   TESTNET_BAANX_CLIENT_KEY, REOWN_PROJECT_ID,
-#   GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID, IOS_ICLOUD_CONTAINER_ID
+#   GOOGLE_IOS_CLIENT_ID, IOS_ICLOUD_CONTAINER_ID
 #
 # Web (browser extension) only — Firebase Web SDK / GA4 / Sentry, see
 # extensions/platform-chrome/src/services/{firebase-app,analytics,
@@ -71,7 +71,6 @@ SECRETS=(
   # Per-environment: staging and production sign in to different OAuth clients
   # and write to different iCloud containers.
   "GOOGLE_IOS_CLIENT_ID"
-  "GOOGLE_WEB_CLIENT_ID"
   "IOS_ICLOUD_CONTAINER_ID"
 )
 

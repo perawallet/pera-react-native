@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     CloudFileNotFoundError,
     GoogleDriveAuthFailedError,
@@ -19,45 +19,29 @@ import {
     type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
 import { isExpectedError } from '@perawallet/wallet-core-shared'
-import { Platform } from 'react-native'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { DRIVE_FILE_SCOPE } from '../google-drive-session'
 import { readFromGoogleDrive } from '../google-drive'
 
-const google = vi.hoisted(() => ({
-    configure: vi.fn(),
-    hasPreviousSignIn: vi.fn(),
-    signInSilently: vi.fn(),
-    signIn: vi.fn(),
-    addScopes: vi.fn(),
-    getTokens: vi.fn(),
-    clearCachedAccessToken: vi.fn(),
-    signOut: vi.fn(),
-    hasPlayServices: vi.fn(),
+const auth = vi.hoisted(() => ({
+    isGoogleDriveConfigured: vi.fn(),
+    authorizeGoogleDrive: vi.fn(),
+    releaseGoogleDriveToken: vi.fn(),
 }))
 
-const { readFile, readdir, stat, constructed, mockConfig } = vi.hoisted(() => ({
+vi.mock('../google-auth', () => ({
+    ...auth,
+    DRIVE_FILE_SCOPE: 'https://www.googleapis.com/auth/drive.file',
+    DRIVE_TIMEOUT_MS: 15_000,
+}))
+
+const { readFile, readdir, stat, constructed } = vi.hoisted(() => ({
     readFile: vi.fn(),
     readdir: vi.fn(),
     stat: vi.fn(),
     constructed: vi.fn(),
-    mockConfig: {
-        googleIosClientId: 'ios-client.apps.googleusercontent.com',
-        googleWebClientId: 'web-client.apps.googleusercontent.com',
-    },
-}))
-
-vi.mock('@react-native-google-signin/google-signin', () => ({
-    GoogleSignin: google,
-    isSuccessResponse: (response: { type: string }) =>
-        response.type === 'success',
-    isCancelledResponse: (response: { type: string }) =>
-        response.type === 'cancelled',
-    isNoSavedCredentialFoundResponse: (response: { type: string }) =>
-        response.type === 'noSavedCredentialFound',
 }))
 
 vi.mock('react-native-cloud-storage', () => {
@@ -91,8 +75,6 @@ vi.mock('react-native-cloud-storage', () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
-
 const ONE = 'pera-backup-VQBGR.json'
 const OTHER = 'pera-backup-ZZZZZ.json'
 const CONTENTS = '{"t":"backup-credentials"}'
@@ -104,11 +86,6 @@ const options = (
     isCandidate,
     chooseFile: async () => null,
     ...extra,
-})
-
-const signedIn = (scopes: string[]) => ({
-    type: 'success',
-    data: { user: { id: 'user-1', email: 'user@example.com' }, scopes },
 })
 
 // What the library's file-id lookup hands back: anything that isn't already a
@@ -132,23 +109,14 @@ const driveOptions = (accessToken: string) => ({
     timeout: 15_000,
 })
 
-const originalOS = Platform.OS
-
 beforeEach(() => {
     vi.clearAllMocks()
-    google.hasPreviousSignIn.mockReturnValue(false)
-    google.signIn.mockResolvedValue(signedIn([DRIVE_FILE_SCOPE]))
-    google.getTokens.mockResolvedValue({ idToken: '', accessToken: 'token-1' })
-    google.clearCachedAccessToken.mockResolvedValue(null)
-    google.signOut.mockResolvedValue(null)
-    google.hasPlayServices.mockResolvedValue(true)
+    auth.isGoogleDriveConfigured.mockReturnValue(true)
+    auth.authorizeGoogleDrive.mockResolvedValue('token-1')
+    auth.releaseGoogleDriveToken.mockResolvedValue(undefined)
     readdir.mockResolvedValue([ONE])
     readFile.mockResolvedValue(CONTENTS)
     stat.mockResolvedValue({ size: CONTENTS.length })
-})
-
-afterEach(() => {
-    Platform.OS = originalOS
 })
 
 describe('readFromGoogleDrive resolving which file to read', () => {
@@ -196,13 +164,13 @@ describe('readFromGoogleDrive resolving which file to read', () => {
         expect(readFile).not.toHaveBeenCalled()
     })
 
-    test('reports an account holding nothing of ours as not found, and signs out so another can be picked', async () => {
+    test('reports an account holding nothing of ours as not found, and releases the token', async () => {
         readdir.mockResolvedValueOnce(['other-app.json'])
 
         await expect(readFromGoogleDrive(options())).rejects.toBeInstanceOf(
             CloudFileNotFoundError,
         )
-        expect(google.signOut).toHaveBeenCalledTimes(1)
+        expect(auth.releaseGoogleDriveToken).toHaveBeenCalledTimes(1)
     })
 
     // A fresh restore, on an account that has never saved a key, has no
@@ -233,9 +201,9 @@ describe('readFromGoogleDrive resolving which file to read', () => {
         await expect(readFromGoogleDrive(options())).rejects.toBe(failure)
     })
 
-    test('still reports not found when the sign-out itself fails', async () => {
+    test('still reports not found when the release itself fails', async () => {
         readdir.mockResolvedValueOnce([])
-        google.signOut.mockRejectedValueOnce(new Error('offline'))
+        auth.releaseGoogleDriveToken.mockRejectedValueOnce(new Error('offline'))
 
         await expect(readFromGoogleDrive(options())).rejects.toBeInstanceOf(
             CloudFileNotFoundError,
@@ -255,26 +223,23 @@ describe('readFromGoogleDrive resolving which file to read', () => {
             CloudFileNotFoundError,
         )
         expect(readFile).toHaveBeenCalledTimes(1)
-        expect(google.signOut).toHaveBeenCalledTimes(1)
+        expect(auth.releaseGoogleDriveToken).toHaveBeenCalledTimes(1)
     })
 })
 
 describe('readFromGoogleDrive using one session', () => {
-    test('lists and reads inside a single sign-in, on one Drive client', async () => {
+    test('lists and reads inside a single authorization, on one Drive client', async () => {
         readdir.mockResolvedValueOnce([ONE, OTHER])
 
         await readFromGoogleDrive(
             options({ chooseFile: vi.fn().mockResolvedValue(ONE) }),
         )
 
-        expect(google.configure).toHaveBeenCalledTimes(1)
-        expect(google.hasPlayServices).toHaveBeenCalledTimes(1)
-        expect(google.signIn).toHaveBeenCalledTimes(1)
-        expect(google.getTokens).toHaveBeenCalledTimes(1)
+        expect(auth.authorizeGoogleDrive).toHaveBeenCalledTimes(1)
         expect(constructed).toHaveBeenCalledTimes(1)
     })
 
-    test('signals the read once, after the picker rather than after sign-in', async () => {
+    test('signals the read once, after the picker rather than after authorization', async () => {
         readdir.mockResolvedValueOnce([ONE, OTHER])
         const onReading = vi.fn()
         const chooseFile = vi.fn().mockResolvedValue(ONE)
@@ -290,8 +255,8 @@ describe('readFromGoogleDrive using one session', () => {
         )
     })
 
-    test('does not signal a read when the user cancels sign-in', async () => {
-        google.signIn.mockResolvedValueOnce({ type: 'cancelled', data: null })
+    test('does not signal a read when the user cancels authorization', async () => {
+        auth.authorizeGoogleDrive.mockResolvedValueOnce(null)
         const onReading = vi.fn()
 
         await expect(
@@ -316,9 +281,9 @@ describe('readFromGoogleDrive using one session', () => {
         readdir.mockResolvedValueOnce([ONE, OTHER])
         const chooseFile = vi.fn().mockResolvedValue(OTHER)
         const onReading = vi.fn()
-        google.getTokens
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-1' })
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-2' })
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
         readFile
             .mockRejectedValueOnce(
                 Object.assign(new Error('Unauthorized'), { status: 401 }),
@@ -340,9 +305,9 @@ describe('readFromGoogleDrive using one session', () => {
     })
 
     test('retries the listing with a fresh token when the token is rejected before a pick', async () => {
-        google.getTokens
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-1' })
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-2' })
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
         readdir
             .mockRejectedValueOnce(
                 wrappedByFileIdLookup(unauthorizedHttpError()),
@@ -356,8 +321,10 @@ describe('readFromGoogleDrive using one session', () => {
         expect(readdir).toHaveBeenCalledTimes(2)
     })
 
-    test('signs out on iOS when a wrapped 401 survives the fresh token', async () => {
-        Platform.OS = 'ios'
+    test('releases the fresh token when a wrapped 401 survives it', async () => {
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
         readFile.mockRejectedValue(
             wrappedByFileIdLookup(unauthorizedHttpError()),
         )
@@ -365,23 +332,23 @@ describe('readFromGoogleDrive using one session', () => {
         const error = await readFromGoogleDrive(options()).catch(e => e)
 
         expect(error).toBeInstanceOf(GoogleDriveAuthFailedError)
-        expect(google.signOut).toHaveBeenCalledTimes(1)
+        expect(auth.releaseGoogleDriveToken).toHaveBeenLastCalledWith('token-2')
         expect(readFile).toHaveBeenCalledTimes(2)
     })
 })
 
-describe('readFromGoogleDrive releasing the Drive grant', () => {
-    test('signs out once the read is done', async () => {
+describe('readFromGoogleDrive releasing the token', () => {
+    test('releases it once the read is done', async () => {
         await readFromGoogleDrive(options())
 
-        expect(google.signOut).toHaveBeenCalledTimes(1)
-        expect(google.signOut.mock.invocationCallOrder[0]!).toBeGreaterThan(
-            readFile.mock.invocationCallOrder[0]!,
-        )
+        expect(auth.releaseGoogleDriveToken).toHaveBeenCalledTimes(1)
+        expect(
+            auth.releaseGoogleDriveToken.mock.invocationCallOrder[0]!,
+        ).toBeGreaterThan(readFile.mock.invocationCallOrder[0]!)
     })
 
-    test('returns the contents even when the sign-out fails', async () => {
-        google.signOut.mockRejectedValueOnce(new Error('offline'))
+    test('returns the contents even when the release fails', async () => {
+        auth.releaseGoogleDriveToken.mockRejectedValueOnce(new Error('offline'))
 
         await expect(readFromGoogleDrive(options())).resolves.toEqual({
             status: 'read',
@@ -389,21 +356,21 @@ describe('readFromGoogleDrive releasing the Drive grant', () => {
         })
     })
 
-    test('stays signed in when the user backs out of the picker', async () => {
+    test('keeps it when the user backs out of the picker', async () => {
         readdir.mockResolvedValueOnce([ONE, OTHER])
 
         await readFromGoogleDrive(
             options({ chooseFile: vi.fn().mockResolvedValue(null) }),
         )
 
-        expect(google.signOut).not.toHaveBeenCalled()
+        expect(auth.releaseGoogleDriveToken).not.toHaveBeenCalled()
     })
 
-    test('stays signed in after an unrecognised failure', async () => {
+    test('keeps it after an unrecognised failure', async () => {
         readFile.mockRejectedValueOnce(new Error('kaboom'))
 
         await expect(readFromGoogleDrive(options())).rejects.toThrow('kaboom')
-        expect(google.signOut).not.toHaveBeenCalled()
+        expect(auth.releaseGoogleDriveToken).not.toHaveBeenCalled()
     })
 })
 
@@ -411,7 +378,7 @@ describe('readFromGoogleDrive releasing the Drive grant', () => {
 // Crashlytics non-fatal, because isExpectedError only spares an AppError.
 describe('readFromGoogleDrive failures the user can act on', () => {
     test('names a device without current Play Services', async () => {
-        google.hasPlayServices.mockRejectedValueOnce(
+        auth.authorizeGoogleDrive.mockRejectedValueOnce(
             Object.assign(new Error('Play services not available'), {
                 code: 'PLAY_SERVICES_NOT_AVAILABLE',
             }),
@@ -466,7 +433,7 @@ describe('readFromGoogleDrive failures the user can act on', () => {
         expect(isExpectedError(error)).toBe(true)
     })
 
-    // Mapped only once runWithFreshToken has already spent the one retry.
+    // Mapped only once the one retry with a fresh token is spent.
     test('names a rejection that survives the token refresh', async () => {
         readFile.mockRejectedValue(
             Object.assign(new Error('Unauthorized'), { status: 401 }),

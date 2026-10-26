@@ -10,49 +10,34 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     GoogleDriveAuthFailedError,
     GoogleDriveNotConfiguredError,
+    GooglePlayServicesUnavailableError,
 } from '@perawallet/wallet-extension-platform'
-import { Platform } from 'react-native'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { DRIVE_FILE_SCOPE } from '../google-drive-session'
-import { isGoogleDriveConfigured, saveToGoogleDrive } from '../google-drive'
+import { saveToGoogleDrive } from '../google-drive'
 
-const google = vi.hoisted(() => ({
-    configure: vi.fn(),
-    hasPreviousSignIn: vi.fn(),
-    signInSilently: vi.fn(),
-    signIn: vi.fn(),
-    addScopes: vi.fn(),
-    getTokens: vi.fn(),
-    clearCachedAccessToken: vi.fn(),
-    signOut: vi.fn(),
-    hasPlayServices: vi.fn(),
+const auth = vi.hoisted(() => ({
+    isGoogleDriveConfigured: vi.fn(),
+    authorizeGoogleDrive: vi.fn(),
+    releaseGoogleDriveToken: vi.fn(),
 }))
 
-const { writeFile, mkdir, constructed, mockConfig } = vi.hoisted(() => ({
+vi.mock('../google-auth', () => ({
+    ...auth,
+    DRIVE_FILE_SCOPE: 'https://www.googleapis.com/auth/drive.file',
+    DRIVE_TIMEOUT_MS: 15_000,
+}))
+
+const { writeFile, mkdir, constructed } = vi.hoisted(() => ({
     writeFile: vi.fn(),
     mkdir: vi.fn(),
     constructed: vi.fn(),
-    mockConfig: {
-        googleIosClientId: 'ios-client.apps.googleusercontent.com',
-        googleWebClientId: 'web-client.apps.googleusercontent.com',
-    },
-}))
-
-vi.mock('@react-native-google-signin/google-signin', () => ({
-    GoogleSignin: google,
-    isSuccessResponse: (response: { type: string }) =>
-        response.type === 'success',
-    isCancelledResponse: (response: { type: string }) =>
-        response.type === 'cancelled',
-    isNoSavedCredentialFoundResponse: (response: { type: string }) =>
-        response.type === 'noSavedCredentialFound',
 }))
 
 vi.mock('react-native-cloud-storage', () => {
@@ -82,18 +67,8 @@ vi.mock('react-native-cloud-storage', () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
-
 const FILE_NAME = 'pera-backup-encryption-key.json'
 const CONTENTS = '{}'
-const originalOS = Platform.OS
-const originalIosClientId = mockConfig.googleIosClientId
-const originalWebClientId = mockConfig.googleWebClientId
-
-const signedIn = (scopes: string[]) => ({
-    type: 'success',
-    data: { user: { id: 'user-1', email: 'user@example.com' }, scopes },
-})
 
 const driveOptions = (accessToken: string) => ({
     accessToken,
@@ -102,73 +77,36 @@ const driveOptions = (accessToken: string) => ({
     timeout: 15_000,
 })
 
+const unauthorized = () =>
+    new CloudStorageError(
+        'unauthorized',
+        CloudStorageErrorCode.AUTHENTICATION_FAILED,
+    )
+
 beforeEach(() => {
     vi.clearAllMocks()
-    Platform.OS = 'ios'
-    google.hasPreviousSignIn.mockReturnValue(false)
-    google.signIn.mockResolvedValue(signedIn([DRIVE_FILE_SCOPE]))
-    google.getTokens.mockResolvedValue({ idToken: '', accessToken: 'token-1' })
-    google.clearCachedAccessToken.mockResolvedValue(null)
-    google.signOut.mockResolvedValue(null)
-    google.hasPlayServices.mockResolvedValue(true)
+    auth.isGoogleDriveConfigured.mockReturnValue(true)
+    auth.authorizeGoogleDrive.mockResolvedValue('token-1')
+    auth.releaseGoogleDriveToken.mockResolvedValue(undefined)
     writeFile.mockResolvedValue(undefined)
     mkdir.mockResolvedValue(undefined)
 })
 
-afterEach(() => {
-    Platform.OS = originalOS
-    mockConfig.googleIosClientId = originalIosClientId
-    mockConfig.googleWebClientId = originalWebClientId
-})
-
-describe('isGoogleDriveConfigured', () => {
-    test('needs only the client id of the platform it runs on', () => {
-        mockConfig.googleWebClientId = ''
-
-        expect(isGoogleDriveConfigured()).toBe(true)
-
-        Platform.OS = 'android'
-
-        expect(isGoogleDriveConfigured()).toBe(false)
-    })
-
-    test('is false on iOS without an iOS client id', () => {
-        mockConfig.googleIosClientId = ''
-
-        expect(isGoogleDriveConfigured()).toBe(false)
-    })
-})
-
 describe('saveToGoogleDrive', () => {
-    test('throws when this platform has no OAuth client configured', async () => {
-        mockConfig.googleIosClientId = ''
+    test('throws when Google auth is not configured, without authorizing', async () => {
+        auth.isGoogleDriveConfigured.mockReturnValue(false)
 
         await expect(
             saveToGoogleDrive(FILE_NAME, CONTENTS),
         ).rejects.toBeInstanceOf(GoogleDriveNotConfiguredError)
-        expect(google.signIn).not.toHaveBeenCalled()
+        expect(auth.authorizeGoogleDrive).not.toHaveBeenCalled()
     })
 
-    test('throws on Android when no web client id is configured', async () => {
-        Platform.OS = 'android'
-        mockConfig.googleWebClientId = ''
-
-        await expect(
-            saveToGoogleDrive(FILE_NAME, CONTENTS),
-        ).rejects.toBeInstanceOf(GoogleDriveNotConfiguredError)
-        expect(google.signIn).not.toHaveBeenCalled()
-    })
-
-    test('signs in, then writes the file into the Pera Wallet folder with the access token', async () => {
+    test('authorizes, then writes the file into the Pera Wallet folder with the access token', async () => {
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'saved',
         )
 
-        expect(google.configure).toHaveBeenCalledWith({
-            scopes: [DRIVE_FILE_SCOPE],
-            iosClientId: mockConfig.googleIosClientId,
-            webClientId: mockConfig.googleWebClientId,
-        })
         expect(constructed).toHaveBeenCalledWith(
             'googledrive',
             driveOptions('token-1'),
@@ -179,63 +117,20 @@ describe('saveToGoogleDrive', () => {
         )
     })
 
-    test('checks Play Services before signing in', async () => {
-        await saveToGoogleDrive(FILE_NAME, CONTENTS)
-
-        expect(google.hasPlayServices).toHaveBeenCalledWith({
-            showPlayServicesUpdateDialog: true,
-        })
-        expect(google.hasPlayServices.mock.invocationCallOrder[0]).toBeLessThan(
-            google.signIn.mock.invocationCallOrder[0]!,
-        )
-    })
-
-    test('rethrows when Play Services are unavailable, before any sign-in', async () => {
-        google.hasPlayServices.mockRejectedValueOnce(
-            new Error('PLAY_SERVICES_NOT_AVAILABLE'),
+    test('names missing Play Services', async () => {
+        auth.authorizeGoogleDrive.mockRejectedValueOnce(
+            Object.assign(new Error('unavailable'), {
+                code: 'PLAY_SERVICES_NOT_AVAILABLE',
+            }),
         )
 
-        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
-            'PLAY_SERVICES_NOT_AVAILABLE',
-        )
-        expect(google.signIn).not.toHaveBeenCalled()
+        await expect(
+            saveToGoogleDrive(FILE_NAME, CONTENTS),
+        ).rejects.toBeInstanceOf(GooglePlayServicesUnavailableError)
     })
 
-    test('reuses a previous sign-in without prompting', async () => {
-        google.hasPreviousSignIn.mockReturnValue(true)
-        google.signInSilently.mockResolvedValueOnce(
-            signedIn([DRIVE_FILE_SCOPE]),
-        )
-
-        await saveToGoogleDrive(FILE_NAME, CONTENTS)
-
-        expect(google.signIn).not.toHaveBeenCalled()
-    })
-
-    test('prompts when the previous sign-in has no saved credential', async () => {
-        google.hasPreviousSignIn.mockReturnValue(true)
-        google.signInSilently.mockResolvedValueOnce({
-            type: 'noSavedCredentialFound',
-            data: null,
-        })
-
-        await saveToGoogleDrive(FILE_NAME, CONTENTS)
-
-        expect(google.signIn).toHaveBeenCalled()
-    })
-
-    test('prompts when restoring a previous sign-in fails', async () => {
-        google.hasPreviousSignIn.mockReturnValue(true)
-        google.signInSilently.mockRejectedValueOnce(new Error('revoked'))
-
-        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
-            'saved',
-        )
-        expect(google.signIn).toHaveBeenCalled()
-    })
-
-    test('resolves cancelled when the user dismisses sign-in', async () => {
-        google.signIn.mockResolvedValueOnce({ type: 'cancelled', data: null })
+    test('resolves cancelled when the user backs out of authorization', async () => {
+        auth.authorizeGoogleDrive.mockResolvedValueOnce(null)
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'cancelled',
@@ -243,64 +138,70 @@ describe('saveToGoogleDrive', () => {
         expect(writeFile).not.toHaveBeenCalled()
     })
 
-    test('asks for the Drive scope when the account has not granted it', async () => {
-        google.signIn.mockResolvedValueOnce(signedIn([]))
-        google.addScopes.mockResolvedValueOnce(signedIn([DRIVE_FILE_SCOPE]))
-
-        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
-            'saved',
-        )
-        expect(google.addScopes).toHaveBeenCalledWith({
-            scopes: [DRIVE_FILE_SCOPE],
-        })
-    })
-
-    test('resolves cancelled when the Drive scope is refused', async () => {
-        google.signIn.mockResolvedValueOnce(signedIn([]))
-        google.addScopes.mockResolvedValueOnce({
-            type: 'cancelled',
-            data: null,
-        })
-
-        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
-            'cancelled',
-        )
-        expect(writeFile).not.toHaveBeenCalled()
-    })
-
-    test('rethrows when the access token cannot be fetched', async () => {
-        google.getTokens.mockRejectedValueOnce(new Error('network'))
+    test('rethrows when authorization fails', async () => {
+        auth.authorizeGoogleDrive.mockRejectedValueOnce(new Error('boom'))
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
-            'network',
+            'boom',
         )
         expect(writeFile).not.toHaveBeenCalled()
     })
 
-    test('on Android, drops the rejected token from the cache and retries once with a fresh one', async () => {
-        Platform.OS = 'android'
-        writeFile.mockRejectedValueOnce(
-            new CloudStorageError(
-                'unauthorized',
-                CloudStorageErrorCode.AUTHENTICATION_FAILED,
-            ),
-        )
-        google.getTokens
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-1' })
-            .mockResolvedValueOnce({ idToken: '', accessToken: 'token-2' })
+    test('releases a rejected token and retries once with a fresh one', async () => {
+        writeFile.mockRejectedValueOnce(unauthorized())
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'saved',
         )
 
-        expect(google.clearCachedAccessToken).toHaveBeenCalledWith('token-1')
+        expect(auth.releaseGoogleDriveToken).toHaveBeenNthCalledWith(
+            1,
+            'token-1',
+        )
+        expect(
+            auth.releaseGoogleDriveToken.mock.invocationCallOrder[0]!,
+        ).toBeLessThan(auth.authorizeGoogleDrive.mock.invocationCallOrder[1]!)
         expect(constructed).toHaveBeenLastCalledWith(
             'googledrive',
             driveOptions('token-2'),
         )
     })
 
-    test('on iOS, signs out when the retried token is rejected too, so the next save prompts', async () => {
+    test('still retries when releasing the rejected token fails', async () => {
+        writeFile.mockRejectedValueOnce(unauthorized())
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
+        auth.releaseGoogleDriveToken.mockRejectedValueOnce(
+            Object.assign(new Error('clear failed'), {
+                code: 'ERR_GOOGLE_AUTH',
+            }),
+        )
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
+            'saved',
+        )
+        expect(constructed).toHaveBeenLastCalledWith(
+            'googledrive',
+            driveOptions('token-2'),
+        )
+    })
+
+    test('resolves cancelled when the user backs out of the retry', async () => {
+        writeFile.mockRejectedValueOnce(unauthorized())
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce(null)
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
+            'cancelled',
+        )
+    })
+
+    test('releases the fresh token too when it is also rejected', async () => {
         writeFile
             .mockRejectedValueOnce(
                 Object.assign(new Error('Unauthorized'), { status: 401 }),
@@ -308,14 +209,16 @@ describe('saveToGoogleDrive', () => {
             .mockRejectedValueOnce(
                 Object.assign(new Error('Unauthorized'), { status: 401 }),
             )
+        auth.authorizeGoogleDrive
+            .mockResolvedValueOnce('token-1')
+            .mockResolvedValueOnce('token-2')
 
         await expect(
             saveToGoogleDrive(FILE_NAME, CONTENTS),
         ).rejects.toBeInstanceOf(GoogleDriveAuthFailedError)
 
         expect(writeFile).toHaveBeenCalledTimes(2)
-        expect(google.clearCachedAccessToken).not.toHaveBeenCalled()
-        expect(google.signOut).toHaveBeenCalledTimes(1)
+        expect(auth.releaseGoogleDriveToken).toHaveBeenLastCalledWith('token-2')
     })
 
     test('does not retry other failures', async () => {
@@ -324,50 +227,50 @@ describe('saveToGoogleDrive', () => {
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
             'quota exceeded',
         )
-        expect(google.getTokens).toHaveBeenCalledTimes(1)
+        expect(auth.authorizeGoogleDrive).toHaveBeenCalledTimes(1)
         expect(mkdir).not.toHaveBeenCalled()
         expect(writeFile).toHaveBeenCalledTimes(1)
     })
 })
 
-describe('saveToGoogleDrive releasing the Drive grant', () => {
-    test('signs out once the write is done, so no refreshable token is left alive', async () => {
+describe('saveToGoogleDrive releasing the token', () => {
+    test('releases it once the write is done', async () => {
         await saveToGoogleDrive(FILE_NAME, CONTENTS)
 
-        expect(google.signOut).toHaveBeenCalledTimes(1)
-        expect(google.signOut.mock.invocationCallOrder[0]!).toBeGreaterThan(
-            writeFile.mock.invocationCallOrder[0]!,
+        expect(auth.releaseGoogleDriveToken).toHaveBeenCalledExactlyOnceWith(
+            'token-1',
         )
+        expect(
+            auth.releaseGoogleDriveToken.mock.invocationCallOrder[0]!,
+        ).toBeGreaterThan(writeFile.mock.invocationCallOrder[0]!)
     })
 
-    test('stays signed in when the user dismisses sign-in, so a retry does not prompt again', async () => {
-        google.signIn.mockResolvedValueOnce({ type: 'cancelled', data: null })
+    test('keeps it when the user backs out, so a retry does not prompt again', async () => {
+        auth.authorizeGoogleDrive.mockResolvedValueOnce(null)
 
         await saveToGoogleDrive(FILE_NAME, CONTENTS)
 
-        expect(google.signOut).not.toHaveBeenCalled()
+        expect(auth.releaseGoogleDriveToken).not.toHaveBeenCalled()
     })
 
-    test('reports the save as done even when the sign-out fails', async () => {
-        google.signOut.mockRejectedValueOnce(new Error('offline'))
+    test('reports the save as done even when the release fails', async () => {
+        auth.releaseGoogleDriveToken.mockRejectedValueOnce(new Error('offline'))
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'saved',
         )
     })
 
-    test('leaves an unrecognised write failure signed in, so a retry is not a fresh grant', async () => {
+    test('keeps it after an unrecognised write failure, so a retry is not a fresh grant', async () => {
         writeFile.mockRejectedValueOnce(new Error('quota exceeded'))
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
             'quota exceeded',
         )
-        expect(google.signOut).not.toHaveBeenCalled()
+        expect(auth.releaseGoogleDriveToken).not.toHaveBeenCalled()
     })
 })
 
-// The library sends `body.length` as Content-Length, which counts UTF-16 units
-// rather than bytes, so an unescaped payload is truncated in flight.
 describe('saveToGoogleDrive escaping the payload for the Drive client', () => {
     const NON_ASCII = '{"salt":"café","note":"日本"}'
 

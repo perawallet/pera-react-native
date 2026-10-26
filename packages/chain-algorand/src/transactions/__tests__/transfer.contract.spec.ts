@@ -25,6 +25,7 @@ import {
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { transferContractTests } from '@perawallet/wallet-core-transactions/testing'
+import { algorandDescriptor } from '../../descriptor'
 import { mockAlgodTransactionParams } from '../../test-handlers'
 import { algorandTransferAdapter } from '../adapter'
 
@@ -39,6 +40,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     isDelegatedAccount: () => false,
 }))
 
+vi.mock('../address-poisoning', () => ({
+    getAlgorandAddressPoisoningRules: () => ({
+        lookalikeMatchedChars: 4,
+        dustCeiling: new Decimal(1000),
+    }),
+}))
 vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
     getMinimumFeeConfig: () => ({
         minTxnFee: 1000n,
@@ -89,6 +96,7 @@ transferContractTests(() => algorandTransferAdapter, {
         fee: new Decimal(1_000),
         hasReserve: true,
     },
+    supportsReplacement: algorandDescriptor.protocol.supportsReplacement,
     arrange: () => {
         useAccountsStore.setState({ accounts: [] })
         mocks.getAccountChainStateRow.mockResolvedValue({

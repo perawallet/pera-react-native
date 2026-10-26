@@ -21,7 +21,6 @@ import { RNFirebaseService } from '../services/firebase'
 vi.mock('react-native', () => ({
     Platform: {
         OS: 'ios',
-        select: vi.fn(config => config.ios),
     },
 }))
 
@@ -70,39 +69,28 @@ vi.mock('@react-native-firebase/messaging', () => ({
     getInitialNotification: vi.fn().mockResolvedValue(null),
 }))
 
-vi.mock('@notifee/react-native', () => ({
-    __esModule: true,
-    default: {
-        requestPermission: vi.fn().mockResolvedValue({
-            authorizationStatus: 1,
-        }),
-        createChannel: vi.fn().mockResolvedValue(undefined),
-        displayNotification: vi.fn().mockResolvedValue(undefined),
-        onForegroundEvent: vi.fn(() => vi.fn()),
-    },
-    AndroidImportance: {
-        DEFAULT: 3,
-    },
-    EventType: {
-        ACTION_PRESS: 1,
-        PRESS: 0,
-    },
-    AuthorizationStatus: {
-        NOT_DETERMINED: -1,
-        DENIED: 0,
-        AUTHORIZED: 1,
-        PROVISIONAL: 2,
-    },
+const { mockRemoveResponseSubscription } = vi.hoisted(() => ({
+    mockRemoveResponseSubscription: vi.fn(),
+}))
+
+vi.mock('expo-notifications', () => ({
+    AndroidImportance: { DEFAULT: 3 },
+    getPermissionsAsync: vi.fn(),
+    requestPermissionsAsync: vi.fn(),
+    setNotificationChannelAsync: vi.fn().mockResolvedValue(null),
+    setNotificationHandler: vi.fn(),
+    scheduleNotificationAsync: vi.fn().mockResolvedValue('id'),
+    addNotificationResponseReceivedListener: vi.fn(() => ({
+        remove: mockRemoveResponseSubscription,
+    })),
 }))
 
 import * as remoteConfig from '@react-native-firebase/remote-config'
 import * as analytics from '@react-native-firebase/analytics'
 import * as messaging from '@react-native-firebase/messaging'
 import * as crashlytics from '@react-native-firebase/crashlytics'
-import notifee from '@notifee/react-native'
+import * as notifications from 'expo-notifications'
 import { remoteConfigDefaultsRegistry } from '@perawallet/wallet-extension-platform'
-
-const mockNotifee = notifee as any
 
 describe('RNFirebaseService', () => {
     let service: RNFirebaseService
@@ -412,6 +400,38 @@ describe('RNFirebaseService', () => {
     })
 
     describe('Notifications', () => {
+        const granted = { granted: true }
+        const denied = { granted: false }
+
+        const remotePush = (data: Record<string, unknown>) => ({
+            request: { trigger: { type: 'push' }, content: { data } },
+        })
+        const localNotification = (data: Record<string, unknown>) => ({
+            request: { trigger: null, content: { data } },
+        })
+
+        const responseCallback = () =>
+            vi.mocked(notifications.addNotificationResponseReceivedListener)
+                .mock.calls[0]![0] as (response: unknown) => void
+        const notificationHandler = () =>
+            vi.mocked(notifications.setNotificationHandler).mock.calls[0]![0]!
+                .handleNotification as (notification: unknown) => Promise<{
+                shouldShowBanner: boolean
+                shouldShowList: boolean
+                shouldPlaySound: boolean
+            }>
+        const onMessageCallback = () =>
+            vi.mocked(messaging.onMessage).mock.calls[0]![1] as (
+                message: unknown,
+            ) => Promise<void>
+
+        beforeEach(() => {
+            vi.mocked(Platform).OS = 'ios'
+            vi.mocked(notifications.requestPermissionsAsync).mockResolvedValue(
+                granted as any,
+            )
+        })
+
         it('reports push notifications as supported', () => {
             expect(service.isSupported()).toBe(true)
         })
@@ -422,9 +442,6 @@ describe('RNFirebaseService', () => {
             const openPayloadFor = async (
                 data: Record<string, unknown>,
             ): Promise<unknown> => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1,
-                })
                 await service.initializeNotifications()
 
                 const onOpened = vi.mocked(onNotificationOpenedApp).mock
@@ -491,50 +508,84 @@ describe('RNFirebaseService', () => {
             })
         })
 
-        describe('initializeNotifications', () => {
-            it('should initialize notifications successfully', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
-                const result = await service.initializeNotifications()
-
-                expect(result).toHaveProperty('token')
-                expect(result).toHaveProperty('unsubscribe')
-                expect(typeof result.unsubscribe).toBe('function')
-                expect(result.token).toEqual('mock-fcm-token')
-            })
-
-            it('should handle Android platform correctly', async () => {
-                vi.mocked(Platform).OS = 'android'
-                vi.mocked(Platform.select).mockImplementation(
-                    (config: any) => config.android,
+        describe('getPushToken', () => {
+            it('returns the FCM token when notifications are permitted', async () => {
+                vi.mocked(notifications.getPermissionsAsync).mockResolvedValue(
+                    granted as any,
                 )
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1,
-                })
 
+                await expect(service.getPushToken()).resolves.toBe(
+                    'mock-fcm-token',
+                )
+            })
+
+            it('returns no token without permission', async () => {
+                vi.mocked(notifications.getPermissionsAsync).mockResolvedValue(
+                    denied as any,
+                )
+
+                await expect(service.getPushToken()).resolves.toBeUndefined()
+                expect(messaging.getToken).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('initializeNotifications', () => {
+            it('resolves the FCM token once permission is granted', async () => {
                 const result = await service.initializeNotifications()
 
                 expect(result.token).toEqual('mock-fcm-token')
                 expect(typeof result.unsubscribe).toBe('function')
             })
 
-            it('should call unsubscribe functions when unsubscribe is called', async () => {
-                const result = await service.initializeNotifications()
+            it('creates the default channel on Android', async () => {
+                vi.mocked(Platform).OS = 'android'
 
-                // Should not throw when calling unsubscribe
-                expect(() => result.unsubscribe()).not.toThrow()
+                await service.initializeNotifications()
+
+                expect(
+                    notifications.setNotificationChannelAsync,
+                ).toHaveBeenCalledWith(
+                    'default',
+                    expect.objectContaining({ importance: 3 }),
+                )
             })
 
-            it('should handle permission request errors', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 'DENIED',
-                })
+            it('creates no channel on iOS', async () => {
+                await service.initializeNotifications()
+
+                expect(
+                    notifications.setNotificationChannelAsync,
+                ).not.toHaveBeenCalled()
+            })
+
+            it('removes the response subscription on unsubscribe', async () => {
+                const result = await service.initializeNotifications()
+
+                result.unsubscribe()
+
+                expect(mockRemoveResponseSubscription).toHaveBeenCalled()
+            })
+
+            it('resolves without a token or listeners when permission is denied', async () => {
+                vi.mocked(
+                    notifications.requestPermissionsAsync,
+                ).mockResolvedValue(denied as any)
 
                 const result = await service.initializeNotifications()
 
-                expect(result).toHaveProperty('token')
-                expect(result).toHaveProperty('unsubscribe')
+                expect(result.token).toBeUndefined()
+                expect(messaging.onMessage).not.toHaveBeenCalled()
+            })
+
+            it('resolves without a token when the permission request rejects', async () => {
+                vi.mocked(
+                    notifications.requestPermissionsAsync,
+                ).mockRejectedValueOnce(new Error('permission request failed'))
+
+                const result = await service.initializeNotifications()
+
+                expect(result.token).toBeUndefined()
+                expect(typeof result.unsubscribe).toBe('function')
             })
 
             it('should handle messaging registration errors', async () => {
@@ -551,9 +602,6 @@ describe('RNFirebaseService', () => {
             it('times out the FCM token fetch and resolves with token undefined within budget', async () => {
                 vi.useFakeTimers()
                 try {
-                    mockNotifee.requestPermission.mockResolvedValue({
-                        authorizationStatus: 1, //AUTHORIZED
-                    })
                     // getToken never settles — the known indefinite-hang surface.
                     vi.mocked(messaging.getToken).mockReturnValue(
                         new Promise<string>(() => {}),
@@ -576,107 +624,85 @@ describe('RNFirebaseService', () => {
                 }
             })
 
-            it('resolves without a token when notifee.requestPermission() rejects', async () => {
-                mockNotifee.requestPermission.mockRejectedValueOnce(
-                    new Error('permission request failed'),
-                )
-
-                const result = await service.initializeNotifications()
-
-                expect(result.token).toBeUndefined()
-                expect(typeof result.unsubscribe).toBe('function')
-            })
-
-            it('should register onMessage and onForegroundEvent handlers', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
+            it('shows a foreground push as a local notification on the default channel', async () => {
+                vi.mocked(Platform).OS = 'android'
                 await service.initializeNotifications()
 
-                expect(messaging.onMessage).toHaveBeenCalled()
-                expect(notifee.onForegroundEvent).toHaveBeenCalled()
-            })
-
-            it('should handle onMessage callback with notification data', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
+                await onMessageCallback()({
+                    notification: { title: 'Test Title', body: 'Test Body' },
+                    data: { key: 'value' },
                 })
-                await service.initializeNotifications()
 
-                // Get the callback that was passed to onMessage
-                const onMessageCallback = (messaging.onMessage as any).mock
-                    .calls[0][1] as (message: any) => Promise<void>
-                expect(onMessageCallback).toBeDefined()
-
-                const mockRemoteMessage = {
-                    notification: {
+                expect(
+                    notifications.scheduleNotificationAsync,
+                ).toHaveBeenCalledWith({
+                    content: {
                         title: 'Test Title',
                         body: 'Test Body',
+                        data: { key: 'value' },
                     },
-                    data: { key: 'value' },
-                }
-
-                await onMessageCallback(mockRemoteMessage)
-
-                expect(notifee.displayNotification).toHaveBeenCalledWith({
-                    title: 'Test Title',
-                    body: 'Test Body',
-                    data: { key: 'value' },
-                    // Platform.select returns the android value due to mock
-                    android: {
-                        channelId: 'default',
-                        smallIcon: 'ic_notification_small',
-                    },
+                    trigger: { channelId: 'default' },
                 })
             })
 
-            it('should handle onMessage callback with missing notification data', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
+            it('falls back to a generic title and shows it immediately on iOS', async () => {
                 await service.initializeNotifications()
 
-                // Get the callback that was passed to onMessage
-                const onMessageCallback = (messaging.onMessage as any).mock
-                    .calls[0][1] as (message: any) => Promise<void>
-                expect(onMessageCallback).toBeDefined()
+                await onMessageCallback()({ data: { key: 'value' } })
 
-                const mockRemoteMessage = {
-                    data: { key: 'value' },
-                }
-
-                await onMessageCallback(mockRemoteMessage)
-
-                expect(notifee.displayNotification).toHaveBeenCalledWith({
-                    title: 'Notification',
-                    body: undefined,
-                    data: { key: 'value' },
-                    // Platform.select returns the android value due to mock
-                    android: {
-                        channelId: 'default',
-                        smallIcon: 'ic_notification_small',
+                expect(
+                    notifications.scheduleNotificationAsync,
+                ).toHaveBeenCalledWith({
+                    content: {
+                        title: 'Notification',
+                        body: undefined,
+                        data: { key: 'value' },
                     },
+                    trigger: null,
                 })
             })
 
-            it('routes a foreground PRESS tap to the notification-open listener', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
+            it('tells the received listener about a foreground push', async () => {
+                const onReceived = vi.fn()
+                service.addNotificationReceivedListener(onReceived)
+                await service.initializeNotifications()
+
+                await onMessageCallback()({ data: {} })
+
+                expect(onReceived).toHaveBeenCalledTimes(1)
+            })
+
+            // iOS hands remote pushes to expo-notifications as well; showing one
+            // would duplicate the local copy onMessage already scheduled.
+            it('presents the local copy but not the remote push it came from', async () => {
+                await service.initializeNotifications()
+
+                await expect(
+                    notificationHandler()(localNotification({})),
+                ).resolves.toMatchObject({
+                    shouldShowBanner: true,
+                    shouldShowList: true,
+                    shouldPlaySound: true,
                 })
+                await expect(
+                    notificationHandler()(remotePush({})),
+                ).resolves.toMatchObject({
+                    shouldShowBanner: false,
+                    shouldShowList: false,
+                })
+            })
+
+            it('routes a tap on the local copy to the notification-open listener', async () => {
                 const listener = vi.fn()
                 service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                const onForegroundEventCallback = (
-                    notifee.onForegroundEvent as any
-                ).mock.calls[0][0] as (event: any) => Promise<void>
-                expect(onForegroundEventCallback).toBeDefined()
-
-                await onForegroundEventCallback({
-                    type: 0, // EventType.PRESS
-                    detail: {
-                        notification: { data: { url: 'pera://deeplink' } },
-                    },
+                responseCallback()({
+                    actionIdentifier:
+                        'expo.modules.notifications.actions.DEFAULT',
+                    notification: localNotification({
+                        url: 'pera://deeplink',
+                    }),
                 })
 
                 expect(listener).toHaveBeenCalledWith(
@@ -684,53 +710,33 @@ describe('RNFirebaseService', () => {
                 )
             })
 
-            it('routes a foreground ACTION_PRESS tap to the notification-open listener', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
+            // RNFB's onNotificationOpenedApp already routes it.
+            it('leaves a tap on a remote push to RNFB', async () => {
                 const listener = vi.fn()
                 service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                const onForegroundEventCallback = (
-                    mockNotifee.onForegroundEvent as any
-                ).mock.calls[0][0] as (event: any) => Promise<void>
-                expect(onForegroundEventCallback).toBeDefined()
-
-                await onForegroundEventCallback({
-                    type: 1, // EventType.ACTION_PRESS
-                    detail: {
-                        notification: { data: { url: 'pera://action' } },
-                    },
+                responseCallback()({
+                    actionIdentifier:
+                        'expo.modules.notifications.actions.DEFAULT',
+                    notification: remotePush({ url: 'pera://deeplink' }),
                 })
 
-                expect(listener).toHaveBeenCalledWith(
-                    expect.objectContaining({ url: 'pera://action' }),
-                )
+                expect(listener).not.toHaveBeenCalled()
             })
 
             it('forwards type and account_address for a multisig push that carries no deeplink url', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
                 const listener = vi.fn()
                 service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                const onForegroundEventCallback = (
-                    notifee.onForegroundEvent as any
-                ).mock.calls[0][0] as (event: any) => Promise<void>
-
-                await onForegroundEventCallback({
-                    type: 0, // EventType.PRESS
-                    detail: {
-                        notification: {
-                            data: {
-                                type: 'multisig-new-sign-request',
-                                account_address: 'MSIG_ADDR',
-                            },
-                        },
-                    },
+                responseCallback()({
+                    actionIdentifier:
+                        'expo.modules.notifications.actions.DEFAULT',
+                    notification: localNotification({
+                        type: 'multisig-new-sign-request',
+                        account_address: 'MSIG_ADDR',
+                    }),
                 })
 
                 // The sign-request push has no `url`; routing must still fire so
@@ -740,23 +746,6 @@ describe('RNFirebaseService', () => {
                     type: 'multisig-new-sign-request',
                     accountAddress: 'MSIG_ADDR',
                 })
-            })
-
-            it('should handle onForegroundEvent callback for unknown event type', async () => {
-                mockNotifee.requestPermission.mockResolvedValue({
-                    authorizationStatus: 1, //AUTHORIZED
-                })
-                await service.initializeNotifications()
-
-                // Get the callback that was passed to onForegroundEvent
-                const onForegroundEventCallback = (
-                    mockNotifee.onForegroundEvent as any
-                ).mock.calls[0][0] as (event: any) => Promise<void>
-                expect(onForegroundEventCallback).toBeDefined()
-
-                await onForegroundEventCallback({ type: 999 }) // Unknown event type
-
-                // Should not throw, hits default case
             })
         })
     })

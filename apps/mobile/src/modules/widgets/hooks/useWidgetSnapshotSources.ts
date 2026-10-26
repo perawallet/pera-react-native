@@ -20,6 +20,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     config,
+    deploymentOf,
     getPeraDeploymentConfig,
     getPeraServicesConfig,
 } from '@perawallet/wallet-core-config'
@@ -28,10 +29,7 @@ import {
     useSelectedScope,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    useDeploymentDeviceID,
-    useScopedDeviceID,
-} from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useCurrency,
     useNativeUsdPriceQuery,
@@ -61,7 +59,7 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const deployment = useWalletDeployment()
     // The widget's yellow bar matches the app's: any deployment that isn't live.
     const isLive = deployment === 'live'
-    const inboxDeviceId = useScopedDeviceID(scope)
+    const inboxDeviceId = useDeploymentDeviceID(deploymentOf(scope))
     const notificationsDeviceId = useDeploymentDeviceID(deployment)
     // The app's inbox is gated on the same capability.
     const hasInbox = useChainCapability(scope.chainId, 'notifications')

@@ -53,6 +53,17 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
+const { recipientSafety } = vi.hoisted(() => ({
+    recipientSafety: {
+        current: {
+            assessment: undefined,
+            isPending: false,
+            isAcknowledged: false,
+            toggleAcknowledged: () => {},
+            isConfirmBlocked: false,
+        } as Record<string, unknown>,
+    },
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
@@ -186,6 +197,7 @@ vi.mock('@modules/transactions/hooks', async () => {
     return {
         useSendFunds: vi.fn(),
         useSendScope: () => useSelectedScope('algorand'),
+        useRecipientSafety: () => recipientSafety.current,
     }
 })
 
@@ -281,6 +293,10 @@ describe('useTransactionConfirmationScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        recipientSafety.current = {
+            ...recipientSafety.current,
+            isConfirmBlocked: false,
+        }
         ;(useSelectedScope as Mock).mockImplementation((chainId: string) => ({
             chainId,
             networkId: 'mainnet',
@@ -462,6 +478,34 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
             expect(mockShowToast).not.toHaveBeenCalled()
+        })
+
+        it('does not confirm while the recipient check blocks it', () => {
+            recipientSafety.current = {
+                ...recipientSafety.current,
+                isConfirmBlocked: true,
+            }
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+                amount: new Decimal(10),
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', mockAsset]]),
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            act(() => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(result.current.recipientSafety.isConfirmBlocked).toBe(true)
         })
     })
 

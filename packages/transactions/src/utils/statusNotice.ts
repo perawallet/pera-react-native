@@ -19,6 +19,9 @@ import type { TransactionHistoryStatus } from '../models/types'
 const PENDING = i18nKey('transactions.notice.pending')
 const FAILED = i18nKey('transactions.notice.failed')
 const REPLACED = i18nKey('transactions.notice.replaced')
+const REPLACEMENT_NOT_NEEDED = i18nKey(
+    'transactions.notice.replacement_not_needed',
+)
 
 /**
  * The notice a summary carries for a non-final status; undefined for a
@@ -43,3 +46,9 @@ export const transactionStatusNotice = (
     }
     return undefined
 }
+
+/** A replacement that never landed because the transaction it re-priced confirmed first. */
+export const replacementNotNeededNotice = (): TransactionNotice => ({
+    kind: 'warning',
+    title: { key: REPLACEMENT_NOT_NEEDED },
+})

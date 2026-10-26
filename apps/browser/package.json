@@ -51,7 +51,7 @@
     "jsdom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-native-web": "^0.21.3",
+    "react-native-web": "^0.21.4",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "ws": "^8.22.0"

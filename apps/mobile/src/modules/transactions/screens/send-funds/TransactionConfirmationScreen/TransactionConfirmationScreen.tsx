@@ -26,6 +26,7 @@ import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
 import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
+import { RecipientSafetyNotice } from '../RecipientSafetyNotice'
 import { useSaveRecipientContact } from './useSaveRecipientContact'
 
 export const TransactionConfirmationScreen = () => {
@@ -56,6 +57,7 @@ export const TransactionConfirmationScreen = () => {
         isCloseAccount,
         recipientWarning,
         isRecipientInfoPending,
+        recipientSafety,
         isSigning,
     } = useTransactionConfirmationScreen()
     const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
@@ -76,12 +78,26 @@ export const TransactionConfirmationScreen = () => {
                     {recipientWarning && (
                         <RecipientWarning notice={recipientWarning} />
                     )}
+                    {!!destination && (
+                        <RecipientSafetyNotice
+                            assessment={recipientSafety.assessment}
+                            isChecking={recipientSafety.isPending}
+                            recipient={destination}
+                            scope={scope}
+                            isAcknowledged={recipientSafety.isAcknowledged}
+                            onToggleAcknowledged={
+                                recipientSafety.toggleAcknowledged
+                            }
+                        />
+                    )}
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
                         isLoading={isSigning}
                         isDisabled={
-                            !!recipientWarning || isRecipientInfoPending
+                            !!recipientWarning ||
+                            isRecipientInfoPending ||
+                            recipientSafety.isConfirmBlocked
                         }
                         testID='send_confirm_button'
                     />
@@ -122,6 +138,7 @@ export const TransactionConfirmationScreen = () => {
                     <KeyValueRow title={t('send_funds.confirmation.to')}>
                         <AddressDisplay
                             address={destination}
+                            addressFormat='full'
                             scope={scope}
                             showCopy={false}
                             showSecondaryAddress

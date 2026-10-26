@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import {
+    type AssetRef,
     type LocalizedText,
     type TransactionSummary,
     i18nKey,
@@ -19,6 +21,7 @@ import { areEvmAddressesEqual } from '../accounts/address-codec'
 
 const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 const NFT_SUBTITLE_KEY = i18nKey('transactions.list_item.nft_subtitle')
+const CANCEL_TITLE_KEY = i18nKey('transactions.list_item.cancel_transaction')
 
 export const nftSendSubtitle = (
     collection: string,
@@ -48,3 +51,15 @@ export const sendSummary = (
         amount,
     }
 }
+
+/** A cancel is an empty transfer to the sender itself. */
+export const cancelSummary = (
+    from: string,
+    nativeAsset: AssetRef,
+): TransactionSummary => ({
+    ...sendSummary('transfer', from, from, {
+        assetRef: nativeAsset,
+        value: new Decimal(0),
+    }),
+    title: { key: CANCEL_TITLE_KEY },
+})

@@ -19,4 +19,7 @@ export {
     getChainDataValue,
     setChainDataValue,
     deleteTransactionsForAccount,
+    getSentToAddresses,
+    getCounterpartyTransfers,
+    type CounterpartyTransfer,
 } from './repository'

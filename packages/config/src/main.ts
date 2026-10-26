@@ -161,10 +161,11 @@ export const configSchema = z
         appStoreAppID: z.string(),
         playIntegrityCloudProjectNumber: z.string(),
 
-        // Google OAuth client ids for the Drive credential store. Public
-        // identifiers; empty means the Drive button reports it isn't set up.
+        // Google's iOS OAuth client id for the Drive credential store. A public
+        // identifier; empty means the Drive button reports it isn't set up on
+        // iOS. Android authorizes against the client registered for its package
+        // and signing key, so it needs none.
         googleIosClientId: z.string(),
-        googleWebClientId: z.string(),
 
         // Firebase Web SDK config (browser extension Remote Config). Not secret —
         // a Firebase web apiKey only identifies the project; access is governed
@@ -422,7 +423,6 @@ const productionConfig: Omit<
     playIntegrityCloudProjectNumber: '',
 
     googleIosClientId: '',
-    googleWebClientId: '',
 
     // Defaults to a distinct non-sensitive Firebase project, safe to ship in
     // source; the real one is injected at build time via FIREBASE_* env. A web
@@ -613,7 +613,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
 
     googleIosClientId: 'GOOGLE_IOS_CLIENT_ID',
-    googleWebClientId: 'GOOGLE_WEB_CLIENT_ID',
 
     firebaseApiKey: 'FIREBASE_API_KEY',
     firebaseAuthDomain: 'FIREBASE_AUTH_DOMAIN',

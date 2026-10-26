@@ -112,12 +112,10 @@ function buildAppConfig(env) {
     }
   })();
 
-  // Each plugin is added only when its setting exists. The cloud-storage plugin
-  // writes iCloud entitlements that an archive signed with a profile lacking the
-  // iCloud capability cannot sign; the Google plugin needs the iOS client id to
-  // register its reversed form as the sign-in URL scheme.
+  // Added only when the container is set: the plugin writes iCloud entitlements
+  // that an archive signed with a profile lacking the iCloud capability cannot
+  // sign.
   const iCloudContainerId = env.IOS_ICLOUD_CONTAINER_ID?.trim();
-  const googleIosClientId = env.GOOGLE_IOS_CLIENT_ID?.trim();
   const credentialStoragePlugins = [
     ...(iCloudContainerId
       ? [
@@ -127,16 +125,6 @@ function buildAppConfig(env) {
               iCloudContainerIdentifier: iCloudContainerId,
               iCloudContainerEnvironment:
                 variant === 'dev' ? 'Development' : 'Production',
-            },
-          ],
-        ]
-      : []),
-    ...(googleIosClientId
-      ? [
-          [
-            '@react-native-google-signin/google-signin',
-            {
-              iosUrlScheme: googleIosClientId.split('.').reverse().join('.'),
             },
           ],
         ]
@@ -395,6 +383,13 @@ function buildAppConfig(env) {
         {
           ios: {
             deploymentTarget: '16.4',
+            // Firebase Apple 13 ships only as Swift packages, which RNFB links
+            // into each of its pods; static pods collide on those copies.
+            useFrameworks: 'dynamic',
+            // The passkey AutoFill extension sits outside the Podfile and links
+            // `libMMKVCore.a` and its public headers directly; as a framework
+            // neither exists.
+            forceStaticLinking: ['MMKVCore'],
             flipper: false,
             // The dev-build network inspector swizzles NSURLSession and
             // bypasses TrustKit, silently disabling SSL pinning
@@ -446,7 +441,7 @@ function buildAppConfig(env) {
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
             ].join('\n'),
-            kotlinVersion: '2.1.20',
+            kotlinVersion: '2.2.10',
             // Package-visibility (API 30+) declarations so Linking.canOpenURL
             // can see the social apps the in-app browser hands off to
             // (PWWebView navigation guard).
@@ -490,9 +485,6 @@ function buildAppConfig(env) {
       // - react-native-gesture-handler
       // - react-native-screens
       // - react-native-safe-area-context
-
-      // Custom plugin for Notifee local Maven repository (pnpm/monorepo fix)
-      './plugins/withNotifeeMavenRepo',
 
       // Custom plugin for Ledger USB intent-filter (Android USB host)
       './plugins/withLedgerUsbAndroidManifest',

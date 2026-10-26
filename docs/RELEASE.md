@@ -48,6 +48,12 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 - Shipping the extension alone: tag on the `support/vX.Y.Z` branch, then start Bitrise `web-production` by hand on that tag rather than the whole `release-builds` pipeline, so no mobile artifact is built for it. The same CI change also lands on `main`, because pera-ci reads `ci/pipelines.yml` only from there.
 - The manifest `version` is the tag's `X.Y.Z` with the build number as a fourth part, and `version_name` is `X.Y.Z`. The store rejects a package whose `version` is not higher than the last one it accepted; the build number is what keeps two rcs of one version in order.
 
+### Bitrise config
+
+Bitrise runs the YAML stored on bitrise.io; `.bitrise/bitrise.yml` mirrors it. The dashboard editor saves Ruby's `YAML.dump` of the config with every key sorted and drops YAML comments, so keep the mirror in that text: `pnpm format:bitrise` writes it, and `pnpm check:bitrise-yml` (pre-push and CI) fails on anything else. A paste into the editor then diffs only real changes. Put rationale inside a step's script, where it survives a save.
+
+`android-staging` builds native code for `arm64-v8a` only (`ORG_GRADLE_PROJECT_reactNativeArchitectures`), a quarter of the native compile. Its APK reaches only Firebase testers and the BrowserStack smoke gate, and every device Crashlytics saw on the last 20 staging builds was a 64-bit ARM phone. It does not install on an x86 emulator or a 32-bit-only phone. Production keeps all four ABIs.
+
 ### Required Bitrise secrets
 
 <!-- doc-hygiene-ignore-next-line stale-path reason: written by CI at build time, never committed -->

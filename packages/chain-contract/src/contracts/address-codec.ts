@@ -30,6 +30,12 @@ export interface AddressCodec {
     areEqual(a: string, b: string): boolean
     /** A short display form, as shown for an account with no name. */
     truncate(address: string): string
+    /**
+     * Two different addresses a person would take for the same one, because
+     * their `truncate` forms read alike. Address poisoning relies on this.
+     * Only defined for input that passes `isValid`.
+     */
+    resembles(a: string, b: string): boolean
     toPaymentUri(address: string, opts?: PaymentUriOpts): string
     parsePaymentUri(uri: string): ParsedPaymentUri | undefined
 }

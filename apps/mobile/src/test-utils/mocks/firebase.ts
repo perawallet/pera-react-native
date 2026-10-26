@@ -46,16 +46,12 @@ vi.mock('@react-native-firebase/remote-config', () => ({
     }),
 }))
 
-vi.mock('@notifee/react-native', () => ({
-    default: {
-        requestPermission: vi.fn(async () => true),
-        onForegroundEvent: vi.fn(() => vi.fn()),
-    },
-    AuthorizationStatus: 'AUTHORIZED',
-    notifee: {
-        requestPermission: vi.fn(),
-        createChannel: vi.fn(),
-        displayNotification: vi.fn(),
-        onForegroundEvent: vi.fn(),
-    },
+vi.mock('expo-notifications', () => ({
+    AndroidImportance: { DEFAULT: 3 },
+    getPermissionsAsync: vi.fn(async () => ({ granted: true })),
+    requestPermissionsAsync: vi.fn(async () => ({ granted: true })),
+    setNotificationChannelAsync: vi.fn(async () => null),
+    setNotificationHandler: vi.fn(),
+    scheduleNotificationAsync: vi.fn(async () => 'id'),
+    addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
 }))

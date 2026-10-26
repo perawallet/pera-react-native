@@ -81,7 +81,6 @@ describe('WEB_CONFIG_ALLOWLIST', () => {
             'appStoreAppID',
             'playIntegrityCloudProjectNumber',
             'googleIosClientId',
-            'googleWebClientId',
             'disableScreenCapturePrevention',
         ]) {
             expect(WEB_CONFIG_ALLOWLIST).not.toContain(key)

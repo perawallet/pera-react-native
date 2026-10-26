@@ -22,22 +22,22 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.10.0
+  "@ledgerhq/hw-app-eth": 7.11.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
-  "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
   "@playwright/test": ^1.53.0
-  # Exact: the app patch below is keyed on this version; move all five together.
-  "@react-native-firebase/analytics": 26.0.0
-  "@react-native-firebase/app": 26.0.0
-  "@react-native-firebase/crashlytics": 26.0.0
-  "@react-native-firebase/messaging": 26.0.0
-  "@react-native-firebase/remote-config": 26.0.0
+  # Exact: every module peers on the identical app version; move all five
+  # together.
+  "@react-native-firebase/analytics": 27.0.0
+  "@react-native-firebase/app": 27.0.0
+  "@react-native-firebase/crashlytics": 27.0.0
+  "@react-native-firebase/messaging": 27.0.0
+  "@react-native-firebase/remote-config": 27.0.0
   # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
   # internal protocol contract, so a floating minor on one side can pair with
   # a core it was never built against. Bump the two together.
@@ -89,6 +89,7 @@ catalog:
   expo-device: 58.0.5
   expo-local-authentication: 58.0.2
   expo-localization: 58.0.5
+  expo-notifications: 58.1.6
   expo-sqlite: 58.0.13
   fake-indexeddb: 6.2.5
   falcon-1024: 0.2.0
@@ -112,11 +113,11 @@ catalog:
   uuid: 14.0.3
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
-  viem: 2.57.6
-  vite: ~8.2.4
+  viem: 2.57.7
+  vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
-  zod: ^4.4.3
+  zod: ^4.6.7
   zustand: ^5.0.12
 
 packageExtensions:
@@ -144,6 +145,10 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+    # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
+    # @expo/cli's, which never ships to a device; the zod override floors every
+    # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
+    - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -187,6 +192,19 @@ minimumReleaseAgeExclude:
   # tag, published by the same releaser as 3.0.1, no install scripts. Pinned
   # to the version so the next release clears the gate on its own.
   - xcode@4.0.0
+  # Firebase Apple 13 is SPM-only and CocoaPods trunk goes read-only, so 27.0.0
+  # is needed ahead of the gate. Same four maintainers as 26.x, SLSA provenance
+  # on all five, and only `prepare` scripts, which a registry install never
+  # runs. Pinned to the version so the next release clears the gate on its own.
+  - '@react-native-firebase/analytics@27.0.0'
+  - '@react-native-firebase/app@27.0.0'
+  - '@react-native-firebase/crashlytics@27.0.0'
+  - '@react-native-firebase/messaging@27.0.0'
+  - '@react-native-firebase/remote-config@27.0.0'
+  # The fast-uri audit floor (see the override). Same six fastify maintainers as
+  # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
+  # stops applying once 4.2.3 clears the gate on its own.
+  - fast-uri@4.2.3
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -248,15 +266,6 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # The Expo SDK 58 AppDelegate has neither anchor the iOS plugin looks for
-  # (`self.moduleName =`, `factory.startReactNative(`), so it only warns and
-  # never inserts `FirebaseApp.configure()`: every Firebase call then fails with
-  # "No Firebase App '[DEFAULT]'". Adds the template's `return
-  # super.application(...)` as a third anchor. 27.x fixes it but needs dynamic
-  # frameworks, and its Firebase 13 needs AppCheckCore 12, which
-  # @react-native-google-signin's `GoogleSignIn ~> 9.0` pin rules out; drop on
-  # that upgrade.
-  "@react-native-firebase/app@26.0.0": patches/@react-native-firebase__app@26.0.0.patch
   # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
   # and the list calls it whenever its data's keys change, i.e. on every
   # reorder. requestIdleCallback is RN's documented replacement. Patches the
@@ -354,10 +363,6 @@ overrides:
   # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
   # Stay on the 0.8 line — 0.9 changed the package's API surface.
   '@xmldom/xmldom': 0.8.15
-  # hw-app-eth 7.10.0 pins axios 1.13.5, which carries GHSA-3pq3-5fj3-cg6v and
-  # GHSA-542g-h47m-68v8, fixed only in 1.20.0. Drop once hw-app-eth resolves
-  # 1.20.0 itself.
-  axios@<1.20.0: 1.20.0
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -368,10 +373,11 @@ overrides:
   # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
   # confusion via an unclosed bracket), patched in 4.1.4; then
   # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
-  # patched in 4.1.5. Pinned to the lowest patched version rather than latest so
-  # the resolution stays behind the minimumReleaseAge window without an exclude
-  # entry.
-  fast-uri@<4.1.5: 4.1.5
+  # patched in 4.1.5; then GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr,
+  # GHSA-xhq7-xmqj-769h and GHSA-333x-w4r6-6crp (scheme spoofing, host
+  # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
+  # the lowest patched version rather than latest.
+  fast-uri@<4.2.3: 4.2.3
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
@@ -391,6 +397,9 @@ overrides:
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
   yaml@2: 2.8.3
+  # GHSA-mrhx-c7xc-m3w5 floor for every 4.x copy, so that advisory's audit
+  # ignore can only ever cover the unpatchable 3.x line.
+  zod@>=4.0.0 <4.6.6: ^4.6.7
 
 supportedArchitectures:
   cpu: [x64, arm64]

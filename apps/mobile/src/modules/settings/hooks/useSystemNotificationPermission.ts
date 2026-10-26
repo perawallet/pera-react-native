@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Linking, AppState, type AppStateStatus } from 'react-native'
-import notifee, { AuthorizationStatus } from '@notifee/react-native'
+import { getPermissionsAsync } from 'expo-notifications'
 
 type UseSystemNotificationPermissionResult = {
     isEnabled: boolean
@@ -29,11 +29,8 @@ export const useSystemNotificationPermission =
 
         const checkPermission = useCallback(async () => {
             try {
-                const settings = await notifee.getNotificationSettings()
-                const enabled =
-                    settings.authorizationStatus ===
-                    AuthorizationStatus.AUTHORIZED
-                setIsEnabled(enabled)
+                const { granted } = await getPermissionsAsync()
+                setIsEnabled(granted)
             } catch {
                 setIsEnabled(false)
             } finally {

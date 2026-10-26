@@ -564,7 +564,6 @@ describe('buildAppConfig — deep-link scheme parity', () => {
 
 describe('credential storage plugins', () => {
     const CONTAINER = 'iCloud.com.algorandllc.algorand'
-    const CLIENT_ID = '1234-abc.apps.googleusercontent.com'
     const findPluginOptions = (config: ResolvedConfig, name: string) => {
         const entry = config.plugins.find(
             (plugin: unknown) => Array.isArray(plugin) && plugin[0] === name,
@@ -574,17 +573,11 @@ describe('credential storage plugins', () => {
             : undefined
     }
 
-    it('leaves both plugins out when their settings are absent', () => {
+    it('leaves the iCloud plugin out when no container is set', () => {
         const config = build({ APP_ENV: 'staging' })
 
         expect(
             findPluginOptions(config, 'react-native-cloud-storage'),
-        ).toBeUndefined()
-        expect(
-            findPluginOptions(
-                config,
-                '@react-native-google-signin/google-signin',
-            ),
         ).toBeUndefined()
     })
 
@@ -593,7 +586,7 @@ describe('credential storage plugins', () => {
         ['staging', 'Production'],
         ['production', 'Production'],
     ])(
-        'adds only the iCloud plugin for %s, in the %s container environment',
+        'adds the iCloud plugin for %s, in the %s container environment',
         (APP_ENV, environment) => {
             const config = build({
                 APP_ENV,
@@ -606,31 +599,8 @@ describe('credential storage plugins', () => {
                 iCloudContainerIdentifier: CONTAINER,
                 iCloudContainerEnvironment: environment,
             })
-            expect(
-                findPluginOptions(
-                    config,
-                    '@react-native-google-signin/google-signin',
-                ),
-            ).toBeUndefined()
         },
     )
-
-    it('adds only the Google plugin, with the trimmed, reversed client id as the URL scheme', () => {
-        const config = build({
-            APP_ENV: 'production',
-            GOOGLE_IOS_CLIENT_ID: `${CLIENT_ID} `,
-        })
-
-        expect(
-            findPluginOptions(
-                config,
-                '@react-native-google-signin/google-signin',
-            ),
-        ).toEqual({ iosUrlScheme: 'com.googleusercontent.apps.1234-abc' })
-        expect(
-            findPluginOptions(config, 'react-native-cloud-storage'),
-        ).toBeUndefined()
-    })
 
     it('trims the iCloud container id', () => {
         const config = build({
@@ -644,20 +614,6 @@ describe('credential storage plugins', () => {
                 iCloudContainerEnvironment: 'Production',
             },
         )
-    })
-
-    it('treats a whitespace-only Google client id as unset', () => {
-        const config = build({
-            APP_ENV: 'production',
-            GOOGLE_IOS_CLIENT_ID: '  ',
-        })
-
-        expect(
-            findPluginOptions(
-                config,
-                '@react-native-google-signin/google-signin',
-            ),
-        ).toBeUndefined()
     })
 })
 
@@ -677,5 +633,19 @@ describe('buildAppConfig — iOS ccache', () => {
 
     it('stays off for a local prebuild', () => {
         expect(ccacheEnabled({ APP_ENV: 'production' })).toBe(false)
+    })
+})
+
+describe('buildAppConfig — iOS linkage', () => {
+    // Firebase Apple 13 is SPM-only and RNFB refuses static pod linkage, while
+    // the passkey AutoFill extension links MMKVCore as a static library.
+    it('builds pods as dynamic frameworks but keeps MMKVCore static', () => {
+        const { ios } = pluginOptions(
+            build({ APP_ENV: 'production' }),
+            'expo-build-properties',
+        ) as { ios: { useFrameworks: string; forceStaticLinking: string[] } }
+
+        expect(ios.useFrameworks).toBe('dynamic')
+        expect(ios.forceStaticLinking).toContain('MMKVCore')
     })
 })

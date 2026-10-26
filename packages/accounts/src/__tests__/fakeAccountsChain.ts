@@ -208,6 +208,7 @@ const createFakeAddressCodec = (): AddressCodec => ({
         address.length > 8
             ? `${address.slice(0, 3)}~${address.slice(-3)}`
             : address,
+    resembles: () => false,
     toPaymentUri: (address: string) => `fake:${address}`,
     parsePaymentUri: () => undefined,
 })

@@ -109,12 +109,6 @@ const webStubs = {
     // the Home/Contacts screen graphs (@utils/shareText, @utils/shareCsvFile). The
     // shim prefers the real Web Share API and otherwise throws a clear error.
     'react-native-share': 'react-native-share.js',
-    // Push notifications: @notifee/react-native constructs its native module class
-    // at eval time, touching the legacy NativeModules bridge and throwing
-    // "__fbBatchedBridgeConfig is not set" on web. pushNotificationSettings is
-    // capability-gated off on web (routes/capabilities.web.ts); this stub only
-    // needs to satisfy useSystemNotificationPermission.ts without crashing.
-    '@notifee/react-native': 'notifee-react-native.js',
     // Lists: @shopify/flash-list v2 renders a Fabric-only AutoLayoutView native
     // component and touches the legacy NativeModules bridge at import time
     // ("__fbBatchedBridgeConfig is not set" on web — no web target exists for

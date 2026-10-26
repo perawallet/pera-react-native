@@ -79,6 +79,7 @@ for (const chain of EVM_TEST_CHAINS) {
             fee: new Decimal('21000000000000'),
             hasReserve: false,
         },
+        supportsReplacement: chain.descriptor.protocol.supportsReplacement,
         arrange: () => {
             server.use(
                 ...evmRpcHandlers({

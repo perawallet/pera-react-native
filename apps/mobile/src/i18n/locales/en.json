@@ -1134,7 +1134,11 @@
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             },
-            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x."
+            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transaction already confirmed",
+                "body": "The transaction you tried to speed up or cancel confirmed first, so nothing was replaced."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Can't remove this asset",
                 "body": "This account created this asset, so it can't opt out of it."
+            },
+            "not_replaceable": {
+                "title": "Transaction no longer pending",
+                "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
             }
         },
         "kms": {
@@ -2726,6 +2734,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Checking the recipient…",
+            "look_alike_title": "This address looks like one you know",
+            "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
+            "look_alike_recipient_label": "You're sending to",
+            "look_alike_known_label_own_account": "Your account {{name}}",
+            "look_alike_known_label_watched_account": "Account {{name}} in your wallet",
+            "look_alike_known_label_contact": "Your contact {{name}}",
+            "look_alike_known_label_history": "An address in your history",
+            "look_alike_acknowledge": "I've checked the full address and want to send to it",
+            "first_send_title": "First send to this address",
+            "first_send_body": "You haven't sent to this address on this network before. Make sure it's the right one."
+        },
         "input_view": {
             "title": "Send {{asset}}"
         },
@@ -2780,6 +2801,16 @@
             "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly.",
             "invalid_address_title": "Invalid address",
             "invalid_address_body": "This isn't a valid {{chain}} address."
+        },
+        "address_poisoning": {
+            "title": "Check this address",
+            "lookalike_body": "This address looks like one you know, but it isn't the same. Scammers create addresses that start or end with the same characters to trick you into copying theirs. Compare every character before you continue.",
+            "dust_body": "This address has only sent you tiny amounts, and you've never sent anything to it. Scammers do this so their address shows up in your history, hoping you'll copy it by mistake.",
+            "recipient_label": "Sending to",
+            "similar_to_label": "Similar to",
+            "acknowledge": "I've checked the full address",
+            "confirm": "Continue",
+            "cancel": "Cancel"
         },
         "fee": {
             "slow": "Slow",
@@ -3195,7 +3226,8 @@
             "title": "You can't sign this account",
             "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it.",
             "rekeyed_auth_missing_body": "This account is rekeyed to {{authAddress}}, which is not in this wallet, so it can’t sign transactions. Import the auth account to sign for it.",
-            "rekeyed_auth_watch_body": "This account is rekeyed to a watch-only account, which holds no signing key. Import the auth account’s key to sign for it."
+            "rekeyed_auth_watch_body": "This account is rekeyed to a watch-only account, which holds no signing key. Import the auth account’s key to sign for it.",
+            "signer_missing_body": "This request needs a signature from an account that isn't in your wallet, so it can't be signed here."
         },
         "transaction_request_faq": {
             "title": "Transaction Request FAQ",
@@ -3256,7 +3288,8 @@
         "notice": {
             "pending": "Pending since {{since}}",
             "failed": "Failed",
-            "replaced": "Replaced by another transaction"
+            "replaced": "Replaced by another transaction",
+            "replacement_not_needed": "Not needed: the original transaction confirmed first"
         },
         "list_item": {
             "send": "Send",
@@ -3276,7 +3309,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} inner txns"
+            "inner_transaction_count": "{{innerCount}} inner txns",
+            "cancel_transaction": "Cancel transaction"
         },
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
@@ -3419,6 +3453,13 @@
             "last_week": "Last Week",
             "last_month": "Last Month",
             "custom_range": "Custom Range"
+        },
+        "replacement": {
+            "title": "Pending transaction",
+            "body": "Speed up sends it again with a higher network fee. Cancel replaces it with an empty transfer to yourself, which also costs a network fee. If the original confirms first, nothing is replaced.",
+            "speed_up": "Speed Up",
+            "cancel": "Cancel Transaction",
+            "review_notice": "Replaces transaction {{txId}}"
         }
     },
     "tabbar": {

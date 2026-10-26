@@ -12,7 +12,7 @@
 
 import { sha256 } from '@noble/hashes/sha2.js'
 import { utf8ToBytes } from '@noble/hashes/utils.js'
-import { encodeToBase64, toUrlSafeBase64 } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, toUrlSafeBase64 } from './strings'
 
 /**
  * PKCE material for one OAuth attempt (RFC 7636). The verifier stays on this
@@ -26,7 +26,7 @@ export type PkcePair = {
     codeChallenge: string
 }
 
-// Unpadded base64url — Baanx validates against [A-Za-z0-9_-] with no '='.
+// Unpadded base64url: servers validate against [A-Za-z0-9_-] with no '='.
 const bytesToBase64Url = (bytes: Uint8Array): string =>
     toUrlSafeBase64(encodeToBase64(bytes))
 
@@ -47,7 +47,7 @@ export const createPkcePair = (): PkcePair => {
 }
 
 /**
- * CSRF `state` for the authorize round-trip (Baanx requires ≥ 8 chars). The
- * value echoed back by /v1/auth/oauth/authorize must equal this original.
+ * CSRF `state` for the authorize round-trip, at least 8 chars. The value the
+ * server echoes back must equal this original.
  */
 export const createOauthState = (): string => randomBase64Url(16)

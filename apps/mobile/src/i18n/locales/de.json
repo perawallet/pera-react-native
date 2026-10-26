@@ -1126,7 +1126,11 @@
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
             },
-            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x."
+            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transaktion bereits bestätigt",
+                "body": "Die Transaktion, die du beschleunigen oder stornieren wolltest, wurde zuerst bestätigt. Es wurde nichts ersetzt."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1199,6 +1203,10 @@
             "creator_cannot_opt_out": {
                 "title": "Asset kann nicht entfernt werden",
                 "body": "Dieses Konto hat das Asset erstellt und kann sich daher nicht davon abmelden."
+            },
+            "not_replaceable": {
+                "title": "Transaktion nicht mehr ausstehend",
+                "body": "Diese Transaktion wurde bereits bestätigt oder ersetzt und kann nicht mehr beschleunigt oder storniert werden."
             }
         },
         "kms": {
@@ -2718,6 +2726,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Empfänger wird geprüft…",
+            "look_alike_title": "Diese Adresse ähnelt einer, die du kennst",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "look_alike_recipient_label": "Du sendest an",
+            "look_alike_known_label_own_account": "Dein Konto {{name}}",
+            "look_alike_known_label_watched_account": "Konto {{name}} in deinem Wallet",
+            "look_alike_known_label_contact": "Dein Kontakt {{name}}",
+            "look_alike_known_label_history": "Eine Adresse aus deinem Verlauf",
+            "look_alike_acknowledge": "Ich habe die vollständige Adresse geprüft und möchte an sie senden",
+            "first_send_title": "Erste Sendung an diese Adresse",
+            "first_send_body": "Du hast in diesem Netzwerk noch nie an diese Adresse gesendet. Stelle sicher, dass es die richtige ist."
+        },
         "input_view": {
             "title": "{{asset}} senden"
         },
@@ -2772,6 +2793,16 @@
             "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
             "invalid_address_title": "Ungültige Adresse",
             "invalid_address_body": "Das ist keine gültige {{chain}}-Adresse."
+        },
+        "address_poisoning": {
+            "title": "Prüfe diese Adresse",
+            "lookalike_body": "Diese Adresse sieht aus wie eine, die du kennst, ist aber nicht dieselbe. Betrüger erstellen Adressen, die mit denselben Zeichen beginnen oder enden, damit du versehentlich ihre kopierst. Vergleiche jedes Zeichen, bevor du fortfährst.",
+            "dust_body": "Diese Adresse hat dir nur winzige Beträge gesendet, und du hast ihr noch nie etwas gesendet. Betrüger machen das, damit ihre Adresse in deinem Verlauf erscheint und du sie versehentlich kopierst.",
+            "recipient_label": "Senden an",
+            "similar_to_label": "Ähnlich wie",
+            "acknowledge": "Ich habe die vollständige Adresse geprüft",
+            "confirm": "Weiter",
+            "cancel": "Abbrechen"
         },
         "fee": {
             "slow": "Langsam",
@@ -3187,7 +3218,8 @@
             "title": "Du kannst dieses Konto nicht signieren",
             "body": "Dies ist ein Gemeinschaftskonto, und keines seiner Signier-Konten befindet sich in deinem Wallet. Füge ein Signier-Konto hinzu, um Transaktionen dafür zu signieren.",
             "rekeyed_auth_missing_body": "Dieses Konto ist zu {{authAddress}} rekeyed, das sich nicht in diesem Wallet befindet, daher kann es keine Transaktionen signieren. Importiere das Auth-Konto, um dafür zu signieren.",
-            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren."
+            "rekeyed_auth_watch_body": "Dieses Konto ist zu einem reinen Beobachtungskonto rekeyed, das keinen Signaturschlüssel besitzt. Importiere den Schlüssel des Auth-Kontos, um dafür zu signieren.",
+            "signer_missing_body": "Diese Anfrage braucht eine Signatur von einem Konto, das nicht in deinem Wallet ist, daher kann sie hier nicht signiert werden."
         },
         "transaction_request_faq": {
             "title": "FAQ zu Transaktionsanfragen",
@@ -3248,7 +3280,8 @@
         "notice": {
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
-            "replaced": "Durch eine andere Transaktion ersetzt"
+            "replaced": "Durch eine andere Transaktion ersetzt",
+            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt"
         },
         "list_item": {
             "send": "Senden",
@@ -3268,7 +3301,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} innere Transaktionen"
+            "inner_transaction_count": "{{innerCount}} innere Transaktionen",
+            "cancel_transaction": "Transaktion stornieren"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
@@ -3411,6 +3445,13 @@
             "last_week": "Letzte Woche",
             "last_month": "Letzter Monat",
             "custom_range": "Benutzerdefinierter Zeitraum"
+        },
+        "replacement": {
+            "title": "Ausstehende Transaktion",
+            "body": "Beschleunigen sendet sie erneut mit einer höheren Netzwerkgebühr. Stornieren ersetzt sie durch eine leere Überweisung an dich selbst, die ebenfalls eine Netzwerkgebühr kostet. Wird die ursprüngliche Transaktion zuerst bestätigt, wird nichts ersetzt.",
+            "speed_up": "Beschleunigen",
+            "cancel": "Transaktion stornieren",
+            "review_notice": "Ersetzt Transaktion {{txId}}"
         }
     },
     "tabbar": {

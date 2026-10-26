@@ -20,8 +20,12 @@ const {
 } = require('expo/config-plugins');
 
 const DRAWABLE_NAME = 'ic_notification_small';
-const FCM_ICON_META =
-  'com.google.firebase.messaging.default_notification_icon';
+// FCM draws pushes that arrive in the background; expo-notifications draws the
+// foreground copy. Each reads only its own key.
+const ICON_META_KEYS = [
+  'com.google.firebase.messaging.default_notification_icon',
+  'expo.modules.notifications.default_notification_icon',
+];
 
 /**
  * Absolute path of the notification drawable inside the generated Android
@@ -43,8 +47,8 @@ function notificationIconDrawableTarget(platformProjectRoot) {
 }
 
 /**
- * Add the FCM default-notification-icon meta-data (pointing at the drawable)
- * to the main <application>. Idempotent.
+ * Point every default-notification-icon meta-data key at the drawable on the
+ * main <application>. Idempotent.
  *
  * @param {any} androidManifest parsed AndroidManifest.xml
  * @returns {any}
@@ -53,20 +57,22 @@ function addNotificationIconMetaData(androidManifest) {
   const app =
     AndroidConfig.Manifest.getMainApplicationOrThrow(androidManifest);
   app['meta-data'] = (app['meta-data'] || []).filter(
-    item => item.$?.['android:name'] !== FCM_ICON_META,
+    item => !ICON_META_KEYS.includes(item.$?.['android:name']),
   );
-  AndroidConfig.Manifest.addMetaDataItemToMainApplication(
-    app,
-    FCM_ICON_META,
-    `@drawable/${DRAWABLE_NAME}`,
-    'resource',
-  );
+  for (const key of ICON_META_KEYS) {
+    AndroidConfig.Manifest.addMetaDataItemToMainApplication(
+      app,
+      key,
+      `@drawable/${DRAWABLE_NAME}`,
+      'resource',
+    );
+  }
   return androidManifest;
 }
 
 /**
  * Ships the native white-silhouette notification icon on ALL lanes: copies the
- * vector drawable into res/drawable and registers it as the FCM default
+ * vector drawable into res/drawable and registers it as the default
  * notification icon. Without this, Android falls back to the launcher icon and
  * renders a white box in the status bar. The silhouette is monochrome and not a
  * brand/lane differentiator, so it is intentionally applied to every variant.

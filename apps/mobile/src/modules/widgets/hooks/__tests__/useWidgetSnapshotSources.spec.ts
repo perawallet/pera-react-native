@@ -75,6 +75,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backendAPIKey: 'api-key' },
+    deploymentOf: () => 'live',
     getPeraServicesConfig: () => ({ backendUrl: state.backendUrl }),
     getPeraDeploymentConfig: (deployment: string) => ({
         backendUrl: `https://${deployment}.api.example`,
@@ -82,7 +83,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => 'inbox-device',
     useDeploymentDeviceID: (deployment: string) => `${deployment}-device`,
 }))
 
@@ -314,7 +314,7 @@ describe('useWidgetSnapshotSources', () => {
         const { result } = renderHook(() => useWidgetSnapshotSources())
 
         expect(result.current.inboxFeed).toEqual({
-            deviceId: 'inbox-device',
+            deviceId: 'live-device',
             addresses: ['ADDR1', 'ADDR2'],
             accountNames: [
                 { address: 'ADDR1', name: 'Main' },
