@@ -27,6 +27,5 @@ export const useStyles = makeStyles(theme => ({
     },
     differing: {
         color: theme.colors.error,
-        fontWeight: 'bold' as const,
     },
 }))

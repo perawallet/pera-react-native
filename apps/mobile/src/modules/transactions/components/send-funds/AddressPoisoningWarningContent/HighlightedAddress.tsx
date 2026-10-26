@@ -33,6 +33,7 @@ export const HighlightedAddress = ({
             {segments.map((segment, index) => (
                 <PWText
                     key={index}
+                    weight={segment.isDifferent ? 700 : undefined}
                     style={segment.isDifferent ? styles.differing : undefined}
                 >
                     {segment.text}
