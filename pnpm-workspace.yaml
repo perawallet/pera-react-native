@@ -22,7 +22,7 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.10.0
+  "@ledgerhq/hw-app-eth": 7.11.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
@@ -61,14 +61,14 @@ catalog:
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
-  "@walletconnect/core": 2.25.0
+  "@walletconnect/core": 2.26.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
-  "@walletconnect/react-native-compat": 2.25.0
+  "@walletconnect/react-native-compat": 2.26.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
-  "@walletconnect/utils": 2.25.0
+  "@walletconnect/utils": 2.26.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
@@ -90,8 +90,8 @@ catalog:
   expo-local-authentication: 58.0.2
   expo-localization: 58.0.5
   expo-notifications: 58.1.6
-  expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.5
+  expo-sqlite: 58.0.14
+  fake-indexeddb: 6.2.6
   falcon-1024: 0.2.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
@@ -113,8 +113,8 @@ catalog:
   uuid: 14.0.3
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
-  viem: 2.57.6
-  vite: ~8.2.4
+  viem: 2.57.7
+  vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
   zod: ^4.4.3
