@@ -285,6 +285,18 @@ export const transferContractTests = (
             })
         }
 
+        if (makeAdapter().addressPoisoning) {
+            it('screens recipients with a positive whole look-alike threshold and a non-negative dust ceiling', () => {
+                const rules = makeAdapter().addressPoisoning?.()
+
+                expect(Number.isInteger(rules?.lookalikeMatchedChars)).toBe(
+                    true,
+                )
+                expect(rules?.lookalikeMatchedChars).toBeGreaterThan(0)
+                expect(rules?.dustCeiling.isNegative()).toBe(false)
+            })
+        }
+
         it.each([new Decimal(-1), new Decimal('0.5')])(
             'refuses %s base units rather than rounding it',
             async amount => {

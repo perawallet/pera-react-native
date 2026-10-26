@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import type { ChainRemoteConfigValue } from '@perawallet/wallet-core-chain-contract'
+import type { AddressPoisoningRules } from '@perawallet/wallet-core-transactions'
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import {
     FALLBACK_ASSET_MBR,
@@ -27,6 +29,8 @@ export const AlgorandRemoteConfigKeys = {
     enable_quantum_swap: 'enable_quantum_swap',
     enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
+    address_poisoning_lookalike_chars: 'address_poisoning_lookalike_chars',
+    address_poisoning_dust_ceiling: 'address_poisoning_dust_ceiling',
 } as const
 
 export type AlgorandRemoteConfigKey =
@@ -54,6 +58,12 @@ export const algorandRemoteConfigDefaults: Readonly<
     // (Nodely) hosts — a separate kill switch so a node-side CA surprise can be
     // disabled without also dropping backend pinning, and vice versa.
     enable_ssl_pinning_algod: false,
+    // Leading plus trailing characters a send recipient must share with a
+    // known address, without being it, to warn as a look-alike.
+    address_poisoning_lookalike_chars: 4,
+    // An incoming ALGO payment at or below this, in µAlgo, reads as
+    // address-poisoning dust.
+    address_poisoning_dust_ceiling: 1000,
 }
 
 export interface AlgorandFeeConfig {
@@ -109,6 +119,35 @@ export const readAlgorandFeeConfig = (
         baseAccountMbr: readValue(
             AlgorandRemoteConfigKeys.fee_base_account_mbr,
             FALLBACK_BASE_ACCOUNT_MBR,
+        ),
+    }
+}
+
+const FALLBACK_LOOKALIKE_CHARS = 4
+/** µAlgo (base units): 0.001 ALGO. */
+const FALLBACK_DUST_CEILING = 1000
+
+/** Remote config retunes both thresholds without a release; an invalid value falls back to the bundled one. */
+export const readAlgorandAddressPoisoningRules = (
+    remoteConfig: Pick<RemoteConfigService, 'getNumberValue'>,
+): AddressPoisoningRules => {
+    const matchedChars = remoteConfig.getNumberValue(
+        AlgorandRemoteConfigKeys.address_poisoning_lookalike_chars,
+        FALLBACK_LOOKALIKE_CHARS,
+    )
+    const dustCeiling = remoteConfig.getNumberValue(
+        AlgorandRemoteConfigKeys.address_poisoning_dust_ceiling,
+        FALLBACK_DUST_CEILING,
+    )
+    return {
+        lookalikeMatchedChars:
+            Number.isInteger(matchedChars) && matchedChars > 0
+                ? matchedChars
+                : FALLBACK_LOOKALIKE_CHARS,
+        dustCeiling: new Decimal(
+            Number.isFinite(dustCeiling) && dustCeiling >= 0
+                ? Math.round(dustCeiling)
+                : FALLBACK_DUST_CEILING,
         ),
     }
 }

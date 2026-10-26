@@ -19,6 +19,8 @@ import {
     lt,
     lte,
     gte,
+    inArray,
+    or,
     sql,
     notExists,
     type SQL,
@@ -35,12 +37,17 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '../models/types'
+import type { Decimal } from 'decimal.js'
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+} from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 import {
     assetFactsResolverFor,
     chainDataCodecFor,
     chainDataCodecOf,
+    summarizeHistoryItem,
 } from '../history-adapter'
 import { fromDb, toDb } from './mappers'
 
@@ -452,6 +459,134 @@ export async function getLatestTransactionRoundTime({
         .all()
 
     return rows[0]?.maxRoundTime ?? null
+}
+
+// A failed or replaced send never reached the receiver, so it isn't history
+// between the two addresses.
+const SETTLED_OR_IN_FLIGHT = [
+    TransactionHistoryStatuses.CONFIRMED,
+    TransactionHistoryStatuses.PENDING,
+]
+
+type GetSentToAddressesParams = {
+    db?: Database
+    scope: ChainScope
+    senders: readonly string[]
+}
+
+/** Every receiver any of `senders` has paid in `scope`, as far as the cache reaches. */
+export async function getSentToAddresses({
+    db = getDatabase(),
+    scope,
+    senders,
+}: GetSentToAddressesParams): Promise<string[]> {
+    if (senders.length === 0) return []
+
+    const rows = await db
+        .selectDistinct({ receiver: TransactionsSchema.receiver })
+        .from(TransactionsSchema)
+        .where(
+            and(
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
+                inArray(TransactionsSchema.sender, [...senders]),
+                isNotNull(TransactionsSchema.receiver),
+                inArray(TransactionsSchema.status, SETTLED_OR_IN_FLIGHT),
+            ),
+        )
+        .all()
+
+    return rows.flatMap(row => (row.receiver ? [row.receiver] : []))
+}
+
+export type CounterpartyTransfer = {
+    direction: 'incoming' | 'outgoing'
+    /** Null when the transfer moves no amount. */
+    assetId: Nullable<string>
+    /** Base units the own account sent or received, as the chain reads the row from its side; null when it moves no amount. */
+    amount: Nullable<Decimal>
+}
+
+type GetCounterpartyTransfersParams = {
+    db?: Database
+    scope: ChainScope
+    ownAddresses: readonly string[]
+    counterparty: string
+}
+
+/** The cached transfers between any of `ownAddresses` and `counterparty`, in either direction. */
+export async function getCounterpartyTransfers({
+    db = getDatabase(),
+    scope,
+    ownAddresses,
+    counterparty,
+}: GetCounterpartyTransfersParams): Promise<CounterpartyTransfer[]> {
+    if (ownAddresses.length === 0) return []
+
+    const own = [...ownAddresses]
+    const incoming = and(
+        eq(TransactionsSchema.sender, counterparty),
+        inArray(TransactionsSchema.receiver, own),
+    )
+    const outgoing = and(
+        inArray(TransactionsSchema.sender, own),
+        eq(TransactionsSchema.receiver, counterparty),
+    )
+    const rows = await db
+        .select({
+            isIncoming: sql<number>`CASE WHEN ${incoming} THEN 1 ELSE 0 END`,
+            id: TransactionsSchema.id,
+            txType: TransactionsSchema.txType,
+            sender: TransactionsSchema.sender,
+            receiver: TransactionsSchema.receiver,
+            status: TransactionsSchema.status,
+            fee: TransactionsSchema.fee,
+            amount: TransactionsSchema.amount,
+            assetSender: TransactionsSchema.assetSender,
+            assetJson: TransactionsSchema.assetJson,
+            interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
+            balanceImpactsJson: TransactionsSchema.balanceImpactsJson,
+            chainData: TransactionsSchema.chainData,
+        })
+        .from(TransactionsSchema)
+        .where(
+            and(
+                eq(TransactionsSchema.scope, toScopeKey(scope)),
+                inArray(TransactionsSchema.status, SETTLED_OR_IN_FLIGHT),
+                or(incoming, outgoing),
+            ),
+        )
+        .all()
+
+    if (rows.length === 0) return []
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
+    const codec = chainDataCodecFor(scope.chainId)
+    return rows.flatMap(({ isIncoming, ...row }): CounterpartyTransfer[] => {
+        const isIn = isIncoming === 1
+        const ownSide = isIn ? row.receiver : row.sender
+        if (!ownSide) return []
+        try {
+            // The row's own amount misses what a chain moves besides it, such
+            // as the balance an Algorand close-out sweeps into the account.
+            const moved = summarizeHistoryItem(
+                fromDb(row, resolveAssetFacts, codec),
+                ownSide,
+                scope.chainId,
+            ).amount
+            return [
+                {
+                    direction: isIn ? 'incoming' : 'outgoing',
+                    assetId: moved?.assetRef.assetId ?? null,
+                    amount: moved?.value ?? null,
+                },
+            ]
+        } catch (error) {
+            logger.warn('history: skipped a cached row that would not parse', {
+                error,
+                id: row.id,
+            })
+            return []
+        }
+    })
 }
 
 type DeleteTransactionsForAccountParams = {
