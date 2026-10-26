@@ -101,6 +101,18 @@ else
 fi
 rm "$FORMAT_LOG"
 
+# The Bitrise config is pasted into the bitrise.io editor, which saves its own
+# serialization; any other layout turns that paste into a whole-file diff.
+echo "\n${YELLOW}Checking .bitrise/bitrise.yml format...${NC}"
+BITRISE_YML_LOG=$(mktemp)
+if pnpm run check:bitrise-yml > "$BITRISE_YML_LOG" 2>&1; then
+    echo "${GREEN}✓ bitrise.yml matches the bitrise.io editor format${NC}"
+else
+    echo "${RED}bitrise.yml format check failed.${NC}"
+    record_failure "bitrise.yml format" "$BITRISE_YML_LOG" "${YELLOW}Run 'pnpm format:bitrise' and commit the result.${NC}"
+fi
+rm "$BITRISE_YML_LOG"
+
 # Run single-algosdk guard. pnpm's peer-dependency auto-install can bypass
 # the workspace-level algosdk override for any importer with no direct
 # algosdk edge, silently reintroducing a second, stock algosdk resolution
