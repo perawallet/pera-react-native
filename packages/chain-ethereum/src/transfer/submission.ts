@@ -28,6 +28,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
+    getOpenSubmissionAttempts,
     markSubmissionUnknown,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
@@ -35,7 +36,12 @@ import {
     type SubmissionFlow,
     type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
-import { EvmErrorCode, evmErrorCodeOf, toEvmError } from '../blockchain/errors'
+import {
+    EvmError,
+    EvmErrorCode,
+    evmErrorCodeOf,
+    toEvmError,
+} from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
 
@@ -148,6 +154,34 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
+// Two sends built before either was recorded pick the same nonce. Sending the
+// second would fail at the node at best, or replace the first if its fees are
+// 10% higher, leaving the first's dApp with a hash that never mines.
+const isNonceHeldByAnotherSend = async ({
+    db,
+    scope,
+    sender,
+    nonce,
+    hash,
+}: {
+    db?: Database
+    scope: ChainScope
+    sender: string
+    nonce: number | undefined
+    hash: Hex
+}): Promise<boolean> => {
+    if (nonce === undefined) return false
+    try {
+        const open = await getOpenSubmissionAttempts({ db, scope, sender })
+        return open.some(
+            attempt => attempt.nonce === nonce && !attempt.txIds.includes(hash),
+        )
+    } catch (error) {
+        logger.warn('ethereum submission ledger: nonce check failed', { error })
+        return false
+    }
+}
+
 /** The entry the send's build put on its unsigned transaction, read back from the signed bytes. */
 export const historyEntryOfSigned = async (
     serializedTransaction: TransactionSerialized,
@@ -193,12 +227,24 @@ export const submitAndRecordEthereumTransactions = async ({
         const sender = await recoverTransactionAddress({
             serializedTransaction,
         })
+        const hash = keccak256(serializedTransaction)
+        if (
+            await isNonceHeldByAnotherSend({ db, scope, sender, nonce, hash })
+        ) {
+            throw new SubmissionError(
+                [hash],
+                'rejected-by-node',
+                new EvmError(EvmErrorCode.NONCE_TOO_LOW, {
+                    symbol: chain.row.nativeAsset.symbol,
+                }),
+            )
+        }
         let attemptId: string | undefined
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({
                 db,
                 scope,
-                txIds: [keccak256(serializedTransaction)],
+                txIds: [hash],
                 flow,
                 sender,
                 nonce,

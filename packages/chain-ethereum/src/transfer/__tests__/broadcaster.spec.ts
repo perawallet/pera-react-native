@@ -35,6 +35,7 @@ import {
     getOpenSubmissionAttempts,
     getUnsyncedSubmissionSpends,
     getSubmissionAttemptsWithHistoryEntry,
+    recordSubmissionAttempt,
     SubmissionAttemptsSchema,
     TransportError,
     type SigningResult,
@@ -164,6 +165,42 @@ describe('Ethereum broadcaster adapter', () => {
                 adapter.submitAndAutoRefresh(SCOPE, SIGNED),
             ).rejects.toMatchObject({ classification: 'rejected-by-node' })
             expect(await rows()).toMatchObject([{ status: 'failed' }])
+        })
+
+        it('refuses a send whose nonce another open send holds, without recording or sending it', async () => {
+            useRpc()
+            await recordSubmissionAttempt({
+                db,
+                scope: SCOPE,
+                txIds: ['0xother'],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 0,
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).rejects.toMatchObject({
+                classification: 'rejected-by-node',
+                nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+            })
+            expect(await rows()).toHaveLength(1)
+        })
+
+        it('still resends a transaction whose own open row holds the nonce', async () => {
+            useRpc()
+            await recordSubmissionAttempt({
+                db,
+                scope: SCOPE,
+                txIds: [HASH],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 0,
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).resolves.toEqual([HASH])
         })
 
         it('submits to the scope it is given, not the selected network', async () => {
