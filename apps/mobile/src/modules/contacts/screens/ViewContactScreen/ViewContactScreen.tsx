@@ -28,7 +28,7 @@ export const ViewContactScreen = () => {
         nfdName,
         openQR,
         copyAddress,
-        sendTo,
+        openExplorer,
         goToEdit,
         handleShare,
     } = useViewContactScreen()
@@ -86,7 +86,7 @@ export const ViewContactScreen = () => {
                     >
                         {t('contacts.edit_contact.addresses_label')}
                     </PWText>
-                    {addressRows.map(({ family, address, canSend }) => (
+                    {addressRows.map(({ family, address, hasExplorer }) => (
                         <ContactAddressRow
                             key={family}
                             family={family}
@@ -112,17 +112,20 @@ export const ViewContactScreen = () => {
                                         )}
                                         testID={`view_contact_qr_${family}`}
                                     />
-                                    {canSend ? (
+                                    {hasExplorer ? (
                                         <PWTouchableIcon
                                             name='arrow-up-right'
                                             variant='secondary'
                                             onPress={() =>
-                                                sendTo(family, address)
+                                                void openExplorer(
+                                                    family,
+                                                    address,
+                                                )
                                             }
                                             accessibilityLabel={t(
-                                                'contacts.view_contact.send',
+                                                'contacts.view_contact.view_in_explorer',
                                             )}
-                                            testID={`view_contact_send_${family}`}
+                                            testID={`view_contact_explorer_${family}`}
                                         />
                                     ) : null}
                                 </PWView>

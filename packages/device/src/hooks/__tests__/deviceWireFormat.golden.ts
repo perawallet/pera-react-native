@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// The v3 devices API reads these exact bodies: a change here is a change to
+// The v4 devices API reads these exact bodies: a change here is a change to
 // the backend contract, never a test update.
 
 export const GOLDEN_DEVICE_ACCOUNT_TYPES = {
@@ -23,12 +23,15 @@ export const GOLDEN_DEVICE_ACCOUNT_TYPES = {
 }
 
 const GOLDEN_REGISTRATION_ACCOUNTS = `[
-    { "address": "ALGO25ADDR", "account_type": "algo25", "receive_notifications": true },
-    { "address": "HDCHILDADDR", "account_type": "hdWallet", "receive_notifications": true },
-    { "address": "LEDGERADDR", "account_type": "hardware", "receive_notifications": true },
-    { "address": "MSIGADDR", "account_type": "multisig", "receive_notifications": true },
-    { "address": "WATCHADDR", "account_type": "watch", "receive_notifications": false },
-    { "address": "QUANTUMADDR", "account_type": "quantum", "receive_notifications": true }
+    { "address": "ALGO25ADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "algo25", "receive_notifications": true },
+    { "address": "HDCHILDADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "hdWallet", "receive_notifications": true },
+    { "address": "LEDGERADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "hardware", "receive_notifications": true },
+    { "address": "MSIGADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "multisig", "receive_notifications": true },
+    { "address": "WATCHADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "watch", "receive_notifications": false },
+    { "address": "QUANTUMADDR", "chain": "algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k", "account_type": "quantum", "receive_notifications": true },
+    { "address": "0x52908400098527886e0f7030069857d2e4169ee7", "chain": "eip155:1", "account_type": "hdWallet", "receive_notifications": true },
+    { "address": "0x8617e340b3d01fa5f11f306f4090fd50e238070d", "chain": "eip155:1", "account_type": "hardware", "receive_notifications": true },
+    { "address": "0xde709f2102306220921060314715629080e2fb77", "chain": "eip155:1", "account_type": "watch", "receive_notifications": false }
 ]`
 
 export const GOLDEN_UPDATE_REQUEST = `{

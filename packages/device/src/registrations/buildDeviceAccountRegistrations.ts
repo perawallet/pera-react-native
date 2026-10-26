@@ -22,7 +22,8 @@ import {
  * address on every chain with a device adapter. Notification state is passed
  * in rather than read from a store so callers can register the *result* of a
  * pending toggle without waiting for the store write to propagate through
- * React.
+ * React. Muting is per account: muting any of its addresses mutes it on every
+ * chain.
  */
 export const buildDeviceAccountRegistrations = (
     accounts: readonly DeviceRegistrableAccount[],
@@ -32,20 +33,24 @@ export const buildDeviceAccountRegistrations = (
     const adapters = CHAIN_IDS.filter(chainId =>
         deviceChainAdapters.has(chainId),
     ).map(chainId => deviceChainAdapters.get(chainId))
-    return accounts.flatMap(account =>
-        adapters.flatMap(adapter => {
+    return accounts.flatMap(account => {
+        const receiveNotifications = !Object.values(account.chains).some(
+            entry => entry !== undefined && disabled.has(entry.address),
+        )
+        return adapters.flatMap(adapter => {
             const address = account.chains[adapter.chainId]?.address
             if (address === undefined) return []
             const accountType = adapter.accountTypeOf(account)
             if (accountType === null) return []
             return [
                 {
+                    chainId: adapter.chainId,
                     address,
                     accountType,
                     rank: adapter.rankOf(account),
-                    receiveNotifications: !disabled.has(address),
+                    receiveNotifications,
                 },
             ]
-        }),
-    )
+        })
+    })
 }

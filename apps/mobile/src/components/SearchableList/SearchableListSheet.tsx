@@ -45,7 +45,7 @@ const SearchableListSheetInner = <T,>(
         snapThreshold: _snapThreshold,
         onScrollEndDrag: _onScrollEndDrag,
         inBottomSheet: _inBottomSheet,
-        searchAccessory: _searchAccessory,
+        searchAccessory,
         children: _children,
         ...listProps
     } = props
@@ -70,6 +70,11 @@ const SearchableListSheetInner = <T,>(
                     autoFocus={autoFocusSearch}
                     testID={SEARCH_INPUT_TEST_ID}
                 />
+                {searchAccessory != null ? (
+                    <PWView style={styles.searchAccessory}>
+                        {searchAccessory}
+                    </PWView>
+                ) : null}
             </PWView>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {React.createElement(PWFlatList as any, {

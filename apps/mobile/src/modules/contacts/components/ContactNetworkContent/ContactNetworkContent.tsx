@@ -17,15 +17,15 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { ChainRow } from '@modules/chain-ui'
 import { useStyles } from './styles'
 
-export type ContactSendNetworkContentProps = {
-    /** The networks of the address's family the user can send on. */
+export type ContactNetworkContentProps = {
+    /** Networks of the address's family to choose between. */
     chainIds: readonly ChainId[]
 }
 
 /** Resolves the picked network's id. */
-export const ContactSendNetworkContent = ({
+export const ContactNetworkContent = ({
     chainIds,
-}: ContactSendNetworkContentProps) => {
+}: ContactNetworkContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<ChainId>()
@@ -33,9 +33,7 @@ export const ContactSendNetworkContent = ({
     return (
         <PWSheetLayout
             header={
-                <SheetHeader
-                    title={t('contacts.view_contact.send_network_title')}
-                />
+                <SheetHeader title={t('contacts.view_contact.network_title')} />
             }
         >
             <PWView style={styles.list}>
@@ -50,7 +48,7 @@ export const ContactSendNetworkContent = ({
                             />
                         }
                         onPress={() => resolve(chainId)}
-                        testID={`contact_send_network_${chainId}`}
+                        testID={`contact_network_${chainId}`}
                     />
                 ))}
             </PWView>

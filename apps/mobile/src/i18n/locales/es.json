@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio.",
+            "chain_network": "Red: {{chain}} {{network}}",
             "request_origin": "La solicitud proviene de {{origin}}",
             "requester_verified_label": "Pestaña verificada: {{origin}}",
             "requester_mismatch": "Esta solicitud vino de {{origin}}, no de {{claimed}}.",
@@ -1026,10 +1027,10 @@
             "no_contact_title": "No se encontró el contacto",
             "no_contact_body": "Parece que algo salió mal. No se pudo encontrar el contacto indicado",
             "nfd_label": "NFDomain",
-            "send": "Enviar",
+            "view_in_explorer": "Ver en el explorador",
             "copy": "Copiar dirección",
             "show_qr": "Mostrar código QR",
-            "send_network_title": "Elegir red"
+            "network_title": "Elegir red"
         },
         "list": {
             "no_contacts_title": "Todavía no has añadido ningún contacto",

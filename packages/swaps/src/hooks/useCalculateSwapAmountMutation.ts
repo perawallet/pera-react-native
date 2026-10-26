@@ -12,13 +12,14 @@
 
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { calculateSwapAmount } from '../api'
 import type { CalculateSwapAmountRequest } from '../api'
 
 export const useCalculateSwapAmountMutation = (scope: ChainScope) => {
     // Injected here rather than threaded through callers.
-    const deviceId = useDeviceIdLookup()(scope)
+    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
 
     return useMutation({
         // Omitted, not sent as null, while the device is unregistered: `device`

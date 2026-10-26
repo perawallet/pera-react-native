@@ -32,6 +32,8 @@ export type AssetSelectionListProps<T> = {
     onSearchChange?: (value: string) => void
     searchPlaceholder?: string
     autoFocusSearch?: boolean
+    /** Pinned under the search input, such as filter chips. */
+    searchAccessory?: React.ReactNode
 
     isLoading?: boolean
     skeletonCount?: number
@@ -54,6 +56,7 @@ export const AssetSelectionList = <T,>({
     onSearchChange,
     searchPlaceholder,
     autoFocusSearch,
+    searchAccessory,
     isLoading = false,
     skeletonCount = 5,
     ListEmptyComponent,
@@ -119,6 +122,7 @@ export const AssetSelectionList = <T,>({
             searchPlaceholder={searchPlaceholder}
             onSearchChange={onSearchChange}
             autoFocusSearch={autoFocusSearch}
+            searchAccessory={searchAccessory}
             ListEmptyComponent={showSkeletons ? undefined : ListEmptyComponent}
             ListHeaderComponent={ListHeaderComponent}
             ListFooterComponent={footerComponent}

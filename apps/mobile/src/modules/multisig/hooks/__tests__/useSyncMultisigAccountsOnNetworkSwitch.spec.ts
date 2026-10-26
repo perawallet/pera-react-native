@@ -70,7 +70,12 @@ vi.mock('@perawallet/wallet-core-chain-shared', async () => {
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: <T>(selector: (state: object) => T): T => selector({}),
-    deviceIdForScope: () => deviceIdMock.current,
+    deviceIdForDeployment: () => deviceIdMock.current,
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    deploymentOf: () => 'live',
 }))
 
 vi.mock('@hooks/useCapableChainIds', () => ({

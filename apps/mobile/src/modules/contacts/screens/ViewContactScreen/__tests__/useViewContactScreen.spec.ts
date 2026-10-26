@@ -10,9 +10,28 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import {
+    CUSTOM_NETWORK_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    getChainDescriptor,
+    getSelectedScope,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
+import { evmCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { setChainEnabled } from '@test-utils/capability-overrides'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 import { useViewContactScreen } from '../useViewContactScreen'
 
@@ -22,8 +41,7 @@ const mocks = vi.hoisted(() => ({
     shareText: vi.fn(),
     useNfdForAddressQuery: vi.fn(),
     copyToClipboard: vi.fn(),
-    sendTo: vi.fn(),
-    canSendOn: vi.fn(),
+    pushWebView: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -38,11 +56,12 @@ vi.mock('@modules/contacts/components/ContactQRContent', () => ({
     ContactQRContent: () => null,
 }))
 
-vi.mock('@modules/contacts/hooks', () => ({
-    useSendToContact: () => ({
-        canSendOn: mocks.canSendOn,
-        sendTo: mocks.sendTo,
-    }),
+vi.mock('@modules/contacts/components/ContactNetworkContent', () => ({
+    ContactNetworkContent: () => null,
+}))
+
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({ pushWebView: mocks.pushWebView }),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -63,6 +82,28 @@ const CONTACT: Contact = {
     addresses: { algorand: 'ALICE_ADDRESS', evm: '0xA11CE' },
 }
 
+const BASE_CHAIN_ID: ChainId = 'base'
+
+const accountUrl = (chainId: ChainId, address: string) =>
+    getChainDescriptor(chainId).explorer.accountUrl(
+        getSelectedScope(chainId).networkId,
+        address,
+    )
+
+const selectCustomNetwork = (chainId: ChainId): void => {
+    const store = useNetworkStore.getState()
+    store.setMode('developer')
+    store.setCustomNetwork(chainId, { id: CUSTOM_NETWORK_ID })
+    store.selectNetwork(chainId, CUSTOM_NETWORK_ID)
+}
+
+const registerBaseChain = (): void => {
+    const { chains } = getProvider()
+    if (!chains.has(BASE_CHAIN_ID)) {
+        chains.register(evmChainOf('base').descriptor, evmCapabilityDefaults)
+    }
+}
+
 const selectContact = (contact: Contact | null): void => {
     vi.mocked(useContacts).mockReturnValue({
         selectedContact: contact,
@@ -76,15 +117,21 @@ describe('useViewContactScreen', () => {
             data: [{ name: 'alice.algo' }, { name: 'second.algo' }],
         })
         mocks.shareText.mockResolvedValue(undefined)
-        mocks.canSendOn.mockImplementation(family => family === 'evm')
+        registerEthereumChain()
     })
 
-    it('lists one row per family, with whether the user can send there, and the first NFD name of the Algorand address', () => {
+    afterEach(() => {
+        useNetworkStore.getState().resetState()
+        useRemoteConfigStore.getState().resetState()
+        restoreAlgorandOnlyChains()
+    })
+
+    it('lists one row per family, with whether it has an explorer, and the first NFD name of the Algorand address', () => {
         const { result } = renderHook(() => useViewContactScreen())
 
         expect(result.current.addressRows).toEqual([
-            { family: 'algorand', address: 'ALICE_ADDRESS', canSend: false },
-            { family: 'evm', address: '0xA11CE', canSend: true },
+            { family: 'algorand', address: 'ALICE_ADDRESS', hasExplorer: true },
+            { family: 'evm', address: '0xA11CE', hasExplorer: true },
         ])
         expect(result.current.nfdName).toBe('alice.algo')
         expect(mocks.useNfdForAddressQuery).toHaveBeenCalledWith(
@@ -115,12 +162,109 @@ describe('useViewContactScreen', () => {
         expect(mocks.copyToClipboard).toHaveBeenCalledWith('0xA11CE')
     })
 
-    it("sends to a row's address on its family", () => {
+    it('has no explorer for a family with no registered chain', () => {
+        restoreAlgorandOnlyChains()
         const { result } = renderHook(() => useViewContactScreen())
 
-        act(() => result.current.sendTo('evm', '0xA11CE'))
+        expect(result.current.addressRows).toContainEqual({
+            family: 'evm',
+            address: '0xA11CE',
+            hasExplorer: false,
+        })
+    })
 
-        expect(mocks.sendTo).toHaveBeenCalledWith('evm', '0xA11CE')
+    it("has no explorer when the family's only chain is on a custom network", () => {
+        selectCustomNetwork(ETHEREUM_CHAIN_ID)
+        const { result } = renderHook(() => useViewContactScreen())
+
+        expect(result.current.addressRows).toContainEqual({
+            family: 'evm',
+            address: '0xA11CE',
+            hasExplorer: false,
+        })
+    })
+
+    it("opens the explorer of a family's only chain without asking for a network", async () => {
+        const { result } = renderHook(() => useViewContactScreen())
+
+        await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+        expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
+        expect(mocks.pushWebView).toHaveBeenCalledWith({
+            url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
+        })
+    })
+
+    describe('when the family has more than one chain', () => {
+        beforeEach(() => {
+            registerBaseChain()
+        })
+
+        it("asks for the network and opens that chain's explorer", async () => {
+            mocks.requestBottomSheet.mockResolvedValue(BASE_CHAIN_ID)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.requestBottomSheet).toHaveBeenCalledWith({
+                contents: expect.objectContaining({
+                    props: { chainIds: [ETHEREUM_CHAIN_ID, BASE_CHAIN_ID] },
+                }),
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('leaves a chain on a custom network out, opening the remaining one directly', async () => {
+            selectCustomNetwork(ETHEREUM_CHAIN_ID)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: accountUrl(BASE_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('leaves a switched-off chain out, opening the remaining one directly', async () => {
+            setChainEnabled(BASE_CHAIN_ID, false)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
+            })
+        })
+
+        it('hides the explorer when every chain of the family is switched off', () => {
+            setChainEnabled(ETHEREUM_CHAIN_ID, false)
+            setChainEnabled(BASE_CHAIN_ID, false)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            expect(result.current.addressRows).toContainEqual({
+                family: 'evm',
+                address: '0xA11CE',
+                hasExplorer: false,
+            })
+        })
+
+        it('opens nothing when the network sheet is dismissed', async () => {
+            mocks.requestBottomSheet.mockResolvedValue(undefined)
+            const { result } = renderHook(() => useViewContactScreen())
+
+            await act(() => result.current.openExplorer('evm', '0xA11CE'))
+
+            expect(mocks.pushWebView).not.toHaveBeenCalled()
+        })
     })
 
     it('navigates to the edit screen', () => {

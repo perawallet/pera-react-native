@@ -33,6 +33,14 @@ vi.mock('@hooks/useCapability', async () =>
     (await import('@test-utils/capability-mock')).capabilityHookMock(),
 )
 
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'base' ? 'Base' : undefined,
+}))
+
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: vi.fn(),
 }))
@@ -117,6 +125,30 @@ describe('useConnectionsSettingsScreen', () => {
                 title: 'Some Dapp',
                 connectedAt: walletConnectRow.lastActiveAt,
             }),
+        ])
+    })
+
+    it('badges an EVM site row with its chain’s display name', () => {
+        mockList([
+            {
+                ...dappRow,
+                id: 'dapp-eip1193:https://site.example.com',
+                kind: 'dapp-eip1193',
+                networks: [{ chainId: 'base', networkId: 'mainnet' }],
+            },
+            dappRow,
+        ])
+
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        expect(
+            result.current.connections.map(({ kind, badgeLabel }) => [
+                kind,
+                badgeLabel,
+            ]),
+        ).toEqual([
+            ['dapp-eip1193', 'Base'],
+            ['dapp', undefined],
         ])
     })
 

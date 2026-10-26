@@ -21,10 +21,16 @@ import {
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import type { FilterOption } from '@components/FilterSelection'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
+import { useCapability } from '@hooks/useCapability'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -38,10 +44,16 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
+    /** The chain the sheet opens on; the user can switch to another offered chain. */
     chainId: ChainId
 }
 
 type UseAddAssetViewResult = {
+    /** One per chain that can search assets; empty while only one can, as there's nothing to pick. */
+    chainOptions: FilterOption<ChainId>[]
+    /** The chain search, opted-in state and add run on. */
+    selectedChainId: ChainId
+    handleSelectChain: (chainId: ChainId) => void
     searchQuery: string
     handleSearchChange: (text: string) => void
     results: DisplayableAsset[]
@@ -53,10 +65,37 @@ type UseAddAssetViewResult = {
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: Nullable<() => void>
-    optedInAssetIds: Set<string>
-    optingInAssetIds: Set<string>
+    /** Asset ids on the selected chain. */
+    optedInAssetIds: ReadonlySet<string>
+    /** Asset ids on the selected chain. */
+    optingInAssetIds: ReadonlySet<string>
+    /** Off: rows offer no add action on the selected chain. */
+    canManageAssets: boolean
     handleRequestAdd: (assetId: string) => void
     t: (key: string, params?: Record<string, string | number>) => string
+}
+
+// Keyed by chain, so an asset added on one chain never reads as added on
+// another after the user switches chips.
+type AssetIdsByChain = ReadonlyMap<ChainId, ReadonlySet<string>>
+
+const EMPTY_ASSET_IDS: ReadonlySet<string> = new Set()
+
+const withAssetId = (
+    byChain: AssetIdsByChain,
+    chainId: ChainId,
+    assetId: string,
+): AssetIdsByChain =>
+    new Map(byChain).set(chainId, new Set(byChain.get(chainId)).add(assetId))
+
+const withoutAssetId = (
+    byChain: AssetIdsByChain,
+    chainId: ChainId,
+    assetId: string,
+): AssetIdsByChain => {
+    const ids = new Set(byChain.get(chainId))
+    ids.delete(assetId)
+    return new Map(byChain).set(chainId, ids)
 }
 
 export const useAddAssetView = (
@@ -64,18 +103,45 @@ export const useAddAssetView = (
 ): UseAddAssetViewResult => {
     const { t } = useLanguage()
     const hasCollectible = options.variant === 'collectible'
-    const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
-        new Set(),
+    const [optingInByChain, setOptingInByChain] = useState<AssetIdsByChain>(
+        new Map(),
     )
-    const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
-        new Set(),
-    )
+    const [recentlyOptedInByChain, setRecentlyOptedInByChain] =
+        useState<AssetIdsByChain>(new Map())
+
+    const [pickedChainId, setPickedChainId] = useState<Nullable<ChainId>>(null)
 
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    // A chain without asset search would only ever show the unavailable state.
+    // A switched-off chain reports every capability off, so it's left out too.
+    const offeredChainIds = useCapableChainIds('assetSearch')
+    // Derived, never written back: a picked or opening chain that stops being
+    // offered falls through to the first offered one.
+    const selectedChainId =
+        [pickedChainId, options.chainId].find(
+            (chainId): chainId is ChainId =>
+                chainId !== null && offeredChainIds.includes(chainId),
+        ) ??
+        offeredChainIds[0] ??
+        options.chainId
+    const chainOptions = useMemo(
+        (): FilterOption<ChainId>[] =>
+            offeredChainIds.length < 2
+                ? []
+                : offeredChainIds.map(chainId => ({
+                      value: chainId,
+                      label: chainDisplayNameOf(chainId) ?? chainId,
+                      testID: `add_asset_network_filter_${chainId}`,
+                  })),
+        [offeredChainIds],
+    )
     // An account not on the chain yet is enabled there on add.
-    const scope = useSelectedScope(options.chainId)
+    const scope = useSelectedScope(selectedChainId)
+    const canManageAssets = useCapability({
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
@@ -121,11 +187,19 @@ export const useAddAssetView = (
                 }
             }
         }
-        for (const id of recentlyOptedIn) {
+        for (const id of recentlyOptedInByChain.get(scope.chainId) ??
+            EMPTY_ASSET_IDS) {
             ids.add(id)
         }
         return ids
-    }, [accountBalances, selectedAddress, recentlyOptedIn])
+    }, [
+        accountBalances,
+        selectedAddress,
+        recentlyOptedInByChain,
+        scope.chainId,
+    ])
+    const optingInAssetIds =
+        optingInByChain.get(scope.chainId) ?? EMPTY_ASSET_IDS
 
     const handleSearchChange = useCallback(
         (text: string) => {
@@ -154,7 +228,8 @@ export const useAddAssetView = (
 
     const handleRequestAdd = useCallback(
         async (assetId: string) => {
-            if (optingInAssetIds.has(assetId)) return
+            const { chainId } = scope
+            if (!canManageAssets || optingInAssetIds.has(assetId)) return
             let sender: string | undefined
             try {
                 sender = await resolveSender()
@@ -178,18 +253,16 @@ export const useAddAssetView = (
             const pendingAsset = results.find(r => r.assetId === assetId)
             const assetDisplayName =
                 pendingAsset?.unitName ?? pendingAsset?.name ?? null
-            setOptingInAssetIds(prev => {
-                const next = new Set(prev)
-                next.add(assetId)
-                return next
-            })
+            setOptingInByChain(prev => withAssetId(prev, chainId, assetId))
 
             try {
                 await optIn({
                     sender,
                     assetId: BigInt(assetId),
                 })
-                setRecentlyOptedIn(prev => new Set([...prev, assetId]))
+                setRecentlyOptedInByChain(prev =>
+                    withAssetId(prev, chainId, assetId),
+                )
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: assetDisplayName
@@ -205,14 +278,13 @@ export const useAddAssetView = (
                 }
                 showError(err, t('add_asset.opt_in.failed_title'))
             } finally {
-                setOptingInAssetIds(prev => {
-                    const next = new Set(prev)
-                    next.delete(assetId)
-                    return next
-                })
+                setOptingInByChain(prev =>
+                    withoutAssetId(prev, chainId, assetId),
+                )
             }
         },
         [
+            canManageAssets,
             resolveSender,
             scope,
             optingInAssetIds,
@@ -226,6 +298,9 @@ export const useAddAssetView = (
     )
 
     return {
+        chainOptions,
+        selectedChainId,
+        handleSelectChain: setPickedChainId,
         searchQuery,
         handleSearchChange,
         results,
@@ -240,6 +315,7 @@ export const useAddAssetView = (
         fetchNextPage,
         optedInAssetIds,
         optingInAssetIds,
+        canManageAssets,
         handleRequestAdd: (assetId: string) => void handleRequestAdd(assetId),
         t,
     }

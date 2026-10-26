@@ -18,6 +18,7 @@ import { assertOnline, NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     registerAlgorandAccountsAdapter,
@@ -155,6 +156,7 @@ describe('useAccountNotificationToggle', () => {
         expect(mocks.setAccountEnabled).toHaveBeenCalledWith('ADDR1', true)
         expect(mocks.registerDevice).toHaveBeenCalledWith([
             {
+                chainId: 'algorand',
                 address: 'ADDR1',
                 accountType: 'algo25',
                 rank: 3,
@@ -501,12 +503,14 @@ describe('useAccountNotificationToggle', () => {
 
         expect(mocks.registerDevice).toHaveBeenCalledWith([
             {
+                chainId: 'algorand',
                 address: 'ADDR_A',
                 accountType: 'algo25',
                 rank: 3,
                 receiveNotifications: false,
             },
             {
+                chainId: 'algorand',
                 address: 'ADDR_B',
                 accountType: 'quantum',
                 rank: 6,
@@ -564,6 +568,7 @@ describe('useAccountNotificationToggle', () => {
 
         expect(mocks.registerDevice).toHaveBeenCalledWith([
             {
+                chainId: 'algorand',
                 address: 'ADDR_A',
                 accountType: 'algo25',
                 rank: 3,
@@ -605,17 +610,175 @@ describe('useAccountNotificationToggle', () => {
 
         expect(mocks.registerDevice).toHaveBeenCalledWith([
             {
+                chainId: 'algorand',
                 address: 'ADDR_A',
                 accountType: 'algo25',
                 rank: 3,
                 receiveNotifications: false,
             },
             {
+                chainId: 'algorand',
                 address: 'ADDR_B',
                 accountType: 'algo25',
                 rank: 3,
                 receiveNotifications: false,
             },
         ])
+    })
+
+    describe('an account with an Ethereum address', () => {
+        beforeEach(() => {
+            deviceChainAdapters.register({
+                chainId: 'ethereum',
+                accountTypeOf: () => 'watch',
+                rankOf: () => 0,
+            })
+        })
+
+        it('mutes and unmutes an account held only on Ethereum through its address', async () => {
+            mocks.accounts = [
+                {
+                    id: 'eth-only',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: '0xabc' } },
+                },
+            ]
+            const { result } = renderHook(() => useAccountNotificationToggle())
+
+            await act(async () => {
+                await result.current.toggleAccountNotification('0xabc', false)
+            })
+            mocks.disabledAccounts = ['0xabc']
+            await act(async () => {
+                await result.current.toggleAccountNotification('0xabc', true)
+            })
+
+            expect(mocks.setAccountEnabled.mock.calls).toEqual([
+                ['0xabc', false],
+                ['0xabc', true],
+            ])
+            expect(
+                mocks.registerDevice.mock.calls.map(
+                    ([registrations]) => registrations[0].receiveNotifications,
+                ),
+            ).toEqual([false, true])
+        })
+
+        it('early-returns a concurrent toggle of the same account through its other address', async () => {
+            mocks.accounts = [
+                {
+                    id: 'both',
+                    custody: { kind: 'watch' },
+                    chains: {
+                        algorand: { address: 'ALGO_ADDR' },
+                        ethereum: { address: '0xabc' },
+                    },
+                },
+            ]
+            let resolveFirst: ((value: unknown) => void) | undefined
+            mocks.registerDevice.mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveFirst = resolve
+                    }),
+            )
+            const { result } = renderHook(() => useAccountNotificationToggle())
+
+            let firstTap: Promise<boolean> | undefined
+            await act(async () => {
+                firstTap = result.current.toggleAccountNotification(
+                    'ALGO_ADDR',
+                    false,
+                )
+            })
+            let secondTap: boolean | undefined
+            await act(async () => {
+                secondTap = await result.current.toggleAccountNotification(
+                    '0xabc',
+                    true,
+                )
+            })
+
+            expect(secondTap).toBe(false)
+            expect(result.current.isTogglePending('0xabc')).toBe(true)
+            expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
+
+            await act(async () => {
+                resolveFirst?.({})
+                await firstTap
+            })
+            expect(result.current.isTogglePending('0xabc')).toBe(false)
+        })
+
+        it('unmutes every account holding the address, not only the first', async () => {
+            mocks.accounts = [
+                {
+                    id: 'watch',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'SHARED' } },
+                },
+                {
+                    id: 'hd',
+                    custody: { kind: 'watch' },
+                    chains: {
+                        algorand: { address: 'SHARED' },
+                        ethereum: { address: '0xabc' },
+                    },
+                },
+            ]
+            mocks.disabledAccounts = ['SHARED', '0xabc']
+            const { result } = renderHook(() => useAccountNotificationToggle())
+
+            await act(async () => {
+                await result.current.toggleAccountNotification('SHARED', true)
+            })
+
+            expect(mocks.setAccountEnabled.mock.calls).toEqual([
+                ['SHARED', true],
+                ['0xabc', true],
+            ])
+            expect(mocks.registerDevice).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        address: '0xabc',
+                        receiveNotifications: true,
+                    }),
+                ]),
+            )
+        })
+
+        it('unmutes every address of the account, whichever one it was muted through', async () => {
+            mocks.accounts = [
+                {
+                    id: 'both',
+                    custody: { kind: 'watch' },
+                    chains: {
+                        algorand: { address: 'ALGO_ADDR' },
+                        ethereum: { address: '0xabc' },
+                    },
+                },
+            ]
+            mocks.disabledAccounts = ['ALGO_ADDR', '0xabc']
+            const { result } = renderHook(() => useAccountNotificationToggle())
+
+            await act(async () => {
+                await result.current.toggleAccountNotification('0xabc', true)
+            })
+
+            expect(mocks.setAccountEnabled.mock.calls).toEqual([
+                ['ALGO_ADDR', true],
+                ['0xabc', true],
+            ])
+            expect(mocks.registerDevice).toHaveBeenCalledWith([
+                expect.objectContaining({
+                    address: 'ALGO_ADDR',
+                    receiveNotifications: true,
+                }),
+                expect.objectContaining({
+                    address: '0xabc',
+                    receiveNotifications: true,
+                }),
+            ])
+        })
     })
 })

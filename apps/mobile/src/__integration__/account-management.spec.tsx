@@ -467,7 +467,7 @@ describe('Flow: Account management', () => {
         // actually sent, not just the local store flip.
         let deviceBody: DeviceRegistrationRequest | undefined
         server.use(
-            http.post('*/api/v3/devices', async ({ request }) => {
+            http.post('*/api/v4/devices/', async ({ request }) => {
                 deviceBody = (await request.json()) as DeviceRegistrationRequest
                 return HttpResponse.json({ id: 'test-device-id' })
             }),

@@ -11,7 +11,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useRampHistoryInfiniteQuery,
     type OnrampStatus,
@@ -37,7 +38,7 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         useState<Nullable<OnrampStatus>>(null)
 
     const { scope, address } = useOnrampAccount()
-    const deviceId = useScopedDeviceID(scope) ?? ''
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const accountAddress = address ?? ''
 
     const {

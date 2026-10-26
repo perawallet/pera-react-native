@@ -19,6 +19,7 @@ import {
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import {
     isDecimalEqual,
@@ -84,7 +85,7 @@ export const useSwapQuotes = ({
     payDecimals,
     slippage,
 }: UseSwapQuotesParams): UseSwapQuotesResult => {
-    const deviceId = useDeviceIdLookup()(scope)
+    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
 
     const {
         mutateAsync: createQuotes,

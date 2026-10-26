@@ -81,8 +81,8 @@ export type SearchableListProps<T> = Omit<
     /** Autofocus the search input. Only honored in `inBottomSheet` mode. */
     autoFocusSearch?: boolean
     /**
-     * Drawn under the search input inside its sticky cell, so it pins with the
-     * search and stays visible over an empty list. Ignored in `inBottomSheet` mode.
+     * Drawn under the search input, pinned with it, so it stays visible over an
+     * empty list.
      */
     searchAccessory?: React.ReactNode
 }

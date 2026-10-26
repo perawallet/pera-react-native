@@ -11,7 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
@@ -26,7 +27,7 @@ export const useAssetNotificationButton = (
     isNotificationsEnabled: Optional<boolean>,
     scope: ChainScope,
 ) => {
-    const deviceId = useScopedDeviceID(scope)
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const { showError } = useErrorToast()
     const hasPriceAlerts = useChainCapability(scope.chainId, 'priceAlerts')
     const {

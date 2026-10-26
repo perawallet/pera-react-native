@@ -12,7 +12,8 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useCancelRampOrderMutation,
     toOnrampUserMessage,
@@ -88,7 +89,7 @@ export const useOnrampOrderDetails = (
     const { request: requestBottomSheet } = useBottomSheet()
     const { successToast, errorToast } = useToast()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
-    const deviceId = useScopedDeviceID(scope)
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const { mutateAsync: cancelOrder, isPending: isCancelling } =
         useCancelRampOrderMutation()
 

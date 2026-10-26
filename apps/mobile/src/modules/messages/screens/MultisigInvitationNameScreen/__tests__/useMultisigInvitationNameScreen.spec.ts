@@ -119,7 +119,7 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
-    useScopedDeviceID: () => mockUseDeviceID(),
+    useDeploymentDeviceID: () => mockUseDeviceID(),
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({

@@ -81,7 +81,7 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => mockUseDeviceID(),
+    useDeploymentDeviceID: () => mockUseDeviceID(),
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({

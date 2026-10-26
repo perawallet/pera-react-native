@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
+            "chain_network": "Ağ: {{chain}} {{network}}",
             "request_origin": "İstek {{origin}} adresinden geldi",
             "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
             "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
@@ -1026,10 +1027,10 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
-            "send": "Gönder",
+            "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",
-            "send_network_title": "Ağ seç"
+            "network_title": "Ağ seç"
         },
         "list": {
             "no_contacts_title": "Henüz hiç kişi eklemedin",

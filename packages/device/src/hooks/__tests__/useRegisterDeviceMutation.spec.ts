@@ -32,6 +32,7 @@ const registration: DeviceRegistration = {
     appVersion: '7.0.1',
     accounts: [
         {
+            chainId: 'algorand',
             address: 'ADDR_A',
             accountType: 'signing-kind',
             rank: 2,

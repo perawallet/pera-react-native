@@ -14,7 +14,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     FINALIZED_SIGN_REQUEST_STATUSES,
@@ -150,7 +151,7 @@ export const usePendingSignaturesContent =
             draft?.scope.chainId ?? openedChainId ?? fallbackChainId,
         )
         const scope = draft?.scope ?? selectedScope
-        const deviceId = useScopedDeviceID(scope) ?? ''
+        const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
         // Tracks whether the bounded recovery window for a `failed` request
         // has elapsed. While false, a `failed` request is treated as still

@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "A Pera não conseguiu enviar sua decisão ao site. A extensão entrou em suspensão enquanto esta janela estava aberta. Feche esta janela e faça a solicitação novamente no site.",
+            "chain_network": "Rede: {{chain}} {{network}}",
             "request_origin": "A solicitação veio de {{origin}}",
             "requester_verified_label": "Aba verificada: {{origin}}",
             "requester_mismatch": "Esta solicitação veio de {{origin}}, não de {{claimed}}.",
@@ -1026,10 +1027,10 @@
             "no_contact_title": "Nenhum contato encontrado",
             "no_contact_body": "Parece que algo deu errado. Não foi possível encontrar o contato indicado",
             "nfd_label": "NFDomain",
-            "send": "Enviar",
+            "view_in_explorer": "Ver no explorer",
             "copy": "Copiar endereço",
             "show_qr": "Mostrar código QR",
-            "send_network_title": "Escolher rede"
+            "network_title": "Escolher rede"
         },
         "list": {
             "no_contacts_title": "Você ainda não adicionou nenhum contato",

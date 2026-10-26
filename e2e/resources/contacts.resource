@@ -7,21 +7,22 @@ Resource            app.resource
 ${FIXTURE_CONTACT_NAME}             AutoTestContact
 ${FIXTURE_CONTACT_ADDRESS}          CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA
 
-${MENU_CONTACTS_BUTTON}             accessibility_id=menu_contacts_button
-${CONTACTS_SEARCH_INPUT}            accessibility_id=contacts_search_input
-${CONTACTS_EMPTY_ADD_BUTTON}        accessibility_id=contacts_empty_add_button
-${ADD_CONTACT_BUTTON}               accessibility_id=add_contact_button
-${CONTACT_NAME_INPUT}               accessibility_id=contact_name_input
-${CONTACT_ADDRESS_INPUT}            accessibility_id=contact_address_input
-${VIEW_CONTACT_SHARE_BUTTON}        accessibility_id=view_contact_share_button
-${VIEW_CONTACT_EDIT_BUTTON}         accessibility_id=view_contact_edit_button
-${VIEW_CONTACT_QR_BUTTON}           accessibility_id=view_contact_qr_algorand
-${EDIT_CONTACT_DONE_BUTTON}         accessibility_id=edit_contact_done_button
-${EDIT_CONTACT_DELETE_BUTTON}       accessibility_id=edit_contact_delete_button
-${CONTACT_DELETE_CONFIRM_BUTTON}    accessibility_id=contact_delete_confirm_button
-${CONTACT_DELETE_CANCEL_BUTTON}     accessibility_id=contact_delete_cancel_button
-${CONTACT_QR_COPY_BUTTON}           accessibility_id=contact_qr_copy_button
-${CONTACT_QR_SHARE_BUTTON}          accessibility_id=contact_qr_share_button
+${MENU_CONTACTS_BUTTON}             xpath=//*[@resource-id='menu_contacts_button' or @name='menu_contacts_button' or @content-desc='menu_contacts_button']
+${CONTACTS_SEARCH_INPUT}            xpath=//*[@resource-id='contacts_search_input' or @name='contacts_search_input' or @content-desc='contacts_search_input']
+${CONTACTS_EMPTY_ADD_BUTTON}        xpath=//*[@resource-id='contacts_empty_add_button' or @name='contacts_empty_add_button' or @content-desc='contacts_empty_add_button']
+${ADD_CONTACT_BUTTON}               xpath=//*[@resource-id='add_contact_button' or @name='add_contact_button' or @content-desc='add_contact_button']
+${CONTACT_NAME_INPUT}               xpath=//*[@resource-id='contact_name_input' or @name='contact_name_input' or @content-desc='contact_name_input']
+${CONTACT_ADDRESS_INPUT}            xpath=//*[@resource-id='contact_address_input' or @name='contact_address_input' or @content-desc='contact_address_input']
+${CONTACT_ADD_ADDRESS_BUTTON}       xpath=//*[@resource-id='contact_add_address_button' or @name='contact_add_address_button' or @content-desc='contact_add_address_button']
+${VIEW_CONTACT_SHARE_BUTTON}        xpath=//*[@resource-id='view_contact_share_button' or @name='view_contact_share_button' or @content-desc='view_contact_share_button']
+${VIEW_CONTACT_EDIT_BUTTON}         xpath=//*[@resource-id='view_contact_edit_button' or @name='view_contact_edit_button' or @content-desc='view_contact_edit_button']
+${VIEW_CONTACT_QR_BUTTON}           xpath=//*[@resource-id='view_contact_qr_algorand' or @name='view_contact_qr_algorand' or @content-desc='view_contact_qr_algorand']
+${EDIT_CONTACT_DONE_BUTTON}         xpath=//*[@resource-id='edit_contact_done_button' or @name='edit_contact_done_button' or @content-desc='edit_contact_done_button']
+${EDIT_CONTACT_DELETE_BUTTON}       xpath=//*[@resource-id='edit_contact_delete_button' or @name='edit_contact_delete_button' or @content-desc='edit_contact_delete_button']
+${CONTACT_DELETE_CONFIRM_BUTTON}    xpath=//*[@resource-id='contact_delete_confirm_button' or @name='contact_delete_confirm_button' or @content-desc='contact_delete_confirm_button']
+${CONTACT_DELETE_CANCEL_BUTTON}     xpath=//*[@resource-id='contact_delete_cancel_button' or @name='contact_delete_cancel_button' or @content-desc='contact_delete_cancel_button']
+${CONTACT_QR_COPY_BUTTON}           xpath=//*[@resource-id='contact_qr_copy_button' or @name='contact_qr_copy_button' or @content-desc='contact_qr_copy_button']
+${CONTACT_QR_SHARE_BUTTON}          xpath=//*[@resource-id='contact_qr_share_button' or @name='contact_qr_share_button' or @content-desc='contact_qr_share_button']
 
 
 *** Keywords ***
@@ -41,7 +42,7 @@ Open Contacts From Menu
 
 Contact Row
     [Arguments]    ${address}
-    RETURN    accessibility_id=contact_row_${address}
+    RETURN    xpath=//*[@resource-id='contact_row_${address}' or @name='contact_row_${address}' or @content-desc='contact_row_${address}']
 
 Contact Row Should Be Listed
     [Arguments]    ${address}
@@ -56,6 +57,16 @@ Fill Contact Form
     [Arguments]    ${name}    ${address}
     Clear Text    ${CONTACT_NAME_INPUT}
     Input Text    ${CONTACT_NAME_INPUT}    ${name}
+    # A contact holds an address per chain family now, so the form opens with no address field
+    # at all: Add address reveals one. Without this the fill went straight at an input that is
+    # not on screen yet.
+    ${field}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${CONTACT_ADDRESS_INPUT}
+    IF    not ${field}
+        Wait Until Settled    ${CONTACT_ADD_ADDRESS_BUTTON}
+        Tap    ${CONTACT_ADD_ADDRESS_BUTTON}
+        Wait Until Page Contains Element    ${CONTACT_ADDRESS_INPUT}    timeout=15s
+    END
     Clear Text    ${CONTACT_ADDRESS_INPUT}
     Input Text    ${CONTACT_ADDRESS_INPUT}    ${address}
     # An open keyboard takes the next header tap to close itself.

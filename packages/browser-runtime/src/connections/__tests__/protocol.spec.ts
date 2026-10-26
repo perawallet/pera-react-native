@@ -299,11 +299,40 @@ describe('isConnectionApprovalRequestMessage', () => {
                     pairingId: 'pair-1',
                     connectionKind: 'walletconnect-v1',
                     peer: PEER,
-                    requested: { networks: ['mainnet'], methods: [] },
+                    requested: {
+                        networks: ['mainnet'],
+                        chains: ['algorand'],
+                        methods: [],
+                    },
                     expiresAt: 1,
                 },
             }),
         ).toBe(true)
+    })
+
+    it('refuses a connection-proposal whose chains are missing or unknown', () => {
+        const proposal = {
+            kind: 'connection-proposal',
+            proposalId: 'p1',
+            connectionKind: 'dapp-eip1193',
+            peer: PEER,
+            expiresAt: 1,
+        }
+        for (const chains of [undefined, ['solana'], 'ethereum']) {
+            expect(
+                isConnectionApprovalRequestMessage({
+                    scope: CONNECTIONS_REQUEST_SCOPE,
+                    request: {
+                        ...proposal,
+                        requested: {
+                            networks: ['mainnet'],
+                            chains,
+                            methods: [],
+                        },
+                    },
+                }),
+            ).toBe(false)
+        }
     })
 
     it('accepts a connection-request carrying a wire operation', () => {

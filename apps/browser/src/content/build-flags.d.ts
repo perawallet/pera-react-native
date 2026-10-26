@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-export {
-    ContactSendNetworkContent,
-    type ContactSendNetworkContentProps,
-} from './ContactSendNetworkContent'
+/**
+ * Baked by `scripts/build.mjs`: whether this build serves an EVM chain. A
+ * build that serves none never offers itself to EVM dApps, and esbuild drops
+ * the EIP-1193 provider from the bundle.
+ */
+declare const __PERA_SERVES_EVM__: boolean

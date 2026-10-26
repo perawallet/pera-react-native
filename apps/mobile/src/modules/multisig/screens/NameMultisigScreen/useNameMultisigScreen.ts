@@ -25,7 +25,8 @@ import {
     useCreateMultisigAccountMutation,
 } from '@perawallet/wallet-core-multisig'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
@@ -76,7 +77,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
     const scope = useSelectedScope(chainId)
-    const deviceId = useScopedDeviceID(scope)
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const createMultisigMutation = useCreateMultisigAccountMutation({
         scope,
     })

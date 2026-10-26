@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { DappProvider } from '@perawallet/wallet-core-browser-runtime'
+
 // Private page↔isolated bridge for window.pera. Event names are randomized per
 // document load so page code cannot forge relay traffic or responses. The MAIN
 // script generates them and hands them to the relay via a one-shot handshake
@@ -46,6 +48,18 @@ export type BridgeResponseEnvelope<TResponse = unknown> = {
 // channel id because nothing on the page is waiting for it.
 export type BridgeNotificationEnvelope<TNotification = unknown> = {
     notification: TNotification
+}
+
+// The window.pera and EIP-1193 providers share the one channel, so every
+// dApp envelope names its provider; their notification names overlap.
+export type DappBridgeRequestEnvelope = BridgeRequestEnvelope & {
+    provider: DappProvider
+}
+export type DappBridgeResponseEnvelope = BridgeResponseEnvelope & {
+    provider: DappProvider
+}
+export type DappBridgeNotificationEnvelope = BridgeNotificationEnvelope & {
+    provider: DappProvider
 }
 
 // Same per-load-randomized-channel scheme as the window.pera pair above, reused

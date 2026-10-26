@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { AppError, logger } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
@@ -35,7 +35,8 @@ import {
 export type ConnectionsHostDeps = {
     registry: ConnectionRegistry
     activeNetworkId: () => NetworkId
-    knownAddresses: () => readonly string[]
+    /** The wallet's addresses on any of `chainIds`. */
+    knownAddresses: (chainIds: readonly ChainId[]) => readonly string[]
     /**
      * Resolves on the router's ack (acceptance for a proposal/request, dismissal
      * for an error notice); rejects when no surface will ever answer.
@@ -301,7 +302,7 @@ export const startConnectionsHost = (
         if (!proposal) return fail(`Unknown proposal ${message.proposalId}`)
         proposals.delete(message.proposalId)
         // The control channel admits any extension page, so the accounts are caller-chosen.
-        const known = new Set(deps.knownAddresses())
+        const known = new Set(deps.knownAddresses(proposal.requested.chains))
         const accounts = message.accounts.filter(address => known.has(address))
         if (accounts.length === 0) {
             logger.error(

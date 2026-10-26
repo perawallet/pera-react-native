@@ -17,7 +17,7 @@ import { algorandDuplicateRank } from '../accounts/local-key-kinds'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
- * Account types as the v3 devices API spells them on the wire. A separate
+ * Account types as the devices API spells them on the wire. A separate
  * declaration from `AccountTypes`, whose literals it mostly shares: this is a
  * backend contract, and `satisfies` makes an internal rename break the build
  * here instead of silently registering an `account_type` the backend doesn't
@@ -48,4 +48,5 @@ export const algorandDeviceAdapter: DeviceChainAdapter = {
     accountTypeOf: (account: WalletAccount) =>
         algorandDeviceAccountType(account),
     rankOf: (account: WalletAccount) => algorandDuplicateRank(account),
+    isOnV3DevicesApi: true,
 }
