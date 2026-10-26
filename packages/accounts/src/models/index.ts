@@ -148,6 +148,15 @@ export type AccountsState = BaseStoreState & {
      */
     discoverChains: (accountId: string) => Promise<ChainId[]>
     /**
+     * Enables, as `'discovery'`, each chain active at an index of seed
+     * `walletId`'s HD tree, creating the account there if none holds it.
+     * `declinedIndexes` stay untouched on every chain. Never rejects.
+     */
+    discoverWalletAccounts: (
+        walletId: string,
+        options?: { declinedIndexes?: readonly HdIndex[] },
+    ) => Promise<WalletAccount[]>
+    /**
      * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
      * (the seed's KMS id, as `seedOf` returns), or creates an account there.
      * Throws `WalletCannotDeriveError` when the wallet can't mint on the chain,

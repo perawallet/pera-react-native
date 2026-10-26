@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts } from '../account-discovery'
+import { hdPathKey } from '../hd-walk'
 import {
     accountsChainAdapters,
     deriveHdAccount,
@@ -71,11 +72,16 @@ export const useHDImportSession = (
             const getPublicKey = requirePublicKeyGetter(
                 accountsChainAdapters.get(scope.chainId),
             )(pending.rootKey)
-            return discoverAccounts({
+            const discovered = await discoverAccounts({
                 scope,
                 getPublicKey,
                 walletKeyId: pending.walletKeyId,
             })
+            useHDImportSessionStore.getState().recordDiscovered(
+                pending.walletKeyId,
+                discovered.flatMap(account => hdIndexOf(account) ?? []),
+            )
+            return discovered
         },
         [scope],
     )
@@ -136,11 +142,21 @@ export const useHDImportSession = (
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...committed]
             setAccounts(next)
-            // Not awaited: the other chains' probes shouldn't hold the import.
-            const { discoverChains } = useAccountsStore.getState()
-            for (const account of committed) {
-                void discoverChains(account.id)
-            }
+            const selected = new Set(
+                selectedAccounts.flatMap(account => {
+                    const index = hdIndexOf(account)
+                    return index ? [hdPathKey(index)] : []
+                }),
+            )
+            const declinedIndexes = (pending.discoveredIndexes ?? []).filter(
+                index => !selected.has(hdPathKey(index)),
+            )
+            // Not awaited: the walk across every chain shouldn't hold the import.
+            void useAccountsStore
+                .getState()
+                .discoverWalletAccounts(pending.walletKeyId, {
+                    declinedIndexes,
+                })
 
             useHDImportSessionStore.getState().resetState()
 

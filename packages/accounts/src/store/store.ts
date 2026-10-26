@@ -20,6 +20,7 @@ import {
     type ChainAccount,
     type EnableChainOptions,
     type HardwareWalletDetails,
+    type HdIndex,
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
@@ -67,6 +68,8 @@ import {
     findHardwareHolder,
     findPathHolder,
     hardwareJoinCandidates,
+    hdDiscoveryChains,
+    hdIndexOf,
     isKeyReferenced,
     seedMintableScheme,
     seedOf,
@@ -84,6 +87,12 @@ import {
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
 } from '../errors'
+import {
+    discoverWalletActivity,
+    hdPathKey,
+    type ProbedHdIndex,
+} from '../hd-walk'
+import { isKeyClaimed, trackWalk } from '../key-claims'
 import { useAccountChainStateStore } from './accountChainState'
 import {
     isHardwareWalletAccount,
@@ -808,6 +817,35 @@ const moveToHardware = (
     return true
 }
 
+/**
+ * The local HD account at `index`: the one `walletId` holds there, or, when the
+ * same seed was imported again under another id, the one at that index that
+ * holds an address derived there.
+ */
+const hdHolderAt = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    index: HdIndex,
+    derived: AccountChains,
+): WalletAccount | undefined =>
+    findPathHolder(accounts, walletId, index) ??
+    accounts.find(account => {
+        const held = hdIndexOf(account)
+        return (
+            held?.account === index.account &&
+            held.keyIndex === index.keyIndex &&
+            (Object.entries(derived) as [ChainId, ChainAccount][]).some(
+                ([chainId, entry]) => {
+                    const address = chainAccountOf(account, chainId)?.address
+                    return (
+                        address !== undefined &&
+                        isSameAddress(chainId, address, entry.address)
+                    )
+                },
+            )
+        )
+    })
+
 const accountQueues = new Map<string, Promise<unknown>>()
 
 /**
@@ -1148,6 +1186,102 @@ export const useAccountsStore: UseBoundStore<
                         return []
                     }
                 }),
+            discoverWalletAccounts: (walletId, options = {}) =>
+                queuedFor(`wallet:${walletId}`, () =>
+                    trackWalk(async () => {
+                        const declined = new Set(
+                            (options.declinedIndexes ?? []).map(hdPathKey),
+                        )
+                        const changedIds = new Set<string>()
+                        // Every flow deriving a key for an account claims it,
+                        // as it stores the account only after deriving.
+                        const removeUnclaimedKeys = (keyPairIds: string[]) =>
+                            removeUnreferencedKeys(
+                                get().accounts,
+                                keyPairIds.filter(id => !isKeyClaimed(id)),
+                            )
+                        let probed: ProbedHdIndex[] = []
+                        try {
+                            probed = await discoverWalletActivity({
+                                walletId,
+                                chainIds: hdDiscoveryChains(),
+                                onUnusedKeys: removeUnclaimedKeys,
+                                heldAccountIndex: Math.max(
+                                    -1,
+                                    ...get().accounts.flatMap(account =>
+                                        seedOf(account) === walletId
+                                            ? (hdIndexOf(account)?.account ??
+                                              [])
+                                            : [],
+                                    ),
+                                ),
+                            })
+                        } catch (error) {
+                            logger.warn(
+                                `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+                            )
+                        }
+                        for (const { index, derived, active } of probed) {
+                            const additions = declined.has(hdPathKey(index))
+                                ? []
+                                : (Object.entries(active) as [
+                                      ChainId,
+                                      ChainAccount,
+                                  ][])
+                            for (const [chainId, entry] of additions) {
+                                const holder = hdHolderAt(
+                                    get().accounts,
+                                    walletId,
+                                    index,
+                                    derived,
+                                )
+                                if (holder && chainAccountOf(holder, chainId)) {
+                                    continue
+                                }
+                                try {
+                                    const account = holder
+                                        ? await get().enableChain(
+                                              holder.id,
+                                              chainId,
+                                              'discovery',
+                                              {
+                                                  expectedAddress:
+                                                      entry.address,
+                                              },
+                                          )
+                                        : await get().addChainAccount(
+                                              walletId,
+                                              chainId,
+                                              index,
+                                              undefined,
+                                              entry.address,
+                                              'discovery',
+                                          )
+                                    changedIds.add(account.id)
+                                } catch (error) {
+                                    if (
+                                        !(
+                                            error instanceof
+                                            DuplicateAccountError
+                                        )
+                                    ) {
+                                        logger.warn(
+                                            `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                        )
+                                    }
+                                }
+                            }
+                            await removeUnclaimedKeys(
+                                Object.values(derived).flatMap(entry =>
+                                    entry?.keyPairId ? [entry.keyPairId] : [],
+                                ),
+                            )
+                        }
+                        return get().accounts.filter(account =>
+                            changedIds.has(account.id),
+                        )
+                    }),
+                ),
             addChainAccount: async (
                 walletId,
                 chainId,

@@ -13,6 +13,7 @@
 import { create } from 'zustand'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
+import type { HdIndex } from '../models'
 
 /**
  * Holds the in-flight HD import session: the data we computed in memory
@@ -25,6 +26,8 @@ export type HDImportSession = {
     walletKeyId: string
     rootKey: Uint8Array
     entropy: Uint8Array
+    /** The indexes the user was offered, so a later walk can tell which they declined. */
+    discoveredIndexes?: HdIndex[]
 }
 
 type State = {
@@ -33,6 +36,7 @@ type State = {
 
 type Actions = {
     start: (session: HDImportSession) => void
+    recordDiscovered: (walletKeyId: string, indexes: HdIndex[]) => void
     resetState: () => void
 }
 
@@ -44,6 +48,11 @@ export const useHDImportSessionStore = create<State & Actions>((set, get) => ({
         const prev = get().pending
         if (prev) zeroBytes(prev.rootKey, prev.entropy)
         set({ pending: session })
+    },
+    recordDiscovered: (walletKeyId, indexes) => {
+        const pending = get().pending
+        if (!pending || pending.walletKeyId !== walletKeyId) return
+        set({ pending: { ...pending, discoveredIndexes: indexes } })
     },
     resetState: () => {
         const prev = get().pending
