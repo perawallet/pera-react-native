@@ -21,7 +21,11 @@ import {
     normalizeEvmAddress,
 } from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
-import type { EthereumPersonalSignPayload } from '../signing/messages'
+import { isPermitTypedData } from '../signing/permits'
+import {
+    parseDomainChainId,
+    type EthereumPersonalSignPayload,
+} from '../signing/messages'
 import { ETHEREUM_WC_V2_METHOD } from './walletConnect'
 
 type MessageValidation = DappRequestValidation<DappMessageRequest>
@@ -126,9 +130,32 @@ const validatePersonalSign = (
     }
 }
 
+export type EthereumMessageSession = { eip155ChainId: number | undefined }
+
+const hasDomainChainId = (typedData: Record<string, unknown>): boolean =>
+    isRecord(typedData.domain) && typedData.domain.chainId !== undefined
+
+// A malformed chainId counts as another chain: `plan` would refuse it later.
+const isBoundToOtherChain = (
+    typedData: Record<string, unknown>,
+    session: EthereumMessageSession,
+): boolean => {
+    const { domain } = typedData
+    if (!isRecord(domain) || domain.chainId === undefined) return false
+    if (session.eip155ChainId === undefined) return true
+    try {
+        return (
+            parseDomainChainId(domain.chainId) !== BigInt(session.eip155ChainId)
+        )
+    } catch {
+        return true
+    }
+}
+
 const validateSignTypedData = (
     params: readonly unknown[],
     authorizedAccounts: readonly string[],
+    session: EthereumMessageSession,
 ): MessageValidation => {
     const [address, rawTypedData] = params
     const signer = signerOf(
@@ -150,6 +177,16 @@ const validateSignTypedData = (
     if (!isWithinTypedDataBudget(typedData)) {
         return invalid('eth_signTypedData_v4 typedData is too large')
     }
+    if (isBoundToOtherChain(typedData, session)) {
+        return invalid(
+            'eth_signTypedData_v4 domain chainId is not the connected chain',
+        )
+    }
+    // Signed without a chain, a permit is valid on every chain whose token
+    // leaves the chain out of its domain separator.
+    if (!hasDomainChainId(typedData) && isPermitTypedData(typedData)) {
+        return invalid('eth_signTypedData_v4 permit domain names no chainId')
+    }
     return {
         ok: true,
         request: {
@@ -161,14 +198,19 @@ const validateSignTypedData = (
     }
 }
 
-export const validateEthereumMessagePayload: NonNullable<
-    DappRequestChainAdapter['validateMessagePayload']
-> = (type, params, authorizedAccounts) => {
+export const validateEthereumMessagePayload = (
+    type: Parameters<
+        NonNullable<DappRequestChainAdapter['validateMessagePayload']>
+    >[0],
+    params: unknown,
+    authorizedAccounts: readonly string[],
+    session: EthereumMessageSession,
+): MessageValidation => {
     if (!Array.isArray(params)) {
         return invalid('Message params must be an array')
     }
     const positional: unknown[] = params
     return type === 'sign-message'
         ? validatePersonalSign(positional, authorizedAccounts)
-        : validateSignTypedData(positional, authorizedAccounts)
+        : validateSignTypedData(positional, authorizedAccounts, session)
 }

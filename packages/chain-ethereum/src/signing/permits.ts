@@ -231,6 +231,15 @@ const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
         : undefined
 }
 
+/** EIP-2612 `Permit` or Permit2 typed data, complete or not. Never throws. */
+export const isPermitTypedData = (typedData: unknown): boolean => {
+    try {
+        return parseTypedData(typedData as TypedDataDefinition) !== undefined
+    } catch {
+        return false
+    }
+}
+
 /**
  * Recognises EIP-2612 `Permit` and Permit2 typed data that lets `spender` move
  * the signer's tokens. `now` is Unix ms. Never throws; anything it doesn't

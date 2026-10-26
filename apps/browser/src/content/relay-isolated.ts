@@ -12,6 +12,8 @@
 
 import {
     DAPP_PAGE_REQUEST_SCOPE,
+    EIP1193_ERROR_CODE,
+    JsonRpcErrorCode,
     WC_PAGE_PAIR_SCOPE,
     isDappPageRequestAck,
     isDappPageResponseMessage,
@@ -60,15 +62,47 @@ const forwardSafely = (
     try {
         forwardRequest(id, request, provider)
     } catch {
-        // Extension context invalidated — the page outlived an extension
-        // reload or update, and sendMessage then throws SYNCHRONOUSLY rather
-        // than reporting via lastError. Same guard the connect-modal handler
-        // below already has. Without it every dApp request after an update
-        // raises an uncaught exception in the PAGE's console (attributed to
-        // the site, not the wallet). Swallowed deliberately: MAIN's own
-        // DAPP_PAGE_TIMEOUT_MS backstop rejects the call with -32004, exactly
-        // as in the worker-died case handled inside the callback.
+        // Extension context invalidated: the page outlived an extension reload
+        // or update, and sendMessage throws SYNCHRONOUSLY rather than through
+        // lastError. Nothing can ever answer this request, so it is answered
+        // here rather than left to MAIN's backstop, which a queued EIP-1193
+        // method waits out for nearly twenty minutes.
+        answerUnreachable(id, request, provider)
     }
+}
+
+const UNREACHABLE_CODE: Record<DappProvider, number> = {
+    pera: JsonRpcErrorCode.RequestTimedOut,
+    eip1193: EIP1193_ERROR_CODE.disconnected,
+}
+
+const answerUnreachable = (
+    id: string,
+    request: unknown,
+    provider: DappProvider,
+): void => {
+    if (!responseEventName) return
+    const rpcId =
+        typeof request === 'object' && request !== null && 'id' in request
+            ? (request as { id: unknown }).id
+            : id
+    window.dispatchEvent(
+        new CustomEvent(responseEventName, {
+            detail: {
+                id,
+                provider,
+                response: {
+                    jsonrpc: '2.0',
+                    id: rpcId,
+                    error: {
+                        code: UNREACHABLE_CODE[provider],
+                        message:
+                            'The wallet extension was reloaded; reload the page',
+                    },
+                },
+            } satisfies DappBridgeResponseEnvelope,
+        }),
+    )
 }
 
 const hasUserActivation = (): boolean =>

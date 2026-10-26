@@ -21,6 +21,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { AppError } from '@perawallet/wallet-core-shared'
 import {
     enqueueInboundRequest,
     isConnectionAlive,
@@ -28,11 +29,15 @@ import {
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
+    declineConnectionRequest,
     decodeWalletOperation,
     encodeWalletOperationResult,
-    rejectApproval,
+    failConnectionRequest,
+    rebuildWireError,
     resolveConnectionRequest,
+    submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
+import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkSwitchPrompt } from '@modules/connections/web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -51,6 +56,10 @@ const describeSignError = (e: unknown, t: (key: string) => string): string => {
     if (e instanceof GenesisHashMismatchError) {
         return t('dapp.sign.network_mismatch')
     }
+    // A broadcast the host ran comes back with its chain's own copy.
+    if (e instanceof AppError && e.metadata.messageKey) {
+        return t(e.metadata.messageKey)
+    }
     return t('dapp.sign.error.body')
 }
 
@@ -66,6 +75,9 @@ export const useSignRequestApprovalScreen =
         // addresses, so it gets every account, keyless ones included.
         const allAccounts = useAllAccounts()
         const confirmNetworkSwitch = useNetworkSwitchPrompt()
+        const databaseReadiness = useDatabaseReadinessStore(
+            state => state.readiness,
+        )
         const enqueuedRef = useRef(false)
         const [error, setError] = useState<string | null>(null)
 
@@ -77,7 +89,18 @@ export const useSignRequestApprovalScreen =
             // the resolver would throw against an empty set. Reaching this
             // screen required a granted account, so it hydrates non-empty.
             if (allAccounts.length === 0) return
+            // Building a send allocates its nonce from the submission ledger,
+            // which the shell opens only after this window has rendered. Other
+            // operations skip the wait so the window stays quick for them.
+            const needsDatabase = approval.operation.type === 'send-transaction'
+            if (needsDatabase && databaseReadiness === 'pending') return
             enqueuedRef.current = true
+
+            if (needsDatabase && databaseReadiness === 'failed') {
+                setError(t('dapp.sign.error.body'))
+                void failConnectionRequest(requestId)
+                return
+            }
 
             // The grant on the message is the snapshot taken when the
             // request arrived; the user can revoke the connection from the
@@ -85,7 +108,7 @@ export const useSignRequestApprovalScreen =
             // revoked grant would produce a signature nothing can deliver.
             if (!isConnectionAlive(approval.connectionId)) {
                 setError(t('dapp.sign.connection_revoked'))
-                void rejectApproval(requestId)
+                void failConnectionRequest(requestId)
                 return
             }
             // The offscreen host already validated the operation; this rebuilds
@@ -107,8 +130,8 @@ export const useSignRequestApprovalScreen =
                     )
                     window.close()
                 },
-                reject: async () => {
-                    await rejectApproval(requestId)
+                reject: async error => {
+                    await declineConnectionRequest(requestId, error)
                     window.close()
                 },
             }
@@ -125,6 +148,22 @@ export const useSignRequestApprovalScreen =
                 confirmNetworkSwitch,
                 // Keep the window open so the reason is readable.
                 onError: err => setError(describeSignError(err, t)),
+                // The host broadcasts and answers the dApp, so closing this
+                // window mid-send can no longer change what the dApp hears.
+                submitSignedSend: async signed => {
+                    const outcome = await submitConnectionRequest(
+                        requestId,
+                        signed,
+                    )
+                    if (!outcome.ok) {
+                        return {
+                            status: 'failed',
+                            error: rebuildWireError(outcome),
+                        }
+                    }
+                    window.close()
+                    return { status: 'submitted', txId: outcome.txId }
+                },
             })
         }, [
             requestId,
@@ -134,6 +173,7 @@ export const useSignRequestApprovalScreen =
             removeSignRequest,
             allAccounts,
             confirmNetworkSwitch,
+            databaseReadiness,
             t,
         ])
 

@@ -339,6 +339,137 @@ describe('installConnectionsApprovalRouter', () => {
             )
         })
 
+        describe('a submitted send', () => {
+            const SIGNED = [
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    id: '0xh',
+                    bytes: 'AQID',
+                },
+            ]
+            const submitted = () => {
+                const reportOutcome = vi.fn()
+                approvals.openConnectionRequest.mockResolvedValue({
+                    submitted: SIGNED,
+                    reportOutcome,
+                })
+                return reportOutcome
+            }
+
+            it("forwards a submitted decision as submit-send and reports the host's tx id", async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: true,
+                    result: { txIds: ['0xh'] },
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: true,
+                        txId: '0xh',
+                    }),
+                )
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
+                    scope: CONNECTIONS_CONTROL_SCOPE,
+                    kind: 'submit-send',
+                    connectionId: 'conn-1',
+                    correlationId: '9',
+                    signedTransactions: SIGNED,
+                })
+                expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalledWith(
+                    expect.objectContaining({ kind: 'respond' }),
+                )
+            })
+
+            it('reports a host failure to the window without a delivery-failed notice', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: true,
+                    result: {
+                        failure: {
+                            name: 'SubmissionError',
+                            message: 'nonce too low',
+                        },
+                    },
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: false,
+                        name: 'SubmissionError',
+                        message: 'nonce too low',
+                    }),
+                )
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
+
+            it('reports a host that refused the submit as a failed outcome', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: false,
+                    error: 'Unknown request conn-1:9',
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: false,
+                        name: 'Error',
+                        message: 'Unknown request conn-1:9',
+                    }),
+                )
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
+
+            it('answers the dApp with a failure when the host refuses the submit', async () => {
+                submitted()
+                chromeMock.runtime.sendMessage
+                    .mockResolvedValueOnce({
+                        ok: false,
+                        error: 'Request conn-1:9 is not for ethereum',
+                    })
+                    .mockResolvedValue({ ok: true })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                        {
+                            scope: CONNECTIONS_CONTROL_SCOPE,
+                            kind: 'respond',
+                            connectionId: 'conn-1',
+                            correlationId: '9',
+                            outcome: { ok: false, message: 'Request failed' },
+                        },
+                    ),
+                )
+            })
+
+            it('opens no notice when the fallback answer finds the send already claimed', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: false,
+                    error: 'Unknown request conn-1:9',
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                        expect.objectContaining({ kind: 'respond' }),
+                    ),
+                )
+                await vi.waitFor(() => expect(reportOutcome).toHaveBeenCalled())
+                await new Promise(resolve => setTimeout(resolve, 0))
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
+        })
+
         it('posts the signed result back as a respond message', async () => {
             chromeMock.deliver(signRequest())
 
@@ -369,7 +500,49 @@ describe('installConnectionsApprovalRouter', () => {
                     expect.objectContaining({
                         kind: 'respond',
                         correlationId: '9',
-                        outcome: { ok: false, message: 'Request declined' },
+                        outcome: {
+                            ok: false,
+                            message: 'Request declined',
+                            isUserRejection: true,
+                        },
+                    }),
+                )
+            })
+        })
+
+        it('posts a wallet-side failure with its kind and no user-rejection flag', async () => {
+            approvals.openConnectionRequest.mockResolvedValue({
+                failed: { failure: 'invalid-params' },
+            })
+
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        kind: 'respond',
+                        correlationId: '9',
+                        outcome: {
+                            ok: false,
+                            message: 'Request failed',
+                            failure: 'invalid-params',
+                        },
+                    }),
+                )
+            })
+        })
+
+        it('posts a wallet-side failure with no kind as a bare failure', async () => {
+            approvals.openConnectionRequest.mockResolvedValue({ failed: {} })
+
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        kind: 'respond',
+                        correlationId: '9',
+                        outcome: { ok: false, message: 'Request failed' },
                     }),
                 )
             })

@@ -12,11 +12,14 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    ConnectionsError,
     createConnectionRegistry,
     dappRequestChainAdapters,
     DappRequestRejectedError,
     type ConnectionProposal,
+    type DappMessageRequest,
     type DappRequestChainAdapter,
+    type DappRequestFailure,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
@@ -48,6 +51,18 @@ const errorOf = (response: JsonRpcResponse) =>
 const resultOf = (response: JsonRpcResponse) =>
     'result' in response ? response.result : undefined
 
+const EIP_1193_CODE: Record<DappRequestFailure, number> = {
+    'user-rejected': 4001,
+    'unauthorized-account': 4100,
+    'unsupported-method': 4200,
+    'unselected-chain': 4901,
+    'invalid-params': -32_602,
+    'limit-exceeded': -32_005,
+}
+
+const toHex = (bytes: Uint8Array): string =>
+    `0x${[...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('')}`
+
 const CAIP2: Record<string, Record<string, string>> = {
     ethereum: { mainnet: 'eip155:1', sepolia: 'eip155:11155111' },
     base: { mainnet: 'eip155:8453' },
@@ -71,9 +86,64 @@ const fakeAdapter = (
         namespace,
         caip2ChainIdFor: networkId => CAIP2[chainId]?.[networkId] ?? null,
         networkForCaip2ChainId: () => null,
-        toWireResult: () => null,
+        toWireResult: result => {
+            if (result.type === 'send-transaction') return result.txId
+            if (
+                result.type === 'sign-message' ||
+                result.type === 'sign-typed-data'
+            ) {
+                return toHex(result.signature)
+            }
+            return null
+        },
+        toWireErrorCode: failure => EIP_1193_CODE[failure],
+        v2: {
+            methods: [],
+            signingMethods: [
+                'eth_sendTransaction',
+                'personal_sign',
+                'eth_signTypedData_v4',
+                'wallet_switchEthereumChain',
+            ],
+            handleRequest: (method, params) => {
+                switch (method) {
+                    case 'eth_sendTransaction': {
+                        return {
+                            kind: 'operation',
+                            type: 'send-transaction',
+                            params: Array.isArray(params) ? params[0] : params,
+                        }
+                    }
+                    case 'personal_sign': {
+                        return {
+                            kind: 'operation',
+                            type: 'sign-message',
+                            params,
+                        }
+                    }
+                    case 'eth_signTypedData_v4': {
+                        return {
+                            kind: 'operation',
+                            type: 'sign-typed-data',
+                            params,
+                        }
+                    }
+                    default: {
+                        return { kind: 'unsupported' }
+                    }
+                }
+            },
+        },
     },
     validateTransactionPayload: () => ({ ok: false, message: 'unused' }),
+    sendTransaction: {
+        validate: params => ({ ok: true, request: params }),
+        build: () => Promise.reject(new Error('unused')),
+    },
+    validateMessagePayload: (_type, params) => ({
+        ok: true,
+        request: params as DappMessageRequest,
+    }),
     useEnqueueTransactionSigning: () => async () => null,
 })
 
@@ -111,6 +181,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
         now: () => 1_000_000,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
+        approvalTtlMs: 60_000,
     })
     const registry = createConnectionRegistry({ store })
     registry.register(handler)
@@ -565,15 +636,6 @@ describe('createEip1193ConnectionHandler', () => {
             )
         })
 
-        it('answers unsupported for any other method', async () => {
-            const { transport, registry } = setup([connectedOn('ethereum')])
-            await registry.initialize()
-            expect(
-                errorOf(await transport.send(ORIGIN, 'eth_sendTransaction'))
-                    ?.code,
-            ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
-        })
-
         it('wallet_revokePermissions disconnects the site and tells its tabs', async () => {
             const { transport, registry, store } = setup([
                 connectedOn('ethereum'),
@@ -592,6 +654,813 @@ describe('createEip1193ConnectionHandler', () => {
             expect(
                 resultOf(await transport.send(ORIGIN, 'eth_accounts')),
             ).toEqual([])
+        })
+    })
+
+    describe('signing requests', () => {
+        type RaisedRequest = Extract<InboundMessage, { kind: 'request' }>
+        const requestOf = (messages: InboundMessage[]): RaisedRequest => {
+            const [message] = messages
+            if (message?.kind !== 'request') throw new Error('not a request')
+            return message
+        }
+        const raise = async (method = 'personal_sign') => {
+            const context = setup([
+                connectedOn('ethereum', [ADDR_X, ADDR_GONE]),
+            ])
+            await context.registry.initialize()
+            const pending = context.transport.send(ORIGIN, method, [
+                { from: ADDR_X },
+            ])
+            await flush()
+            return { ...context, pending, message: requestOf(context.messages) }
+        }
+
+        it.each([
+            ['eth_sendTransaction', 'send-transaction'],
+            ['personal_sign', 'sign-message'],
+            ['eth_signTypedData_v4', 'sign-typed-data'],
+        ])(
+            '%s from a connected site raises one injected request on the site chain',
+            async (method, type) => {
+                const { messages, message } = await raise(method)
+                expect(messages).toHaveLength(1)
+                expect(message.sourceType).toBe('injected')
+                expect(message.chainId).toBe('ethereum')
+                expect(message.connectionId).toBe(ID)
+                expect(message.verifiedOrigin).toBe(ORIGIN)
+                expect(message.authorizedAccounts).toEqual([ADDR_X])
+                expect(message.operation.type).toBe(type)
+            },
+        )
+
+        it('answers eth_sendTransaction with the tx hash', async () => {
+            const { pending, message } = await raise('eth_sendTransaction')
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            expect(resultOf(await pending)).toBe('0xabc')
+        })
+
+        it('answers personal_sign with the hex signature', async () => {
+            const { pending, message } = await raise('personal_sign')
+            await message.respond({
+                type: 'sign-message',
+                signature: Uint8Array.of(1, 2),
+            })
+            expect(resultOf(await pending)).toBe('0x0102')
+        })
+
+        it.each([
+            'eth_sign',
+            'eth_signTransaction',
+            'eth_sendRawTransaction',
+            'wallet_sendCalls',
+        ])('%s is refused with 4200 and never raised', async method => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            expect(errorOf(await transport.send(ORIGIN, method))?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
+            )
+            expect(messages).toHaveLength(0)
+        })
+
+        it('answers a route the chain refuses with its error verbatim', async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    v2: {
+                        methods: [],
+                        signingMethods: ['personal_sign'],
+                        handleRequest: () => ({
+                            kind: 'refused',
+                            error: { code: -32_602, message: 'Bad params' },
+                        }),
+                    },
+                },
+            })
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'personal_sign')),
+            ).toEqual({
+                code: -32_602,
+                message: 'Bad params',
+            })
+            expect(messages).toHaveLength(0)
+        })
+
+        it('a signing request from an unconnected site gets 4100 and is never raised', async () => {
+            const { transport, registry, messages } = setup()
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'personal_sign'))?.code,
+            ).toBe(EIP1193_ERROR_CODE.unauthorized)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('an unconnected site calling eth_call gets 4200', async () => {
+            const { transport, registry, messages } = setup()
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_call'))?.code,
+            ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('a signing request on a chain no longer served gets 4901 and is never raised', async () => {
+            const { transport, registry, messages } = setup(
+                [connectedOn('ethereum')],
+                { networks: { ethereum: 'holesky' } },
+            )
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'personal_sign'))?.code,
+            ).toBe(EIP1193_ERROR_CODE.chainDisconnected)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('a validation refusal for an account the site was not given answers 4100', async () => {
+            const { pending, message } = await raise()
+            await message.reject(
+                new ConnectionsError('unauthorized-account', 'x'),
+            )
+            expect(errorOf(await pending)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+        })
+
+        it('a declined approval answers 4001', async () => {
+            const { pending, message } = await raise()
+            await message.reject(new DappRequestRejectedError())
+            expect(errorOf(await pending)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+        })
+
+        it('an unexpected failure answers -32603 without leaking its message', async () => {
+            const { pending, message } = await raise()
+            await message.reject(new Error('/private/keystore path'))
+            const error = errorOf(await pending)
+            expect(error?.code).toBe(EIP1193_ERROR_CODE.internal)
+            expect(error?.message).not.toContain('keystore')
+        })
+
+        // An expiry would withdraw the window under a broadcast that still
+        // goes out, telling the page no to a transaction already on chain.
+        it('keeps a request on screen past the queue TTL, and takes its late answer', async () => {
+            const { pending, message, messages } = await raise()
+            vi.advanceTimersByTime(10_000)
+            await flush()
+            expect(messages.map(({ kind }) => kind)).not.toContain(
+                'request-expired',
+            )
+
+            await message.respond({
+                type: 'sign-message',
+                signature: Uint8Array.of(1),
+            })
+
+            expect(resultOf(await pending)).toBe('0x01')
+        })
+
+        it('expires a request on screen after approvalTtlMs and withdraws its window', async () => {
+            const { pending, message, messages } = await raise()
+            vi.advanceTimersByTime(60_000)
+            await flush()
+
+            expect(errorOf(await pending)).toEqual({
+                code: EIP1193_ERROR_CODE.internal,
+                message: 'The wallet did not answer in time',
+            })
+            expect(messages).toContainEqual(
+                expect.objectContaining({
+                    kind: 'request-expired',
+                    correlationId: message.correlationId,
+                }),
+            )
+            await expect(
+                message.respond({
+                    type: 'sign-message',
+                    signature: Uint8Array.of(1),
+                }),
+            ).rejects.toThrow()
+        })
+
+        it('a committed send outlives approvalTtlMs and is answered with its hash', async () => {
+            const { pending, message, messages } = await raise(
+                'eth_sendTransaction',
+            )
+
+            message.commit?.()
+            vi.advanceTimersByTime(60_001)
+            await flush()
+
+            expect(messages.map(({ kind }) => kind)).not.toContain(
+                'request-expired',
+            )
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            expect(resultOf(await pending)).toBe('0xabc')
+        })
+
+        it('revoking the site leaves a committed send to its broadcast', async () => {
+            const { pending, message, messages, registry, transport } =
+                await raise('eth_sendTransaction')
+            const queued = transport.send(ORIGIN, 'personal_sign', [
+                '0x68656c6c6f',
+                ADDR_X,
+            ])
+            await flush()
+            let isSettled = false
+            void pending.then(() => {
+                isSettled = true
+            })
+
+            message.commit?.()
+            await registry.disconnect(ID)
+            await flush()
+
+            expect(errorOf(await queued)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(isSettled).toBe(false)
+            expect(messages).not.toContainEqual(
+                expect.objectContaining({
+                    kind: 'request-expired',
+                    correlationId: message.correlationId,
+                }),
+            )
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            expect(resultOf(await pending)).toBe('0xabc')
+        })
+
+        it('committing an answered request leaves the next one’s expiry alone', async () => {
+            const { message, messages, transport } = await raise(
+                'eth_sendTransaction',
+            )
+            const next = transport.send(ORIGIN, 'personal_sign', [
+                '0x68656c6c6f',
+                ADDR_X,
+            ])
+            await flush()
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            await flush()
+
+            message.commit?.()
+            vi.advanceTimersByTime(60_001)
+            await flush()
+
+            expect(errorOf(await next)?.code).toBe(EIP1193_ERROR_CODE.internal)
+            expect(
+                messages.filter(({ kind }) => kind === 'request'),
+            ).toHaveLength(2)
+        })
+
+        it('answers a signing method no page backstop covers with 4200', async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    v2: {
+                        methods: [],
+                        signingMethods: ['eth_signUserOperation'],
+                        handleRequest: () => ({
+                            kind: 'operation',
+                            type: 'sign-message',
+                            params: [],
+                        }),
+                    },
+                },
+            })
+            await registry.initialize()
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_signUserOperation'))
+                    ?.code,
+            ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
+            expect(messages).toHaveLength(0)
+        })
+
+        it('refuses an answer that arrives after the request was answered', async () => {
+            const { pending, message } = await raise()
+            await message.reject(new DappRequestRejectedError())
+            await pending
+            await expect(
+                message.respond({
+                    type: 'sign-message',
+                    signature: Uint8Array.of(1),
+                }),
+            ).rejects.toThrow()
+        })
+    })
+
+    describe('signing queue', () => {
+        type RaisedRequest = Extract<InboundMessage, { kind: 'request' }>
+        const ORIGIN_B = 'https://lend.example'
+        const raisedOf = (messages: InboundMessage[]): RaisedRequest[] =>
+            messages.filter(
+                (message): message is RaisedRequest =>
+                    message.kind === 'request',
+            )
+        const siteOn = (
+            origin: string,
+            accounts: string[] = [ADDR_X],
+        ): Eip1193Connection => ({
+            ...connectedOn('ethereum', accounts),
+            id: eip1193ConnectionIdOf(origin),
+            peer: { name: new URL(origin).host, url: origin },
+            origin: { requesterOrigin: origin },
+        })
+        const track = (pending: Promise<JsonRpcResponse>) => {
+            const state: { response?: JsonRpcResponse } = {}
+            void pending.then(response => {
+                state.response = response
+            })
+            return state
+        }
+        const connected = async (seed: Connection[] = [siteOn(ORIGIN)]) => {
+            const context = setup(seed)
+            await context.registry.initialize()
+            const sign = (origin = ORIGIN, from = ADDR_X) =>
+                track(
+                    context.transport.send(origin, 'eth_sendTransaction', [
+                        { from },
+                    ]),
+                )
+            return { ...context, sign }
+        }
+        const signed = { type: 'send-transaction', txId: '0xabc' } as const
+
+        it('a second request from the same site waits until the first is answered', async () => {
+            const { messages, sign } = await connected()
+            const first = sign()
+            const second = sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+            expect(second.response).toBeUndefined()
+
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(resultOf(first.response!)).toBe('0xabc')
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('two tabs of the same site share one queue', async () => {
+            const { transport, messages } = await connected()
+            void transport.send(ORIGIN, 'personal_sign', [], {
+                faviconUrl: `${ORIGIN}/a.ico`,
+            })
+            void transport.send(ORIGIN, 'personal_sign', [], {
+                faviconUrl: `${ORIGIN}/b.ico`,
+            })
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a switch waits behind the request on screen, so the chain never moves under it', async () => {
+            const { transport, messages, store, sign } = await connected()
+            const send = sign()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+            expect((await store.get(ID))?.metadata.chainId).toBe('ethereum')
+
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+            expect(resultOf(send.response!)).toBe('0xabc')
+            const prompt = raisedOf(messages)[1]!
+            expect(prompt.operation).toEqual({
+                type: 'switch-network',
+                networkId: 'mainnet',
+            })
+
+            await prompt.respond({ type: 'switch-network' })
+            await flush()
+            expect(resultOf(switched.response!)).toBeNull()
+            expect((await store.get(ID))?.metadata.chainId).toBe('base')
+        })
+
+        it('a request queued behind a switch is raised on the chain switched to', async () => {
+            const { transport, messages, sign } = await connected()
+            void transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                { chainId: '0x2105' },
+            ])
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(1)
+
+            await raisedOf(messages)[0]!.respond({ type: 'switch-network' })
+            await flush()
+            expect(raisedOf(messages)[1]?.chainId).toBe('base')
+        })
+
+        it('declining a switch rejects the requests queued behind it', async () => {
+            const { transport, messages, sign } = await connected()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            const send = sign()
+            await flush()
+
+            await raisedOf(messages)[0]!.reject(new DappRequestRejectedError())
+            await flush()
+
+            expect(errorOf(switched.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+            expect(errorOf(send.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.userRejected,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a switch whose answer throws and is never declined still frees the queue', async () => {
+            const { transport, messages, networks, sign } = await connected()
+            const switched = track(
+                transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                    { chainId: '0x2105' },
+                ]),
+            )
+            await flush()
+            networks.base = 'sepolia'
+            await expect(
+                raisedOf(messages)[0]!.respond({ type: 'switch-network' }),
+            ).rejects.toThrow()
+
+            vi.advanceTimersByTime(1_000)
+            await flush()
+            expect(errorOf(switched.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('a switch already satisfied by the one ahead of it answers without a prompt', async () => {
+            const { transport, messages } = await connected()
+            const toBase = () =>
+                track(
+                    transport.send(ORIGIN, 'wallet_switchEthereumChain', [
+                        { chainId: '0x2105' },
+                    ]),
+                )
+            toBase()
+            const second = toBase()
+            await flush()
+
+            await raisedOf(messages)[0]!.respond({ type: 'switch-network' })
+            await flush()
+            expect(resultOf(second.response!)).toBeNull()
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('requests from different sites are raised independently', async () => {
+            const { messages, sign } = await connected([
+                siteOn(ORIGIN),
+                siteOn(ORIGIN_B),
+            ])
+            sign(ORIGIN)
+            sign(ORIGIN_B)
+            await flush()
+            expect(
+                raisedOf(messages).map(({ verifiedOrigin }) => verifiedOrigin),
+            ).toEqual([ORIGIN, ORIGIN_B])
+        })
+
+        it('a fourth pending request from one site is refused with -32005', async () => {
+            const { messages, sign } = await connected()
+            const pending = [sign(), sign(), sign()]
+            const fourth = sign()
+            await flush()
+            expect(errorOf(fourth.response!)).toEqual({
+                code: EIP1193_ERROR_CODE.limitExceeded,
+                message: 'Too many requests are already pending for this site',
+            })
+            expect(pending.every(({ response }) => !response)).toBe(true)
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('rejecting the request on screen rejects the queued ones with 4001', async () => {
+            const { messages, sign } = await connected()
+            const all = [sign(), sign(), sign()]
+            await flush()
+
+            await raisedOf(messages)[0]!.reject(new DappRequestRejectedError())
+            await flush()
+
+            expect(all.map(({ response }) => errorOf(response!)?.code)).toEqual(
+                [4001, 4001, 4001],
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        // Only the user's own decline speaks for the site's backlog; a failed
+        // build or a revoked grant in the approval window does not.
+        it('a wallet-side failure of the head answers -32603 and advances the queue', async () => {
+            const { messages, sign } = await connected()
+            const head = sign()
+            const queued = sign()
+            await flush()
+
+            await raisedOf(messages)[0]!.reject(new Error('Request failed'))
+            await flush()
+
+            expect(errorOf(head.response!)).toEqual({
+                code: EIP1193_ERROR_CODE.internal,
+                message: expect.any(String),
+            })
+            expect(queued.response).toBeUndefined()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('a wallet-side failure with a kind answers its mapped code and advances the queue', async () => {
+            const { messages, sign } = await connected()
+            const head = sign()
+            const queued = sign()
+            await flush()
+
+            await raisedOf(messages)[0]!.reject(
+                Object.assign(new Error('Request failed'), {
+                    failure: 'unauthorized-account',
+                }),
+            )
+            await flush()
+
+            expect(errorOf(head.response!)?.code).toBe(
+                EIP_1193_CODE['unauthorized-account'],
+            )
+            expect(queued.response).toBeUndefined()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        // Only the user's own decline answers 4001.
+        it('a queued request expires with -32603 after requestTtlMs from arrival', async () => {
+            const { messages, sign } = await connected()
+            const head = sign()
+            const queued = sign()
+            await flush()
+
+            vi.advanceTimersByTime(1_000)
+            await flush()
+
+            expect(errorOf(queued.response!)).toEqual({
+                code: EIP1193_ERROR_CODE.internal,
+                message: 'The wallet did not answer in time',
+            })
+            expect(head.response).toBeUndefined()
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a request that reaches the screen with its time nearly gone stays until answered', async () => {
+            const { messages, sign } = await connected()
+            sign()
+            vi.advanceTimersByTime(400)
+            const queued = sign()
+            await flush()
+            vi.advanceTimersByTime(500)
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
+
+            vi.advanceTimersByTime(5_000)
+            await flush()
+            expect(queued.response).toBeUndefined()
+
+            await raisedOf(messages)[1]!.respond(signed)
+            await flush()
+            expect(resultOf(queued.response!)).toBe('0xabc')
+        })
+
+        it('the queue advances when the page is gone', async () => {
+            const { transport, messages, sign } = await connected()
+            sign()
+            sign()
+            await flush()
+            transport.setReachable(ORIGIN, false)
+
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('revoking the site answers its queued requests with 4100', async () => {
+            const { registry, messages, sign } = await connected()
+            const all = [sign(), sign(), sign()]
+            await flush()
+
+            await registry.disconnect(ID)
+            await flush()
+
+            expect(all.map(({ response }) => errorOf(response!)?.code)).toEqual(
+                [
+                    EIP1193_ERROR_CODE.unauthorized,
+                    EIP1193_ERROR_CODE.unauthorized,
+                    EIP1193_ERROR_CODE.unauthorized,
+                ],
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('revoking the site answers the request on screen and frees the queue for a reconnect', async () => {
+            const { registry, store, messages, sign } = await connected()
+            const head = sign()
+            await flush()
+
+            await registry.disconnect(ID)
+            await flush()
+
+            expect(errorOf(head.response!)).toEqual({
+                code: EIP1193_ERROR_CODE.unauthorized,
+                message: 'The site was disconnected',
+            })
+            await store.upsert(siteOn(ORIGIN))
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('an answer that cannot be encoded answers -32603 and advances the queue', async () => {
+            const { messages, sign } = await connected()
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    toWireResult: () => {
+                        throw new Error('bad result')
+                    },
+                },
+            })
+            const head = sign()
+            sign()
+            await flush()
+
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(errorOf(head.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+            expect(raisedOf(messages)).toHaveLength(2)
+        })
+
+        it('queues only the methods a served chain lists as signing', async () => {
+            const { transport, messages } = await connected()
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            const v2 = adapter.walletConnect.v2!
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    v2: {
+                        ...v2,
+                        signingMethods: ['eth_signTypedData_v4'],
+                    },
+                },
+            })
+            const unlisted = transport.send(ORIGIN, 'personal_sign', [])
+            void transport.send(ORIGIN, 'eth_signTypedData_v4', [])
+            await flush()
+
+            expect(errorOf(await unlisted)?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a queued request is raised with the connection as it is when raised', async () => {
+            const context = await connected([siteOn(ORIGIN, [ADDR_X, ADDR_Y])])
+            const { accounts, messages, sign } = context
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            const seen: string[][] = []
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                sendTransaction: {
+                    build: () => Promise.reject(new Error('unused')),
+                    validate: (params, authorized) => {
+                        seen.push([...authorized])
+                        const { from } = params as { from: string }
+                        return authorized.includes(from)
+                            ? { ok: true, request: params }
+                            : {
+                                  ok: false,
+                                  failure: 'unauthorized-account',
+                                  message: 'Not an account of this site',
+                              }
+                    },
+                },
+            })
+            sign(ORIGIN, ADDR_X)
+            const fromDropped = sign(ORIGIN, ADDR_Y)
+            await flush()
+
+            accounts.ethereum = [ADDR_X]
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(seen).toEqual([[ADDR_X, ADDR_Y], [ADDR_X]])
+            expect(errorOf(fromDropped.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a queued request whose chain stopped being served is answered 4901 without being raised', async () => {
+            const { networks, messages, sign } = await connected()
+            sign()
+            const queued = sign()
+            await flush()
+
+            networks.ethereum = 'holesky'
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(errorOf(queued.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.chainDisconnected,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('a queued request whose connection is gone is answered 4100 without being raised', async () => {
+            const { store, messages, sign } = await connected()
+            sign()
+            const queued = sign()
+            await flush()
+
+            await store.remove(ID)
+            await raisedOf(messages)[0]!.respond(signed)
+            await flush()
+
+            expect(errorOf(queued.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(raisedOf(messages)).toHaveLength(1)
+        })
+
+        it('teardown answers every queued request with 4900 and withdraws the one on screen', async () => {
+            const { handler, messages, sign } = await connected()
+            const all = [sign(), sign()]
+            await flush()
+            const [head] = raisedOf(messages)
+
+            await handler.teardown()
+            await flush()
+
+            expect(all.map(({ response }) => errorOf(response!)?.code)).toEqual(
+                [
+                    EIP1193_ERROR_CODE.disconnected,
+                    EIP1193_ERROR_CODE.disconnected,
+                ],
+            )
+            expect(
+                messages.filter(({ kind }) => kind === 'request-expired'),
+            ).toEqual([
+                expect.objectContaining({
+                    correlationId: head!.correlationId,
+                }),
+            ])
+        })
+
+        it('a request on screen whose answer is lost frees the queue after approvalTtlMs', async () => {
+            const { messages, sign } = await connected()
+            const lost = sign()
+            await flush()
+
+            vi.advanceTimersByTime(60_000)
+            await flush()
+            expect(errorOf(lost.response!)?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+
+            sign()
+            await flush()
+            expect(raisedOf(messages)).toHaveLength(2)
         })
     })
 

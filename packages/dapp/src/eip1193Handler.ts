@@ -16,10 +16,14 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    dappRequestChainAdapters,
     dappRequestFailureOf,
+    isDappUserRejection,
+    MAX_PENDING_REQUESTS_PER_PEER,
     type ConnectionHandler,
     type ConnectionProposal,
     type WalletNotice,
+    type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
@@ -47,6 +51,7 @@ import {
     EIP1193_EVENT,
     EIP1193_METHOD,
     EIP1193_PERMISSION_METHODS,
+    EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
 import {
     eip1193ConnectionIdOf,
@@ -57,7 +62,11 @@ import {
     type DappTransport,
     type Eip1193Connection,
 } from './models'
-import { DAPP_PROPOSAL_TTL_MS, DAPP_REQUEST_TTL_MS } from './protocol'
+import {
+    DAPP_APPROVAL_TTL_MS,
+    DAPP_PROPOSAL_TTL_MS,
+    DAPP_REQUEST_TTL_MS,
+} from './protocol'
 
 export type Eip1193HandlerDeps = {
     transport: DappTransport
@@ -72,6 +81,18 @@ export type Eip1193HandlerDeps = {
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
+    approvalTtlMs?: number
+}
+
+type QueuedRequest = {
+    ctx: DappRequestContext
+    request: JsonRpcRequest
+    respond: DappRespond
+    timer: ReturnType<typeof setTimeout>
+    isAnswered: boolean
+    isRaising: boolean
+    isCommitted: boolean
+    raised?: { connectionId: ConnectionId; correlationId: string }
 }
 
 type ServedChain = { scope: ChainScope; hexChainId: Eip155HexChainId }
@@ -82,9 +103,23 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isSameList = (a: readonly string[], b: readonly string[]): boolean =>
     a.length === b.length && a.every((item, index) => item === b[index])
 
-const isUserRejection = (error: Error): boolean =>
-    error.name === 'UserCancelledError' ||
-    dappRequestFailureOf(error) === 'user-rejected'
+// Both lists must name it: the chains' v2 tables decide what asks the user,
+// and the page gives only the named ones a backstop long enough to wait.
+const isSigningMethod = (method: string): boolean =>
+    EIP1193_SIGNING_METHODS.includes(method) &&
+    eip155ChainIds().some(
+        chainId =>
+            dappRequestChainAdapters
+                .get(chainId)
+                .walletConnect.v2?.signingMethods.includes(method) ?? false,
+    )
+
+const unsupportedMethod = (request: JsonRpcRequest): JsonRpcResponse =>
+    jsonRpcError(
+        request.id,
+        EIP1193_ERROR_CODE.unsupportedMethod,
+        `Unsupported method '${request.method}'`,
+    )
 
 // The one place a site's chain is compared: always against a chain the caller
 // passes, never a named one.
@@ -103,6 +138,7 @@ export const createEip1193ConnectionHandler = (
     const now = deps.now ?? (() => Date.now())
     const proposalTtlMs = deps.proposalTtlMs ?? DAPP_PROPOSAL_TTL_MS
     const requestTtlMs = deps.requestTtlMs ?? DAPP_REQUEST_TTL_MS
+    const approvalTtlMs = deps.approvalTtlMs ?? DAPP_APPROVAL_TTL_MS
 
     const kit = createHandlerKit(EIP1193_DAPP_KIND, {
         logTag: '[eip1193]',
@@ -113,6 +149,9 @@ export const createEip1193ConnectionHandler = (
     let unsubscribe: (() => void) | null = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+    // Index 0 is the request on screen; per origin, so every tab of a site
+    // shares one.
+    const siteQueues = new Map<string, QueuedRequest[]>()
 
     const getConnectionById = async (
         id: ConnectionId,
@@ -399,13 +438,12 @@ export const createEip1193ConnectionHandler = (
         requireContext().onProposal(proposal)
     }
 
-    const handleSwitchChain = async (
+    const handleSwitchChain = (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
         respond: DappRespond,
     ): Promise<void> => {
-        const requested = requestedChainOf(request.params)
-        if (!requested) {
+        if (!requestedChainOf(request.params)) {
             return deliver(
                 respond,
                 jsonRpcError(
@@ -415,47 +453,127 @@ export const createEip1193ConnectionHandler = (
                 ),
             )
         }
-        const connection = await getConnection(ctx.origin)
-        if (!connection) {
-            return deliver(
-                respond,
+        return enqueueRequest(ctx, request, respond)
+    }
+
+    const removeQueued = (entry: QueuedRequest): boolean => {
+        const { origin } = entry.ctx
+        const queue = siteQueues.get(origin) ?? []
+        const index = queue.indexOf(entry)
+        if (index !== -1) queue.splice(index, 1)
+        if (queue.length === 0) siteQueues.delete(origin)
+        return index === 0
+    }
+
+    const disarm = (entry: QueuedRequest): void => {
+        clearTimeout(entry.timer)
+        pendingTimers.delete(entry.timer)
+    }
+
+    // The one way a queued request is answered, so each is answered once and
+    // its timer never outlives it.
+    const answerQueued = (
+        entry: QueuedRequest,
+        response: JsonRpcResponse,
+    ): Promise<void> => {
+        if (entry.isAnswered) return Promise.resolve()
+        entry.isAnswered = true
+        disarm(entry)
+        return deliver(entry.respond, response)
+    }
+
+    const finishQueued = (
+        entry: QueuedRequest,
+        response: JsonRpcResponse,
+    ): Promise<void> => {
+        if (entry.isAnswered) return Promise.resolve()
+        const delivered = answerQueued(entry, response)
+        if (removeQueued(entry)) void raiseHead(entry.ctx.origin)
+        return delivered
+    }
+
+    // Its broadcast is underway, so only the broadcast's own outcome may
+    // answer it: no expiry, and no revoke.
+    const commitQueued = (entry: QueuedRequest): void => {
+        if (entry.isAnswered) return
+        entry.isCommitted = true
+        disarm(entry)
+    }
+
+    // A user who declines one request has answered for the site's backlog
+    // too, so a burst costs one Reject rather than one each.
+    const rejectSiteQueue = (
+        entry: QueuedRequest,
+        response: JsonRpcResponse,
+    ): Promise<void> => {
+        if (entry.isAnswered) return Promise.resolve()
+        const queue = siteQueues.get(entry.ctx.origin) ?? []
+        siteQueues.delete(entry.ctx.origin)
+        for (const queued of queue) {
+            if (queued === entry) continue
+            void answerQueued(
+                queued,
                 jsonRpcError(
-                    request.id,
-                    EIP1193_ERROR_CODE.unauthorized,
-                    'Not connected: call eth_requestAccounts first',
+                    queued.request.id,
+                    EIP1193_ERROR_CODE.userRejected,
+                    'The user rejected an earlier request from this site',
                 ),
             )
         }
+        return answerQueued(entry, response)
+    }
+
+    const armOnScreen = (
+        entry: QueuedRequest,
+        connectionId: ConnectionId,
+        correlationId: string,
+        ttlMs: number,
+    ): void => {
+        disarm(entry)
+        entry.raised = { connectionId, correlationId }
+        entry.timer = setTimeout(() => {
+            void finishQueued(
+                entry,
+                jsonRpcError(
+                    entry.request.id,
+                    EIP1193_ERROR_CODE.internal,
+                    'The wallet did not answer in time',
+                ),
+            )
+            requireContext().onRequestExpired(connectionId, correlationId)
+        }, ttlMs)
+        pendingTimers.add(entry.timer)
+    }
+
+    const raiseSwitchRequest = async (
+        entry: QueuedRequest,
+        connection: Eip1193Connection,
+    ): Promise<void> => {
+        const { ctx, request } = entry
+        const requested = requestedChainOf(request.params)
+        // Read at the head, not on arrival: a switch queued behind another
+        // may already be satisfied, or aim at a chain that went away.
         if (chainOn(connection.metadata.chainId)?.hexChainId === requested) {
-            return deliver(respond, jsonRpcResult(request.id, null))
+            await finishQueued(entry, jsonRpcResult(request.id, null))
+            return
         }
         const target = servedChains().find(
             ({ hexChainId }) => hexChainId === requested,
         )
         if (!target) {
-            return deliver(
-                respond,
+            await finishQueued(
+                entry,
                 jsonRpcError(
                     request.id,
                     EIP1193_ERROR_CODE.unrecognizedChain,
                     'Pera does not have that chain',
                 ),
             )
+            return
         }
 
         const correlationId = generateOrderedUniqueId()
-        const { settle, isSettled } = timedSettle(() => {
-            requireContext().onRequestExpired(connection.id, correlationId)
-            void deliver(
-                respond,
-                jsonRpcError(
-                    request.id,
-                    EIP1193_ERROR_CODE.internal,
-                    'The wallet did not answer in time',
-                ),
-            )
-        }, requestTtlMs)
-
+        armOnScreen(entry, connection.id, correlationId, requestTtlMs)
         requireContext().onMessage({
             kind: 'request',
             chainId: target.scope.chainId,
@@ -472,8 +590,11 @@ export const createEip1193ConnectionHandler = (
             // A throw here declines the request, so the page is answered
             // through `reject` rather than told of a chain it can't use.
             respond: async () => {
-                if (isSettled()) throw new Error('The request has expired')
+                if (entry.isAnswered) throw new Error('The request has expired')
                 const stored = await getConnection(ctx.origin)
+                // The timer stays armed until the answer: a throw below may
+                // never be followed by a `reject`, and only it frees the queue.
+                if (entry.isAnswered) throw new Error('The request has expired')
                 const current = chainOn(target.scope.chainId)
                 if (!stored || current?.hexChainId !== target.hexChainId) {
                     throw new Error('The chain is no longer available')
@@ -501,37 +622,302 @@ export const createEip1193ConnectionHandler = (
                         after,
                     )
                 }
-                // Settled before answering: the switch has happened, so a tab
-                // gone meanwhile must not turn it into a decline.
-                settle()
-                await deliver(respond, jsonRpcResult(request.id, null))
+                await finishQueued(entry, jsonRpcResult(request.id, null))
             },
             reject: async error => {
-                if (isSettled()) return
-                settle()
-                await deliver(
-                    respond,
-                    isUserRejection(error)
-                        ? jsonRpcError(
-                              request.id,
-                              EIP1193_ERROR_CODE.userRejected,
-                              'The user rejected the request',
-                          )
-                        : jsonRpcError(
-                              request.id,
-                              EIP1193_ERROR_CODE.internal,
-                              sanitizeErrorForWebview(error),
-                          ),
+                if (isDappUserRejection(error)) {
+                    await rejectSiteQueue(
+                        entry,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.userRejected,
+                            'The user rejected the request',
+                        ),
+                    )
+                    return
+                }
+                await finishQueued(
+                    entry,
+                    jsonRpcError(
+                        request.id,
+                        EIP1193_ERROR_CODE.internal,
+                        sanitizeErrorForWebview(error),
+                    ),
                 )
             },
         })
         kit.recordActivity(connection.id)
     }
 
+    const raiseSigningRequest = (
+        entry: QueuedRequest,
+        connection: Eip1193Connection,
+        operation: { type: WalletOperationType; params: unknown },
+    ): void => {
+        const { ctx, request } = entry
+        const { chainId } = connection.metadata
+        const adapter = dappRequestChainAdapters.get(chainId)
+        const { walletConnect } = adapter
+        const correlationId = generateOrderedUniqueId()
+        const errorResponse = (error: Error): JsonRpcResponse => {
+            const failure = dappRequestFailureOf(error)
+            return jsonRpcError(
+                request.id,
+                failure && walletConnect.toWireErrorCode
+                    ? walletConnect.toWireErrorCode(failure)
+                    : EIP1193_ERROR_CODE.internal,
+                sanitizeErrorForWebview(error, adapter.relayableErrorNames),
+            )
+        }
+
+        // On screen the window owns the lifetime; the approval TTL only frees
+        // a queue whose answer was lost.
+        armOnScreen(entry, connection.id, correlationId, approvalTtlMs)
+        requireContext().onMessage({
+            kind: 'request',
+            chainId,
+            connectionId: connection.id,
+            correlationId,
+            sourceType: 'injected',
+            authorizedAccounts: reportedAccounts(connection),
+            peer: connection.peer,
+            verifiedOrigin: ctx.origin,
+            rawOperation: operation,
+            commit: () => commitQueued(entry),
+            // Answered before delivery, unlike `handleSign`: a sent
+            // transaction is already on chain, so a result for a closed tab
+            // is dropped, not retried.
+            respond: async result => {
+                if (entry.isAnswered) {
+                    throw new Error('The request is no longer pending')
+                }
+                let wire: unknown
+                try {
+                    wire = walletConnect.toWireResult(result)
+                } catch (error) {
+                    logger.error(
+                        '[eip1193] could not encode a signing result',
+                        {
+                            error,
+                        },
+                    )
+                    await finishQueued(
+                        entry,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.internal,
+                            'Internal error',
+                        ),
+                    )
+                    return
+                }
+                await finishQueued(entry, jsonRpcResult(request.id, wire))
+            },
+            reject: async error => {
+                if (isDappUserRejection(error)) {
+                    await rejectSiteQueue(
+                        entry,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.userRejected,
+                            'The user rejected the request',
+                        ),
+                    )
+                    return
+                }
+                await finishQueued(entry, errorResponse(error))
+            },
+        })
+        kit.recordActivity(connection.id)
+    }
+
+    // The connection and chain are read when the request reaches the head,
+    // not on arrival: a queued request can wait a whole TTL, and an account
+    // or chain dropped meanwhile must not reach the approval.
+    const raiseHead = async (origin: string): Promise<void> => {
+        const head = siteQueues.get(origin)?.[0]
+        if (!head || head.isRaising) return
+        head.isRaising = true
+        const { request } = head
+        try {
+            const connection = await getConnection(origin)
+            if (head.isAnswered) return
+            if (!connection) {
+                await finishQueued(
+                    head,
+                    jsonRpcError(
+                        request.id,
+                        EIP1193_ERROR_CODE.unauthorized,
+                        'Not connected: call eth_requestAccounts first',
+                    ),
+                )
+                return
+            }
+            if (request.method === EIP1193_METHOD.switchChain) {
+                await raiseSwitchRequest(head, connection)
+                return
+            }
+            const { chainId } = connection.metadata
+            if (!chainOn(chainId)) {
+                await finishQueued(
+                    head,
+                    jsonRpcError(
+                        request.id,
+                        EIP1193_ERROR_CODE.chainDisconnected,
+                        'The connected chain is not available',
+                    ),
+                )
+                return
+            }
+            const route = dappRequestChainAdapters
+                .get(chainId)
+                .walletConnect.v2?.handleRequest(request.method, request.params)
+            if (route?.kind === 'operation') {
+                raiseSigningRequest(head, connection, {
+                    type: route.type,
+                    params: route.params,
+                })
+                return
+            }
+            await finishQueued(
+                head,
+                route?.kind === 'refused'
+                    ? jsonRpcError(
+                          request.id,
+                          route.error.code,
+                          route.error.message,
+                      )
+                    : unsupportedMethod(request),
+            )
+        } catch (error) {
+            logger.error('[eip1193] could not raise a signing request', {
+                method: request.method,
+                error,
+            })
+            await finishQueued(
+                head,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.internal,
+                    'Internal error',
+                ),
+            )
+        }
+    }
+
+    // Synchronous on purpose: two requests in one task must not both pass the
+    // cap. The TTL bounds only the wait in the queue.
+    const enqueueRequest = (
+        ctx: DappRequestContext,
+        request: JsonRpcRequest,
+        respond: DappRespond,
+    ): Promise<void> => {
+        const queue = siteQueues.get(ctx.origin) ?? []
+        if (queue.length >= MAX_PENDING_REQUESTS_PER_PEER) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.limitExceeded,
+                    'Too many requests are already pending for this site',
+                ),
+            )
+        }
+        const entry: QueuedRequest = {
+            ctx,
+            request,
+            respond,
+            timer: setTimeout(() => {
+                void finishQueued(
+                    entry,
+                    jsonRpcError(
+                        request.id,
+                        EIP1193_ERROR_CODE.internal,
+                        'The wallet did not answer in time',
+                    ),
+                )
+            }, requestTtlMs),
+            isAnswered: false,
+            isRaising: false,
+            isCommitted: false,
+        }
+        pendingTimers.add(entry.timer)
+        queue.push(entry)
+        siteQueues.set(ctx.origin, queue)
+        return raiseHead(ctx.origin)
+    }
+
+    const handleChainRequest = async (
+        ctx: DappRequestContext,
+        request: JsonRpcRequest,
+        respond: DappRespond,
+    ): Promise<void> => {
+        if (isSigningMethod(request.method)) {
+            return enqueueRequest(ctx, request, respond)
+        }
+        const connection = await getConnection(ctx.origin)
+        if (!connection) return deliver(respond, unsupportedMethod(request))
+        const { chainId } = connection.metadata
+        if (!chainOn(chainId)) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.chainDisconnected,
+                    'The connected chain is not available',
+                ),
+            )
+        }
+        const route = dappRequestChainAdapters
+            .get(chainId)
+            .walletConnect.v2?.handleRequest(request.method, request.params)
+        if (route?.kind === 'refused') {
+            return deliver(
+                respond,
+                jsonRpcError(request.id, route.error.code, route.error.message),
+            )
+        }
+        // Only the queued signing methods reach the user; public data and
+        // switches the v2 table serves are the handler's own cases above.
+        return deliver(respond, unsupportedMethod(request))
+    }
+
+    // The approval window only withdraws a closed connection's request, so
+    // the page is answered here, including for the one on screen.
+    const dropSiteQueue = (id: ConnectionId): void => {
+        for (const [origin, queue] of siteQueues) {
+            if (eip1193ConnectionIdOf(origin) !== id) continue
+            siteQueues.delete(origin)
+            for (const entry of queue) {
+                if (entry.isCommitted) continue
+                const { raised } = entry
+                void answerQueued(
+                    entry,
+                    jsonRpcError(
+                        entry.request.id,
+                        EIP1193_ERROR_CODE.unauthorized,
+                        'The site was disconnected',
+                    ),
+                )
+                // A head raised while the record was being removed can land
+                // after `connection-closed`, which then never withdraws it.
+                if (raised) {
+                    requireContext().onRequestExpired(
+                        raised.connectionId,
+                        raised.correlationId,
+                    )
+                }
+            }
+        }
+    }
+
     const disconnect = async (id: ConnectionId): Promise<void> => {
         const connection = await getConnectionById(id)
+        if (connection) await store().remove(id)
+        // After the removal, so a request that arrived meanwhile and read
+        // the record before it went is answered too.
+        dropSiteQueue(id)
         if (!connection) return
-        await store().remove(id)
         // EIP-1193's `disconnect` means the provider lost every chain; a
         // revoked site is told it holds no accounts.
         await notifyOrigin(
@@ -582,14 +968,7 @@ export const createEip1193ConnectionHandler = (
                 return deliver(respond, jsonRpcResult(request.id, null))
             }
             default: {
-                return deliver(
-                    respond,
-                    jsonRpcError(
-                        request.id,
-                        EIP1193_ERROR_CODE.unsupportedMethod,
-                        `Unsupported method '${request.method}'`,
-                    ),
-                )
+                return handleChainRequest(ctx, request, respond)
             }
         }
     }
@@ -632,6 +1011,28 @@ export const createEip1193ConnectionHandler = (
         async teardown() {
             unsubscribe?.()
             unsubscribe = null
+            const queued = [...siteQueues.values()].flat()
+            siteQueues.clear()
+            await Promise.all(
+                queued.map(entry => {
+                    // Left open, the window could still broadcast a send whose
+                    // page was just told the wallet closed.
+                    if (entry.raised) {
+                        kit.currentContext()?.onRequestExpired(
+                            entry.raised.connectionId,
+                            entry.raised.correlationId,
+                        )
+                    }
+                    return answerQueued(
+                        entry,
+                        jsonRpcError(
+                            entry.request.id,
+                            EIP1193_ERROR_CODE.disconnected,
+                            'The wallet closed the connection',
+                        ),
+                    )
+                }),
+            )
             pendingTimers.forEach(timer => clearTimeout(timer))
             pendingTimers.clear()
             openProposals.clear()

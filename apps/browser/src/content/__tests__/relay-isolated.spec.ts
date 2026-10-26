@@ -224,6 +224,41 @@ describe('relay-isolated handshake hardening', () => {
         vi.unstubAllGlobals()
     })
 
+    it.each([
+        ['eip1193', 4900],
+        ['pera', -32_004],
+    ])(
+        'answers a %s request at once with %i when the extension context is invalidated',
+        async (provider, code) => {
+            stubChrome(() => {
+                throw new Error('Extension context invalidated.')
+            })
+
+            await import('../relay-isolated')
+            dispatchHandshake(`req-gone-${provider}`, `res-gone-${provider}`)
+            const seen = collect(`res-gone-${provider}`)
+            dispatchRequest(`req-gone-${provider}`, 'id-9', provider)
+
+            expect(seen).toEqual([
+                {
+                    id: 'id-9',
+                    provider,
+                    response: {
+                        jsonrpc: '2.0',
+                        id: 'id-9',
+                        error: {
+                            code,
+                            message:
+                                'The wallet extension was reloaded; reload the page',
+                        },
+                    },
+                },
+            ])
+
+            vi.unstubAllGlobals()
+        },
+    )
+
     it('holds a prerendered page’s requests until it activates', async () => {
         const sendMessage = vi.fn<SendMessageMock>()
         stubChrome(sendMessage)

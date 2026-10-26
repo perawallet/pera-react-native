@@ -39,7 +39,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { seedAlgo25Signer } from '@test-utils/signing-review'
+import { renderSignReview, seedAlgo25Signer } from '@test-utils/signing-review'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
 import {
     makeProposal,
@@ -92,6 +92,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useSigningStore } from '@packages/signing/src/store'
+import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
@@ -486,6 +487,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             // The nonce comes from the submission ledger.
             beforeAll(setupTestDatabase)
             beforeEach(resetTestDatabase)
+            // A request approved without the review leaves its actor in the
+            // module registry, which keeps the next request's review blank.
+            beforeEach(__resetSigningActorRegistryForTests)
             afterAll(teardownTestDatabase)
 
             const queued = async (): Promise<QueuedRequest> => {
@@ -516,6 +520,37 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         result: HASH,
                     })
                 })
+            })
+
+            it('Given a valid request, when it is queued, then the review shows the Ethereum transaction with its max fee', async () => {
+                const walletKit = await settle()
+                // Mounted first so the request FAQ is acknowledged before the
+                // request arrives; otherwise its sheet covers the review.
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('signing_transaction_review'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                expect(
+                    screen.getAllByTestId('ethereum_max_fee'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.queryByText(
+                        'signing.transaction_view.invalid_title',
+                    ),
+                ).toBeNull()
             })
 
             it('Given a queued request, when the user rejects it, then the dApp receives 4001', async () => {

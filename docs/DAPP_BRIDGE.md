@@ -152,7 +152,8 @@ required nor read, where the webview takes a single `data` object and requires
   `-32004`, and settles any approval surface still open for it, so no approval
   can be accepted afterwards. `DAPP_PAGE_TIMEOUT_MS` is that budget plus ten
   seconds (5 min 10 s), so the page's backstop loses the race and the wallet's
-  own terminal answer is what a dApp sees.
+  own terminal answer is what a dApp sees. EIP-1193 signing requests wait
+  longer; see [EIP-1193 provider](#eip-1193-provider).
 
 ## Errors
 
@@ -249,6 +250,70 @@ is that chain's network as the wallet has selected it, and a dApp's
 selection. The chains on offer are the `eip155` chain adapters with
 `dappConnect` on; a network the wallet hasn't selected answers 4902, and
 `wallet_addEthereumChain` is refused.
+
+### Routing
+
+Any other method goes through the site's chain's WalletConnect v2 route table
+(`walletConnect.v2.handleRequest` on its `dapp-request` adapter), so a page gets
+the same signing methods, review and refusals as a WalletConnect session.
+`eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go to the
+approval as `sourceType: 'injected'`, a route the chain refuses is answered with
+its error unchanged, and everything else answers 4200. The handler queues only
+the methods `EIP1193_SIGNING_METHODS` names, so a chain that adds a signing
+method answers 4200 until that list names it too.
+
+### Approval queue
+
+Signing requests and chain switches from one site, across all its tabs, wait in
+one queue and reach the approval one at a time, so a page cannot bury the user
+under prompts and a switch can never move the site's chain under a request
+already on screen. The connection, chain and granted accounts are read when a
+request reaches the approval, not when it arrives: a site with no connection
+then answers 4100, and a chain no longer served 4901.
+
+- Past `MAX_PENDING_REQUESTS_PER_PEER` pending, a request answers -32005.
+- Only the user's Reject, or closing the approval before a send is handed off,
+  answers 4001, and it answers every request queued behind it 4001 too. Any
+  other refusal from the window (a build the node rejects, a grant revoked while
+  it was open) travels as `fail-connection-request` and answers just that
+  request with the chain's code for its failure kind, or -32603.
+- Revoking the site answers every queued request 4100, except a send already
+  handed off.
+
+### Sends
+
+The approval window reviews and signs an `eth_sendTransaction` but never
+broadcasts it: a toolbar popup closes whenever it loses focus, and a send
+broadcast from it could land after the dApp was told no. Once signed, the window
+hands the transactions to the service worker as `submit-connection-request`,
+which settles the approval there and then, and the router forwards them to the
+offscreen document as `submit-send`. The offscreen host marks the request
+committed (`commit` on the inbound message), records and broadcasts it through
+the chain's `submitAndAutoRefresh`, and answers the dApp with the hash, or with
+the node's error only when the node refused it: a send whose outcome is unknown
+may still mine, so it answers with its locally derived hash and the reconciler
+settles the attempt. From the handoff on, no expiry, close or revoke answers the
+request; the window only shows the outcome. A window that dies before the
+handoff has sent nothing, so its decline is the truth. A `submit-send` the host
+refuses (or never receives) gets a failure `respond` from the router, which finds
+nothing to answer if the host had already claimed the send.
+
+The one case this cannot cover is the offscreen document dying mid-broadcast:
+the attempt is recorded before it is sent, so the reconciler settles it, but the
+page hears only its own backstop.
+
+### Timeouts
+
+A request still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A
+request on screen is answered by its window; `DAPP_APPROVAL_TTL_MS` expires it
+only so a window whose answer was lost, such as one a restarted service worker
+forgot, cannot hold the site's queue forever. Withdrawing before the handoff
+never loses a send, so the value is chosen for the user: it stays under the
+approval bridge's `APPROVAL_KEEPALIVE_MAX_MS`, so the window is withdrawn before
+the user can approve into an approval the worker has forgotten. A switch on
+screen keeps `DAPP_REQUEST_TTL_MS`. The page's backstop for the queued methods
+(`EIP1193_QUEUED_METHODS`) is both TTLs plus ten seconds; after an extension
+reload the content script answers 4900 at once instead.
 
 A revoked site, from the dApp (`wallet_revokePermissions`) or from Settings,
 gets `accountsChanged([])`, not `disconnect`, because EIP-1193 reserves

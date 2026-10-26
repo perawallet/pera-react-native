@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { EIP1193_QUEUED_METHODS } from './eip1193Protocol'
+
 export const DAPP_KIND = 'dapp' as const
 
 export const DAPP_METHODS = [
@@ -45,8 +47,22 @@ export const isDappProvider = (value: unknown): value is DappProvider =>
 // the 8 s pairing budget WalletConnect uses for its handshake.
 export const DAPP_PROPOSAL_TTL_MS = 5 * 60_000
 export const DAPP_REQUEST_TTL_MS = 5 * 60_000
-// Page-side backstop; strictly longer than the handler's own expiry so the
-// handler's terminal answer always wins when both are racing.
+// How long an EIP-1193 request may stay on screen; docs/DAPP_BRIDGE.md
+// (Timeouts) says why it stays under the approval bridge's keepalive.
+export const DAPP_APPROVAL_TTL_MS = 14 * 60_000
+// Page-side backstops; strictly longer than the handler's own expiry so the
+// handler's terminal answer always wins when both are racing. A queued
+// EIP-1193 request can wait out its queue TTL and then its approval TTL.
 export const DAPP_PAGE_TIMEOUT_MS = DAPP_REQUEST_TTL_MS + 10_000
+export const DAPP_QUEUED_PAGE_TIMEOUT_MS =
+    DAPP_REQUEST_TTL_MS + DAPP_APPROVAL_TTL_MS + 10_000
+
+export const dappPageTimeoutMs = (
+    provider: DappProvider,
+    method: string,
+): number =>
+    provider === 'eip1193' && EIP1193_QUEUED_METHODS.includes(method)
+        ? DAPP_QUEUED_PAGE_TIMEOUT_MS
+        : DAPP_PAGE_TIMEOUT_MS
 
 export const MAX_DAPP_REQUEST_JSON_LENGTH = 1_048_576

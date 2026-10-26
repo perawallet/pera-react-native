@@ -12,6 +12,8 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import type { WireSubmitFailure } from '@perawallet/wallet-core-browser-runtime'
 
 const mocks = vi.hoisted(() => {
     class GenesisHashMismatchError extends Error {}
@@ -28,7 +30,9 @@ const mocks = vi.hoisted(() => {
         enqueueInboundRequest: vi.fn(),
         isConnectionAlive: vi.fn(() => true),
         resolveConnectionRequest: vi.fn(),
-        rejectApproval: vi.fn(),
+        declineConnectionRequest: vi.fn(),
+        failConnectionRequest: vi.fn(),
+        submitConnectionRequest: vi.fn(),
         decodeWalletOperation: vi.fn(),
         encodeWalletOperationResult: vi.fn(),
         useAllAccounts: vi.fn(),
@@ -64,13 +68,24 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolveConnectionRequest: mocks.resolveConnectionRequest,
-    rejectApproval: mocks.rejectApproval,
+    declineConnectionRequest: mocks.declineConnectionRequest,
+    failConnectionRequest: mocks.failConnectionRequest,
+    submitConnectionRequest: mocks.submitConnectionRequest,
+    rebuildWireError: ({ name, message, messageKey }: WireSubmitFailure) =>
+        Object.assign(
+            new AppError(message, {
+                category: ErrorCategory.CONNECTIONS,
+                messageKey,
+            }),
+            { name },
+        ),
     decodeWalletOperation: mocks.decodeWalletOperation,
     encodeWalletOperationResult: mocks.encodeWalletOperationResult,
 }))
 
 vi.mock('@hooks/useLanguage')
 
+import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 
 const SIGNER = {
@@ -116,7 +131,9 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.enqueue.mockReset()
         mocks.addSignRequest.mockReset()
         mocks.useSigningRequest.mockReset()
-        mocks.rejectApproval.mockReset()
+        mocks.declineConnectionRequest.mockReset()
+        mocks.failConnectionRequest.mockReset()
+        mocks.failConnectionRequest.mockResolvedValue(undefined)
         mocks.useAllAccounts.mockReset()
         mocks.enqueueInboundRequest.mockReset()
         mocks.resolveConnectionRequest.mockReset()
@@ -146,10 +163,12 @@ describe('useSignRequestApprovalScreen', () => {
             removeSignRequest: mocks.removeSignRequest,
             currentRequest: null,
         })
-        mocks.rejectApproval.mockResolvedValue(undefined)
+        mocks.declineConnectionRequest.mockResolvedValue(undefined)
         // Hydrated by default with the account the approval authorizes, so
         // cases exercise the post-hydration path unless they say otherwise.
         mocks.useAllAccounts.mockReturnValue([SIGNER])
+
+        useDatabaseReadinessStore.getState().setReadiness('ready')
 
         closeSpy = vi.fn()
         vi.stubGlobal('close', closeSpy)
@@ -184,6 +203,63 @@ describe('useSignRequestApprovalScreen', () => {
             rerender()
 
             expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('database readiness gate', () => {
+        const SEND_APPROVAL = {
+            ...CONNECTION_REQUEST_APPROVAL,
+            chainId: 'base',
+            operation: { type: 'send-transaction', request: '{"to":"0x1"}' },
+        }
+
+        it('holds a send until the database is ready, then enqueues it once', () => {
+            useDatabaseReadinessStore.getState().setReadiness('pending')
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'cr1',
+                approval: SEND_APPROVAL,
+                isLoading: false,
+            })
+
+            const { result } = renderHook(() => useSignRequestApprovalScreen())
+
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
+            expect(result.current.isLoading).toBe(true)
+
+            act(() => {
+                useDatabaseReadinessStore.getState().setReadiness('ready')
+            })
+
+            expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not hold a request that never reads the database', () => {
+            useDatabaseReadinessStore.getState().setReadiness('pending')
+
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
+        })
+
+        it('declines a send and shows the error when the database never opened', () => {
+            useDatabaseReadinessStore.getState().setReadiness('pending')
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'cr1',
+                approval: SEND_APPROVAL,
+                isLoading: false,
+            })
+            const { result } = renderHook(() => useSignRequestApprovalScreen())
+
+            act(() => {
+                useDatabaseReadinessStore.getState().setReadiness('failed')
+            })
+
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
+            expect(mocks.failConnectionRequest).toHaveBeenCalledWith('cr1')
+            expect(mocks.declineConnectionRequest).not.toHaveBeenCalled()
+            expect(result.current.error).toBe('dapp.sign.error.body')
+            expect(result.current.isLoading).toBe(false)
+            expect(closeSpy).not.toHaveBeenCalled()
         })
     })
 
@@ -319,8 +395,59 @@ describe('useSignRequestApprovalScreen', () => {
             const { result } = renderHook(() => useSignRequestApprovalScreen())
 
             expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('cr1')
+            expect(mocks.failConnectionRequest).toHaveBeenCalledWith('cr1')
+            expect(mocks.declineConnectionRequest).not.toHaveBeenCalled()
             expect(result.current.error).toBe('dapp.sign.connection_revoked')
+        })
+
+        describe('a handed-off send', () => {
+            const SIGNED = [
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    id: '0xh',
+                    bytes: new Uint8Array([1]),
+                },
+            ]
+            const enqueuedDeps = () =>
+                mocks.enqueueInboundRequest.mock.calls[0][1]
+
+            it('hands a signed send to the bridge and closes on success', async () => {
+                renderHook(() => useSignRequestApprovalScreen())
+                mocks.submitConnectionRequest.mockResolvedValue({
+                    ok: true,
+                    txId: '0xh',
+                })
+
+                const outcome = await enqueuedDeps().submitSignedSend(SIGNED)
+
+                expect(mocks.submitConnectionRequest).toHaveBeenCalledWith(
+                    'cr1',
+                    SIGNED,
+                )
+                expect(outcome).toEqual({ status: 'submitted', txId: '0xh' })
+                expect(closeSpy).toHaveBeenCalled()
+            })
+
+            it('keeps the window open and names the error on a failed broadcast', async () => {
+                const { result } = renderHook(() =>
+                    useSignRequestApprovalScreen(),
+                )
+                mocks.submitConnectionRequest.mockResolvedValue({
+                    ok: false,
+                    name: 'EvmError',
+                    message: 'insufficient funds',
+                    messageKey: 'errors.general.title',
+                })
+
+                const outcome = await enqueuedDeps().submitSignedSend(SIGNED)
+                act(() => {
+                    enqueuedDeps().onError(outcome.error)
+                })
+
+                expect(outcome.status).toBe('failed')
+                expect(result.current.error).toBe('errors.general.title')
+                expect(closeSpy).not.toHaveBeenCalled()
+            })
         })
 
         it('surfaces an adapter failure in the window instead of closing it silently', () => {
@@ -336,12 +463,16 @@ describe('useSignRequestApprovalScreen', () => {
             expect(closeSpy).not.toHaveBeenCalled()
         })
 
-        it('reject rejects the approval and closes the window', async () => {
+        it('declines a pipeline reject through the approval client and closes the window', async () => {
             renderHook(() => useSignRequestApprovalScreen())
+            const error = new Error('execution reverted')
 
-            await enqueuedMessage().reject(new Error('User rejected'))
+            await enqueuedMessage().reject(error)
 
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('cr1')
+            expect(mocks.declineConnectionRequest).toHaveBeenCalledWith(
+                'cr1',
+                error,
+            )
             expect(closeSpy).toHaveBeenCalled()
         })
 

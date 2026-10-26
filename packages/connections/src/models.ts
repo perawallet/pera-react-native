@@ -178,6 +178,13 @@ type MessageBase = {
     verifiedOrigin?: string
     respond(result: WalletOperationResult): Promise<void>
     reject(error: Error): Promise<void>
+    /**
+     * The user approved and the answer is being produced where no expiry or
+     * surface can interrupt it (a broadcast underway). A handler that expires
+     * requests on its own clock stops for this one; only `respond` or
+     * `reject` answers it now.
+     */
+    commit?(): void
 }
 
 export type InboundMessage =

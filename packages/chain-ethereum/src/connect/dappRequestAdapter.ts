@@ -67,7 +67,13 @@ export const createEthereumDappRequestAdapter = (
         message: NO_TRANSACTION_GROUP,
     }),
 
-    validateMessagePayload: validateEthereumMessagePayload,
+    validateMessagePayload: (type, params, authorizedAccounts) =>
+        validateEthereumMessagePayload(type, params, authorizedAccounts, {
+            eip155ChainId: eip155ChainIdOfNetwork(
+                chain,
+                ctx.getScope().networkId,
+            ),
+        }),
 
     useEnqueueTransactionSigning: () => refuseTransactionGroup,
 

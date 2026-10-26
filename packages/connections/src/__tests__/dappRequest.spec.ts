@@ -14,10 +14,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { ConnectionsError, type ConnectionsErrorCode } from '../errors'
 import {
+    DappRequestFailedError,
     DappRequestRejectedError,
     dappRelayableErrorNames,
     dappRequestChainAdapters,
     dappRequestFailureOf,
+    isDappUserRejection,
     type DappRequestChainAdapter,
 } from '../dappRequest'
 
@@ -120,6 +122,17 @@ describe('dappRequestFailureOf', () => {
         expect(error.name).toBe('DappRequestRejectedError')
     })
 
+    it('reads a wallet-side failure, and nothing when it names no kind', () => {
+        expect(
+            dappRequestFailureOf(
+                new DappRequestFailedError('Request failed', 'invalid-params'),
+            ),
+        ).toBe('invalid-params')
+        expect(
+            dappRequestFailureOf(new DappRequestFailedError('Request failed')),
+        ).toBeUndefined()
+    })
+
     it('reads nothing from a plain error or a forged failure', () => {
         expect(dappRequestFailureOf(new Error('boom'))).toBeUndefined()
         expect(
@@ -127,5 +140,21 @@ describe('dappRequestFailureOf', () => {
                 Object.assign(new Error('boom'), { failure: 'x' }),
             ),
         ).toBeUndefined()
+    })
+})
+
+describe('isDappUserRejection', () => {
+    it('treats a DappRequestRejectedError and a UserCancelledError as the user declining, and nothing else', () => {
+        const cancelled = new Error('cancelled')
+        cancelled.name = 'UserCancelledError'
+
+        expect(isDappUserRejection(new DappRequestRejectedError())).toBe(true)
+        expect(isDappUserRejection(cancelled)).toBe(true)
+        expect(
+            isDappUserRejection(
+                new DappRequestFailedError('x', 'invalid-params'),
+            ),
+        ).toBe(false)
+        expect(isDappUserRejection(new Error('User rejected'))).toBe(false)
     })
 })

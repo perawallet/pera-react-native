@@ -16,14 +16,17 @@ import {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_EVENT_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
+    decodeSignedTransactions,
     decodeWalletOperation,
     decodeWalletOperationResult,
+    encodeSignedTransactions,
     encodeWalletOperation,
     encodeWalletOperationResult,
     isConnectionApprovalRequestMessage,
     isConnectionsAck,
     isConnectionsControlMessage,
     isConnectionsEventMessage,
+    isWireSignedTransactions,
     isWireWalletOperation,
     isWireWalletOperationResult,
 } from '../protocol'
@@ -33,6 +36,33 @@ const PEER = { name: 'dApp', url: 'https://dapp.example', icons: [] }
 // JSON.parse(JSON.stringify(...)) is what chrome.runtime.sendMessage does to
 // a payload, so a round trip through it is the real test of "wire-safe".
 const overTheWire = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+describe('signed transactions wire codec', () => {
+    it('round-trips signed transactions through the wire', () => {
+        const signed = [
+            { scope: SCOPE, id: '0xabc', bytes: new Uint8Array([1, 2, 3]) },
+        ]
+
+        const wire = overTheWire(encodeSignedTransactions(signed))
+
+        expect(isWireSignedTransactions(wire)).toBe(true)
+        expect(decodeSignedTransactions(wire)).toEqual(signed)
+    })
+
+    it('refuses an empty list, non-string bytes and a scope without networkId', () => {
+        expect(isWireSignedTransactions([])).toBe(false)
+        expect(
+            isWireSignedTransactions([{ scope: SCOPE, id: '0xabc', bytes: 1 }]),
+        ).toBe(false)
+        expect(
+            isWireSignedTransactions([
+                { scope: { chainId: 'ethereum' }, id: '0xabc', bytes: 'AQID' },
+            ]),
+        ).toBe(false)
+    })
+})
 
 describe('wallet operation wire codec', () => {
     it('round-trips a sign-transactions group unchanged', () => {
@@ -106,19 +136,45 @@ describe('wallet operation wire codec', () => {
         expect(decodeWalletOperationResult(wire)).toEqual(result)
     })
 
-    it('refuses to encode a send-transaction operation or result, whose bigints cannot cross a message hop', () => {
-        expect(() =>
-            encodeWalletOperation({
-                type: 'send-transaction',
-                request: { value: 1n },
-            }),
-        ).toThrow(/send-transaction/)
-        expect(() =>
-            encodeWalletOperationResult({
-                type: 'send-transaction',
-                txId: '0xabc',
-            }),
-        ).toThrow(/send-transaction/)
+    it('round-trips a send-transaction request with bigints through the wire', () => {
+        const request = {
+            from: '0xabc',
+            to: '0xdef',
+            value: 10n ** 30n,
+            data: '0x',
+            gas: 21000n,
+            accessList: [{ address: '0x1', storageKeys: ['0x2'] }],
+        }
+
+        const wire = encodeWalletOperation({
+            type: 'send-transaction',
+            request,
+        })
+
+        expect(overTheWire(wire)).toEqual(wire)
+        expect(isWireWalletOperation(wire)).toBe(true)
+        expect(decodeWalletOperation(overTheWire(wire))).toEqual({
+            type: 'send-transaction',
+            request,
+        })
+    })
+
+    it('round-trips a send-transaction result', () => {
+        const result = {
+            type: 'send-transaction',
+            txId: '0x' + 'ab'.repeat(32),
+        } as const
+
+        const wire = overTheWire(encodeWalletOperationResult(result))
+
+        expect(isWireWalletOperationResult(wire)).toBe(true)
+        expect(decodeWalletOperationResult(wire)).toEqual(result)
+    })
+
+    it('rejects a send-transaction wire result without a txId', () => {
+        expect(isWireWalletOperationResult({ type: 'send-transaction' })).toBe(
+            false,
+        )
     })
 
     it('refuses to encode a batch operation or result, which no browser chain serves', () => {
@@ -283,6 +339,58 @@ describe('isConnectionsControlMessage', () => {
                 correlationId: '7',
                 outcome: { ok: true, result: ['c3R4bg=='] },
             }),
+        ).toBe(false)
+    })
+
+    it('accepts a decline flagged as a user rejection and refuses a non-boolean flag', () => {
+        const withFlag = (isUserRejection: unknown) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'respond',
+            connectionId: 'c1',
+            correlationId: '7',
+            outcome: { ok: false, message: 'declined', isUserRejection },
+        })
+        expect(isConnectionsControlMessage(withFlag(true))).toBe(true)
+        expect(isConnectionsControlMessage(withFlag('yes'))).toBe(false)
+    })
+
+    it('accepts a decline carrying a known failure kind and refuses any other', () => {
+        const withFailure = (failure: unknown) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'respond',
+            connectionId: 'c1',
+            correlationId: '7',
+            outcome: { ok: false, message: 'Request failed', failure },
+        })
+        expect(isConnectionsControlMessage(withFailure('invalid-params'))).toBe(
+            true,
+        )
+        expect(isConnectionsControlMessage(withFailure('made-up'))).toBe(false)
+        expect(isConnectionsControlMessage(withFailure(4001))).toBe(false)
+        // A decline travels only as `isUserRejection`, which clears the site's queue.
+        expect(isConnectionsControlMessage(withFailure('user-rejected'))).toBe(
+            false,
+        )
+    })
+
+    it('accepts a well-formed submit-send and refuses one without correlationId or with malformed transactions', () => {
+        const submitSend = (fields: Record<string, unknown>) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'submit-send',
+            connectionId: 'c1',
+            correlationId: '7',
+            signedTransactions: [{ scope: SCOPE, id: '0xabc', bytes: 'AQID' }],
+            ...fields,
+        })
+
+        expect(isConnectionsControlMessage(submitSend({}))).toBe(true)
+        expect(
+            isConnectionsControlMessage(
+                submitSend({ correlationId: undefined }),
+            ),
+        ).toBe(false)
+        expect(
+            isConnectionsControlMessage(submitSend({ signedTransactions: [] })),
         ).toBe(false)
     })
 
