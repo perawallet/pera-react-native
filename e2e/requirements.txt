@@ -1,2 +1,5 @@
 robotframework==7.4.2
 robotframework-appiumlibrary==3.2.1
+# AppiumLibrary leaves these unpinned; pinned so a fresh install matches the one the suite ran on.
+Appium-Python-Client==6.0.9
+selenium==4.51.0
