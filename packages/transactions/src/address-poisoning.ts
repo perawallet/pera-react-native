@@ -60,7 +60,11 @@ const commonSuffixLength = (a: string, b: string): number => {
     return length
 }
 
-/** The known address sharing the most leading plus trailing characters with `recipient`, when that reaches `minMatchedChars`. */
+/**
+ * The known address sharing the most leading plus trailing characters with
+ * `recipient`, when that reaches `minMatchedChars`. Rule out the recipient
+ * itself first: address equality is the chain codec's call, not a string match.
+ */
 export const findLookalikeAddress = (
     recipient: string,
     knownAddresses: readonly string[],
@@ -69,7 +73,6 @@ export const findLookalikeAddress = (
     let best: Optional<string>
     let bestScore = minMatchedChars - 1
     for (const known of knownAddresses) {
-        if (known === recipient) continue
         const score =
             commonPrefixLength(recipient, known) +
             commonSuffixLength(recipient, known)

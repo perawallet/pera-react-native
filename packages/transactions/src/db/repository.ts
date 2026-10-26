@@ -522,9 +522,17 @@ export async function getCounterpartyTransfers({
     if (ownAddresses.length === 0) return []
 
     const own = [...ownAddresses]
+    const incoming = and(
+        eq(TransactionsSchema.sender, counterparty),
+        inArray(TransactionsSchema.receiver, own),
+    )
+    const outgoing = and(
+        inArray(TransactionsSchema.sender, own),
+        eq(TransactionsSchema.receiver, counterparty),
+    )
     const rows = await db
         .select({
-            sender: TransactionsSchema.sender,
+            isIncoming: sql<number>`CASE WHEN ${incoming} THEN 1 ELSE 0 END`,
             amount: TransactionsSchema.amount,
             assetId: jsonPathAsText(TransactionsSchema.assetJson, '$.assetId'),
         })
@@ -533,22 +541,13 @@ export async function getCounterpartyTransfers({
             and(
                 eq(TransactionsSchema.scope, toScopeKey(scope)),
                 inArray(TransactionsSchema.status, SETTLED_OR_IN_FLIGHT),
-                or(
-                    and(
-                        eq(TransactionsSchema.sender, counterparty),
-                        inArray(TransactionsSchema.receiver, own),
-                    ),
-                    and(
-                        inArray(TransactionsSchema.sender, own),
-                        eq(TransactionsSchema.receiver, counterparty),
-                    ),
-                ),
+                or(incoming, outgoing),
             ),
         )
         .all()
 
     return rows.map(row => ({
-        direction: row.sender === counterparty ? 'incoming' : 'outgoing',
+        direction: row.isIncoming === 1 ? 'incoming' : 'outgoing',
         assetId: row.assetId,
         amount: row.amount,
     }))

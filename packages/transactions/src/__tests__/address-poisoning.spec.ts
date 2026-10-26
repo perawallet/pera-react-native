@@ -83,10 +83,6 @@ describe('findLookalikeAddress', () => {
         expect(findLookalikeAddress(recipient, [KNOWN], 4)).toBeUndefined()
     })
 
-    it('ignores the known address itself', () => {
-        expect(findLookalikeAddress(KNOWN, [KNOWN], 4)).toBeUndefined()
-    })
-
     it('picks the known address sharing the most characters', () => {
         const weaker = pad('ABCD', 'MNOP', 'R')
         const stronger = pad('ABCDE', 'STUV', 'R')
