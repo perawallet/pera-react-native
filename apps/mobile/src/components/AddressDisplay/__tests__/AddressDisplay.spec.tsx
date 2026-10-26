@@ -96,6 +96,37 @@ describe('AddressDisplay', () => {
         )
     })
 
+    it("shortens an EVM address with its own chain's rule", () => {
+        registerEthereumChain()
+        onTestFinished(restoreAlgorandOnlyChains)
+
+        render(
+            <AddressDisplay
+                address='0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
+                scope={{ chainId: 'ethereum', networkId: 'mainnet' }}
+            />,
+        )
+
+        expect(screen.getByText('0xf39f...2266')).toBeTruthy()
+    })
+
+    it('shows a full EVM address in its checksummed form', () => {
+        registerEthereumChain()
+        onTestFinished(restoreAlgorandOnlyChains)
+
+        render(
+            <AddressDisplay
+                address='0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
+                addressFormat='full'
+                scope={{ chainId: 'ethereum', networkId: 'mainnet' }}
+            />,
+        )
+
+        expect(
+            screen.getByText('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'),
+        ).toBeTruthy()
+    })
+
     it('does not resolve NFD when displayType is address-only', () => {
         render(
             <AddressDisplay
