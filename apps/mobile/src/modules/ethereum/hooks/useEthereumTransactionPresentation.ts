@@ -51,10 +51,13 @@ export type EthereumTransactionPresentation = {
         | 'transactions.list_item.contract_call'
     iconName: IconName
     /**
-     * A transfer's recipient (`view.to`, or `view.token.to` for a token) or the
-     * called contract; absent for a contract creation.
+     * A transfer's recipient (`view.to`, `view.token.to` for a token or
+     * `view.nft.to` for an NFT) or the called contract; absent for a contract
+     * creation.
      */
     counterparty?: string
+    /** Set on an NFT transfer. */
+    collectible?: { tokenId: string; collectionName?: string }
     /** What a transfer moves; absent on a contract call. */
     amount?: EthereumAmount
     isAmountLoading: boolean
@@ -93,8 +96,8 @@ export const useEthereumTransactionPresentation = (
         value: tokenValue,
         isLoading: isTokenLoading,
     } = useBaseUnitsAmount(
-        view?.token?.contract ?? '',
-        view?.token?.amount,
+        view?.token?.contract ?? view?.nft?.assetId ?? '',
+        view?.token?.amount ?? view?.nft?.amount,
         scope,
     )
     const signingAccount = useFindAccountByAddress(view?.from ?? '', scope)
@@ -102,7 +105,9 @@ export const useEthereumTransactionPresentation = (
     return useMemo(() => {
         if (!view) return null
 
-        const isAmountLoading = view.kind === 'token-transfer' && isTokenLoading
+        const isAmountLoading =
+            (view.kind === 'token-transfer' || view.kind === 'nft-transfer') &&
+            isTokenLoading
 
         let amount: EthereumAmount | undefined
         if (view.kind === 'transfer') {
@@ -121,7 +126,14 @@ export const useEthereumTransactionPresentation = (
             iconName: transactionIconName(
                 view.kind === 'contract-call' ? 'contract-call' : 'send',
             ),
-            counterparty: view.token?.to ?? view.to,
+            counterparty: view.token?.to ?? view.nft?.to ?? view.to,
+            ...(view.nft && {
+                collectible: {
+                    tokenId: view.nft.tokenId,
+                    collectionName:
+                        tokenAsset?.peraMetadata?.collectible?.collection?.name,
+                },
+            }),
             amount,
             isAmountLoading,
             value: toEther(view.value),

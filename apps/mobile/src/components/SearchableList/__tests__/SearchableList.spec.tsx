@@ -154,6 +154,22 @@ describe('SearchableList in bottom sheet', () => {
         expect(onSearchChange).toHaveBeenCalledWith('app')
     })
 
+    it('keeps the search accessory over an empty list in sheet mode', () => {
+        render(
+            <SearchableList
+                inBottomSheet
+                data={[] as (typeof DATA)[number][]}
+                keyExtractor={item => item.id}
+                renderItem={renderRow}
+                searchAccessory={<PWText>Chips</PWText>}
+                ListEmptyComponent={<PWText>No results</PWText>}
+            />,
+        )
+
+        expect(screen.getByText('Chips')).toBeTruthy()
+        expect(screen.getByText('No results')).toBeTruthy()
+    })
+
     it('renders the empty component when data is empty in sheet mode', () => {
         render(
             <SearchableList

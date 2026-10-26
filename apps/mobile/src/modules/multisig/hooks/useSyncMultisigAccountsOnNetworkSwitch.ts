@@ -28,8 +28,9 @@ import {
     useOnDeploymentSwitch,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
+import { deploymentOf } from '@perawallet/wallet-core-config'
 import {
-    deviceIdForScope,
+    deviceIdForDeployment,
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
@@ -62,7 +63,14 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
         }))
     }, [chainIds, networksKey])
     const deviceIdsKey = useDeviceStore(state =>
-        scopes.map(scope => deviceIdForScope(state, scope) ?? '').join(),
+        scopes
+            .map(scope => {
+                const deployment = deploymentOf(scope)
+                return deployment === null
+                    ? ''
+                    : (deviceIdForDeployment(state, deployment) ?? '')
+            })
+            .join(),
     )
     const targets = useMemo(() => {
         const deviceIds = deviceIdsKey.split(',')

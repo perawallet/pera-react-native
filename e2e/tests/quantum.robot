@@ -29,4 +29,5 @@ Quantum Import Opens With Its Explanatory Note
     Wait Until Page Contains Element    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=15s
     Tap    ${IMPORT_QUANTUM_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_QUANTUM_NOTE}    timeout=15s
-    Page Should Contain Element    ${IMPORT_WORD_INPUT}0
+    ${first_field}=    Indexed Row    ${IMPORT_WORD_INPUT_ID}    0
+    Page Should Contain Element    ${first_field}

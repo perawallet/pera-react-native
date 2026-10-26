@@ -30,8 +30,8 @@ export const useStyles = makeStyles(theme => ({
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        // Inset to align with the asset name: icon width (lg = xxl) + row gap (lg).
-        marginLeft: theme.spacing.xxl + theme.spacing.lg,
+        // Starts at the text column: the xl asset icon (3xl) plus the row gap (lg).
+        marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
     },
     headerContainer: {
         marginTop: theme.spacing.sm,

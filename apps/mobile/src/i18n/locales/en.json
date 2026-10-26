@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
+            "chain_network": "Network: {{chain}} {{network}}",
             "request_origin": "Request came from {{origin}}",
             "requester_verified_label": "Verified tab: {{origin}}",
             "requester_mismatch": "This request came from {{origin}}, not {{claimed}}.",
@@ -265,6 +266,8 @@
             "empty_body": "No transactions found",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
+            "search_paused_body": "No transactions found in recent history.",
+            "search_older": "Search Older",
             "filter": "Filter",
             "csv": "CSV"
         },
@@ -1024,10 +1027,10 @@
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
             "nfd_label": "NFDomain",
-            "send": "Send",
+            "view_in_explorer": "View in explorer",
             "copy": "Copy address",
             "show_qr": "Show QR code",
-            "send_network_title": "Choose Network"
+            "network_title": "Choose Network"
         },
         "list": {
             "no_contacts_title": "You haven't added any contacts yet",
@@ -3872,7 +3875,11 @@
             "upgrade_watch_title_other": "Upgrade watch accounts?",
             "upgrade_watch_body_one": "This address is already in your wallet as a watch account. Importing it will upgrade it to a Ledger account that can sign transactions. Its name and settings will be kept.",
             "upgrade_watch_body_other": "{{count}} of these addresses are already in your wallet as watch accounts. Importing them will upgrade them to Ledger accounts that can sign transactions. Their names and settings will be kept.",
-            "upgrade_watch_confirm": "Upgrade"
+            "upgrade_watch_confirm": "Upgrade",
+            "same_wallet_title": "Add to your existing Ledger account?",
+            "same_wallet_body": "An account from this Ledger is already in your wallet. Open the {{appName}} app on your Ledger so Pera can confirm both addresses come from the same Ledger, then continue. Or add this address as a separate account.",
+            "same_wallet_confirm": "Continue",
+            "same_wallet_separate": "Add as separate account"
         },
         "signing": {
             "cancel": "Cancel",

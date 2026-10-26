@@ -10,36 +10,43 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
     DeviceRegistrationRequest,
+    V3DeviceRegistrationRequest,
 } from '../models'
 
 const MAX_CURRENCY_LENGTH = 8
 
 /**
- * Collapse repeated addresses, the higher-ranked registration winning and
- * equal ranks keeping the last occurrence — v3 specifies last-wins
- * server-side, so ties resolve the way the backend would. Sending a clean
- * array keeps the request auditable and removes the dependency on that
- * behaviour.
+ * Collapse an address repeated on one chain, the higher-ranked registration
+ * winning and equal ranks keeping the last occurrence — the backend dedupes
+ * last-wins, so ties resolve the way it would. Sending a clean array keeps the
+ * request auditable and removes the dependency on that behaviour.
  */
-const dedupeByAddress = (
+const dedupeByChainAddress = (
     accounts: DeviceAccountRegistration[],
 ): DeviceAccountRegistration[] => {
-    const byAddress = new Map<string, DeviceAccountRegistration>()
+    const byChainAddress = new Map<string, DeviceAccountRegistration>()
     for (const account of accounts) {
-        const incumbent = byAddress.get(account.address)
+        const key = `${account.chainId}|${account.address}`
+        const incumbent = byChainAddress.get(key)
         if (incumbent === undefined || account.rank >= incumbent.rank) {
-            byAddress.set(account.address, account)
+            byChainAddress.set(key, account)
         }
     }
-    return [...byAddress.values()]
+    return [...byChainAddress.values()]
 }
 
+/**
+ * `chainOf` gives the CAIP-2 id of a chain on the deployment the request goes
+ * to; an account on a chain it can't name is left out rather than refused.
+ */
 export const toDeviceRegistrationRequest = (
     registration: DeviceRegistration,
+    chainOf: (chainId: ChainId) => string | null,
 ): DeviceRegistrationRequest => ({
     ...(registration.id !== undefined ? { id: registration.id } : {}),
     push_token: registration.pushToken,
@@ -53,9 +60,34 @@ export const toDeviceRegistrationRequest = (
     registration.currency.length <= MAX_CURRENCY_LENGTH
         ? { currency: registration.currency }
         : {}),
-    accounts: dedupeByAddress(registration.accounts).map(account => ({
-        address: account.address,
-        account_type: account.accountType,
-        receive_notifications: account.receiveNotifications,
-    })),
+    accounts: dedupeByChainAddress(registration.accounts).flatMap(account => {
+        const chain = chainOf(account.chainId)
+        if (chain === null) return []
+        return [
+            {
+                address: account.address,
+                chain,
+                account_type: account.accountType,
+                receive_notifications: account.receiveNotifications,
+            },
+        ]
+    }),
 })
+
+export const toV3DeviceRegistrationRequest = (
+    registration: DeviceRegistration,
+    isOnV3: (chainId: ChainId) => boolean,
+): V3DeviceRegistrationRequest => {
+    const { accounts, ...device } = toDeviceRegistrationRequest(
+        registration,
+        chainId => (isOnV3(chainId) ? chainId : null),
+    )
+    return {
+        ...device,
+        accounts: accounts.map(account => ({
+            address: account.address,
+            account_type: account.account_type,
+            receive_notifications: account.receive_notifications,
+        })),
+    }
+}

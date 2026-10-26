@@ -11,12 +11,36 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { toDeviceRegistrationRequest } from '../serializers'
 import type { DeviceRegistration } from '../../models'
 
+const FIRST_CHAIN = 'algorand' as ChainId
+const SECOND_CHAIN = 'ethereum' as ChainId
+const UNNAMED_CHAIN = 'base' as ChainId
+
+const FIRST_CAIP2 = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+const SECOND_CAIP2 = 'eip155:1'
+
+const chainOf = (chainId: ChainId): string | null =>
+    ({ [FIRST_CHAIN]: FIRST_CAIP2, [SECOND_CHAIN]: SECOND_CAIP2 })[
+        chainId as string
+    ] ?? null
+
+const serialize = (registration: DeviceRegistration) =>
+    toDeviceRegistrationRequest(registration, chainOf)
+
 // The chain names the kinds and ranks them; serialization only compares ranks.
-const SIGNING = { accountType: 'signing-kind', rank: 2 } as const
-const WATCH = { accountType: 'watch-kind', rank: 1 } as const
+const SIGNING = {
+    chainId: FIRST_CHAIN,
+    accountType: 'signing-kind',
+    rank: 2,
+} as const
+const WATCH = {
+    chainId: FIRST_CHAIN,
+    accountType: 'watch-kind',
+    rank: 1,
+} as const
 
 const baseRegistration: DeviceRegistration = {
     pushToken: 'fcm-token',
@@ -27,8 +51,8 @@ const baseRegistration: DeviceRegistration = {
 }
 
 describe('toDeviceRegistrationRequest', () => {
-    it('maps the domain payload onto the v3 wire shape', () => {
-        const request = toDeviceRegistrationRequest({
+    it('maps the domain payload onto the wire shape', () => {
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -47,6 +71,7 @@ describe('toDeviceRegistrationRequest', () => {
             accounts: [
                 {
                     address: 'ADDR_A',
+                    chain: FIRST_CAIP2,
                     account_type: 'signing-kind',
                     receive_notifications: true,
                 },
@@ -55,7 +80,7 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('sends the display currency the user picked', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             currency: 'TRY',
         })
@@ -64,13 +89,13 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('omits currency when the registration carries none', () => {
-        const request = toDeviceRegistrationRequest(baseRegistration)
+        const request = serialize(baseRegistration)
 
         expect('currency' in request).toBe(false)
     })
 
     it('omits an over-long currency rather than truncating it', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             currency: 'TOOLONGCURRENCY',
         })
@@ -79,13 +104,13 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('omits id when the registration has none', () => {
-        const request = toDeviceRegistrationRequest(baseRegistration)
+        const request = serialize(baseRegistration)
 
         expect('id' in request).toBe(false)
     })
 
     it('includes id when the registration carries one', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             id: '3502762836822418987',
         })
@@ -94,7 +119,7 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('never emits the v1-only model, application or is_watch_account fields', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -116,12 +141,13 @@ describe('toDeviceRegistrationRequest', () => {
         expect(Object.keys(request.accounts[0]).sort()).toEqual([
             'account_type',
             'address',
+            'chain',
             'receive_notifications',
         ])
     })
 
     it('deduplicates repeated addresses, the higher-ranked registration winning', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -140,6 +166,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
+                chain: FIRST_CAIP2,
                 account_type: 'signing-kind',
                 receive_notifications: true,
             },
@@ -147,7 +174,7 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('registers a duplicated address under the higher rank when the watch entry comes first', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -166,6 +193,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
+                chain: FIRST_CAIP2,
                 account_type: 'signing-kind',
                 receive_notifications: true,
             },
@@ -173,7 +201,7 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('registers a duplicated address under the higher rank when the watch entry comes last', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -192,6 +220,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
+                chain: FIRST_CAIP2,
                 account_type: 'signing-kind',
                 receive_notifications: true,
             },
@@ -199,7 +228,7 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('keeps the last entry when two duplicates rank equally', () => {
-        const request = toDeviceRegistrationRequest({
+        const request = serialize({
             ...baseRegistration,
             accounts: [
                 {
@@ -218,6 +247,7 @@ describe('toDeviceRegistrationRequest', () => {
         expect(request.accounts).toEqual([
             {
                 address: 'ADDR_A',
+                chain: FIRST_CAIP2,
                 account_type: 'signing-kind',
                 receive_notifications: false,
             },
@@ -225,8 +255,77 @@ describe('toDeviceRegistrationRequest', () => {
     })
 
     it('emits an empty accounts array rather than omitting the field', () => {
-        const request = toDeviceRegistrationRequest(baseRegistration)
+        const request = serialize(baseRegistration)
 
         expect(request.accounts).toEqual([])
+    })
+
+    it('names each account by the chain the deployment serves it on', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: [
+                { address: 'ADDR_A', ...SIGNING, receiveNotifications: true },
+                {
+                    address: '0xabc',
+                    ...SIGNING,
+                    chainId: SECOND_CHAIN,
+                    receiveNotifications: true,
+                },
+            ],
+        })
+
+        expect(request.accounts.map(account => account.chain)).toEqual([
+            FIRST_CAIP2,
+            SECOND_CAIP2,
+        ])
+    })
+
+    it('keeps one address registered on two chains as two items', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: [
+                { address: 'SHARED', ...SIGNING, receiveNotifications: true },
+                {
+                    address: 'SHARED',
+                    ...WATCH,
+                    chainId: SECOND_CHAIN,
+                    receiveNotifications: true,
+                },
+            ],
+        })
+
+        expect(request.accounts).toEqual([
+            {
+                address: 'SHARED',
+                chain: FIRST_CAIP2,
+                account_type: 'signing-kind',
+                receive_notifications: true,
+            },
+            {
+                address: 'SHARED',
+                chain: SECOND_CAIP2,
+                account_type: 'watch-kind',
+                receive_notifications: true,
+            },
+        ])
+    })
+
+    it('leaves out an account on a chain the deployment cannot name', () => {
+        const request = serialize({
+            ...baseRegistration,
+            accounts: [
+                { address: 'ADDR_A', ...SIGNING, receiveNotifications: true },
+                {
+                    address: '0xdef',
+                    ...SIGNING,
+                    chainId: UNNAMED_CHAIN,
+                    receiveNotifications: true,
+                },
+            ],
+        })
+
+        expect(request.accounts.map(account => account.address)).toEqual([
+            'ADDR_A',
+        ])
     })
 })

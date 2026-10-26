@@ -31,7 +31,7 @@ const DEVICE_ID = '9000000000000000001'
 const PHRASE = [...Array(11).fill('abandon'), 'about']
 const ENCRYPTION_KEY = 'c2FsdHNhbHRzYWx0c2FsdA=='
 
-const DEVICES = /\/api\/v3\/devices$/
+const DEVICES = /\/api\/v[34]\/devices\/?$/
 const BACKUP_MANIFEST = /\/api\/v3\/backup\/[^/]+\/manifest$/
 
 test('restoring a backup during onboarding sends the registered device id', async () => {

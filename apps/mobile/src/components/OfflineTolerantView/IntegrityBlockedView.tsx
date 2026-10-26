@@ -11,18 +11,21 @@
  */
 
 import { PWButton } from '@components/core'
+import type { PWViewProps } from '@components/core/PWView'
 import { EmptyView } from '@components/EmptyView'
 import { useIntegrityAccessState } from '@hooks/useIntegrityAccessState'
 import { useLanguage } from '@hooks/useLanguage'
 
 type IntegrityBlockedViewProps = {
     onRetry?: () => void
+    style?: PWViewProps['style']
 }
 
 // Mounted only while the arm shows, so a surface that is not blocked never
 // subscribes to the access state.
 export const IntegrityBlockedView = ({
     onRetry,
+    style,
 }: IntegrityBlockedViewProps) => {
     const { t } = useLanguage()
     const { state, retry, verify } = useIntegrityAccessState()
@@ -41,6 +44,7 @@ export const IntegrityBlockedView = ({
                     />
                 }
                 shouldTruncateBody={false}
+                style={style}
             />
         )
     }
@@ -54,6 +58,7 @@ export const IntegrityBlockedView = ({
                 title={t('integrityCheck.surface.service_title')}
                 body={t('integrityCheck.surface.blocked_body')}
                 shouldTruncateBody={false}
+                style={style}
             />
         )
     }
@@ -75,6 +80,7 @@ export const IntegrityBlockedView = ({
                 />
             }
             shouldTruncateBody={false}
+            style={style}
         />
     )
 }

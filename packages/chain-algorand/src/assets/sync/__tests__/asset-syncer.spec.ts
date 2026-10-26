@@ -52,7 +52,7 @@ const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => ({}) },
-    deviceIdForScope: () => deviceIdGetMock(),
+    deviceIdForDeployment: () => deviceIdGetMock(),
 }))
 
 import {

@@ -13,6 +13,7 @@
 import React, { useCallback } from 'react'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { FilterSelection } from '@components/FilterSelection'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
@@ -37,6 +38,9 @@ export const AddAssetView = ({
     const styles = useStyles()
     const isCollectible = variant === 'collectible'
     const {
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
         searchQuery,
         handleSearchChange,
         results,
@@ -50,6 +54,7 @@ export const AddAssetView = ({
         fetchNextPage,
         optedInAssetIds,
         optingInAssetIds,
+        canManageAssets,
         handleRequestAdd,
         t,
     } = useAddAssetView({ variant, chainId })
@@ -60,10 +65,10 @@ export const AddAssetView = ({
                 item={item}
                 isOptedIn={optedInAssetIds.has(item.assetId)}
                 isOptingIn={optingInAssetIds.has(item.assetId)}
-                onAdd={handleRequestAdd}
+                onAdd={canManageAssets ? handleRequestAdd : undefined}
             />
         ),
-        [optedInAssetIds, optingInAssetIds, handleRequestAdd],
+        [optedInAssetIds, optingInAssetIds, canManageAssets, handleRequestAdd],
     )
 
     const handleEndReached = useCallback(() => {
@@ -89,6 +94,16 @@ export const AddAssetView = ({
         </PWView>
     ) : undefined
 
+    const chainFilter =
+        chainOptions.length > 0 ? (
+            <FilterSelection
+                options={chainOptions}
+                selectedValue={selectedChainId}
+                onSelect={handleSelectChain}
+                testID='add_asset_network_filter'
+            />
+        ) : undefined
+
     return (
         <PWView style={styles.container}>
             <AssetSelectionList
@@ -103,6 +118,7 @@ export const AddAssetView = ({
                         : t('add_asset.search_placeholder')
                 }
                 autoFocusSearch
+                searchAccessory={chainFilter}
                 isLoading={isLoading}
                 skeletonCount={5}
                 onEndReached={handleEndReached}

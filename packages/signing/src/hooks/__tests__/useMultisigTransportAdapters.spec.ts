@@ -52,7 +52,8 @@ const mocks = vi.hoisted(() => ({
     addSignature: vi.fn(),
     unsignedTransactionBytesOf: vi.fn(),
     useAllAccounts: vi.fn(),
-    deviceIdForScope: vi.fn(),
+    deviceIdForDeployment: vi.fn(),
+    deploymentOf: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -63,9 +64,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    deviceIdForScope: (_state: unknown, scope: ChainScope) =>
-        mocks.deviceIdForScope(scope),
+    deviceIdForDeployment: (_state: unknown, deployment: string) =>
+        mocks.deviceIdForDeployment(deployment),
     useDeviceStore: { getState: () => ({}) },
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    deploymentOf: (scope: ChainScope) => mocks.deploymentOf(scope),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -155,7 +161,8 @@ describe('useMultisigTransportAdapters', () => {
                 addresses: ['A', 'B'],
             }),
         ])
-        mocks.deviceIdForScope.mockReturnValue('device-1')
+        mocks.deploymentOf.mockReturnValue('live')
+        mocks.deviceIdForDeployment.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
         mocks.unsignedTransactionBytesOf.mockImplementation(
             (signed: SignedTransaction) =>
@@ -197,14 +204,18 @@ describe('useMultisigTransportAdapters', () => {
     })
 
     describe('on an Ethereum scope', () => {
-        test('reads the device id registered for that scope', () => {
-            mocks.deviceIdForScope.mockReturnValue('eth-device')
+        test('reads the device id of the deployment serving that scope', () => {
+            mocks.deploymentOf.mockReturnValue('developer')
+            mocks.deviceIdForDeployment.mockReturnValue('eth-device')
             const { result } = renderTransportFns()
 
             expect(result.current.adaptersFor(ETHEREUM).getDeviceId()).toBe(
                 'eth-device',
             )
-            expect(mocks.deviceIdForScope).toHaveBeenCalledWith(ETHEREUM)
+            expect(mocks.deploymentOf).toHaveBeenCalledWith(ETHEREUM)
+            expect(mocks.deviceIdForDeployment).toHaveBeenCalledWith(
+                'developer',
+            )
         })
 
         test("proposes through the scope's planner adapter and backend", async () => {

@@ -6,18 +6,18 @@ Resource            discover.resource
 
 
 *** Variables ***
-${MENU_STAKING_BUTTON}          accessibility_id=menu_staking_button
-${STAKING_SUBTITLE}             accessibility_id=staking-subtitle
-${STAKING_HELP_BUTTON}          accessibility_id=staking-help-button
-${STAKING_HELP_TITLE}           accessibility_id=staking-help-sheet-title
-${STAKING_ERROR_TITLE}          accessibility_id=staking-error-title
+${MENU_STAKING_BUTTON}          xpath=//*[@resource-id='menu_staking_button' or @name='menu_staking_button' or @content-desc='menu_staking_button']
+${STAKING_SUBTITLE}             xpath=//*[@resource-id='staking-subtitle' or @name='staking-subtitle' or @content-desc='staking-subtitle']
+${STAKING_HELP_BUTTON}          xpath=//*[@resource-id='staking-help-button' or @name='staking-help-button' or @content-desc='staking-help-button']
+${STAKING_HELP_TITLE}           xpath=//*[@resource-id='staking-help-sheet-title' or @name='staking-help-sheet-title' or @content-desc='staking-help-sheet-title']
+${STAKING_ERROR_TITLE}          xpath=//*[@resource-id='staking-error-title' or @name='staking-error-title' or @content-desc='staking-error-title' or @resource-id='staking-error-title']
 # Card ids come from remote config, so match the prefix on either platform's id attribute.
-${STAKING_FIRST_CARD}           xpath=(//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@name,'staking-project-card-')])[1]
-${STAKING_DISCLAIMER_TITLE}     accessibility_id=staking-disclaimer-title
-${STAKING_DISCLAIMER_ACCEPT}    accessibility_id=staking-disclaimer-accept-button
-${WEBVIEW_CLOSE_BUTTON}         accessibility_id=webview_close_button
+${STAKING_FIRST_CARD}           xpath=(//*[starts-with(@content-desc, 'staking-project-card-') or starts-with(@resource-id, 'staking-project-card-') or starts-with(@name,'staking-project-card-')])[1]
+${STAKING_DISCLAIMER_TITLE}     xpath=//*[@resource-id='staking-disclaimer-title' or @name='staking-disclaimer-title' or @content-desc='staking-disclaimer-title']
+${STAKING_DISCLAIMER_ACCEPT}    xpath=//*[@resource-id='staking-disclaimer-accept-button' or @name='staking-disclaimer-accept-button' or @content-desc='staking-disclaimer-accept-button']
+${WEBVIEW_CLOSE_BUTTON}         xpath=//*[@resource-id='webview_close_button' or @name='webview_close_button' or @content-desc='webview_close_button']
 ${STAKING_EMPTY_VIEW}           xpath=//*[@resource-id='staking-empty-view' or @name='staking-empty-view' or @content-desc='staking-empty-view']
-${STAKING_SETTLED}              xpath=//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@name,'staking-project-card-') or @content-desc='staking-error-title' or @name='staking-error-title' or @resource-id='staking-empty-view' or @name='staking-empty-view']
+${STAKING_SETTLED}              xpath=//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@resource-id,'staking-project-card-') or starts-with(@name,'staking-project-card-') or @content-desc='staking-error-title' or @resource-id='staking-error-title' or @name='staking-error-title' or @resource-id='staking-empty-view' or @name='staking-empty-view']
 
 
 *** Keywords ***
@@ -36,15 +36,18 @@ Staking Projects Should Be Listed
 
 Tap First Project
     [Documentation]    Returns whether the disclaimer showed rather than the project opening directly.
+    ...                Once the disclaimer has been accepted the tap goes straight to the project,
+    ...                which is a webview over the network and the slower of the two outcomes; 20s
+    ...                was not enough for it on a cold run.
     Tap    ${STAKING_FIRST_CARD}
-    FOR    ${i}    IN RANGE    40
+    FOR    ${i}    IN RANGE    90
         ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
         IF    ${disclaimer}    RETURN    ${True}
         ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
         IF    ${project}    RETURN    ${False}
         Sleep    0.5s
     END
-    Fail    Tapping a project opened neither the disclaimer nor the project page.
+    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s.
 
 Open Disclaimer
     [Documentation]    The disclaimer shows until accepted once per install, so a run after an

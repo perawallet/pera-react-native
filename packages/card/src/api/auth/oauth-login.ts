@@ -13,6 +13,8 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
+    createOauthState,
+    createPkcePair,
     ErrorCategory,
     ErrorSeverity,
     logger,
@@ -23,7 +25,6 @@ import {
     oauthInitiateRequest,
     oauthTokenRequest,
 } from './endpoints'
-import { createOauthState, createPkcePair } from './pkce'
 
 /** The authorize step echoed a different `state` than we sent — possible CSRF. */
 export class OauthStateMismatchError extends AppError {

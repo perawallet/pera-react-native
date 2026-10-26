@@ -195,10 +195,10 @@ export const AccountNetworkList = ({
                     testID='account_networks_see_all'
                 >
                     <PWView style={styles.chainIconStack}>
-                        {networks.hiddenRows.map(row => (
+                        {networks.hiddenRows.map((row, index) => (
                             <PWView
                                 key={row.chainId}
-                                style={styles.stackedChainIcon}
+                                style={index > 0 && styles.stackedChainIcon}
                             >
                                 <ChainIcon
                                     chainId={row.chainId}

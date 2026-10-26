@@ -28,7 +28,6 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -44,9 +43,11 @@ export const WcConnectScreen = (): React.JSX.Element => {
         peer,
         peerName,
         permissions,
-        requesterOrigin,
         requesterOriginLabel,
         isRequesterOriginDistinct,
+        chainId,
+        chainNetwork,
+        verificationTier,
         accounts,
         selected,
         toggle,
@@ -66,7 +67,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
     }: {
         item: WalletAccount
     }): React.JSX.Element => {
-        const address = chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+        const address = chainAccountOf(item, chainId)?.address ?? ''
         return (
             <PWTouchableOpacity
                 key={item.id}
@@ -102,7 +103,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         peer={peer}
                         peerName={peerName}
                         permissions={permissions}
-                        requesterOrigin={requesterOrigin}
+                        chainNetwork={chainNetwork}
+                        verificationTier={verificationTier}
                         requesterOriginLabel={requesterOriginLabel}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
                         peerUrlLabel={peerUrlLabel}

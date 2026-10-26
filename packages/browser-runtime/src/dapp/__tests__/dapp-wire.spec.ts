@@ -32,6 +32,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageRequestMessage({
                 scope: DAPP_PAGE_REQUEST_SCOPE,
+                provider: 'pera',
                 request,
                 hasUserActivation: true,
             }),
@@ -39,6 +40,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageRequestMessage({
                 scope: DAPP_PAGE_REQUEST_SCOPE,
+                provider: 'pera',
                 request,
                 hasUserActivation: 'yes',
             }),
@@ -46,6 +48,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageRequestMessage({
                 scope: DAPP_PAGE_REQUEST_SCOPE,
+                provider: 'pera',
                 request: notification,
                 hasUserActivation: true,
             }),
@@ -53,6 +56,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageRequestMessage({
                 scope: 'other',
+                provider: 'pera',
                 request,
                 hasUserActivation: true,
             }),
@@ -68,6 +72,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageResponseMessage({
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: response,
             }),
@@ -75,6 +80,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageResponseMessage({
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: notification,
             }),
@@ -82,6 +88,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageResponseMessage({
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: request,
             }),
@@ -89,6 +96,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappPageResponseMessage({
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 payload: response,
             }),
         ).toBe(false)
@@ -96,6 +104,7 @@ describe('dapp wire guards', () => {
     it('host request: verified origin, activation, return address, request; favicon optional', () => {
         const base = {
             scope: DAPP_HOST_REQUEST_SCOPE,
+            provider: 'pera',
             origin: 'https://a.example',
             hasUserActivation: true,
             returnTo: { tabId: 3 },
@@ -115,6 +124,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappHostResponseMessage({
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: response,
                 returnTo: { tabId: 1 },
@@ -123,6 +133,7 @@ describe('dapp wire guards', () => {
         expect(
             isDappHostResponseMessage({
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: notification,
             }),
@@ -130,10 +141,54 @@ describe('dapp wire guards', () => {
         expect(
             isDappHostResponseMessage({
                 scope: DAPP_HOST_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://a.example',
                 payload: notification,
                 returnTo: { tabId: 'x' },
             }),
         ).toBe(false)
+    })
+    it('every hop requires a known provider tag', () => {
+        const messages = [
+            [
+                isDappPageRequestMessage,
+                {
+                    scope: DAPP_PAGE_REQUEST_SCOPE,
+                    request,
+                    hasUserActivation: true,
+                },
+            ],
+            [
+                isDappPageResponseMessage,
+                {
+                    scope: DAPP_PAGE_RESPONSE_SCOPE,
+                    origin: 'https://a.example',
+                    payload: response,
+                },
+            ],
+            [
+                isDappHostRequestMessage,
+                {
+                    scope: DAPP_HOST_REQUEST_SCOPE,
+                    origin: 'https://a.example',
+                    hasUserActivation: true,
+                    returnTo: { tabId: 3 },
+                    request,
+                },
+            ],
+            [
+                isDappHostResponseMessage,
+                {
+                    scope: DAPP_HOST_RESPONSE_SCOPE,
+                    origin: 'https://a.example',
+                    payload: notification,
+                },
+            ],
+        ] as const
+        for (const [guard, message] of messages) {
+            expect(guard({ ...message, provider: 'eip1193' })).toBe(true)
+            expect(guard({ ...message, provider: 'ethereum' })).toBe(false)
+            expect(guard(message)).toBe(false)
+        }
     })
 })

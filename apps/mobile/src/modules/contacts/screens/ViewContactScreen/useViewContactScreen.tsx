@@ -14,16 +14,25 @@ import { useCallback, useMemo } from 'react'
 import {
     CHAIN_FAMILIES,
     LEGACY_CHAIN_ID,
+    type ChainDescriptor,
     type ChainFamily,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+    useSelectedScope,
+    useSwitchedOffChainIds,
+} from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { ContactNetworkContent } from '@modules/contacts/components/ContactNetworkContent'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
-import { useSendToContact } from '@modules/contacts/hooks'
+import { useWebView } from '@modules/webview'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useClipboard } from '@hooks/useClipboard'
@@ -31,7 +40,8 @@ import { useClipboard } from '@hooks/useClipboard'
 export type ViewContactAddressRow = {
     family: ChainFamily
     address: string
-    canSend: boolean
+    /** False when no network of the family has an explorer, such as a custom one. */
+    hasExplorer: boolean
 }
 
 export type UseViewContactScreenResult = {
@@ -41,9 +51,21 @@ export type UseViewContactScreenResult = {
     nfdName: Optional<string>
     openQR: (family: ChainFamily) => void
     copyAddress: (address: string) => void
-    sendTo: (family: ChainFamily, address: string) => void
+    openExplorer: (family: ChainFamily, address: string) => Promise<void>
     goToEdit: () => void
     handleShare: () => Promise<void>
+}
+
+// App code may not compare `.family` (pera/no-chain-identity-in-shared-packages), so group by it.
+const chainsOfFamily = (family: ChainFamily): ChainDescriptor[] => {
+    const byFamily = new Map<ChainFamily, ChainDescriptor[]>()
+    for (const descriptor of getProvider().chains.list()) {
+        byFamily.set(descriptor.family, [
+            ...(byFamily.get(descriptor.family) ?? []),
+            descriptor,
+        ])
+    }
+    return byFamily.get(family) ?? []
 }
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {
@@ -53,7 +75,19 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { copyToClipboard } = useClipboard()
-    const { canSendOn, sendTo: sendToContact } = useSendToContact()
+    const { pushWebView } = useWebView()
+    const mode = useNetworkStore(state => state.mode)
+    const selectedNetworkByChain = useNetworkStore(
+        state => state.selectedNetworkByChain,
+    )
+    const customNetworksByChain = useNetworkStore(
+        state => state.customNetworksByChain,
+    )
+    const switchedOff = useSwitchedOffChainIds()
+    const networkSelection = useMemo(
+        () => ({ mode, selectedNetworkByChain, customNetworksByChain }),
+        [mode, selectedNetworkByChain, customNetworksByChain],
+    )
 
     const algorandAddress = selectedContact?.addresses.algorand ?? ''
     const { data: nfdNames } = useNfdForAddressQuery(scope, algorandAddress, {
@@ -61,15 +95,40 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     })
     const nfdName = nfdNames?.at(0)?.name
 
+    // An address is shared by every chain of its family, but each chain has its
+    // own explorer on the network the user has selected for it. A switched-off
+    // chain is left out, as every other chain picker does.
+    const explorerLinks = useCallback(
+        (family: ChainFamily, address: string): Map<ChainId, string> =>
+            new Map(
+                chainsOfFamily(family).flatMap(({ id, explorer }) => {
+                    if (switchedOff.includes(id)) return []
+                    const url = explorer.accountUrl(
+                        selectChainNetworkId(networkSelection, id),
+                        address,
+                    )
+                    return url ? [[id, url] as const] : []
+                }),
+            ),
+        [networkSelection, switchedOff],
+    )
+
     const addressRows = useMemo(
         (): ViewContactAddressRow[] =>
             CHAIN_FAMILIES.flatMap(family => {
                 const address = selectedContact?.addresses[family]
                 return address
-                    ? [{ family, address, canSend: canSendOn(family) }]
+                    ? [
+                          {
+                              family,
+                              address,
+                              hasExplorer:
+                                  explorerLinks(family, address).size > 0,
+                          },
+                      ]
                     : []
             }),
-        [selectedContact, canSendOn],
+        [selectedContact, explorerLinks],
     )
 
     const openQR = useCallback(
@@ -93,10 +152,28 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
         [copyToClipboard],
     )
 
-    const sendTo = useCallback(
-        (family: ChainFamily, address: string) =>
-            void sendToContact(family, address),
-        [sendToContact],
+    const openExplorer = useCallback(
+        async (family: ChainFamily, address: string) => {
+            const links = explorerLinks(family, address)
+            const chainIds = [...links.keys()]
+            const chainId =
+                chainIds.length > 1
+                    ? await requestBottomSheet<ChainId>({
+                          contents: (
+                              <ContactNetworkContent chainIds={chainIds} />
+                          ),
+                          // The body scrolls once a family has more networks than fit.
+                          options: {
+                              size: 'auto',
+                              enablePanDownToClose: true,
+                              autoCreateContainer: false,
+                          },
+                      })
+                    : chainIds[0]
+            const url = chainId ? links.get(chainId) : undefined
+            if (url) pushWebView({ url })
+        },
+        [explorerLinks, requestBottomSheet, pushWebView],
     )
 
     const goToEdit = useCallback(() => {
@@ -121,7 +198,7 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
         nfdName,
         openQR,
         copyAddress,
-        sendTo,
+        openExplorer,
         goToEdit,
         handleShare,
     }

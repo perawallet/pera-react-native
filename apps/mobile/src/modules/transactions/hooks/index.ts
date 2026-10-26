@@ -26,3 +26,8 @@ export {
     useReceiveFunds,
 } from './receive-funds/useReceiveFunds'
 export { needsReceiveChainSelection } from './receive-funds/receiveChainSelection'
+export {
+    useTransactionHistoryRows,
+    type UseTransactionHistoryRowsParams,
+    type UseTransactionHistoryRowsResult,
+} from './history/useTransactionHistoryRows'

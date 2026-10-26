@@ -8,7 +8,8 @@ Resource            ../resources/multisig.resource
 Suite Setup         Start From Wallet Account Only
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
-Test Teardown       Clean Up Test Accounts    ${NAME_MANAGED}
+Test Teardown       Run Keywords    Capture Failure Screenshot
+...                 AND    Clean Up Test Accounts    ${NAME_MANAGED}
 Test Tags           multisig
 
 
@@ -103,9 +104,9 @@ Watch Account Is Refused As A Participant
     Open Create Shared Account
     Open Participant Search
     Input Text    ${ADDRESS_SEARCH_INPUT}    ${WATCH_ADDRESS}
-    Tap    accessibility_id=account_result_row_${WATCH_ADDRESS}
+    Tap    xpath=//*[@resource-id='account_result_row_${WATCH_ADDRESS}' or @name='account_result_row_${WATCH_ADDRESS}' or @content-desc='account_result_row_${WATCH_ADDRESS}']
     Wait Until Page Contains    Cannot add watch account    timeout=10s
-    Page Should Not Contain Element    accessibility_id=participant_item_0_${WATCH_ADDRESS}
+    Page Should Not Contain Element    xpath=//*[@resource-id='participant_item_0_${WATCH_ADDRESS}' or @name='participant_item_0_${WATCH_ADDRESS}' or @content-desc='participant_item_0_${WATCH_ADDRESS}']
 
 Shared Account Is Refused As A Participant
     [Tags]    id:multisig.participant.reject-shared    p1
@@ -115,8 +116,8 @@ Shared Account Is Refused As A Participant
     ${add}=    Test Id    address-search-add-icon
     Wait Until Page Contains Element    ${add}    timeout=10s
     Tap    ${add}
-    ${added}=    Set Variable    accessibility_id=participant_item_0_${KNOWN_SHARED_ADDRESS}
-    Wait Until Page Contains Element    xpath=//*[contains(@text,'Cannot add shared account') or contains(@label,'Cannot add shared account') or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}']    timeout=20s
+    ${added}=    Set Variable    xpath=//*[@resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}']
+    Wait Until Page Contains Element    xpath=//*[contains(@text,'Cannot add shared account') or contains(@label,'Cannot add shared account') or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}']    timeout=20s
     ${plain}=    Run Keyword And Return Status    Page Should Contain Element    ${added}
     # Only the backend's account lookup marks an address as shared; when it answers 404 or fails,
     # the app adds the address as a plain one.
@@ -137,7 +138,7 @@ External Participant Opens Edit Name
     [Tags]    id:multisig.participant.edit    p2
     Open Create Shared Account
     Add Participant    ${PARTICIPANT_1}
-    Tap    accessibility_id=participant_edit_0_${PARTICIPANT_1}
+    Tap    xpath=//*[@resource-id='participant_edit_0_${PARTICIPANT_1}' or @name='participant_edit_0_${PARTICIPANT_1}' or @content-desc='participant_edit_0_${PARTICIPANT_1}']
     Wait Until Page Contains Element    ${EDIT_PARTICIPANT_NAME_INPUT}    timeout=15s
 
 Continue Needs Two Participants
@@ -220,7 +221,7 @@ Shared Account Can Be Selected From The Account Menu
     [Setup]    Start With Shared Account    ${NAME_MANAGED}    ${PARTICIPANT_2}    ${PARTICIPANT_3}    ${PARTICIPANT_4}
     ${managed}=    Set Variable    ${CREATED}[${NAME_MANAGED}]
     Open Account Menu
-    Tap    xpath=(//*[(starts-with(@content-desc,'${ACCOUNT_ROW_PREFIX}') or starts-with(@name,'${ACCOUNT_ROW_PREFIX}')) and not(contains(@content-desc,'${managed}') or contains(@name,'${managed}'))])[1]
+    Tap    xpath=(//*[(starts-with(@content-desc, '${ACCOUNT_ROW_PREFIX}') or starts-with(@resource-id, '${ACCOUNT_ROW_PREFIX}') or starts-with(@name,'${ACCOUNT_ROW_PREFIX}')) and not(contains(@content-desc,'${managed}') or contains(@resource-id,'${managed}') or contains(@name,'${managed}'))])[1]
     Wait Until Account Menu Closed
     Open Account Options
     Page Should Not Contain Element    ${ACCOUNT_OPTION_SHARED_DETAIL}
@@ -265,7 +266,7 @@ Removing A Shared Account Takes It Out Of The Wallet
     [Setup]    Start With Shared Account    ${NAME_MANAGED}    ${PARTICIPANT_2}    ${PARTICIPANT_3}    ${PARTICIPANT_4}
     Remove Selected Account
     Open Account Menu
-    Page Should Not Contain Element    accessibility_id=${ACCOUNT_ROW_PREFIX}${CREATED}[${NAME_MANAGED}]
+    Page Should Not Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${CREATED}' or @name='${ACCOUNT_ROW_PREFIX}${CREATED}' or @content-desc='${ACCOUNT_ROW_PREFIX}${CREATED}'][${NAME_MANAGED}]
     Close Account Menu
 
 Signable Shared Account Rekeys Only To A Shared Account

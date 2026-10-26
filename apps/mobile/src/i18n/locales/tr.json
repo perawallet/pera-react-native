@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
+            "chain_network": "Ağ: {{chain}} {{network}}",
             "request_origin": "İstek {{origin}} adresinden geldi",
             "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
             "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
@@ -265,6 +266,8 @@
             "empty_body": "İşlem bulunamadı",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
+            "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
+            "search_older": "Daha eskileri ara",
             "filter": "Filtrele",
             "csv": "CSV"
         },
@@ -1024,10 +1027,10 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
-            "send": "Gönder",
+            "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",
-            "send_network_title": "Ağ seç"
+            "network_title": "Ağ seç"
         },
         "list": {
             "no_contacts_title": "Henüz hiç kişi eklemedin",
@@ -3872,7 +3875,11 @@
             "upgrade_watch_title_other": "İzleme hesapları yükseltilsin mi?",
             "upgrade_watch_body_one": "Bu adres cüzdanında zaten bir izleme hesabı olarak var. İçe aktarmak, onu işlem imzalayabilen bir Ledger hesabına yükseltir. Adı ve ayarları korunur.",
             "upgrade_watch_body_other": "Bu adreslerden {{count}} tanesi cüzdanında zaten izleme hesabı olarak var. İçe aktarmak, onları işlem imzalayabilen Ledger hesaplarına yükseltir. Adları ve ayarları korunur.",
-            "upgrade_watch_confirm": "Yükselt"
+            "upgrade_watch_confirm": "Yükselt",
+            "same_wallet_title": "Mevcut Ledger hesabına eklensin mi?",
+            "same_wallet_body": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Pera’nın iki adresin de aynı Ledger’dan geldiğini doğrulayabilmesi için Ledger’ında {{appName}} uygulamasını aç ve devam et. Ya da bu adresi ayrı bir hesap olarak ekle.",
+            "same_wallet_confirm": "Devam et",
+            "same_wallet_separate": "Ayrı hesap olarak ekle"
         },
         "signing": {
             "cancel": "İptal",

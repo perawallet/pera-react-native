@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => 'device-123',
+    useDeploymentDeviceID: () => 'device-123',
 }))
 
 const declineMutationParamsMock = vi.fn()

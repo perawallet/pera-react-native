@@ -125,7 +125,11 @@ const proposalCtx = (
     proposalId: requestId,
     connectionKind: 'walletconnect-v1',
     peer: { name: 'dApp', url: origin },
-    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    requested: {
+        networks: ['mainnet'],
+        chains: ['algorand'],
+        methods: ['algo_signTxn'],
+    },
     expiresAt: 1,
 })
 
@@ -1123,7 +1127,11 @@ describe('ApprovalWindowBridge', () => {
             proposalId: 'proposal-1',
             connectionKind: 'walletconnect-v1',
             peer: { name: 'dApp', url: 'https://dapp.example' },
-            requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+            requested: {
+                networks: ['mainnet'],
+                chains: ['algorand'],
+                methods: ['algo_signTxn'],
+            },
             expiresAt: 1,
         })
         await flush()
@@ -1345,6 +1353,7 @@ describe('ApprovalWindowBridge', () => {
                         peer: { name: 'dApp', url: peerUrl },
                         requested: {
                             networks: ['mainnet'],
+                            chains: ['algorand'],
                             methods: ['algo_signTxn'],
                         },
                         expiresAt: 1,

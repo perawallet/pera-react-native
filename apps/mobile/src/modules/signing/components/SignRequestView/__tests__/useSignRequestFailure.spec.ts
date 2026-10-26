@@ -23,7 +23,10 @@ const mocks = vi.hoisted(() => ({
     useSignRequestDetailQuery: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: mockConfig,
+    deploymentOf: () => 'live',
+}))
 
 // The global mock in vitest.setup.ts omits this class, and `instanceof` needs
 // the same identity the hook imports — so re-mock the module here.
@@ -50,7 +53,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => 'device-1',
+    useDeploymentDeviceID: () => 'device-1',
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({

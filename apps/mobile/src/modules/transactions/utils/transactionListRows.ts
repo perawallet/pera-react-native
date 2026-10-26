@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import {
     formatISODate,
     formatDisplayDate,
@@ -20,6 +21,7 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 export const TRANSACTION_ROW_TYPES = {
     header: 'header',
     transaction: 'transaction',
+    record: 'record',
 } as const
 
 export type TransactionDateHeaderRow = {
@@ -37,27 +39,37 @@ export type TransactionRow = {
     transaction: TransactionHistoryItem
 }
 
-export type TransactionListRow = TransactionDateHeaderRow | TransactionRow
+/** A row on a chain that keeps no cached history rows: already summarised. */
+export type TransactionRecordRow = {
+    kind: typeof TRANSACTION_ROW_TYPES.record
+    /** Transaction id; also the row key. */
+    key: string
+    record: TransactionRecord
+}
+
+export type TransactionListRow =
+    | TransactionDateHeaderRow
+    | TransactionRow
+    | TransactionRecordRow
 
 /**
- * Flattens a transaction history into the alternating date-header / row stream
- * a single-array virtualised list renders.
- *
  * Date groups are emitted newest-first; order within a group is preserved as
  * received, matching how the API returns a page.
  */
-export const buildTransactionListRows = (
-    transactions: TransactionHistoryItem[],
+const groupByDate = <T>(
+    entries: T[],
+    dateKeyOf: (entry: T) => string,
+    toRow: (entry: T) => TransactionRow | TransactionRecordRow,
 ): TransactionListRow[] => {
-    const groups = new Map<string, TransactionHistoryItem[]>()
+    const groups = new Map<string, T[]>()
 
-    for (const transaction of transactions) {
-        const dateKey = formatISODate(parseRoundTime(transaction.roundTime))
+    for (const entry of entries) {
+        const dateKey = dateKeyOf(entry)
         const group = groups.get(dateKey)
         if (group) {
-            group.push(transaction)
+            group.push(entry)
         } else {
-            groups.set(dateKey, [transaction])
+            groups.set(dateKey, [entry])
         }
     }
 
@@ -71,12 +83,8 @@ export const buildTransactionListRows = (
             key: dateKey,
             title: formatDisplayDate(dateKey),
         })
-        for (const transaction of group) {
-            rows.push({
-                kind: TRANSACTION_ROW_TYPES.transaction,
-                key: transaction.id,
-                transaction,
-            })
+        for (const entry of group) {
+            rows.push(toRow(entry))
         }
     }
 
@@ -84,12 +92,46 @@ export const buildTransactionListRows = (
 }
 
 /**
+ * Flattens a transaction history into the alternating date-header / row stream
+ * a single-array virtualised list renders.
+ */
+export const buildTransactionListRows = (
+    transactions: TransactionHistoryItem[],
+): TransactionListRow[] =>
+    groupByDate(
+        transactions,
+        transaction => formatISODate(parseRoundTime(transaction.roundTime)),
+        transaction => ({
+            kind: TRANSACTION_ROW_TYPES.transaction,
+            key: transaction.id,
+            transaction,
+        }),
+    )
+
+/** {@link buildTransactionListRows} for records; one with no timestamp yet files under today. */
+export const buildRecordListRows = (
+    records: TransactionRecord[],
+): TransactionListRow[] =>
+    groupByDate(
+        records,
+        record => formatISODate(new Date(record.timestamp ?? Date.now())),
+        record => ({
+            kind: TRANSACTION_ROW_TYPES.record,
+            key: record.id,
+            record,
+        }),
+    )
+
+/**
  * Recycling pool selector. Date headers and transaction rows have very
  * different subtrees, so pooling them together would force a full re-render on
- * every reuse and defeat the point of recycling.
+ * every reuse and defeat the point of recycling. Record rows render the same
+ * list item as transaction rows, so they share its pool.
  */
 export const getTransactionRowType = (row: TransactionListRow): string =>
-    row.kind
+    row.kind === TRANSACTION_ROW_TYPES.header
+        ? TRANSACTION_ROW_TYPES.header
+        : TRANSACTION_ROW_TYPES.transaction
 
 export const getTransactionRowKey = (row: TransactionListRow): string =>
     `${row.kind}:${row.key}`

@@ -23,15 +23,27 @@ import type {
 } from '../../../utils/groupedHoldings'
 import { useAssetGroupRow } from '../useAssetGroupRow'
 
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    findNativeAsset: (chainId: string) =>
+        chainId === 'ethereum' ? { assetId: 'eth' } : undefined,
+}))
+
 type Holding = { scope: ChainScope; assetId: string }
 
 const USDC = { assetId: '31566704', name: 'USD Coin' } as PeraAsset
 
+const withTier = (verificationTier: string) =>
+    ({ ...USDC, peraMetadata: { verificationTier } }) as PeraAsset
+
 const member = (
     chainId: 'algorand' | 'ethereum',
     asset: Nullable<PeraAsset> = USDC,
+    assetId: string = chainId,
 ): GroupedHoldingMember<Holding> => ({
-    holding: { scope: { chainId, networkId: 'mainnet' }, assetId: chainId },
+    holding: { scope: { chainId, networkId: 'mainnet' }, assetId },
     asset,
     displayAmount: new Decimal(1),
     usdPrice: new Decimal(1),
@@ -108,5 +120,118 @@ describe('useAssetGroupRow', () => {
         )
 
         expect(result.current.icon).toBeNull()
+    })
+
+    describe('verification badge', () => {
+        const badgeOf = (members: GroupedHoldingMember<Holding>[]) =>
+            renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(members, null),
+                    convertFiat: toEur,
+                }),
+            ).result.current
+
+        it('shows the badge its members share', () => {
+            const result = badgeOf([
+                member('algorand', withTier('verified')),
+                member('ethereum', withTier('verified')),
+            ])
+
+            expect(result.verificationIcon).toBe('assets/verified')
+            expect(result.isSuspicious).toBe(false)
+        })
+
+        it('shows the most cautious tier when members differ', () => {
+            const result = badgeOf([
+                member('algorand', withTier('trusted')),
+                member('ethereum', withTier('verified')),
+            ])
+
+            expect(result.verificationIcon).toBe('assets/verified')
+        })
+
+        it('shows no badge when any member is unverified', () => {
+            const result = badgeOf([
+                member('algorand', withTier('verified')),
+                member('ethereum', USDC),
+            ])
+
+            expect(result.verificationIcon).toBeNull()
+        })
+
+        it('never hides a suspicious member behind a verified one', () => {
+            const result = badgeOf([
+                member('algorand', withTier('verified')),
+                member('ethereum', withTier('suspicious')),
+            ])
+
+            expect(result.verificationIcon).toBe('assets/suspicious')
+            expect(result.isSuspicious).toBe(true)
+        })
+
+        it("counts a chain's native coin as trusted", () => {
+            const result = badgeOf([
+                member('algorand', withTier('trusted')),
+                member('ethereum', USDC, 'eth'),
+            ])
+
+            expect(result.verificationIcon).toBe('assets/trusted')
+        })
+
+        it('shows a suspicious member before the other networks sync', () => {
+            const result = badgeOf([
+                member('algorand', null),
+                member('ethereum', withTier('suspicious')),
+            ])
+
+            expect(result.verificationIcon).toBe('assets/suspicious')
+            expect(result.isSuspicious).toBe(true)
+        })
+
+        it('shows no other badge until every network has synced', () => {
+            const result = badgeOf([
+                member('algorand', withTier('verified')),
+                member('ethereum', null),
+            ])
+
+            expect(result.verificationIcon).toBeNull()
+            expect(result.isSuspicious).toBe(false)
+        })
+    })
+
+    describe('subtitle', () => {
+        it('names the symbol and the id every network shares', () => {
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('algorand', USDC, '753101315'),
+                            member('ethereum', USDC, '753101315'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC · 753101315')
+        })
+
+        it('names the symbol alone when each network has its own id', () => {
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('algorand', USDC, '31566704'),
+                            member('ethereum', USDC, '0xA0b8'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC')
+        })
     })
 })

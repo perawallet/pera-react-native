@@ -12,12 +12,16 @@
 
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useIsMounted } from '@hooks/useIsMounted'
 
 type UseSyncRefreshParams = {
     addresses: string[]
+    /** The addresses' own chain: refresh syncs and invalidates within it. */
+    scope: ChainScope
 }
 
 export type UseSyncRefreshResult = {
@@ -30,8 +34,8 @@ export type UseSyncRefreshResult = {
 // or, worse, be dropped by a guard another instance still holds.
 const inFlightRefreshes = new Map<string, Promise<void>>()
 
-const buildRefreshKey = (addresses: string[], networkId: string) =>
-    `${networkId}:${[...addresses].sort().join(',')}`
+const buildRefreshKey = (addresses: string[], scope: ChainScope) =>
+    `${toScopeKey(scope)}:${[...addresses].sort().join(',')}`
 
 /**
  * Pull-to-refresh for DB-first screens. Their queries hold
@@ -44,13 +48,13 @@ const buildRefreshKey = (addresses: string[], networkId: string) =>
  */
 export const useSyncRefresh = ({
     addresses,
+    scope,
 }: UseSyncRefreshParams): UseSyncRefreshResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isMounted = useIsMounted()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const refresh = useCallback(() => {
-        const key = buildRefreshKey(addresses, scope.networkId)
+        const key = buildRefreshKey(addresses, scope)
         setIsRefreshing(true)
         void (async () => {
             try {

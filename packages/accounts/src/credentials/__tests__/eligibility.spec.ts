@@ -48,6 +48,7 @@ import {
     findAddressHolder,
     findHardwareHolder,
     findPathHolder,
+    hardwareJoinCandidates,
     isEnabledByDefault,
     nextChainPosition,
     preferDefaultChain,
@@ -453,6 +454,54 @@ describe('findHardwareHolder', () => {
                 accountIndex: 0,
             }),
         ).toBeUndefined()
+    })
+})
+
+describe('hardwareJoinCandidates', () => {
+    const ALGORAND = 'algorand' as ChainId
+    const device = TEST_CUSTODY.hardware.device
+    const position = { ...device, accountIndex: 0 }
+    const ledger = (id: string, chains: WalletAccount['chains']) =>
+        buildTestAccount(
+            { kind: 'hardware', device, accountIndex: 0 },
+            chains,
+            {
+                id,
+            },
+        )
+
+    test("lists the position's accounts holding none of the chains", () => {
+        const accounts = [
+            ledger('algorand-only', {
+                [ALGORAND]: { address: ALGORAND_ADDRESS },
+            }),
+            ledger('ethereum-only', {
+                [ETHEREUM]: { address: EVM_KEY_ADDRESS },
+            }),
+            buildTestAccount(
+                { kind: 'hardware', device, accountIndex: 1 },
+                { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+                { id: 'index-1' },
+            ),
+            testAccount('watch'),
+        ]
+
+        expect(
+            hardwareJoinCandidates(accounts, position, [ETHEREUM]).map(
+                ({ id }) => id,
+            ),
+        ).toEqual(['algorand-only'])
+    })
+
+    test('excludes an account holding any of the chains', () => {
+        const both = ledger('both', {
+            [ALGORAND]: { address: ALGORAND_ADDRESS },
+            [ETHEREUM]: { address: EVM_KEY_ADDRESS },
+        })
+
+        expect(
+            hardwareJoinCandidates([both], position, [ALGORAND, ETHEREUM]),
+        ).toEqual([])
     })
 })
 

@@ -22,7 +22,7 @@ import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
-import { NetworkIconStack } from './NetworkIconStack'
+import { ChainIconStack } from './ChainIconStack'
 import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
@@ -43,7 +43,8 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
     const { t } = useLanguage()
     const { group, amount, isExpanded } = item
 
-    const { icon, chainIds, fiat } = useAssetGroupRow({ item, convertFiat })
+    const { icon, verificationIcon, isSuspicious, subtitle, chainIds, fiat } =
+        useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
         return <AssetRowSkeleton />
@@ -55,23 +56,69 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
             onPress={onToggleExpanded}
             style={[styles.container, style]}
         >
-            <AssetIcon
-                asset={icon}
-                logoUrl={group.logoUrl ?? undefined}
-                size='xl'
-            />
-            <PWView style={styles.info}>
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                    numberOfLines={1}
-                >
-                    {group.name}
-                </PWText>
-                <PWView style={styles.networksRow}>
+            <PWView style={styles.summaryRow}>
+                <AssetIcon
+                    asset={icon}
+                    logoUrl={group.logoUrl ?? undefined}
+                    size='xl'
+                />
+                <PWView style={styles.info}>
+                    <PWView style={styles.titleRow}>
+                        <PWText
+                            variant='h4'
+                            style={
+                                isSuspicious
+                                    ? styles.suspiciousTitle
+                                    : styles.title
+                            }
+                            numberOfLines={1}
+                        >
+                            {group.name}
+                        </PWText>
+                        {verificationIcon ? (
+                            <PWIcon
+                                name={verificationIcon}
+                                size='xs'
+                                testID='asset_group_row_verification'
+                            />
+                        ) : null}
+                    </PWView>
                     <PWText
                         variant='body'
                         style={styles.subtitle}
+                        numberOfLines={1}
+                    >
+                        {subtitle}
+                    </PWText>
+                </PWView>
+                <PWView style={styles.amountContainer}>
+                    {/* The group's symbol is the unit; the figure carries none, as
+                        on a single asset's row. */}
+                    <CurrencyAmount
+                        currency=''
+                        assetId=''
+                        value={amount}
+                        precision='compact'
+                        style={styles.primaryAmount}
+                        numberOfLines={1}
+                    />
+                    <CurrencyAmount
+                        currency={fiat.displayCurrency}
+                        assetId={null}
+                        value={fiat.value}
+                        precision='compact'
+                        showSymbol
+                        variant='body'
+                        style={styles.secondaryAmount}
+                        numberOfLines={1}
+                    />
+                </PWView>
+            </PWView>
+            <PWView style={styles.networksRow}>
+                <PWView style={styles.networksToggle}>
+                    <PWText
+                        variant='h4'
+                        style={styles.networksToggleLabel}
                         numberOfLines={1}
                     >
                         {isExpanded
@@ -80,33 +127,12 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                     </PWText>
                     <PWIcon
                         name='chevron-down'
-                        size='xs'
+                        size='sm'
+                        variant='positive'
                         style={isExpanded ? styles.chevronExpanded : undefined}
                     />
-                    <NetworkIconStack chainIds={chainIds} />
                 </PWView>
-            </PWView>
-            <PWView style={styles.amountContainer}>
-                {/* The group's symbol is the unit; the figure carries none, as
-                    on a single asset's row. */}
-                <CurrencyAmount
-                    currency=''
-                    assetId=''
-                    value={amount}
-                    precision='compact'
-                    style={styles.primaryAmount}
-                    numberOfLines={1}
-                />
-                <CurrencyAmount
-                    currency={fiat.displayCurrency}
-                    assetId={null}
-                    value={fiat.value}
-                    precision='compact'
-                    showSymbol
-                    variant='body'
-                    style={styles.secondaryAmount}
-                    numberOfLines={1}
-                />
+                <ChainIconStack chainIds={chainIds} />
             </PWView>
         </PWTouchableOpacity>
     )

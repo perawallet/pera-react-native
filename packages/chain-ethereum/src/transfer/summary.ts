@@ -11,20 +11,31 @@
  */
 
 import {
+    type LocalizedText,
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 
 const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
+const NFT_SUBTITLE_KEY = i18nKey('transactions.list_item.nft_subtitle')
+
+export const nftSendSubtitle = (
+    collection: string,
+    tokenId: string,
+): LocalizedText => ({
+    key: NFT_SUBTITLE_KEY,
+    params: { collection, tokenId },
+})
 
 // The builder and the reviewer both describe a send through this, so a
 // transfer the wallet builds reads the same once review rebuilds it from the bytes.
 export const sendSummary = (
-    kind: 'transfer' | 'token-transfer',
+    kind: 'transfer' | 'token-transfer' | 'nft-transfer',
     from: string,
     to: string,
     amount: NonNullable<TransactionSummary['amount']>,
+    subtitle?: LocalizedText,
 ): TransactionSummary => {
     const isSelf = areEvmAddressesEqual(from, to)
     return {
@@ -33,6 +44,7 @@ export const sendSummary = (
         direction: isSelf ? 'self' : 'out',
         icon: isSelf ? 'self' : 'send',
         counterparty: to,
+        ...(subtitle && { subtitle }),
         amount,
     }
 }

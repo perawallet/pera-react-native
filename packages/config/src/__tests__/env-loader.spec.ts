@@ -283,7 +283,6 @@ describe('env-loader', () => {
             playIntegrityCloudProjectNumber:
                 'base-play-integrity-project-number',
             googleIosClientId: 'base-google-ios-client-id',
-            googleWebClientId: 'base-google-web-client-id',
             firebaseApiKey: 'base-firebase-api-key',
             firebaseAuthDomain: 'base.firebaseapp.com',
             firebaseDatabaseUrl: 'https://base.firebaseio.com',

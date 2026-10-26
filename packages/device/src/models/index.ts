@@ -11,6 +11,7 @@
  */
 
 import type {
+    ChainId,
     ChainScopeKey,
     WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
@@ -20,6 +21,8 @@ import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
 /** One account as registration reports it. Domain shape, camelCase. */
 export type DeviceAccountRegistration = {
+    /** Resolved to the wire `chain` only when sent, for the deployment it goes to. */
+    chainId: ChainId
     address: string
     /** The devices API `account_type`, as the account's chain spells it. */
     accountType: string
@@ -36,7 +39,7 @@ export type DeviceAccountRegistration = {
  * Version-neutral registration payload. Every consumer above the endpoint
  * layer speaks this; only `serializers.ts` knows the wire shape.
  *
- * `pushToken` is a required string, not an optional one: v3 has no
+ * `pushToken` is a required string, not an optional one: the API has no
  * "omit to keep the stored value" path, and `''` clears the token.
  */
 export type DeviceRegistration = {
@@ -47,8 +50,8 @@ export type DeviceRegistration = {
     locale: string
     appVersion: string
     /**
-     * The user's display-currency id, exactly as `/v1/currencies/` returns it
-     * ('USD', 'TRY', 'ALGO'). The backend renders push copy and notification
+     * The user's fiat display-currency id, exactly as `/v1/currencies/`
+     * returns it ('USD', 'TRY'). The backend renders push copy and notification
      * text in it, and falls back to USD for a device that never sent one.
      * Independent of `locale`.
      */
@@ -58,6 +61,8 @@ export type DeviceRegistration = {
 
 export type DeviceAccountRequest = {
     address: string
+    /** CAIP-2 id of the network the address is followed on. */
+    chain: string
     account_type: string
     receive_notifications: boolean
 }
@@ -72,6 +77,14 @@ export type DeviceRegistrationRequest = {
     currency?: string
     accounts: DeviceAccountRequest[]
 }
+
+/** The v3 devices API names no chain, so it only takes the chains it always carried. */
+export type V3DeviceAccountRequest = Omit<DeviceAccountRequest, 'chain'>
+
+export type V3DeviceRegistrationRequest = Omit<
+    DeviceRegistrationRequest,
+    'accounts'
+> & { accounts: V3DeviceAccountRequest[] }
 
 /** `id` wins when both identifiers are present; a blank token is rejected. */
 export type DeviceDeleteRequest =

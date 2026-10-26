@@ -31,6 +31,11 @@ Fixture names and their data are defined in
 Build the app with the hook in release mode on both platforms (no dev client, Metro or dev menu,
 and the navigation trace reaches the device log), then point the suite at a device through Appium:
 
+Use `e2e/tools/run.sh <android|ios>`: it runs from a snapshot of `tests/` and `resources/`,
+so editing the suite while a pass is in flight cannot change what that pass executes. Robot
+reads a resource file when its suite starts, so a mid-run edit reaches the suites after it and
+not the ones before, and the failures that follow belong to neither version of the file.
+
 ```sh
 pip install -r e2e/requirements.txt
 (cd apps/mobile/android && E2E_FIXTURES=1 APP_ENV=development ./gradlew assembleRelease)

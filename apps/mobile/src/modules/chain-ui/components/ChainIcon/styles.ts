@@ -13,6 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles((theme, size: number) => ({
+    clip: {
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        overflow: 'hidden',
+    },
     placeholder: {
         alignItems: 'center',
         justifyContent: 'center',

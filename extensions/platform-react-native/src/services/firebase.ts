@@ -41,12 +41,16 @@ import {
     setConsent,
 } from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
-import notifee, {
+import {
     AndroidImportance,
-    AuthorizationStatus,
-    EventType,
-    type NotificationAndroid,
-} from '@notifee/react-native'
+    addNotificationResponseReceivedListener,
+    getPermissionsAsync,
+    type NotificationRequest,
+    requestPermissionsAsync,
+    scheduleNotificationAsync,
+    setNotificationChannelAsync,
+    setNotificationHandler,
+} from 'expo-notifications'
 import {
     type CrashReportingService,
     type NotificationOpenListener,
@@ -62,7 +66,7 @@ import {
 import { config, isDebug } from '@perawallet/wallet-core-config'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
-const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+const ANDROID_CHANNEL_ID = 'default'
 
 /**
  * `getRemoteConfig()` is typed as the Firebase-JS `RemoteConfig`, which exposes
@@ -81,19 +85,20 @@ type AwaitableRemoteConfig = RemoteConfig & {
 // token fetch so cold-start degrades to a no-token result instead of stalling.
 const FCM_TOKEN_FETCH_TIMEOUT_MS = 5000
 
-export const androidForegroundNotification = (
-    channelId: string,
-): NotificationAndroid => ({
-    channelId,
-    smallIcon: NOTIFICATION_SMALL_ICON,
-})
+// RNFB messaging owns remote pushes: it fires onMessage, onNotificationOpenedApp
+// and getInitialNotification for them. expo-notifications also sees them on
+// iOS, where it chains the notification-center delegate with RNFB, so it acts
+// only on the local copy shown in the foreground or a remote push would be
+// presented twice and routed twice.
+const isRemotePush = ({ trigger }: NotificationRequest): boolean =>
+    trigger !== null && 'type' in trigger && trigger.type === 'push'
 
 const asNonEmptyString = (value: unknown): string | undefined =>
     typeof value === 'string' && value.length > 0 ? value : undefined
 
 /**
- * Pulls the actionable fields out of a push payload. Both notifee and FCM
- * expose the dApp-supplied custom fields under `data`. `type`/`accountAddress`
+ * Pulls the actionable fields out of a push payload. Both expo-notifications
+ * and FCM expose the dApp-supplied custom fields under `data`. `type`/`accountAddress`
  * are forwarded because some notifications (e.g. multisig sign requests) carry
  * no sign-request `url` and can only be routed by type.
  *
@@ -303,10 +308,8 @@ export class RNFirebaseService
 
     async getPushToken(): Promise<string | undefined> {
         try {
-            const settings = await notifee.getNotificationSettings()
-            if (
-                settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED
-            ) {
+            const { granted } = await getPermissionsAsync()
+            if (!granted) {
                 return undefined
             }
         } catch {
@@ -344,32 +347,42 @@ export class RNFirebaseService
         // Allow user to opt into notifications. A rejection here (native
         // permission surface failing offline) degrades to "not authorized"
         // rather than rejecting the whole cold-start bootstrap.
-        let settings: Awaited<ReturnType<typeof notifee.requestPermission>>
+        let isGranted: boolean
         try {
-            settings = await notifee.requestPermission()
+            isGranted = (await requestPermissionsAsync()).granted
         } catch {
+            isGranted = false
+        }
+
+        if (!isGranted) {
             return {
                 token: undefined,
                 unsubscribe: () => {},
             }
         }
 
-        if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
-            return {
-                token: undefined,
-                unsubscribe: () => {},
-            }
-        }
-
-        // Android notification channel
         if (Platform.OS === 'android') {
-            await notifee.createChannel({
-                id: 'default',
+            await setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
                 name: 'Default',
                 importance: AndroidImportance.DEFAULT,
-                vibration: true,
+                enableVibrate: true,
             })
         }
+
+        // Without a handler expo-notifications presents nothing in the
+        // foreground. On Android, `shouldPlaySound: false` also suppresses the
+        // alert itself.
+        setNotificationHandler({
+            handleNotification: async notification => {
+                const isShown = !isRemotePush(notification.request)
+                return {
+                    shouldShowBanner: isShown,
+                    shouldShowList: isShown,
+                    shouldPlaySound: isShown,
+                    shouldSetBadge: false,
+                }
+            },
+        })
 
         const token = await this.fetchToken()
 
@@ -385,35 +398,21 @@ export class RNFirebaseService
                   // poll interval.
                   this.notificationReceivedListener?.()
 
-                  await notifee.displayNotification({
-                      title,
-                      body,
-                      data: remoteMessage.data,
-                      android: Platform.select({
-                          android: androidForegroundNotification('default'),
-                          ios: undefined,
-                      }) as NotificationAndroid,
+                  await scheduleNotificationAsync({
+                      content: { title, body, data: remoteMessage.data },
+                      trigger:
+                          Platform.OS === 'android'
+                              ? { channelId: ANDROID_CHANNEL_ID }
+                              : null,
                   })
               })
             : () => {}
 
-        // Foreground notification events — a tap on a notifee-displayed
-        // notification routes its deeplink to the registered listener.
-        // Not async: notifee expects a void-returning handler and nothing in
-        // here awaits, so returning a promise only detached the body from
-        // notifee's own error handling.
-        const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
-            ({ type, detail }) => {
-                switch (type) {
-                    case EventType.ACTION_PRESS:
-                    case EventType.PRESS: {
-                        this.emitNotificationOpen(detail.notification?.data)
-                        break
-                    }
-                    default: {
-                        break
-                    }
-                }
+        // A tap on the local copy shown in the foreground.
+        const responseSubscription = addNotificationResponseReceivedListener(
+            ({ notification }) => {
+                if (isRemotePush(notification.request)) return
+                this.emitNotificationOpen(notification.request.content.data)
             },
         )
 
@@ -439,7 +438,7 @@ export class RNFirebaseService
             token,
             unsubscribe: () => {
                 unsubscribeOnMessage?.()
-                unsubscribeNotifeeForeground()
+                responseSubscription.remove()
                 unsubscribeOnOpened()
             },
         }

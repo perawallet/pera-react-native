@@ -31,6 +31,16 @@ describe('pera/no-algorand-terms-in-chain-neutral-packages', () => {
         ])
     })
 
+    it('reports the device package', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('algorand-terms.device.ts')),
+            ),
+        ).toEqual(['algorand-terms.device.ts:2'])
+    })
+
     it('leaves a compound that only contains Networks alone', async () => {
         const found = await runRule(RULE, FIXTURES)
 
@@ -55,10 +65,10 @@ describe('pera/no-algorand-terms-in-chain-neutral-packages', () => {
         ).toEqual([])
     })
 
-    it('finds nothing in backup or migrate source', async () => {
+    it('finds nothing in backup, device or migrate source', async () => {
         const found = await runRule(
             RULE,
-            'packages/{backup,migrate}/src/**/*.{ts,tsx}',
+            'packages/{backup,device,migrate}/src/**/*.{ts,tsx}',
         )
 
         expect(found).toEqual([])

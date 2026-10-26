@@ -78,10 +78,18 @@ const dispatchHandshake = (
     )
 }
 
-const dispatchRequest = (requestEventName: string, id: string): void => {
+const dispatchRequest = (
+    requestEventName: string,
+    id: string,
+    provider: unknown = 'pera',
+): void => {
     window.dispatchEvent(
         new CustomEvent(requestEventName, {
-            detail: { id, request: { jsonrpc: '2.0', id, method: 'connect' } },
+            detail: {
+                id,
+                provider,
+                request: { jsonrpc: '2.0', id, method: 'connect' },
+            },
         }),
     )
 }
@@ -173,6 +181,7 @@ describe('relay-isolated handshake hardening', () => {
         expect(sendMessage).toHaveBeenCalledWith(
             {
                 scope: DAPP_PAGE_REQUEST_SCOPE,
+                provider: 'pera',
                 request: { jsonrpc: '2.0', id: 'id-1', method: 'connect' },
                 hasUserActivation: true,
             },
@@ -210,7 +219,78 @@ describe('relay-isolated handshake hardening', () => {
         const seen = collect('res-refuse')
         dispatchRequest('req-refuse', 'id-1')
 
-        expect(seen).toEqual([{ id: 'id-1', response }])
+        expect(seen).toEqual([{ id: 'id-1', provider: 'pera', response }])
+
+        vi.unstubAllGlobals()
+    })
+
+    it('holds a prerendered page’s requests until it activates', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        stubChrome(sendMessage)
+        Object.defineProperty(document, 'prerendering', {
+            value: true,
+            configurable: true,
+        })
+
+        await import('../relay-isolated')
+        dispatchHandshake('req-pre', 'res-pre')
+        dispatchRequest('req-pre', 'id-1')
+        expect(sendMessage).not.toHaveBeenCalled()
+
+        Object.defineProperty(document, 'prerendering', {
+            value: false,
+            configurable: true,
+        })
+        document.dispatchEvent(new Event('prerenderingchange'))
+        expect(sendMessage).toHaveBeenCalledTimes(1)
+
+        delete (document as { prerendering?: boolean }).prerendering
+        vi.unstubAllGlobals()
+    })
+
+    it('drops a request with no known provider tag', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        stubChrome(sendMessage)
+
+        await import('../relay-isolated')
+        dispatchHandshake('req-untagged', 'res-untagged')
+        dispatchRequest('req-untagged', 'id-1', null)
+        dispatchRequest('req-untagged', 'id-2', 'ethereum')
+
+        expect(sendMessage).not.toHaveBeenCalled()
+
+        vi.unstubAllGlobals()
+    })
+
+    it('carries the EIP-1193 tag out with the request and back in with its answers', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        stubChrome(sendMessage)
+
+        await import('../relay-isolated')
+        dispatchHandshake('req-eip', 'res-eip')
+        const seen = collect('res-eip')
+        dispatchRequest('req-eip', 'id-1', 'eip1193')
+        expect(sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ provider: 'eip1193' }),
+            expect.any(Function),
+        )
+
+        const notification = {
+            jsonrpc: '2.0',
+            method: 'chainChanged',
+            params: '0x1',
+        }
+        deliver(
+            runtimeListeners[0],
+            {
+                scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'eip1193',
+                origin: window.location.origin,
+                payload: notification,
+            },
+            { id: 'ext-id' } as chrome.runtime.MessageSender,
+        )
+        expect(seen).toEqual([{ provider: 'eip1193', notification }])
 
         vi.unstubAllGlobals()
     })
@@ -247,12 +327,15 @@ describe('relay-isolated handshake hardening', () => {
             listener,
             {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: window.location.origin,
                 payload,
             },
             { id: 'ext-id' } as chrome.runtime.MessageSender,
         )
-        expect(seen).toEqual([{ id: 'id-1', response: payload }])
+        expect(seen).toEqual([
+            { id: 'id-1', provider: 'pera', response: payload },
+        ])
 
         // Another origin's traffic must never surface here, and a sender with
         // a tab is a content script impersonating the service worker.
@@ -260,6 +343,7 @@ describe('relay-isolated handshake hardening', () => {
             listener,
             {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: 'https://other.example',
                 payload,
             },
@@ -269,6 +353,7 @@ describe('relay-isolated handshake hardening', () => {
             listener,
             {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: window.location.origin,
                 payload,
             },
@@ -288,6 +373,7 @@ describe('relay-isolated handshake hardening', () => {
         const listener = runtimeListeners[0]
         const message = {
             scope: DAPP_PAGE_RESPONSE_SCOPE,
+            provider: 'pera',
             origin: window.location.origin,
             payload: { jsonrpc: '2.0', id: 'id-1', result: 1 },
         }
@@ -328,13 +414,14 @@ describe('relay-isolated handshake hardening', () => {
             runtimeListeners[0],
             {
                 scope: DAPP_PAGE_RESPONSE_SCOPE,
+                provider: 'pera',
                 origin: window.location.origin,
                 payload,
             },
             { id: 'ext-id' } as chrome.runtime.MessageSender,
         )
 
-        expect(seen).toEqual([{ notification: payload }])
+        expect(seen).toEqual([{ provider: 'pera', notification: payload }])
 
         vi.unstubAllGlobals()
     })

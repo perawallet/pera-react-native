@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { PWScrollView, PWText, PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
@@ -17,6 +18,8 @@ import { useStyles } from './styles'
 export type FilterOption<T> = {
     value: T
     label: string
+    /** Drawn before the label. */
+    icon?: ReactNode
     testID?: string
 }
 
@@ -50,23 +53,24 @@ export const FilterSelection = <T,>({
             contentContainerStyle={[styles.row, contentContainerStyle]}
             testID={testID}
         >
-            {options.map(option => (
-                <PWTouchableOpacity
-                    key={String(option.value)}
-                    onPress={() => onSelect(option.value)}
-                    testID={option.testID}
-                >
-                    <PWText
-                        style={
-                            option.value === selectedValue
-                                ? styles.activeChip
-                                : styles.chip
-                        }
+            {options.map(option => {
+                const isActive = option.value === selectedValue
+                return (
+                    <PWTouchableOpacity
+                        key={String(option.value)}
+                        onPress={() => onSelect(option.value)}
+                        testID={option.testID}
+                        style={[styles.chip, isActive && styles.activeChip]}
                     >
-                        {option.label}
-                    </PWText>
-                </PWTouchableOpacity>
-            ))}
+                        {option.icon}
+                        <PWText
+                            style={isActive ? styles.activeLabel : undefined}
+                        >
+                            {option.label}
+                        </PWText>
+                    </PWTouchableOpacity>
+                )
+            })}
         </PWScrollView>
     )
 }

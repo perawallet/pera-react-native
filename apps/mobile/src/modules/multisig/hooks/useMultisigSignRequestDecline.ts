@@ -16,7 +16,8 @@ import {
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -86,7 +87,7 @@ export const useMultisigSignRequestDecline = (
             ? chainIdOfSignRequest(params.request)
             : params.chainId,
     )
-    const deviceId = useScopedDeviceID(scope) ?? ''
+    const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const { errorToast } = useToast()
     const { rejectRequest } = useSigningRequest()
     const accounts = useAllAccounts()

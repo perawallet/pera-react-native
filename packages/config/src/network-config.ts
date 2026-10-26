@@ -397,6 +397,10 @@ export const getPeraDeploymentConfig = (
 export const peraDeploymentOf = (scope: ChainScope): WalletMode | undefined =>
     findScopeConfig(scope)?.deployment
 
+/** `peraDeploymentOf` for a scope that may be missing; `null` wherever no deployment serves it. */
+export const deploymentOf = (scope: ChainScope | null): WalletMode | null =>
+    scope === null ? null : (peraDeploymentOf(scope) ?? null)
+
 const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
 
 const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>

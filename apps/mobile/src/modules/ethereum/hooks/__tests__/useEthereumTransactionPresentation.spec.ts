@@ -18,6 +18,7 @@ import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
+    ETHEREUM_FIXTURE_NFT_ID,
     ETHEREUM_FIXTURE_RECIPIENT,
     ETHEREUM_FIXTURE_SENDER,
     ETHEREUM_FIXTURE_TOKEN,
@@ -43,6 +44,7 @@ describe('useEthereumTransactionPresentation', () => {
         for (const kind of [
             'transfer',
             'token-transfer',
+            'nft-transfer',
             'contract-call',
             'contract-creation',
         ] as const) {
@@ -83,6 +85,56 @@ describe('useEthereumTransactionPresentation', () => {
             ETHEREUM_FIXTURE_TOKEN,
             expect.objectContaining({ chainId: 'ethereum' }),
         )
+    })
+
+    it("shows an NFT transfer's recipient, quantity, collection and token id", () => {
+        const nft = {
+            assetId: ETHEREUM_FIXTURE_NFT_ID,
+            decimals: 0,
+            unitName: 'BAYC',
+            peraMetadata: { collectible: { collection: { name: 'Apes' } } },
+        }
+        mockAssetQuery({ data: nft, isPending: false })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['nft-transfer']),
+        )
+
+        expect(result.current?.titleKey).toBe('transactions.list_item.send')
+        expect(result.current?.iconName).toBe('transactions/send')
+        expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_RECIPIENT)
+        expect(result.current?.amount).toEqual({
+            asset: nft,
+            value: new Decimal(1),
+        })
+        expect(result.current?.collectible).toEqual({
+            tokenId: '7',
+            collectionName: 'Apes',
+        })
+        expect(useSingleAssetDetailsQuery).toHaveBeenCalledWith(
+            ETHEREUM_FIXTURE_NFT_ID,
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+    })
+
+    it("waits on an NFT's record before showing its quantity", () => {
+        mockAssetQuery({ data: undefined, isPending: true })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['nft-transfer']),
+        )
+
+        expect(result.current?.isAmountLoading).toBe(true)
+    })
+
+    it('sets no collectible on a token transfer', () => {
+        mockAssetQuery({ data: USDC, isPending: false })
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives['token-transfer']),
+        )
+
+        expect(result.current?.collectible).toBeUndefined()
     })
 
     it("waits on a token's record before showing its amount", () => {

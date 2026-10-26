@@ -29,15 +29,15 @@ catalog:
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
-  "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
   "@playwright/test": ^1.53.0
-  # Exact: the app patch below is keyed on this version; move all five together.
-  "@react-native-firebase/analytics": 26.4.0
-  "@react-native-firebase/app": 26.0.0
-  "@react-native-firebase/crashlytics": 26.4.0
-  "@react-native-firebase/messaging": 26.4.0
-  "@react-native-firebase/remote-config": 26.4.0
+  # Exact: every module peers on the identical app version; move all five
+  # together.
+  "@react-native-firebase/analytics": 27.0.0
+  "@react-native-firebase/app": 27.0.0
+  "@react-native-firebase/crashlytics": 27.0.0
+  "@react-native-firebase/messaging": 27.0.0
+  "@react-native-firebase/remote-config": 27.0.0
   # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
   # internal protocol contract, so a floating minor on one side can pair with
   # a core it was never built against. Bump the two together.
@@ -89,6 +89,7 @@ catalog:
   expo-device: 58.0.5
   expo-local-authentication: 58.0.2
   expo-localization: 58.0.5
+  expo-notifications: 58.1.6
   expo-sqlite: 58.0.13
   fake-indexeddb: 6.2.5
   falcon-1024: 0.2.0
@@ -187,6 +188,15 @@ minimumReleaseAgeExclude:
   # tag, published by the same releaser as 3.0.1, no install scripts. Pinned
   # to the version so the next release clears the gate on its own.
   - xcode@4.0.0
+  # Firebase Apple 13 is SPM-only and CocoaPods trunk goes read-only, so 27.0.0
+  # is needed ahead of the gate. Same four maintainers as 26.x, SLSA provenance
+  # on all five, and only `prepare` scripts, which a registry install never
+  # runs. Pinned to the version so the next release clears the gate on its own.
+  - '@react-native-firebase/analytics@27.0.0'
+  - '@react-native-firebase/app@27.0.0'
+  - '@react-native-firebase/crashlytics@27.0.0'
+  - '@react-native-firebase/messaging@27.0.0'
+  - '@react-native-firebase/remote-config@27.0.0'
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -248,15 +258,6 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # The Expo SDK 58 AppDelegate has neither anchor the iOS plugin looks for
-  # (`self.moduleName =`, `factory.startReactNative(`), so it only warns and
-  # never inserts `FirebaseApp.configure()`: every Firebase call then fails with
-  # "No Firebase App '[DEFAULT]'". Adds the template's `return
-  # super.application(...)` as a third anchor. 27.x fixes it but needs dynamic
-  # frameworks, and its Firebase 13 needs AppCheckCore 12, which
-  # @react-native-google-signin's `GoogleSignIn ~> 9.0` pin rules out; drop on
-  # that upgrade.
-  "@react-native-firebase/app@26.0.0": patches/@react-native-firebase__app@26.0.0.patch
   # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
   # and the list calls it whenever its data's keys change, i.e. on every
   # reorder. requestIdleCallback is RN's documented replacement. Patches the

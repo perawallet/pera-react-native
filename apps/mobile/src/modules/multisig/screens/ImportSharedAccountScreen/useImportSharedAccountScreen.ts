@@ -22,7 +22,8 @@ import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
 } from '@perawallet/wallet-core-multisig'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useExitAccountFlow } from '@modules/onboarding'
 import type { MultisigStackParamList } from '../../routes/types'
@@ -55,7 +56,7 @@ export const useImportSharedAccountScreen =
         const scope = useSelectedScope(chainId)
         const accounts = useAllAccounts()
         const { exitAccountFlow } = useExitAccountFlow()
-        const deviceId = useScopedDeviceID(scope) ?? ''
+        const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
         const deleteImportInboxMutation = useDeleteImportInboxMutation({
             scope,
             deviceId,

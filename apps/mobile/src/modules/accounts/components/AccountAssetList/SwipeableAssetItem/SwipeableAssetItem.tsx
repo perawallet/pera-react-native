@@ -31,9 +31,7 @@ export type SwipeableAssetItemProps = {
     chainId: ChainId
     isNativeAsset: boolean
     isSwipeEnabled: boolean
-    /** Shown beside the name when the list spans chains. */
-    chainName?: string
-    /** Listed under its group: names its network instead of the chain badge. */
+    /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
@@ -45,7 +43,6 @@ const SwipeableAssetItemInner = ({
     chainId,
     isNativeAsset,
     isSwipeEnabled,
-    chainName,
     isGroupMember,
     convertFiat,
     onPress,
@@ -85,7 +82,6 @@ const SwipeableAssetItemInner = ({
                 holding={item}
                 chainId={chainId}
                 isNativeAsset={isNativeAsset}
-                chainName={chainName}
                 isGroupMember={isGroupMember}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
@@ -118,7 +114,6 @@ const SwipeableAssetItemInner = ({
                     holding={item}
                     chainId={chainId}
                     isNativeAsset={isNativeAsset}
-                    chainName={chainName}
                     isGroupMember={isGroupMember}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}

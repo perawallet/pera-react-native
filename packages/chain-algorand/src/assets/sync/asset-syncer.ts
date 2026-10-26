@@ -34,13 +34,13 @@ import {
 } from '../constants'
 import { partition, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    deviceIdForScope,
+    deviceIdForDeployment,
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import { isAlgorandNativeAssetId } from '../../descriptor'
 import { hasAlgorandNftShape } from '../collectible'
 import { algorandNetworkOf, algorandScope } from '../../network-id'
-import { hasPeraBackend } from '@perawallet/wallet-core-config'
+import { deploymentOf, hasPeraBackend } from '@perawallet/wallet-core-config'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -181,10 +181,11 @@ export async function fetchAndPersistAssets(
     })
     if (toFetch.length === 0) return
 
-    const deviceId = deviceIdForScope(
-        useDeviceStore.getState(),
-        algorandScope(network),
-    )
+    const deployment = deploymentOf(algorandScope(network))
+    const deviceId =
+        deployment === null
+            ? null
+            : deviceIdForDeployment(useDeviceStore.getState(), deployment)
 
     const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 

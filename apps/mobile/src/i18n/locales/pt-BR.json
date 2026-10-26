@@ -26,6 +26,7 @@
         },
         "approval": {
             "delivery_failed": "A Pera não conseguiu enviar sua decisão ao site. A extensão entrou em suspensão enquanto esta janela estava aberta. Feche esta janela e faça a solicitação novamente no site.",
+            "chain_network": "Rede: {{chain}} {{network}}",
             "request_origin": "A solicitação veio de {{origin}}",
             "requester_verified_label": "Aba verificada: {{origin}}",
             "requester_mismatch": "Esta solicitação veio de {{origin}}, não de {{claimed}}.",
@@ -265,6 +266,8 @@
             "empty_body": "Nenhuma transação encontrada",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
+            "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
+            "search_older": "Buscar mais antigas",
             "filter": "Filtrar",
             "csv": "CSV"
         },
@@ -1024,10 +1027,10 @@
             "no_contact_title": "Nenhum contato encontrado",
             "no_contact_body": "Parece que algo deu errado. Não foi possível encontrar o contato indicado",
             "nfd_label": "NFDomain",
-            "send": "Enviar",
+            "view_in_explorer": "Ver no explorer",
             "copy": "Copiar endereço",
             "show_qr": "Mostrar código QR",
-            "send_network_title": "Escolher rede"
+            "network_title": "Escolher rede"
         },
         "list": {
             "no_contacts_title": "Você ainda não adicionou nenhum contato",
@@ -3900,7 +3903,11 @@
             "upgrade_watch_body_zero": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
             "upgrade_watch_body_one": "Este endereço já está na sua wallet como conta de observação. Ao importá-lo, ele será atualizado para uma conta Ledger capaz de assinar transações. O nome e as configurações serão mantidos.",
             "upgrade_watch_body_other": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
-            "upgrade_watch_confirm": "Atualizar"
+            "upgrade_watch_confirm": "Atualizar",
+            "same_wallet_title": "Adicionar à sua conta Ledger existente?",
+            "same_wallet_body": "Uma conta deste Ledger já está na sua wallet. Abra o app {{appName}} no seu Ledger para que a Pera confirme que os dois endereços vêm do mesmo Ledger e depois continue. Ou adicione este endereço como uma conta separada.",
+            "same_wallet_confirm": "Continuar",
+            "same_wallet_separate": "Adicionar como conta separada"
         },
         "signing": {
             "cancel": "Cancelar",

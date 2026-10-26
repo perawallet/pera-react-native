@@ -16,7 +16,7 @@ ${IOS_WDA_PORT}         8100
 # Set it for dev-client runs: a plain relaunch can land on the launcher instead of the app.
 ${IOS_DEV_CLIENT_URL}   ${EMPTY}
 ${WEBVIEW}             xpath=//XCUIElementTypeWebView
-${MENU_TAB}             accessibility_id=tab_menu_button
+${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @name='tab_menu_button' or @content-desc='tab_menu_button']
 
 
 *** Keywords ***
@@ -79,7 +79,7 @@ Enter Recovery Phrase
     [Arguments]    ${phrase}
     @{words}=    Split String    ${phrase}
     FOR    ${i}    ${word}    IN ENUMERATE    @{words}
-        Input Text    accessibility_id=import_account_word_input_${i}    ${word}
+        Input Text    xpath=//*[@resource-id='import_account_word_input_${i}' or @name='import_account_word_input_${i}' or @content-desc='import_account_word_input_${i}']    ${word}
     END
 
 Get Text In Container
@@ -96,10 +96,11 @@ Scroll Into View
     [Documentation]    Swipes until the element reports itself visible. iOS lists off-screen rows too,
     ...                so presence is not enough. mobile: scrollToElement fails on this XCUITest
     ...                (unrecognized selector), and mobile: scroll toVisible stops at its own count.
-    [Arguments]    ${test_id}    ${by}=description
-    Wait Until Page Contains Element    accessibility_id=${test_id}    timeout=10s
+    # ${by} exists only to match the Android adapter's signature; xpath covers both here.
+    [Arguments]    ${test_id}    ${by}=resourceId
+    Wait Until Page Contains Element    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    timeout=10s
     FOR    ${i}    IN RANGE    8
-        ${visible}=    Get Element Attribute    accessibility_id=${test_id}    visible
+        ${visible}=    Get Element Attribute    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    visible
         IF    $visible == 'true'    RETURN
         Swipe By Percent    50    75    50    35
     END
@@ -156,3 +157,13 @@ Match Biometric
     [Documentation]    The simulator's model decides Face ID or Touch ID; the other notification is ignored.
     Execute Script    mobile: sendBiometricMatch    type=faceId    match=${True}
     Execute Script    mobile: sendBiometricMatch    type=touchId    match=${True}
+
+Rows With Prefix
+    [Documentation]    Every element whose testID begins with ${prefix}.
+    ...
+    ...                A predicate is evaluated inside XCUITest; the equivalent xpath walks the
+    ...                entire element tree on every poll. Waiting for the pay-asset rows to GO
+    ...                that way hung one command past WebDriverAgent's 240s proxy timeout and took
+    ...                the whole session with it, which then failed the two suites after it too.
+    [Arguments]    ${prefix}
+    RETURN    predicate=name BEGINSWITH '${prefix}'

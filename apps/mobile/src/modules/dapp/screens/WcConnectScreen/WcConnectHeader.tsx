@@ -25,26 +25,22 @@ import {
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    resolveDisplayableVerificationTier,
-    useProjectByUrlQuery,
-} from '@perawallet/wallet-core-projects'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { VerificationTier } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon, PermissionItem } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
+import type { ChainNetworkLabel } from './useWcConnectScreen'
 
 export type WcConnectHeaderProps = {
     peer: ConnectionPeer
     /** `peer.name` cleaned and clamped for display. */
     peerName: string
     permissions: string[]
-    /** Browser-verified origin of the requesting tab; `peer.url` is forgeable. */
-    requesterOrigin?: string
-    /** `requesterOrigin` as its host, for display. */
+    chainNetwork?: ChainNetworkLabel
+    verificationTier?: VerificationTier
+    /** Host of the browser-verified requesting tab, for display; `peer.url` is forgeable. */
     requesterOriginLabel?: string
     /** When true `peer.url` is not the requesting tab, so the header warns instead. */
     isRequesterOriginDistinct?: boolean
@@ -57,38 +53,25 @@ export const WcConnectHeader = ({
     peer,
     peerName,
     permissions,
-    requesterOrigin,
+    chainNetwork,
+    verificationTier,
     requesterOriginLabel,
     isRequesterOriginDistinct = false,
     peerUrlLabel,
     canOpenPeerUrl,
     onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const requesterStyles = useRequesterStyles()
     const { t } = useLanguage()
-
-    const { data: project } = useProjectByUrlQuery({
-        scope,
-        url: peer.url ?? '',
-        isEnabled: !!peer.url,
-    })
-
-    // The registry is keyed by the peer-asserted url, so a positive tier only
-    // shows when the browser-verified tab is that same site. A page asserting
-    // someone else's url never inherits their checkmark.
-    const verificationTier = resolveDisplayableVerificationTier(
-        project,
-        isRequesterOriginDistinct ? undefined : requesterOrigin,
-    )
 
     const preferredIcon = getPreferredDappIcon(peer.icons)
 
     return (
         <PWView style={styles.headerContainer}>
             {/* No network badges: TestnetIndicator already states the active network
-                here, and a proposal only arrives once the host's network gate passed it. */}
+                here, and a proposal only arrives once the host's network gate passed it.
+                Another chain's network is named as text under the title instead. */}
             {preferredIcon ? (
                 <PWImage
                     source={{ uri: preferredIcon }}
@@ -122,6 +105,15 @@ export const WcConnectHeader = ({
                         />
                     )}
                 </PWView>
+                {!!chainNetwork && (
+                    <PWText
+                        variant='caption'
+                        style={styles.peerUrlText}
+                        testID='wc-connect-chain-network'
+                    >
+                        {t('dapp.approval.chain_network', chainNetwork)}
+                    </PWText>
+                )}
                 {/* A page CAN pair while asserting someone else's url. Then the
                     asserted url is not shown as a link at all: the warning names
                     the real (browser-stamped) origin and the claimed one. */}

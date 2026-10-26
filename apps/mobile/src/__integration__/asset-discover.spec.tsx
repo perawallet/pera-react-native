@@ -12,17 +12,28 @@
 
 // Asset discovery: AddAssetView -> debounce -> useAssetSearchQuery ->
 // GET /v1/assets/search/. Covers all three verification tiers round-tripping,
-// cursor pagination via the `next` URL, and the `enabled` gate that keeps empty
-// queries from firing.
+// cursor pagination via the `next` URL, the `enabled` gate that keeps empty
+// queries from firing, and the sheet offering no network chips while Algorand
+// is the only chain.
 
-import { describe, expect, it } from 'vitest'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import {
+    act,
+    cleanup,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { AddAssetView } from '@modules/assets/components/AddAssetView'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
@@ -220,5 +231,54 @@ describe('Flow: Asset discovery (search)', () => {
 
         expect(result.current.results).toEqual([])
         expect(result.current.isLoading).toBe(false)
+    })
+
+    describe('Add Asset', () => {
+        afterEach(() => {
+            cleanup()
+            useAccountsStore.getState().setAccounts([])
+        })
+
+        it('Given Algorand is the only chain, when Add Asset opens, then it searches Algorand with no network chips', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'watch-1',
+                    name: 'Watch',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: ALGO25_TEST_ADDRESS } },
+                },
+            ])
+            useAccountsStore.getState().setSelectedAccountId('watch-1')
+            server.use(
+                mockAssetSearch({
+                    response: {
+                        results: [
+                            {
+                                asset_id: 31_566_704,
+                                name: 'USD Coin',
+                                unit_name: 'USDC',
+                                verification_tier: 'verified',
+                                usd_value: '1.00',
+                                type: 'standard_asset',
+                            },
+                        ],
+                        next: null,
+                        previous: null,
+                    },
+                }),
+            )
+
+            renderWithNavigation(
+                () => <AddAssetView chainId={LEGACY_CHAIN_ID} />,
+                'AddAsset',
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('USD Coin')).toBeTruthy()
+            })
+            expect(
+                screen.queryByTestId('add_asset_network_filter_algorand'),
+            ).toBeNull()
+        })
     })
 })

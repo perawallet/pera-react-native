@@ -26,7 +26,8 @@ import {
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
@@ -64,7 +65,7 @@ export const useCardOnboardingEmailScreen =
             bodyKey: i18nKey('peraCard.create_account.error_body'),
         })
         const { request } = useBottomSheet()
-        const deviceId = useScopedDeviceID(scope)
+        const deviceId = useDeploymentDeviceID(deploymentOf(scope))
         const setEmail = useCardStore(state => state.setEmail)
         const setCountryIso = useCardStore(state => state.setCountryIso)
         const sendEmailVerification = useSendEmailVerificationMutation(scope)

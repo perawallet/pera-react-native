@@ -21,9 +21,11 @@ import {
     invalidateAssetQueries,
 } from '@perawallet/wallet-core-assets'
 import {
+    hasCachedHistoryRows,
     invalidateSpendableBalanceQueries,
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
+    invalidateTransactionQueriesForScope,
 } from '@perawallet/wallet-core-transactions'
 import {
     logger,
@@ -526,8 +528,10 @@ export class SyncService {
         // Invalidation forces a wide DB re-read per account, so skip the
         // unchanged ones — which is the common tick.
         const { changedAddresses } = accountPass
+        // Keyed per scope: the debounce keeps only the latest run per key, so
+        // a shared key would drop the earlier scope's addresses.
         if (changedAddresses.length > 0) {
-            this.debouncedInvalidate('accounts', () =>
+            this.debouncedInvalidate(`accounts:${toScopeKey(scope)}`, () =>
                 invalidateAccountQueriesForAddresses(
                     this.deps.queryClient,
                     changedAddresses,
@@ -573,11 +577,28 @@ export class SyncService {
             'transactions',
         )
         recordOutcome(txPass)
-        // Skipped when every fetch was rejected — invalidation forces a DB
-        // re-read with no new data to surface.
-        if (txPass.hasSuccess) {
-            this.debouncedInvalidate('transactions', () =>
-                invalidateTransactionQueries(this.deps.queryClient),
+        // Per scope, like the accounts key above.
+        const transactionsKey = `transactions:${toScopeKey(scope)}`
+        if (!hasCachedHistoryRows(scope.chainId)) {
+            // No cached rows, so History reads the backend: refetch it only
+            // for the accounts whose state changed, not on every pass.
+            if (changedAddresses.length > 0) {
+                this.debouncedInvalidate(transactionsKey, () =>
+                    invalidateTransactionQueriesForAddresses(
+                        this.deps.queryClient,
+                        changedAddresses,
+                        scope,
+                    ),
+                )
+            }
+        } else if (txPass.hasSuccess) {
+            // Skipped when every fetch was rejected — invalidation forces a DB
+            // re-read with no new data to surface.
+            this.debouncedInvalidate(transactionsKey, () =>
+                invalidateTransactionQueriesForScope(
+                    this.deps.queryClient,
+                    scope,
+                ),
             )
         }
 
@@ -694,6 +715,7 @@ export class SyncService {
         invalidateTransactionQueriesForAddresses(
             this.deps.queryClient,
             addresses,
+            scope,
         )
     }
 }

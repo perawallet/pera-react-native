@@ -90,7 +90,7 @@ export const EthereumReviewHeader = ({
                         style={styles.amount}
                         ignorePrivacyMode
                     />
-                    {!!amount?.asset && (
+                    {!!amount?.asset && !presentation.collectible && (
                         <PreferredAmount
                             sourceAmount={amount.value}
                             sourceAssetId={amount.asset.assetId}

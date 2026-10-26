@@ -19,6 +19,10 @@ import {
     useConnectionsStore,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
+import {
+    createEip1193ConnectionHandler,
+    createNoopDappTransport,
+} from '@perawallet/wallet-core-dapp'
 import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connections'
 import { onLocalStorageKeyChanged } from '@perawallet/wallet-core-browser-runtime'
 import { createRemoteConnectionRegistry } from '@perawallet/wallet-core-browser-runtime/remote-registry'
@@ -40,12 +44,21 @@ const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
 // Handlers are never initialized here; they only answer descriptor queries
-// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for dapp).
+// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for
+// the injected providers).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registryRef = useRef<ConnectionRegistryClient | null>(null)
     if (!registryRef.current) {
         registryRef.current = createRemoteConnectionRegistry({
-            handlers: createAlgorandDescriptorHandlers({ getNetworkId }),
+            handlers: [
+                ...createAlgorandDescriptorHandlers({ getNetworkId }),
+                createEip1193ConnectionHandler({
+                    transport: createNoopDappTransport(),
+                    getNetworkId,
+                    isDappConnectEnabled: () => false,
+                    getAccounts: () => [],
+                }),
+            ],
         })
     }
     const registry = registryRef.current

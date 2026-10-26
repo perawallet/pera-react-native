@@ -41,6 +41,8 @@ export interface DeviceChainAdapter {
     accountTypeOf(account: DeviceRegistrableAccount): string | null
     /** Which of two registrations of one address the backend is told about: higher wins. */
     rankOf(account: DeviceRegistrableAccount): number
+    /** Whether the v3 devices API, which names no chain, takes this chain's accounts. */
+    readonly isOnV3DevicesApi?: boolean
 }
 
 export const deviceChainAdapters =

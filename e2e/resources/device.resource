@@ -16,7 +16,7 @@ ${CAMERA_DENIED_CLOSE}          xpath=//*[@text='Close' or @label='Close']
 # The offline pill has no testID either (common.offline_mode).
 ${OFFLINE_BANNER}               xpath=//*[@text='Offline Mode' or @label='Offline Mode']
 ${BIOMETRIC_TOGGLE_ID}          settings_security_biometric_toggle
-${BIOMETRIC_TOGGLE}             accessibility_id=${BIOMETRIC_TOGGLE_ID}
+${BIOMETRIC_TOGGLE}             xpath=//*[@resource-id='${BIOMETRIC_TOGGLE_ID}' or @name='${BIOMETRIC_TOGGLE_ID}' or @content-desc='${BIOMETRIC_TOGGLE_ID}']
 
 
 *** Keywords ***
@@ -33,7 +33,8 @@ Open Passphrase
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
     Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
     FOR    ${i}    IN RANGE    4
-        Tap    ${PASSPHRASE_ACK_ROW}${i}
+        ${row_locator}=    Passphrase Ack Row    ${i}
+        Tap    ${row_locator}
     END
     Tap    ${PASSPHRASE_ACK_REVEAL}
     Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s
@@ -65,3 +66,15 @@ Turn Biometrics And Pin Off
     [Documentation]    Removing the PIN deletes the biometric unlock with it (usePinCode).
     Capture Failure Screenshot
     Turn Pin Off
+
+Leave Scanner To Home
+    [Documentation]    Home after the scanner, however many layers are still up.
+    FOR    ${attempt}    IN RANGE    3
+        ${home}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${MENU_TAB}    timeout=8s
+        IF    ${home}    RETURN
+        Run Keyword And Ignore Error    Tap Back
+    END
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=15s
+    ...    error=The scanner flow did not get back to Home; the screen is capture-protected, so a screenshot here is blank.
+

@@ -20,6 +20,8 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 }))
 
 const ADDRESSES = ['ADDR1', 'ADDR2']
+const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const createDeferred = () => {
     let resolve: () => void = () => {}
@@ -46,7 +48,7 @@ describe('useSyncRefresh', () => {
 
     it('refreshes the given addresses on the active network without re-invalidating on top of refreshAccounts', async () => {
         const { result } = renderHook(() =>
-            useSyncRefresh({ addresses: ADDRESSES }),
+            useSyncRefresh({ addresses: ADDRESSES, scope: ALGORAND }),
         )
 
         await act(async () => {
@@ -60,12 +62,46 @@ describe('useSyncRefresh', () => {
         expect(invalidateQueries).not.toHaveBeenCalled()
     })
 
+    it("syncs within the caller's own chain, not the selected Algorand one", async () => {
+        const { result } = renderHook(() =>
+            useSyncRefresh({ addresses: ['0xabc'], scope: ETHEREUM }),
+        )
+
+        await act(async () => {
+            result.current.refresh()
+        })
+
+        expect(refreshAccounts).toHaveBeenCalledWith(['0xabc'], ETHEREUM)
+    })
+
+    it('keeps pulls on two chains apart, so neither joins the other', async () => {
+        const deferred = createDeferred()
+        refreshAccounts.mockReturnValue(deferred.promise)
+        const algorand = renderHook(() =>
+            useSyncRefresh({ addresses: ['0xabc'], scope: ALGORAND }),
+        )
+        const ethereum = renderHook(() =>
+            useSyncRefresh({ addresses: ['0xabc'], scope: ETHEREUM }),
+        )
+
+        act(() => {
+            algorand.result.current.refresh()
+            ethereum.result.current.refresh()
+        })
+
+        expect(refreshAccounts).toHaveBeenCalledTimes(2)
+        await act(async () => {
+            deferred.resolve()
+            await deferred.promise
+        })
+    })
+
     it('reports isRefreshing while the refresh is in flight and false once it settles', async () => {
         const deferred = createDeferred()
         refreshAccounts.mockReturnValue(deferred.promise)
 
         const { result } = renderHook(() =>
-            useSyncRefresh({ addresses: ADDRESSES }),
+            useSyncRefresh({ addresses: ADDRESSES, scope: ALGORAND }),
         )
         expect(result.current.isRefreshing).toBe(false)
 
@@ -86,7 +122,7 @@ describe('useSyncRefresh', () => {
         refreshAccounts.mockReturnValue(deferred.promise)
 
         const { result } = renderHook(() =>
-            useSyncRefresh({ addresses: ADDRESSES }),
+            useSyncRefresh({ addresses: ADDRESSES, scope: ALGORAND }),
         )
 
         act(() => {
@@ -108,7 +144,7 @@ describe('useSyncRefresh', () => {
         refreshAccounts.mockReturnValue(deferred.promise)
 
         const { result } = renderHook(() =>
-            useSyncRefresh({ addresses: ADDRESSES }),
+            useSyncRefresh({ addresses: ADDRESSES, scope: ALGORAND }),
         )
 
         act(() => {
@@ -135,11 +171,13 @@ describe('useSyncRefresh', () => {
         refreshAccounts.mockReturnValue(deferred.promise)
         const shared = ['SHARED_ADDR']
 
-        const overview = renderHook(() => useSyncRefresh({ addresses: shared }))
+        const overview = renderHook(() =>
+            useSyncRefresh({ addresses: shared, scope: ALGORAND }),
+        )
         // A distinct array with the same contents: the key is the addresses,
         // not the array identity.
         const history = renderHook(() =>
-            useSyncRefresh({ addresses: [...shared] }),
+            useSyncRefresh({ addresses: [...shared], scope: ALGORAND }),
         )
 
         act(() => {
@@ -169,8 +207,12 @@ describe('useSyncRefresh', () => {
             .mockReturnValueOnce(accountA.promise)
             .mockReturnValueOnce(accountB.promise)
 
-        const a = renderHook(() => useSyncRefresh({ addresses: ['A_ADDR'] }))
-        const b = renderHook(() => useSyncRefresh({ addresses: ['B_ADDR'] }))
+        const a = renderHook(() =>
+            useSyncRefresh({ addresses: ['A_ADDR'], scope: ALGORAND }),
+        )
+        const b = renderHook(() =>
+            useSyncRefresh({ addresses: ['B_ADDR'], scope: ALGORAND }),
+        )
 
         act(() => {
             a.result.current.refresh()
@@ -199,7 +241,9 @@ describe('useSyncRefresh', () => {
     })
 
     it('settles a refresh with no addresses', async () => {
-        const { result } = renderHook(() => useSyncRefresh({ addresses: [] }))
+        const { result } = renderHook(() =>
+            useSyncRefresh({ addresses: [], scope: ALGORAND }),
+        )
 
         await act(async () => {
             result.current.refresh()
@@ -218,7 +262,7 @@ describe('useSyncRefresh', () => {
         })
 
         const { result } = renderHook(() =>
-            useSyncRefresh({ addresses: ADDRESSES }),
+            useSyncRefresh({ addresses: ADDRESSES, scope: ALGORAND }),
         )
 
         await act(async () => {

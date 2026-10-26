@@ -67,11 +67,11 @@ case "$PROFILE" in
     )
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
-      # Unset means app.config.builder drops the matching plugin, so the archive
-      # ships with no iCloud entitlement and a Drive button that always reports
-      # itself unconfigured. Entitlements are build-time, so a later remote-config
-      # flip cannot recover it — the warning is the only signal before release.
-      "GOOGLE_IOS_CLIENT_ID" "GOOGLE_WEB_CLIENT_ID" "IOS_ICLOUD_CONTAINER_ID"
+      # Unset, the archive ships a Drive button that always reports itself
+      # unconfigured, or with no iCloud entitlement because app.config.builder
+      # drops that plugin. Both are build-time, so a later remote-config flip
+      # cannot recover them — the warning is the only signal before release.
+      "GOOGLE_IOS_CLIENT_ID" "IOS_ICLOUD_CONTAINER_ID"
     )
     # AutoDraw LogicSig pins. Unprefixed: one set of card apps serves both
     # environments on testnet, and the template hash is environment-independent.
@@ -118,10 +118,6 @@ case "$PROFILE" in
     fi
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
-      # Android signs in with the web client id; there is no iCloud here and the
-      # iOS client id is only the URL scheme. Unset means the Drive row always
-      # reports itself unconfigured.
-      "GOOGLE_WEB_CLIENT_ID"
     )
     # AutoDraw LogicSig pins. Unprefixed: one set of card apps serves both
     # environments on testnet, and the template hash is environment-independent.
@@ -143,8 +139,8 @@ case "$PROFILE" in
     )
     ;;
   web)
-    # Zip-only build (no store/CWS upload yet), so no signing/upload
-    # credentials are required — just the same backend wiring as ios/android.
+    # The Chrome Web Store upload checks its own credentials, and only on an
+    # rc tag, so this needs just the same backend wiring as ios/android.
     required_global+=(
       "SLACK_WEBHOOK_URL"
     )

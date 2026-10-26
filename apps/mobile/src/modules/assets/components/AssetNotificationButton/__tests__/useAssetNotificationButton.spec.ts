@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: () => mocks.deviceId,
+    useDeploymentDeviceID: () => mocks.deviceId,
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<

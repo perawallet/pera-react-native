@@ -22,7 +22,10 @@ export const mockRegisterDevice = ({
     response,
     status = 200,
 }: MockRegisterDeviceParams): HttpHandler =>
-    http.post('*/api/v3/devices', () => HttpResponse.json(response, { status }))
+    // Either route: which one registration takes depends on a remote flag.
+    http.post(/\/api\/(v3\/devices|v4\/devices\/)$/, () =>
+        HttpResponse.json(response, { status }),
+    )
 
 export type MockDeleteDeviceParams = {
     status?: number

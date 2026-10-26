@@ -15,23 +15,18 @@ import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useTransactionListItem } from './useTransactionListItem'
+import {
+    useTransactionListItem,
+    type UseTransactionListItemParams,
+} from './useTransactionListItem'
 import type { AmountDisplay } from './amounts'
 
-export type TransactionListItemProps = {
-    /** The transaction data to display */
-    transaction: TransactionHistoryItem
-    /** Optional callback when the item is pressed */
-    onPress?: (transaction: TransactionHistoryItem) => void
-}
+export type TransactionListItemProps = UseTransactionListItemParams
 
-const TransactionListItemView = ({
-    transaction,
-    onPress,
-}: TransactionListItemProps) => {
+const TransactionListItemView = (props: TransactionListItemProps) => {
+    const { id } = 'record' in props ? props.record : props.transaction
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -43,10 +38,7 @@ const TransactionListItemView = ({
         notice,
         handlePress,
         handleLongPress,
-    } = useTransactionListItem({
-        transaction,
-        onPress,
-    })
+    } = useTransactionListItem(props)
 
     const getAmountStyle = (amount: AmountDisplay) => {
         if (amount.prefix === '+') return styles.amountPositive
@@ -56,7 +48,7 @@ const TransactionListItemView = ({
 
     return (
         <PWListItemLayout
-            testID={`transaction_row_${transaction.id}`}
+            testID={`transaction_row_${id}`}
             style={styles.container}
             align='top'
             onPress={handlePress}
@@ -114,7 +106,7 @@ const TransactionListItemView = ({
                     <ChainNotice
                         {...notice}
                         style={styles.notice}
-                        testID={`transaction_row_notice_${transaction.id}`}
+                        testID={`transaction_row_notice_${id}`}
                     />
                 )}
             </PWView>
@@ -125,7 +117,8 @@ const TransactionListItemView = ({
 /**
  * Rows carry their own query observers (NFD reverse lookup, asset details), so
  * a parent re-render — pagination, a refetch, a store write — used to re-run
- * every mounted row's hooks. `transaction` comes straight from the query cache
- * and `onPress` from a `useCallback`, so the default shallow comparison holds.
+ * every mounted row's hooks. `transaction` / `record` come straight from the
+ * query cache and `onPress` from a `useCallback`, so the default shallow
+ * comparison holds.
  */
 export const TransactionListItem = memo(TransactionListItemView)

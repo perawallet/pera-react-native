@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import {
-    rekeyLegacyNetworkRecord,
+    scopeKeyLegacyNetworkRecord,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -68,7 +68,7 @@ export const migrateSyncCursorState = (
     if (version < 1) {
         state = {
             ...state,
-            lastRefreshedRound: rekeyLegacyNetworkRecord(
+            lastRefreshedRound: scopeKeyLegacyNetworkRecord(
                 state.lastRefreshedRound,
             ),
         }

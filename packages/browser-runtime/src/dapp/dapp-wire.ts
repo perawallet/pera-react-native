@@ -13,9 +13,11 @@
 // Pure wire for the window.pera transport: scopes, message shapes, guards.
 // No chrome.* usage — content scripts pull this in through content-wire.ts.
 import {
+    isDappProvider,
     isJsonRpcNotification,
     isJsonRpcRequest,
     isJsonRpcResponse,
+    type DappProvider,
     type JsonRpcNotification,
     type JsonRpcRequest,
     type JsonRpcResponse,
@@ -35,6 +37,7 @@ export type DappPagePayload = JsonRpcResponse | JsonRpcNotification
 
 export type DappPageRequestMessage = {
     scope: typeof DAPP_PAGE_REQUEST_SCOPE
+    provider: DappProvider
     request: JsonRpcRequest
     /** `navigator.userActivation.isActive` as read by the ISOLATED relay; the page cannot forge that world's view. */
     hasUserActivation: boolean
@@ -44,11 +47,13 @@ export type DappPageRequestAck =
     | { ok: false; response: JsonRpcResponse }
 export type DappPageResponseMessage = {
     scope: typeof DAPP_PAGE_RESPONSE_SCOPE
+    provider: DappProvider
     origin: string
     payload: DappPagePayload
 }
 export type DappHostRequestMessage = {
     scope: typeof DAPP_HOST_REQUEST_SCOPE
+    provider: DappProvider
     origin: string
     hasUserActivation: boolean
     faviconUrl?: string
@@ -57,6 +62,7 @@ export type DappHostRequestMessage = {
 }
 export type DappHostResponseMessage = {
     scope: typeof DAPP_HOST_RESPONSE_SCOPE
+    provider: DappProvider
     origin: string
     payload: DappPagePayload
     /** Absent for a notification, which goes to every tab of `origin`. */
@@ -75,6 +81,7 @@ export const isDappPageRequestMessage = (
 ): value is DappPageRequestMessage =>
     isRecord(value) &&
     value.scope === DAPP_PAGE_REQUEST_SCOPE &&
+    isDappProvider(value.provider) &&
     isJsonRpcRequest(value.request) &&
     typeof value.hasUserActivation === 'boolean'
 
@@ -96,6 +103,7 @@ export const isDappPageResponseMessage = (
 ): value is DappPageResponseMessage =>
     isRecord(value) &&
     value.scope === DAPP_PAGE_RESPONSE_SCOPE &&
+    isDappProvider(value.provider) &&
     typeof value.origin === 'string' &&
     isPagePayload(value.payload)
 
@@ -104,6 +112,7 @@ export const isDappHostRequestMessage = (
 ): value is DappHostRequestMessage =>
     isRecord(value) &&
     value.scope === DAPP_HOST_REQUEST_SCOPE &&
+    isDappProvider(value.provider) &&
     typeof value.origin === 'string' &&
     typeof value.hasUserActivation === 'boolean' &&
     (value.faviconUrl === undefined || typeof value.faviconUrl === 'string') &&
@@ -115,6 +124,7 @@ export const isDappHostResponseMessage = (
 ): value is DappHostResponseMessage =>
     isRecord(value) &&
     value.scope === DAPP_HOST_RESPONSE_SCOPE &&
+    isDappProvider(value.provider) &&
     typeof value.origin === 'string' &&
     isPagePayload(value.payload) &&
     (value.returnTo === undefined || isReturnAddress(value.returnTo))

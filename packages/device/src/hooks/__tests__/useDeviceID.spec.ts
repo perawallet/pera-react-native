@@ -14,18 +14,7 @@ import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import { useDeviceStore } from '../../store'
-import { useDeploymentDeviceID, useScopedDeviceID } from '../useDeviceID'
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        defaultNetwork: 'mainnet',
-    },
-    // Mirrors the real table: a tier's chains share its deployment; betanet has none.
-    peraDeploymentOf: ({ networkId }: { networkId: string }) =>
-        ({ mainnet: 'live', sepolia: 'developer', testnet: 'developer' })[
-            networkId
-        ],
-}))
+import { useDeploymentDeviceID } from '../useDeviceID'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -76,24 +65,13 @@ describe('device/hooks/useDeviceID', () => {
         expect(hook.result.current).toBe('device-new-123')
     })
 
-    test("reads a scope's device ID from the deployment serving it", () => {
+    test('returns null for no deployment', () => {
         act(() => {
-            useDeviceStore.getState().setDeviceID('live', 'device-main-123')
-            useDeviceStore
-                .getState()
-                .setDeviceID('developer', 'device-test-456')
+            useDeviceStore.getState().setDeviceID('live', 'device-123')
         })
 
-        const read = (chainId: 'algorand' | 'ethereum', networkId: string) =>
-            renderHook(() => useScopedDeviceID({ chainId, networkId })).result
-                .current
-
-        expect(read('algorand', 'mainnet')).toBe('device-main-123')
-        expect(read('ethereum', 'mainnet')).toBe('device-main-123')
-        expect(read('ethereum', 'sepolia')).toBe('device-test-456')
-        expect(read('algorand', 'betanet')).toBeNull()
         expect(
-            renderHook(() => useScopedDeviceID(null)).result.current,
+            renderHook(() => useDeploymentDeviceID(null)).result.current,
         ).toBeNull()
     })
 
