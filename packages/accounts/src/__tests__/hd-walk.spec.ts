@@ -76,6 +76,23 @@ describe('walkHdTree', () => {
         ])
     })
 
+    it('keeps the keys an account index found before a later batch of it rejects', async () => {
+        const found = await walkHdTree({
+            probe: async indices => {
+                if (indices[0].account === 0 && indices[0].keyIndex === 5) {
+                    throw new Error('offline')
+                }
+                return probeActiveAt(['0/0', '0/1', '0/2', '0/3', '0/4'])(
+                    indices,
+                )
+            },
+        })
+
+        expect(found).toEqual(
+            [0, 1, 2, 3, 4].map(keyIndex => ({ account: 0, keyIndex })),
+        )
+    })
+
     it('counts an account index whose probe rejects as empty', async () => {
         const found = await walkHdTree({
             probe: async indices => {

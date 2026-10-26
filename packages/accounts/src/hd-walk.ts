@@ -81,7 +81,9 @@ async function scanAccountIndex(
             account,
             keyIndex: keyIndex + i,
         }))
-        const results = await probe(batch)
+        // Inactive rather than thrown, so a dropped batch keeps the keys this
+        // index already found; the gap still ends the scan.
+        const results = await probe(batch).catch(() => batch.map(() => false))
 
         for (const [i, index] of batch.entries()) {
             if (results[i]) {
@@ -102,8 +104,8 @@ async function scanAccountIndex(
 /**
  * Walks an HD tree until `keyIndexGapLimit` consecutive inactive keys end an
  * account index and `accountGapLimit` consecutive account indexes with no
- * active key end the walk. An account index whose probe rejects counts as
- * empty. Never probes past `accountIndexLimit` account indexes or
+ * active key end the walk. A batch whose probe rejects reads as inactive.
+ * Never probes past `accountIndexLimit` account indexes or
  * `keyIndexLimit` key indexes on one, warning when it stops there with the gap
  * still open. Resolves to the active indexes, by account then key index.
  */

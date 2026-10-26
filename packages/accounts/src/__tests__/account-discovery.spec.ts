@@ -122,6 +122,30 @@ describe('discoverAccounts', () => {
         )
     })
 
+    it('keeps the accounts found before a later batch of the same account index rejects', async () => {
+        mockFetchAccountFastLookup.mockImplementation(
+            async (addresses: string[]) => {
+                if (addresses.includes('ADDRESS_0_5')) {
+                    throw new Error('offline')
+                }
+                return addresses.map(address => ({
+                    address,
+                    accountExists: address.startsWith('ADDRESS_0_'),
+                }))
+            },
+        )
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+        })
+
+        expect(accounts.map(account => hdIndexOf(account))).toEqual(
+            [0, 1, 2, 3, 4].map(keyIndex => ({ account: 0, keyIndex })),
+        )
+    })
+
     it('returns nothing when every activity probe rejects, rather than the first account', async () => {
         mockFetchAccountFastLookup.mockRejectedValue(new Error('offline'))
 
