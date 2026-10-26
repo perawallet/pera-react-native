@@ -26,7 +26,9 @@ import {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsAtNonce,
     getSubmissionAttemptsWithHistoryEntry,
+    getReplaceableSubmissionAttempt,
     getUnsyncedSubmissionSpends,
     pruneResolvedSubmissionAttempts,
     subscribeToSubmissionLedger,
@@ -627,6 +629,135 @@ describe('submission ledger repository', () => {
 
             await expect(record()).resolves.toEqual(expect.any(String))
             unsubscribe()
+        })
+    })
+
+    describe('replacement', () => {
+        const record = (
+            overrides: Partial<
+                Parameters<typeof recordSubmissionAttempt>[0]
+            > = {},
+        ) =>
+            recordSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txIds: ['0xaaa'],
+                flow: 'pipeline',
+                sender: '0xSENDER',
+                nonce: 7,
+                rawTransaction: '0x02aaa',
+                historyEntry: HISTORY_ENTRY,
+                ...overrides,
+            })
+
+        it('reads back the raw transaction and the attempt it replaces', async () => {
+            const original = await record()
+            await record({
+                txIds: ['0xbbb'],
+                rawTransaction: '0x02bbb',
+                replacesAttemptId: original,
+            })
+
+            const attempts = await getSubmissionAttemptsAtNonce({
+                db,
+                scope: ETHEREUM,
+                sender: '0xSENDER',
+                nonce: 7,
+            })
+
+            expect(
+                attempts.map(a => [a.rawTransaction, a.replacesAttemptId]),
+            ).toEqual([
+                ['0x02aaa', null],
+                ['0x02bbb', original],
+            ])
+        })
+
+        it('reads an attempt at a sequence number by scope, sender, nonce and status', async () => {
+            const kept = await record()
+            await record({ txIds: ['0x1'], nonce: 8 })
+            await record({ txIds: ['0x2'], sender: '0xOTHER' })
+            await record({
+                txIds: ['0x3'],
+                scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            })
+            const settled = await record({ txIds: ['0x4'] })
+            await resolveSubmissionAttempt({
+                db,
+                id: settled,
+                status: 'failed',
+            })
+
+            const open = await getSubmissionAttemptsAtNonce({
+                db,
+                scope: ETHEREUM,
+                sender: '0xSENDER',
+                nonce: 7,
+                statuses: ['submitted', 'unknown'],
+            })
+            const all = await getSubmissionAttemptsAtNonce({
+                db,
+                scope: ETHEREUM,
+                sender: '0xSENDER',
+                nonce: 7,
+            })
+
+            expect(open.map(a => a.id)).toEqual([kept])
+            expect(all.map(a => a.id)).toEqual([kept, settled])
+        })
+
+        it('offers an open attempt with its bytes and history entry', async () => {
+            const id = await record()
+
+            const attempt = await getReplaceableSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txId: '0xaaa',
+            })
+
+            expect(attempt).toMatchObject({
+                id,
+                rawTransaction: '0x02aaa',
+                nonce: 7,
+            })
+            expect(attempt!.historyEntry!.summary.kind).toBe('transfer')
+        })
+
+        it('offers no settled attempt, none without bytes and none superseded by a newer one', async () => {
+            const settled = await record({ txIds: ['0xsettled'], nonce: 1 })
+            await resolveSubmissionAttempt({
+                db,
+                id: settled,
+                status: 'confirmed',
+            })
+            await record({
+                txIds: ['0xbare'],
+                nonce: 2,
+                rawTransaction: undefined,
+            })
+            const original = await record({ txIds: ['0xold'], nonce: 3 })
+            await record({
+                txIds: ['0xnew'],
+                nonce: 3,
+                replacesAttemptId: original,
+            })
+
+            for (const txId of ['0xsettled', '0xbare', '0xold']) {
+                await expect(
+                    getReplaceableSubmissionAttempt({
+                        db,
+                        scope: ETHEREUM,
+                        txId,
+                    }),
+                ).resolves.toBeNull()
+            }
+            await expect(
+                getReplaceableSubmissionAttempt({
+                    db,
+                    scope: ETHEREUM,
+                    txId: '0xnew',
+                }),
+            ).resolves.not.toBeNull()
         })
     })
 })

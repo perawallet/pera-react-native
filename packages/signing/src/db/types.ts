@@ -122,10 +122,22 @@ export type SubmissionAttempt = {
     nonce: number | null
     createdAt: number
     resolvedAt: number | null
+    /** The broadcast transaction in its chain's own encoding; only the owning chain reads it. */
+    rawTransaction: string | null
+    /** Id of the attempt this one re-prices at the same sequence number; null when it replaces none. */
+    replacesAttemptId: string | null
 }
 
 export type SubmissionAttemptWithHistoryEntry = SubmissionAttempt & {
     historyEntry: SubmissionHistoryEntry
+}
+
+/** An open attempt this wallet can re-price: it holds its broadcast bytes and nothing newer holds its sequence number. */
+export type ReplaceableSubmissionAttempt = SubmissionAttempt & {
+    rawTransaction: string
+    nonce: number
+    /** Null when the attempt recorded none, or it can't be read. */
+    historyEntry: SubmissionHistoryEntry | null
 }
 
 export type UnsyncedSubmissionSpend = SubmissionAttempt & {

@@ -33,6 +33,7 @@ import m0017 from './0017_submission_attempts_max_fee.sql?raw'
 import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
 import m0019 from './0019_chain_data_scope_columns.sql?raw'
 import m0020 from './0020_collectible_uniqueness_backfill.sql?raw'
+import m0021 from './0021_submission_attempts_replacement.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -92,4 +93,6 @@ export const migrations: MigrationConfig = {
     // Writes Algorand's uniqueness flag (supply 1, no decimals) into cached
     // collectibles locally, so they don't read as editions until a refetch.
     '0020_collectible_uniqueness_backfill': m0020,
+    // Nullable: Algorand attempts and attempts recorded before it carry neither.
+    '0021_submission_attempts_replacement': m0021,
 }

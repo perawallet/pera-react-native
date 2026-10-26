@@ -56,6 +56,8 @@ const attempt = (
     nonce: 0,
     createdAt: CREATED_AT,
     resolvedAt: null,
+    rawTransaction: null,
+    replacesAttemptId: null,
     historyEntry: {
         summary: {
             kind: 'transfer',

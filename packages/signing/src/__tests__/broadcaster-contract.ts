@@ -34,6 +34,19 @@ export interface BroadcasterContractFixtures {
     arrangeConfirmed(): void
     /** The chain keeps reporting `txIds` unconfirmed past its wait window. */
     arrangeNeverConfirmed(): void
+    /** Set by a chain whose descriptor sets `protocol.supportsReplacement`. */
+    replacement?: BroadcasterReplacementFixtures
+}
+
+/** A group that re-prices a pending one at the same sequence number. */
+export interface BroadcasterReplacementFixtures {
+    /** Wire-encoded, at the sequence number a pending group holds. */
+    signedTransactions: readonly Uint8Array[]
+    txIds: readonly string[]
+    /** The node refuses the next submit for not outbidding the pending group enough. */
+    arrangeUnderpriced(): void
+    /** The node refuses the next submit because the pending group already landed. */
+    arrangeOriginalLanded(): void
 }
 
 /** Every chain package runs this against its own broadcaster adapter. */
@@ -109,6 +122,28 @@ export const broadcasterContractTests = (
             await expect(
                 makeAdapter().waitForConfirmation(scope, []),
             ).resolves.toBeUndefined()
+        })
+
+        const { replacement } = fixtures
+        describe.runIf(replacement)('replacing a pending group', () => {
+            const submitReplacement = () =>
+                makeAdapter().submit(scope, replacement!.signedTransactions)
+            const refused = {
+                classification: 'rejected-by-node',
+                txIds: [...(replacement?.txIds ?? [])],
+            }
+
+            it('reports a replacement the node prices out as rejected, with its ids', async () => {
+                replacement!.arrangeUnderpriced()
+
+                await expect(submitReplacement()).rejects.toMatchObject(refused)
+            })
+
+            it('reports a replacement whose original already landed as rejected, with its ids', async () => {
+                replacement!.arrangeOriginalLanded()
+
+                await expect(submitReplacement()).rejects.toMatchObject(refused)
+            })
         })
     })
 }
