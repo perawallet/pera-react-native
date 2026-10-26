@@ -140,6 +140,7 @@ export const CardWalletBalanceScreen = () => {
                                 <PWText
                                     variant='h3'
                                     style={styles.secondaryText}
+                                    testID='card-wallet-balance-currency'
                                 >
                                     {currencyDisplay}
                                 </PWText>

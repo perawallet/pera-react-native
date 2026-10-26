@@ -57,6 +57,7 @@ export const CardWalletBalanceWithdrawScreen = () => {
                         })}
                         amount={amount}
                         amountTestID='card-wallet-balance-withdraw-amount'
+                        balanceTestID='card-wallet-balance-withdraw-balance'
                         chip={<PWText variant='bodyLarge'>USDC</PWText>}
                     />
                 </PWView>
