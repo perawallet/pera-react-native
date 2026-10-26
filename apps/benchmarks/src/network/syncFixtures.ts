@@ -26,6 +26,8 @@ const ALGO_TOTAL_SUPPLY = '10000000000000000'
 const FIXTURE_ROUND = 100
 const BASE_MIN_BALANCE_MICROALGOS = 100_000
 const NATIVE_BALANCE_MICROALGOS = 5_000_000_000
+// algod's MaxAPIResourcesPerAccount default: a full account read past it is a 400.
+const MAX_INLINE_RESOURCES = 1000
 
 const assetWire = (asset: PeraAsset) => {
     const collectible = asset.peraMetadata?.collectible
@@ -132,6 +134,73 @@ const peraBackendHandlers = (
     ]
 }
 
+/**
+ * An account read as algod and the indexer answer it: inline up to algod's
+ * resource cap and a 400 past it, `exclude=all` always, and the holdings paged
+ * from the indexer, which the app reads instead once the account it last
+ * stored reaches the cap.
+ */
+const accountReadHandlers = (
+    address: string,
+    held: readonly PeraAsset[],
+): RequestHandler[] => {
+    const holdings = held.map(asset => ({
+        'asset-id': Number(asset.assetId),
+        amount: asset.decimals === 0 ? 1 : 1000,
+        'is-frozen': false,
+    }))
+    // `exclude=all` drops the resource arrays but keeps every scalar.
+    const account = {
+        amount: NATIVE_BALANCE_MICROALGOS,
+        'amount-without-pending-rewards': NATIVE_BALANCE_MICROALGOS,
+        'min-balance': BASE_MIN_BALANCE_MICROALGOS * (held.length + 1),
+        'pending-rewards': 0,
+        rewards: 0,
+        round: FIXTURE_ROUND,
+        status: 'Offline' as const,
+        'apps-total-schema': { 'num-byte-slice': 0, 'num-uint': 0 },
+        'total-apps-opted-in': 0,
+        'total-assets-opted-in': held.length,
+        'total-created-apps': 0,
+        'total-created-assets': 0,
+    }
+    const isOverCap = held.length > MAX_INLINE_RESOURCES
+
+    return [
+        // Answers only what the next handler must not: returning nothing
+        // falls through to it.
+        http.get(`*/v2/accounts/${address}`, ({ request }) => {
+            const isExcludeAll =
+                new URL(request.url).searchParams.get('exclude') === 'all'
+            if (isExcludeAll) {
+                return HttpResponse.json({ ...account, address })
+            }
+            if (isOverCap) {
+                return HttpResponse.json(
+                    { message: 'MaxAPIResourcesPerAccount exceeded' },
+                    { status: 400 },
+                )
+            }
+            return undefined
+        }),
+        mockAlgodAccountInformation({
+            address,
+            response: { ...account, assets: holdings },
+        }),
+        http.get(`*/v2/accounts/${address}/assets`, ({ request }) => {
+            const params = new URL(request.url).searchParams
+            const limit = Number(params.get('limit') ?? MAX_INLINE_RESOURCES)
+            const start = Number(params.get('next') ?? 0)
+            const end = Math.min(start + limit, holdings.length)
+            return HttpResponse.json({
+                'current-round': FIXTURE_ROUND,
+                assets: holdings.slice(start, end),
+                ...(end < holdings.length && { 'next-token': String(end) }),
+            })
+        }),
+    ]
+}
+
 export type SyncFixtureOptions = {
     /** What the change signal answers: true makes every tick read every account. */
     refresh: boolean
@@ -145,33 +214,18 @@ export const syncFixtureHandlers = (
 ): RequestHandler[] => {
     const universe = benchAssets(scale.heavyAccountAssets)
 
-    const algodAccounts = wallet.accounts.flatMap((account, index) => {
+    const accountReads = wallet.accounts.flatMap((account, index) => {
         const address = account.chains.algorand?.address
         if (!address) return []
-        const held = assetsHeldBy(index, scale.assetsPerAccount, universe)
-        return [
-            mockAlgodAccountInformation({
-                address,
-                response: {
-                    amount: NATIVE_BALANCE_MICROALGOS,
-                    'amount-without-pending-rewards': NATIVE_BALANCE_MICROALGOS,
-                    'min-balance':
-                        BASE_MIN_BALANCE_MICROALGOS * (held.length + 1),
-                    round: FIXTURE_ROUND,
-                    assets: held.map(asset => ({
-                        'asset-id': Number(asset.assetId),
-                        amount: asset.decimals === 0 ? 1 : 1000,
-                        'is-frozen': false,
-                    })),
-                    'total-assets-opted-in': held.length,
-                },
-            }),
-        ]
+        return accountReadHandlers(
+            address,
+            assetsHeldBy(index, scale.assetsPerAccount, universe),
+        )
     })
 
     return [
         mockShouldRefresh({ response: { refresh, round: FIXTURE_ROUND } }),
-        ...algodAccounts,
+        ...accountReads,
         ...peraBackendHandlers(universe),
         ...(wallet.chainIds.length > 1
             ? [...peraEvmHandlers(), ...evmRpcHandlers()]
