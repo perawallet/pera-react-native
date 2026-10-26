@@ -67,15 +67,22 @@ Open Opt In Sheet
         IF    not ${there}
             # Already on the results; the remote lookup re-renders, so wait for the row to come
             # back rather than reopening the search for one specific asset id.
-            Run Keyword And Ignore Error
+            ${back}=    Run Keyword And Return Status
             ...    Wait Until Page Contains Element    ${result}    timeout=20s
+            VAR    ${there}    ${back}
         END
         # Being in the tree is not being on screen. A result below the fold is still found by
         # Page Should Contain Element, and Click Element then taps where the row is not - which is
         # why three attempts miss identically. Which position USDC takes depends on what the remote
         # lookup returns, so it is only sometimes off screen. Scroll once a tap has already failed,
         # to leave the ordinary path exactly as it was.
-        IF    ${i} > 0    Run Keyword And Ignore Error    Scroll Into View    ${asset_id}
+        #
+        # Only when the row is in the tree. UiScrollable hunts by flinging the first scrollable, and
+        # a downward fling on a bottom sheet dismisses it: asked for a row the lookup had dropped, it
+        # scrolled the sheet away and left the run on Home, where every later locator was missing for
+        # a reason that had nothing to do with the case. Nothing is on screen that is not in the
+        # tree, so there is never a reason to scroll for an absent row.
+        IF    ${i} > 0 and ${there}    Run Keyword And Ignore Error    Scroll Into View    ${asset_id}
         Run Keyword And Ignore Error    Tap    ${result}
         ${open}=    Run Keyword And Return Status
         ...    Wait Until Page Contains Element    ${OPT_IN_CONFIRM}    timeout=5s
