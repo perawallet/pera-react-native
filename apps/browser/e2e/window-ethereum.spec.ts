@@ -22,13 +22,9 @@ import {
     type Page,
 } from '@playwright/test'
 import http from 'node:http'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-    configuredScopes,
-    getChainConfig,
-} from '@perawallet/wallet-core-config'
 import {
     openApprovalSurface,
     expectApprovalSurfaceUrl,
@@ -39,8 +35,11 @@ import {
 } from './approval-surface'
 import { settlePinPrompt } from './pin-prompt'
 import {
+    E2E_EVM_RPC_PORT,
+    E2E_EVM_RPC_URL,
     createFakeEvmNode,
     evmTxHashOf,
+    serveFakeEvmNode,
     type FakeEvmNode,
 } from './fixtures/fake-evm-node.mjs'
 
@@ -57,6 +56,20 @@ const servesEvm = readFileSync(
     path.join(dist, 'content-inject-main.js'),
     'utf8',
 ).includes('eip6963:announceProvider')
+
+// Every EVM RPC URL the bundle baked, from the esbuild surfaces and the
+// exported UI chunks alike (the offscreen document runs the latter).
+const bakedEvmRpcUrls = (): string[] =>
+    readdirSync(dist, { recursive: true, withFileTypes: true })
+        .filter(entry => entry.isFile() && entry.name.endsWith('.js'))
+        .flatMap(entry =>
+            [
+                ...readFileSync(
+                    path.join(entry.parentPath, entry.name),
+                    'utf8',
+                ).matchAll(/\b\w+RpcUrl\s*:\s*["']([^"']*)["']/g),
+            ].map(([, url]) => url),
+        )
 
 test.describe.configure({ mode: 'serial' })
 
@@ -83,6 +96,17 @@ test.beforeAll(async () => {
     // http:// is a secure context only on localhost, where the content
     // scripts are declared.
     dappOrigin = `http://localhost:${port}`
+
+    const realNodes = [...new Set(bakedEvmRpcUrls())].filter(
+        url => url !== E2E_EVM_RPC_URL,
+    )
+    if (realNodes.length > 0) {
+        throw new Error(
+            `dist bakes EVM RPC URLs other than the e2e fake node: ${realNodes.join(', ')}. ` +
+                'Playwright cannot route the offscreen document, so a real node would be reached. ' +
+                'Rebuild with: pnpm --filter browser bundle:e2e',
+        )
+    }
 
     context = await chromium.launchPersistentContext('', {
         channel: 'chromium',
@@ -224,39 +248,28 @@ test('the provider answers EIP-1193 requests with no connection yet', async () =
     await page.close()
 })
 
-// Signing from a connected site, through the real approval surface. Every EVM
-// RPC URL this build was configured with (the config package reads the same
-// generated env the bundle did) is routed to fixtures/fake-evm-node.mjs. The
-// node is called from extension pages (the wallet tab, and the approval
-// surface that builds and broadcasts the transaction), which `context.route`
-// covers, so nothing signed here leaves the machine.
+// Signing from a connected site, through the real approval surface. The
+// bundle bakes one EVM RPC URL, the localhost server in
+// fixtures/fake-evm-node.mjs, so nothing signed here leaves the machine, from
+// whichever extension page makes the call.
 test.describe('signing from a connected dApp', () => {
     const PASSWORD = 'e2e-window-ethereum-password-1'
     // The same wait walletconnect.spec.ts gives a wrongly-surfaced approval.
     const NO_APPROVAL_WAIT_MS = 3000
+    // OFFSCREEN_POLL_INTERVAL_MS in src/offscreen/runOffscreenApp.ts, which is
+    // not exported: importing it would pull the offscreen runtime into the spec.
+    const OFFSCREEN_POLL_INTERVAL_MS = 30_000
+    const OFFSCREEN_SLACK_MS = 5000
 
     let extensionId: string
     let walletPage: Page
     let dappPage: Page
     let node: FakeEvmNode
+    let nodeServer: Awaited<ReturnType<typeof serveFakeEvmNode>> | undefined
     let address: string
     let hexChainId: string
 
     type Outcome = { result?: unknown; code?: number; message?: string }
-
-    const evmRpcUrls = (): string[] =>
-        configuredScopes()
-            .filter(scope => scope.chainId !== 'algorand')
-            .flatMap(scope => {
-                try {
-                    const { rpcUrl } = getChainConfig(scope) as {
-                        rpcUrl?: string
-                    }
-                    return rpcUrl ? [rpcUrl] : []
-                } catch {
-                    return []
-                }
-            })
 
     // Started in the page and read back by key: a request that waits on an
     // approval can't be awaited inside one evaluate while the test drives it.
@@ -333,19 +346,7 @@ test.describe('signing from a connected dApp', () => {
     test.beforeAll(async () => {
         test.skip(!servesEvm, 'this dist serves no EVM chain')
         node = createFakeEvmNode()
-        const rpcUrls = evmRpcUrls()
-        // With no URL routed, the wallet would reach a real node.
-        expect(rpcUrls.length).toBeGreaterThan(0)
-        await context.route(
-            url => rpcUrls.some(rpcUrl => url.href.startsWith(rpcUrl)),
-            route =>
-                route.fulfill({
-                    contentType: 'application/json',
-                    body: JSON.stringify(
-                        node.respond(route.request().postDataJSON()),
-                    ),
-                }),
-        )
+        nodeServer = await serveFakeEvmNode(node, { port: E2E_EVM_RPC_PORT })
 
         let [serviceWorker] = context.serviceWorkers()
         if (!serviceWorker) {
@@ -403,6 +404,10 @@ test.describe('signing from a connected dApp', () => {
         await startRequest('chainId', { method: 'eth_chainId' })
         hexChainId = (await outcomeOf('chainId')).result as string
         node.setChainId(Number(BigInt(hexChainId)))
+    })
+
+    test.afterAll(async () => {
+        await nodeServer?.close()
     })
 
     test('a connected dApp sends a transaction and gets the hash back', async () => {
@@ -521,5 +526,23 @@ test.describe('signing from a connected dApp', () => {
                 .pages()
                 .some(candidate => candidate.url().includes('approval.html')),
         ).toBe(false)
+    })
+
+    // Last, because it closes the wallet tab the earlier tests drive. The
+    // service worker makes no EVM RPC, so with only the dApp page open the
+    // offscreen document's sync is the one caller left.
+    test("the offscreen document's RPC reaches the fake node", async () => {
+        for (const page of context.pages()) {
+            if (page !== dappPage) {
+                await page.close().catch(() => {})
+            }
+        }
+        node.methods.length = 0
+
+        await expect
+            .poll(() => node.methods.length, {
+                timeout: OFFSCREEN_POLL_INTERVAL_MS + OFFSCREEN_SLACK_MS,
+            })
+            .toBeGreaterThan(0)
     })
 })

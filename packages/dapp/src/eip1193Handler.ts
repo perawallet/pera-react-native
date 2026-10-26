@@ -18,6 +18,7 @@ import type {
 import {
     dappRequestChainAdapters,
     dappRequestFailureOf,
+    isDappUserRejection,
     MAX_PENDING_REQUESTS_PER_PEER,
     type ConnectionHandler,
     type ConnectionProposal,
@@ -90,6 +91,7 @@ type QueuedRequest = {
     timer: ReturnType<typeof setTimeout>
     isAnswered: boolean
     isRaising: boolean
+    isCommitted: boolean
     raised?: { connectionId: ConnectionId; correlationId: string }
 }
 
@@ -100,10 +102,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isSameList = (a: readonly string[], b: readonly string[]): boolean =>
     a.length === b.length && a.every((item, index) => item === b[index])
-
-const isUserRejection = (error: Error): boolean =>
-    error.name === 'UserCancelledError' ||
-    dappRequestFailureOf(error) === 'user-rejected'
 
 // Both lists must name it: the chains' v2 tables decide what asks the user,
 // and the page gives only the named ones a backstop long enough to wait.
@@ -494,6 +492,14 @@ export const createEip1193ConnectionHandler = (
         return delivered
     }
 
+    // Its broadcast is underway, so only the broadcast's own outcome may
+    // answer it: no expiry, and no revoke.
+    const commitQueued = (entry: QueuedRequest): void => {
+        if (entry.isAnswered) return
+        entry.isCommitted = true
+        disarm(entry)
+    }
+
     // A user who declines one request has answered for the site's backlog
     // too, so a burst costs one Reject rather than one each.
     const rejectSiteQueue = (
@@ -619,7 +625,7 @@ export const createEip1193ConnectionHandler = (
                 await finishQueued(entry, jsonRpcResult(request.id, null))
             },
             reject: async error => {
-                if (isUserRejection(error)) {
+                if (isDappUserRejection(error)) {
                     await rejectSiteQueue(
                         entry,
                         jsonRpcError(
@@ -664,9 +670,8 @@ export const createEip1193ConnectionHandler = (
             )
         }
 
-        // On screen the window owns the lifetime, so the queue TTL stops here.
-        // The approval TTL only frees the site's queue if the window's answer
-        // is lost (a restarted service worker forgets it).
+        // On screen the window owns the lifetime; the approval TTL only frees
+        // a queue whose answer was lost.
         armOnScreen(entry, connection.id, correlationId, approvalTtlMs)
         requireContext().onMessage({
             kind: 'request',
@@ -678,6 +683,7 @@ export const createEip1193ConnectionHandler = (
             peer: connection.peer,
             verifiedOrigin: ctx.origin,
             rawOperation: operation,
+            commit: () => commitQueued(entry),
             // Answered before delivery, unlike `handleSign`: a sent
             // transaction is already on chain, so a result for a closed tab
             // is dropped, not retried.
@@ -708,7 +714,7 @@ export const createEip1193ConnectionHandler = (
                 await finishQueued(entry, jsonRpcResult(request.id, wire))
             },
             reject: async error => {
-                if (isUserRejection(error)) {
+                if (isDappUserRejection(error)) {
                     await rejectSiteQueue(
                         entry,
                         jsonRpcError(
@@ -833,6 +839,7 @@ export const createEip1193ConnectionHandler = (
             }, requestTtlMs),
             isAnswered: false,
             isRaising: false,
+            isCommitted: false,
         }
         pendingTimers.add(entry.timer)
         queue.push(entry)
@@ -882,6 +889,7 @@ export const createEip1193ConnectionHandler = (
             if (eip1193ConnectionIdOf(origin) !== id) continue
             siteQueues.delete(origin)
             for (const entry of queue) {
+                if (entry.isCommitted) continue
                 const { raised } = entry
                 void answerQueued(
                     entry,

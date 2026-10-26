@@ -94,6 +94,15 @@ export const dappRequestFailureOf = (
     return DAPP_REQUEST_FAILURES.find(known => known === failure)
 }
 
+/**
+ * Only this may answer a dApp with its user-rejected code: an EIP-1193 site
+ * clears its whole approval queue on that answer. `UserCancelledError` is the
+ * signing pipeline's, matched by name for the same reason as above.
+ */
+export const isDappUserRejection = (error: Error): boolean =>
+    error.name === 'UserCancelledError' ||
+    dappRequestFailureOf(error) === 'user-rejected'
+
 export type DappSigningParamsResult =
     | { ok: true; payload: unknown }
     | { ok: false; reason: 'missing' | 'out-of-bounds'; message: string }

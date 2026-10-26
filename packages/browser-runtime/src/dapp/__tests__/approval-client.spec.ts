@@ -12,10 +12,16 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    DappRequestFailedError,
+    DappRequestRejectedError,
+} from '@perawallet/wallet-core-connections/dappRequest'
+import {
     APPROVAL_POPUP_PORT_PREFIX,
     DAPP_APPROVAL_SCOPE,
 } from '../approval-bridge'
 import {
+    ApprovalDeliveryError,
+    declineConnectionRequest,
     getCurrentApproval,
     getPendingApproval,
     failConnectionRequest,
@@ -23,6 +29,7 @@ import {
     rejectPasskey,
     resolveApproval,
     resolvePasskey,
+    submitConnectionRequest,
 } from '../approval-client'
 
 const sendMessage = vi.fn()
@@ -120,6 +127,95 @@ describe('failConnectionRequest', () => {
             requestId: 'q1',
             failure: 'unauthorized-account',
         })
+    })
+})
+
+describe('declineConnectionRequest', () => {
+    it('sends reject-approval for a user rejection', async () => {
+        sendMessage.mockResolvedValue({ ok: true })
+        const cancelled = new Error('cancelled')
+        cancelled.name = 'UserCancelledError'
+
+        await declineConnectionRequest('q1', new DappRequestRejectedError())
+        await declineConnectionRequest('q2', cancelled)
+
+        expect(sendMessage).toHaveBeenNthCalledWith(1, {
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'reject-approval',
+            requestId: 'q1',
+        })
+        expect(sendMessage).toHaveBeenNthCalledWith(2, {
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'reject-approval',
+            requestId: 'q2',
+        })
+    })
+
+    it('sends fail-connection-request with the failure kind otherwise', async () => {
+        sendMessage.mockResolvedValue({ ok: true })
+
+        await declineConnectionRequest(
+            'q1',
+            new DappRequestFailedError('bad params', 'invalid-params'),
+        )
+        await declineConnectionRequest('q2', new Error('execution reverted'))
+
+        expect(sendMessage).toHaveBeenNthCalledWith(1, {
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'fail-connection-request',
+            requestId: 'q1',
+            failure: 'invalid-params',
+        })
+        expect(sendMessage).toHaveBeenNthCalledWith(2, {
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'fail-connection-request',
+            requestId: 'q2',
+            failure: undefined,
+        })
+    })
+})
+
+describe('submitConnectionRequest', () => {
+    const SIGNED = [
+        {
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            id: '0xabc',
+            bytes: new Uint8Array([1, 2, 3]),
+        },
+    ] as const
+
+    it('sends the encoded transactions and returns the outcome', async () => {
+        sendMessage.mockResolvedValueOnce({
+            ok: true,
+            outcome: { ok: true, txId: '0xabc' },
+        })
+
+        const outcome = await submitConnectionRequest('q1', SIGNED)
+
+        expect(sendMessage).toHaveBeenCalledWith({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'submit-connection-request',
+            requestId: 'q1',
+            signedTransactions: [
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    id: '0xabc',
+                    bytes: 'AQID',
+                },
+            ],
+        })
+        expect(outcome).toEqual({ ok: true, txId: '0xabc' })
+    })
+
+    it('throws ApprovalDeliveryError when the bridge refuses', async () => {
+        sendMessage.mockResolvedValueOnce({
+            ok: false,
+            error: 'unknown request',
+        })
+
+        await expect(
+            submitConnectionRequest('q1', SIGNED),
+        ).rejects.toBeInstanceOf(ApprovalDeliveryError)
     })
 })
 

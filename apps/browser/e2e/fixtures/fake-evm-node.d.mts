@@ -16,6 +16,8 @@ export type FakeEvmNode = {
     /** Every `eth_sendRawTransaction` payload, in arrival order. */
     rawTransactions: string[]
     unansweredMethods: string[]
+    /** Every JSON-RPC method received, in arrival order. */
+    methods: string[]
     setChainId: (chainId: number) => void
     respond: (body: unknown) => unknown
 }
@@ -23,3 +25,11 @@ export type FakeEvmNode = {
 export declare const evmTxHashOf: (raw: string) => string
 
 export declare const createFakeEvmNode: () => FakeEvmNode
+
+export declare const E2E_EVM_RPC_PORT: number
+export declare const E2E_EVM_RPC_URL: string
+
+export declare const serveFakeEvmNode: (
+    node: FakeEvmNode,
+    options: { port: number },
+) => Promise<{ url: string; close: () => Promise<void> }>

@@ -13,6 +13,7 @@
 import {
     BaseError,
     bytesToHex,
+    getAddress,
     keccak256,
     parseTransaction,
     recoverTransactionAddress,
@@ -36,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { EvmErrorCode, evmErrorCodeOf, toEvmError } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
+import { ethereumCallSummary } from '../signing/review'
 
 // Nodes word a resend of a pooled transaction differently.
 const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
@@ -151,6 +153,27 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
  * no answer still holds its nonce. A ledger write failure never blocks the
  * send.
  */
+/** The entry the send's build put on its unsigned transaction, read back from the signed bytes. */
+export const historyEntryOfSigned = async (
+    serializedTransaction: TransactionSerialized,
+    chain: EvmChain,
+): Promise<SubmissionHistoryEntry> => {
+    const { to, value, data } = parseTransaction(serializedTransaction)
+    const from = await recoverTransactionAddress({ serializedTransaction })
+    return {
+        summary: ethereumCallSummary(
+            {
+                from,
+                to: to == null ? undefined : getAddress(to),
+                value: value ?? 0n,
+                data: data ?? '0x',
+            },
+            chain,
+        ),
+        chainData: { family: 'evm' },
+    }
+}
+
 export const submitAndRecordEthereumTransactions = async ({
     client,
     chain,

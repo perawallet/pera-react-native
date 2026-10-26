@@ -16,14 +16,17 @@ import {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_EVENT_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
+    decodeSignedTransactions,
     decodeWalletOperation,
     decodeWalletOperationResult,
+    encodeSignedTransactions,
     encodeWalletOperation,
     encodeWalletOperationResult,
     isConnectionApprovalRequestMessage,
     isConnectionsAck,
     isConnectionsControlMessage,
     isConnectionsEventMessage,
+    isWireSignedTransactions,
     isWireWalletOperation,
     isWireWalletOperationResult,
 } from '../protocol'
@@ -33,6 +36,33 @@ const PEER = { name: 'dApp', url: 'https://dapp.example', icons: [] }
 // JSON.parse(JSON.stringify(...)) is what chrome.runtime.sendMessage does to
 // a payload, so a round trip through it is the real test of "wire-safe".
 const overTheWire = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+describe('signed transactions wire codec', () => {
+    it('round-trips signed transactions through the wire', () => {
+        const signed = [
+            { scope: SCOPE, id: '0xabc', bytes: new Uint8Array([1, 2, 3]) },
+        ]
+
+        const wire = overTheWire(encodeSignedTransactions(signed))
+
+        expect(isWireSignedTransactions(wire)).toBe(true)
+        expect(decodeSignedTransactions(wire)).toEqual(signed)
+    })
+
+    it('refuses an empty list, non-string bytes and a scope without networkId', () => {
+        expect(isWireSignedTransactions([])).toBe(false)
+        expect(
+            isWireSignedTransactions([{ scope: SCOPE, id: '0xabc', bytes: 1 }]),
+        ).toBe(false)
+        expect(
+            isWireSignedTransactions([
+                { scope: { chainId: 'ethereum' }, id: '0xabc', bytes: 'AQID' },
+            ]),
+        ).toBe(false)
+    })
+})
 
 describe('wallet operation wire codec', () => {
     it('round-trips a sign-transactions group unchanged', () => {
@@ -326,6 +356,31 @@ describe('isConnectionsControlMessage', () => {
         expect(isConnectionsControlMessage(withFailure('user-rejected'))).toBe(
             false,
         )
+    })
+
+    it('accepts a well-formed submit-send and refuses one without correlationId or with malformed transactions', () => {
+        const submitSend = (fields: Record<string, unknown>) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'submit-send',
+            connectionId: 'c1',
+            correlationId: '7',
+            signedTransactions: [
+                { scope: SCOPE, id: '0xabc', bytes: 'AQID' },
+            ],
+            ...fields,
+        })
+
+        expect(isConnectionsControlMessage(submitSend({}))).toBe(true)
+        expect(
+            isConnectionsControlMessage(
+                submitSend({ correlationId: undefined }),
+            ),
+        ).toBe(false)
+        expect(
+            isConnectionsControlMessage(
+                submitSend({ signedTransactions: [] }),
+            ),
+        ).toBe(false)
     })
 
     it('rejects another scope, an unknown kind and a non-object', () => {

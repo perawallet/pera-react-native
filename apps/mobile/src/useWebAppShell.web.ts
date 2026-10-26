@@ -172,10 +172,9 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         }
         bootstrap().catch(error => {
             logger.error('Web shell bootstrap failed', { error })
-            const readiness = useDatabaseReadinessStore.getState()
-            if (readiness.readiness === 'pending') {
-                readiness.setReadiness('failed')
-            }
+            const { readiness, setReadiness } =
+                useDatabaseReadinessStore.getState()
+            if (readiness === 'pending') setReadiness('failed')
             setHasBootstrapError(true)
         })
     }, [isUnlocked])

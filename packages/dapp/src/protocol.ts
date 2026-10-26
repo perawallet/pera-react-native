@@ -47,11 +47,8 @@ export const isDappProvider = (value: unknown): value is DappProvider =>
 // the 8 s pairing budget WalletConnect uses for its handshake.
 export const DAPP_PROPOSAL_TTL_MS = 5 * 60_000
 export const DAPP_REQUEST_TTL_MS = 5 * 60_000
-// How long an EIP-1193 signing request may stay on screen. Only a lost
-// approval window should reach it: expiring sooner could withdraw the window
-// under a broadcast that still goes out. Kept under the approval bridge's
-// service-worker keepalive, so the window is withdrawn before an idled worker
-// can drop an Approve whose send has already gone out.
+// How long an EIP-1193 request may stay on screen; docs/DAPP_BRIDGE.md
+// (Timeouts) says why it stays under the approval bridge's keepalive.
 export const DAPP_APPROVAL_TTL_MS = 14 * 60_000
 // Page-side backstops; strictly longer than the handler's own expiry so the
 // handler's terminal answer always wins when both are racing. A queued

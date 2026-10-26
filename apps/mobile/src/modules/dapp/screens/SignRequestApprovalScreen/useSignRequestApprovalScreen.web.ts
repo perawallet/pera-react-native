@@ -21,19 +21,21 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { AppError } from '@perawallet/wallet-core-shared'
 import {
-    dappRequestFailureOf,
     enqueueInboundRequest,
     isConnectionAlive,
     useChainTransactionSigning,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
+    declineConnectionRequest,
     decodeWalletOperation,
     encodeWalletOperationResult,
     failConnectionRequest,
-    rejectApproval,
+    rebuildWireError,
     resolveConnectionRequest,
+    submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useLanguage } from '@hooks/useLanguage'
@@ -54,18 +56,11 @@ const describeSignError = (e: unknown, t: (key: string) => string): string => {
     if (e instanceof GenesisHashMismatchError) {
         return t('dapp.sign.network_mismatch')
     }
-    return t('dapp.sign.error.body')
-}
-
-// Only the user's own decline may reach the dApp as a rejection: a page
-// clears its whole queue on that answer, and every other transport answers
-// a wallet-side failure with the chain's failure code instead.
-const declineApproval = (requestId: string, error: Error): Promise<void> => {
-    const failure = dappRequestFailureOf(error)
-    if (failure === 'user-rejected' || error.name === 'UserCancelledError') {
-        return rejectApproval(requestId)
+    // A broadcast the host ran comes back with its chain's own copy.
+    if (e instanceof AppError && e.metadata.messageKey) {
+        return t(e.metadata.messageKey)
     }
-    return failConnectionRequest(requestId, failure)
+    return t('dapp.sign.error.body')
 }
 
 export const useSignRequestApprovalScreen =
@@ -136,7 +131,7 @@ export const useSignRequestApprovalScreen =
                     window.close()
                 },
                 reject: async error => {
-                    await declineApproval(requestId, error)
+                    await declineConnectionRequest(requestId, error)
                     window.close()
                 },
             }
@@ -153,6 +148,22 @@ export const useSignRequestApprovalScreen =
                 confirmNetworkSwitch,
                 // Keep the window open so the reason is readable.
                 onError: err => setError(describeSignError(err, t)),
+                // The host broadcasts and answers the dApp, so closing this
+                // window mid-send can no longer change what the dApp hears.
+                submitSignedSend: async signed => {
+                    const outcome = await submitConnectionRequest(
+                        requestId,
+                        signed,
+                    )
+                    if (!outcome.ok) {
+                        return {
+                            status: 'failed',
+                            error: rebuildWireError(outcome),
+                        }
+                    }
+                    window.close()
+                    return { status: 'submitted', txId: outcome.txId }
+                },
             })
         }, [
             requestId,

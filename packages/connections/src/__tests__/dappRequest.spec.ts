@@ -19,6 +19,7 @@ import {
     dappRelayableErrorNames,
     dappRequestChainAdapters,
     dappRequestFailureOf,
+    isDappUserRejection,
     type DappRequestChainAdapter,
 } from '../dappRequest'
 
@@ -139,5 +140,21 @@ describe('dappRequestFailureOf', () => {
                 Object.assign(new Error('boom'), { failure: 'x' }),
             ),
         ).toBeUndefined()
+    })
+})
+
+describe('isDappUserRejection', () => {
+    it('treats a DappRequestRejectedError and a UserCancelledError as the user declining, and nothing else', () => {
+        const cancelled = new Error('cancelled')
+        cancelled.name = 'UserCancelledError'
+
+        expect(isDappUserRejection(new DappRequestRejectedError())).toBe(true)
+        expect(isDappUserRejection(cancelled)).toBe(true)
+        expect(
+            isDappUserRejection(
+                new DappRequestFailedError('x', 'invalid-params'),
+            ),
+        ).toBe(false)
+        expect(isDappUserRejection(new Error('User rejected'))).toBe(false)
     })
 })

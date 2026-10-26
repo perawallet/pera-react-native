@@ -23,7 +23,13 @@ import {
 import { http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
-import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
+import {
+    getAddress,
+    hexToBytes,
+    keccak256,
+    parseTransaction,
+    type RpcTransaction,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
@@ -51,6 +57,7 @@ import {
 } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import { ethereumCallSummary } from '../../signing/review'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 import { submitEthereumTransactions } from '../submission'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -112,6 +119,72 @@ describe('Ethereum broadcaster adapter', () => {
     })
 
     const rows = () => db.select().from(SubmissionAttemptsSchema).all()
+
+    describe('submitAndAutoRefresh', () => {
+        const SIGNED = [{ scope: SCOPE, id: HASH, bytes: BYTES }]
+
+        it('records the attempt with the call’s history entry and resolves with the hash', async () => {
+            useRpc()
+            const parsed = parseTransaction(VIEM_TRANSFER_NONCE_0)
+
+            const txIds = await adapter.submitAndAutoRefresh(SCOPE, SIGNED)
+
+            expect(txIds).toEqual([HASH])
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: SCOPE,
+            })
+            expect(attempt!.historyEntry).toEqual({
+                summary: ethereumCallSummary(
+                    {
+                        from: SENDER,
+                        to: getAddress(parsed.to!),
+                        value: parsed.value ?? 0n,
+                        data: parsed.data ?? '0x',
+                    },
+                    ETHEREUM,
+                ),
+                chainData: { family: 'evm' },
+                fee: new Decimal('420000000000000'),
+            })
+            expect(await getOpenSubmissionAttempts({ db })).toMatchObject([
+                { txIds: [HASH], flow: 'pipeline', sender: SENDER },
+            ])
+        })
+
+        it('marks a node refusal failed and rethrows it', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).rejects.toMatchObject({ classification: 'rejected-by-node' })
+            expect(await rows()).toMatchObject([{ status: 'failed' }])
+        })
+
+        it('submits to the scope it is given, not the selected network', async () => {
+            useRpc()
+            const onSepolia = createEvmBroadcasterAdapter(
+                {
+                    ...testChainContext(),
+                    getScope: () => ({
+                        chainId: 'ethereum',
+                        networkId: 'sepolia',
+                    }),
+                },
+                ETHEREUM,
+            )
+
+            const txIds = await onSepolia.submitAndAutoRefresh(SCOPE, SIGNED)
+
+            expect(txIds).toEqual([HASH])
+            expect(await rows()).toMatchObject([{ scope: 'ethereum/mainnet' }])
+        })
+    })
 
     describe('submit transport', () => {
         it('records an open pipeline row with the nonce and sender, then returns the hash', async () => {
@@ -366,12 +439,6 @@ describe('Ethereum broadcaster adapter', () => {
                 classification: 'unknown-outcome',
                 metadata: { retryable: true },
             })
-        })
-
-        it('refuses submitAndAutoRefresh, which takes the Algorand envelope', async () => {
-            await expect(
-                adapter.submitAndAutoRefresh(SCOPE, []),
-            ).rejects.toThrow(/createSubmitTransport/)
         })
 
         it('has nothing to check for an unsigned request', async () => {

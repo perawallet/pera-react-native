@@ -17,6 +17,7 @@ import {
     sendConnectionsControlMessage,
     type ApprovalWindowBridge,
     type ConnectionRequestDecision,
+    type ConnectionRequestSubmitted,
     type ConnectionsAck,
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-core-browser-runtime'
@@ -47,7 +48,10 @@ type RespondOutcome = Extract<
 // Only `null` (the user's Reject, or closing the surface) may tell the dApp
 // the user declined: a page clears its whole queue on that answer.
 const toRespondOutcome = (
-    decision: Exclude<ConnectionRequestDecision, typeof APPROVAL_WITHDRAWN>,
+    decision: Exclude<
+        ConnectionRequestDecision,
+        typeof APPROVAL_WITHDRAWN | ConnectionRequestSubmitted
+    >,
 ): RespondOutcome => {
     if (decision === null) {
         return {
@@ -123,6 +127,48 @@ export const installConnectionsApprovalRouter = ({
                     '[pera] delivery-failure notice failed to open:',
                     error,
                 )
+            })
+    }
+
+    // The approval surface shows this outcome, so a failure goes back to it
+    // rather than to a delivery-failed notice.
+    const submitSend = (
+        connectionId: string,
+        correlationId: string,
+        { submitted, reportOutcome }: ConnectionRequestSubmitted,
+    ): void => {
+        sendConnectionsControlMessage(
+            {
+                kind: 'submit-send',
+                connectionId,
+                correlationId,
+                signedTransactions: submitted,
+            },
+            {
+                chromeLike,
+                ensureHost: () => ensureOffscreenDocumentLike(),
+            },
+        )
+            .then(result => {
+                if ('failure' in result) {
+                    reportOutcome({ ok: false, ...result.failure })
+                    return
+                }
+                const [txId] = result.txIds
+                reportOutcome(
+                    txId === undefined
+                        ? {
+                              ok: false,
+                              name: 'Error',
+                              message: 'The node returned no transaction id',
+                          }
+                        : { ok: true, txId },
+                )
+            })
+            .catch((error: unknown) => {
+                const { name, message } =
+                    error instanceof Error ? error : new Error(String(error))
+                reportOutcome({ ok: false, name, message })
             })
     }
 
@@ -206,6 +252,14 @@ export const installConnectionsApprovalRouter = ({
                             // the request; posting a decision now would only
                             // raise a spurious delivery-failure notice.
                             if (decision === APPROVAL_WITHDRAWN) return
+                            if (decision && 'submitted' in decision) {
+                                submitSend(
+                                    connectionId,
+                                    correlationId,
+                                    decision,
+                                )
+                                return
+                            }
                             controlOrNotify(
                                 {
                                     kind: 'respond',

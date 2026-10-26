@@ -16,6 +16,9 @@ const evmTooling = createRequire(import.meta.url)(
     '../../../tools/dev/evm-config-keys.cjs',
 )
 
+const evmRpcUrlKeys = () =>
+    evmTooling.evmScopeConfigKeys().map(keys => keys.rpcUrlKey)
+
 /** Every EVM config key generate-config.sh can bake, from the network table. */
 const evmConfigKeys = () => [
     ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesKey),
@@ -146,3 +149,39 @@ export const assertWebConfigAllowlisted = generatedEnvSource => {
         )
     }
 }
+
+/**
+ * The channel a generated-env.ts bakes. generate-config.sh leaves an unset
+ * APP_ENV out, which config reads as development.
+ */
+export const bakedAppEnvironment = generatedEnvSource =>
+    generatedEnvSource.match(/appEnvironment:\s*"([^"]+)"/)?.[1] ??
+    'development'
+
+/**
+ * Throws unless the build is a development one. Staging and production are
+ * the channels a release or store zip is built on, and an extension that
+ * baked a localhost node would have no working EVM chain for its users.
+ */
+export const assertE2eEvmRpcOverrideAllowed = appEnvironment => {
+    if (appEnvironment !== 'development') {
+        throw new Error(
+            `PERA_E2E_EVM_RPC_URL is set on a ${appEnvironment} build; ` +
+                'it exists for the e2e bundle, which is a development build',
+        )
+    }
+}
+
+/**
+ * Points every EVM RPC URL a generated-env.ts bakes at `url`, so an e2e bundle
+ * holds no real node. Only keys that already have a value change: a chain the
+ * build does not ship is not added, and one it ships is not dropped.
+ */
+export const overrideEvmRpcUrls = (generatedEnvSource, url) =>
+    generatedEnvSource.replace(
+        new RegExp(
+            `^(\\s+(?:${evmRpcUrlKeys().join('|')}):\\s*)"(?:[^"\\\\]|\\\\.)*"`,
+            'gm',
+        ),
+        (_entry, key) => `${key}${JSON.stringify(url)}`,
+    )

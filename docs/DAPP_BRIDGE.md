@@ -251,36 +251,65 @@ selection. The chains on offer are the `eip155` chain adapters with
 `dappConnect` on; a network the wallet hasn't selected answers 4902, and
 `wallet_addEthereumChain` is refused.
 
-Any other method is routed through the site's chain's WalletConnect v2 route
-table (`walletConnect.v2.handleRequest` on its `dapp-request` adapter), so a
-page gets the same signing methods, review and refusals as a WalletConnect
-session: `eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go
-to the approval as `sourceType: 'injected'`, and a route the chain refuses is
-answered with its error unchanged. Everything else answers 4200, a signing
-request from a site with no connection 4100, and a connection whose chain is no
-longer served 4901. Signing requests and chain switches from one site, across
-all its tabs, wait in one queue and reach the approval one at a time, so a page
-cannot bury the user under prompts, and a switch can never move the site's chain
-under a request already on screen: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
--32005, rejecting the one on screen answers the rest 4001, revoking the site
-answers every one 4100 (the approval window only withdraws its own), and one
-still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A request on
-screen is answered by its window; `DAPP_APPROVAL_TTL_MS` (14 minutes) expires it
-only so a window whose answer was lost, such as one a restarted service worker
-forgot, cannot hold the site's queue forever, since an earlier expiry could
-close the window under a broadcast that still goes out. It stays under the
-approval bridge's `APPROVAL_KEEPALIVE_MAX_MS`, so the window is withdrawn while
-the service worker is still alive to hear its answer. A switch on screen keeps
-`DAPP_REQUEST_TTL_MS`, since it broadcasts nothing. The page's backstop for the
-queued methods (`EIP1193_QUEUED_METHODS`) is both TTLs plus ten seconds, and the
-handler queues only signing methods on `EIP1193_SIGNING_METHODS`, so a chain
-that adds a signing method answers 4200 until the list names it. The connection, chain and granted
-accounts are read when a request reaches the approval, not when it arrives.
+### Routing
 
-Only the user's Reject, or closing the approval, answers 4001. The approval
-window sends any other refusal (a build the node rejects, a grant revoked while
-it was open) as `fail-connection-request`, which answers just that request with
-the chain's code for its failure kind, or -32603, and the queue moves on.
+Any other method goes through the site's chain's WalletConnect v2 route table
+(`walletConnect.v2.handleRequest` on its `dapp-request` adapter), so a page gets
+the same signing methods, review and refusals as a WalletConnect session.
+`eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go to the
+approval as `sourceType: 'injected'`, a route the chain refuses is answered with
+its error unchanged, and everything else answers 4200. The handler queues only
+the methods `EIP1193_SIGNING_METHODS` names, so a chain that adds a signing
+method answers 4200 until that list names it too.
+
+### Approval queue
+
+Signing requests and chain switches from one site, across all its tabs, wait in
+one queue and reach the approval one at a time, so a page cannot bury the user
+under prompts and a switch can never move the site's chain under a request
+already on screen. The connection, chain and granted accounts are read when a
+request reaches the approval, not when it arrives: a site with no connection
+then answers 4100, and a chain no longer served 4901.
+
+- Past `MAX_PENDING_REQUESTS_PER_PEER` pending, a request answers -32005.
+- Only the user's Reject, or closing the approval before a send is handed off,
+  answers 4001, and it answers every request queued behind it 4001 too. Any
+  other refusal from the window (a build the node rejects, a grant revoked while
+  it was open) travels as `fail-connection-request` and answers just that
+  request with the chain's code for its failure kind, or -32603.
+- Revoking the site answers every queued request 4100, except a send already
+  handed off.
+
+### Sends
+
+The approval window reviews and signs an `eth_sendTransaction` but never
+broadcasts it: a toolbar popup closes whenever it loses focus, and a send
+broadcast from it could land after the dApp was told no. Once signed, the window
+hands the transactions to the service worker as `submit-connection-request`,
+which settles the approval there and then, and the router forwards them to the
+offscreen document as `submit-send`. The offscreen host marks the request
+committed (`commit` on the inbound message), records and broadcasts it through
+the chain's `submitAndAutoRefresh`, and answers the dApp with the hash or the
+node's error. From the handoff on, no expiry, close or revoke answers the
+request; the window only shows the outcome. A window that dies before the
+handoff has sent nothing, so its decline is the truth.
+
+The one case this cannot cover is the offscreen document dying mid-broadcast:
+the attempt is recorded before it is sent, so the reconciler settles it, but the
+page hears only its own backstop.
+
+### Timeouts
+
+A request still queued `DAPP_REQUEST_TTL_MS` after it arrived answers -32603. A
+request on screen is answered by its window; `DAPP_APPROVAL_TTL_MS` expires it
+only so a window whose answer was lost, such as one a restarted service worker
+forgot, cannot hold the site's queue forever. Withdrawing before the handoff
+never loses a send, so the value is chosen for the user: it stays under the
+approval bridge's `APPROVAL_KEEPALIVE_MAX_MS`, so the window is withdrawn before
+the user can approve into an approval the worker has forgotten. A switch on
+screen keeps `DAPP_REQUEST_TTL_MS`. The page's backstop for the queued methods
+(`EIP1193_QUEUED_METHODS`) is both TTLs plus ten seconds; after an extension
+reload the content script answers 4900 at once instead.
 
 A revoked site, from the dApp (`wallet_revokePermissions`) or from Settings,
 gets `accountsChanged([])`, not `disconnect`, because EIP-1193 reserves

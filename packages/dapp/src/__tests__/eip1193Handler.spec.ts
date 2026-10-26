@@ -852,6 +852,75 @@ describe('createEip1193ConnectionHandler', () => {
             ).rejects.toThrow()
         })
 
+        it('a committed send outlives approvalTtlMs and is answered with its hash', async () => {
+            const { pending, message, messages } = await raise(
+                'eth_sendTransaction',
+            )
+
+            message.commit?.()
+            vi.advanceTimersByTime(60_001)
+            await flush()
+
+            expect(messages.map(({ kind }) => kind)).not.toContain(
+                'request-expired',
+            )
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            expect(resultOf(await pending)).toBe('0xabc')
+        })
+
+        it('revoking the site leaves a committed send to its broadcast', async () => {
+            const { pending, message, messages, registry, transport } =
+                await raise('eth_sendTransaction')
+            const queued = transport.send(ORIGIN, 'personal_sign', [
+                '0x68656c6c6f',
+                ADDR_X,
+            ])
+            await flush()
+            let isSettled = false
+            void pending.then(() => {
+                isSettled = true
+            })
+
+            message.commit?.()
+            await registry.disconnect(ID)
+            await flush()
+
+            expect(errorOf(await queued)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(isSettled).toBe(false)
+            expect(messages).not.toContainEqual(
+                expect.objectContaining({
+                    kind: 'request-expired',
+                    correlationId: message.correlationId,
+                }),
+            )
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            expect(resultOf(await pending)).toBe('0xabc')
+        })
+
+        it('committing an answered request leaves the next one’s expiry alone', async () => {
+            const { message, messages, transport } = await raise(
+                'eth_sendTransaction',
+            )
+            const next = transport.send(ORIGIN, 'personal_sign', [
+                '0x68656c6c6f',
+                ADDR_X,
+            ])
+            await flush()
+            await message.respond({ type: 'send-transaction', txId: '0xabc' })
+            await flush()
+
+            message.commit?.()
+            vi.advanceTimersByTime(60_001)
+            await flush()
+
+            expect(errorOf(await next)?.code).toBe(EIP1193_ERROR_CODE.internal)
+            expect(messages.filter(({ kind }) => kind === 'request')).toHaveLength(
+                2,
+            )
+        })
+
         it('answers a signing method no page backstop covers with 4200', async () => {
             const { transport, registry, messages } = setup([
                 connectedOn('ethereum'),

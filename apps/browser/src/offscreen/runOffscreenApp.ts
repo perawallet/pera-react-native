@@ -45,7 +45,10 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     bootConnections,
     createConnectionRegistry,
@@ -106,11 +109,14 @@ export type OffscreenAppDeps = {
     // Handed over by the web shell: apps/browser imports no apps/mobile code but the query client.
     registerChainAdapters: () => void
     onDatabaseReset: () => Promise<void>
+    /** The broadcaster registry lives in the signing package, which apps/browser doesn't import. */
+    submitSignedTransactions: (signed: SignedTransaction[]) => Promise<string[]>
 }
 
 export const runOffscreenApp = async ({
     registerChainAdapters,
     onDatabaseReset,
+    submitSignedTransactions,
 }: OffscreenAppDeps): Promise<void> => {
     const services = getPlatformServices()
 
@@ -203,6 +209,7 @@ export const runOffscreenApp = async ({
         knownAddresses: addressesOn,
         requestApproval: sendConnectionApprovalRequest,
         broadcastEvent: broadcastConnectionsEvent,
+        submitSignedTransactions,
     })
     // Bound after the registry is live, never before: the registry refuses a
     // `pair` it cannot route, and an early command answered with that error

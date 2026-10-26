@@ -23,8 +23,11 @@ import type {
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
+    isWireSignedTransactions,
     isWireWalletOperationResult,
     type ConnectionErrorReason,
+    type WireSignedSendOutcome,
+    type WireSignedTransaction,
     type WireWalletOperation,
     type WireWalletOperationResult,
 } from '../connections/protocol'
@@ -152,6 +155,7 @@ const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
     'resolve-approval': ['connection-proposal'],
     'resolve-connection-request': ['connection-request'],
     'fail-connection-request': ['connection-request'],
+    'submit-connection-request': ['connection-request'],
     'resolve-passkey': ['passkey-create', 'passkey-get'],
     'reject-passkey': ['passkey-create', 'passkey-get'],
 }
@@ -180,16 +184,26 @@ export type ConnectionRequestFailed = {
     failed: { failure?: Exclude<DappRequestFailure, 'user-rejected'> }
 }
 
+/**
+ * The surface signed a send for the host to broadcast and answer. The window
+ * stays open; `reportOutcome` hands it the broadcast's result to show.
+ */
+export type ConnectionRequestSubmitted = {
+    submitted: WireSignedTransaction[]
+    reportOutcome: (outcome: WireSignedSendOutcome) => void
+}
+
 /** `null` is the user declining, or closing the surface. */
 export type ConnectionRequestDecision =
     | { result: WireWalletOperationResult }
     | ConnectionRequestFailed
+    | ConnectionRequestSubmitted
     | typeof APPROVAL_WITHDRAWN
     | null
 
 // A user rejection travels only as `reject-approval`, so a failure claiming
 // one is dropped to the generic failure rather than trusted.
-const toWalletFailure = (
+export const toWalletFailure = (
     value: unknown,
 ): ConnectionRequestFailed['failed']['failure'] =>
     DAPP_REQUEST_FAILURES.find(
@@ -273,6 +287,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         const decision = this.awaitApproval<
             | { result: WireWalletOperationResult }
             | ConnectionRequestFailed
+            | ConnectionRequestSubmitted
             | typeof APPROVAL_WITHDRAWN
         >({
             ...ctx,
@@ -558,6 +573,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             reason?: string
             result?: unknown
             failure?: unknown
+            signedTransactions?: unknown
         }
         if (msg?.scope !== DAPP_APPROVAL_SCOPE) return false
         if (!isTrustedExtensionPageSender(sender, this.chromeLike)) {
@@ -627,6 +643,27 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 sendResponse({ ok: true })
                 return true
             }
+            case 'submit-connection-request': {
+                if (!isWireSignedTransactions(msg.signedTransactions)) {
+                    sendResponse({
+                        ok: false,
+                        error: 'malformed signed transactions',
+                    })
+                    return true
+                }
+                // Settled now, so nothing the surface does from here (a close,
+                // a pagehide reject) can answer the dApp; the host owns the send.
+                this.finish(
+                    msg.requestId!,
+                    {
+                        submitted: msg.signedTransactions,
+                        reportOutcome: outcome =>
+                            sendResponse({ ok: true, outcome }),
+                    } satisfies ConnectionRequestSubmitted,
+                    { keepSurface: true },
+                )
+                return true
+            }
             case 'reject-approval': {
                 this.finish(msg.requestId!, null)
                 sendResponse({ ok: true })
@@ -682,7 +719,11 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         // because openApprovalWindow registers the id before any onRemoved can fire.
     }
 
-    private finish(requestId: string, decision: unknown): void {
+    private finish(
+        requestId: string,
+        decision: unknown,
+        { keepSurface = false }: { keepSurface?: boolean } = {},
+    ): void {
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
@@ -698,11 +739,13 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         }
         if (entry.surface === 'window' && typeof entry.windowId === 'number') {
             this.windowToRequest.delete(entry.windowId)
-            this.selfClosedWindowIds.add(entry.windowId)
-            // Best-effort close on programmatic resolve; ignore if already gone.
-            void this.chromeLike.windows
-                .remove?.(entry.windowId)
-                .catch(() => {})
+            if (!keepSurface) {
+                this.selfClosedWindowIds.add(entry.windowId)
+                // Best-effort close on programmatic resolve; ignore if already gone.
+                void this.chromeLike.windows
+                    .remove?.(entry.windowId)
+                    .catch(() => {})
+            }
         }
         entry.settle(decision)
     }

@@ -19,8 +19,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
     WEB_CONFIG_ALLOWLIST,
+    assertE2eEvmRpcOverrideAllowed,
     assertWebConfigAllowlisted,
+    bakedAppEnvironment,
     bakedIntegrityFlags,
+    overrideEvmRpcUrls,
 } from '../web-config.mjs'
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
@@ -114,6 +117,78 @@ describe('bakedIntegrityFlags', () => {
             WEB_INTEGRITY_BEARER_ENABLED: false,
             WEB_INTEGRITY_ENROL_ENABLED: false,
         })
+    })
+})
+
+describe('bakedAppEnvironment', () => {
+    it('reads the channel the generated env sets', () => {
+        expect(
+            bakedAppEnvironment(
+                'export const generatedEnv = {\n  appEnvironment: "staging",\n} as const;\n',
+            ),
+        ).toBe('staging')
+    })
+
+    it('reads a channel generate-config.sh left out as development', () => {
+        expect(
+            bakedAppEnvironment('export const generatedEnv = {\n} as const;\n'),
+        ).toBe('development')
+    })
+})
+
+describe('assertE2eEvmRpcOverrideAllowed', () => {
+    it('accepts a development build', () => {
+        expect(() =>
+            assertE2eEvmRpcOverrideAllowed('development'),
+        ).not.toThrow()
+    })
+
+    it.each(['staging', 'production'])('refuses a %s build', channel => {
+        expect(() => assertE2eEvmRpcOverrideAllowed(channel)).toThrow(
+            new RegExp(`${channel} build`),
+        )
+    })
+})
+
+describe('overrideEvmRpcUrls', () => {
+    const URL = 'http://127.0.0.1:18545'
+
+    it('points every baked RPC URL at the override and touches nothing else', () => {
+        const source = [
+            'export const generatedEnv = {',
+            '  mainnetAlgodUrl: "https://mainnet-api.algonode.cloud",',
+            '  chainIds: "algorand,ethereum,base",',
+            '  ethereumMainnetRpcUrl: "https://ethereum-rpc.publicnode.com",',
+            '  ethereumMainnetPeraServices: "prices,assets",',
+            '  baseSepoliaRpcUrl: "https://base-sepolia-rpc.publicnode.com",',
+            '} as const;',
+            '',
+        ].join('\n')
+
+        expect(overrideEvmRpcUrls(source, URL)).toBe(
+            source
+                .replace('https://ethereum-rpc.publicnode.com', URL)
+                .replace('https://base-sepolia-rpc.publicnode.com', URL),
+        )
+    })
+
+    it('adds no chain: a network the build does not configure stays absent', () => {
+        const source =
+            'export const generatedEnv = {\n  baseMainnetRpcUrl: "https://base.rpc.example",\n} as const;\n'
+
+        const overridden = overrideEvmRpcUrls(source, URL)
+
+        expect(overridden).toContain(`baseMainnetRpcUrl: "${URL}"`)
+        expect(overridden).not.toContain('bscMainnetRpcUrl')
+    })
+
+    it('rewrites a URL that carries an escaped quote whole', () => {
+        const source =
+            'export const generatedEnv = {\n  baseMainnetRpcUrl: "https://a.example/\\"x",\n} as const;\n'
+
+        expect(overrideEvmRpcUrls(source, URL)).toBe(
+            `export const generatedEnv = {\n  baseMainnetRpcUrl: "${URL}",\n} as const;\n`,
+        )
     })
 })
 

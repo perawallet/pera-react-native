@@ -1770,6 +1770,92 @@ describe('useConnectionSigningAdapter', () => {
             })
         })
 
+        describe('with submitSignedSend', () => {
+            const SIGNED = {
+                scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                id: '0xh',
+                bytes: new Uint8Array([1]),
+            }
+            const submitSignedSend = vi.fn()
+            const onError = vi.fn()
+            const enqueueHandedOff = () => {
+                const message = sendMessage()
+                enqueueInboundRequest(message, {
+                    transactionSigning: new Map(),
+                    addSignRequest: mockAddSignRequest,
+                    removeSignRequest: mockRemoveSignRequest,
+                    isSignRequestPending: mockIsSignRequestPending,
+                    isSignRequestPastApproval: mockIsSignRequestPastApproval,
+                    accounts: [],
+                    pendingRequests: new Map(),
+                    onError,
+                    submitSignedSend,
+                })
+                return message
+            }
+
+            beforeEach(() => {
+                submitSignedSend.mockReset()
+                onError.mockReset()
+            })
+
+            it('signs only and hands the signed send over, never answering the peer itself', async () => {
+                submitSignedSend.mockResolvedValue({
+                    status: 'submitted',
+                    txId: '0xh',
+                })
+                const message = enqueueHandedOff()
+                await vi.waitFor(() =>
+                    expect(mockAddSignRequest).toHaveBeenCalled(),
+                )
+
+                expect(addedRequest()).toMatchObject({ transport: 'callback' })
+                await addedRequest().approve([SIGNED])
+
+                expect(submitSignedSend).toHaveBeenCalledWith([SIGNED])
+                expect(message.respond).not.toHaveBeenCalled()
+                expect(message.reject).not.toHaveBeenCalled()
+            })
+
+            it('a failed broadcast is reported and never answered again', async () => {
+                const failure = new Error('nonce too low')
+                submitSignedSend.mockResolvedValue({
+                    status: 'failed',
+                    error: failure,
+                })
+                const message = enqueueHandedOff()
+                await vi.waitFor(() =>
+                    expect(mockAddSignRequest).toHaveBeenCalled(),
+                )
+
+                await addedRequest().approve([SIGNED])
+                await addedRequest().error(new Error('a later pipeline error'))
+                await addedRequest().reject()
+
+                expect(onError).toHaveBeenCalledWith(failure, {
+                    connectionId: 'c1',
+                })
+                expect(message.reject).not.toHaveBeenCalled()
+            })
+
+            it('a send that never left is still answered here', async () => {
+                submitSignedSend.mockRejectedValue(new Error('unknown request'))
+                const message = enqueueHandedOff()
+                await vi.waitFor(() =>
+                    expect(mockAddSignRequest).toHaveBeenCalled(),
+                )
+
+                await expect(addedRequest().approve([SIGNED])).rejects.toThrow(
+                    'unknown request',
+                )
+                await addedRequest().reject({ kind: 'user' })
+
+                expect(message.reject).toHaveBeenCalledWith(
+                    expect.any(DappRequestRejectedError),
+                )
+            })
+        })
+
         it('answers the dApp with the submitted transaction id on approve', async () => {
             const { send } = mount()
             const message = sendMessage()

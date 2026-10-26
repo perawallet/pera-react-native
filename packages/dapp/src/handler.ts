@@ -17,7 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
-    dappRequestFailureOf,
+    isDappUserRejection,
     walletNoticeChainId,
     type ConnectionHandler,
     type ConnectionProposal,
@@ -122,10 +122,7 @@ const toErrorResponse = (
     error: Error,
     relayableErrorNames: readonly string[],
 ): JsonRpcResponse => {
-    if (
-        error.name === 'UserCancelledError' ||
-        dappRequestFailureOf(error) === 'user-rejected'
-    ) {
+    if (isDappUserRejection(error)) {
         return jsonRpcError(
             id,
             JsonRpcErrorCode.UserRejected,

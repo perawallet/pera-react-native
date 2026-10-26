@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import http from 'node:http'
 import { keccak_256 } from '@noble/hashes/sha3.js'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js'
 
@@ -17,6 +18,13 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js'
 // never reaches a real chain. It keeps every raw transaction it is sent, and
 // every method it has no answer for, so a test can tell "the wallet never
 // broadcast" from "the wallet asked for something the fake doesn't serve".
+
+// The e2e bundle (`pnpm --filter browser bundle:e2e`) bakes this as every EVM
+// RPC URL. Playwright never attaches to the offscreen document, so
+// `context.route` cannot cover it; a real server on localhost covers every
+// extension page.
+export const E2E_EVM_RPC_PORT = 18_545
+export const E2E_EVM_RPC_URL = `http://127.0.0.1:${E2E_EVM_RPC_PORT}`
 
 // The wallet derives a sent transaction's hash from its own signed bytes, so a
 // node answering any other hash would disagree with what the dApp is told.
@@ -55,10 +63,11 @@ const block = () => ({
 })
 
 export const createFakeEvmNode = () => {
-    // Set once the dApp's chain is known; every EVM RPC URL is routed here.
+    // Set once the dApp's chain is known; one node answers every chain's URL.
     let chainId = 1
     const rawTransactions = []
     const unansweredMethods = []
+    const methods = []
 
     const results = {
         eth_chainId: () => toHex(chainId),
@@ -83,6 +92,8 @@ export const createFakeEvmNode = () => {
                 ),
             }
         },
+        // Not mined: the wallet's own reconcile keeps asking after a send.
+        eth_getTransactionReceipt: () => null,
         // 1 ETH, so a 1-wei send is always affordable.
         eth_getBalance: () => toHex(10n ** 18n),
         eth_sendRawTransaction: ([raw]) => {
@@ -92,6 +103,7 @@ export const createFakeEvmNode = () => {
     }
 
     const answer = ({ id, method, params }) => {
+        methods.push(method)
         const result = results[method]
         if (!result) {
             unansweredMethods.push(method)
@@ -107,11 +119,63 @@ export const createFakeEvmNode = () => {
     return {
         rawTransactions,
         unansweredMethods,
+        methods,
         setChainId: id => {
             chainId = id
         },
         /** Answers one JSON-RPC body, single or batched. */
         respond: body =>
             Array.isArray(body) ? body.map(answer) : answer(body),
+    }
+}
+
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'content-type',
+}
+
+/** Serves `node` over HTTP on 127.0.0.1, the way an EVM node's RPC URL is. */
+export const serveFakeEvmNode = async (node, { port }) => {
+    const server = http.createServer((request, response) => {
+        if (request.method === 'OPTIONS') {
+            response.writeHead(204, CORS_HEADERS).end()
+            return
+        }
+        if (request.method !== 'POST') {
+            response.writeHead(404, CORS_HEADERS).end()
+            return
+        }
+        const chunks = []
+        request.on('data', chunk => chunks.push(chunk))
+        request.on('end', () => {
+            let body
+            try {
+                body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            } catch {
+                response.writeHead(400, CORS_HEADERS).end()
+                return
+            }
+            response.writeHead(200, {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json',
+            })
+            response.end(JSON.stringify(node.respond(body)))
+        })
+    })
+    await new Promise((resolve, reject) => {
+        server.once('error', reject)
+        server.listen(port, '127.0.0.1', () => {
+            server.off('error', reject)
+            resolve()
+        })
+    })
+    return {
+        url: `http://127.0.0.1:${port}`,
+        // Chrome keeps its connections alive, which would hold close() open.
+        close: () =>
+            new Promise(resolve => {
+                server.close(() => resolve())
+                server.closeAllConnections()
+            }),
     }
 }

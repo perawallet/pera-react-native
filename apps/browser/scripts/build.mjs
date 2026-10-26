@@ -39,8 +39,11 @@ import {
 } from './manifest.mjs'
 import {
     WEB_CONFIG_ALLOWLIST,
-    bakedIntegrityFlags,
+    assertE2eEvmRpcOverrideAllowed,
     assertWebConfigAllowlisted,
+    bakedAppEnvironment,
+    bakedIntegrityFlags,
+    overrideEvmRpcUrls,
 } from './web-config.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
@@ -120,6 +123,15 @@ const generatedEnvPath = path.join(
     'packages/config/src/generated-env.ts',
 )
 assertWebConfigAllowlisted(readFileSync(generatedEnvPath, 'utf8'))
+// The e2e bundle (`pnpm --filter browser bundle:e2e`) bakes no real EVM node,
+// so no part of the extension, the offscreen document included, can reach one.
+// Rewritten before config is built below, which is what bakes the file in.
+const e2eEvmRpcUrl = process.env.PERA_E2E_EVM_RPC_URL
+if (e2eEvmRpcUrl) {
+    const source = readFileSync(generatedEnvPath, 'utf8')
+    assertE2eEvmRpcOverrideAllowed(bakedAppEnvironment(source))
+    writeFileSync(generatedEnvPath, overrideEvmRpcUrls(source, e2eEvmRpcUrl))
+}
 // packages/config and the workspace packages it depends on (e.g.
 // chain-contract, whose dist/index.d.ts config's types resolve to) must be
 // rebuilt right after generate-config.sh (not just picked up by the broader
@@ -139,10 +151,8 @@ execSync('pnpm exec turbo run build --filter=...browser', {
 })
 const generatedEnv = readFileSync(generatedEnvPath, 'utf8')
 const integrityFlags = bakedIntegrityFlags(generatedEnv)
-// A missing appEnvironment line means config's own default, development.
 assertReleaseEnv({
-    appEnvironment:
-        generatedEnv.match(/appEnvironment:\s*"([^"]+)"/)?.[1] ?? 'development',
+    appEnvironment: bakedAppEnvironment(generatedEnv),
     integrityFlags,
 })
 if (Object.values(integrityFlags).includes(false)) {

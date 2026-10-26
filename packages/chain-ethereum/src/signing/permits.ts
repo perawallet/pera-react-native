@@ -232,9 +232,9 @@ const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
 }
 
 /** EIP-2612 `Permit` or Permit2 typed data, complete or not. Never throws. */
-export const isPermitTypedData = (typedData: TypedDataDefinition): boolean => {
+export const isPermitTypedData = (typedData: unknown): boolean => {
     try {
-        return parseTypedData(typedData) !== undefined
+        return parseTypedData(typedData as TypedDataDefinition) !== undefined
     } catch {
         return false
     }

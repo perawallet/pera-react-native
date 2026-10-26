@@ -339,6 +339,94 @@ describe('installConnectionsApprovalRouter', () => {
             )
         })
 
+        describe('a submitted send', () => {
+            const SIGNED = [
+                {
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    id: '0xh',
+                    bytes: 'AQID',
+                },
+            ]
+            const submitted = () => {
+                const reportOutcome = vi.fn()
+                approvals.openConnectionRequest.mockResolvedValue({
+                    submitted: SIGNED,
+                    reportOutcome,
+                })
+                return reportOutcome
+            }
+
+            it("forwards a submitted decision as submit-send and reports the host's tx id", async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: true,
+                    result: { txIds: ['0xh'] },
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: true,
+                        txId: '0xh',
+                    }),
+                )
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
+                    scope: CONNECTIONS_CONTROL_SCOPE,
+                    kind: 'submit-send',
+                    connectionId: 'conn-1',
+                    correlationId: '9',
+                    signedTransactions: SIGNED,
+                })
+                expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalledWith(
+                    expect.objectContaining({ kind: 'respond' }),
+                )
+            })
+
+            it('reports a host failure to the window without a delivery-failed notice', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: true,
+                    result: {
+                        failure: {
+                            name: 'SubmissionError',
+                            message: 'nonce too low',
+                        },
+                    },
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: false,
+                        name: 'SubmissionError',
+                        message: 'nonce too low',
+                    }),
+                )
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
+
+            it('reports a host that refused the submit as a failed outcome', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: false,
+                    error: 'Unknown request conn-1:9',
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(reportOutcome).toHaveBeenCalledWith({
+                        ok: false,
+                        name: 'Error',
+                        message: 'Unknown request conn-1:9',
+                    }),
+                )
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
+        })
+
         it('posts the signed result back as a respond message', async () => {
             chromeMock.deliver(signRequest())
 

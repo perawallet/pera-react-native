@@ -110,15 +110,19 @@ export const App = (): React.JSX.Element => {
                     mod,
                     { registerChainAdapters },
                     { markDatabaseResetNoticePending },
+                    { submitAndAutoRefresh },
                 ] = await Promise.all([
                     import('@browser/offscreen/runOffscreenApp'),
                     import('./bootstrap/chain-adapters'),
                     import('./bootstrap/databaseResetNotice'),
+                    import('@perawallet/wallet-core-signing'),
                 ])
                 await registerTransports()
                 await mod.runOffscreenApp({
                     registerChainAdapters,
                     onDatabaseReset: markDatabaseResetNoticePending,
+                    submitSignedTransactions: signed =>
+                        submitAndAutoRefresh(signed[0]!.scope, signed),
                 })
                 setShell(() => OffscreenStatus)
                 return

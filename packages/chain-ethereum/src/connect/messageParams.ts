@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isAddress, isHex, stringToHex, type TypedDataDefinition } from 'viem'
+import { isAddress, isHex, stringToHex } from 'viem'
 import type {
     DappMessageRequest,
     DappRequestChainAdapter,
@@ -186,7 +186,7 @@ const validateSignTypedData = (
     // leaves the chain out of its domain separator.
     if (
         !hasDomainChainId(typedData) &&
-        isPermitTypedData(typedData as unknown as TypedDataDefinition)
+        isPermitTypedData(typedData)
     ) {
         return invalid('eth_signTypedData_v4 permit domain names no chainId')
     }
