@@ -49,6 +49,7 @@ import {
     OPEN_SUBMISSION_STATUSES,
     SUBMISSION_HISTORY_ENTRY_VERSION,
     type IntentKey,
+    type ReplaceableSubmissionAttempt,
     type UnsyncedSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
@@ -75,6 +76,8 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     nonce: row.nonce,
     createdAt: row.createdAt,
     resolvedAt: row.resolvedAt,
+    rawTransaction: row.rawTransaction,
+    replacesAttemptId: row.replacesAttemptId,
 })
 
 type StoredHistoryEntry = { v: number; entry: SubmissionHistoryEntry }
@@ -107,6 +110,10 @@ export type RecordSubmissionAttemptParams = {
     /** Base units of the native asset: the most the transaction can be charged. */
     maxFee?: Decimal
     historyEntry?: SubmissionHistoryEntry
+    /** The broadcast transaction in its chain's own encoding. */
+    rawTransaction?: string
+    /** Id of the attempt this one re-prices at the same sequence number. */
+    replacesAttemptId?: string
 }
 
 /**
@@ -124,6 +131,8 @@ export const recordSubmissionAttempt = async ({
     nonce,
     maxFee,
     historyEntry,
+    rawTransaction,
+    replacesAttemptId,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
     await db
@@ -147,6 +156,8 @@ export const recordSubmissionAttempt = async ({
                   } satisfies StoredHistoryEntry)
                 : null,
             maxFee: maxFee ?? null,
+            rawTransaction: rawTransaction ?? null,
+            replacesAttemptId: replacesAttemptId ?? null,
         })
         .run()
     notifySubmissionLedgerChanged()
@@ -343,6 +354,98 @@ export const getSubmissionAttemptsByTxIds = async ({
         .all()
 
     return rows.map(fromDb)
+}
+
+export type GetSubmissionAttemptsAtNonceParams = {
+    db?: Database
+    scope: ChainScope
+    /** Matched exactly, so the caller passes the form its chain stores. */
+    sender: string
+    nonce: number
+    /** Defaults to every status. */
+    statuses?: readonly SubmissionStatus[]
+}
+
+/** Every attempt of one sender at one sequence number, oldest first. */
+export const getSubmissionAttemptsAtNonce = async ({
+    db = getDatabase(),
+    scope,
+    sender,
+    nonce,
+    statuses,
+}: GetSubmissionAttemptsAtNonceParams): Promise<SubmissionAttempt[]> => {
+    const conditions = [
+        eq(SubmissionAttemptsSchema.scope, toScopeKey(scope)),
+        eq(SubmissionAttemptsSchema.sender, sender),
+        eq(SubmissionAttemptsSchema.nonce, nonce),
+    ]
+    if (statuses !== undefined) {
+        conditions.push(inArray(SubmissionAttemptsSchema.status, [...statuses]))
+    }
+    const rows = await db
+        .select()
+        .from(SubmissionAttemptsSchema)
+        .where(and(...conditions))
+        .orderBy(
+            SubmissionAttemptsSchema.createdAt,
+            SubmissionAttemptsSchema.id,
+        )
+        .all()
+    return rows.map(fromDb)
+}
+
+export type GetReplaceableSubmissionAttemptParams = {
+    db?: Database
+    scope: ChainScope
+    txId: string
+}
+
+/**
+ * The open attempt broadcasting `txId`, when it can be re-priced: it holds its
+ * bytes and a sequence number, and no newer open attempt of its sender holds
+ * that number, since the node only keeps the newest one.
+ */
+export const getReplaceableSubmissionAttempt = async ({
+    db = getDatabase(),
+    scope,
+    txId,
+}: GetReplaceableSubmissionAttemptParams): Promise<ReplaceableSubmissionAttempt | null> => {
+    const [row] = await db
+        .select()
+        .from(SubmissionAttemptsSchema)
+        .where(
+            and(
+                eq(SubmissionAttemptsSchema.scope, toScopeKey(scope)),
+                inArray(SubmissionAttemptsSchema.status, [
+                    ...OPEN_SUBMISSION_STATUSES,
+                ]),
+                isNotNull(SubmissionAttemptsSchema.rawTransaction),
+                isNotNull(SubmissionAttemptsSchema.nonce),
+                isNotNull(SubmissionAttemptsSchema.sender),
+                sql`EXISTS (SELECT 1 FROM json_each(${SubmissionAttemptsSchema.txIdsJson}) WHERE json_each.value = ${txId})`,
+            ),
+        )
+        .orderBy(desc(SubmissionAttemptsSchema.createdAt))
+        .limit(1)
+        .all()
+    if (!row) return null
+    const attempt = fromDb(row)
+    const siblings = await getSubmissionAttemptsAtNonce({
+        db,
+        scope,
+        sender: row.sender!,
+        nonce: row.nonce!,
+        statuses: OPEN_SUBMISSION_STATUSES,
+    })
+    if (siblings.at(-1)?.id !== attempt.id) return null
+    return {
+        ...attempt,
+        rawTransaction: row.rawTransaction!,
+        nonce: row.nonce!,
+        historyEntry: row.historyEntryJson
+            ? parseHistoryEntry(row.historyEntryJson)
+            : null,
+    }
 }
 
 export type GetSubmissionAttemptsWithHistoryEntryParams = {

@@ -22,7 +22,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -99,17 +101,28 @@ const resolveUnifiedLabels = ({
     return { primary: truncatedAddress, secondary: undefined }
 }
 
-const formatAddress = (address: string, format: AddressFormat): string => {
+const formatAddress = (
+    address: string,
+    format: AddressFormat,
+    chainId: ChainId,
+): string => {
+    const codec =
+        addressCodecs.has(chainId) &&
+        addressCodecs.get(chainId).isValid(address)
+            ? addressCodecs.get(chainId)
+            : undefined
     switch (format) {
         case 'full': {
-            return address
+            return codec ? codec.normalize(address) : address
         }
         case 'long': {
             return truncateAlgorandAddress(address, LONG_ADDRESS_LENGTH)
         }
         case 'short':
         default: {
-            return truncateAlgorandAddress(address)
+            return codec
+                ? codec.truncate(address)
+                : truncateAlgorandAddress(address)
         }
     }
 }
@@ -156,8 +169,8 @@ export const useAddressDisplay = ({
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     const truncatedAddress = useMemo(
-        () => formatAddress(address, addressFormat),
-        [address, addressFormat],
+        () => formatAddress(address, addressFormat, scope.chainId),
+        [address, addressFormat, scope.chainId],
     )
 
     const fallbackIconName: IconName = `accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`

@@ -103,10 +103,12 @@ describe('useSigningActionButtons', () => {
     const setupPipeline = (
         warnings: TransactionWarning[] = [],
         allTransactions: unknown[] = [],
+        hasUnsignableTransaction = false,
     ) => {
         ;(useSigningPipeline as Mock).mockReturnValue({
             currentRequest: mockRequest,
             allTransactions,
+            hasUnsignableTransaction,
             warnings,
             isLoading: false,
             next: mockNext,
@@ -608,6 +610,42 @@ describe('useSigningActionButtons', () => {
 
         it('shows no notice for a signable sender', () => {
             ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.cannotSignNotice).toBeUndefined()
+        })
+    })
+
+    describe('a request signing would refuse', () => {
+        // Which transactions count (unheld signer, unreadable transaction,
+        // planner-less chains only) is the pipeline's spec; this only checks
+        // the hook blocks on its answer.
+        beforeEach(() => {
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: { id: 'r1', chainId: 'ethereum' },
+            })
+        })
+
+        it('blocks it and does not advance the pipeline', () => {
+            setupPipeline([], [{ family: 'evm' }], true)
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.cannotSignNotice).toEqual({
+                title: 'signing.cannot_sign.title',
+                body: 'signing.cannot_sign.signer_missing_body',
+            })
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('shows no notice when signing would accept it', () => {
+            setupPipeline([], [{ family: 'evm' }], false)
 
             const { result } = renderHook(() => useSigningActionButtons())
 

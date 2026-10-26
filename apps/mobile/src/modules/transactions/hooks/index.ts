@@ -12,6 +12,10 @@
 
 export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
 export { useSendScope } from './send-funds/useSendScope'
+export {
+    useRecipientSafety,
+    type UseRecipientSafetyResult,
+} from './send-funds/useRecipientSafety'
 export { useSendAccountResolver } from './send-funds/useSendAccountResolver'
 export {
     resolveSendAccount,

@@ -132,6 +132,7 @@ transferContractTests(() => fixtureTransferAdapter, {
         fee: new Decimal(21),
         hasReserve: false,
     },
+    supportsReplacement: false,
     arrange: () => {
         balances.clear()
         balances.set('alice', new Decimal(1_000))

@@ -1134,7 +1134,11 @@
                 "title": "Red saturada",
                 "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
             },
-            "invalid_private_key": "Introduce una clave privada válida: 64 caracteres hexadecimales, con o sin 0x."
+            "invalid_private_key": "Introduce una clave privada válida: 64 caracteres hexadecimales, con o sin 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transacción ya confirmada",
+                "body": "La transacción que intentaste acelerar o cancelar se confirmó antes, así que no se reemplazó nada."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "No se puede eliminar este activo",
                 "body": "Esta cuenta creó este activo, así que no puede eliminarlo."
+            },
+            "not_replaceable": {
+                "title": "La transacción ya no está pendiente",
+                "body": "Esta transacción ya se confirmó o fue reemplazada, así que no se puede acelerar ni cancelar."
             }
         },
         "kms": {
@@ -2726,6 +2734,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Comprobando el destinatario…",
+            "look_alike_title": "Esta dirección se parece a una que conoces",
+            "look_alike_body": "Empieza y termina como una dirección que conoces, pero los caracteres del medio son distintos. Los estafadores crean direcciones parecidas para engañarte. Compara las direcciones completas a continuación.",
+            "look_alike_recipient_label": "Vas a enviar a",
+            "look_alike_known_label_own_account": "Tu cuenta {{name}}",
+            "look_alike_known_label_watched_account": "La cuenta {{name}} de tu billetera",
+            "look_alike_known_label_contact": "Tu contacto {{name}}",
+            "look_alike_known_label_history": "Una dirección de tu historial",
+            "look_alike_acknowledge": "He revisado la dirección completa y quiero enviar a ella",
+            "first_send_title": "Primer envío a esta dirección",
+            "first_send_body": "Nunca has enviado a esta dirección en esta red. Asegúrate de que sea la correcta."
+        },
         "input_view": {
             "title": "Enviar {{asset}}"
         },
@@ -2780,6 +2801,16 @@
             "nfd_unavailable_body": "No se pudo contactar con el registro NFD para comprobar este nombre. Inténtalo de nuevo o pega la dirección directamente.",
             "invalid_address_title": "Dirección no válida",
             "invalid_address_body": "Esta no es una dirección válida de {{chain}}."
+        },
+        "address_poisoning": {
+            "title": "Revisa esta dirección",
+            "lookalike_body": "Esta dirección se parece a una que conoces, pero no es la misma. Los estafadores crean direcciones que empiezan o terminan con los mismos caracteres para que copies la suya por error. Compara cada carácter antes de continuar.",
+            "dust_body": "Esta dirección solo te ha enviado cantidades muy pequeñas y nunca le has enviado nada. Los estafadores hacen esto para que su dirección aparezca en tu historial y la copies por error.",
+            "recipient_label": "Enviar a",
+            "similar_to_label": "Similar a",
+            "acknowledge": "He revisado la dirección completa",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
         },
         "fee": {
             "slow": "Lenta",
@@ -3195,7 +3226,8 @@
             "title": "No puedes firmar por esta cuenta",
             "body": "Esta es una cuenta compartida y ninguna de sus cuentas firmantes está en tu wallet. Añade una cuenta firmante para firmar transacciones por ella.",
             "rekeyed_auth_missing_body": "Esta cuenta está con rekey a {{authAddress}}, que no está en esta wallet, por lo que no puede firmar transacciones. Importa la cuenta auth para firmar por ella.",
-            "rekeyed_auth_watch_body": "Esta cuenta está con rekey a una cuenta de solo observación, que no tiene clave de firma. Importa la clave de la cuenta auth para firmar por ella."
+            "rekeyed_auth_watch_body": "Esta cuenta está con rekey a una cuenta de solo observación, que no tiene clave de firma. Importa la clave de la cuenta auth para firmar por ella.",
+            "signer_missing_body": "Esta solicitud necesita la firma de una cuenta que no está en tu wallet, así que no se puede firmar aquí."
         },
         "transaction_request_faq": {
             "title": "Preguntas frecuentes sobre solicitudes de transacción",
@@ -3256,7 +3288,8 @@
         "notice": {
             "pending": "Pendiente desde {{since}}",
             "failed": "Fallida",
-            "replaced": "Reemplazada por otra transacción"
+            "replaced": "Reemplazada por otra transacción",
+            "replacement_not_needed": "No fue necesaria: la transacción original se confirmó antes"
         },
         "list_item": {
             "send": "Enviar",
@@ -3276,7 +3309,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} transacciones internas"
+            "inner_transaction_count": "{{innerCount}} transacciones internas",
+            "cancel_transaction": "Cancelar transacción"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
@@ -3419,6 +3453,13 @@
             "last_week": "Última semana",
             "last_month": "Último mes",
             "custom_range": "Rango personalizado"
+        },
+        "replacement": {
+            "title": "Transacción pendiente",
+            "body": "Acelerar la vuelve a enviar con una comisión de red más alta. Cancelar la reemplaza con una transferencia vacía a ti mismo, que también cuesta una comisión de red. Si la original se confirma antes, no se reemplaza nada.",
+            "speed_up": "Acelerar",
+            "cancel": "Cancelar transacción",
+            "review_notice": "Reemplaza la transacción {{txId}}"
         }
     },
     "tabbar": {

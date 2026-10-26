@@ -36,6 +36,8 @@ export const algorandAddressCodec: AddressCodec = {
     normalize: address => address,
     areEqual: (a, b) => a === b,
     truncate: address => truncateAlgorandAddress(address),
+    resembles: (a, b) =>
+        a !== b && truncateAlgorandAddress(a) === truncateAlgorandAddress(b),
     toPaymentUri: writeArc90PaymentUri,
     parsePaymentUri: uri => {
         const read = readArc90Uri(uri)

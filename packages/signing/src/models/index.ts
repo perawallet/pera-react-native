@@ -137,6 +137,8 @@ export type UnsignedTransactionSignRequest = TransactionRequestCallbacks & {
     ) => Promise<void>
     approveSignedBytes?: SourceCallbacks['approveSignedBytes']
     onProposed?: SourceCallbacks['onProposed']
+    /** Id of the pending transaction this request re-prices at the same sequence number. */
+    replacesTxId?: string
 }
 
 export type TransactionSignRequest = UnsignedTransactionSignRequest

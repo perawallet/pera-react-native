@@ -14,21 +14,12 @@
 const { withGradleProperties } = require('expo/config-plugins');
 const { setProperty } = require('./withAndroidGradleHeap');
 
-const PRECISE_SHRINKING_KEY =
-  'android.enableNewResourceShrinker.preciseShrinking';
 const STRICT_FULL_MODE_KEY = 'android.r8.strictFullModeForKeepRules';
 
 /**
  * @type {import('expo/config-plugins').ConfigPlugin}
  *
- * Turns on `preciseShrinking`, which Play Console reports as missing
- * ("Optimized resource shrinking isn't enabled"): the resource shrinker then
- * deletes unused resources instead of replacing them with stub entries. Not
- * reachable through `expo-build-properties`, which owns minify/shrinkResources.
- * The template already applies `proguard-android-optimize.txt`, so R8's
- * optimization pass needs nothing here.
- *
- * Also turns `strictFullModeForKeepRules` back off. AGP 9 defaults it on, and a
+ * Turns `strictFullModeForKeepRules` back off. AGP 9 defaults it on, and a
  * bare `-keep class X` then stops keeping X's no-arg constructor. Room 2.5
  * (WorkManager's, via notifee) keeps its generated database only that way and
  * builds it with `Class.newInstance()`, so the release app crashed at launch.
@@ -43,16 +34,10 @@ const withAndroidR8Optimization = (config) =>
   });
 
 function setR8Properties(items) {
-  const withPreciseShrinking = setProperty(
-    items,
-    PRECISE_SHRINKING_KEY,
-    'true',
-  );
-  return setProperty(withPreciseShrinking, STRICT_FULL_MODE_KEY, 'false');
+  return setProperty(items, STRICT_FULL_MODE_KEY, 'false');
 }
 
 module.exports = Object.assign(withAndroidR8Optimization, {
   setR8Properties,
-  PRECISE_SHRINKING_KEY,
   STRICT_FULL_MODE_KEY,
 });

@@ -67,6 +67,14 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: vi.fn() }),
 }))
 
+const mockReplace = vi.hoisted(() => ({
+    canReplace: false,
+    handleReplace: vi.fn(async () => undefined),
+}))
+vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
+    useReplaceTransaction: () => mockReplace,
+}))
+
 vi.mock('../../../hooks/history/useCounterpartyName', () => ({
     useCounterpartyName: (address: string) => `name:${address}`,
 }))

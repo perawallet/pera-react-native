@@ -19,6 +19,7 @@ export const EvmErrorCode = {
     OUT_OF_GAS: 'out_of_gas',
     NONCE_TOO_LOW: 'nonce_too_low',
     REPLACEMENT_UNDERPRICED: 'replacement_underpriced',
+    REPLACED_TRANSACTION_CONFIRMED: 'replaced_transaction_confirmed',
     INSUFFICIENT_FUNDS: 'insufficient_funds',
     RATE_LIMITED: 'rate_limited',
     UNKNOWN: 'unknown',
@@ -64,6 +65,12 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
     replacement_underpriced: {
         titleKey: i18nKey('errors.evm.replacement_underpriced.title'),
         messageKey: i18nKey('errors.evm.replacement_underpriced.body'),
+        severity: ErrorSeverity.MEDIUM,
+        retryable: false,
+    },
+    replaced_transaction_confirmed: {
+        titleKey: i18nKey('errors.evm.replaced_transaction_confirmed.title'),
+        messageKey: i18nKey('errors.evm.replaced_transaction_confirmed.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
     },

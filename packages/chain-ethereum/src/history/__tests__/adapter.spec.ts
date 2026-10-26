@@ -161,6 +161,7 @@ describe('getEvmTransactionHistory', () => {
             scope: MAINNET,
             status: 'confirmed',
             timestamp: Date.parse('2026-01-01T00:00:00Z'),
+            initiator: ME,
             chainData: { family: 'evm' },
         })
         expect(items[0]?.fee).toEqual(new Decimal(21000))

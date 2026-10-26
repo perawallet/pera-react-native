@@ -71,6 +71,13 @@ export const SubmissionAttemptsSchema = sqliteTable(
          * still holds its fee back from the spendable balance.
          */
         maxFee: decimalColumn('max_fee'),
+        /**
+         * The broadcast transaction in its chain's own encoding; only the
+         * owning chain reads it. Kept so a pending attempt can be re-priced.
+         */
+        rawTransaction: text('raw_transaction'),
+        /** Id of the attempt this one re-prices at the same sequence number. */
+        replacesAttemptId: text('replaces_attempt_id'),
     },
     table => [
         index('submission_attempts_open_idx').on(table.scope, table.status),

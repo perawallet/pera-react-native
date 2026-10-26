@@ -35,7 +35,11 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import {
+    SENDER,
+    VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_0_SPED_UP,
+} from '../../signing/__tests__/fixtures'
 import { allocateEthereumNonce } from '../nonce-pool'
 import { submitAndRecordEthereumTransactions } from '../submission'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -89,6 +93,24 @@ describe('allocateEthereumNonce', () => {
             nonce,
             ...overrides,
         })
+
+    it('holds one nonce for a send and its replacement, so the next send takes the one after', async () => {
+        nodeReportsPending(0)
+        await submitAndRecordEthereumTransactions({
+            client,
+            chain: ETHEREUM,
+            scope: SCOPE,
+            signedTransactions: [
+                hexToBytes(VIEM_TRANSFER_NONCE_0),
+                hexToBytes(VIEM_TRANSFER_NONCE_0_SPED_UP),
+            ],
+            flow: 'pipeline',
+            historyEntries: [],
+            db,
+        })
+
+        await expect(allocate()).resolves.toBe(1)
+    })
 
     it('gives a second send the next nonce while the node still reports the first as unseen', async () => {
         nodeReportsPending(0)

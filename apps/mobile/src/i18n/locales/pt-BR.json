@@ -1134,7 +1134,11 @@
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             },
-            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x."
+            "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transação já confirmada",
+                "body": "A transação que você tentou acelerar ou cancelar foi confirmada antes, então nada foi substituído."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Não é possível remover este ativo",
                 "body": "Esta conta criou este ativo, então não pode removê-lo."
+            },
+            "not_replaceable": {
+                "title": "Transação não está mais pendente",
+                "body": "Esta transação já foi confirmada ou substituída, então não pode ser acelerada nem cancelada."
             }
         },
         "kms": {
@@ -2742,6 +2750,19 @@
         }
     },
     "send_funds": {
+        "recipient_safety": {
+            "checking": "Verificando o destinatário…",
+            "look_alike_title": "Este endereço parece um que você conhece",
+            "look_alike_body": "Ele começa e termina como um endereço que você conhece, mas os caracteres do meio são diferentes. Golpistas criam endereços parecidos para enganar você. Compare os endereços completos abaixo.",
+            "look_alike_recipient_label": "Você está enviando para",
+            "look_alike_known_label_own_account": "Sua conta {{name}}",
+            "look_alike_known_label_watched_account": "A conta {{name}} da sua carteira",
+            "look_alike_known_label_contact": "Seu contato {{name}}",
+            "look_alike_known_label_history": "Um endereço do seu histórico",
+            "look_alike_acknowledge": "Verifiquei o endereço completo e quero enviar para ele",
+            "first_send_title": "Primeiro envio para este endereço",
+            "first_send_body": "Você nunca enviou para este endereço nesta rede. Confirme que é o endereço certo."
+        },
         "input_view": {
             "title": "Enviar {{asset}}"
         },
@@ -2796,6 +2817,16 @@
             "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente.",
             "invalid_address_title": "Endereço inválido",
             "invalid_address_body": "Este não é um endereço válido de {{chain}}."
+        },
+        "address_poisoning": {
+            "title": "Confira este endereço",
+            "lookalike_body": "Este endereço parece com um que você conhece, mas não é o mesmo. Golpistas criam endereços que começam ou terminam com os mesmos caracteres para que você copie o deles por engano. Compare cada caractere antes de continuar.",
+            "dust_body": "Este endereço só enviou valores muito pequenos para você, e você nunca enviou nada para ele. Golpistas fazem isso para que o endereço deles apareça no seu histórico e você o copie por engano.",
+            "recipient_label": "Enviando para",
+            "similar_to_label": "Parecido com",
+            "acknowledge": "Conferi o endereço completo",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
         },
         "fee": {
             "slow": "Lenta",
@@ -3212,7 +3243,8 @@
             "title": "Você não pode assinar por esta conta",
             "body": "Esta é uma conta compartilhada e nenhuma das contas signatárias está na sua wallet. Adicione uma conta signatária para assinar transações por ela.",
             "rekeyed_auth_missing_body": "Esta conta passou por rekey para {{authAddress}}, que não está nesta wallet, então ela não pode assinar transações. Importe a conta de autorização para assinar por ela.",
-            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela."
+            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela.",
+            "signer_missing_body": "Esta solicitação precisa da assinatura de uma conta que não está na sua wallet, então não pode ser assinada aqui."
         },
         "transaction_request_faq": {
             "title": "Perguntas frequentes sobre solicitações de transação",
@@ -3273,7 +3305,8 @@
         "notice": {
             "pending": "Pendente desde {{since}}",
             "failed": "Falhou",
-            "replaced": "Substituída por outra transação"
+            "replaced": "Substituída por outra transação",
+            "replacement_not_needed": "Não foi necessária: a transação original foi confirmada antes"
         },
         "list_item": {
             "send": "Enviar",
@@ -3293,7 +3326,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} transações internas"
+            "inner_transaction_count": "{{innerCount}} transações internas",
+            "cancel_transaction": "Cancelar transação"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
@@ -3441,6 +3475,13 @@
             "last_week": "Semana passada",
             "last_month": "Mês passado",
             "custom_range": "Período personalizado"
+        },
+        "replacement": {
+            "title": "Transação pendente",
+            "body": "Acelerar envia de novo com uma taxa de rede mais alta. Cancelar substitui por uma transferência vazia para você mesmo, que também custa uma taxa de rede. Se a original for confirmada antes, nada é substituído.",
+            "speed_up": "Acelerar",
+            "cancel": "Cancelar transação",
+            "review_notice": "Substitui a transação {{txId}}"
         }
     },
     "tabbar": {

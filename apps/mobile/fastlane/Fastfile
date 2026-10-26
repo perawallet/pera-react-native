@@ -62,6 +62,19 @@ def get_xcworkspace_path
   raise "Could not find any .xcworkspace file. CWD: #{Dir.pwd}"
 end
 
+# Firebase Apple 13 ships only as Swift packages, so Crashlytics' upload tool
+# sits in the package checkout under the workspace's DerivedData, not in Pods/.
+def get_crashlytics_upload_symbols_path
+  workspace = File.basename(get_xcworkspace_path, ".xcworkspace")
+  pattern = File.expand_path(
+    "~/Library/Developer/Xcode/DerivedData/#{workspace}-*/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"
+  )
+  path = Dir[pattern].max_by { |candidate| File.mtime(candidate) }
+  return path if path
+
+  raise "Could not find Crashlytics upload-symbols at #{pattern}"
+end
+
 default_platform(:ios)
 
 # ============================================================================
@@ -221,7 +234,7 @@ platform :ios do
 
     crashlytics_options = {
       gsp_path: "./config/GoogleService-Info.plist",
-      binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
+      binary_path: get_crashlytics_upload_symbols_path
     }
     if archive_dsyms.any?
       UI.message(

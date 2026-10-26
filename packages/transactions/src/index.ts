@@ -18,6 +18,7 @@ export const name = '@perawallet/wallet-core-transactions'
 
 export * from './models'
 export * from './hooks'
+export * from './address-safety'
 export {
     sendFlowChainAdapters,
     sendFlowFeatureFor,
@@ -48,7 +49,16 @@ export {
     type SpendableBalanceInput,
     type InFlightSpend,
     type RecipientWarningInput,
+    type TransactionReplacementKind,
+    type TransactionReplacementRequest,
+    type AddressPoisoningRules,
 } from './transfer-adapter'
+export {
+    diffAddressCharacters,
+    type AddressPoisoningInput,
+    type AddressPoisoningRisk,
+    type AddressSegment,
+} from './address-poisoning'
 export { getInFlightSpends } from './in-flight'
 export {
     historyChainAdapters,
@@ -111,6 +121,7 @@ export {
     NonZeroBalanceError,
     CreatorCannotOptOutError,
     AssetFrozenError,
+    TransactionNotReplaceableError,
     RekeyError,
     type RekeyErrorReason,
 } from './errors'

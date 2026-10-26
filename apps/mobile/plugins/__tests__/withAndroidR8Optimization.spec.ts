@@ -12,7 +12,6 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-    PRECISE_SHRINKING_KEY,
     STRICT_FULL_MODE_KEY,
     setR8Properties,
 } from '../withAndroidR8Optimization'
@@ -23,10 +22,9 @@ const valueOf = (items: GradleProperty[], key: string) =>
     items.find(item => item.key === key)?.value
 
 describe('setR8Properties', () => {
-    it('turns on precise shrinking and turns off strict keep rules', () => {
+    it('turns off strict keep rules', () => {
         const result: GradleProperty[] = setR8Properties([])
 
-        expect(valueOf(result, PRECISE_SHRINKING_KEY)).toBe('true')
         expect(valueOf(result, STRICT_FULL_MODE_KEY)).toBe('false')
     })
 
@@ -44,6 +42,6 @@ describe('setR8Properties', () => {
         const once: GradleProperty[] = setR8Properties([])
         const twice: GradleProperty[] = setR8Properties(once)
 
-        expect(twice).toHaveLength(2)
+        expect(twice).toHaveLength(1)
     })
 })
