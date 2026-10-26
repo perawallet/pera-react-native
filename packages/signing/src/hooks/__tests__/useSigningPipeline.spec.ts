@@ -58,12 +58,17 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
+import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../__tests__/fakeReviewerAdapter'
+import { reviewerChainAdapters } from '../../chain-adapter'
 import {
     asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
+    SECOND_CHAIN_SCOPE,
 } from '../../__tests__/transactions'
 import {
     useSigningPipeline,
@@ -150,18 +155,40 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
-    test('shows nothing for a request on a chain with no planner, which its own body reviews', () => {
-        mockSigningRequest.currentRequest = {
+    describe('on a chain with no planner, which its own body reviews', () => {
+        const request = {
             id: 'req-neutral',
             type: 'transactions',
             transport: 'network',
             txs: [makeUnsignedTransaction('0xFROM')],
         } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        test("reviews each transaction through its chain's reviewer, with no planner-built list or fee", () => {
+            reviewerChainAdapters.register({
+                ...fakeReviewerAdapter({
+                    toTransactionNative: tx =>
+                        mockMapToDisplayable(tx) as TransactionNative,
+                }),
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+            })
+            mockSigningRequest.currentRequest = request
 
-        expect(result.current.allTransactions).toEqual([])
-        expect(mockMapToDisplayable).not.toHaveBeenCalled()
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.allTransactions).toEqual(request.txs)
+            expect([...result.current.signableIndices]).toEqual([0])
+            expect(result.current.listItems).toEqual([])
+            expect(result.current.totalFee.isZero()).toBe(true)
+        })
+
+        test('shows nothing when no reviewer reads its chain', () => {
+            mockSigningRequest.currentRequest = request
+
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(result.current.allTransactions).toEqual([])
+            expect(mockMapToDisplayable).not.toHaveBeenCalled()
+        })
     })
 
     describe('on an Algorand chain-neutral request', () => {

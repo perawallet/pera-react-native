@@ -489,8 +489,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     gasPrice: '0x3b9aca00',
                 })
                 const request = await queued()
-                // The broadcaster leg is pinned by the chain's own spec, and
-                // mobile has no Ethereum review UI to drive.
+                // The broadcaster leg is pinned by the chain's own spec.
                 await act(async () => {
                     await request.approve([], { txIds: [HASH] })
                 })

@@ -123,6 +123,7 @@ export type SourceKind =
     | 'gift-card'
     | 'card'
     | 'injected'
+    | 'replacement'
 
 export type TransportKind =
     | 'network'

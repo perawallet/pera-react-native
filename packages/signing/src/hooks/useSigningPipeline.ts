@@ -178,6 +178,32 @@ const EMPTY_DISPLAY_DATA: DisplayData = {
     requestStructure: 'single',
 }
 
+/**
+ * A chain without a planner (Ethereum) reviews each transaction in its own
+ * body, so the sheet needs only the review models and who can sign: there is
+ * no planner-built list, fee total or warning set to show.
+ */
+const computeReviewOnlyDisplayData = (
+    txRequest: TransactionSignRequest,
+    accounts: WalletAccount[],
+): DisplayData => {
+    const chainId = chainIdOfSignRequest(txRequest)
+    if (!reviewerChainAdapters.has(chainId)) return EMPTY_DISPLAY_DATA
+    const reviewer = reviewerChainAdapters.get(chainId)
+    const allTransactions = txRequest.txs
+        .map(tx => reviewer.toTransactionNative(tx))
+        .filter((tx): tx is TransactionNative => !!tx)
+    return {
+        ...EMPTY_DISPLAY_DATA,
+        allTransactions,
+        signableIndices: new Set(allTransactions.map((_, i) => i)),
+        signableAddresses: addressesOn(
+            accounts.filter(a => canSignWith(a, accounts, chainId)),
+            chainId,
+        ),
+    }
+}
+
 // Module-level single-entry cache. Only one sign request is active at a time
 // (single-flight queue), yet the signing sheet mounts ~6-8 components that
 // each call useSigningPipeline. Without sharing, every consumer — and every
@@ -263,14 +289,12 @@ export const useSigningPipeline = (
 
     // Fees and the list come from the chain's planner, so a chain without one
     // (Ethereum) is reviewed by its own body alone.
-    const displayData = useMemo(
-        () =>
-            txRequest &&
-            plannerChainAdapters.has(chainIdOfSignRequest(txRequest))
-                ? getSharedDisplayData(txRequest, accounts)
-                : EMPTY_DISPLAY_DATA,
-        [txRequest, accounts],
-    )
+    const displayData = useMemo(() => {
+        if (!txRequest) return EMPTY_DISPLAY_DATA
+        return plannerChainAdapters.has(chainIdOfSignRequest(txRequest))
+            ? getSharedDisplayData(txRequest, accounts)
+            : computeReviewOnlyDisplayData(txRequest, accounts)
+    }, [txRequest, accounts])
 
     // Release the shared cache once no transaction request is active — i.e.
     // when the queue drains as the signing sheet closes. While a request is

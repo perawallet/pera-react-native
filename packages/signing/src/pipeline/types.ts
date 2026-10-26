@@ -115,6 +115,7 @@ export type SourceType =
     | 'card'
     | 'gift-card'
     | 'injected' // browser-extension window.pera provider
+    | 'replacement' // the wallet re-pricing one of its own pending transactions
 
 /**
  * Sources that pause at `awaiting_user` for the in-app review flow. Everything
@@ -130,6 +131,7 @@ export const INTERACTIVE_SOURCES = [
     'card',
     'gift-card',
     'injected',
+    'replacement',
 ] as const satisfies readonly SourceType[]
 
 export const isInteractiveSource = (
