@@ -311,6 +311,12 @@ describes, not the test that uses it, so it stays reusable.
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
 BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
 
+## On-device benchmarks
+
+Timing and heap for the wallet's own operations on a real device (startup work, queries, sync, import,
+cloud backup, signing) live in a separate benchmark app, not in the test suites. See
+`apps/benchmarks/README.md`.
+
 ## Locale tour (i18n screenshot QA)
 
 A dev-build-only tool for visually checking translated and pseudolocalized text across the app's
