@@ -40,12 +40,18 @@ const NATIVE = 'native'
 const STABLE = 'stable'
 const SUSPICIOUS = 'suspicious-token'
 const UNPRICED = 'unpriced-token'
+const VERIFIED_UNPRICED = 'verified-unpriced-token'
 
 const DECIMALS: Record<string, number> = {
     [NATIVE]: 6,
     [STABLE]: 6,
     [SUSPICIOUS]: 6,
     [UNPRICED]: 6,
+    [VERIFIED_UNPRICED]: 6,
+}
+const TIERS: Record<string, string> = {
+    [SUSPICIOUS]: 'suspicious',
+    [UNPRICED]: 'unverified',
 }
 const USD_PRICES: Record<string, string> = {
     [NATIVE]: '0.2',
@@ -134,7 +140,10 @@ describe('isTrustedTransfer', () => {
         value: new Decimal(100_000),
         decimals: 6,
         usdPrice: new Decimal(1),
+        isNative: false,
+        isVerified: true,
         isSuspicious: false,
+        isSignedByAccount: false,
     }
 
     it('trusts a transfer worth exactly the threshold', () => {
@@ -155,6 +164,32 @@ describe('isTrustedTransfer', () => {
     ])('does not trust a %s transfer', (_, overrides) => {
         expect(isTrustedTransfer({ ...valuation, ...overrides })).toBe(false)
     })
+
+    describe('for a send the account signed', () => {
+        const signed = {
+            ...valuation,
+            value: new Decimal(1),
+            usdPrice: undefined,
+            isVerified: false,
+            isSignedByAccount: true,
+        }
+
+        it.each([
+            ['the native asset', { isNative: true }],
+            ['a verified asset', { isVerified: true }],
+            ['a priced asset', { usdPrice: new Decimal(1) }],
+        ])('trusts any amount of %s', (_, overrides) => {
+            expect(isTrustedTransfer({ ...signed, ...overrides })).toBe(true)
+        })
+
+        it.each([
+            ['an unverified, unpriced asset', {}],
+            ['a suspicious asset', { isSuspicious: true, isVerified: true }],
+            ['a zero amount', { isNative: true, value: new Decimal(0) }],
+        ])('does not trust %s', (_, overrides) => {
+            expect(isTrustedTransfer({ ...signed, ...overrides })).toBe(false)
+        })
+    })
 })
 
 describe('fetchTrustedCounterparties', () => {
@@ -173,8 +208,7 @@ describe('fetchTrustedCounterparties', () => {
                     assetId,
                     decimals: DECIMALS[assetId] ?? 0,
                     peraMetadata: {
-                        verificationTier:
-                            assetId === SUSPICIOUS ? 'suspicious' : 'verified',
+                        verificationTier: TIERS[assetId] ?? 'verified',
                     },
                 })) as never,
         )
@@ -200,23 +234,49 @@ describe('fetchTrustedCounterparties', () => {
         expect(await trustedFor()).toEqual([payer('PAYER')])
     })
 
+    it('trusts a recipient of native dust the account signed, without any lookups', async () => {
+        historyOf([
+            record({ direction: 'out', counterparty: 'PAYEE', value: '1' }),
+        ])
+
+        expect(await trustedFor()).toEqual([paid('PAYEE')])
+        expect(getAssetsByIds).not.toHaveBeenCalled()
+        expect(getAssetPricesByIds).not.toHaveBeenCalled()
+    })
+
     it.each([
-        ['native dust', { value: '1' }],
-        ['an unpriced token', { assetId: UNPRICED, kind: 'token-transfer' }],
-        ['a suspicious token', { assetId: SUSPICIOUS, kind: 'token-transfer' }],
-    ] as const)(
-        'trusts a recipient of %s the account signed, without pricing it',
-        async (_, overrides) => {
+        ['a verified token with no price', VERIFIED_UNPRICED],
+        ['a priced token below the minimum value', STABLE],
+    ])('trusts a recipient of %s the account signed', async (_, assetId) => {
+        historyOf([
+            record({
+                direction: 'out',
+                counterparty: 'PAYEE',
+                kind: 'token-transfer',
+                assetId,
+                value: '1',
+            }),
+        ])
+
+        expect(await trustedFor()).toEqual([paid('PAYEE')])
+    })
+
+    it.each([
+        ['a suspicious token', SUSPICIOUS],
+        ['an unverified token with no price', UNPRICED],
+    ])(
+        'does not trust a recipient of %s even though the account signed it',
+        async (_, assetId) => {
             historyOf([
                 record({
                     direction: 'out',
-                    counterparty: 'PAYEE',
-                    ...overrides,
+                    counterparty: 'LOOK-ALIKE',
+                    kind: 'token-transfer',
+                    assetId,
                 }),
             ])
 
-            expect(await trustedFor()).toEqual([paid('PAYEE')])
-            expect(getAssetPricesByIds).not.toHaveBeenCalled()
+            expect(await trustedFor()).toEqual([])
         },
     )
 

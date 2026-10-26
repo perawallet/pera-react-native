@@ -53,7 +53,10 @@ export type TransferValuation = {
     value: Decimal
     decimals: Optional<number>
     usdPrice: Optional<Decimal>
+    isNative: boolean
+    isVerified: boolean
     isSuspicious: boolean
+    isSignedByAccount: boolean
 }
 
 export type FetchTrustedCounterpartiesParams = {

@@ -67,13 +67,21 @@ type CounterpartyTransfer = {
     isSentByAccount: boolean
 }
 
+// A send the account signed needs no minimum value, but the asset must still
+// be real: signing an attacker's token call can emit a transfer to a look-alike.
 export const isTrustedTransfer = ({
     value,
     decimals,
     usdPrice,
+    isNative,
+    isVerified,
     isSuspicious,
+    isSignedByAccount,
 }: TransferValuation): boolean => {
     if (value.isZero() || isSuspicious) return false
+    if (isSignedByAccount) {
+        return isNative || isVerified || usdPrice !== undefined
+    }
     if (decimals === undefined || usdPrice === undefined) return false
     return baseUnitsToDisplayUnits(value, decimals)
         .mul(usdPrice)
@@ -151,50 +159,58 @@ const readPrices = async (
     return new Map(prices.map(price => [price.assetId, price.usdPrice]))
 }
 
-// A send the account signed proves the counterparty whatever it was worth;
-// anything else has to carry value.
 const trustedOf = async (
     transfers: CounterpartyTransfer[],
     scope: ChainScope,
 ): Promise<TrustedCounterparty[]> => {
-    const sent = transfers.filter(transfer => transfer.isSentByAccount)
-    const unsigned = transfers.filter(transfer => !transfer.isSentByAccount)
-    const trusted: TrustedCounterparty[] = sent.map(transfer => ({
-        address: transfer.counterparty,
-        hasBeenPaid: true,
-    }))
-    if (unsigned.length === 0) return trusted
-
+    const descriptor = getChainDescriptor(scope.chainId)
+    const isNative = (transfer: CounterpartyTransfer) =>
+        isNativeAsset(transfer.assetRef, descriptor)
+    // A signed native send needs no lookups, so a history of plain payments
+    // costs no asset or price requests.
+    const needsLookup = transfers.filter(
+        transfer => !(transfer.isSentByAccount && isNative(transfer)),
+    )
     const refs = [
         ...new Map(
-            unsigned.map(({ assetRef }) => [assetRef.assetId, assetRef]),
+            needsLookup.map(({ assetRef }) => [assetRef.assetId, assetRef]),
         ).values(),
     ]
-    const [assets, prices] = await Promise.all([
-        readAssets(refs, scope),
-        readPrices(
-            refs.map(ref => ref.assetId),
-            scope,
-        ),
-    ])
-    const descriptor = getChainDescriptor(scope.chainId)
-    for (const transfer of unsigned) {
+    const [assets, prices] =
+        refs.length > 0
+            ? await Promise.all([
+                  readAssets(refs, scope),
+                  readPrices(
+                      refs.map(ref => ref.assetId),
+                      scope,
+                  ),
+              ])
+            : [new Map<string, PeraAsset>(), new Map<string, Decimal>()]
+
+    return transfers.flatMap(transfer => {
         const { assetId } = transfer.assetRef
         const asset = assets.get(assetId)
+        const tier = asset?.peraMetadata?.verificationTier
         const isTrusted = isTrustedTransfer({
             value: transfer.value,
             decimals: transfer.decimalsHint ?? asset?.decimals,
             usdPrice: prices.get(assetId),
+            isNative: isNative(transfer),
+            isVerified: tier === PeraAssetVerificationTier.verified,
             isSuspicious:
-                !isNativeAsset(transfer.assetRef, descriptor) &&
-                asset?.peraMetadata?.verificationTier ===
-                    PeraAssetVerificationTier.suspicious,
+                !isNative(transfer) &&
+                tier === PeraAssetVerificationTier.suspicious,
+            isSignedByAccount: transfer.isSentByAccount,
         })
-        if (isTrusted) {
-            trusted.push({ address: transfer.counterparty, hasBeenPaid: false })
-        }
-    }
-    return trusted
+        return isTrusted
+            ? [
+                  {
+                      address: transfer.counterparty,
+                      hasBeenPaid: transfer.isSentByAccount,
+                  },
+              ]
+            : []
+    })
 }
 
 const mergeInto = (
