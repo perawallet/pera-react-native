@@ -315,6 +315,16 @@ workflows:
             #!/usr/bin/env bash
             ./tools/dev/validate-env.sh
     - script@1:
+        title: Resolve Xcode build version
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # Keys the Pods and DerivedData caches, so a stack change never restores output
+            # another Xcode built.
+            envman add --key XCODE_BUILD_VERSION \
+              --value "$(xcodebuild -version | awk '/Build version/ { print $3 }')"
+    - script@1:
         title: Install Ruby via asdf
         inputs:
         - content: |
@@ -433,7 +443,7 @@ workflows:
             echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
     - restore-cache@3:
         inputs:
-        - key: ios-pods-{{ checksum "pnpm-lock.yaml" }}
+        - key: ios-pods-$XCODE_BUILD_VERSION-{{ checksum "pnpm-lock.yaml" }}
     - script@1:
         title: Resolve marketing version (tag-driven)
         inputs:
@@ -471,12 +481,12 @@ workflows:
             pnpm --filter mobile expo:prebuild
     - save-cache@1:
         inputs:
-        - key: ios-pods-{{ checksum "pnpm-lock.yaml" }}
+        - key: ios-pods-$XCODE_BUILD_VERSION-{{ checksum "pnpm-lock.yaml" }}
         - paths: apps/mobile/ios/Pods
     - restore-cache@3:
         run_if: '{{enveq "USE_CACHE" "true"}}'
         inputs:
-        - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
+        - key: ios-derived-data-$XCODE_BUILD_VERSION-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
             }}-{{ checksum "pnpm-lock.yaml" }}
     - certificate-and-profile-installer@1: {}
     - script@1:
@@ -503,7 +513,7 @@ workflows:
     - save-cache@1:
         run_if: '{{enveq "USE_CACHE" "true"}}'
         inputs:
-        - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
+        - key: ios-derived-data-$XCODE_BUILD_VERSION-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
             }}-{{ checksum "pnpm-lock.yaml" }}
         - paths: "~/Library/Developer/Xcode/DerivedData"
     - script@1:
