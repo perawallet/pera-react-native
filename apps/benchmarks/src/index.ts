@@ -10,4 +10,7 @@
  limitations under the License
  */
 
+// Must evaluate before anything that loads MSW.
+import './mswGlobals'
+
 export { BenchApp } from './BenchApp'
