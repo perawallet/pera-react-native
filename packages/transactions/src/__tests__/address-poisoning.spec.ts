@@ -162,9 +162,9 @@ describe('isDustOnlyCounterparty', () => {
             amount: null,
         }
 
-        expect(
-            isDustOnlyCounterparty([noAmount], DUST_CEILING, isNative),
-        ).toBe(true)
+        expect(isDustOnlyCounterparty([noAmount], DUST_CEILING, isNative)).toBe(
+            true,
+        )
     })
 })
 
@@ -267,14 +267,11 @@ describe('assessAddressPoisoning', () => {
         ['own account', OWN, pad('OWNA', 'MMMM')],
         ['contact', CONTACT, pad('CONT', 'MMMM')],
         ['sent-to address', SENT_TO, pad('SENT', 'MMMM')],
-    ])(
-        'flags a look-alike of a %s',
-        async (_, known, recipient) => {
-            const risk = await assessAddressPoisoning(input(recipient))
+    ])('flags a look-alike of a %s', async (_, known, recipient) => {
+        const risk = await assessAddressPoisoning(input(recipient))
 
-            expect(risk).toEqual({ kind: 'lookalike', similarTo: known })
-        },
-    )
+        expect(risk).toEqual({ kind: 'lookalike', similarTo: known })
+    })
 
     it('flags an address that only sent the user dust', async () => {
         vi.mocked(getCounterpartyTransfers).mockResolvedValue([

@@ -1262,8 +1262,7 @@ describe('transaction repository', () => {
         const store = (
             items: TransactionHistoryItem[],
             scope: ChainScope = SCOPE,
-        ) =>
-            upsertTransactions({ db, items, accountAddress: 'OWN1', scope })
+        ) => upsertTransactions({ db, items, accountAddress: 'OWN1', scope })
 
         it('lists the distinct receivers the given senders paid', async () => {
             await store([
