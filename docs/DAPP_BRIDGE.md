@@ -289,10 +289,14 @@ hands the transactions to the service worker as `submit-connection-request`,
 which settles the approval there and then, and the router forwards them to the
 offscreen document as `submit-send`. The offscreen host marks the request
 committed (`commit` on the inbound message), records and broadcasts it through
-the chain's `submitAndAutoRefresh`, and answers the dApp with the hash or the
-node's error. From the handoff on, no expiry, close or revoke answers the
+the chain's `submitAndAutoRefresh`, and answers the dApp with the hash, or with
+the node's error only when the node refused it: a send whose outcome is unknown
+may still mine, so it answers with its locally derived hash and the reconciler
+settles the attempt. From the handoff on, no expiry, close or revoke answers the
 request; the window only shows the outcome. A window that dies before the
-handoff has sent nothing, so its decline is the truth.
+handoff has sent nothing, so its decline is the truth. A `submit-send` the host
+refuses (or never receives) gets a failure `respond` from the router, which finds
+nothing to answer if the host had already claimed the send.
 
 The one case this cannot cover is the offscreen document dying mid-broadcast:
 the attempt is recorded before it is sent, so the reconciler settles it, but the

@@ -425,6 +425,49 @@ describe('installConnectionsApprovalRouter', () => {
                 )
                 expect(approvals.openConnectionError).not.toHaveBeenCalled()
             })
+
+            it('answers the dApp with a failure when the host refuses the submit', async () => {
+                submitted()
+                chromeMock.runtime.sendMessage
+                    .mockResolvedValueOnce({
+                        ok: false,
+                        error: 'Request conn-1:9 is not for ethereum',
+                    })
+                    .mockResolvedValue({ ok: true })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                        {
+                            scope: CONNECTIONS_CONTROL_SCOPE,
+                            kind: 'respond',
+                            connectionId: 'conn-1',
+                            correlationId: '9',
+                            outcome: { ok: false, message: 'Request failed' },
+                        },
+                    ),
+                )
+            })
+
+            it('opens no notice when the fallback answer finds the send already claimed', async () => {
+                const reportOutcome = submitted()
+                chromeMock.runtime.sendMessage.mockResolvedValue({
+                    ok: false,
+                    error: 'Unknown request conn-1:9',
+                })
+
+                chromeMock.deliver(signRequest())
+
+                await vi.waitFor(() =>
+                    expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                        expect.objectContaining({ kind: 'respond' }),
+                    ),
+                )
+                await vi.waitFor(() => expect(reportOutcome).toHaveBeenCalled())
+                await new Promise(resolve => setTimeout(resolve, 0))
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
+            })
         })
 
         it('posts the signed result back as a respond message', async () => {

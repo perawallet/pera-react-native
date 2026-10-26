@@ -169,6 +169,16 @@ export const installConnectionsApprovalRouter = ({
                 const { name, message } =
                     error instanceof Error ? error : new Error(String(error))
                 reportOutcome({ ok: false, name, message })
+                // The bridge has settled and the window counts the send as
+                // handed off, so nothing else answers a send the host refused.
+                // The host claims a send before broadcasting it, so one it
+                // took finds nothing here; `control` raises no notice for that.
+                void control({
+                    kind: 'respond',
+                    connectionId,
+                    correlationId,
+                    outcome: { ok: false, message: 'Request failed' },
+                })
             })
     }
 
