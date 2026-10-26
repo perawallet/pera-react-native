@@ -181,6 +181,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 })
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useWebAppShell } from '../useWebAppShell.web'
 
 // Read before any test runs: vitest clears mock calls before each one, and
@@ -206,6 +207,7 @@ describe('useWebAppShell', () => {
         mocks.showOnboarding = false
         mocks.hasAccounts = false
         vi.clearAllMocks()
+        useDatabaseReadinessStore.getState().resetState()
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
         mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
@@ -523,6 +525,50 @@ describe('useWebAppShell', () => {
         const { result } = renderHook(() => useWebAppShell())
 
         await waitFor(() => expect(result.current.shellState).toBe('error'))
+    })
+
+    it('marks the database ready once it opens, before the rest of bootstrap finishes', async () => {
+        mocks.surface = 'approval'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.seedNativeAssets.mockReturnValue(new Promise(() => undefined))
+
+        renderHook(() => useWebAppShell())
+
+        expect(useDatabaseReadinessStore.getState().readiness).toBe('pending')
+        await waitFor(() =>
+            expect(useDatabaseReadinessStore.getState().readiness).toBe(
+                'ready',
+            ),
+        )
+        expect(mocks.initializeSyncService).not.toHaveBeenCalled()
+    })
+
+    it('marks the database failed when bootstrap ends before it opens', async () => {
+        mocks.surface = 'approval'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.initializeDatabase.mockRejectedValue(new Error('db init failed'))
+
+        renderHook(() => useWebAppShell())
+
+        await waitFor(() =>
+            expect(useDatabaseReadinessStore.getState().readiness).toBe(
+                'failed',
+            ),
+        )
+    })
+
+    it('keeps the database ready when a later bootstrap step fails', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.seedNativeAssets.mockRejectedValue(new Error('seed failed'))
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() => expect(result.current.shellState).toBe('error'))
+        expect(useDatabaseReadinessStore.getState().readiness).toBe('ready')
     })
 
     it('re-seals legacy material after keystore ready and before the database initialises', async () => {

@@ -369,7 +369,49 @@ describe('installConnectionsApprovalRouter', () => {
                     expect.objectContaining({
                         kind: 'respond',
                         correlationId: '9',
-                        outcome: { ok: false, message: 'Request declined' },
+                        outcome: {
+                            ok: false,
+                            message: 'Request declined',
+                            isUserRejection: true,
+                        },
+                    }),
+                )
+            })
+        })
+
+        it('posts a wallet-side failure with its kind and no user-rejection flag', async () => {
+            approvals.openConnectionRequest.mockResolvedValue({
+                failed: { failure: 'invalid-params' },
+            })
+
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        kind: 'respond',
+                        correlationId: '9',
+                        outcome: {
+                            ok: false,
+                            message: 'Request failed',
+                            failure: 'invalid-params',
+                        },
+                    }),
+                )
+            })
+        })
+
+        it('posts a wallet-side failure with no kind as a bare failure', async () => {
+            approvals.openConnectionRequest.mockResolvedValue({ failed: {} })
+
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        kind: 'respond',
+                        correlationId: '9',
+                        outcome: { ok: false, message: 'Request failed' },
                     }),
                 )
             })

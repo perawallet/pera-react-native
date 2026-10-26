@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
+    dappRequestFailureOf,
     enqueueInboundRequest,
     isConnectionAlive,
     useChainTransactionSigning,
@@ -30,9 +31,11 @@ import {
 import {
     decodeWalletOperation,
     encodeWalletOperationResult,
+    failConnectionRequest,
     rejectApproval,
     resolveConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
+import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkSwitchPrompt } from '@modules/connections/web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -54,6 +57,17 @@ const describeSignError = (e: unknown, t: (key: string) => string): string => {
     return t('dapp.sign.error.body')
 }
 
+// Only the user's own decline may reach the dApp as a rejection: a page
+// clears its whole queue on that answer, and every other transport answers
+// a wallet-side failure with the chain's failure code instead.
+const declineApproval = (requestId: string, error: Error): Promise<void> => {
+    const failure = dappRequestFailureOf(error)
+    if (failure === 'user-rejected' || error.name === 'UserCancelledError') {
+        return rejectApproval(requestId)
+    }
+    return failConnectionRequest(requestId, failure)
+}
+
 export const useSignRequestApprovalScreen =
     (): UseSignRequestApprovalScreenResult => {
         const { requestId, approval, isLoading } = useDappRequest()
@@ -66,6 +80,9 @@ export const useSignRequestApprovalScreen =
         // addresses, so it gets every account, keyless ones included.
         const allAccounts = useAllAccounts()
         const confirmNetworkSwitch = useNetworkSwitchPrompt()
+        const databaseReadiness = useDatabaseReadinessStore(
+            state => state.readiness,
+        )
         const enqueuedRef = useRef(false)
         const [error, setError] = useState<string | null>(null)
 
@@ -77,7 +94,18 @@ export const useSignRequestApprovalScreen =
             // the resolver would throw against an empty set. Reaching this
             // screen required a granted account, so it hydrates non-empty.
             if (allAccounts.length === 0) return
+            // Building a send allocates its nonce from the submission ledger,
+            // which the shell opens only after this window has rendered. Other
+            // operations skip the wait so the window stays quick for them.
+            const needsDatabase = approval.operation.type === 'send-transaction'
+            if (needsDatabase && databaseReadiness === 'pending') return
             enqueuedRef.current = true
+
+            if (needsDatabase && databaseReadiness === 'failed') {
+                setError(t('dapp.sign.error.body'))
+                void failConnectionRequest(requestId)
+                return
+            }
 
             // The grant on the message is the snapshot taken when the
             // request arrived; the user can revoke the connection from the
@@ -85,7 +113,7 @@ export const useSignRequestApprovalScreen =
             // revoked grant would produce a signature nothing can deliver.
             if (!isConnectionAlive(approval.connectionId)) {
                 setError(t('dapp.sign.connection_revoked'))
-                void rejectApproval(requestId)
+                void failConnectionRequest(requestId)
                 return
             }
             // The offscreen host already validated the operation; this rebuilds
@@ -107,8 +135,8 @@ export const useSignRequestApprovalScreen =
                     )
                     window.close()
                 },
-                reject: async () => {
-                    await rejectApproval(requestId)
+                reject: async error => {
+                    await declineApproval(requestId, error)
                     window.close()
                 },
             }
@@ -134,6 +162,7 @@ export const useSignRequestApprovalScreen =
             removeSignRequest,
             allAccounts,
             confirmNetworkSwitch,
+            databaseReadiness,
             t,
         ])
 

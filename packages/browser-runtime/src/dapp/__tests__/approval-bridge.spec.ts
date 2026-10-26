@@ -1258,6 +1258,141 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toBeNull()
     })
 
+    describe('declining a connection-request approval', () => {
+        const openRequest = (
+            bridge: ApprovalWindowBridge,
+            requestId: string,
+        ): Promise<unknown> =>
+            bridge.openConnectionRequest({
+                requestId,
+                origin: 'https://dapp.example',
+                connectionId: 'client-1',
+                correlationId: requestId,
+                chainId: 'algorand',
+                operation: { type: 'sign-transactions', group: [] },
+                authorizedAccounts: ['AAAA'],
+                peer: { name: 'dApp', url: 'https://dapp.example' },
+                sourceType: 'injected',
+            })
+
+        it('settles a user reject as null', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-user')
+            await flush()
+
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'reject-approval',
+                    requestId: 'req-user',
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toBeNull()
+        })
+
+        it('settles a wallet-side failure with its failure kind', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-failed')
+            await flush()
+
+            const ack = await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-failed',
+                    failure: 'invalid-params',
+                },
+                trustedSender,
+            )
+
+            expect(ack).toEqual({ ok: true })
+            expect(await decision).toEqual({
+                failed: { failure: 'invalid-params' },
+            })
+        })
+
+        it('settles a failure with no kind as a generic failure', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-generic')
+            await flush()
+
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-generic',
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toEqual({ failed: {} })
+        })
+
+        it.each(['user-rejected', 'made-up', 42])(
+            'drops a %s failure kind to the generic failure',
+            async failure => {
+                const { chromeLike, fireMessage } = makeChrome()
+                const bridge = new ApprovalWindowBridge(chromeLike)
+                bridge.listen()
+                const decision = openRequest(bridge, 'req-forged')
+                await flush()
+
+                await fireMessage(
+                    {
+                        scope: DAPP_APPROVAL_SCOPE,
+                        kind: 'fail-connection-request',
+                        requestId: 'req-forged',
+                        failure,
+                    },
+                    trustedSender,
+                )
+
+                expect(await decision).toEqual({
+                    failed: { failure: undefined },
+                })
+            },
+        )
+
+        it('refuses fail-connection-request on any other approval kind', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            void bridge.openConnectionProposal({
+                requestId: 'req-proposal',
+                origin: 'https://dapp.example',
+                proposalId: 'p-1',
+                connectionKind: 'walletconnect-v1',
+                peer: { name: 'dApp', url: 'https://dapp.example' },
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['algorand'],
+                    methods: ['algo_signTxn'],
+                },
+                expiresAt: 1,
+            })
+            await flush()
+
+            const ack = await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-proposal',
+                },
+                trustedSender,
+            )
+
+            expect(ack).toMatchObject({ ok: false })
+        })
+    })
+
     // Every pending approval past the first becomes a real OS window, and a
     // connection proposal needs no prior permission — so without a cap a page
     // that varies the request id could bury the desktop with a loop of a few

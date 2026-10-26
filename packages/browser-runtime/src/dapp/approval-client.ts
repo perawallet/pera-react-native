@@ -17,6 +17,7 @@ import type { WireWalletOperationResult } from '../connections/protocol'
 import {
     APPROVAL_POPUP_PORT_PREFIX,
     DAPP_APPROVAL_SCOPE,
+    type ConnectionRequestFailed,
     type PendingApproval,
 } from './approval-bridge'
 
@@ -115,6 +116,16 @@ export const resolveConnectionRequest = async (
     result: WireWalletOperationResult,
 ): Promise<void> =>
     deliverDecision('resolve-connection-request', { requestId, result })
+
+/**
+ * Refuses a connection request on the wallet's side; the dApp is not told the
+ * user declined. A user decline is `rejectApproval`.
+ */
+export const failConnectionRequest = async (
+    requestId: string,
+    failure?: ConnectionRequestFailed['failed']['failure'],
+): Promise<void> =>
+    deliverDecision('fail-connection-request', { requestId, failure })
 
 export const resolvePasskey = async (
     requestId: string,

@@ -364,8 +364,9 @@ export const drainPendingSignRequests = (): void => {
 /**
  * Mount the signing overlays and enqueue `request` so the interactive review
  * sheet opens. Returns the render result plus `confirm()`/`reject()` helpers.
+ * Without `request`, reviews whatever the flow under test already queued.
  */
-export const renderSignReview = (request: SignRequest) => {
+export const renderSignReview = (request?: SignRequest) => {
     const Host = () => {
         const { addSignRequest } = useSigningRequest()
         const { setPreference } = usePreferences()
@@ -376,7 +377,7 @@ export const renderSignReview = (request: SignRequest) => {
             // Suppress the once-per-device transaction-request FAQ sheet so it
             // doesn't open a competing bottom sheet during the test.
             setPreference('hasSeenTransactionRequestFAQ', true)
-            addSignRequest(request)
+            if (request) addSignRequest(request)
         }, [addSignRequest, setPreference])
         return <SigningOverlays />
     }

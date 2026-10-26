@@ -14,10 +14,12 @@ import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { AppError, logger } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
+    DappRequestRejectedError,
     matchesScope,
     waitForPairingOutcome,
     type ConnectionProposal,
     type ConnectionRegistry,
+    type DappRequestFailure,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { WalletConnectInvalidNetworkError } from '@perawallet/wallet-core-walletconnect'
@@ -62,6 +64,17 @@ const fail = (error: string): ConnectionsControlResponse => ({
     ok: false,
     error,
 })
+
+// Read by `dappRequestFailureOf`, the way the request's own handler would
+// have seen the error had it been raised in this realm.
+class DappRequestFailedError extends Error {
+    readonly failure?: DappRequestFailure
+
+    constructor(message: string, failure?: DappRequestFailure) {
+        super(message)
+        this.failure = failure
+    }
+}
 
 const describeError = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
@@ -343,7 +356,14 @@ export const startConnectionsHost = (
                 decodeWalletOperationResult(message.outcome.result),
             )
         } else {
-            await request.reject(new Error(message.outcome.message))
+            await request.reject(
+                message.outcome.isUserRejection
+                    ? new DappRequestRejectedError()
+                    : new DappRequestFailedError(
+                          message.outcome.message,
+                          message.outcome.failure,
+                      ),
+            )
         }
         requests.delete(key)
         return ok()

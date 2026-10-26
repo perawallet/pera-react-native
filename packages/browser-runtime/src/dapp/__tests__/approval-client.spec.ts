@@ -18,6 +18,7 @@ import {
 import {
     getCurrentApproval,
     getPendingApproval,
+    failConnectionRequest,
     rejectApproval,
     rejectPasskey,
     resolveApproval,
@@ -105,6 +106,19 @@ describe('rejectApproval', () => {
             scope: DAPP_APPROVAL_SCOPE,
             kind: 'reject-approval',
             requestId: 'q1',
+        })
+    })
+})
+
+describe('failConnectionRequest', () => {
+    it('sends a fail-connection-request message with the failure kind', async () => {
+        sendMessage.mockResolvedValueOnce({ ok: true })
+        await failConnectionRequest('q1', 'unauthorized-account')
+        expect(sendMessage).toHaveBeenCalledWith({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'fail-connection-request',
+            requestId: 'q1',
+            failure: 'unauthorized-account',
         })
     })
 })

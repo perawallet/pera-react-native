@@ -106,19 +106,45 @@ describe('wallet operation wire codec', () => {
         expect(decodeWalletOperationResult(wire)).toEqual(result)
     })
 
-    it('refuses to encode a send-transaction operation or result, whose bigints cannot cross a message hop', () => {
-        expect(() =>
-            encodeWalletOperation({
-                type: 'send-transaction',
-                request: { value: 1n },
-            }),
-        ).toThrow(/send-transaction/)
-        expect(() =>
-            encodeWalletOperationResult({
-                type: 'send-transaction',
-                txId: '0xabc',
-            }),
-        ).toThrow(/send-transaction/)
+    it('round-trips a send-transaction request with bigints through the wire', () => {
+        const request = {
+            from: '0xabc',
+            to: '0xdef',
+            value: 10n ** 30n,
+            data: '0x',
+            gas: 21000n,
+            accessList: [{ address: '0x1', storageKeys: ['0x2'] }],
+        }
+
+        const wire = encodeWalletOperation({
+            type: 'send-transaction',
+            request,
+        })
+
+        expect(overTheWire(wire)).toEqual(wire)
+        expect(isWireWalletOperation(wire)).toBe(true)
+        expect(decodeWalletOperation(overTheWire(wire))).toEqual({
+            type: 'send-transaction',
+            request,
+        })
+    })
+
+    it('round-trips a send-transaction result', () => {
+        const result = {
+            type: 'send-transaction',
+            txId: '0x' + 'ab'.repeat(32),
+        } as const
+
+        const wire = overTheWire(encodeWalletOperationResult(result))
+
+        expect(isWireWalletOperationResult(wire)).toBe(true)
+        expect(decodeWalletOperationResult(wire)).toEqual(result)
+    })
+
+    it('rejects a send-transaction wire result without a txId', () => {
+        expect(isWireWalletOperationResult({ type: 'send-transaction' })).toBe(
+            false,
+        )
     })
 
     it('leaves a sign-transactions result untouched', () => {
@@ -269,6 +295,33 @@ describe('isConnectionsControlMessage', () => {
                 outcome: { ok: true, result: ['c3R4bg=='] },
             }),
         ).toBe(false)
+    })
+
+    it('accepts a decline flagged as a user rejection and refuses a non-boolean flag', () => {
+        const withFlag = (isUserRejection: unknown) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'respond',
+            connectionId: 'c1',
+            correlationId: '7',
+            outcome: { ok: false, message: 'declined', isUserRejection },
+        })
+        expect(isConnectionsControlMessage(withFlag(true))).toBe(true)
+        expect(isConnectionsControlMessage(withFlag('yes'))).toBe(false)
+    })
+
+    it('accepts a decline carrying a known failure kind and refuses any other', () => {
+        const withFailure = (failure: unknown) => ({
+            scope: CONNECTIONS_CONTROL_SCOPE,
+            kind: 'respond',
+            connectionId: 'c1',
+            correlationId: '7',
+            outcome: { ok: false, message: 'Request failed', failure },
+        })
+        expect(isConnectionsControlMessage(withFailure('invalid-params'))).toBe(
+            true,
+        )
+        expect(isConnectionsControlMessage(withFailure('made-up'))).toBe(false)
+        expect(isConnectionsControlMessage(withFailure(4001))).toBe(false)
     })
 
     it('rejects another scope, an unknown kind and a non-object', () => {

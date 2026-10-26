@@ -25,6 +25,10 @@ import type {
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
 import {
+    DAPP_REQUEST_FAILURES,
+    type DappRequestFailure,
+} from '@perawallet/wallet-core-connections/dappRequest'
+import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
@@ -65,6 +69,7 @@ export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
     | Extract<WalletOperation, { type: MessageOperationType }>
     | Extract<WalletOperation, { type: 'switch-network' }>
+    | { type: 'send-transaction'; request: unknown }
     | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
@@ -73,6 +78,7 @@ export type WireWalletOperation =
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
     | Extract<WalletOperationResult, { type: 'switch-network' }>
+    | Extract<WalletOperationResult, { type: 'send-transaction' }>
     | {
           type: MessageOperationType
           /** base64 of the signature. */
@@ -84,16 +90,48 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
-// The browser registers no chain that serves one, and its request holds bigints
-// that cannot cross a message hop.
-const refuseSendTransaction = (): never => {
-    throw new Error('send-transaction cannot cross a browser message hop')
+const BIGINT_KEY = '$bigint'
+
+// The request is opaque to this package, so bigints can't be encoded per field.
+const encodeOpaque = (value: unknown): unknown => {
+    if (typeof value === 'bigint') return { [BIGINT_KEY]: value.toString() }
+    if (Array.isArray(value)) return value.map(encodeOpaque)
+    if (value === null || typeof value !== 'object') {
+        if (typeof value === 'function' || typeof value === 'symbol') {
+            throw new TypeError('Opaque value is not wire-safe')
+        }
+        return value
+    }
+    const proto = Object.getPrototypeOf(value)
+    if (proto !== Object.prototype && proto !== null) {
+        throw new TypeError('Opaque value is not wire-safe')
+    }
+    return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [key, encodeOpaque(item)]),
+    )
+}
+
+const decodeOpaque = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(decodeOpaque)
+    if (!isRecord(value)) return value
+    const keys = Object.keys(value)
+    if (keys.length === 1 && keys[0] === BIGINT_KEY) {
+        return BigInt(value[BIGINT_KEY] as string)
+    }
+    return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [key, decodeOpaque(item)]),
+    )
 }
 
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
-    if (operation.type === 'send-transaction') return refuseSendTransaction()
+    if (operation.type === 'send-transaction') {
+        return {
+            type: 'send-transaction',
+            request: encodeOpaque(operation.request),
+        }
+    }
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -116,6 +154,12 @@ export const encodeWalletOperation = (
 export const decodeWalletOperation = (
     operation: WireWalletOperation,
 ): WalletOperation => {
+    if (operation.type === 'send-transaction') {
+        return {
+            type: 'send-transaction',
+            request: decodeOpaque(operation.request),
+        }
+    }
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -138,7 +182,7 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
-    if (result.type === 'send-transaction') return refuseSendTransaction()
+    if (result.type === 'send-transaction') return result
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
     if (result.type !== 'sign-data') {
@@ -158,6 +202,7 @@ export const decodeWalletOperationResult = (
 ): WalletOperationResult => {
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
+    if (result.type === 'send-transaction') return result
     if (result.type !== 'sign-data') {
         return {
             type: result.type,
@@ -183,6 +228,9 @@ export const isWireWalletOperation = (
         }
         case 'switch-network': {
             return typeof value.networkId === 'string'
+        }
+        case 'send-transaction': {
+            return isRecord(value.request)
         }
         case 'sign-message':
         case 'sign-typed-data': {
@@ -213,6 +261,9 @@ export const isWireWalletOperationResult = (
         }
         case 'switch-network': {
             return true
+        }
+        case 'send-transaction': {
+            return typeof value.txId === 'string'
         }
         case 'sign-message':
         case 'sign-typed-data': {
@@ -256,7 +307,14 @@ export type ConnectionsControlMessage = {
           correlationId: string
           outcome:
               | { ok: true; result: WireWalletOperationResult }
-              | { ok: false; message: string }
+              | {
+                    ok: false
+                    /** Reaches the dApp; never wallet-private. */
+                    message: string
+                    isUserRejection?: boolean
+                    /** Mapped to the dApp's wire code; absent answers a generic internal error. */
+                    failure?: DappRequestFailure
+                }
       }
 )
 
@@ -296,7 +354,14 @@ const isRespondOutcome = (
 >['outcome'] => {
     if (!isRecord(value)) return false
     if (value.ok === true) return isWireWalletOperationResult(value.result)
-    return value.ok === false && typeof value.message === 'string'
+    return (
+        value.ok === false &&
+        typeof value.message === 'string' &&
+        (value.isUserRejection === undefined ||
+            typeof value.isUserRejection === 'boolean') &&
+        (value.failure === undefined ||
+            DAPP_REQUEST_FAILURES.some(known => known === value.failure))
+    )
 }
 
 export const isConnectionsControlMessage = (

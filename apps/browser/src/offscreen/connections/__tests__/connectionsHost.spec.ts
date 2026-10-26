@@ -22,6 +22,7 @@ import {
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
+    dappRequestFailureOf,
     type ConnectionErrorScope,
     type ConnectionProposal,
     type ConnectionRegistry,
@@ -512,6 +513,64 @@ describe('startConnectionsHost', () => {
                 expect.objectContaining({ message: 'Request declined' }),
             )
             expect(response).toEqual({ ok: true })
+        })
+
+        it('a declined approval rejects the request as user-rejected', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Request declined',
+                    isUserRejection: true,
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(dappRequestFailureOf(error)).toBe('user-rejected')
+        })
+
+        it('an approval that failed to open rejects with its message', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Approval window failed to open',
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(error.message).toBe('Approval window failed to open')
+            expect(dappRequestFailureOf(error)).toBeUndefined()
+        })
+
+        it('a wallet-side failure rejects with its failure kind, not as user-rejected', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Request failed',
+                    failure: 'unauthorized-account',
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(error.message).toBe('Request failed')
+            expect(dappRequestFailureOf(error)).toBe('unauthorized-account')
         })
 
         it('reports a failed delivery as { ok: false }', async () => {

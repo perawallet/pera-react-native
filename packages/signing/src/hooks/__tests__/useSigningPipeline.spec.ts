@@ -58,8 +58,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../__tests__/fakeReviewerAdapter'
+import { reviewerChainAdapters } from '../../chain-adapter'
+import {
+    SECOND_CHAIN_SCOPE,
     asUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestPaymentTx,
@@ -150,9 +155,30 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
-    test('shows nothing for a request on a chain with no planner, which its own body reviews', () => {
+    test('reviews a request on a chain with no planner through its reviewer, without planner fees', () => {
+        const native = { family: 'evm' } as unknown as TransactionNative
+        reviewerChainAdapters.register(
+            fakeReviewerAdapter({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                toTransactionNative: () => native,
+            }),
+        )
         mockSigningRequest.currentRequest = {
             id: 'req-neutral',
+            type: 'transactions',
+            transport: 'network',
+            txs: [makeUnsignedTransaction('0xFROM')],
+        } satisfies TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.allTransactions).toEqual([native])
+        expect(result.current.totalFee.isZero()).toBe(true)
+    })
+
+    test('shows nothing for a request on a chain with no reviewer', () => {
+        mockSigningRequest.currentRequest = {
+            id: 'req-unreviewed',
             type: 'transactions',
             transport: 'network',
             txs: [makeUnsignedTransaction('0xFROM')],

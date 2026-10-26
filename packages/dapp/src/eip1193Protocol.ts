@@ -25,6 +25,9 @@ export const EIP1193_METHOD = {
     switchChain: 'wallet_switchEthereumChain',
     addChain: 'wallet_addEthereumChain',
     revokePermissions: 'wallet_revokePermissions',
+    sendTransaction: 'eth_sendTransaction',
+    personalSign: 'personal_sign',
+    signTypedDataV4: 'eth_signTypedData_v4',
 } as const
 
 export const EIP1193_EVENT = {
@@ -44,6 +47,7 @@ export const EIP1193_ERROR_CODE = {
     chainDisconnected: 4901,
     unrecognizedChain: 4902,
     resourceUnavailable: -32_002,
+    limitExceeded: -32_005,
     invalidParams: -32_602,
     internal: -32_603,
 } as const

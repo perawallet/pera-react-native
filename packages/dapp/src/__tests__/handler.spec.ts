@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     createConnectionRegistry,
+    DappRequestRejectedError,
     dappRequestChainAdapters,
     type ConnectionHandler,
     type ConnectionProposal,
@@ -508,6 +509,25 @@ describe('DappConnectionHandler', () => {
                 signatures: [new Uint8Array([1, 2, 3])],
             })
             expect(resultOf(await pending)).toEqual(['AQID'])
+        })
+
+        it('answers a DappRequestRejectedError with UserRejected', async () => {
+            const { transport, registry, messages } = setup([connected()])
+            await registry.initialize()
+            const pending = transport.send(
+                ORIGIN,
+                'requestTransactionSigning',
+                {
+                    txns: [{ txn: 'AA==' }],
+                },
+            )
+            await flush()
+            const m = messages[0]
+            if (m.kind !== 'request') throw new Error('expected a request')
+            await m.reject(new DappRequestRejectedError())
+            expect(errorOf(await pending)?.code).toBe(
+                JsonRpcErrorCode.UserRejected,
+            )
         })
 
         it('maps a user rejection to UserRejected and other failures to a sanitized InternalError', async () => {

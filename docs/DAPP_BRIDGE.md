@@ -250,6 +250,27 @@ selection. The chains on offer are the `eip155` chain adapters with
 `dappConnect` on; a network the wallet hasn't selected answers 4902, and
 `wallet_addEthereumChain` is refused.
 
+Any other method is routed through the site's chain's WalletConnect v2 route
+table (`walletConnect.v2.handleRequest` on its `dapp-request` adapter), so a
+page gets the same signing methods, review and refusals as a WalletConnect
+session: `eth_sendTransaction`, `personal_sign` and `eth_signTypedData_v4` go
+to the approval as `sourceType: 'injected'`, and a route the chain refuses is
+answered with its error unchanged. Everything else answers 4200, a signing
+request from a site with no connection 4100, and a connection whose chain is no
+longer served 4901. Signing requests from one site, across all its tabs, wait in
+one queue and reach the approval one at a time, so a page cannot bury the user
+under prompts: past `MAX_PENDING_REQUESTS_PER_PEER` pending a request answers
+-32005, rejecting the one on screen answers the rest 4001, revoking the site
+answers every one 4100 (the approval window only withdraws its own), and each
+expires `DAPP_REQUEST_TTL_MS` after it arrived, queued or not, because the page
+stops waiting on its own clock. The connection, chain and granted accounts are
+read when a request reaches the approval, not when it arrives.
+
+Only the user's Reject, or closing the approval, answers 4001. The approval
+window sends any other refusal (a build the node rejects, a grant revoked while
+it was open) as `fail-connection-request`, which answers just that request with
+the chain's code for its failure kind, or -32603, and the queue moves on.
+
 A revoked site, from the dApp (`wallet_revokePermissions`) or from Settings,
 gets `accountsChanged([])`, not `disconnect`, because EIP-1193 reserves
 `disconnect` for a provider that has lost every chain.

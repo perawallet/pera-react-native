@@ -16,6 +16,7 @@ import {
     isConnectionApprovalRequestMessage,
     sendConnectionsControlMessage,
     type ApprovalWindowBridge,
+    type ConnectionRequestDecision,
     type ConnectionsAck,
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-core-browser-runtime'
@@ -36,6 +37,35 @@ const peerOrigin = (peer: ConnectionPeer | undefined): string => {
     } catch {
         return ''
     }
+}
+
+type RespondOutcome = Extract<
+    ConnectionsControlCommand,
+    { kind: 'respond' }
+>['outcome']
+
+// Only `null` (the user's Reject, or closing the surface) may tell the dApp
+// the user declined: a page clears its whole queue on that answer.
+const toRespondOutcome = (
+    decision: Exclude<ConnectionRequestDecision, typeof APPROVAL_WITHDRAWN>,
+): RespondOutcome => {
+    if (decision === null) {
+        return {
+            ok: false,
+            message: 'Request declined',
+            isUserRejection: true,
+        }
+    }
+    if ('failed' in decision) {
+        return {
+            ok: false,
+            message: 'Request failed',
+            ...(decision.failed.failure && {
+                failure: decision.failed.failure,
+            }),
+        }
+    }
+    return { ok: true, result: decision.result }
 }
 
 // Offscreen documents cannot open windows, so approval requests are relayed to
@@ -181,12 +211,7 @@ export const installConnectionsApprovalRouter = ({
                                     kind: 'respond',
                                     connectionId,
                                     correlationId,
-                                    outcome: decision
-                                        ? { ok: true, result: decision.result }
-                                        : {
-                                              ok: false,
-                                              message: 'Request declined',
-                                          },
+                                    outcome: toRespondOutcome(decision),
                                 },
                                 request.peer,
                             )

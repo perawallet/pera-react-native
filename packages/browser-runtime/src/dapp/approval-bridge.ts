@@ -14,6 +14,10 @@ import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { SourceType } from '@perawallet/wallet-core-connections'
 import { pendingCapacityBreach } from '@perawallet/wallet-core-connections/capacity'
+import {
+    DAPP_REQUEST_FAILURES,
+    type DappRequestFailure,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import type {
     ConnectionKind,
     ConnectionPeer,
@@ -147,6 +151,7 @@ export const APPROVAL_WINDOW_HEIGHT = 600
 const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
     'resolve-approval': ['connection-proposal'],
     'resolve-connection-request': ['connection-request'],
+    'fail-connection-request': ['connection-request'],
     'resolve-passkey': ['passkey-create', 'passkey-get'],
     'reject-passkey': ['passkey-create', 'passkey-get'],
 }
@@ -166,10 +171,31 @@ const isDecisionKindAllowed = (
 /** Settles an approval that nothing may answer any more; see `withdrawConnectionRequest`. */
 export const APPROVAL_WITHDRAWN: unique symbol = Symbol('approval-withdrawn')
 
+/**
+ * The wallet refused the request without the user declining it (a failed
+ * build, a revoked grant). `failure` is what the dApp's namespace maps to its
+ * own wire code; absent, the dApp gets a generic internal error.
+ */
+export type ConnectionRequestFailed = {
+    failed: { failure?: Exclude<DappRequestFailure, 'user-rejected'> }
+}
+
+/** `null` is the user declining, or closing the surface. */
 export type ConnectionRequestDecision =
     | { result: WireWalletOperationResult }
+    | ConnectionRequestFailed
     | typeof APPROVAL_WITHDRAWN
     | null
+
+// A user rejection travels only as `reject-approval`, so a failure claiming
+// one is dropped to the generic failure rather than trusted.
+const toWalletFailure = (
+    value: unknown,
+): ConnectionRequestFailed['failed']['failure'] =>
+    DAPP_REQUEST_FAILURES.find(
+        (known): known is Exclude<DappRequestFailure, 'user-rejected'> =>
+            known === value && known !== 'user-rejected',
+    )
 
 /** Callers surface this to the dApp as a declined request rather than opening a surface. */
 export class ApprovalRejectedError extends Error {
@@ -245,7 +271,9 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         verifiedOrigin?: string
     }): Promise<ConnectionRequestDecision> {
         const decision = this.awaitApproval<
-            { result: WireWalletOperationResult } | typeof APPROVAL_WITHDRAWN
+            | { result: WireWalletOperationResult }
+            | ConnectionRequestFailed
+            | typeof APPROVAL_WITHDRAWN
         >({
             ...ctx,
             kind: 'connection-request',
@@ -529,6 +557,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             credential?: SerializedCredential
             reason?: string
             result?: unknown
+            failure?: unknown
         }
         if (msg?.scope !== DAPP_APPROVAL_SCOPE) return false
         if (!isTrustedExtensionPageSender(sender, this.chromeLike)) {
@@ -588,6 +617,13 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                     return true
                 }
                 this.finish(msg.requestId!, { result: msg.result })
+                sendResponse({ ok: true })
+                return true
+            }
+            case 'fail-connection-request': {
+                this.finish(msg.requestId!, {
+                    failed: { failure: toWalletFailure(msg.failure) },
+                } satisfies ConnectionRequestFailed)
                 sendResponse({ ok: true })
                 return true
             }
