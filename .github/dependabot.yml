@@ -229,6 +229,14 @@ updates:
       # reopening a bump that cannot change what installs. Move it with the
       # override, or not at all.
       - dependency-name: expo-build-properties
+      # @reown/walletkit pins @walletconnect/core, sign-client and utils
+      # exactly, and packages/walletconnect hands our own `new Core(...)` to
+      # WalletKit.init. A core or utils ahead of walletkit's pin runs under an
+      # older sign-client and ships two cores. Move these by hand, to the
+      # version the next walletkit release pins.
+      - dependency-name: "@walletconnect/core"
+      - dependency-name: "@walletconnect/utils"
+      - dependency-name: "@walletconnect/react-native-compat"
 
   # Fastlane's gem tree ships the iOS release lane, so an advisory there reaches
   # a signing machine. Nothing else watches apps/mobile/Gemfile.lock — `pnpm
