@@ -491,6 +491,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         // transitively imports it needs this mock to include the export.
         getActiveLocale: vi.fn(() => 'en'),
         setActiveLocale: vi.fn(),
+        subscribeActiveLocale: vi.fn(() => () => undefined),
+        useActiveLocale: vi.fn(() => 'en'),
         generateUniqueId: vi.fn(() => 'mock-uuid'),
         generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
         encodeToBase64: (bytes: Uint8Array) =>

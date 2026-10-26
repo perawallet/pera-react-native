@@ -80,7 +80,7 @@ export const useInputScreen = () => {
     // asset is unavailable (SelectDestination then resolves or shows the error).
     const proceedToDestination = useCallback(() => {
         if (destination && isDestinationReady && !isAssetUnavailable) {
-            resolveDestination(destination)
+            void resolveDestination(destination)
         } else {
             navigation.navigate('SelectDestination')
         }

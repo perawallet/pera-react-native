@@ -29,7 +29,12 @@ vi.mock('../history/indexer/endpoints', () => ({
 }))
 
 import { algorandAssetInbox } from '../../asa-inbox/adapter'
-import { algorandHistoryAdapter, algorandSendFlowAdapter } from '../adapter'
+import {
+    algorandHistoryAdapter,
+    algorandSendFlowAdapter,
+    algorandTransferAdapter,
+} from '../adapter'
+import { getAlgorandAddressPoisoningRules } from '../address-poisoning'
 import {
     EMPTY_ALGORAND_HISTORY_DATA,
     type AlgorandHistoryData,
@@ -235,5 +240,13 @@ describe('algorandHistoryAdapter', () => {
             family: 'algorand',
             transaction: { id: 'TX', paymentTransaction: { receiver: 'R' } },
         })
+    })
+})
+
+describe('algorandTransferAdapter address poisoning', () => {
+    it('screens recipients with the remotely tunable Algorand rules', () => {
+        expect(algorandTransferAdapter.addressPoisoning).toBe(
+            getAlgorandAddressPoisoningRules,
+        )
     })
 })

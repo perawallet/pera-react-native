@@ -192,7 +192,7 @@ describe('services/device/hooks', () => {
                 accounts,
                 platform: 'ios',
                 pushToken: 'test-fcm-token',
-                locale: 'en-US',
+                locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
             },
@@ -232,6 +232,34 @@ describe('services/device/hooks', () => {
         )
 
         useCurrenciesStore.getState().resetState()
+    })
+
+    test("registers the app's language rather than the phone's", async () => {
+        vi.resetModules()
+
+        const { setActiveLocale } =
+            await import('@perawallet/wallet-core-shared')
+        const useDevice = await importUseDevice()
+
+        await seedPushToken('test-fcm-token')
+        mockDeviceInfoService.getDeviceLocale.mockReturnValue('de-DE')
+        setActiveLocale('en')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ locale: 'en' }),
+            }),
+        )
+
+        mockDeviceInfoService.getDeviceLocale.mockReturnValue('en-US')
     })
 
     test('sends the stored id on every subsequent registration', async () => {
@@ -618,7 +646,7 @@ describe('services/device/hooks', () => {
                 accounts,
                 platform: 'ios',
                 pushToken: 'test-fcm-token',
-                locale: 'en-US',
+                locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
                 id: 'DEV-1',
@@ -689,7 +717,7 @@ describe('services/device/hooks', () => {
                 accounts,
                 platform: 'ios',
                 pushToken: 'test-fcm-token',
-                locale: 'en-US',
+                locale: 'en',
                 appVersion: '7.0.1',
                 currency: 'USD',
             },
@@ -1468,7 +1496,7 @@ describe('services/device/hooks', () => {
             id: 'OLD-DEV',
             pushToken: '',
             platform: 'ios',
-            locale: 'en-US',
+            locale: 'en',
             appVersion: '7.0.1',
             currency: 'USD',
             accounts: [],

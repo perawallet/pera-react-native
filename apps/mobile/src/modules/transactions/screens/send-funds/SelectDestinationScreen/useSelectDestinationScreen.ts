@@ -55,7 +55,7 @@ export const useSelectDestinationScreen = () => {
         if (!isReady) return
 
         setIsAutoAdvancing(false)
-        resolveDestination(destination)
+        void resolveDestination(destination)
     }, [
         isAutoAdvancing,
         destination,
@@ -97,7 +97,7 @@ export const useSelectDestinationScreen = () => {
                     signal: controller.signal,
                 })
                 if (verification === 'verified') {
-                    resolveDestination(address)
+                    void resolveDestination(address)
                     return
                 }
                 showToast({
@@ -131,7 +131,7 @@ export const useSelectDestinationScreen = () => {
                 void verifyThenResolve(address, nfdName)
                 return
             }
-            resolveDestination(address)
+            void resolveDestination(address)
         },
         [verifyThenResolve, resolveDestination],
     )

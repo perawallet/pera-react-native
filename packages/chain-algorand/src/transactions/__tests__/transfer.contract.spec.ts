@@ -39,6 +39,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     isDelegatedAccount: () => false,
 }))
 
+vi.mock('../address-poisoning', () => ({
+    getAlgorandAddressPoisoningRules: () => ({
+        lookalikeMatchedChars: 4,
+        dustCeiling: new Decimal(1000),
+    }),
+}))
 vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
     getMinimumFeeConfig: () => ({
         minTxnFee: 1000n,

@@ -82,6 +82,13 @@ vi.mock('@hooks/useCapability', async () =>
     (await import('@test-utils/capability-mock')).capabilityHookMock(),
 )
 
+vi.mock('../../useRecipientPoisoningGate', () => ({
+    useRecipientPoisoningGate: () => ({
+        screenRecipient: () => Promise.resolve(true),
+        isScreeningRecipient: false,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
@@ -185,7 +192,7 @@ describe('useSelectDestinationScreen', () => {
         })
     })
 
-    it('navigates to ConfirmTransaction for ALGO sends', () => {
+    it('navigates to ConfirmTransaction for ALGO sends', async () => {
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: '0',
             setDestination: mockSetDestination,
@@ -194,7 +201,7 @@ describe('useSelectDestinationScreen', () => {
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelected(EXTERNAL_ADDR)
         })
 
@@ -202,7 +209,7 @@ describe('useSelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('navigates to ConfirmTransaction for internal account already opted in', () => {
+    it('navigates to ConfirmTransaction for internal account already opted in', async () => {
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([
                 [
@@ -214,7 +221,7 @@ describe('useSelectDestinationScreen', () => {
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelected(INTERNAL_OPTED_IN_ADDR)
         })
 
@@ -222,7 +229,7 @@ describe('useSelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('navigates to ExpressSend for internal signable account not opted in', () => {
+    it('navigates to ExpressSend for internal signable account not opted in', async () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 chains: { algorand: { address: INTERNAL_SIGNABLE_ADDR } },
@@ -233,7 +240,7 @@ describe('useSelectDestinationScreen', () => {
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelected(INTERNAL_SIGNABLE_ADDR)
         })
 
@@ -241,7 +248,7 @@ describe('useSelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ExpressSend')
     })
 
-    it('navigates to AssetInboxSendSummary for internal watch account not opted in', () => {
+    it('navigates to AssetInboxSendSummary for internal watch account not opted in', async () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
@@ -252,7 +259,7 @@ describe('useSelectDestinationScreen', () => {
 
         const { result } = renderHook(() => useSelectDestinationScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleSelected(INTERNAL_WATCH_ADDR)
         })
 
@@ -325,7 +332,7 @@ describe('useSelectDestinationScreen', () => {
     // them (getArc59Config → null) the route is blocked with a toast instead
     // of landing on a summary screen that can never load.
     describe('inbox unavailable on network', () => {
-        it('blocks the inbox route with a toast for a local unsignable receiver', () => {
+        it('blocks the inbox route with a toast for a local unsignable receiver', async () => {
             mockGetArc59Config.mockReturnValue(null)
             mockUseAllAccounts.mockReturnValue([
                 {
@@ -337,7 +344,7 @@ describe('useSelectDestinationScreen', () => {
 
             const { result } = renderHook(() => useSelectDestinationScreen())
 
-            act(() => {
+            await act(async () => {
                 result.current.handleSelected(INTERNAL_WATCH_ADDR)
             })
 
@@ -375,7 +382,7 @@ describe('useSelectDestinationScreen', () => {
     // destination before this screen mounts. The receiver is already known, so
     // the picker must be bypassed and the flow routed straight through.
     describe('prefilled deeplink destination', () => {
-        it('auto-uses the prefilled destination and skips the picker (ALGO)', () => {
+        it('auto-uses the prefilled destination and skips the picker (ALGO)', async () => {
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['0', { assetId: '0', name: 'Algo' }]]),
             })
@@ -387,13 +394,14 @@ describe('useSelectDestinationScreen', () => {
             })
 
             const { result } = renderHook(() => useSelectDestinationScreen())
+            await act(async () => {})
 
             expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)
             expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
             expect(result.current.isAutoAdvancing).toBe(false)
         })
 
-        it('auto-uses the prefilled destination for an opted-in ASA receiver', () => {
+        it('auto-uses the prefilled destination for an opted-in ASA receiver', async () => {
             ;(useAccountBalancesQuery as Mock).mockReturnValue({
                 accountBalances: new Map([
                     [
@@ -410,6 +418,7 @@ describe('useSelectDestinationScreen', () => {
             })
 
             renderHook(() => useSelectDestinationScreen())
+            await act(async () => {})
 
             expect(mockSetDestination).toHaveBeenCalledWith(
                 INTERNAL_OPTED_IN_ADDR,
@@ -546,11 +555,11 @@ describe('useSelectDestinationScreen', () => {
                 setSendMode: mockSetSendMode,
             })
 
-        it('routes a plain address without consulting the contract', () => {
+        it('routes a plain address without consulting the contract', async () => {
             algoSend()
             const { result } = renderHook(() => useSelectDestinationScreen())
 
-            act(() => {
+            await act(async () => {
                 result.current.handleSelected(EXTERNAL_ADDR)
             })
 
