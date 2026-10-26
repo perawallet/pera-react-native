@@ -277,12 +277,23 @@ Quiz Option Words
 
 Distractor For
     [Documentation]    An option the app offers for the item that is not the correct word.
+    ...
+    ...                The options render a moment after the item scrolls into view, and reading
+    ...                them in that moment returns only the one word that is already there. "The
+    ...                quiz offered no alternative" is then a statement about our timing, not about
+    ...                the app, so keep asking for a few seconds before believing it.
+    [Arguments]    ${index}    ${correct}
+    @{options}=    Wait Until Keyword Succeeds    5s    0.5s
+    ...    Quiz Options Other Than    ${index}    ${correct}
+    RETURN    ${options}[0]
+
+Quiz Options Other Than
     [Arguments]    ${index}    ${correct}
     @{options}=    Quiz Option Words    ${index}
     Remove Values From List    ${options}    ${correct}
     Should Not Be Empty    ${options}
     ...    msg=Quiz item ${index} offers no word other than the correct "${correct}", so answering it proves nothing.
-    RETURN    ${options}[0]
+    RETURN    @{options}
 
 Answer Verify Quiz
     [Documentation]    Answers every item from the passphrase the setup screen showed. With

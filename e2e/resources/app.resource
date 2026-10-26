@@ -146,13 +146,19 @@ Tap
     [Documentation]    Retries only a stale or briefly missing element (a re-render between the wait and
     ...                the click): that tap never landed. Any other error may follow a tap that did
     ...                land, and retrying it could toggle a switch twice.
+    ...
+    ...                Six attempts rather than three: a sheet animating in replaces its own
+    ...                elements for longer than 0.6s, and the denied-camera Close button went stale
+    ...                through all three even after waiting for it to settle. Staleness is the one
+    ...                error that says for certain the tap did not land, so there is nothing to
+    ...                double by being patient with it.
     [Arguments]    ${locator}
-    FOR    ${attempt}    IN RANGE    3
+    FOR    ${attempt}    IN RANGE    6
         TRY
             Click Element    ${locator}
             RETURN
         EXCEPT    StaleElementReferenceException*    type=GLOB    AS    ${error}
-            Sleep    0.2s
+            Sleep    0.4s
         EXCEPT    *did not match any elements*    type=GLOB    AS    ${error}
             Wait Until Page Contains Element    ${locator}    timeout=5s
         END
