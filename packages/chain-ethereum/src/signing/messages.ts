@@ -121,7 +121,7 @@ const readPersonalSign = (payload: unknown): EthereumPersonalSignPayload => {
 
 const MALFORMED_TYPED_DATA = 'The typed-data message payload is malformed'
 
-const parseDomainChainId = (chainId: unknown): bigint | undefined => {
+export const parseDomainChainId = (chainId: unknown): bigint | undefined => {
     if (chainId === undefined) return undefined
     if (
         typeof chainId !== 'number' &&

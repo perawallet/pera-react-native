@@ -56,6 +56,23 @@ export class DappRequestRejectedError extends Error {
     }
 }
 
+/**
+ * The wallet refused the request without the user declining it. Absent a
+ * `failure`, the dApp gets its namespace's generic internal error.
+ */
+export class DappRequestFailedError extends Error {
+    readonly failure?: Exclude<DappRequestFailure, 'user-rejected'>
+
+    constructor(
+        message: string,
+        failure?: Exclude<DappRequestFailure, 'user-rejected'>,
+    ) {
+        super(message)
+        this.name = 'DappRequestFailedError'
+        this.failure = failure
+    }
+}
+
 export class PendingRequestCapacityError extends Error {
     readonly failure = 'limit-exceeded' as const
 
@@ -76,6 +93,15 @@ export const dappRequestFailureOf = (
     const { failure } = error as { failure?: unknown }
     return DAPP_REQUEST_FAILURES.find(known => known === failure)
 }
+
+/**
+ * Only this may answer a dApp with its user-rejected code: an EIP-1193 site
+ * clears its whole approval queue on that answer. `UserCancelledError` is the
+ * signing pipeline's, matched by name for the same reason as above.
+ */
+export const isDappUserRejection = (error: Error): boolean =>
+    error.name === 'UserCancelledError' ||
+    dappRequestFailureOf(error) === 'user-rejected'
 
 export type DappSigningParamsResult =
     | { ok: true; payload: unknown }

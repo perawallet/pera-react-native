@@ -75,6 +75,7 @@ export type SigningPipeline = {
      * group members, `signers: []` entries). Empty set when no request.
      */
     signableIndices: Set<number>
+    /** Zero on a chain with no planner, whose review body prices the fee itself. */
     totalFee: Decimal
     warnings: TransactionWarning[]
     distinctWarnings: TransactionWarning[]

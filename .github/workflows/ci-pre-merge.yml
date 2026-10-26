@@ -581,12 +581,14 @@ jobs:
           key: metro-web-${{ runner.os }}-${{ github.sha }}
           restore-keys: metro-web-${{ runner.os }}-
 
+      # bundle:e2e bakes the localhost fake EVM node as every EVM RPC URL, which
+      # Playwright cannot route for the offscreen document.
       - name: Bundle extension
         if: steps.changes.outputs.affected == 'true'
         env:
           # Expo keeps Metro's cache under os.tmpdir().
           TMPDIR: ${{ runner.temp }}
-        run: pnpm --filter browser bundle
+        run: pnpm --filter browser bundle:e2e
 
       # Every shard builds the same bundle, so one saves it.
       - name: Save Metro cache

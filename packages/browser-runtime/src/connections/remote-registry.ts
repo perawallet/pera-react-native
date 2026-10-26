@@ -18,34 +18,14 @@ import {
     type ConnectionProposal,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
-import {
-    AppError,
-    ErrorCategory,
-    logger,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionKind } from '@perawallet/wallet-extension-connections'
 
 import { onConnectionsEvent, sendConnectionsControlMessage } from './client'
-import type { ConnectionsEvent } from './protocol'
+import { rebuildWireError, type ConnectionsEvent } from './protocol'
 
 type ProposalListener = (proposal: ConnectionProposal) => void
 type ErrorListener = (error: Error, scope?: ConnectionErrorScope) => void
-
-// Only an `AppError` reaches `resolveErrorCopy`'s translated branch, so a
-// broadcast error that carried a key is rebuilt as one.
-const rebuildError = (
-    event: Extract<ConnectionsEvent, { kind: 'error' }>,
-): Error => {
-    const error = event.messageKey
-        ? new AppError(event.message, {
-              category: ErrorCategory.CONNECTIONS,
-              messageKey: event.messageKey,
-          })
-        : new Error(event.message)
-    error.name = event.name
-    return error
-}
 
 /**
  * URI claims, `describeUri`, `scopesFor` and `methodsFor` are answered locally from
@@ -102,7 +82,7 @@ export const createRemoteConnectionRegistry = (options: {
             }
             return
         }
-        const error = rebuildError(event)
+        const error = rebuildWireError(event)
         for (const listener of errorListeners) {
             try {
                 listener(error, event.scope)

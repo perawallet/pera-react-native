@@ -12,8 +12,8 @@
 
 import {
     type DAPP_NOTIFICATIONS,
-    DAPP_PAGE_TIMEOUT_MS,
     DAPP_PROVIDER_VERSION,
+    dappPageTimeoutMs,
     EIP1193_ERROR_CODE,
     JsonRpcErrorCode,
     isJsonRpcNotification,
@@ -176,10 +176,15 @@ const sendRpc = (
             ...(params === undefined ? {} : { params }),
         }
         // Backstop only; the wallet's own expiry is shorter and answers first.
-        const timer = setTimeout(() => {
-            if (!pending.delete(id)) return
-            reject(toError(TIMEOUT_CODE[provider], 'No response from wallet'))
-        }, DAPP_PAGE_TIMEOUT_MS)
+        const timer = setTimeout(
+            () => {
+                if (!pending.delete(id)) return
+                reject(
+                    toError(TIMEOUT_CODE[provider], 'No response from wallet'),
+                )
+            },
+            dappPageTimeoutMs(provider, method),
+        )
         pending.set(id, { resolve, reject, toError, timer })
         window.dispatchEvent(
             new CustomEvent(requestEventName, {

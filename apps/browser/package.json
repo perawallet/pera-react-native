@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "bundle": "node scripts/build.mjs",
+    "bundle:e2e": "PERA_E2E_EVM_RPC_URL=http://127.0.0.1:18545 node scripts/build.mjs",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",

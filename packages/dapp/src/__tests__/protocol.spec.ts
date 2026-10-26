@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    DAPP_APPROVAL_TTL_MS,
     DAPP_KIND,
     DAPP_METHODS,
     DAPP_NOTIFICATIONS,
@@ -19,6 +20,8 @@ import {
     DAPP_PROVIDER_VERSION,
     DAPP_PROVIDERS,
     DAPP_REQUEST_TTL_MS,
+    DAPP_QUEUED_PAGE_TIMEOUT_MS,
+    dappPageTimeoutMs,
     isDappProvider,
 } from '../protocol'
 
@@ -52,5 +55,23 @@ describe('dapp protocol constants', () => {
 
     it('leaves the page backstop losing the race to the handler expiry', () => {
         expect(DAPP_PAGE_TIMEOUT_MS).toBeGreaterThan(DAPP_REQUEST_TTL_MS)
+        expect(DAPP_QUEUED_PAGE_TIMEOUT_MS).toBeGreaterThan(
+            DAPP_REQUEST_TTL_MS + DAPP_APPROVAL_TTL_MS,
+        )
+    })
+
+    it('gives only queued EIP-1193 methods the queued backstop', () => {
+        expect(dappPageTimeoutMs('eip1193', 'eth_sendTransaction')).toBe(
+            DAPP_QUEUED_PAGE_TIMEOUT_MS,
+        )
+        expect(dappPageTimeoutMs('eip1193', 'wallet_switchEthereumChain')).toBe(
+            DAPP_QUEUED_PAGE_TIMEOUT_MS,
+        )
+        expect(dappPageTimeoutMs('eip1193', 'eth_chainId')).toBe(
+            DAPP_PAGE_TIMEOUT_MS,
+        )
+        expect(dappPageTimeoutMs('pera', 'eth_sendTransaction')).toBe(
+            DAPP_PAGE_TIMEOUT_MS,
+        )
     })
 })

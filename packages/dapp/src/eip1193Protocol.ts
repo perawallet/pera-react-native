@@ -25,7 +25,30 @@ export const EIP1193_METHOD = {
     switchChain: 'wallet_switchEthereumChain',
     addChain: 'wallet_addEthereumChain',
     revokePermissions: 'wallet_revokePermissions',
+    sendTransaction: 'eth_sendTransaction',
+    personalSign: 'personal_sign',
+    signTypedDataV4: 'eth_signTypedData_v4',
 } as const
+
+/**
+ * The signing methods the handler queues for the user's approval; a chain
+ * that adds a signing method is refused until it is named here too.
+ */
+export const EIP1193_SIGNING_METHODS: readonly string[] = [
+    EIP1193_METHOD.sendTransaction,
+    EIP1193_METHOD.personalSign,
+    EIP1193_METHOD.signTypedDataV4,
+]
+
+/**
+ * Every method that waits in a site's approval queue, and so on the longer
+ * page backstop. A switch queues with the signing requests so it can never
+ * move the site's chain under a request already on screen.
+ */
+export const EIP1193_QUEUED_METHODS: readonly string[] = [
+    ...EIP1193_SIGNING_METHODS,
+    EIP1193_METHOD.switchChain,
+]
 
 export const EIP1193_EVENT = {
     connect: 'connect',
@@ -44,6 +67,7 @@ export const EIP1193_ERROR_CODE = {
     chainDisconnected: 4901,
     unrecognizedChain: 4902,
     resourceUnavailable: -32_002,
+    limitExceeded: -32_005,
     invalidParams: -32_602,
     internal: -32_603,
 } as const

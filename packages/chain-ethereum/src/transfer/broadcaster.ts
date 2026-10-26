@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { keccak256, type Hex } from 'viem'
+import {
+    bytesToHex,
+    keccak256,
+    type Hex,
+    type TransactionSerialized,
+} from 'viem'
 import type {
     ChainContext,
     ChainScope,
@@ -31,6 +36,7 @@ import {
     type SubmissionSettledHandlers,
 } from './reconcile'
 import {
+    historyEntryOfSigned,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
 } from './submission'
@@ -119,10 +125,25 @@ export const createEvmBroadcasterAdapter = (
                 return { type: 'submitted', txIds }
             },
         }),
-        submitAndAutoRefresh: () =>
-            Promise.reject(
-                new Error('Ethereum submits through createSubmitTransport'),
-            ),
+        // Confirmation is the reconciler's, as for the pipeline's transport.
+        submitAndAutoRefresh: async (scope, signedTransactions, options) => {
+            const bytes = signedTransactions.map(signed => signed.bytes)
+            return submitAndRecordEthereumTransactions({
+                client: clientFor(scope),
+                chain,
+                scope,
+                signedTransactions: bytes,
+                historyEntries: await Promise.all(
+                    bytes.map(serialized =>
+                        historyEntryOfSigned(
+                            bytesToHex(serialized) as TransactionSerialized,
+                            chain,
+                        ),
+                    ),
+                ),
+                flow: options?.flow ?? 'pipeline',
+            })
+        },
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
         findStaleGroupReason: async () => null,

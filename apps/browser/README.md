@@ -36,6 +36,11 @@ open the popup.
 
 ## E2E
 
-    pnpm --filter browser bundle
+    pnpm --filter browser bundle:e2e
     pnpm --filter browser exec playwright install chromium
     pnpm --filter browser test:e2e
+
+`bundle:e2e` bakes a localhost fake node (`e2e/fixtures/fake-evm-node.mjs`) as
+every EVM RPC URL, because Playwright cannot route the offscreen document's
+requests. `window-ethereum.spec.ts` fails on a plain `bundle`. Staging and
+production builds refuse the override.

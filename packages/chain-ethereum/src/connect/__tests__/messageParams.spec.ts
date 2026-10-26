@@ -12,7 +12,12 @@
 
 import { describe, expect, it } from 'vitest'
 import { stringToHex } from 'viem'
-import { MAIL_TYPED_DATA, SENDER } from '../../signing/__tests__/fixtures'
+import {
+    EIP2612_PERMIT_TYPED_DATA,
+    MAIL_TYPED_DATA,
+    PERMIT2_SINGLE_TYPED_DATA,
+    SENDER,
+} from '../../signing/__tests__/fixtures'
 import {
     MAX_MESSAGE_LENGTH,
     MAX_TYPED_DATA_DEPTH,
@@ -28,7 +33,8 @@ const validate = (
     type: 'sign-message' | 'sign-typed-data',
     params: unknown,
     authorizedAccounts: readonly string[] = [SENDER],
-) => validateEthereumMessagePayload(type, params, authorizedAccounts)
+    session: { eip155ChainId: number | undefined } = { eip155ChainId: 1 },
+) => validateEthereumMessagePayload(type, params, authorizedAccounts, session)
 
 describe('validateEthereumMessagePayload: personal_sign', () => {
     it('reads [message, address]', () => {
@@ -148,6 +154,94 @@ describe('validateEthereumMessagePayload: eth_signTypedData_v4', () => {
         ['a malformed address', ['nope', MAIL_TYPED_DATA]],
     ])('refuses %s', (_label, params) => {
         expect(validate('sign-typed-data', params).ok).toBe(false)
+    })
+})
+
+describe('validateEthereumMessagePayload: typed-data chain', () => {
+    const SEPOLIA = { eip155ChainId: 11155111 }
+    const withChainId = (chainId: unknown) => ({
+        ...MAIL_TYPED_DATA,
+        domain: { ...MAIL_TYPED_DATA.domain, chainId },
+    })
+
+    it.each([[11155111], ['11155111'], ['0xaa36a7']])(
+        'accepts a typed-data domain chainId given as %s',
+        chainId => {
+            const result = validate(
+                'sign-typed-data',
+                [SENDER, withChainId(chainId)],
+                [SENDER],
+                SEPOLIA,
+            )
+
+            expect(result.ok).toBe(true)
+        },
+    )
+
+    it('refuses typed data bound to another chain', () => {
+        const result = validate(
+            'sign-typed-data',
+            [SENDER, withChainId(1)],
+            [SENDER],
+            SEPOLIA,
+        )
+
+        expect(result).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('refuses a domain chainId that is not a chain id', () => {
+        const result = validate(
+            'sign-typed-data',
+            [SENDER, withChainId('mainnet')],
+            [SENDER],
+            SEPOLIA,
+        )
+
+        expect(result).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('accepts typed data with no domain chainId', () => {
+        const { chainId: _chainId, ...domain } = MAIL_TYPED_DATA.domain
+
+        const result = validate(
+            'sign-typed-data',
+            [SENDER, { ...MAIL_TYPED_DATA, domain }],
+            [SENDER],
+            SEPOLIA,
+        )
+
+        expect(result.ok).toBe(true)
+    })
+
+    it.each([
+        ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+        ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+    ])('refuses %s with no domain chainId', (_name, permit) => {
+        const { chainId: _chainId, ...domain } = permit.domain
+
+        const result = validate('sign-typed-data', [
+            SENDER,
+            { ...permit, domain },
+        ])
+
+        expect(result).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('accepts a permit bound to the connected chain', () => {
+        expect(
+            validate('sign-typed-data', [SENDER, EIP2612_PERMIT_TYPED_DATA]).ok,
+        ).toBe(true)
+    })
+
+    it('refuses typed data with a chainId when the network has no EIP-155 id', () => {
+        const result = validate(
+            'sign-typed-data',
+            [SENDER, withChainId(1)],
+            [SENDER],
+            { eip155ChainId: undefined },
+        )
+
+        expect(result.ok).toBe(false)
     })
 })
 

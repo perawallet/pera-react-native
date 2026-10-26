@@ -15,6 +15,7 @@ import type {
     ChainId,
     ChainScope,
     NetworkId,
+    SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -574,31 +575,60 @@ const enqueueSendTransactionRequest = (
                     forgetRequest(deps, message)
                     return
                 }
+                const { submitSignedSend } = deps
+                let isHandedOff = false
+                // Once handed off, the receiver answers the peer; nothing here
+                // may decline it again.
+                const lifecycleMessage: RequestMessage = {
+                    ...message,
+                    reject: error =>
+                        isHandedOff ? Promise.resolve() : message.reject(error),
+                }
                 const signRequest: UnsignedTransactionSignRequest = {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    // Routes an external source to the chain's broadcaster, which
-                    // answers through `approve` once the transaction is submitted.
-                    transport: 'network',
+                    // `network` routes an external source to the chain's
+                    // broadcaster, which answers through `approve` once the
+                    // transaction is submitted; `callback` only signs.
+                    transport: submitSignedSend ? 'callback' : 'network',
                     sourceType: message.sourceType,
                     transportId: message.connectionId,
                     sourceMetadata: message.peer,
                     verifiedOrigin: message.verifiedOrigin,
                     txs: [transaction],
-                    approve: async (_signed, submission) => {
-                        const txId = submission?.txIds[0]
-                        if (txId === undefined) {
-                            throw new Error(
-                                'The transaction was approved without being submitted',
-                            )
-                        }
-                        await message.respond({
-                            type: 'send-transaction',
-                            txId,
-                        })
-                        forgetRequest(deps, message)
-                    },
-                    ...requestLifecycle(message, deps, () => signRequest),
+                    approve: submitSignedSend
+                        ? async signed => {
+                              const outcome = await submitSignedSend(
+                                  signed.filter(
+                                      (tx): tx is SignedTransaction => !!tx,
+                                  ),
+                              )
+                              isHandedOff = true
+                              forgetRequest(deps, message)
+                              if (outcome.status === 'failed') {
+                                  onError?.(outcome.error, {
+                                      connectionId: message.connectionId,
+                                  })
+                              }
+                          }
+                        : async (_signed, submission) => {
+                              const txId = submission?.txIds[0]
+                              if (txId === undefined) {
+                                  throw new Error(
+                                      'The transaction was approved without being submitted',
+                                  )
+                              }
+                              await message.respond({
+                                  type: 'send-transaction',
+                                  txId,
+                              })
+                              forgetRequest(deps, message)
+                          },
+                    ...requestLifecycle(
+                        lifecycleMessage,
+                        deps,
+                        () => signRequest,
+                    ),
                 }
                 addSignRequest(signRequest)
                 settleTrackedRequest(deps, message, signRequest)
@@ -704,7 +734,21 @@ export type EnqueueInboundRequestDeps = {
     onError?: ConnectionErrorReporter
     /** Without one a network switch is declined. */
     confirmNetworkSwitch?: ConfirmNetworkSwitch
+    /**
+     * Set by a surface that must not broadcast (the extension's approval
+     * window): the signed send goes here, and the receiver broadcasts it and
+     * answers the peer. Resolves with the receiver's outcome; a rejection
+     * means no outcome came back, so this surface still answers the peer, and
+     * a receiver that did take the send ignores that late answer.
+     */
+    submitSignedSend?: (
+        signed: SignedTransaction[],
+    ) => Promise<SignedSendOutcome>
 }
+
+export type SignedSendOutcome =
+    | { status: 'submitted'; txId: string }
+    | { status: 'failed'; error: Error }
 
 /**
  * Pure over its deps so the browser's approval window, which has no hook realm,

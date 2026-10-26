@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { DAPP_APPROVAL_TTL_MS } from '@perawallet/wallet-core-dapp/wire'
 import {
     APPROVAL_KEEPALIVE_INTERVAL_MS,
     APPROVAL_KEEPALIVE_MAX_MS,
@@ -19,6 +20,7 @@ import {
     ApprovalWindowBridge,
     DAPP_APPROVAL_SCOPE,
     POPUP_OPEN_TIMEOUT_MS,
+    type ConnectionRequestSubmitted,
 } from '../approval-bridge'
 
 // A chrome fake capturing windows.create + the two onMessage/onRemoved listeners.
@@ -219,6 +221,46 @@ describe('ApprovalWindowBridge', () => {
             expect(getPlatformInfoMock).toHaveBeenCalledTimes(3)
         })
 
+        it('keeps the worker alive while a submitted send awaits its outcome, and stops once it is reported', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'k-send')
+            await vi.advanceTimersByTimeAsync(0)
+            void fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'submit-connection-request',
+                    requestId: 'k-send',
+                    signedTransactions: [
+                        {
+                            scope: {
+                                chainId: 'ethereum',
+                                networkId: 'mainnet',
+                            },
+                            id: '0xh',
+                            bytes: 'AQID',
+                        },
+                    ],
+                },
+                trustedSender,
+            )
+            const { reportOutcome } =
+                (await decision) as ConnectionRequestSubmitted
+            getPlatformInfoMock.mockClear()
+
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 2,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(2)
+
+            reportOutcome({ ok: true, txId: '0xh' })
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 2,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(2)
+        })
+
         it('lets the worker idle out once an approval has been pending past the cap', async () => {
             const { chromeLike } = makeChrome()
             const bridge = new ApprovalWindowBridge(chromeLike)
@@ -236,6 +278,14 @@ describe('ApprovalWindowBridge', () => {
 
             expect(getPlatformInfoMock.mock.calls.length).toBeLessThanOrEqual(
                 callsAtCap + 1,
+            )
+        })
+
+        // The handler withdraws the window before an idled worker forgets
+        // it, so the user never approves into an approval that is gone.
+        it('outlasts the EIP-1193 handler expiry of a request on screen', () => {
+            expect(APPROVAL_KEEPALIVE_MAX_MS).toBeGreaterThan(
+                DAPP_APPROVAL_TTL_MS,
             )
         })
     })
@@ -1256,6 +1306,248 @@ describe('ApprovalWindowBridge', () => {
         closeWindow(100)
 
         expect(await decision).toBeNull()
+    })
+
+    const openRequest = (
+        bridge: ApprovalWindowBridge,
+        requestId: string,
+    ): Promise<unknown> =>
+        bridge.openConnectionRequest({
+            requestId,
+            origin: 'https://dapp.example',
+            connectionId: 'client-1',
+            correlationId: requestId,
+            chainId: 'algorand',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
+        })
+
+    describe('submitting a connection request', () => {
+        const SIGNED = [
+            {
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                id: '0xabc',
+                bytes: 'AQID',
+            },
+        ]
+        const submit = (requestId: string, signedTransactions: unknown) => ({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'submit-connection-request',
+            requestId,
+            signedTransactions,
+        })
+
+        it('settles a submitted connection request without closing its window, and answers with the outcome', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-send')
+            await flush()
+
+            const ack = fireMessage(submit('req-send', SIGNED), trustedSender)
+            const settled = (await decision) as ConnectionRequestSubmitted
+
+            expect(settled.submitted).toEqual(SIGNED)
+            expect(chromeLike.windows.remove).not.toHaveBeenCalled()
+            settled.reportOutcome({ ok: true, txId: '0xabc' })
+            expect(await ack).toEqual({
+                ok: true,
+                outcome: { ok: true, txId: '0xabc' },
+            })
+        })
+
+        it('a close after submit-connection-request settles nothing more', async () => {
+            const { chromeLike, fireMessage, closeWindow } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-send')
+            await flush()
+            void fireMessage(submit('req-send', SIGNED), trustedSender)
+            const settled = await decision
+
+            closeWindow(100)
+
+            expect(await decision).toBe(settled)
+            expect(
+                await fireMessage(
+                    {
+                        scope: DAPP_APPROVAL_SCOPE,
+                        kind: 'reject-approval',
+                        requestId: 'req-send',
+                    },
+                    trustedSender,
+                ),
+            ).toEqual({ ok: false, error: 'unknown request' })
+        })
+
+        it('refuses malformed transactions and leaves the approval pending', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-send')
+            await flush()
+
+            const ack = await fireMessage(submit('req-send', []), trustedSender)
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'reject-approval',
+                    requestId: 'req-send',
+                },
+                trustedSender,
+            )
+
+            expect(ack).toMatchObject({ ok: false })
+            expect(await decision).toBeNull()
+        })
+
+        it('refuses submit-connection-request on a proposal', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            void bridge.openConnectionProposal({
+                requestId: 'req-proposal',
+                origin: 'https://dapp.example',
+                proposalId: 'p-1',
+                connectionKind: 'walletconnect-v1',
+                peer: { name: 'dApp', url: 'https://dapp.example' },
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['algorand'],
+                    methods: ['algo_signTxn'],
+                },
+                expiresAt: 1,
+            })
+            await flush()
+
+            const ack = await fireMessage(
+                submit('req-proposal', SIGNED),
+                trustedSender,
+            )
+
+            expect(ack).toMatchObject({ ok: false })
+        })
+    })
+
+    describe('declining a connection-request approval', () => {
+        it('settles a user reject as null', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-user')
+            await flush()
+
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'reject-approval',
+                    requestId: 'req-user',
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toBeNull()
+        })
+
+        it('settles a wallet-side failure with its failure kind', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-failed')
+            await flush()
+
+            const ack = await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-failed',
+                    failure: 'invalid-params',
+                },
+                trustedSender,
+            )
+
+            expect(ack).toEqual({ ok: true })
+            expect(await decision).toEqual({
+                failed: { failure: 'invalid-params' },
+            })
+        })
+
+        it('settles a failure with no kind as a generic failure', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = openRequest(bridge, 'req-generic')
+            await flush()
+
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-generic',
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toEqual({ failed: {} })
+        })
+
+        it.each(['user-rejected', 'made-up', 42])(
+            'drops a %s failure kind to the generic failure',
+            async failure => {
+                const { chromeLike, fireMessage } = makeChrome()
+                const bridge = new ApprovalWindowBridge(chromeLike)
+                bridge.listen()
+                const decision = openRequest(bridge, 'req-forged')
+                await flush()
+
+                await fireMessage(
+                    {
+                        scope: DAPP_APPROVAL_SCOPE,
+                        kind: 'fail-connection-request',
+                        requestId: 'req-forged',
+                        failure,
+                    },
+                    trustedSender,
+                )
+
+                expect(await decision).toEqual({
+                    failed: { failure: undefined },
+                })
+            },
+        )
+
+        it('refuses fail-connection-request on any other approval kind', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            void bridge.openConnectionProposal({
+                requestId: 'req-proposal',
+                origin: 'https://dapp.example',
+                proposalId: 'p-1',
+                connectionKind: 'walletconnect-v1',
+                peer: { name: 'dApp', url: 'https://dapp.example' },
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['algorand'],
+                    methods: ['algo_signTxn'],
+                },
+                expiresAt: 1,
+            })
+            await flush()
+
+            const ack = await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'fail-connection-request',
+                    requestId: 'req-proposal',
+                },
+                trustedSender,
+            )
+
+            expect(ack).toMatchObject({ ok: false })
+        })
     })
 
     // Every pending approval past the first becomes a real OS window, and a

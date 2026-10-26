@@ -12,11 +12,23 @@
 
 // apps/mobile is barred (oxlint no-restricted-globals) from touching the ambient
 // `chrome` global, so it reaches the approval bridge through this typed wrapper.
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    dappRequestFailureOf,
+    isDappUserRejection,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import type { WireWalletOperationResult } from '../connections/protocol'
+import {
+    encodeSignedTransactions,
+    isWireSignedSendOutcome,
+    type WireSignedSendOutcome,
+    type WireWalletOperationResult,
+} from '../connections/protocol'
 import {
     APPROVAL_POPUP_PORT_PREFIX,
     DAPP_APPROVAL_SCOPE,
+    toWalletFailure,
+    type ConnectionRequestFailed,
     type PendingApproval,
 } from './approval-bridge'
 
@@ -39,10 +51,10 @@ export class ApprovalDeliveryError extends Error {
  * an idle worker while an approval window sits open, so a late Approve gets
  * `{ok: false, error: 'unknown request'}`. That must surface, not close the window.
  */
-const deliverDecision = async (
+const sendDecision = async (
     kind: string,
     message: Record<string, unknown>,
-): Promise<void> => {
+): Promise<Record<string, unknown>> => {
     let response: unknown
     try {
         response = await chrome.runtime.sendMessage({
@@ -61,7 +73,7 @@ const deliverDecision = async (
         typeof response === 'object' &&
         response !== null &&
         (response as { ok?: unknown }).ok === true
-    if (ok) return
+    if (ok) return response as Record<string, unknown>
     const detail =
         typeof response === 'object' &&
         response !== null &&
@@ -69,6 +81,13 @@ const deliverDecision = async (
             ? (response as { error: string }).error
             : 'no acknowledgement'
     throw new ApprovalDeliveryError(kind, detail)
+}
+
+const deliverDecision = async (
+    kind: string,
+    message: Record<string, unknown>,
+): Promise<void> => {
+    await sendDecision(kind, message)
 }
 
 export const getPendingApproval = async (
@@ -115,6 +134,49 @@ export const resolveConnectionRequest = async (
     result: WireWalletOperationResult,
 ): Promise<void> =>
     deliverDecision('resolve-connection-request', { requestId, result })
+
+/**
+ * Refuses a connection request on the wallet's side; the dApp is not told the
+ * user declined. A user decline is `rejectApproval`.
+ */
+export const failConnectionRequest = async (
+    requestId: string,
+    failure?: ConnectionRequestFailed['failed']['failure'],
+): Promise<void> =>
+    deliverDecision('fail-connection-request', { requestId, failure })
+
+/** Answers a request the pipeline turned down, as the user's decline only when it was one. */
+export const declineConnectionRequest = async (
+    requestId: string,
+    error: Error,
+): Promise<void> =>
+    isDappUserRejection(error)
+        ? rejectApproval(requestId)
+        : failConnectionRequest(
+              requestId,
+              toWalletFailure(dappRequestFailureOf(error)),
+          )
+
+/**
+ * Hands a signed send to the host, which broadcasts it and answers the dApp,
+ * and resolves with what the broadcast did. Throws `ApprovalDeliveryError`
+ * when no outcome came back; if the bridge had already settled the approval,
+ * the caller's decline that follows changes nothing.
+ */
+export const submitConnectionRequest = async (
+    requestId: string,
+    signed: readonly SignedTransaction[],
+): Promise<WireSignedSendOutcome> => {
+    const kind = 'submit-connection-request'
+    const { outcome } = await sendDecision(kind, {
+        requestId,
+        signedTransactions: encodeSignedTransactions(signed),
+    })
+    if (!isWireSignedSendOutcome(outcome)) {
+        throw new ApprovalDeliveryError(kind, 'no outcome')
+    }
+    return outcome
+}
 
 export const resolvePasskey = async (
     requestId: string,
