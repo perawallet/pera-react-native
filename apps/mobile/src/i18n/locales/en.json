@@ -1134,7 +1134,11 @@
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             },
-            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x."
+            "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x.",
+            "replaced_transaction_confirmed": {
+                "title": "Transaction already confirmed",
+                "body": "The transaction you tried to speed up or cancel confirmed first, so nothing was replaced."
+            }
         },
         "submission": {
             "unknown_outcome": {
@@ -1207,6 +1211,10 @@
             "creator_cannot_opt_out": {
                 "title": "Can't remove this asset",
                 "body": "This account created this asset, so it can't opt out of it."
+            },
+            "not_replaceable": {
+                "title": "Transaction no longer pending",
+                "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
             }
         },
         "kms": {
@@ -3256,7 +3264,8 @@
         "notice": {
             "pending": "Pending since {{since}}",
             "failed": "Failed",
-            "replaced": "Replaced by another transaction"
+            "replaced": "Replaced by another transaction",
+            "replacement_not_needed": "Not needed: the original transaction confirmed first"
         },
         "list_item": {
             "send": "Send",
@@ -3276,7 +3285,8 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
-            "inner_transaction_count": "{{innerCount}} inner txns"
+            "inner_transaction_count": "{{innerCount}} inner txns",
+            "cancel_transaction": "Cancel transaction"
         },
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
@@ -3419,6 +3429,13 @@
             "last_week": "Last Week",
             "last_month": "Last Month",
             "custom_range": "Custom Range"
+        },
+        "replacement": {
+            "title": "Pending transaction",
+            "body": "Speed up sends it again with a higher network fee. Cancel replaces it with an empty transfer to yourself, which also costs a network fee. If the original confirms first, nothing is replaced.",
+            "speed_up": "Speed Up",
+            "cancel": "Cancel Transaction",
+            "review_notice": "Replaces transaction {{txId}}"
         }
     },
     "tabbar": {

@@ -48,6 +48,8 @@ export {
     type SpendableBalanceInput,
     type InFlightSpend,
     type RecipientWarningInput,
+    type TransactionReplacementKind,
+    type TransactionReplacementRequest,
 } from './transfer-adapter'
 export { getInFlightSpends } from './in-flight'
 export {
@@ -111,6 +113,7 @@ export {
     NonZeroBalanceError,
     CreatorCannotOptOutError,
     AssetFrozenError,
+    TransactionNotReplaceableError,
     RekeyError,
     type RekeyErrorReason,
 } from './errors'
