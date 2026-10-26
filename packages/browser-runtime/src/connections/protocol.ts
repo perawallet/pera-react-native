@@ -84,16 +84,25 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
-// The browser registers no chain that serves one, and its request holds bigints
-// that cannot cross a message hop.
-const refuseSendTransaction = (): never => {
-    throw new Error('send-transaction cannot cross a browser message hop')
+// The browser registers no chain that sends a transaction or a batch for a
+// dApp, and their requests hold bigints that cannot cross a message hop.
+const UNSERVED_TYPES = ['send-transaction', 'send-batch', 'show-batch'] as const
+
+type UnservedType = (typeof UNSERVED_TYPES)[number]
+
+const isUnserved = <T extends { type: string }>(
+    value: T,
+): value is Extract<T, { type: UnservedType }> =>
+    (UNSERVED_TYPES as readonly string[]).includes(value.type)
+
+const refuseUnserved = (type: UnservedType): never => {
+    throw new Error(`${type} cannot cross a browser message hop`)
 }
 
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
-    if (operation.type === 'send-transaction') return refuseSendTransaction()
+    if (isUnserved(operation)) return refuseUnserved(operation.type)
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -138,7 +147,7 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
-    if (result.type === 'send-transaction') return refuseSendTransaction()
+    if (isUnserved(result)) return refuseUnserved(result.type)
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
     if (result.type !== 'sign-data') {

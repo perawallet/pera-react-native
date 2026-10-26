@@ -17,12 +17,14 @@ import {
     type ChainId,
     type ChainScope,
     type NetworkId,
+    type SignedTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 // Type-only: keeps the `./dappRequest` subpath hook-free and light, since
 // walletconnect resolves it from source without pulling in signing's runtime.
 import type {
     ExternalSignTxnTransport,
+    ReviewApproval,
     SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type {
@@ -77,6 +79,15 @@ export const dappRequestFailureOf = (
     return DAPP_REQUEST_FAILURES.find(known => known === failure)
 }
 
+/**
+ * The wire code a chain picked for a refusal no {@link DappRequestFailure}
+ * names. Structural for the same reason as {@link dappRequestFailureOf}.
+ */
+export const dappRequestWireCodeOf = (error: Error): number | undefined => {
+    const { wireCode } = error as { wireCode?: unknown }
+    return typeof wireCode === 'number' ? wireCode : undefined
+}
+
 export type DappSigningParamsResult =
     | { ok: true; payload: unknown }
     | { ok: false; reason: 'missing' | 'out-of-bounds'; message: string }
@@ -109,6 +120,8 @@ export type DappRequestValidation<Request = unknown> =
           /** Reaches the peer. */
           message: string
       }
+    /** A refusal in the chain's own wire vocabulary: `code` reaches the peer verbatim. */
+    | { ok: false; failure: 'coded'; code: number; message: string }
 
 /**
  * A chain whose dApps ask the wallet to build and send a transaction from a
@@ -124,6 +137,47 @@ export interface DappTransactionSending {
     build(request: unknown): Promise<UnsignedTransaction>
 }
 
+/** A batch the chain built ready for review, before the user approves it. */
+export type PreparedDappBatch = {
+    /** What the peer tracks the batch by. */
+    batchId: string
+    /** Signed on approval. */
+    first: UnsignedTransaction
+    /** Reviewed with `first`; the chain builds, signs and sends each once the one before it lands. */
+    following: UnsignedTransaction[]
+    /** The chain's own record of the request; only `start` reads it. */
+    request: unknown
+}
+
+/**
+ * A chain whose dApps send several transactions as one request, reviewed
+ * once and run one after another.
+ */
+export interface DappBatchSending {
+    /** Every refusal the params alone decide happens here, before anything is shown. */
+    validate(
+        params: unknown,
+        authorizedAccounts: readonly string[],
+    ): DappRequestValidation
+    /** Builds what the review shows; rejects a batch the chain won't run. */
+    prepare(request: unknown): Promise<PreparedDappBatch>
+    /**
+     * Resolves once the batch is recorded; the rest runs in the background,
+     * each later transaction signed against `approval`, the review the user
+     * approved.
+     */
+    start(
+        prepared: PreparedDappBatch,
+        first: SignedTransaction,
+        approval: ReviewApproval,
+    ): Promise<void>
+    /** The batch's first transaction, when one of `authorizedAccounts` sent it. */
+    locate(
+        batchId: string,
+        authorizedAccounts: readonly string[],
+    ): Promise<Nullable<{ scope: ChainScope; txId: string }>>
+}
+
 /**
  * What a chain makes of one WalletConnect v2 request. `operation` params are
  * already off the JSON-RPC envelope. `public-data` is answered without asking
@@ -133,10 +187,11 @@ export type WalletConnectRequestRoute =
     | { kind: 'operation'; type: WalletOperationType; params: unknown }
     | {
           kind: 'public-data'
+          /** May settle later; a rejection carrying a wire code answers with it. */
           answer: (
               addresses: readonly string[],
               networkId: NetworkId,
-          ) => Nullable<unknown>
+          ) => Nullable<unknown> | Promise<Nullable<unknown>>
       }
     | { kind: 'unsupported' }
     /**
@@ -234,6 +289,8 @@ export interface DappRequestChainAdapter {
     ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
     /** Omitted by a chain whose dApps send no transaction for the wallet to build. */
     readonly sendTransaction?: DappTransactionSending
+    /** Omitted by a chain whose dApps send no batch of transactions. */
+    readonly sendBatch?: DappBatchSending
     /**
      * Parses a `sign-message` or `sign-typed-data` request's params. The
      * signer comes back in the chain's canonical spelling. Omitted by a chain

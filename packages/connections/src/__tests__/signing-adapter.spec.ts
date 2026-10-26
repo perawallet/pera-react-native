@@ -32,6 +32,7 @@ import {
     type DappRequestChainAdapter,
     PendingRequestCapacityError,
 } from '../dappRequest'
+import { DappRequestCodedError } from '../errors'
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
 import type { PendingRequestLedger } from '../signing-adapter'
@@ -1973,6 +1974,238 @@ describe('useConnectionSigningAdapter', () => {
                 sourceMetadata: PEER,
             }),
         )
+    })
+
+    describe('send-batch', () => {
+        const FIRST = { scope: { chainId: CHAIN_ID }, payload: 'first' }
+        const FOLLOWING = [{ scope: { chainId: CHAIN_ID }, payload: 'second' }]
+        const PREPARED = {
+            batchId: 'batch-1',
+            first: FIRST,
+            following: FOLLOWING,
+            request: { marker: 'validated' },
+        }
+        const SIGNED_FIRST = {
+            scope: { chainId: CHAIN_ID },
+            id: '0xfirst',
+            bytes: new Uint8Array([1]),
+        }
+        const APPROVAL = { token: 'approval-1' }
+        const mockPrepare = vi.fn()
+        const mockStart = vi.fn()
+        const mockLocate = vi.fn()
+        const mockShowTransaction = vi.fn()
+
+        const batchMessage = (
+            operation:
+                | { type: 'send-batch'; request: unknown }
+                | { type: 'show-batch'; batchId: string },
+        ) => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '9',
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation,
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const addedRequest = () => {
+            const request = mockAddSignRequest.mock.calls[0]?.[0]
+            if (!request) throw new Error('no sign request was queued')
+            return request as {
+                approve: (
+                    signed: unknown[],
+                    submission?: unknown,
+                    approval?: { token: string },
+                ) => Promise<void>
+                [key: string]: unknown
+            }
+        }
+
+        const mount = () => {
+            const harness = makeRegistry()
+            renderHook(() =>
+                useConnectionSigningAdapter(harness.registry, CHAIN_ID, {
+                    showTransaction: mockShowTransaction,
+                }),
+            )
+            return harness
+        }
+
+        beforeEach(() => {
+            mockPrepare.mockReset()
+            mockPrepare.mockResolvedValue(PREPARED)
+            mockStart.mockReset()
+            mockStart.mockResolvedValue(undefined)
+            mockLocate.mockReset()
+            mockShowTransaction.mockReset()
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...fixtureAdapter(),
+                sendBatch: {
+                    validate: vi.fn(),
+                    prepare: mockPrepare,
+                    start: mockStart,
+                    locate: mockLocate,
+                },
+            })
+        })
+
+        it('Given a batch, when it is prepared, then one review signs the first transaction and lists the rest after it', async () => {
+            const { send } = mount()
+
+            send(
+                batchMessage({
+                    type: 'send-batch',
+                    request: { marker: 'validated' },
+                }),
+            )
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            expect(mockPrepare).toHaveBeenCalledWith({ marker: 'validated' })
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            expect(addedRequest()).toMatchObject({
+                type: 'transactions',
+                transport: 'callback',
+                sourceType: 'walletconnect',
+                transportId: 'c1',
+                txs: [FIRST],
+                followingTxs: FOLLOWING,
+            })
+        })
+
+        it('Given the review, when the user approves, then the chain starts the batch before the dApp gets its id', async () => {
+            const { send } = mount()
+            const message = batchMessage({ type: 'send-batch', request: {} })
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await addedRequest().approve([SIGNED_FIRST], undefined, APPROVAL)
+
+            expect(mockStart).toHaveBeenCalledWith(
+                PREPARED,
+                SIGNED_FIRST,
+                APPROVAL,
+            )
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'send-batch',
+                batchId: 'batch-1',
+            })
+            expect(mockStart.mock.invocationCallOrder[0]).toBeLessThan(
+                message.respond.mock.invocationCallOrder[0],
+            )
+        })
+
+        it('Given a batch of one call, when the user approves, then its review is still a batch and it starts', async () => {
+            mockPrepare.mockResolvedValueOnce({ ...PREPARED, following: [] })
+            const { send } = mount()
+            const message = batchMessage({ type: 'send-batch', request: {} })
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            // Present though empty: it is what makes approving record the review.
+            expect(addedRequest().followingTxs).toEqual([])
+            await addedRequest().approve([SIGNED_FIRST], undefined, APPROVAL)
+
+            expect(mockStart).toHaveBeenCalledWith(
+                { ...PREPARED, following: [] },
+                SIGNED_FIRST,
+                APPROVAL,
+            )
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'send-batch',
+                batchId: 'batch-1',
+            })
+        })
+
+        it('Given the batch cannot be recorded, when the user approves, then the dApp gets no id', async () => {
+            mockStart.mockRejectedValueOnce(new Error('disk full'))
+            const { send } = mount()
+            const message = batchMessage({ type: 'send-batch', request: {} })
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await expect(
+                addedRequest().approve([SIGNED_FIRST], undefined, APPROVAL),
+            ).rejects.toThrow('disk full')
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('Given no recorded review, when the batch is approved, then nothing starts and the dApp gets no id', async () => {
+            const { send } = mount()
+            const message = batchMessage({ type: 'send-batch', request: {} })
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await expect(
+                addedRequest().approve([SIGNED_FIRST]),
+            ).rejects.toThrow(/review recorded/)
+            expect(mockStart).not.toHaveBeenCalled()
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('Given the chain refuses the batch with its own code, when preparing, then the dApp gets that code and nothing is queued', async () => {
+            const refusal = new DappRequestCodedError(5720, 'Duplicate id')
+            mockPrepare.mockRejectedValueOnce(refusal)
+            const { send } = mount()
+            const message = batchMessage({ type: 'send-batch', request: {} })
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(refusal)
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('Given a batch the session sent, when the dApp asks to show it, then its first transaction opens and the dApp is answered', async () => {
+            const located = { scope: { chainId: CHAIN_ID }, txId: '0xfirst' }
+            mockLocate.mockResolvedValueOnce(located)
+            const { send } = mount()
+            const message = batchMessage({
+                type: 'show-batch',
+                batchId: 'batch-1',
+            })
+
+            send(message)
+            await vi.waitFor(() => expect(message.respond).toHaveBeenCalled())
+
+            expect(mockLocate).toHaveBeenCalledWith('batch-1', ['AAAA'])
+            expect(mockShowTransaction).toHaveBeenCalledWith(located)
+            expect(message.respond).toHaveBeenCalledWith({ type: 'show-batch' })
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('Given an unknown batch, when the dApp asks to show it, then the chain refusal reaches the dApp and nothing opens', async () => {
+            const refusal = new DappRequestCodedError(5730, 'Unknown bundle id')
+            mockLocate.mockRejectedValueOnce(refusal)
+            const { send, reportError } = mount()
+            const message = batchMessage({
+                type: 'show-batch',
+                batchId: 'nope',
+            })
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(refusal)
+            expect(mockShowTransaction).not.toHaveBeenCalled()
+            expect(reportError).not.toHaveBeenCalled()
+        })
     })
 
     describe('switch-network', () => {
