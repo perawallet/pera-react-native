@@ -132,17 +132,13 @@ export const accountStateCases = (
         ).rejects.toThrow()
     })
 
-    it('reads a failed activity probe as inactive instead of rejecting', async () => {
+    it('rejects an activity probe that could not check the batch, rather than reading it as inactive', async () => {
         server.use(...fixtures.activityFailure)
         const { active, inactive } = fixtures.activity
 
-        const activity = await makeOps().checkActivity(
-            [active, inactive],
-            scope,
-        )
-
-        expect(activity.get(active) ?? false).toBe(false)
-        expect(activity.get(inactive) ?? false).toBe(false)
+        await expect(
+            makeOps().checkActivity([active, inactive], scope),
+        ).rejects.toThrow()
     })
 
     it('reports a change after the cursor with the next cursor, or has no signal', async () => {

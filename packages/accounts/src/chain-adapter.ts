@@ -356,8 +356,9 @@ export interface AccountsChainAdapter {
      */
     accountExists(address: string, scope: ChainScope): Promise<boolean>
     /**
-     * Batch activity probe for HD discovery. Never rejects: a failed probe
-     * reads as inactive so the gap limit still ends the scan.
+     * Batch activity probe for HD discovery. Rejects when the batch can't be
+     * checked at all, so "no activity" and "unknown" stay apart; the walks read
+     * a rejected batch as inactive, so the gap limit still ends the scan.
      */
     checkActivity(
         addresses: string[],

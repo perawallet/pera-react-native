@@ -383,22 +383,25 @@ export const createEthereumAccountStateOps = (
     ),
     accountExists: (address, scope) =>
         readFootprint(ctx, chain, address, scope),
-    checkActivity: async (addresses, scope) =>
-        new Map(
-            await Promise.all(
-                addresses.map(
-                    async address =>
-                        [
-                            address,
-                            await readFootprint(
-                                ctx,
-                                chain,
-                                address,
-                                scope,
-                            ).catch(() => false),
-                        ] as const,
-                ),
-            ),
-        ),
+    checkActivity: async (addresses, scope) => {
+        const reads = await Promise.allSettled(
+            addresses.map(address => readFootprint(ctx, chain, address, scope)),
+        )
+        // A read that failed beside ones that answered reads as inactive, so
+        // one flaky call doesn't discard the batch's other answers.
+        const [first] = reads
+        if (
+            first?.status === 'rejected' &&
+            reads.every(read => read.status === 'rejected')
+        ) {
+            throw first.reason
+        }
+        return new Map(
+            addresses.map((address, i) => {
+                const read = reads[i]
+                return [address, read.status === 'fulfilled' && read.value]
+            }),
+        )
+    },
     fetchChangeSignal: fetchChangeSignal(ctx, chain),
 })

@@ -660,8 +660,8 @@ const probeChainEntries = async (
                 )
                 return undefined
             }
-            // The contract says the probe never rejects; one that does still
-            // reads as inactive rather than losing every other chain's answer.
+            // A probe that couldn't be made reads as inactive rather than
+            // losing every other chain's answer.
             const activity = await accountsChainAdapters
                 .get(chainId)
                 .checkActivity([entry.address], scopeOn(chainId))
