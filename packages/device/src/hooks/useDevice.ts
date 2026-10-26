@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    getActiveLocale,
     isNotFoundError,
     isPeraNetworkError,
 } from '@perawallet/wallet-core-shared'
@@ -181,7 +182,10 @@ export const useDevice = () => {
             accounts,
             platform: deviceInfoService.getDevicePlatform(),
             pushToken: pushToken ?? '',
-            locale: deviceInfoService.getDeviceLocale(),
+            // The backend renders every push in this locale, so it is the app's
+            // language, not the phone's: they differ whenever the user picked one
+            // in Settings.
+            locale: getActiveLocale(),
             appVersion: deviceInfoService.getAppVersion(),
             currency: notificationCurrency,
         }),
