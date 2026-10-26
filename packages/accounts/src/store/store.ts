@@ -52,6 +52,7 @@ import { kmsCore, zeroBytes } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountsChainAdapters,
+    deriveHdKeyForAccount,
     type DecodedAccountRecord,
 } from '../chain-adapter'
 import {
@@ -579,15 +580,12 @@ const resolveChainEntry = async (
         if (scheme === undefined || walletId === undefined) {
             throw new WalletCannotDeriveError(walletId ?? account.id, chainId)
         }
-        const { address, keyPairId } = await keyDerivations
-            .get(chainId)
-            .deriveAccount(
-                kmsCore,
-                walletId,
-                custody.hd.account,
-                custody.hd.keyIndex,
-                { scheme, networkId },
-            )
+        const { address, keyPairId } = await deriveHdKeyForAccount(
+            chainId,
+            walletId,
+            custody.hd,
+            { scheme, networkId },
+        )
         return { address, keyPairId }
     }
     if (custody.kind === 'local' && custody.seed === null) {
@@ -1169,15 +1167,12 @@ export const useAccountsStore: UseBoundStore<
                     useNetworkStore.getState(),
                     chainId,
                 )
-                const { address, keyPairId } = await keyDerivations
-                    .get(chainId)
-                    .deriveAccount(
-                        kmsCore,
-                        walletId,
-                        index.account,
-                        index.keyIndex,
-                        { scheme, networkId },
-                    )
+                const { address, keyPairId } = await deriveHdKeyForAccount(
+                    chainId,
+                    walletId,
+                    index,
+                    { scheme, networkId },
+                )
 
                 assertExpectedAddress(chainId, address, expectedAddress)
 

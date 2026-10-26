@@ -27,6 +27,7 @@ import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import type { HdIndex } from '../models'
 
 export const ALGORAND = 'algorand' as ChainId
 export const EVM_CHAINS = [
@@ -198,6 +199,8 @@ export const registerChainFamilies = (
         accountsChainAdapters.register({
             chainId,
             checkActivity,
+            hdKeyPairId: (seedKeyId: string, { account, keyIndex }: HdIndex) =>
+                familyHdKeyId(seedKeyId, family, account, keyIndex),
         } as unknown as AccountsChainAdapter)
     }
     return families

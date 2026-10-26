@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import {
     buildAccount,
     chainAccountOf,
+    deriveClaimedHdKey,
     DuplicateAccountError,
     findAddressHolder,
     findPathHolder,
@@ -194,11 +195,17 @@ const buildHdWalletAccount = async (
 ): Promise<LocalAccount> => {
     // Derivation also commits the child key to the keystore, so no separate
     // `generateDerivedKey` call is needed here.
-    const derived = await adapter.deriveHdAccount(kmsCore, seedKeyId, {
-        account: payload.account,
-        keyIndex: payload.keyIndex,
-        derivationType: payload.derivationType,
-    })
+    const index = { account: payload.account, keyIndex: payload.keyIndex }
+    const derived = await deriveClaimedHdKey(
+        adapter.chainId,
+        seedKeyId,
+        index,
+        () =>
+            adapter.deriveHdAccount(kmsCore, seedKeyId, {
+                ...index,
+                derivationType: payload.derivationType,
+            }),
+    )
     if (derived.address !== payload.address) {
         throw new Error(
             `${payload.type} address mismatch: derived ${derived.address} != backup ${payload.address}`,

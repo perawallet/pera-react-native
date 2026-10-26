@@ -21,6 +21,7 @@ import { moduleEntryNamedExports } from './rules/module-entry-named-exports.js'
 import { hookResultType } from './rules/hook-result-type.js'
 import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
+import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -39,5 +40,6 @@ export default {
         'hook-result-type': hookResultType,
         'no-algorand-sdk-imports': noAlgorandSdkImports,
         'no-i18n-key-cast': noI18nKeyCast,
+        'hd-derive-claimed': hdDeriveClaimed,
     },
 }

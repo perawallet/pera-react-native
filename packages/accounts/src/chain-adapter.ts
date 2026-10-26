@@ -46,6 +46,7 @@ import type {
     LocalCustody,
     WalletAccount,
 } from './models'
+import { deriveClaimedKey } from './key-claims'
 import type { SignerResolution } from './signer-resolution'
 
 /**
@@ -459,21 +460,44 @@ export const hdDeriveOpts = (scope: ChainScope): DeriveOpts => {
     return { scheme: hdKind.signingScheme, networkId: scope.networkId }
 }
 
+/**
+ * Runs `derive`, which saves the HD child at `index` of `seedKeyId` on
+ * `chainId` for an account that will hold it, claimed so a discovery walk's
+ * cleanup leaves the key alone until that account is stored. Every flow that
+ * derives an HD key and stores its account afterwards must go through this.
+ */
+export const deriveClaimedHdKey = <T extends { keyPairId: string }>(
+    chainId: ChainId,
+    seedKeyId: string,
+    index: HdIndex,
+    derive: () => Promise<T>,
+): Promise<T> =>
+    deriveClaimedKey(
+        accountsChainAdapters.has(chainId)
+            ? accountsChainAdapters.get(chainId).hdKeyPairId(seedKeyId, index)
+            : undefined,
+        derive,
+    )
+
+/** Derives the HD child at `index` through the chain's registered `KeyDerivation`, claimed. */
+export const deriveHdKeyForAccount = async (
+    chainId: ChainId,
+    seedKeyId: string,
+    { account, keyIndex }: HdIndex,
+    opts: DeriveOpts,
+) =>
+    deriveClaimedHdKey(chainId, seedKeyId, { account, keyIndex }, () =>
+        keyDerivations
+            .get(chainId)
+            .deriveAccount(kmsCore, seedKeyId, account, keyIndex, opts),
+    )
+
 /** Derives the HD child through the chain's registered `KeyDerivation`. */
 export const deriveHdAccount = async (
     scope: ChainScope,
     seedKeyId: string,
-    { account, keyIndex }: HdIndex,
-) =>
-    keyDerivations
-        .get(scope.chainId)
-        .deriveAccount(
-            kmsCore,
-            seedKeyId,
-            account,
-            keyIndex,
-            hdDeriveOpts(scope),
-        )
+    index: HdIndex,
+) => deriveHdKeyForAccount(scope.chainId, seedKeyId, index, hdDeriveOpts(scope))
 
 /** Throws {@link SingleKeyAccountsUnsupportedError} on a chain without single-key accounts. */
 export const requireSingleKeyAccounts = (
