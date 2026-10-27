@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { createServer } from 'node:http'
+import { createServer, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
 import { EVMNET, type EvmnetChain } from './evmnet'
@@ -19,6 +19,14 @@ type JsonRpcCall = { method?: string }
 
 const isBlockNumber = (call: JsonRpcCall): boolean =>
     call.method === 'eth_blockNumber'
+
+// The cause goes to the test log, not the response: the app under test only
+// needs to see the node fail, and an error's text can carry a stack trace.
+const answerProxyFailure = (res: ServerResponse, error: unknown): void => {
+    console.error('rpc proxy request failed', error)
+    res.writeHead(502, { 'content-type': 'text/plain' })
+    res.end('rpc proxy request failed')
+}
 
 /**
  * A JSON-RPC pass-through to a chain's Anvil node that, once the app has
@@ -59,8 +67,7 @@ export const withMidReadBlock = async (
                     })
                     res.end(answer)
                 } catch (error) {
-                    res.writeHead(502, { 'content-type': 'text/plain' })
-                    res.end(String(error))
+                    answerProxyFailure(res, error)
                 }
             })()
         })
@@ -107,8 +114,7 @@ export const withSeverableRpc = async (
                     })
                     res.end(answer)
                 } catch (error) {
-                    res.writeHead(502, { 'content-type': 'text/plain' })
-                    res.end(String(error))
+                    answerProxyFailure(res, error)
                 }
             })()
         })
