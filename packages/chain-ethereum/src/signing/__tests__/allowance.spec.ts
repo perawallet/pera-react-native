@@ -77,8 +77,10 @@ describe('spendApprovalOfCall', () => {
 
     it('leaves the amount out when it is unlimited', () => {
         expect(
-            spendApprovalOfCall(approve(maxUint256, 'increase-allowance'), 'ethereum')
-                ?.allowances[0].amount,
+            spendApprovalOfCall(
+                approve(maxUint256, 'increase-allowance'),
+                'ethereum',
+            )?.allowances[0].amount,
         ).toBeUndefined()
     })
 

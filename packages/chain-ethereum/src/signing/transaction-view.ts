@@ -113,7 +113,9 @@ const isDigits = (value: unknown): boolean =>
     typeof value === 'string' && /^\d+$/.test(value)
 
 const isNftItem = (value: unknown): boolean =>
-    isRecord(value) && isDigits(value.tokenId) && Decimal.isDecimal(value.amount)
+    isRecord(value) &&
+    isDigits(value.tokenId) &&
+    Decimal.isDecimal(value.amount)
 
 const isTransferParties = (value: Record<string, unknown>): boolean =>
     isAddressValue(value.from) && isAddressValue(value.to)

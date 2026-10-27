@@ -552,7 +552,8 @@ export const createEthereumReviewer = ({
                       .filter(t => !isAutoApproved(t))
                       .flatMap(t => {
                           const standard = recognisedCallOf(t, context)
-                          if (!standard) return [{ ...UNKNOWN_CONTRACT_WARNING }]
+                          if (!standard)
+                              return [{ ...UNKNOWN_CONTRACT_WARNING }]
                           const warning = approvalWarningOf(standard)
                           return warning ? [warning] : []
                       }),

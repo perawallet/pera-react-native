@@ -3178,6 +3178,14 @@
             "deadline_label": "Son tarih",
             "never": "Hiçbir zaman"
         },
+        "collection_approval": {
+            "warning": "Bu, operatörün bu koleksiyonda sahip olduğun tüm öğeleri, sonradan alacakların dahil, iptal edene kadar transfer etmesine izin verir.",
+            "operator_label": "Operatör",
+            "collection_label": "Koleksiyon"
+        },
+        "token_approval": {
+            "revoke_note": "Bu, adresin bu varlığı taşıma iznini kaldırır."
+        },
         "arbitrary_data_details": {
             "unnamed": "Birisi",
             "description": "Veri imzalama isteği, serbest verinin imzalanması için yapılan bir istektir. Servisler bunu genellikle bir hesabın sahipliğini doğrulamak için kullanır ve herhangi bir ücret oluşturmaz.",
@@ -3305,6 +3313,8 @@
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
             "contract_call": "Sözleşme çağrısı",
+            "approval": "Onay",
+            "revoke_approval": "Onayı iptal et",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

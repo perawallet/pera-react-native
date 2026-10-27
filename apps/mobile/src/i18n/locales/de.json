@@ -3170,6 +3170,14 @@
             "deadline_label": "Frist",
             "never": "Nie"
         },
+        "collection_approval": {
+            "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",
+            "operator_label": "Operator",
+            "collection_label": "Sammlung"
+        },
+        "token_approval": {
+            "revoke_note": "Damit verliert die Adresse die Berechtigung, dieses Asset zu bewegen."
+        },
         "arbitrary_data_details": {
             "unnamed": "Jemand",
             "description": "Eine Daten-Signaturanfrage ist eine Anfrage zum Signieren beliebiger Daten. Dies wird häufig von Diensten verwendet, um den Besitz eines Kontos zu überprüfen, verursacht jedoch keine Gebühren.",
@@ -3297,6 +3305,8 @@
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
             "contract_call": "Smart-Contract-Aufruf",
+            "approval": "Freigabe",
+            "revoke_approval": "Freigabe widerrufen",
             "key_registration": "Schlüsselregistrierung",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

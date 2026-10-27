@@ -115,12 +115,10 @@ const toCall = (
                 contract,
                 from: address(0),
                 to: address(1),
-                items: ids.map(
-                    (id, index): EvmNftItem => ({
-                        tokenId: id.toString(),
-                        amount: toDecimal(amounts[index]),
-                    }),
-                ),
+                items: ids.map((id, index): EvmNftItem => ({
+                    tokenId: id.toString(),
+                    amount: toDecimal(amounts[index]),
+                })),
             }
         }
         case 'approve':
@@ -191,7 +189,9 @@ const approvalSummary = (
 ): TransactionSummary => ({
     kind: 'approval',
     title: {
-        key: isRevocation(call) ? REVOKE_APPROVAL_TITLE_KEY : APPROVAL_TITLE_KEY,
+        key: isRevocation(call)
+            ? REVOKE_APPROVAL_TITLE_KEY
+            : APPROVAL_TITLE_KEY,
     },
     direction: 'none',
     counterparty,

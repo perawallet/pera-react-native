@@ -17,8 +17,12 @@ import type {
     SpendAllowance,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
+import { spendApprovalOfCall } from '@perawallet/wallet-core-chain-ethereum'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { useSpendApprovalWarning } from '../useSpendApprovalWarning'
+import {
+    useCollectionApprovalWarning,
+    useSpendApprovalWarning,
+} from '../useSpendApprovalWarning'
 
 vi.mock('@hooks/useLanguage')
 
@@ -105,5 +109,42 @@ describe('useSpendApprovalWarning', () => {
                 }),
             ),
         ).toEqual(['spend', 'unlimited', 'no-expiry'])
+    })
+})
+
+describe('an unlimited approval sent as a transaction', () => {
+    it('warns the same way an unlimited permit does', () => {
+        const transaction = spendApprovalOfCall(
+            {
+                kind: 'approve',
+                contract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                spender: SPENDER,
+                value: new Decimal(2).pow(256).minus(1),
+            },
+            'ethereum',
+        )
+        const permit = approval({ allowances: [unlimited('0xusdc')] })
+
+        expect(transaction).toBeDefined()
+        expect(rowTypes(transaction as SpendApproval)).toContain('unlimited')
+        expect(rowTypes(permit)).toContain('unlimited')
+    })
+})
+
+describe('useCollectionApprovalWarning', () => {
+    it('warns that the operator can take every item, naming the operator', () => {
+        const { result } = renderHook(() =>
+            useCollectionApprovalWarning(SPENDER),
+        )
+
+        expect(result.current.rows).toEqual([
+            {
+                type: 'collection',
+                icon: 'warning',
+                message: 'signing.collection_approval.warning',
+                emphasis: 'signing.spend_approval.spend_warning_bold',
+                caption: 'signing.spend_approval.spender_caption',
+            },
+        ])
     })
 })

@@ -21,7 +21,7 @@ import type { IconName } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type SpendApprovalWarningRow = {
-    type: 'spend' | 'unlimited' | 'no-expiry' | 'long-lived'
+    type: 'spend' | 'unlimited' | 'no-expiry' | 'long-lived' | 'collection'
     icon: IconName
     message: string
     emphasis?: string
@@ -31,6 +31,10 @@ export type SpendApprovalWarningRow = {
 export type UseSpendApprovalWarningResult = {
     rows: SpendApprovalWarningRow[]
     deadlineText: string
+}
+
+export type UseCollectionApprovalWarningResult = {
+    rows: SpendApprovalWarningRow[]
 }
 
 type RowCopy = {
@@ -56,6 +60,11 @@ const ROW_COPY: Record<SpendApprovalWarningRow['type'], RowCopy> = {
     'long-lived': {
         icon: 'pending',
         message: i18nKey('signing.spend_approval.long_deadline_warning'),
+    },
+    collection: {
+        icon: 'warning',
+        message: i18nKey('signing.collection_approval.warning'),
+        emphasis: i18nKey('signing.spend_approval.spend_warning_bold'),
     },
 }
 
@@ -100,4 +109,27 @@ export const useSpendApprovalWarning = (
                     : formatDatetime(new Date(deadline)),
         }
     }, [approval, t])
+}
+
+export const useCollectionApprovalWarning = (
+    operator: string,
+): UseCollectionApprovalWarningResult => {
+    const { t } = useLanguage()
+
+    return useMemo(() => {
+        const { icon, message, emphasis } = ROW_COPY.collection
+        return {
+            rows: [
+                {
+                    type: 'collection',
+                    icon,
+                    message: t(message),
+                    emphasis: emphasis ? t(emphasis) : undefined,
+                    caption: t('signing.spend_approval.spender_caption', {
+                        address: operator,
+                    }),
+                },
+            ],
+        }
+    }, [operator, t])
 }

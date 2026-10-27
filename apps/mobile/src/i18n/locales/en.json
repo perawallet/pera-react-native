@@ -3178,6 +3178,14 @@
             "deadline_label": "Deadline",
             "never": "Never"
         },
+        "collection_approval": {
+            "warning": "This lets the operator transfer every item you hold in this collection, including ones you get later, until you revoke it.",
+            "operator_label": "Operator",
+            "collection_label": "Collection"
+        },
+        "token_approval": {
+            "revoke_note": "This removes the address's permission to move this asset."
+        },
         "arbitrary_data_details": {
             "unnamed": "Someone",
             "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",
@@ -3305,6 +3313,8 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "contract_call": "Contract Call",
+            "approval": "Approval",
+            "revoke_approval": "Revoke Approval",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

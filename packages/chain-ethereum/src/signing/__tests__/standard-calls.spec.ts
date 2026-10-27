@@ -210,7 +210,11 @@ describe('decodeEvmStandardCall', () => {
                 'an address word with dirty high bits',
                 call(
                     TOKEN,
-                    concat([approve.slice(0, 10) as Hex, DIRTY_ADDRESS, word('5')]),
+                    concat([
+                        approve.slice(0, 10) as Hex,
+                        DIRTY_ADDRESS,
+                        word('5'),
+                    ]),
                 ),
             ],
             [

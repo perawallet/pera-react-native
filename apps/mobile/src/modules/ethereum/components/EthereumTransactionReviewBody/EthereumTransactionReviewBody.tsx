@@ -21,6 +21,7 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumReviewHeader } from './EthereumReviewHeader'
@@ -42,63 +43,138 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const { view, amount, maxFee, signingAccount, scope, collectible } =
-        presentation
+    const {
+        view,
+        amount,
+        maxFee,
+        signingAccount,
+        scope,
+        collectible,
+        standardCall,
+        sender,
+        nftItems,
+        isTransfer,
+    } = presentation
+    const tokenContract =
+        view.token?.contract ??
+        (standardCall?.kind === 'token-transfer'
+            ? standardCall.contract
+            : undefined)
+    const nftContract =
+        view.nft?.contract ??
+        (standardCall?.kind === 'nft-transfer'
+            ? standardCall.contract
+            : undefined)
 
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
 
+    const senderRow = sender ? (
+        <KeyValueRow
+            testID='ethereum_review_sender'
+            title={t('transactions.common.from')}
+        >
+            <AddressDisplay
+                address={sender}
+                displayType='address-only'
+            />
+        </KeyValueRow>
+    ) : null
+
     let details = null
-    if (view.kind === 'contract-call') {
+    if (standardCall && !isTransfer) {
+        details = <EthereumApprovalDetails presentation={presentation} />
+    } else if (!isTransfer) {
         details = <EthereumContractCallDetails presentation={presentation} />
-    } else if (view.token) {
+    } else if (tokenContract) {
         details = (
-            <KeyValueRow
-                testID='ethereum_review_asset'
-                title={t('transactions.common.asset')}
-            >
-                <PWView style={styles.asset}>
-                    {!!amount?.asset && (
-                        <PWText>{amount.asset.unitName}</PWText>
-                    )}
-                    <AddressDisplay
-                        address={view.token.contract}
-                        displayType='address-only'
-                    />
-                </PWView>
-            </KeyValueRow>
-        )
-    } else if (view.nft && collectible) {
-        details = (
-            <KeyValueRow
-                testID='ethereum_review_nft'
-                title={t('transactions.common.asset')}
-            >
-                <PWView style={styles.nft}>
-                    {!!amount?.asset && (
-                        <AssetIcon
-                            asset={amount.asset}
-                            shape='square'
-                            size='xl'
-                        />
-                    )}
+            <>
+                {senderRow}
+                <KeyValueRow
+                    testID='ethereum_review_asset'
+                    title={t('transactions.common.asset')}
+                >
                     <PWView style={styles.asset}>
-                        <PWText>
-                            {t('transactions.list_item.nft_subtitle', {
-                                collection:
-                                    collectible.collectionName ??
-                                    view.nft.contract,
-                                tokenId: collectible.tokenId,
-                            })}
-                        </PWText>
+                        {!!amount?.asset && (
+                            <PWText>{amount.asset.unitName}</PWText>
+                        )}
                         <AddressDisplay
-                            address={view.nft.contract}
+                            address={tokenContract}
                             displayType='address-only'
                         />
                     </PWView>
-                </PWView>
-            </KeyValueRow>
+                </KeyValueRow>
+            </>
+        )
+    } else if (nftContract && collectible) {
+        details = (
+            <>
+                {senderRow}
+                <KeyValueRow
+                    testID='ethereum_review_nft'
+                    title={t('transactions.common.asset')}
+                >
+                    <PWView style={styles.nft}>
+                        {!!amount?.asset && (
+                            <AssetIcon
+                                asset={amount.asset}
+                                shape='square'
+                                size='xl'
+                            />
+                        )}
+                        <PWView style={styles.asset}>
+                            <PWText>
+                                {t('transactions.list_item.nft_subtitle', {
+                                    collection:
+                                        collectible.collectionName ??
+                                        nftContract,
+                                    tokenId: collectible.tokenId,
+                                })}
+                            </PWText>
+                            <AddressDisplay
+                                address={nftContract}
+                                displayType='address-only'
+                            />
+                        </PWView>
+                    </PWView>
+                </KeyValueRow>
+            </>
+        )
+    } else if (nftContract && nftItems) {
+        const collection =
+            standardCall?.kind === 'nft-transfer'
+                ? (standardCall.collectionName ?? nftContract)
+                : nftContract
+        details = (
+            <>
+                {senderRow}
+                <KeyValueRow
+                    testID='ethereum_review_nft_collection'
+                    title={t('signing.collection_approval.collection_label')}
+                >
+                    <AddressDisplay
+                        address={nftContract}
+                        displayType='address-only'
+                    />
+                </KeyValueRow>
+                {nftItems.map(item => (
+                    <KeyValueRow
+                        key={item.tokenId}
+                        testID={`ethereum_review_nft_item_${item.tokenId}`}
+                        title={t('transactions.list_item.nft_subtitle', {
+                            collection,
+                            tokenId: item.tokenId,
+                        })}
+                    >
+                        <AssetAmount
+                            asset={null}
+                            value={item.amount}
+                            ignorePrivacyMode
+                        />
+                    </KeyValueRow>
+                ))}
+            </>
         )
     }
 

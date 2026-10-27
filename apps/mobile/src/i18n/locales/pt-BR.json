@@ -3194,6 +3194,14 @@
             "deadline_label": "Prazo",
             "never": "Nunca"
         },
+        "collection_approval": {
+            "warning": "Isso permite que o operador transfira todos os itens que você tem nesta coleção, inclusive os que receber depois, até você revogar.",
+            "operator_label": "Operador",
+            "collection_label": "Coleção"
+        },
+        "token_approval": {
+            "revoke_note": "Isso remove a permissão do endereço para mover este ativo."
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguém",
             "description": "Uma solicitação de assinatura de dados pede que você assine dados arbitrários. Serviços costumam usar isso para verificar a propriedade de uma conta, e não gera taxas.",
@@ -3322,6 +3330,8 @@
             "asset_freeze": "Congelamento de ativo",
             "app_call": "Chamada de app",
             "contract_call": "Chamada de contrato",
+            "approval": "Aprovação",
+            "revoke_approval": "Revogar aprovação",
             "key_registration": "Registro de chave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
