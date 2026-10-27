@@ -46,6 +46,8 @@ on:
             - 'packages/database/**'
             - 'packages/shared/**'
             - 'extensions/provider/**'
+            # A catalog bump of viem, keystore-core or algosdk changes the code under test.
+            - 'pnpm-workspace.yaml'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:

@@ -167,9 +167,15 @@ export default defineRule({
             return
         }
 
-        const manifest = JSON.parse(manifestRaw) as {
+        let manifest: {
             name?: string
             dependencies?: Record<string, string>
+        }
+        try {
+            manifest = JSON.parse(manifestRaw) as typeof manifest
+        } catch {
+            ctx.report(file, `${suite.manifest} is not valid JSON`)
+            return
         }
         const { items, line } = yamlList(workflowRaw, [
             'on',

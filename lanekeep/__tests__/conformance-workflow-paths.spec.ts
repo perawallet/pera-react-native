@@ -131,4 +131,32 @@ describe('pera/conformance-workflow-paths', () => {
             ['vitest.config.ts', `${WORKFLOW} does not exist`],
         ])
     })
+
+    it('reads plain, quoted and commented list items', async () => {
+        const raw = [
+            'on:',
+            '    pull_request:',
+            '        paths:',
+            '            - conformance-evm/**',
+            "            - 'conformance/**'",
+            '            - "packages/kms/**"',
+            '            - packages/signing/** # the signer',
+            '',
+        ].join('\n')
+
+        const found = await check({ [WORKFLOW]: raw })
+
+        expect(found).toEqual([])
+    })
+
+    it('reports a malformed suite manifest instead of throwing', async () => {
+        const found = await check({
+            'conformance-evm/package.json': '{ nope',
+            [WORKFLOW]: workflow(['conformance-evm/**']),
+        })
+
+        expect(found.map(v => v.message)).toEqual([
+            'conformance-evm/package.json is not valid JSON',
+        ])
+    })
 })

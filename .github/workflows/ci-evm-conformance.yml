@@ -11,7 +11,7 @@ name: CI / EVM Conformance
 
 on:
     schedule:
-        # After the LocalNet conformance run (03:00), so the two never share a runner window.
+        # Staggered after the LocalNet conformance run (03:00).
         - cron: '30 3 * * *'
     workflow_dispatch: {}
     pull_request:
@@ -24,14 +24,14 @@ on:
             - 'packages/kms/**'
             - 'packages/accounts/**'
             - 'packages/chain-contract/**'
+            - 'packages/shared/**'
+            - 'packages/assets/**'
             - 'packages/database/**'
             # The secp256k1 shim keystore-core signs EVM payloads through.
             - 'extensions/provider/**'
             # Aliased to source in conformance-evm/vitest.config.ts.
             - 'packages/chain-shared/**'
-            - 'packages/assets/**'
             - 'packages/config/**'
-            - 'packages/shared/**'
             - 'packages/transactions/**'
             # The Anvil nodes, the Solidity fixtures' build, the runner, and the
             # OP-stack predeploy capture the Base fee fixtures come from.
@@ -39,6 +39,8 @@ on:
             - 'tools/dev/evm-contracts.sh'
             - 'tools/dev/conformance-evm.sh'
             - 'tools/dev/capture-op-predeploys.sh'
+            # A catalog bump of viem, keystore-core or algosdk changes the code under test.
+            - 'pnpm-workspace.yaml'
             - '.github/workflows/ci-evm-conformance.yml'
 
 # Least-privilege default, matching ci-pre-merge.yml.
