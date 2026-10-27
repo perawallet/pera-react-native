@@ -1825,7 +1825,7 @@
             "documents_pending_body": "Se ha enviado tu verificación. Te avisaremos por correo cuando esté completa.",
             "documents_verified_body": "Tu identidad ha sido verificada.",
             "documents_preparing_body": "Tu identidad está verificada. Estamos configurando tu cuenta, lo que puede tardar unos minutos.",
-            "documents_preparing_slow_body": "Tu identidad está verificada, pero la configuración de tu cuenta está tardando más de lo habitual. Seguiremos intentándolo.",
+            "documents_preparing_slow_body": "Tu identidad está verificada, pero la configuración de tu cuenta está tardando más de lo habitual. Vuelve a intentarlo en unos minutos.",
             "documents_preparing_stalled_body": "Tu identidad está verificada, pero no pudimos terminar de configurar tu cuenta. Contacta con soporte para completarla.",
             "documents_account_locked_body": "Tu cuenta de Pera Card está bloqueada temporalmente. Contacta con soporte para desbloquearla.",
             "documents_rejected_body": "No pudimos verificar tu identidad. Contacta con soporte para obtener ayuda.",
