@@ -433,7 +433,8 @@ struct PortfolioTransactionsTabsWidget: Widget {
         }
         .configurationDisplayName(String(localized: "portfolioTransactionsTabs.name"))
         .description(String(localized: "portfolioTransactionsTabs.description"))
-        .supportedFamilies([.systemSmall, .systemMedium])
+        // Small only: a medium one shows both pages side by side, the same as Portfolio & Transactions.
+        .supportedFamilies([.systemSmall])
         .contentMarginsDisabled()
     }
 }

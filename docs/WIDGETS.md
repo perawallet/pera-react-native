@@ -234,8 +234,8 @@ Two controls are offered side by side so the team can compare them:
   costs a row of content.
 
 Only the small size switches pages: a medium Portfolio & Transactions or Inbox & Notifications
-widget has room for both, so it shows them side by side, each half its own tap where they differ. The plain Portfolio widget has neither; it and
-the Transactions widget can be stacked instead.
+shows both side by side, each half its own tap, so the tabs variant of Portfolio & Transactions is
+small only. The plain Portfolio widget has neither; it and Transactions can be stacked instead.
 
 ## Inbox widgets
 
