@@ -24,6 +24,7 @@ import {
 } from 'viem'
 
 import { MULTICALL3_RUNTIME_BYTECODE } from '../vectors/multicall3'
+import { ANVIL_DEV_PRIVATE_KEY, castSend } from './cast'
 import { type EvmnetChain, anvilRpc } from './evmnet'
 
 export type ContractName =
@@ -37,12 +38,6 @@ export type ContractName =
 type Artifact = { abi: Abi; bytecode: Hex }
 
 const ARTIFACTS_DIR = resolve(import.meta.dirname, '../../contracts/artifacts')
-
-// Anvil's unlocked dev account 0.
-const DEPLOYER: Address = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-
-const RECEIPT_POLL_MS = 100
-const RECEIPT_TIMEOUT_MS = 30_000
 
 export const loadArtifact = (name: ContractName): Artifact =>
     JSON.parse(
@@ -76,27 +71,6 @@ const encodeConstructorArgs = (
     )
 }
 
-type Receipt = { contractAddress: Address | null; status: Hex } | null
-
-const waitForReceipt = async (
-    chain: EvmnetChain,
-    hash: Hex,
-): Promise<NonNullable<Receipt>> => {
-    const deadline = Date.now() + RECEIPT_TIMEOUT_MS
-    while (Date.now() < deadline) {
-        const receipt = await anvilRpc<Receipt>(
-            chain,
-            'eth_getTransactionReceipt',
-            [hash],
-        )
-        if (receipt) {
-            return receipt
-        }
-        await new Promise(done => setTimeout(done, RECEIPT_POLL_MS))
-    }
-    throw new Error(`deploy ${hash} on ${chain} was not mined in time`)
-}
-
 export const deployContract = async (
     chain: EvmnetChain,
     name: ContractName,
@@ -108,14 +82,15 @@ export const deployContract = async (
         constructorArgs.length > 0
             ? encodeConstructorArgs(constructorSig, constructorArgs)
             : '0x'
-    const hash = await anvilRpc<Hex>(chain, 'eth_sendTransaction', [
-        { from: DEPLOYER, data: `${bytecode}${encodedArgs.slice(2)}` },
-    ])
-    const receipt = await waitForReceipt(chain, hash)
-    if (receipt.status !== '0x1' || !receipt.contractAddress) {
-        throw new Error(`deploying ${name} on ${chain} failed (${hash})`)
+    const { contractAddress } = await castSend({
+        chain,
+        privateKey: ANVIL_DEV_PRIVATE_KEY,
+        create: `${bytecode}${encodedArgs.slice(2)}`,
+    })
+    if (!contractAddress) {
+        throw new Error(`deploying ${name} on ${chain} created no contract`)
     }
-    return receipt.contractAddress
+    return contractAddress
 }
 
 export const installMulticall3 = async (chain: EvmnetChain): Promise<void> => {

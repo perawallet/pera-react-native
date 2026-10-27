@@ -18,6 +18,7 @@ import {
     MULTICALL3_CODEHASH,
     MULTICALL3_RUNTIME_BYTECODE,
 } from '../../vectors/multicall3'
+import { castCall } from '../cast'
 import { deployContract, installMulticall3, loadArtifact } from '../contracts'
 import { anvilRpc, assertEvmnetReachable } from '../evmnet'
 
@@ -63,5 +64,64 @@ describe('contract helpers', () => {
         ])
 
         expect(code.length).toBeGreaterThan(2)
+    })
+
+    describe('fixtures', () => {
+        const OWNER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
+        it('deploys TestToken with a non-zero EIP-712 domain separator and zero nonces', async () => {
+            const token = await deployContract(
+                'ethereum',
+                'TestToken',
+                ['Test', 'TST', '1'],
+                'constructor(string,string,uint256)',
+            )
+
+            const separator = await castCall({
+                chain: 'ethereum',
+                to: token,
+                sig: 'DOMAIN_SEPARATOR()(bytes32)',
+            })
+            const nonce = await castCall({
+                chain: 'ethereum',
+                to: token,
+                sig: 'nonces(address)(uint256)',
+                args: [OWNER],
+            })
+
+            expect(separator).toMatch(/^0x[0-9a-f]{64}$/)
+            expect(BigInt(separator)).not.toBe(0n)
+            expect(nonce).toBe('0')
+        })
+
+        it('deploys Reverter whose revertWithReason call fails with its reason', async () => {
+            const reverter = await deployContract('ethereum', 'Reverter')
+
+            await expect(
+                castCall({
+                    chain: 'ethereum',
+                    to: reverter,
+                    sig: 'revertWithReason()',
+                }),
+            ).rejects.toThrow('conformance: reason')
+        })
+
+        it('deploys TestNft721 advertising ERC-721 through ERC-165', async () => {
+            const nft = await deployContract(
+                'ethereum',
+                'TestNft721',
+                [],
+                'constructor()',
+            )
+
+            const supported = await castCall({
+                chain: 'ethereum',
+                to: nft,
+                sig: 'supportsInterface(bytes4)(bool)',
+                args: ['0x80ac58cd'],
+            })
+
+            expect(supported).toBe('true')
+        })
     })
 })
