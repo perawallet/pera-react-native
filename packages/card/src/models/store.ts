@@ -57,6 +57,12 @@ export type CardUxState = BaseStoreState & {
     /** Returned by email/verify; required by every later registration step. */
     onboardingId: Nullable<string>
     /**
+     * The onboarding id whose record this device has read as VERIFIED. Only
+     * then does a record that stops resolving mean Baanx created the account,
+     * rather than an id that was wrong or dropped.
+     */
+    verifiedOnboardingId: Nullable<string>
+    /**
      * Persisted so the consent-link step can still bind it after a cross-reload
      * retry, where re-creating returns "Duplicate" with no id.
      */
@@ -116,6 +122,7 @@ export type CardUxState = BaseStoreState & {
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
+    setVerifiedOnboardingId: (id: Nullable<string>) => void
     setConsentSetId: (id: Nullable<string>) => void
     setAllowMarketing: (allowMarketing: boolean) => void
     setAllowSms: (allowSms: boolean) => void

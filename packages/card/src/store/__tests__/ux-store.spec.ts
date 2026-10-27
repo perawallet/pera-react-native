@@ -123,10 +123,32 @@ describe('useCardStore', () => {
         ).persist
             .getOptions()
             .partialize?.(useCardStore.getState())
-        expect(persisted).not.toHaveProperty('password')
+        expect(persisted).not.toHaveProperty('hasPassword')
 
         act(() => result.current.resetOnboardingProgress())
         expect(result.current.hasPassword).toBe(false)
+    })
+
+    test('keeps the verified onboarding id across restarts until onboarding restarts', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => result.current.setVerifiedOnboardingId('ob_1'))
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).toHaveProperty('verifiedOnboardingId', 'ob_1')
+
+        act(() => result.current.resetOnboardingProgress())
+        expect(result.current.verifiedOnboardingId).toBeNull()
     })
 
     test('the login budget counts attempts, locks, and clears with the password', async () => {

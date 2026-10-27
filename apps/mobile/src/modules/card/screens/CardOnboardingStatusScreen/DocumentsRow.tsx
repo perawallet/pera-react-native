@@ -84,6 +84,12 @@ const DOCUMENTS_ROW: Record<
         bodyKey: i18nKey('peraCard.setup_status.sign_in_to_finish_body'),
         showsPendingLabel: false,
     },
+    'record-missing': {
+        icon: 'info',
+        variant: 'warning',
+        bodyKey: i18nKey('peraCard.setup_status.documents_record_missing_body'),
+        showsPendingLabel: false,
+    },
     'account-locked': {
         icon: 'cross',
         variant: 'error',
@@ -163,7 +169,8 @@ export const DocumentsRow = ({
                     testID='card-onboarding-status-documents-try-again'
                 />
             ) : null}
-            {documentsState === 'sign-in-required' ? (
+            {documentsState === 'sign-in-required' ||
+            documentsState === 'record-missing' ? (
                 <PWButton
                     variant='primary'
                     title={t('peraCard.sign_in.submit_button')}

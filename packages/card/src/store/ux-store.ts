@@ -46,6 +46,7 @@ const initialState = {
     phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
+    verifiedOnboardingId: null,
     consentSetId: null,
     // Consent opt-ins start as "never asked" — the user ticks them on the
     // Set-Password screen (explicit opt-in, committed on success), and they're
@@ -148,6 +149,7 @@ export const useCardStore: UseBoundStore<
                 set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
+            setVerifiedOnboardingId: id => set({ verifiedOnboardingId: id }),
             setConsentSetId: id => set({ consentSetId: id }),
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
             setAllowSms: allowSms => set({ allowSms }),
@@ -215,6 +217,7 @@ export const useCardStore: UseBoundStore<
                     phoneNumber: initialState.phoneNumber,
                     contactVerificationId: initialState.contactVerificationId,
                     onboardingId: initialState.onboardingId,
+                    verifiedOnboardingId: initialState.verifiedOnboardingId,
                     consentSetId: initialState.consentSetId,
                     allowMarketing: initialState.allowMarketing,
                     allowSms: initialState.allowSms,
@@ -247,6 +250,7 @@ export const useCardStore: UseBoundStore<
                 countryIso: state.countryIso,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
+                verifiedOnboardingId: state.verifiedOnboardingId,
                 consentSetId: state.consentSetId,
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,

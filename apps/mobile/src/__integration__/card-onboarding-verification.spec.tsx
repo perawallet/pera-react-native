@@ -310,39 +310,74 @@ describe('Flow: Card onboarding — identity verification', () => {
         )
     })
 
-    it('Given the app restarts after Baanx turned the record into an account, then sign-in opens instead of asking to verify again', async () => {
-        const loginSpy = vi.fn()
-        server.use(
-            http.get('*/v1/auth/register', () =>
-                HttpResponse.json(
-                    { message: 'Invalid onboarding ID' },
-                    { status: 404 },
+    describe('Given the onboarding record no longer resolves on a cold start', () => {
+        const loginSpy = vi.fn<() => void>()
+        beforeEach(() => {
+            loginSpy.mockReset()
+            server.use(
+                http.get('*/v1/auth/register', () =>
+                    HttpResponse.json(
+                        { message: 'Invalid onboarding ID' },
+                        { status: 404 },
+                    ),
                 ),
-            ),
-            http.post('*/v1/auth/login', () => {
-                loginSpy()
-                return HttpResponse.json({}, { status: 400 })
-            }),
-        )
+                http.post('*/v1/auth/login', () => {
+                    loginSpy()
+                    return HttpResponse.json({}, { status: 400 })
+                }),
+            )
+        })
 
-        renderWithNavigation(
-            CardOnboardingStatusScreen,
-            'CardOnboardingStatus',
-            {
-                additionalScreens: [
-                    { name: 'CardSignIn', component: CardSignInScreen },
-                ],
-            },
-        )
+        const renderStatusWithSignIn = () =>
+            renderWithNavigation(
+                CardOnboardingStatusScreen,
+                'CardOnboardingStatus',
+                {
+                    additionalScreens: [
+                        { name: 'CardSignIn', component: CardSignInScreen },
+                    ],
+                },
+            )
 
-        expect(
-            await screen.findByTestId('card-sign-in-email-input'),
-        ).toBeTruthy()
-        expect(
-            screen.queryByTestId('card-onboarding-status-documents-verify'),
-        ).toBeNull()
-        // The password didn't survive the restart, so there is nothing to log in with.
-        expect(loginSpy).not.toHaveBeenCalled()
+        it('when this device saw it verified, then sign-in opens to finish', async () => {
+            useCardStore
+                .getState()
+                .setVerifiedOnboardingId('mock-onboarding-id')
+
+            renderStatusWithSignIn()
+
+            expect(
+                await screen.findByTestId('card-sign-in-email-input'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('card-onboarding-status-documents-verify'),
+            ).toBeNull()
+            // The password didn't survive the restart, so there is nothing to log in with.
+            expect(loginSpy).not.toHaveBeenCalled()
+        })
+
+        it('when this device never saw it verified, then the row offers a sign-in without claiming the identity is verified', async () => {
+            renderStatusWithSignIn()
+
+            expect(
+                await screen.findByText(
+                    'peraCard.setup_status.documents_record_missing_body',
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('card-sign-in-email-input')).toBeNull()
+            expect(
+                screen.queryByTestId('card-onboarding-status-documents-verify'),
+            ).toBeNull()
+
+            fireEvent.click(
+                screen.getByTestId('card-onboarding-status-documents-sign-in'),
+            )
+
+            expect(
+                await screen.findByTestId('card-sign-in-email-input'),
+            ).toBeTruthy()
+            expect(loginSpy).not.toHaveBeenCalled()
+        })
     })
 
     it('Given registration is incomplete, then the Connect Funds row stays inactive', () => {

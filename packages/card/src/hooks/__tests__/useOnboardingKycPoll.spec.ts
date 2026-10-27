@@ -94,15 +94,21 @@ vi.mock('../useCardUserQuery', () => ({
     },
 }))
 
+let mockVerifiedOnboardingId: string | null = null
+const mockSetVerifiedOnboardingId = vi.fn()
 vi.mock('../../store', () => ({
     useCardStore: (
         selector: (state: {
             onboardingId: string | null
+            verifiedOnboardingId: string | null
+            setVerifiedOnboardingId: (id: string | null) => void
             onboardingStep: string
         }) => unknown,
     ) =>
         selector({
             onboardingId: 'mock-onboarding-id',
+            verifiedOnboardingId: mockVerifiedOnboardingId,
+            setVerifiedOnboardingId: mockSetVerifiedOnboardingId,
             onboardingStep: mockOnboardingStep,
         }),
 }))
@@ -133,6 +139,7 @@ beforeEach(() => {
     mockOnboardingStep = 'VERIFICATION'
     mockPhase = null
     mockQueryError = null
+    mockVerifiedOnboardingId = null
     mockIsAuthenticated = false
     mockUserVerificationState = undefined
     mockUserQueryOptions = undefined
@@ -224,7 +231,8 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(result.current.hasAccountSignal).toBe(true)
     })
 
-    it('signals the account once the record no longer resolves', async () => {
+    it('signals the account once a record seen verified no longer resolves', async () => {
+        mockVerifiedOnboardingId = 'mock-onboarding-id'
         mockVerificationState = 'VERIFIED'
         mockQueryError = {
             response: { status: 400 },
@@ -235,7 +243,8 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         await waitFor(() => expect(result.current.hasAccountSignal).toBe(true))
     })
 
-    it('reads a record gone on a cold start as verified, since only a verified record becomes an account', async () => {
+    it('reads a record seen verified and gone on a cold start as verified, since only a verified record becomes an account', async () => {
+        mockVerifiedOnboardingId = 'mock-onboarding-id'
         mockVerificationState = undefined
         mockQueryError = {
             response: { status: 404 },
@@ -251,7 +260,34 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         )
         expect(result.current.isLoading).toBe(false)
         expect(result.current.hasAccountSignal).toBe(true)
+        expect(result.current.isRecordMissing).toBe(false)
         expect(scheduledInterval()).toBe(false)
+    })
+
+    it('does not trust a gone record this device never saw verified', async () => {
+        // A wrong bridged id or a dropped Veriff-era record answers the same.
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+        expect(result.current.verificationState).toBeNull()
+        expect(result.current.hasAccountSignal).toBe(false)
+        expect(result.current.isLoading).toBe(false)
+    })
+
+    it('remembers the record it reads as verified', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+
+        renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(mockSetVerifiedOnboardingId).toHaveBeenCalledWith(
+            'mock-onboarding-id',
+        )
     })
 
     it('stops reading a record error as loading once it turns out to be an outage', async () => {

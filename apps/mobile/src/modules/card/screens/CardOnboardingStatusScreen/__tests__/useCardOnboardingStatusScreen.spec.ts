@@ -74,6 +74,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isLoading: mockIsLoading,
             hasPollTimedOut: mockHasPollTimedOut,
             hasAccountSignal: mockHasAccountSignal,
+            isRecordMissing: mockIsRecordMissing,
             restartPolling: mockRestartPolling,
             refetch: vi.fn(),
         }),
@@ -142,6 +143,7 @@ const mockShowCardError = vi.fn()
 let mockIsStateUnknown = false
 let mockIsLoading = false
 let mockHasAccountSignal = false
+let mockIsRecordMissing = false
 const mockRestartPolling = vi.fn()
 vi.mock('@modules/card/hooks', async () => ({
     // Real support hook (over the mocked webview + capabilities) so the
@@ -273,6 +275,7 @@ beforeEach(() => {
     mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
     mockHasAccountSignal = false
+    mockIsRecordMissing = false
     mockConnectedAddress = null
     mockStoredFundingType = null
     mockAccounts = []
@@ -430,6 +433,13 @@ describe('useCardOnboardingStatusScreen', () => {
             expect.anything(),
             expect.objectContaining({ areDetailsSubmitted: false }),
         )
+    })
+
+    it('asks for a sign-in, without claiming the identity is verified, when the record went missing', () => {
+        mockIsRecordMissing = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('record-missing')
     })
 
     it('reads every form as in once the record has become an account', () => {

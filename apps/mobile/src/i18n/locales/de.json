@@ -1819,6 +1819,7 @@
             "documents_preparing_body": "Deine Identität ist bestätigt. Wir richten gerade dein Konto ein, das kann ein paar Minuten dauern.",
             "documents_preparing_slow_body": "Deine Identität ist bestätigt, aber die Einrichtung deines Kontos dauert länger als üblich. Versuche es in ein paar Minuten erneut.",
             "documents_preparing_stalled_body": "Deine Identität ist bestätigt, aber wir konnten die Einrichtung deines Kontos nicht abschließen. Wende dich an den Support, um sie abzuschließen.",
+            "documents_record_missing_body": "Wir konnten deine Registrierung nicht laden. Melde dich mit deinem Pera Card-Passwort an, um fortzufahren.",
             "documents_account_locked_body": "Dein Pera Card-Konto ist vorübergehend gesperrt. Wende dich an den Support, um es zu entsperren.",
             "documents_rejected_body": "Wir konnten deine Identität nicht verifizieren. Bitte wende dich an den Support.",
             "documents_error_body": "Wir konnten deinen Verifizierungsstatus nicht prüfen. Bitte versuche es erneut.",

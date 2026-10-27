@@ -61,9 +61,15 @@ export type UseOnboardingKycPollResult = {
     hasPollTimedOut: boolean
     /**
      * The onboarding record says Baanx has created the account: its phase is
-     * ACCOUNT, or the record no longer resolves. Free to watch, unlike a login.
+     * ACCOUNT, or a record this device saw verified no longer resolves. Free
+     * to watch, unlike a login.
      */
     hasAccountSignal: boolean
+    /**
+     * The record no longer resolves and this device never saw it verified, so
+     * the stored id may be wrong or dropped; only a sign-in can tell.
+     */
+    isRecordMissing: boolean
     /** Clears the give-up state and counters, then re-arms with a fresh fetch. */
     restartPolling: () => void
     refetch: () => void
@@ -82,6 +88,12 @@ export const useOnboardingKycPoll = (
     { enabled = true }: UseOnboardingKycPollOptions = {},
 ): UseOnboardingKycPollResult => {
     const onboardingId = useCardStore(state => state.onboardingId)
+    const verifiedOnboardingId = useCardStore(
+        state => state.verifiedOnboardingId,
+    )
+    const setVerifiedOnboardingId = useCardStore(
+        state => state.setVerifiedOnboardingId,
+    )
     const isRegistrationComplete = useCardStore(
         state => state.onboardingStep === OnboardingStep.Completed,
     )
@@ -148,19 +160,42 @@ export const useOnboardingKycPoll = (
             isCurrent = false
         }
     }, [recordError])
+    const recordVerificationState =
+        onboardingQuery.data?.verificationState ?? null
+    useEffect(() => {
+        if (isAuthenticated || onboardingId === null) return
+        if (
+            recordVerificationState === VerificationState.Verified &&
+            verifiedOnboardingId !== onboardingId
+        ) {
+            setVerifiedOnboardingId(onboardingId)
+        }
+    }, [
+        isAuthenticated,
+        onboardingId,
+        recordVerificationState,
+        verifiedOnboardingId,
+        setVerifiedOnboardingId,
+    ])
+    // Baanx only turns a verified record into an account, so a gone record
+    // means the account exists only if this device saw it verified first.
+    const hasSeenVerified =
+        onboardingId !== null && verifiedOnboardingId === onboardingId
+    const isAccountRecordGone =
+        !isAuthenticated && isRecordGone && hasSeenVerified
+    const isRecordMissing = !isAuthenticated && isRecordGone && !hasSeenVerified
     const hasAccountSignal =
         !isAuthenticated &&
         (onboardingQuery.data?.phase === OnboardingPhase.Account ||
-            isRecordGone)
+            isAccountRecordGone)
     const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
         isAuthenticated ? userQuery : onboardingQuery
 
-    // Baanx only turns a record into an account once KYC verifies, and a cold
-    // start after that finds no record to read the verdict from.
-    const verificationState =
-        !isAuthenticated && isRecordGone
-            ? VerificationState.Verified
-            : (data?.verificationState ?? null)
+    // A cold start after the account exists finds no record to read the
+    // verdict from.
+    const verificationState = isAccountRecordGone
+        ? VerificationState.Verified
+        : (data?.verificationState ?? null)
     // Until a record error is read, it may still turn out to mean verified.
     const isReadingRecordError =
         !isAuthenticated &&
@@ -227,6 +262,7 @@ export const useOnboardingKycPoll = (
         isLoading: isLoading || isReadingRecordError,
         hasPollTimedOut,
         hasAccountSignal,
+        isRecordMissing,
         restartPolling,
         refetch: stableRefetch,
     }

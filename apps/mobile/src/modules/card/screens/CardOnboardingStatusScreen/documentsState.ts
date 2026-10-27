@@ -23,6 +23,8 @@ import type { AccountPreparation } from './useFinishRegistrationOnVerified'
  *   the account (for longer than usual in the second case).
  * - `preparing-stalled`: the same, with no logins left this session.
  * - `sign-in-required`: verified, and only the user's sign-in can finish it.
+ * - `record-missing`: the record stopped resolving before this device saw it
+ *   verified, so the stored id may be wrong; only a sign-in can tell.
  * - `account-locked`: Baanx locked the account after repeated failed logins.
  */
 export type DocumentsState =
@@ -34,6 +36,7 @@ export type DocumentsState =
     | 'preparing-slow'
     | 'preparing-stalled'
     | 'sign-in-required'
+    | 'record-missing'
     | 'account-locked'
     | 'rejected'
     | 'error'
@@ -55,9 +58,11 @@ export const resolveDocumentsState = (
     areDetailsSubmitted: boolean,
     accountPreparation: AccountPreparation,
     isLoginLocked: boolean,
+    isRecordMissing: boolean,
 ): DocumentsState => {
     if (verificationState === VerificationState.Rejected) return 'rejected'
     if (isLoginLocked) return 'account-locked'
+    if (isRecordMissing) return 'record-missing'
     if (!areDetailsSubmitted) return 'locked'
     if (isLoading) return 'pending'
     switch (verificationState) {

@@ -93,6 +93,7 @@ export const useCardOnboardingStatusScreen =
             isLoading,
             hasPollTimedOut,
             hasAccountSignal,
+            isRecordMissing,
             restartPolling,
         } = useOnboardingKycPoll(scope)
 
@@ -155,6 +156,7 @@ export const useCardOnboardingStatusScreen =
             areDetailsSubmitted,
             accountPreparation,
             isLoginLocked,
+            isRecordMissing,
         )
         const isIdentityVerified =
             documentsState === 'verified' ||

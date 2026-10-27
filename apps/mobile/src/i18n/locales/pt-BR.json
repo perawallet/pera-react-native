@@ -1829,6 +1829,7 @@
             "documents_preparing_body": "Sua identidade foi verificada. Estamos configurando sua conta, o que pode levar alguns minutos.",
             "documents_preparing_slow_body": "Sua identidade foi verificada, mas a configuração da sua conta está demorando mais do que o normal. Tente novamente em alguns minutos.",
             "documents_preparing_stalled_body": "Sua identidade foi verificada, mas não conseguimos concluir a configuração da sua conta. Entre em contato com o suporte para concluí-la.",
+            "documents_record_missing_body": "Não conseguimos carregar seu cadastro. Entre com sua senha do Pera Card para continuar.",
             "documents_account_locked_body": "Sua conta do Pera Card está bloqueada temporariamente. Entre em contato com o suporte para desbloqueá-la.",
             "documents_rejected_body": "Não conseguimos verificar sua identidade. Entre em contato com o suporte para obter ajuda.",
             "documents_error_body": "Não conseguimos verificar o status da sua verificação. Tente novamente.",
