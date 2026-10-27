@@ -92,10 +92,14 @@ vi.mock('@components/AccountDisplay', () => ({
         account?.name || null,
 }))
 
+const mockAccountResultRow = vi.fn()
+
 vi.mock('../AccountResultRow', () => ({
     __esModule: true,
-    AccountResultRow: ({ account }: { account: { name: string } }) =>
-        account?.name || null,
+    AccountResultRow: (props: { account: { name: string } }) => {
+        mockAccountResultRow(props)
+        return props.account?.name || null
+    },
 }))
 
 const mockIsValidAddress = vi.fn<(address: string) => boolean>()
@@ -162,6 +166,27 @@ describe('AddressSearchView', () => {
 
         fireEvent.click(screen.getByText('Test Account'))
         expect(mockOnSelected).toHaveBeenCalledWith('ABC123456789')
+    })
+
+    it("scopes account rows to the search's chain, whose address a pick selects", () => {
+        const mockAccount = {
+            chains: { algorand: { address: 'ABC123456789' } },
+            name: 'Test Account',
+        }
+        vi.mocked(useAllAccounts).mockReturnValue([
+            mockAccount,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: SCOPE.chainId }),
+        )
     })
 
     it('shows matching contacts when searching', () => {

@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { useStyles } from './styles'
@@ -18,11 +19,13 @@ import { useStyles } from './styles'
 type AccountResultRowProps = {
     account: WalletAccount
     showBalance: boolean
+    chainId: ChainId
 }
 
 export const AccountResultRow = ({
     account,
     showBalance,
+    chainId,
 }: AccountResultRowProps) => {
     const styles = useStyles()
 
@@ -30,11 +33,17 @@ export const AccountResultRow = ({
         return (
             <AccountDisplay
                 account={account}
+                chainId={chainId}
                 showChevron={false}
                 style={styles.accountDisplay}
             />
         )
     }
 
-    return <AccountWithBalance account={account} />
+    return (
+        <AccountWithBalance
+            account={account}
+            chainId={chainId}
+        />
+    )
 }
