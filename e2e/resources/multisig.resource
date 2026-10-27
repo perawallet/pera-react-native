@@ -78,6 +78,28 @@ Test Id Starting With
     [Arguments]    ${prefix}
     RETURN    xpath=//*[starts-with(@content-desc,'${prefix}') or starts-with(@resource-id, '${prefix}') or starts-with(@name,'${prefix}')]
 
+Listed Participant Count
+    [Documentation]    The number of signers the import screen is showing, once it is showing them.
+    ...
+    ...                The screen counts as loaded when its footer draws, and the footer draws while
+    ...                the signers are still being resolved - so the count reads 0 for a moment on a
+    ...                screen that is otherwise complete, and a case that read it once reported the
+    ...                app as listing no participants. Wait for the count to leave 0 before reading
+    ...                it. The value is still whatever the app says, so a wrong count still fails.
+    ...
+    ...                A count that stays at 0 is a link that resolved to an empty shared account,
+    ...                which is a different thing from the app miscounting, so it says that instead.
+    ${count}=    Test Id    import-shared-account-participant-count
+    ${text}=    Wait Until Keyword Succeeds    15s    1s    Resolved Participant Count    ${count}
+    RETURN    ${text}
+
+Resolved Participant Count
+    [Arguments]    ${locator}
+    ${text}=    Get Text    ${locator}
+    Should Not Be Equal As Strings    ${text}    0
+    ...    msg=The import link resolved to a shared account with no signers, so there is nothing to list.
+    RETURN    ${text}
+
 Tap Screen At
     [Documentation]    Taps a point given as fractions of the window, for backdrops with no element.
     [Arguments]    ${x_ratio}    ${y_ratio}

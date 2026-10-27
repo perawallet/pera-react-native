@@ -300,8 +300,7 @@ Import Link Offers A Shared Account The Wallet Is Not Part Of
 Import Screen Lists The Participants
     [Tags]    id:multisig.import.participants    p2
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    ${count}=    Test Id    import-shared-account-participant-count
-    ${text}=    Get Text    ${count}
+    ${text}=    Listed Participant Count
     Should Be Equal As Integers    ${text}    3
     ${row}=    Test Id    import-participant-row-${PARTICIPANT_1}
     Page Should Contain Element    ${row}
