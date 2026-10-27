@@ -96,12 +96,20 @@ export const readEvmReviewTransaction = (
     }
 }
 
+type SignableEvmTransactionPayload = EthereumTransactionPayload & {
+    transaction: TransactionSerializableEIP1559 & {
+        nonce: number
+        gas: bigint
+        maxFeePerGas: bigint
+    }
+}
+
 // `payload` is `unknown` and may come from a dApp, so this is the trust boundary
 // for both `plan` and `assemble`.
 export const readEvmTransaction = (
     unsigned: UnsignedTransaction,
     chain: EvmChain,
-): EthereumTransactionPayload => {
+): SignableEvmTransactionPayload => {
     const payload = readEvmReviewTransaction(unsigned, chain)
     if (payload.isPreview) {
         throw new Error('A batch preview is never signed')
@@ -119,7 +127,10 @@ export const readEvmTransaction = (
             'The EVM transaction needs a nonce, a gas limit and a max fee per gas to be signed',
         )
     }
-    return payload
+    return {
+        ...payload,
+        transaction: { ...payload.transaction, nonce, gas, maxFeePerGas },
+    }
 }
 
 export const createEvmPlannerAdapter = (
