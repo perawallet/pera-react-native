@@ -46,6 +46,19 @@ export const AccountWithBalance = ({
         isMultiChain,
         isTestTier,
     } = useAccountWithBalance(account, chainId)
+    const hasChainBadge = isMultiChain && !!chainName
+    const badges =
+        hasChainBadge || isTestTier ? (
+            <>
+                {hasChainBadge && <ChainBadge name={chainName} />}
+                {isTestTier && (
+                    <PWBadge
+                        variant='testnet'
+                        value={t('common.network_label.testnet')}
+                    />
+                )}
+            </>
+        ) : undefined
 
     return (
         <PWView
@@ -57,15 +70,9 @@ export const AccountWithBalance = ({
                 chainId={chainId}
                 showChevron={false}
                 showAccountType
+                badges={badges}
                 style={styles.accountDisplay}
             />
-            {isMultiChain && chainName && <ChainBadge name={chainName} />}
-            {isTestTier && (
-                <PWBadge
-                    variant='testnet'
-                    value={t('common.network_label.testnet')}
-                />
-            )}
             {!availability.isAvailable ? (
                 <ChainUnavailableNotice
                     chainName={chainName}

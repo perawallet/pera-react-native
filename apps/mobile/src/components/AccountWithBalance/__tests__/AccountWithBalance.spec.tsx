@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import type { ReactNode } from 'react'
+import { render, screen, within } from '@test-utils/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { PWView } from '@components/core'
 import { AccountWithBalance } from '../AccountWithBalance'
 
 const mockHookResult = {
@@ -37,7 +39,10 @@ vi.mock('../useAccountWithBalance', () => ({
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
-    AccountDisplay: (props: unknown) => mockAccountDisplay(props),
+    AccountDisplay: (props: { badges?: ReactNode }) => {
+        mockAccountDisplay(props)
+        return <PWView testID='account_display'>{props.badges}</PWView>
+    },
 }))
 
 vi.mock('@components/AssetAmount', () => ({
@@ -66,12 +71,39 @@ describe('AccountWithBalance', () => {
         }
     })
 
-    it('marks an account holding test funds with the tier badge', () => {
+    it('marks an account holding test funds with the tier badge, under its name', () => {
         mockHookResult.isTestTier = true
 
         render(<AccountWithBalance account={ACCOUNT} />)
 
-        expect(screen.getByText('common.network_label.testnet')).toBeTruthy()
+        expect(
+            within(screen.getByTestId('account_display')).getByText(
+                'common.network_label.testnet',
+            ),
+        ).toBeTruthy()
+    })
+
+    it('puts both the chain and the tier badge under the name', () => {
+        mockHookResult.isMultiChain = true
+        mockHookResult.isTestTier = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        const accountDisplay = within(screen.getByTestId('account_display'))
+        expect(accountDisplay.getByText('Algorand')).toBeTruthy()
+        expect(
+            accountDisplay.getByText('common.network_label.testnet'),
+        ).toBeTruthy()
+    })
+
+    it('passes no badges to a single-chain mainnet row', () => {
+        mockAccountDisplay.mockClear()
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ badges: undefined }),
+        )
     })
 
     it('shows no tier badge for an account on a mainnet network', () => {
@@ -91,15 +123,25 @@ describe('AccountWithBalance', () => {
 
         render(<AccountWithBalance account={ACCOUNT} />)
 
-        expect(screen.getByText('Algorand')).toBeTruthy()
+        expect(
+            within(screen.getByTestId('account_display')).getByText(
+                'Algorand',
+            ),
+        ).toBeTruthy()
     })
 
-    it("replaces the balances with a notice when the chain's kill switch is off", () => {
+    it("replaces the balances with a notice when the chain's kill switch is off, keeping the badges under the name", () => {
         mockHookResult.availability = { isAvailable: false }
+        mockHookResult.isTestTier = true
 
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(screen.getByTestId('account_chain_unavailable')).toBeTruthy()
+        expect(
+            within(screen.getByTestId('account_display')).getByText(
+                'common.network_label.testnet',
+            ),
+        ).toBeTruthy()
     })
 
     it('hands its chain to the hook and the account display, and the hook scope to the fiat amount', () => {
