@@ -30,19 +30,18 @@ import { ETHEREUM } from '../../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const usdcResponder = erc20CallResponder({
+    [USDC]: {
+        name: 'USD Coin',
+        symbol: 'USDC',
+        decimals: 6,
+        totalSupply: 10n ** 12n,
+    },
+})
 const server = setupServer(
     ...evmRpcHandlers({
         rpcUrl: TEST_RPC_URL,
-        responses: {
-            eth_call: erc20CallResponder({
-                [USDC]: {
-                    name: 'USD Coin',
-                    symbol: 'USDC',
-                    decimals: 6,
-                    totalSupply: 10n ** 12n,
-                },
-            }),
-        },
+        responses: { eth_call: usdcResponder },
     }),
 )
 
@@ -141,5 +140,32 @@ describe('readErc20', () => {
                 SCOPE,
             ),
         ).rejects.toThrow(/token exploded/)
+    })
+
+    it('rejects when the string read fails at the node, rather than retrying it as bytes32', async () => {
+        const NAME = toFunctionSelector('name()')
+        let nameReads = 0
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: params => {
+                        const { data } = params[0] as { data: Hex }
+                        if (data.startsWith(NAME) && nameReads++ === 0) {
+                            return new EvmRpcErrorFixture(
+                                -32000,
+                                'header not found',
+                            )
+                        }
+                        return usdcResponder(params)
+                    },
+                },
+            }),
+        )
+
+        await expect(
+            readErc20(testChainContext(), ETHEREUM, USDC, SCOPE),
+        ).rejects.toThrow(/header not found/)
+        expect(nameReads).toBe(1)
     })
 })

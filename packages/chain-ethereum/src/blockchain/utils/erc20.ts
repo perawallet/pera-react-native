@@ -12,11 +12,13 @@
 
 import { Decimal } from 'decimal.js'
 import {
+    BaseError,
     decodeFunctionResult,
     encodeFunctionData,
     erc20Abi,
     getAddress,
     hexToString,
+    IntegerOutOfRangeError,
     multicall3Abi,
     type Address,
     type Hex,
@@ -52,7 +54,15 @@ const bytes32TextAbi = [
     },
 ] as const
 
-// MKR and SAI return bytes32 for name and symbol, which a string decoder reverts on.
+// A bytes32 word read as a string head is an offset far past the safe-integer
+// range, which viem's decoder rejects with this error.
+const isBytes32Text = (error: unknown): boolean =>
+    error instanceof BaseError &&
+    error.walk(cause => cause instanceof IntegerOutOfRangeError) !== null
+
+// MKR and SAI return bytes32 for name and symbol, which the string decoder
+// fails on. Only that failure retries as bytes32: after any other error the
+// retry would decode a string token's ABI head as text.
 const readText = async (
     client: PublicClient,
     address: Address,
@@ -65,6 +75,7 @@ const readText = async (
             functionName,
         })
     } catch (error) {
+        if (!isBytes32Text(error)) throw error
         const packed = await client
             .readContract({ address, abi: bytes32TextAbi, functionName })
             .catch(() => {
