@@ -299,11 +299,18 @@ describe('evm signer binding', () => {
     })
 
     describe("refuses another key's message signature labelled as the signer's", () => {
-        const requests: [string, (env: EvmConformanceEnv, signer: string) => MessageRequest][] = [
+        const requests: [
+            string,
+            (env: EvmConformanceEnv, signer: string) => MessageRequest,
+        ][] = [
             [
                 'personal_sign',
                 (env, signer) =>
-                    personalSignMessageRequest(env.scope, signer, toHex('Pera')),
+                    personalSignMessageRequest(
+                        env.scope,
+                        signer,
+                        toHex('Pera'),
+                    ),
             ],
             [
                 'EIP-712',

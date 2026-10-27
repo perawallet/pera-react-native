@@ -605,16 +605,15 @@ describe('ethereumMessageSignerAdapter.assemble', () => {
     // the label alone would pass it off as a signature over this one.
     it.each([
         ['personal_sign', personal(toHex('Pera'))],
-        [
-            'EIP-712',
-            typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
-        ],
+        ['EIP-712', typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA)],
     ])(
         "refuses a %s signature that doesn't recover to the signer",
         async (_method, other) => {
             await expect(async () =>
                 adapter.assemble(other, [signature]),
-            ).rejects.toThrow(/^The signature recovers to 0x[0-9a-fA-F]{40}, not the signer /)
+            ).rejects.toThrow(
+                /^The signature recovers to 0x[0-9a-fA-F]{40}, not the signer /,
+            )
         },
     )
 })
