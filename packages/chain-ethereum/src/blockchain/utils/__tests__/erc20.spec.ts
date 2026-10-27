@@ -122,4 +122,24 @@ describe('readErc20', () => {
         })
         expect(asset.totalSupply.toFixed()).toBe((10n ** 24n).toString())
     })
+
+    it('rejects with the original error when the string and bytes32 reads both revert', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: () => new EvmRpcErrorFixture(3, 'token exploded'),
+                },
+            }),
+        )
+
+        await expect(
+            readErc20(
+                testChainContext(),
+                ETHEREUM,
+                '0x00000000000000000000000000000000000000ee',
+                SCOPE,
+            ),
+        ).rejects.toThrow(/token exploded/)
+    })
 })
