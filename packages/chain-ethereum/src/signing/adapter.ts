@@ -105,6 +105,18 @@ export const readEvmTransaction = (
     if (payload.isPreview) {
         throw new Error('A batch preview is never signed')
     }
+    // viem serialises a missing nonce, gas or fee as 0, which would sign a
+    // transaction the user never saw priced.
+    const { nonce, gas, maxFeePerGas } = payload.transaction
+    if (
+        typeof nonce !== 'number' ||
+        typeof gas !== 'bigint' ||
+        typeof maxFeePerGas !== 'bigint'
+    ) {
+        throw new Error(
+            'The EVM transaction needs a nonce, a gas limit and a max fee per gas to be signed',
+        )
+    }
     return payload
 }
 

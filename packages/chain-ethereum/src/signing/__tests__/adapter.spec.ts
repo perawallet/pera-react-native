@@ -189,6 +189,20 @@ describe('ethereumPlannerAdapter', () => {
     })
 
     it.each([
+        ['nonce', 'nonce'],
+        ['gas limit', 'gas'],
+        ['max fee per gas', 'maxFeePerGas'],
+    ] as const)('refuses to plan or assemble without a %s', (_label, field) => {
+        const { [field]: _omitted, ...incomplete } = TRANSFER
+        const input = unsigned(incomplete)
+        const message =
+            'The EVM transaction needs a nonce, a gas limit and a max fee per gas to be signed'
+
+        expect(() => plan(input)).toThrow(message)
+        expect(() => assemble(input, [signature()])).toThrow(message)
+    })
+
+    it.each([
         ['no signatures', []],
         ['two signatures', [signature(), signature()]],
         ['another request index', [signature({ requestIndex: 1 })]],
