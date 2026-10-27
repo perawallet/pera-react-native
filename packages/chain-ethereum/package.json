@@ -30,6 +30,7 @@
     "@perawallet/wallet-core-deeplinks": "workspace:*",
     "@perawallet/wallet-core-device": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
+    "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",

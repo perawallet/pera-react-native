@@ -14,3 +14,4 @@ export {
     useConnectionPairing,
     type UseConnectionPairingResult,
 } from './useConnectionPairing'
+export { useShowDappTransaction } from './useShowDappTransaction'

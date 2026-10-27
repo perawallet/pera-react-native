@@ -177,6 +177,21 @@ describe('wallet operation wire codec', () => {
         )
     })
 
+    it('refuses to encode a batch operation or result, which no browser chain serves', () => {
+        expect(() =>
+            encodeWalletOperation({ type: 'send-batch', request: {} }),
+        ).toThrow(/send-batch/)
+        expect(() =>
+            encodeWalletOperation({ type: 'show-batch', batchId: 'b' }),
+        ).toThrow(/show-batch/)
+        expect(() =>
+            encodeWalletOperationResult({ type: 'send-batch', batchId: 'b' }),
+        ).toThrow(/send-batch/)
+        expect(() =>
+            encodeWalletOperationResult({ type: 'show-batch' }),
+        ).toThrow(/show-batch/)
+    })
+
     it('leaves a sign-transactions result untouched', () => {
         const result = {
             type: 'sign-transactions' as const,

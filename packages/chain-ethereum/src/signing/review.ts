@@ -45,7 +45,7 @@ import {
     readEvmNftTransferAsset,
 } from '../transfer/nft-transfer'
 import { nftSendSubtitle, sendSummary } from '../transfer/summary'
-import { readEvmTransaction } from './adapter'
+import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
 import {
     toEthereumNative,
     type EthereumTransactionView,
@@ -64,6 +64,57 @@ const NO_RECOGNITION: CallRecogniser = () => undefined
 
 const SELECTOR_SIZE = 4
 
+/**
+ * How far a batch call's max fee per gas may rise over the first call's, as
+ * the review priced it, before it is refused rather than signed.
+ */
+export const BATCH_FEE_CEILING_MULTIPLIER = 2n
+
+/**
+ * The built call goes where the approved review showed it going, from the same
+ * account, with the same value and calldata, and costs no more per gas than the
+ * review allowed; only the nonce, gas and fees it gained may differ. What was
+ * shown is the pipeline's own record of the review: a preview with its fee
+ * ceiling, or the first call as it was priced then.
+ */
+const matchesPreview = (
+    transaction: UnsignedTransaction,
+    preview: UnsignedTransaction,
+    chain: EvmChain,
+): boolean => {
+    try {
+        if (toScopeKey(transaction.scope) !== toScopeKey(preview.scope)) {
+            return false
+        }
+        const built = readEvmTransaction(transaction, chain)
+        const shown = readEvmReviewTransaction(preview, chain)
+        const [builtTo, shownTo] = [built.transaction.to, shown.transaction.to]
+        const shownFee = shown.transaction.maxFeePerGas
+        const ceiling = shown.isPreview
+            ? shown.maxFeePerGasCeiling
+            : shownFee === undefined
+              ? undefined
+              : shownFee * BATCH_FEE_CEILING_MULTIPLIER
+        const builtFee = built.transaction.maxFeePerGas
+        return (
+            ceiling !== undefined &&
+            builtFee !== undefined &&
+            builtFee <= ceiling &&
+            areEvmAddressesEqual(built.from, shown.from) &&
+            typeof builtTo === 'string' &&
+            typeof shownTo === 'string' &&
+            areEvmAddressesEqual(builtTo, shownTo) &&
+            (built.transaction.value ?? 0n) ===
+                (shown.transaction.value ?? 0n) &&
+            (built.transaction.data ?? '0x').toLowerCase() ===
+                (shown.transaction.data ?? '0x').toLowerCase() &&
+            (built.transaction.accessList ?? []).length === 0
+        )
+    } catch {
+        return false
+    }
+}
+
 // An allowlist, so a kind a future recogniser adds stays behind review until it opts in.
 const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
     'transfer',
@@ -81,18 +132,23 @@ const UNKNOWN_CONTRACT_WARNING: ReviewWarning = {
         "Pera can't tell what this contract call does. Only approve it if you trust the site.",
 }
 
-type Call = {
-    from: Address
-    to?: Address
-    /** Wei. */
-    value: bigint
-    data: Hex
+type Pricing = {
     nonce: number
     gas: bigint
     /** Wei. */
     maxFeePerGas: bigint
     /** Wei. */
     maxPriorityFeePerGas: bigint
+}
+
+type Call = {
+    from: Address
+    to?: Address
+    /** Wei. */
+    value: bigint
+    data: Hex
+    /** Absent on a batch preview, which is priced only once it is reached. */
+    pricing?: Pricing
 }
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
@@ -104,7 +160,10 @@ const readCall = (
     chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction } = readEvmTransaction(unsigned, chain)
+    const { from, transaction, isPreview } = readEvmReviewTransaction(
+        unsigned,
+        chain,
+    )
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -119,19 +178,23 @@ const readCall = (
         maxFeePerGas,
         maxPriorityFeePerGas = 0n,
     } = transaction
-    if (typeof gas !== 'bigint' || typeof maxFeePerGas !== 'bigint') {
+    if (
+        !isPreview &&
+        (typeof gas !== 'bigint' || typeof maxFeePerGas !== 'bigint')
+    ) {
         throw new Error(
             'The EVM transaction needs a gas limit and a max fee per gas to be reviewed',
         )
     }
     if (
         typeof value !== 'bigint' ||
-        typeof maxPriorityFeePerGas !== 'bigint' ||
-        typeof nonce !== 'number' ||
         !isHex(data) ||
         // viem left-pads odd hex when serialising, so the bytes shown would differ from those signed.
         data.length % 2 !== 0 ||
-        (to != null && !isAddress(to))
+        (to != null && !isAddress(to)) ||
+        (!isPreview &&
+            (typeof maxPriorityFeePerGas !== 'bigint' ||
+                typeof nonce !== 'number'))
     ) {
         throw new Error('The EVM transaction payload is malformed')
     }
@@ -140,10 +203,14 @@ const readCall = (
         to: to == null ? undefined : getAddress(to),
         value,
         data,
-        nonce,
-        gas,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
+        ...(!isPreview && {
+            pricing: {
+                nonce,
+                gas: gas as bigint,
+                maxFeePerGas: maxFeePerGas as bigint,
+                maxPriorityFeePerGas,
+            },
+        }),
     }
 }
 
@@ -160,13 +227,21 @@ const viewOf = (
     ...(size(call.data) >= SELECTOR_SIZE && {
         selector: slice(call.data, 0, SELECTOR_SIZE),
     }),
-    nonce: call.nonce,
-    gas: call.gas,
-    fee: {
-        maxFeePerGas: toDecimal(call.maxFeePerGas),
-        maxPriorityFeePerGas: toDecimal(call.maxPriorityFeePerGas),
-        maxFee: toDecimal(call.gas * call.maxFeePerGas),
-    },
+    ...(call.pricing
+        ? {
+              nonce: call.pricing.nonce,
+              gas: call.pricing.gas,
+              fee: {
+                  maxFeePerGas: toDecimal(call.pricing.maxFeePerGas),
+                  maxPriorityFeePerGas: toDecimal(
+                      call.pricing.maxPriorityFeePerGas,
+                  ),
+                  maxFee: toDecimal(
+                      call.pricing.gas * call.pricing.maxFeePerGas,
+                  ),
+              },
+          }
+        : { isPreview: true as const }),
     ...(token && { token }),
     ...(nft && { nft }),
 })
@@ -396,12 +471,17 @@ export const createEthereumReviewer = ({
             const reviewed = await Promise.all(
                 transactions.map(unsigned => {
                     const call = readCall(unsigned, chain, context)
+                    // Decoding is for signing, and a preview is never signed.
+                    if (!call.pricing) {
+                        throw new Error('A batch preview is never signed')
+                    }
                     const held = context.heldAddresses.find(address =>
                         areEvmAddressesEqual(address, call.from),
                     )
                     if (held !== undefined) {
                         signable.add(held)
-                        totalFees += call.gas * call.maxFeePerGas
+                        totalFees +=
+                            call.pricing.gas * call.pricing.maxFeePerGas
                     }
                     return reviewCall(
                         chain,
@@ -429,5 +509,7 @@ export const createEthereumReviewer = ({
     },
     policy: {
         autoApproveLocal: review => review.transactions.every(isAutoApproved),
+        matchesApprovedPreview: (transaction, preview) =>
+            matchesPreview(transaction, preview, chain),
     },
 })

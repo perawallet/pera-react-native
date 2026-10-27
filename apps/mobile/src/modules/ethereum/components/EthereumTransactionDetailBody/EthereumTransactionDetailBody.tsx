@@ -127,12 +127,16 @@ export const EthereumTransactionDetailBody = ({
                     testID='ethereum_max_fee'
                     title={t('send_funds.fee.max_fee')}
                 >
-                    <AssetAmount
-                        asset={maxFee.asset}
-                        value={maxFee.value}
-                        showSymbol
-                        ignorePrivacyMode
-                    />
+                    {maxFee ? (
+                        <AssetAmount
+                            asset={maxFee.asset}
+                            value={maxFee.value}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
+                    ) : (
+                        <PWText>{t('ethereum.batch.fee_when_reached')}</PWText>
+                    )}
                 </KeyValueRow>
             </PWView>
         </PWView>

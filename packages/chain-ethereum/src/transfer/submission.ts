@@ -52,6 +52,9 @@ import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
 
 /** Resolves false only when the node says it has no such transaction. */
+// How long a receipt is awaited before the reconciler is left to settle the send.
+export const ETHEREUM_CONFIRMATION_TIMEOUT_MS = 3 * 60_000
+
 export const isTransactionKnownToNode = async (
     client: PublicClient,
     hash: Hex,

@@ -10,15 +10,25 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DappRequestCodedError } from '@perawallet/wallet-core-connections'
+import { findTransactionBatch } from '@perawallet/wallet-core-signing'
 import {
     ETHEREUM_CAIP2_NAMESPACE,
     ETHEREUM_WC_V2_METHOD,
     createEvmWalletConnectSupport,
 } from '../walletConnect'
+import { testChainContext } from '../../__tests__/context'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 
-const support = createEvmWalletConnectSupport(ETHEREUM)
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    findTransactionBatch: vi.fn(),
+}))
+
+const support = createEvmWalletConnectSupport(testChainContext(), ETHEREUM)
 
 const v2 = support.v2
 if (!v2) throw new Error('Ethereum serves WalletConnect v2')
@@ -52,15 +62,19 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
 })
 
 describe('v2.methods', () => {
-    it('is exactly the seven served methods', () => {
+    it('is exactly the eleven served methods', () => {
         expect(v2.methods).toEqual([
             'eth_sendTransaction',
             'personal_sign',
             'eth_signTypedData_v4',
             'wallet_switchEthereumChain',
+            'wallet_sendCalls',
             'eth_accounts',
             'eth_requestAccounts',
             'eth_chainId',
+            'wallet_getCapabilities',
+            'wallet_getCallsStatus',
+            'wallet_showCallsStatus',
         ])
     })
 
@@ -68,18 +82,14 @@ describe('v2.methods', () => {
         'eth_signTransaction',
         'eth_sendRawTransaction',
         'eth_sign',
-        'wallet_sendCalls',
-        'wallet_getCallsStatus',
-        'wallet_getCapabilities',
-        'wallet_showCallsStatus',
         'wallet_addEthereumChain',
     ])('never lists %s', method => {
         expect(v2.methods).not.toContain(method)
         expect(v2.handleRequest(method, [])).toEqual({ kind: 'unsupported' })
     })
 
-    it('asks the user only for the four signing methods', () => {
-        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 4))
+    it('asks the user only for the five signing methods', () => {
+        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 5))
     })
 })
 
@@ -194,7 +204,139 @@ describe('v2.sessionEvents.chainChangedData', () => {
     })
 })
 
+describe('EIP-5792 batches', () => {
+    const CALL = { to: ADDRESS, value: '0x0', data: '0x' }
+    const sendCalls = (batch: Record<string, unknown>) =>
+        v2.handleRequest(ETHEREUM_WC_V2_METHOD.sendCalls, [
+            {
+                version: '2.0.0',
+                chainId: '0x1',
+                from: ADDRESS,
+                atomicRequired: false,
+                calls: [CALL],
+                ...batch,
+            },
+        ])
+
+    beforeEach(() => {
+        vi.mocked(findTransactionBatch).mockReset()
+    })
+
+    it('refuses a batch that requires atomic execution with 5760, before anything is shown', () => {
+        expect(sendCalls({ atomicRequired: true })).toEqual({
+            kind: 'refused',
+            error: { code: 5760, message: expect.any(String) },
+        })
+    })
+
+    it.each([
+        ['on the batch', { capabilities: { paymasterService: { url: 'x' } } }],
+        [
+            'on a call',
+            { calls: [{ ...CALL, capabilities: { auxiliaryFunds: {} } }] },
+        ],
+    ])('refuses a required capability %s with 5700', (_, batch) => {
+        expect(sendCalls(batch)).toEqual({
+            kind: 'refused',
+            error: { code: 5700, message: expect.any(String) },
+        })
+    })
+
+    it('routes a batch whose capabilities are all optional as a send-batch with its params', () => {
+        const params = [
+            {
+                version: '2.0.0',
+                chainId: '0x1',
+                atomicRequired: false,
+                calls: [CALL],
+                capabilities: { paymasterService: { optional: true } },
+            },
+        ]
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.sendCalls, params),
+        ).toEqual({ kind: 'operation', type: 'send-batch', params })
+    })
+
+    it('routes wallet_showCallsStatus as a show-batch of its id', () => {
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.showCallsStatus, [
+                'batch-1',
+            ]),
+        ).toEqual({
+            kind: 'operation',
+            type: 'show-batch',
+            params: { batchId: 'batch-1' },
+        })
+    })
+
+    const publicAnswer = (method: string, params: unknown) => {
+        const route = v2.handleRequest(method, params)
+        if (route.kind !== 'public-data')
+            throw new Error(`${method} is not public data`)
+        return (addresses: readonly string[]) =>
+            Promise.resolve().then(() => route.answer(addresses, 'mainnet'))
+    }
+
+    it('reports atomic execution unsupported on every network for a held account', async () => {
+        const answer = publicAnswer(ETHEREUM_WC_V2_METHOD.getCapabilities, [
+            ADDRESS,
+        ])
+
+        await expect(answer([ADDRESS.toLowerCase()])).resolves.toEqual({
+            '0x1': { atomic: { status: 'unsupported' } },
+            '0xaa36a7': { atomic: { status: 'unsupported' } },
+        })
+    })
+
+    it('reports capabilities only for the chains asked about', async () => {
+        const answer = publicAnswer(ETHEREUM_WC_V2_METHOD.getCapabilities, [
+            ADDRESS,
+            ['0xaa36a7', '0x89'],
+        ])
+
+        await expect(answer([ADDRESS])).resolves.toEqual({
+            '0xaa36a7': { atomic: { status: 'unsupported' } },
+        })
+    })
+
+    it('refuses capabilities for an account the session does not hold with 4100', async () => {
+        const answer = publicAnswer(ETHEREUM_WC_V2_METHOD.getCapabilities, [
+            ADDRESS,
+        ])
+
+        await expect(answer([])).rejects.toMatchObject({ wireCode: 4100 })
+    })
+
+    it("refuses the status of a batch none of the session's accounts sent with 5730", async () => {
+        vi.mocked(findTransactionBatch).mockResolvedValue(null)
+        const answer = publicAnswer(ETHEREUM_WC_V2_METHOD.getCallsStatus, [
+            'batch-1',
+        ])
+
+        const refusal = answer([ADDRESS])
+
+        await expect(refusal).rejects.toBeInstanceOf(DappRequestCodedError)
+        await expect(refusal).rejects.toMatchObject({ wireCode: 5730 })
+        expect(findTransactionBatch).toHaveBeenCalledWith({
+            chainId: 'ethereum',
+            batchId: 'batch-1',
+            senders: [ADDRESS],
+        })
+    })
+})
+
 describe('toWireResult', () => {
+    it('answers a sent batch with its id', () => {
+        expect(
+            support.toWireResult({ type: 'send-batch', batchId: 'batch-1' }),
+        ).toEqual({ id: 'batch-1' })
+    })
+
+    it('answers a shown batch with null', () => {
+        expect(support.toWireResult({ type: 'show-batch' })).toBeNull()
+    })
+
     it('answers a switch with null, which is what wallet_switchEthereumChain returns', () => {
         expect(support.toWireResult({ type: 'switch-network' })).toBeNull()
     })

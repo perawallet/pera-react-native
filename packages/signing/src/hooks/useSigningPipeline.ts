@@ -111,9 +111,11 @@ const computeDisplayData = (
 
     const userAccountAddresses = addressesOn(accounts, chainId)
 
-    const { totalFee, highFeeWarning } = plannerChainAdapters
-        .get(chainId)
-        .reviewGroupFees(allTransactions, signableAddresses)
+    const { totalFee, highFeeWarning } = plannerChainAdapters.has(chainId)
+        ? plannerChainAdapters
+              .get(chainId)
+              .reviewGroupFees(allTransactions, signableAddresses)
+        : { totalFee: ZERO_FEE, highFeeWarning: null }
 
     // Gate warnings on the authorizing entity, not the raw sender: a dApp
     // can set a foreign `sender` it never imported while signing with an
@@ -320,10 +322,12 @@ export const useSigningPipeline = (
             : undefined
 
     // Fees and the list come from the chain's planner, so a chain without one
-    // (Ethereum) is reviewed by its own body alone.
+    // (Ethereum) is reviewed by its own body alone, unless the review also
+    // shows transactions to be signed later, which only the full list carries.
     const displayData = useMemo(() => {
         if (!txRequest) return EMPTY_DISPLAY_DATA
-        return plannerChainAdapters.has(chainIdOfSignRequest(txRequest))
+        return plannerChainAdapters.has(chainIdOfSignRequest(txRequest)) ||
+            reviewGroupOf(txRequest).transactions.length > txRequest.txs.length
             ? getSharedDisplayData(txRequest, accounts)
             : computeReviewOnlyDisplayData(txRequest, accounts)
     }, [txRequest, accounts])

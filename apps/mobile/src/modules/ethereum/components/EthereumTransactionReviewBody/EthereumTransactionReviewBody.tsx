@@ -138,12 +138,18 @@ export const EthereumTransactionReviewBody = ({
                         <PWText style={styles.label}>
                             {t('send_funds.fee.max_fee')}
                         </PWText>
-                        <AssetAmount
-                            asset={maxFee.asset}
-                            value={maxFee.value}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
+                        {maxFee ? (
+                            <AssetAmount
+                                asset={maxFee.asset}
+                                value={maxFee.value}
+                                showSymbol
+                                ignorePrivacyMode
+                            />
+                        ) : (
+                            <PWText>
+                                {t('ethereum.batch.fee_when_reached')}
+                            </PWText>
+                        )}
                     </PWView>
                     <PWButton
                         testID='ethereum_view_details'

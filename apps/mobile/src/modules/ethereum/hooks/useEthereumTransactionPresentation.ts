@@ -63,8 +63,11 @@ export type EthereumTransactionPresentation = {
     isAmountLoading: boolean
     /** `view.value` in ether. */
     value: EthereumAmount
-    /** `view.fee.maxFee` in ether: the most the signature authorises. */
-    maxFee: EthereumAmount
+    /**
+     * `view.fee.maxFee` in ether: the most the signature authorises. Null on a
+     * batch call not yet reached, which is priced only once it is.
+     */
+    maxFee: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
 }
 
@@ -137,7 +140,7 @@ export const useEthereumTransactionPresentation = (
             amount,
             isAmountLoading,
             value: toEther(view.value),
-            maxFee: toEther(view.fee.maxFee),
+            maxFee: view.isPreview ? null : toEther(view.fee.maxFee),
             signingAccount,
         }
     }, [view, scope, tokenAsset, tokenValue, isTokenLoading, signingAccount])

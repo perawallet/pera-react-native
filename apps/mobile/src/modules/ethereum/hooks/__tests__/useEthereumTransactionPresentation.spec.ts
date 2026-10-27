@@ -67,7 +67,7 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_RECIPIENT)
         expect(result.current?.amount?.value).toEqual(new Decimal(1))
         expect(result.current?.value.value).toEqual(new Decimal(1))
-        expect(result.current?.maxFee.value).toEqual(new Decimal('0.00042'))
+        expect(result.current?.maxFee?.value).toEqual(new Decimal('0.00042'))
         expect(result.current?.isAmountLoading).toBe(false)
     })
 
@@ -177,6 +177,26 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_TOKEN)
         expect(result.current?.amount).toBeUndefined()
         expect(result.current?.isAmountLoading).toBe(false)
+    })
+
+    it('has no fee yet for a batch call not reached, which is priced once it is', () => {
+        const {
+            nonce: _nonce,
+            gas: _gas,
+            fee: _fee,
+            ...unpriced
+        } = natives['contract-call'].transaction as Record<string, unknown>
+        const preview: TransactionNative = {
+            family: 'evm',
+            transaction: { ...unpriced, isPreview: true },
+        }
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(preview),
+        )
+
+        expect(result.current?.maxFee).toBeNull()
+        expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_TOKEN)
     })
 
     it('has no counterparty for a contract creation', () => {

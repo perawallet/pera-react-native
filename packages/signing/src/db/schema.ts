@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+    index,
+    integer,
+    sqliteTable,
+    text,
+    uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import type {
     ChainScopeKey,
     ChainSubmissionData,
@@ -83,3 +89,56 @@ export const SubmissionAttemptsSchema = sqliteTable(
         ),
     ],
 )
+
+/**
+ * Transactions a requester asked for as one batch and the wallet runs one
+ * after another, each only once the one before it has landed. The row keeps
+ * where the run got to, so it can resume after a restart.
+ */
+export const TransactionBatchesSchema = sqliteTable(
+    'transaction_batches',
+    {
+        id: text('id').primaryKey(),
+        /** The id the requester tracks the batch by; unique per sender. */
+        batchId: text('batch_id').notNull(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
+        sender: text('sender').notNull(),
+        /** The {@link ReviewApprovalsSchema} row the user approved the batch on. */
+        approvalToken: text('approval_token').notNull(),
+        /** JSON the recording chain owns: what each transaction does. */
+        payloadJson: text('payload_json').notNull(),
+        /** JSON array: the hash at each position reached, written before it is sent. */
+        txIdsJson: text('tx_ids_json').notNull(),
+        /**
+         * Hex of the signed transaction at `position`, kept until it lands so a
+         * resume rebroadcasts the same bytes rather than signing anew.
+         */
+        signedRaw: text('signed_raw'),
+        position: integer('position').notNull(),
+        /** Serialized {@link TransactionBatchOutcome}. */
+        outcome: text('outcome').notNull(),
+        createdAt: integer('created_at').notNull(),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [
+        uniqueIndex('transaction_batches_sender_batch_idx').on(
+            table.sender,
+            table.batchId,
+        ),
+        index('transaction_batches_outcome_idx').on(table.outcome),
+    ],
+)
+
+/**
+ * What the user saw on a review they approved, recorded by the signing
+ * pipeline itself when they approved it. A transaction the wallet signs later
+ * without a review screen is let through only when it matches one of these.
+ */
+export const ReviewApprovalsSchema = sqliteTable('review_approvals', {
+    /** The token a caller names the approval by. */
+    id: text('id').primaryKey(),
+    scope: text('scope').notNull().$type<ChainScopeKey>(),
+    /** Every transaction the review listed, in order; bigints and Decimals tagged. */
+    transactionsJson: text('transactions_json').notNull(),
+    createdAt: integer('created_at').notNull(),
+})

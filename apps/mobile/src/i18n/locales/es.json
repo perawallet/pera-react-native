@@ -4436,5 +4436,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum y redes EVM"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "La comisión se estima cuando llegue el turno de esta llamada"
+        }
     }
 }

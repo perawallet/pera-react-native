@@ -18,7 +18,29 @@ import type { EvmNftStandard } from '../blockchain/utils/caip19'
 import { isRecord } from './adapter'
 
 /** An Ethereum transaction as review and detail screens read it. */
-export type EthereumTransactionView = {
+export type EthereumTransactionView = EthereumTransactionViewBase &
+    (EthereumPricedView | EthereumPreviewView)
+
+/** The nonce, gas and fees the signature commits to. */
+export type EthereumPricedView = {
+    isPreview?: false
+    nonce: number
+    gas: bigint
+    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
+    fee: {
+        maxFeePerGas: Decimal
+        maxPriorityFeePerGas: Decimal
+        maxFee: Decimal
+    }
+}
+
+/**
+ * A later transaction of a batch, reviewed before it can be priced: its nonce,
+ * gas and fees are set only once the one before it has landed.
+ */
+export type EthereumPreviewView = { isPreview: true }
+
+type EthereumTransactionViewBase = {
     kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
     from: Address
     /** Absent for a contract creation. */
@@ -29,14 +51,6 @@ export type EthereumTransactionView = {
     data: Hex
     /** First four bytes of `data`; absent when `data` is shorter. */
     selector?: Hex
-    nonce: number
-    gas: bigint
-    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
-    fee: {
-        maxFeePerGas: Decimal
-        maxPriorityFeePerGas: Decimal
-        maxFee: Decimal
-    }
     /** Only on a verified token transfer; `amount` in the token's base units. */
     token?: { contract: Address; to: Address; amount: Decimal }
     /**
@@ -103,9 +117,11 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     Decimal.isDecimal(value.value) &&
     isHexValue(value.data) &&
     isOptional(value.selector, isHexValue) &&
-    typeof value.nonce === 'number' &&
-    typeof value.gas === 'bigint' &&
-    isFee(value.fee) &&
+    (value.isPreview === true ||
+        ((value.isPreview === undefined || value.isPreview === false) &&
+            typeof value.nonce === 'number' &&
+            typeof value.gas === 'bigint' &&
+            isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft))
 

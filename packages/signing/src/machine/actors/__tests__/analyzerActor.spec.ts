@@ -25,6 +25,8 @@ import {
     GenesisHashMismatchError,
     ReviewRequiredError,
 } from '../../../pipeline/errors'
+import { getReviewApproval } from '../../../db/repository'
+import { REVIEW_APPROVAL_TTL_MS } from '../../../db/types'
 import { analyzerActor } from '../analyzerActor'
 import type { AnalyzerActorInput } from '../analyzerActor'
 import type {
@@ -34,6 +36,10 @@ import type {
     SignableGroup,
 } from '../../../pipeline/types'
 
+vi.mock('../../../db/repository', () => ({
+    getReviewApproval: vi.fn(),
+}))
+
 const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 
 const decoded = (totalFees: bigint): DecodedGroup => ({
@@ -41,15 +47,20 @@ const decoded = (totalFees: bigint): DecodedGroup => ({
     signableAddresses: [],
 })
 
-const makeGroup = (signerAddress: string): SignableGroup =>
+const makeGroup = (
+    signerAddress: string,
+    transactions: unknown[] = [],
+    originalIndices?: number[],
+): SignableGroup =>
     ({
         data: {
             type: 'transactions',
-            transactions: [],
+            transactions,
             chainData: { algorand: { indicesToSign: [] } },
         },
         source: { type: 'local' },
         signerAddress,
+        ...(originalIndices && { originalIndices }),
     }) as SignableGroup
 
 const algorandContext: AnalysisContext = {
@@ -209,6 +220,163 @@ describe('analyzerActor', () => {
             expect(error).toBeInstanceOf(ReviewRequiredError)
             expect((error as ReviewRequiredError).metadata.params).toEqual({
                 warningTypes: ['rekey'],
+            })
+        })
+
+        describe('with a review the user approved', () => {
+            const matchesApprovedPreview = vi.fn(
+                (transaction: unknown, preview: unknown) =>
+                    (transaction as { id: string }).id ===
+                    (preview as { id: string }).id,
+            )
+            const SWAP = { id: 'swap' }
+            const APPROVE = { id: 'approve' }
+
+            beforeEach(() => {
+                autoApproveLocal.mockReturnValue(false)
+                matchesApprovedPreview.mockClear()
+                vi.mocked(getReviewApproval).mockReset()
+                vi.mocked(getReviewApproval).mockResolvedValue({
+                    scope: algorandContext.scope,
+                    transactions: [APPROVE, SWAP] as never,
+                    createdAt: Date.now(),
+                })
+                registerFakeReviewerAdapter({
+                    decoder: { decode },
+                    warnings: { detect },
+                    policy: { autoApproveLocal, matchesApprovedPreview },
+                })
+            })
+
+            const approval = (positions: number[], token = 'token') => ({
+                token,
+                positions,
+            })
+
+            it('signs a transaction the policy turns down when the approved review showed it at that position', async () => {
+                const analyses = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                )
+
+                expect(analyses).toHaveLength(1)
+                expect(getReviewApproval).toHaveBeenCalledWith({
+                    token: 'token',
+                })
+                expect(matchesApprovedPreview).toHaveBeenCalledWith(SWAP, SWAP)
+            })
+
+            it('refuses a transaction the approved review showed at another position', async () => {
+                const error = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([0]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('refuses a token no approved review recorded, whatever the caller claims', async () => {
+                vi.mocked(getReviewApproval).mockResolvedValue(null)
+
+                const error = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1], 'minted-by-caller'),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+                expect(matchesApprovedPreview).not.toHaveBeenCalled()
+            })
+
+            it('refuses an approval recorded on another network', async () => {
+                vi.mocked(getReviewApproval).mockResolvedValue({
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                    transactions: [APPROVE, SWAP] as never,
+                    createdAt: Date.now(),
+                })
+
+                const error = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('refuses an approval older than a day, however well the transaction matches', async () => {
+                vi.mocked(getReviewApproval).mockResolvedValue({
+                    scope: algorandContext.scope,
+                    transactions: [APPROVE, SWAP] as never,
+                    createdAt: Date.now() - REVIEW_APPROVAL_TTL_MS - 1,
+                })
+
+                const error = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('maps each transaction through its own position in the request', async () => {
+                const error = await run(
+                    buildInput([makeGroup('B', [SWAP], [1])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1, 0]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('refuses a group with no transactions to vouch for', async () => {
+                const error = await run(
+                    buildInput([makeGroup('A')], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('refuses when the chain cannot match a review at all', async () => {
+                registerFakeReviewerAdapter({
+                    decoder: { decode },
+                    warnings: { detect },
+                    policy: { autoApproveLocal },
+                })
+
+                const error = await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                ).catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(ReviewRequiredError)
+            })
+
+            it('never reads an approval when the policy signs everything anyway', async () => {
+                autoApproveLocal.mockReturnValue(true)
+
+                await run(
+                    buildInput([makeGroup('A', [SWAP])], {
+                        isHeadless: true,
+                        reviewApproval: approval([1]),
+                    }),
+                )
+
+                expect(getReviewApproval).not.toHaveBeenCalled()
             })
         })
     })
