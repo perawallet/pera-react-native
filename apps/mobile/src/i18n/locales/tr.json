@@ -448,7 +448,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",
-        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi.",
+        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi. Algo25 hesapları yalnızca Algorand'ı destekler. Ethereum veya Base kullanmak için bir Universal Wallet oluştur.",
+        "standard_unreachable_chains_note": "Algo25 hesapları için diğer ağlar kullanılamaz.",
         "ledger_title": "Ledger hesabı",
         "ledger_description": "Hesabın bir Ledger hesabı. Cüzdanına doğrudan hardware wallet cihazından eklendi. Bu hesaba ait tüm işlemlerin Ledger’ında onaylanması gerekir.",
         "watch_title": "İzleme hesabı",

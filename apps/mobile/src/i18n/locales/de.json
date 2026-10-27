@@ -448,7 +448,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25-Konto",
-        "standard_description": "Dein Konto ist ein Standard-Algorand-Konto. Es wurde nicht rekeyed und ist keinem Ledger-Gerät zugeordnet. Es wurde mit seinen Schlüsseln zu deinem Wallet hinzugefügt.",
+        "standard_description": "Dein Konto ist ein Standard-Algorand-Konto. Es wurde nicht rekeyed und ist keinem Ledger-Gerät zugeordnet. Es wurde mit seinen Schlüsseln zu deinem Wallet hinzugefügt. Algo25-Konten unterstützen nur Algorand. Um Ethereum oder Base zu nutzen, erstelle ein Universal Wallet.",
+        "standard_unreachable_chains_note": "Andere Netzwerke sind für Algo25-Konten nicht verfügbar.",
         "ledger_title": "Ledger-Konto",
         "ledger_description": "Dein Konto ist ein Ledger-Konto. Es wurde direkt vom Hardware-Gerät zu deinem Wallet hinzugefügt. Alle Transaktionen für dieses Konto müssen auf deinem Ledger bestätigt werden.",
         "watch_title": "Beobachtungskonto",

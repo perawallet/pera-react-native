@@ -12,6 +12,12 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    i18nKey,
+    type ChainDescriptor,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
 import {
@@ -22,13 +28,21 @@ import {
     fakePresentationOf,
 } from '../../__tests__/fakeAccountsChain'
 import { accountKindId } from '../../chain-adapter'
+import { eligibleChains } from '../../credentials/eligibility'
 import { accountPresentationChainAdapters } from '../../presentation-adapter'
 import {
     accountKindGlyph,
     accountKindIdOf,
     authorityTransitionLabel,
+    firstUnreachableChainsNote,
+    unreachableChainsNoteOf,
     useAccountPresentation,
 } from '../useAccountPresentation'
+
+vi.mock('../../credentials/eligibility', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../credentials/eligibility')>()),
+    eligibleChains: vi.fn(),
+}))
 
 describe('useAccountPresentation', () => {
     beforeEach(() => {
@@ -200,6 +214,102 @@ describe('authorityTransitionLabel', () => {
                 },
                 FAKE_CHAIN_ID,
             ),
+        ).toBeNull()
+    })
+})
+
+describe('unreachableChainsNoteOf', () => {
+    const OTHER_CHAIN_ID = 'other' as ChainId
+    const NOTE = i18nKey('fake.local.unreachable_note')
+
+    const registerChain = (id: ChainId) =>
+        getProvider().chains.register(
+            { id, networks: [] } as unknown as ChainDescriptor,
+            {} as never,
+        )
+
+    beforeEach(() => {
+        registerChain(FAKE_CHAIN_ID)
+        registerChain(OTHER_CHAIN_ID)
+        vi.mocked(eligibleChains).mockReturnValue([FAKE_CHAIN_ID])
+        vi.mocked(fakeAccountsChain().presentation.describe).mockImplementation(
+            kindId => ({
+                labelKey: i18nKey(`${kindId}.label`),
+                infoTitleKey: i18nKey(`${kindId}.info_title`),
+                infoBodyKey: i18nKey(`${kindId}.info_body`),
+                glyph: 'glyph',
+                ...(kindId.startsWith('fake.local')
+                    ? { unreachableChainsNoteKey: NOTE }
+                    : {}),
+            }),
+        )
+    })
+
+    it("is the kind's note when a registered chain is out of the account's reach", () => {
+        const account = testAccount('local')
+
+        expect(
+            unreachableChainsNoteOf(account, [FAKE_CHAIN_ID, OTHER_CHAIN_ID]),
+        ).toBe(NOTE)
+    })
+
+    it('is null when every chain is in reach', () => {
+        vi.mocked(eligibleChains).mockReturnValue([
+            FAKE_CHAIN_ID,
+            OTHER_CHAIN_ID,
+        ])
+
+        expect(
+            unreachableChainsNoteOf(testAccount('local'), [OTHER_CHAIN_ID]),
+        ).toBeNull()
+    })
+
+    it('is null for no chains', () => {
+        expect(unreachableChainsNoteOf(testAccount('local'), [])).toBeNull()
+    })
+
+    it('ignores a chain that is not registered', () => {
+        expect(
+            unreachableChainsNoteOf(testAccount('local'), [
+                'unregistered' as ChainId,
+            ]),
+        ).toBeNull()
+    })
+
+    it('is null when the kind gives no note', () => {
+        expect(
+            unreachableChainsNoteOf(testAccount('watch'), [OTHER_CHAIN_ID]),
+        ).toBeNull()
+    })
+
+    it("is null when the account's chain registers no presentation", () => {
+        accountPresentationChainAdapters.reset()
+
+        expect(
+            unreachableChainsNoteOf(testAccount('local'), [OTHER_CHAIN_ID]),
+        ).toBeNull()
+    })
+
+    it("firstUnreachableChainsNote is the first account's note, in order", () => {
+        const accounts = [testAccount('watch'), testAccount('local')]
+
+        expect(firstUnreachableChainsNote(accounts, [OTHER_CHAIN_ID])).toBe(
+            NOTE,
+        )
+        expect(firstUnreachableChainsNote([], [OTHER_CHAIN_ID])).toBeNull()
+    })
+
+    it('firstUnreachableChainsNote gives no note when another held account can reach the chain', () => {
+        const local = testAccount('local')
+        const reaching = testAccount('watch')
+        vi.mocked(eligibleChains).mockImplementation(account =>
+            account === reaching
+                ? [FAKE_CHAIN_ID, OTHER_CHAIN_ID]
+                : [FAKE_CHAIN_ID],
+        )
+
+        expect(
+            firstUnreachableChainsNote([local, reaching], [OTHER_CHAIN_ID]),
         ).toBeNull()
     })
 })

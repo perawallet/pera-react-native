@@ -448,7 +448,8 @@
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
-        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves.",
+        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves. Las cuentas Algo25 solo admiten Algorand. Para usar Ethereum o Base, crea una Wallet universal.",
+        "standard_unreachable_chains_note": "Otras redes no están disponibles para las cuentas Algo25.",
         "ledger_title": "Cuenta Ledger",
         "ledger_description": "Tu cuenta es una cuenta Ledger. Se añadió a tu wallet directamente desde el dispositivo de hardware. Todas las transacciones de esta cuenta deben confirmarse en tu Ledger.",
         "watch_title": "Cuenta de observación",

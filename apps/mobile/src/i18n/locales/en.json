@@ -448,7 +448,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
-        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
+        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys. Algo25 accounts support Algorand only. To use Ethereum or Base, create a Universal Wallet.",
+        "standard_unreachable_chains_note": "Other networks aren't available for Algo25 accounts.",
         "ledger_title": "Ledger account",
         "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
         "watch_title": "Watch account",

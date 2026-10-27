@@ -14,9 +14,12 @@ import { useMemo } from 'react'
 import type {
     ChainId,
     ChainScope,
+    I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters, type AccountKindId } from '../chain-adapter'
+import { eligibleChains } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
 import {
     accountPresentationChainAdapters,
@@ -25,6 +28,7 @@ import {
 } from '../presentation-adapter'
 import type { DelegateTransition } from '../signer-resolution'
 import { useAccountsStore } from '../store'
+import { accountChainIdOf } from './useAccountChain'
 
 /** The account's kind as `chainId` names it, e.g. for analytics. */
 export const accountKindIdOf = (
@@ -68,6 +72,63 @@ export const accountKindGlyph = (
               // The glyph doesn't follow signability, so any context gives it.
               .describe(kindId, { canSign: true })?.glyph
         : undefined
+
+/**
+ * The note the account's kind gives for being missing from a chain, when one
+ * of `chainIds` is registered but out of its custody's reach; null otherwise,
+ * or when the kind gives none.
+ */
+export const unreachableChainsNoteOf = (
+    account: WalletAccount,
+    chainIds: readonly ChainId[],
+): Nullable<I18nKey> => {
+    const { chains } = getProvider()
+    const reachable = new Set(eligibleChains(account))
+    const isMissing = chainIds.some(
+        chainId => chains.has(chainId) && !reachable.has(chainId),
+    )
+    if (!isMissing) return null
+    const ownChainId = accountChainIdOf(
+        account,
+        chains.list().map(({ id }) => id),
+    )
+    if (
+        !accountsChainAdapters.has(ownChainId) ||
+        !accountPresentationChainAdapters.has(ownChainId)
+    ) {
+        return null
+    }
+    return (
+        accountPresentationChainAdapters
+            .get(ownChainId)
+            // The note follows the kind alone, so any context gives it.
+            .describe(accountKindIdOf(account, ownChainId), { canSign: true })
+            ?.unreachableChainsNoteKey ?? null
+    )
+}
+
+/**
+ * The first of `accounts`' notes for being missing from one of `chainIds`.
+ * Null when any of them can reach one of the chains: the fix is then to add
+ * the network to that account, which a kind's note would misattribute.
+ */
+export const firstUnreachableChainsNote = (
+    accounts: readonly WalletAccount[],
+    chainIds: readonly ChainId[],
+): Nullable<I18nKey> => {
+    const { chains } = getProvider()
+    const registered = chainIds.filter(chainId => chains.has(chainId))
+    const isReachableByAny = accounts.some(account => {
+        const reachable = eligibleChains(account)
+        return registered.some(chainId => reachable.includes(chainId))
+    })
+    if (isReachableByAny) return null
+    for (const account of accounts) {
+        const note = unreachableChainsNoteOf(account, chainIds)
+        if (note) return note
+    }
+    return null
+}
 
 /** The copy for an account whose signing authority moved, as `chainId` words it; null when the chain gives none. */
 export const authorityTransitionLabel = (
