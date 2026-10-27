@@ -31,13 +31,7 @@ Restore Network
 
 Open Passphrase
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
-    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
-    FOR    ${i}    IN RANGE    4
-        ${row_locator}=    Passphrase Ack Row    ${i}
-        Tap    ${row_locator}
-    END
-    Tap    ${PASSPHRASE_ACK_REVEAL}
-    Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s
+    Acknowledge And Reveal Passphrase
 
 Require Biometric Switch
     [Documentation]    The switch shows only with a PIN set and a biometric enrolled on the device, and
@@ -66,6 +60,27 @@ Turn Biometrics And Pin Off
     [Documentation]    Removing the PIN deletes the biometric unlock with it (usePinCode).
     Capture Failure Screenshot
     Turn Pin Off
+
+Dismiss Camera Denied Sheet
+    [Documentation]    Closes the scanner's permission sheet, asserting the sheet actually went.
+    ...
+    ...                Close is the means, not the assertion, and it is unreliable in two ways at
+    ...                once: the sheet replaces its own elements while it settles, so the button
+    ...                found a moment ago is stale, and it is sometimes not drawn with the title at
+    ...                all, so the locator matches nothing. Both were reported as the tap's own
+    ...                failure. Tap what is there, then judge by whether the sheet left.
+    FOR    ${attempt}    IN RANGE    3
+        ${gone}=    Run Keyword And Return Status
+        ...    Page Should Not Contain Element    ${CAMERA_DENIED_TITLE}
+        IF    ${gone}    RETURN
+        Run Keyword And Ignore Error    Wait Until Settled    ${CAMERA_DENIED_CLOSE}
+        Run Keyword And Ignore Error    Tap    ${CAMERA_DENIED_CLOSE}
+        ${gone}=    Run Keyword And Return Status
+        ...    Wait Until Page Does Not Contain Element    ${CAMERA_DENIED_TITLE}    timeout=10s
+        IF    ${gone}    RETURN
+        Log    The camera-denied sheet did not take the Close tap; trying again.    level=WARN
+    END
+    Fail    The camera-denied sheet stayed up over three Close taps.
 
 Leave Scanner To Home
     [Documentation]    Home after the scanner, however many layers are still up.

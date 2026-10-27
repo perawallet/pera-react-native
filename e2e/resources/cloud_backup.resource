@@ -43,6 +43,8 @@ ${CB_VERIFY_SCREEN}                 xpath=//*[@resource-id='cloud_backup_verify_
 ${CB_VERIFY_PROCEED}                xpath=//*[@resource-id='cloud_backup_verify_proceed_button' or @name='cloud_backup_verify_proceed_button' or @content-desc='cloud_backup_verify_proceed_button']
 # BackupQuizItem's label has no testID; matched on backup.verification.select_word (English).
 ${QUIZ_LABEL_ANY}                   xpath=//*[starts-with(@text,'Select word #') or (starts-with(@label,'Select word #') and @accessible='true')]
+# Any item's option, whatever word it carries: the handle for "the quiz has finished drawing".
+${QUIZ_OPTION_ANY}                  xpath=//*[(starts-with(@resource-id,'cloud_backup_verify_item_') and contains(@resource-id,'_option_')) or (starts-with(@name,'cloud_backup_verify_item_') and contains(@name,'_option_'))]
 # The toast carries no testID; matched on cloud_backup.verify.error_message (English).
 ${CB_VERIFY_WRONG_TOAST}            xpath=//*[contains(@text,'Incorrect selection') or contains(@label,'Incorrect selection') or contains(@name,'Incorrect selection')]
 
@@ -173,6 +175,10 @@ Start At Verify Quiz
     Acknowledge Passphrase
     Tap    ${CB_SETUP_PROCEED}
     Wait Until Page Contains Element    ${CB_VERIFY_SCREEN}    timeout=20s
+    # The screen's container arrives before its items draw their options, and the first thing a
+    # case does is read the options off an item. Returning on the container alone handed back an
+    # item carrying nothing, which the reader can only report as "the quiz offers no alternative".
+    Wait Until Page Contains Element    ${QUIZ_OPTION_ANY}    timeout=20s
     RETURN    @{words}
 
 Start At Store Key

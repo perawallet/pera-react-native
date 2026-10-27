@@ -148,10 +148,9 @@ Tap
     ...                land, and retrying it could toggle a switch twice.
     ...
     ...                Six attempts rather than three: a sheet animating in replaces its own
-    ...                elements for longer than 0.6s, and the denied-camera Close button went stale
-    ...                through all three even after waiting for it to settle. Staleness is the one
-    ...                error that says for certain the tap did not land, so there is nothing to
-    ...                double by being patient with it.
+    ...                elements for longer than the 0.6s three allowed, even after waiting for the
+    ...                element to settle. Staleness is the one error that says for certain the tap
+    ...                did not land, so there is nothing to double by being patient with it.
     [Arguments]    ${locator}
     FOR    ${attempt}    IN RANGE    6
         TRY
@@ -183,6 +182,26 @@ Tap Until
         Log    ${locator} did not bring up ${anchor} in ${timeout}; tapping it again.    level=WARN
     END
     Fail    ${locator} did not bring up ${anchor} over three taps.
+
+Type Exactly
+    [Documentation]    Types into a field and confirms the field holds exactly that before moving on.
+    ...
+    ...                XCUITest's typing drops and doubles characters under load: a search for
+    ...                "AutoTestContact" went in as "AuoTestContactt", and the case then reported
+    ...                that the contact was missing - which was true of what had actually been
+    ...                searched for. A probe typing the same string by hand came back clean, so it
+    ...                is intermittent and only the field can say when it happened.
+    ...
+    ...                Logs what landed, so never type a recovery phrase through this.
+    [Arguments]    ${locator}    ${text}
+    FOR    ${attempt}    IN RANGE    3
+        Clear Text    ${locator}
+        Input Text    ${locator}    ${text}
+        ${landed}=    Get Text    ${locator}
+        IF    $landed == $text    RETURN
+        Log    ${locator} took "${landed}" rather than "${text}"; typing it again.    level=WARN
+    END
+    Fail    ${locator} kept mistyping "${text}": the field holds "${landed}".
 
 Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can

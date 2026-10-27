@@ -113,9 +113,16 @@ Add Account To Wallet
     Open Account Switcher
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
-    ${added}=    Tap If Present    ${ADD_ACCOUNT_ADD_BUTTON}
-    IF    not ${added}    Tap    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=60s
+    ${offered}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${ADD_ACCOUNT_ADD_BUTTON}
+    # The tap lands - Click Element reports success and the button is on screen and enabled - and
+    # the screen simply stays. Waiting it out for a minute found nothing on the way; a second tap
+    # opens it at once, and the cases that follow inherited the missing account as their own failure.
+    IF    ${offered}
+        Tap Until    ${ADD_ACCOUNT_ADD_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    ELSE
+        Tap Until    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    END
     # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
@@ -237,6 +244,26 @@ Passphrase Ack Row
     ...                concatenated into an xpath, so the index is applied here instead.
     [Arguments]    ${index}
     RETURN    xpath=//*[@resource-id='${PASSPHRASE_ACK_ROW_ID}${index}' or @name='${PASSPHRASE_ACK_ROW_ID}${index}' or @content-desc='${PASSPHRASE_ACK_ROW_ID}${index}']
+
+Acknowledge And Reveal Passphrase
+    [Documentation]    Checks the four acknowledgement rows and opens the passphrase behind them.
+    ...
+    ...                Reveal is disabled until every row is checked, and the tap that followed the
+    ...                fourth row went out before React had re-rendered it: it landed on a disabled
+    ...                button, reported success, and the sheet stayed. "The grid did not appear in
+    ...                20 seconds" was the only thing that said so - and in the accounts suite the
+    ...                two cases after it then failed on the account this one never got to make.
+    ...
+    ...                So wait for the app's own gate instead. If that times out, a row's tap is
+    ...                what went missing, and the failure says that rather than naming the grid.
+    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
+    FOR    ${index}    IN RANGE    4
+        ${row}=    Passphrase Ack Row    ${index}
+        Tap    ${row}
+    END
+    Wait Until Keyword Succeeds    10s    0.5s
+    ...    Element Should Be Enabled    ${PASSPHRASE_ACK_REVEAL}
+    Tap Until    ${PASSPHRASE_ACK_REVEAL}    ${PASSPHRASE_GRID}    timeout=20s
 
 Confirm Removal Until The Sheet Goes
     [Documentation]    Taps Remove until the confirmation sheet leaves.
