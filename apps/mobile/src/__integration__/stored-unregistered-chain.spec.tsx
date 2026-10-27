@@ -32,6 +32,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
+import { AccountScreen } from '@modules/accounts/screens/AccountScreen/AccountScreen'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // A build that registers fewer chains than the wallet's accounts hold, as when
@@ -86,7 +87,9 @@ describe('Flow: a stored chain the build does not register', () => {
 
     beforeEach(async () => {
         await resetTestDatabase()
-        useAccountsStore.getState().setAccounts([ACCOUNT_ON_BOTH, ETHEREUM_ONLY])
+        useAccountsStore
+            .getState()
+            .setAccounts([ACCOUNT_ON_BOTH, ETHEREUM_ONLY])
     })
 
     it('Given an Algorand-only build and an account that also holds Ethereum, when the account list renders, then the account shows instead of crashing', async () => {
@@ -102,5 +105,14 @@ describe('Flow: a stored chain the build does not register', () => {
         )
 
         expect(await screen.findByText('On both')).toBeTruthy()
+        expect(screen.getByText('Ethereum only')).toBeTruthy()
+    })
+
+    it('Given an Algorand-only build and a selected account that only holds Ethereum, when the account screen renders, then it shows the account instead of crashing', async () => {
+        useAccountsStore.getState().setSelectedAccountId(ETHEREUM_ONLY.id)
+
+        renderWithNavigation(AccountScreen, 'Account')
+
+        expect(await screen.findByText('Ethereum only')).toBeTruthy()
     })
 })

@@ -167,6 +167,14 @@ describe('useChainCapability', () => {
         expect(result.current).toBe(true)
     })
 
+    it('is false, not a throw, for a chain this build does not register', () => {
+        const { result } = renderHook(() =>
+            useChainCapability('ethereum', 'swap'),
+        )
+
+        expect(result.current).toBe(false)
+    })
+
     it('follows a developer override without a remount', () => {
         const { result } = renderHook(() =>
             useChainCapability('algorand', 'swap'),
@@ -388,6 +396,14 @@ describe('useIsCapabilityRestricted', () => {
         expect(result.current).toBe(true)
 
         act(() => useNetworkStore.getState().setMode('live'))
+        expect(result.current).toBe(false)
+    })
+
+    it('is false, not a throw, for a chain this build does not register', () => {
+        const { result } = renderHook(() =>
+            useIsCapabilityRestricted('ethereum', 'swap'),
+        )
+
         expect(result.current).toBe(false)
     })
 })
