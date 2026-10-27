@@ -14,16 +14,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import {
+    Easing,
     interpolateColor,
     useAnimatedStyle,
     useSharedValue,
     withTiming,
     type AnimatedStyle,
 } from 'react-native-reanimated'
-import {
-    TAP_TO_CONFIRM_ANIMATION_DURATION,
-    TAP_TO_CONFIRM_ARMED_TIMEOUT,
-} from '@constants/ui'
+import { TAP_TO_CONFIRM_ANIMATION_DURATION } from '@constants/ui'
+
+// Matches the disabled root's opacity so the wait reads as "not yet pressable".
+const WAITING_LABEL_OPACITY = 0.7
 
 type UsePWTapToConfirmParams = {
     onConfirm: () => void
@@ -31,11 +32,14 @@ type UsePWTapToConfirmParams = {
     isDisabled: boolean
     isConfirmed: boolean
     minConfirmDelayMs: number
+    armedTimeoutMs: number
 }
 
 type UsePWTapToConfirmResult = {
     handlePress: () => void
+    isWaiting: boolean
     rootAnimatedStyle: AnimatedStyle<ViewStyle>
+    waitFillStyle: AnimatedStyle<ViewStyle>
     idleLabelStyle: AnimatedStyle<ViewStyle>
     armedLabelStyle: AnimatedStyle<ViewStyle>
     idleContentStyle: AnimatedStyle<ViewStyle>
@@ -55,9 +59,11 @@ export const usePWTapToConfirm = ({
     isDisabled,
     isConfirmed,
     minConfirmDelayMs,
+    armedTimeoutMs,
 }: UsePWTapToConfirmParams): UsePWTapToConfirmResult => {
     const { theme } = useTheme()
     const [isArmed, setIsArmed] = useState(false)
+    const [isWaiting, setIsWaiting] = useState(false)
     // Mirrors `isArmed` so handlePress can read it synchronously. The
     // confirming tap of a quick double-tap routinely lands before React has
     // committed the arming tap's render, and a handler closing over the state
@@ -65,9 +71,12 @@ export const usePWTapToConfirm = ({
     // the action silently never fires. `allowRapidPress` on the Pressable is
     // what lets that second tap through in the first place.
     const isArmedRef = useRef(false)
-    const armedAtRef = useRef(0)
+    const lastTapAtRef = useRef(0)
     const disarmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const armedProgress = useSharedValue(0)
+    const waitProgress = useSharedValue(0)
+    const fillProgress = useSharedValue(0)
     const phase = useSharedValue(getPhaseTarget(isLoading, isConfirmed))
 
     const setArmed = useCallback((next: boolean) => {
@@ -75,27 +84,57 @@ export const usePWTapToConfirm = ({
         setIsArmed(next)
     }, [])
 
-    const clearDisarmTimer = useCallback(() => {
+    const clearTimers = useCallback(() => {
         if (disarmTimerRef.current) {
             clearTimeout(disarmTimerRef.current)
             disarmTimerRef.current = null
         }
+        if (readyTimerRef.current) {
+            clearTimeout(readyTimerRef.current)
+            readyTimerRef.current = null
+        }
     }, [])
 
-    useEffect(() => clearDisarmTimer, [clearDisarmTimer])
+    const disarm = useCallback(() => {
+        clearTimers()
+        setArmed(false)
+        setIsWaiting(false)
+    }, [clearTimers, setArmed])
+
+    // Both the wait and the armed timeout run from the latest tap.
+    const restartWait = useCallback(() => {
+        clearTimers()
+        lastTapAtRef.current = Date.now()
+        disarmTimerRef.current = setTimeout(disarm, armedTimeoutMs)
+        if (minConfirmDelayMs <= 0) return
+
+        setIsWaiting(true)
+        readyTimerRef.current = setTimeout(
+            () => setIsWaiting(false),
+            minConfirmDelayMs,
+        )
+        fillProgress.value = 0
+        fillProgress.value = withTiming(1, {
+            duration: minConfirmDelayMs,
+            easing: Easing.linear,
+        })
+    }, [clearTimers, disarm, armedTimeoutMs, minConfirmDelayMs, fillProgress])
+
+    useEffect(() => clearTimers, [clearTimers])
 
     useEffect(() => {
-        if (isLoading || isDisabled || isConfirmed) {
-            clearDisarmTimer()
-            setArmed(false)
-        }
-    }, [isLoading, isDisabled, isConfirmed, clearDisarmTimer, setArmed])
+        if (isLoading || isDisabled || isConfirmed) disarm()
+    }, [isLoading, isDisabled, isConfirmed, disarm])
 
     useEffect(() => {
         armedProgress.value = withTiming(isArmed ? 1 : 0, {
             duration: TAP_TO_CONFIRM_ANIMATION_DURATION,
         })
     }, [isArmed, armedProgress])
+
+    useEffect(() => {
+        waitProgress.value = isWaiting ? 1 : 0
+    }, [isWaiting, waitProgress])
 
     useEffect(() => {
         phase.value = withTiming(getPhaseTarget(isLoading, isConfirmed), {
@@ -106,29 +145,30 @@ export const usePWTapToConfirm = ({
     const handlePress = useCallback(() => {
         if (isLoading || isDisabled || isConfirmed) return
 
-        if (isArmedRef.current) {
-            clearDisarmTimer()
-            setArmed(false)
-            // Disarm rather than ignore: rapid clicking then alternates arm and
-            // disarm and never lands a confirm.
-            if (Date.now() - armedAtRef.current < minConfirmDelayMs) return
-            onConfirm()
+        if (!isArmedRef.current) {
+            setArmed(true)
+            restartWait()
             return
         }
 
-        armedAtRef.current = Date.now()
-        setArmed(true)
-        clearDisarmTimer()
-        disarmTimerRef.current = setTimeout(() => {
-            setArmed(false)
-        }, TAP_TO_CONFIRM_ARMED_TIMEOUT)
+        // A tap inside the wait restarts it rather than confirming, so a
+        // rapid burst (e.g. a page-baited multi-click) can never sign: only a
+        // tap that follows a real pause does.
+        if (Date.now() - lastTapAtRef.current < minConfirmDelayMs) {
+            restartWait()
+            return
+        }
+
+        disarm()
+        onConfirm()
     }, [
         isLoading,
         isDisabled,
         isConfirmed,
         onConfirm,
         minConfirmDelayMs,
-        clearDisarmTimer,
+        restartWait,
+        disarm,
         setArmed,
     ])
 
@@ -138,12 +178,20 @@ export const usePWTapToConfirm = ({
     const armedColor = theme.colors.buttonHelperPeraIcon
     const loadingColor = theme.colors.buttonHelperPeraIcon
     const confirmedColor = theme.colors.positive
+    const waitingColor = theme.colors.buttonPrimaryDisabledBg
 
     const rootAnimatedStyle = useAnimatedStyle(() => {
         const restingColor = interpolateColor(
-            armedProgress.value,
+            waitProgress.value,
             [0, 1],
-            [idleColor, armedColor],
+            [
+                interpolateColor(
+                    armedProgress.value,
+                    [0, 1],
+                    [idleColor, armedColor],
+                ),
+                waitingColor,
+            ],
         )
         return {
             backgroundColor: interpolateColor(
@@ -154,12 +202,20 @@ export const usePWTapToConfirm = ({
         }
     })
 
+    const waitFillStyle = useAnimatedStyle(() => ({
+        width: `${fillProgress.value * 100}%`,
+        backgroundColor: armedColor,
+        opacity: waitProgress.value,
+    }))
+
     const idleLabelStyle = useAnimatedStyle(() => ({
         opacity: 1 - armedProgress.value,
     }))
 
     const armedLabelStyle = useAnimatedStyle(() => ({
-        opacity: armedProgress.value,
+        opacity:
+            armedProgress.value *
+            (1 - (1 - WAITING_LABEL_OPACITY) * waitProgress.value),
     }))
 
     const idleContentStyle = useAnimatedStyle(() => ({
@@ -179,7 +235,9 @@ export const usePWTapToConfirm = ({
 
     return {
         handlePress,
+        isWaiting,
         rootAnimatedStyle,
+        waitFillStyle,
         idleLabelStyle,
         armedLabelStyle,
         idleContentStyle,

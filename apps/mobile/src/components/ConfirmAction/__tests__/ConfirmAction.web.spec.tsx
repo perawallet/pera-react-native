@@ -114,6 +114,19 @@ describe('ConfirmAction (web)', () => {
         expect(onConfirm).not.toHaveBeenCalled()
     })
 
+    it('stays armed for a confirming tap a couple of seconds later', () => {
+        const { onConfirm } = renderConfirmAction()
+        armWindow()
+
+        fireEvent.click(screen.getByTestId('confirm-action'))
+        act(() => {
+            vi.advanceTimersByTime(2000)
+        })
+        fireEvent.click(screen.getByTestId('confirm-action'))
+
+        expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
     it('does not confirm an immediate double-click', () => {
         const { onConfirm } = renderConfirmAction()
         armWindow()
