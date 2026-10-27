@@ -13,7 +13,13 @@
 import { collectGarbage, readHeap } from '../runner/memory'
 import { runSoak } from '../runner/soak'
 import type { HeapPoint, Scenario } from '../runner/types'
-import { afterFirstTick, changedTick, provenTick, type TickState } from './sync'
+import {
+    afterFirstTick,
+    changedTick,
+    changeHoldings,
+    provenTick,
+    type TickState,
+} from './sync'
 
 const SOAK_PASSES = 30
 
@@ -60,7 +66,10 @@ const longSoak: Scenario<LongSoakState> = {
             durationMs: LONG_SOAK_MINUTES * 60_000,
             sampleEvery: LONG_SOAK_SAMPLE_EVERY,
             now: () => performance.now(),
-            tick: () => provenTick(state.ctx, state.service, state.minRequests),
+            tick: async () => {
+                await changeHoldings(state)
+                await provenTick(state.ctx, state.service, state.minRequests)
+            },
             sample: atMs => {
                 collectGarbage()
                 const heap = readHeap()

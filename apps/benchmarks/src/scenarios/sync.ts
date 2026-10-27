@@ -11,7 +11,9 @@
  */
 
 import { QueryClient } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import {
+    getAccountHoldings,
     getAllHeldAssetIdsForNetwork,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
@@ -19,7 +21,9 @@ import {
     AssetPriceMissesSchema,
     AssetPricesSchema,
     fetchAndPersistPrices,
+    PeraAssetType,
     seedNativeAssets,
+    upsertNodeAssets,
 } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
@@ -29,12 +33,15 @@ import {
 import { clearDatabase, getDatabase } from '@perawallet/wallet-core-database'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { benchWatchAccounts } from '../data/generators'
+import { benchAssets, benchWatchAccounts } from '../data/generators'
 import { chainsFor } from '../data/chains'
 import { benchScope } from '../data/scope'
 import type { SeededWallet } from '../data/seedWallet'
 import { mockShouldRefresh } from '../network/handlers'
-import { syncFixtureHandlers } from '../network/syncFixtures'
+import {
+    syncFixtureHandlers,
+    type FixtureAmounts,
+} from '../network/syncFixtures'
 import type { BenchScale, Scenario, ScenarioContext } from '../runner/types'
 import { seeded } from './seeded'
 
@@ -114,6 +121,11 @@ export type TickState = {
     scope: ChainScope
     /** The fewest requests a real tick of this scenario makes. */
     minRequests: number
+    /** What the fixture's account reads answer; bumped to make a tick see a change. */
+    amounts: FixtureAmounts
+    heavyAddress: string
+    /** The heavy account's stored amounts as of the last tick, to prove a change landed. */
+    storedAmounts: string
 }
 
 /** A wallet of accounts only: the database empty, as just after an import. */
@@ -147,6 +159,38 @@ const assertSynced = async (
     }
 }
 
+const storedAmountsOf = async (state: TickState): Promise<string> => {
+    const rows = await getAccountHoldings({
+        accountAddress: state.heavyAddress,
+        scope: state.scope,
+    })
+    return rows
+        .reduce((sum, row) => sum.plus(row.amount), new Decimal(0))
+        .toString()
+}
+
+/**
+ * Makes the fixture answer the next account read with different amounts, so
+ * the tick that follows has holdings to write. Without it a repeat tick reads
+ * the same holdings back and the sync's own diff skips every write.
+ */
+export const changeHoldings = async (state: TickState): Promise<void> => {
+    state.amounts.variant += 1
+}
+
+/** The tick has to have written the changed amounts, or it timed a no-op diff. */
+export const assertHoldingsChanged = async (
+    state: TickState,
+): Promise<void> => {
+    const stored = await storedAmountsOf(state)
+    if (stored === state.storedAmounts) {
+        throw new Error(
+            'The tick left the stored holdings as they were: it timed a no-op diff, not a change',
+        )
+    }
+    state.storedAmounts = stored
+}
+
 const firstTick: Scenario<TickState> = {
     id: 'sync.first-tick',
     group: 'sync',
@@ -156,8 +200,9 @@ const firstTick: Scenario<TickState> = {
     warmup: 0,
     setup: async (ctx, scale) => {
         const wallet = accountsOnly(scale)
+        const amounts = { variant: 0 }
         ctx.network.use(
-            ...syncFixtureHandlers(wallet, scale, { refresh: true }),
+            ...syncFixtureHandlers(wallet, scale, { refresh: true, amounts }),
         )
         return {
             service: newService(),
@@ -166,6 +211,9 @@ const firstTick: Scenario<TickState> = {
             scope: benchScope(),
             // The first tick forces a read of every account.
             minRequests: scale.accounts,
+            amounts,
+            heavyAddress: wallet.heavyAddress,
+            storedAmounts: '',
         }
     },
     // Emptying the tables stands in for a fresh install.
@@ -179,22 +227,53 @@ const firstTick: Scenario<TickState> = {
     afterEach: state => assertSynced(state.scale, state.scope),
 }
 
+/**
+ * Stores every collectible's url as already looked up. An established wallet
+ * did that long ago; left unset, each tick that syncs metadata spends up to
+ * 100 indexer lookups backfilling them, which a changed tick would then time.
+ */
+const markCollectibleUrlsKnown = (
+    scale: BenchScale,
+    scope: ChainScope,
+): Promise<void> =>
+    upsertNodeAssets({
+        items: benchAssets(scale.heavyAccountAssets)
+            .filter(
+                asset => asset.peraMetadata?.type === PeraAssetType.collectible,
+            )
+            .map(asset => ({ ...asset, url: '' })),
+        scope,
+    })
+
 /** The first tick has run, so the next goes through the change signal. */
 export const afterFirstTick =
     (refresh: boolean, minRequests: (scale: BenchScale) => number) =>
     async (ctx: ScenarioContext, scale: BenchScale): Promise<TickState> => {
         const wallet = accountsOnly(scale)
         const scope = benchScope()
+        const amounts = { variant: 0 }
         ctx.network.use(
-            ...syncFixtureHandlers(wallet, scale, { refresh: true }),
+            ...syncFixtureHandlers(wallet, scale, { refresh: true, amounts }),
         )
         const service = newService()
         await provenTick(ctx, service, scale.accounts)
         await assertSynced(scale, scope)
+        await markCollectibleUrlsKnown(scale, scope)
         ctx.network.use(
             mockShouldRefresh({ response: { refresh, round: FIXTURE_ROUND } }),
         )
-        return { service, ctx, scale, scope, minRequests: minRequests(scale) }
+        const state: TickState = {
+            service,
+            ctx,
+            scale,
+            scope,
+            minRequests: minRequests(scale),
+            amounts,
+            heavyAddress: wallet.heavyAddress,
+            storedAmounts: '',
+        }
+        state.storedAmounts = await storedAmountsOf(state)
+        return state
     }
 
 const tickRun = (state: TickState): Promise<void> =>
@@ -215,9 +294,11 @@ export const changedTick: Scenario<TickState> = {
     group: 'sync',
     title: 'A tick when the change signal reports a change',
     scales: SYNC_SCALES,
-    // A change reads every account again.
+    // A change reads every account again, and every holding in it differs.
     setup: afterFirstTick(true, scale => scale.accounts),
+    beforeEach: changeHoldings,
     run: tickRun,
+    afterEach: assertHoldingsChanged,
 }
 
 type PriceState = {

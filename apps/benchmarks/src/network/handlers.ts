@@ -13,10 +13,7 @@
 // The handler factories the packages' own tests use, re-exported from source:
 // they are test entries, not part of any package's public exports, and the
 // monorepo is on Metro's watch path.
-export {
-    mockAlgodAccountInformation,
-    mockShouldRefresh,
-} from '../../../../packages/chain-algorand/src/test-handlers'
+export { mockShouldRefresh } from '../../../../packages/chain-algorand/src/test-handlers'
 export {
     evmRpcHandlers,
     peraEvmHandlers,

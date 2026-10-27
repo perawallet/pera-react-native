@@ -15,12 +15,7 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { SeededWallet } from '../data/seedWallet'
 import { assetsHeldBy, benchAssets } from '../data/generators'
 import type { BenchScale } from '../runner/types'
-import {
-    evmRpcHandlers,
-    mockAlgodAccountInformation,
-    mockShouldRefresh,
-    peraEvmHandlers,
-} from './handlers'
+import { evmRpcHandlers, mockShouldRefresh, peraEvmHandlers } from './handlers'
 
 const ALGO_TOTAL_SUPPLY = '10000000000000000'
 const FIXTURE_ROUND = 100
@@ -135,97 +130,119 @@ const peraBackendHandlers = (
 }
 
 /**
- * An account read as algod and the indexer answer it: inline up to algod's
+ * Account reads as algod and the indexer answer them: inline up to algod's
  * resource cap and a 400 past it, `exclude=all` always, and the holdings paged
  * from the indexer, which the app reads instead once the account it last
  * stored reaches the cap.
+ *
+ * One handler per route, never per account: MSW tries every handler in turn
+ * for every request, so per-account handlers made the fixture's own matching
+ * grow with accounts x requests and dominate the time the sync rows report.
  */
 const accountReadHandlers = (
-    address: string,
-    held: readonly PeraAsset[],
+    heldByAddress: ReadonlyMap<string, readonly PeraAsset[]>,
+    amounts: FixtureAmounts,
 ): RequestHandler[] => {
-    const holdings = held.map(asset => ({
-        'asset-id': Number(asset.assetId),
-        amount: asset.decimals === 0 ? 1 : 1000,
-        'is-frozen': false,
-    }))
+    const holdingsOf = (held: readonly PeraAsset[]) =>
+        held.map(asset => ({
+            'asset-id': Number(asset.assetId),
+            amount: (asset.decimals === 0 ? 1 : 1000) + (amounts.variant % 2),
+            'is-frozen': false,
+        }))
     // `exclude=all` drops the resource arrays but keeps every scalar.
-    const account = {
+    const scalarsOf = (address: string, held: readonly PeraAsset[]) => ({
+        address,
         amount: NATIVE_BALANCE_MICROALGOS,
         'amount-without-pending-rewards': NATIVE_BALANCE_MICROALGOS,
         'min-balance': BASE_MIN_BALANCE_MICROALGOS * (held.length + 1),
         'pending-rewards': 0,
         rewards: 0,
         round: FIXTURE_ROUND,
-        status: 'Offline' as const,
+        status: 'Offline',
         'apps-total-schema': { 'num-byte-slice': 0, 'num-uint': 0 },
         'total-apps-opted-in': 0,
         'total-assets-opted-in': held.length,
         'total-created-apps': 0,
         'total-created-assets': 0,
-    }
-    const isOverCap = held.length > MAX_INLINE_RESOURCES
+    })
 
     return [
-        // Answers only what the next handler must not: returning nothing
-        // falls through to it.
-        http.get(`*/v2/accounts/${address}`, ({ request }) => {
-            const isExcludeAll =
-                new URL(request.url).searchParams.get('exclude') === 'all'
-            if (isExcludeAll) {
-                return HttpResponse.json({ ...account, address })
+        // An address outside the wallet gets no answer, so it shows up as unhandled.
+        http.get('*/v2/accounts/:address', ({ params, request }) => {
+            const address = String(params.address)
+            const held = heldByAddress.get(address)
+            if (!held) return undefined
+            if (new URL(request.url).searchParams.get('exclude') === 'all') {
+                return HttpResponse.json(scalarsOf(address, held))
             }
-            if (isOverCap) {
+            if (held.length > MAX_INLINE_RESOURCES) {
                 return HttpResponse.json(
                     { message: 'MaxAPIResourcesPerAccount exceeded' },
                     { status: 400 },
                 )
             }
-            return undefined
+            return HttpResponse.json({
+                ...scalarsOf(address, held),
+                assets: holdingsOf(held),
+                'created-assets': [],
+                'apps-local-state': [],
+                'created-apps': [],
+            })
         }),
-        mockAlgodAccountInformation({
-            address,
-            response: { ...account, assets: holdings },
-        }),
-        http.get(`*/v2/accounts/${address}/assets`, ({ request }) => {
-            const params = new URL(request.url).searchParams
-            const limit = Number(params.get('limit') ?? MAX_INLINE_RESOURCES)
-            const start = Number(params.get('next') ?? 0)
-            const end = Math.min(start + limit, holdings.length)
+        http.get('*/v2/accounts/:address/assets', ({ params, request }) => {
+            const held = heldByAddress.get(String(params.address))
+            if (!held) return undefined
+            const query = new URL(request.url).searchParams
+            const limit = Number(query.get('limit') ?? MAX_INLINE_RESOURCES)
+            const start = Number(query.get('next') ?? 0)
+            const end = Math.min(start + limit, held.length)
             return HttpResponse.json({
                 'current-round': FIXTURE_ROUND,
-                assets: holdings.slice(start, end),
-                ...(end < holdings.length && { 'next-token': String(end) }),
+                assets: holdingsOf(held.slice(start, end)),
+                ...(end < held.length && { 'next-token': String(end) }),
             })
         }),
     ]
 }
 
+/**
+ * Which of two amount sets the account reads answer. Every holding differs by
+ * one between them, so bumping `variant` makes the next account read a change
+ * the sync has to write; leaving it alone makes the read a no-op diff.
+ */
+export type FixtureAmounts = { variant: number }
+
 export type SyncFixtureOptions = {
     /** What the change signal answers: true makes every tick read every account. */
     refresh: boolean
+    amounts?: FixtureAmounts
 }
 
 /** Everything one sync tick over the seeded wallet asks of the network. */
 export const syncFixtureHandlers = (
     wallet: SeededWallet,
     scale: BenchScale,
-    { refresh }: SyncFixtureOptions,
+    { refresh, amounts = { variant: 0 } }: SyncFixtureOptions,
 ): RequestHandler[] => {
     const universe = benchAssets(scale.heavyAccountAssets)
 
-    const accountReads = wallet.accounts.flatMap((account, index) => {
-        const address = account.chains.algorand?.address
-        if (!address) return []
-        return accountReadHandlers(
-            address,
-            assetsHeldBy(index, scale.assetsPerAccount, universe),
-        )
-    })
+    const heldByAddress = new Map(
+        wallet.accounts.flatMap((account, index) => {
+            const address = account.chains.algorand?.address
+            return address
+                ? [
+                      [
+                          address,
+                          assetsHeldBy(index, scale.assetsPerAccount, universe),
+                      ] as const,
+                  ]
+                : []
+        }),
+    )
 
     return [
         mockShouldRefresh({ response: { refresh, round: FIXTURE_ROUND } }),
-        ...accountReads,
+        ...accountReadHandlers(heldByAddress, amounts),
         ...peraBackendHandlers(universe),
         ...(wallet.chainIds.length > 1
             ? [...peraEvmHandlers(), ...evmRpcHandlers()]
