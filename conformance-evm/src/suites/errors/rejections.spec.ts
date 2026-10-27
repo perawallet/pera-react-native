@@ -145,9 +145,10 @@ describe('evm node rejections classified by toEvmError', () => {
             )
             expect(feesOf(replacement.raw).maxFeePerGas).toBe(100n * gwei)
 
-            // Anvil's pool takes a 5% bump of both fees, so the refusal needs
-            // one fee left unchanged. Sent raw: the app's own submit refuses an underpriced bump
-            // before the node sees it, which would hide the node's text.
+            // Anvil's pool takes any strictly higher max fee and ignores the
+            // tip, so the refusal needs the max fee left unchanged. Sent raw:
+            // the app's own submit refuses an underpriced bump before the node
+            // sees it, which would hide the node's text.
             const error = await rejectionOf(() => sendRaw(env, replacement.raw))
 
             expect(nodeTextOf(error)).toBe(

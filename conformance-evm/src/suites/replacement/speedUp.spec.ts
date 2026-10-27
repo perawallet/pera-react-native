@@ -26,6 +26,7 @@ import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET, anvilRpc, mine } from '../../harness/evmnet'
 import { rejectionOf } from '../../harness/submit'
 import {
+    expectGethPriceBump,
     feesOf,
     minedReceipt,
     nodeReceipt,
@@ -85,6 +86,10 @@ describe('evm speed-up', () => {
                     sender,
                     'speed-up',
                     original.raw,
+                )
+                expectGethPriceBump(
+                    feesOf(original.raw),
+                    feesOf(replacement.raw),
                 )
                 expect(
                     meetsReplacementBump(

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { expect } from 'vitest'
 import {
     hexToBytes,
     parseTransaction,
@@ -89,6 +90,23 @@ export const feesOf = (raw: Hex): FeeValuesEIP1559 => {
         maxFeePerGas: maxFeePerGas!,
         maxPriorityFeePerGas: maxPriorityFeePerGas!,
     }
+}
+
+/**
+ * geth's 10% price bump on both fee fields, restated outside the app: Anvil
+ * takes any higher max fee, so a regression in the app's bump and its
+ * `meetsReplacementBump` together would otherwise still pass.
+ */
+export const expectGethPriceBump = (
+    original: FeeValuesEIP1559,
+    replacement: FeeValuesEIP1559,
+): void => {
+    expect(replacement.maxFeePerGas * 100n).toBeGreaterThanOrEqual(
+        original.maxFeePerGas * 110n,
+    )
+    expect(replacement.maxPriorityFeePerGas * 100n).toBeGreaterThanOrEqual(
+        original.maxPriorityFeePerGas * 110n,
+    )
 }
 
 const withFees = (

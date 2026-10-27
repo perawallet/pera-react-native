@@ -27,6 +27,7 @@ import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET, mine } from '../../harness/evmnet'
 import {
     chargedFee,
+    expectGethPriceBump,
     feesOf,
     nodeReceipt,
     nodeTransaction,
@@ -83,6 +84,7 @@ describe('evm cancel', () => {
                 expect(transaction.nonce).toBe(0)
                 expect(CANCEL_GAS).toBe(TRANSFER_GAS)
                 expect(transaction.gas).toBe(TRANSFER_GAS)
+                expectGethPriceBump(feesOf(original.raw), feesOf(cancel.raw))
                 expect(
                     meetsReplacementBump(
                         feesOf(original.raw),
