@@ -49,15 +49,36 @@ export const CardConfirmSwapScreen = () => {
     } = useCardConfirmSwapScreen()
     const isDepositFailed = step === 'deposit-failed'
     const detailRows = [
-        [i18nKey('peraCard.confirm_swap.price'), priceDisplay],
-        [i18nKey('peraCard.confirm_swap.slippage'), slippageDisplay],
-        [i18nKey('peraCard.confirm_swap.price_impact'), priceImpactDisplay],
+        [
+            i18nKey('peraCard.confirm_swap.price'),
+            priceDisplay,
+            'card-confirm-swap-price',
+        ],
+        [
+            i18nKey('peraCard.confirm_swap.slippage'),
+            slippageDisplay,
+            'card-confirm-swap-slippage',
+        ],
+        [
+            i18nKey('peraCard.confirm_swap.price_impact'),
+            priceImpactDisplay,
+            'card-confirm-swap-price-impact',
+        ],
         [
             i18nKey('peraCard.confirm_swap.minimum_received'),
             minimumReceivedDisplay,
+            'card-confirm-swap-minimum-received',
         ],
-        [i18nKey('peraCard.confirm_swap.exchange_fee'), exchangeFeeDisplay],
-        [i18nKey('peraCard.confirm_swap.pera_fee'), peraFeeDisplay],
+        [
+            i18nKey('peraCard.confirm_swap.exchange_fee'),
+            exchangeFeeDisplay,
+            'card-confirm-swap-exchange-fee',
+        ],
+        [
+            i18nKey('peraCard.confirm_swap.pera_fee'),
+            peraFeeDisplay,
+            'card-confirm-swap-pera-fee',
+        ],
     ] as const
 
     if (isQuoteLoading) {
@@ -66,6 +87,7 @@ export const CardConfirmSwapScreen = () => {
 
     return (
         <PWScreen
+            testID='card-confirm-swap'
             footer={
                 isDepositFailed ? (
                     <PWButton
@@ -97,7 +119,12 @@ export const CardConfirmSwapScreen = () => {
                             size='sm'
                         />
                     )}
-                    <PWText variant='footnoteMedium'>{payDisplay}</PWText>
+                    <PWText
+                        variant='footnoteMedium'
+                        testID='card-confirm-swap-pay'
+                    >
+                        {payDisplay}
+                    </PWText>
                 </PWView>
                 <PWIcon
                     name='chevron-right'
@@ -110,7 +137,12 @@ export const CardConfirmSwapScreen = () => {
                             size='sm'
                         />
                     )}
-                    <PWText variant='footnoteMedium'>{receiveDisplay}</PWText>
+                    <PWText
+                        variant='footnoteMedium'
+                        testID='card-confirm-swap-receive'
+                    >
+                        {receiveDisplay}
+                    </PWText>
                 </PWView>
                 <PWIcon
                     name='chevron-right'
@@ -162,7 +194,7 @@ export const CardConfirmSwapScreen = () => {
                 {t('peraCard.add_funds.confirm_details_title')}
             </PWText>
             <PWView>
-                {detailRows.map(([key, value]) => (
+                {detailRows.map(([key, value, valueTestID]) => (
                     <KeyValueRow
                         key={key}
                         title={t(key)}
@@ -171,6 +203,7 @@ export const CardConfirmSwapScreen = () => {
                         <PWText
                             variant='body'
                             style={styles.value}
+                            testID={valueTestID}
                         >
                             {value}
                         </PWText>

@@ -32,7 +32,10 @@ export const CardWithdrawScreen = () => {
     } = useCardWithdrawScreen()
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            testID='card-withdraw'
+        >
             <PWView style={styles.container}>
                 <PWView style={styles.topGroup}>
                     <PWText
@@ -65,6 +68,7 @@ export const CardWithdrawScreen = () => {
                         })}
                         amount={amount}
                         amountTestID='card-withdraw-amount'
+                        balanceTestID='card-withdraw-balance'
                         chip={<PWText variant='bodyLarge'>USDC</PWText>}
                     />
 

@@ -28,6 +28,7 @@ type CardAmountInputProps = {
     onChipPress?: () => void
     chipTestID?: string
     amountTestID?: string
+    balanceTestID?: string
     /** Extra rows under the amount (secondary value, swap rate). */
     children?: ReactNode
 }
@@ -44,6 +45,7 @@ export const CardAmountInput = ({
     onChipPress,
     chipTestID,
     amountTestID,
+    balanceTestID,
     children,
 }: CardAmountInputProps) => {
     const styles = useStyles()
@@ -60,6 +62,7 @@ export const CardAmountInput = ({
                 <PWText
                     variant='body'
                     style={styles.mutedLabel}
+                    testID={balanceTestID}
                 >
                     {balanceText}
                 </PWText>
