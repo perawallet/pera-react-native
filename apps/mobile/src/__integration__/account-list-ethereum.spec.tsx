@@ -105,8 +105,8 @@ const rowOf = (account: WalletAccount) =>
         `account_switcher_row_${Object.values(account.chains)[0]?.address}`,
     )
 
-// 1.5 ETH at $2,000 and 10 ALGO at $0.30.
-const seedBalances = async () => {
+// 1.5 ETH at $2,000 (or unpriced) and 10 ALGO at $0.30.
+const seedBalances = async ({ isEthPriced = true } = {}) => {
     await seedAlgoAsset('mainnet')
     await seedAlgorandAccountState({
         accountAddress: ALGO25_TEST_ADDRESS,
@@ -138,10 +138,12 @@ const seedBalances = async () => {
         scope: ETH_SCOPE,
         amount: new Decimal('1500000000000000000'),
     })
-    await upsertAssetPrices({
-        prices: [{ assetId: eth.assetId, usdPrice: new Decimal('2000') }],
-        scope: ETH_SCOPE,
-    })
+    if (isEthPriced) {
+        await upsertAssetPrices({
+            prices: [{ assetId: eth.assetId, usdPrice: new Decimal('2000') }],
+            scope: ETH_SCOPE,
+        })
+    }
 }
 
 describe('Flow: Account list with Ethereum registered', () => {
@@ -241,6 +243,36 @@ describe('Flow: Account list with Ethereum registered', () => {
         })
         // Ethereum has no balance history, so a chart would plot only the $3.
         expect(screen.queryByText('portfolio.show_chart')).toBeNull()
+        expect(
+            screen.queryByTestId('portfolio_total_partial_notice'),
+        ).toBeNull()
+    })
+
+    it('Given the ETH balance has no price, when the list renders, then its row shows the fiat as unavailable and the total counts only the ALGO with a note', async () => {
+        await resetTestDatabase()
+        await seedBalances({ isEthPriced: false })
+        useAccountsStore
+            .getState()
+            .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
+
+        renderMenu()
+
+        const ethRow = rowOf(ETHEREUM_ACCOUNT)
+        await waitFor(() => {
+            expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
+        })
+        await waitFor(() => {
+            expect(within(ethRow).getByText('---')).toBeTruthy()
+        })
+        expect(within(ethRow).queryByText(/0\.00/)).toBeNull()
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/^\$ ?3\.00$/)
+        })
+        expect(
+            screen.getByTestId('portfolio_total_partial_notice'),
+        ).toBeTruthy()
     })
 
     it('Given the Ethereum kill switch is off, when the list renders, then its account stays listed with the unavailable notice and out of the total', async () => {
