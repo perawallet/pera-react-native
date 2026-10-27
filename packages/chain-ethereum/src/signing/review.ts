@@ -153,8 +153,8 @@ type Call = {
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
-// Stricter than the planner, which signs without a gas limit or max fee: the
-// fee shown is the most the signature authorises, so review needs both.
+// The fee shown is the most the signature authorises, so review needs a gas
+// limit and a max fee, as signing does.
 const readCall = (
     unsigned: UnsignedTransaction,
     chain: EvmChain,
