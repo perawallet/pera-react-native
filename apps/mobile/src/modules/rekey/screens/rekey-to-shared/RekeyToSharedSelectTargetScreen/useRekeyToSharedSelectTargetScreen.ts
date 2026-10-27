@@ -20,7 +20,10 @@ import {
     addressOn,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-shared/types'
@@ -28,6 +31,8 @@ import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-share
 export type UseRekeyToSharedSelectTargetScreenResult = {
     sourceAddress: string
     targets: WalletAccount[]
+    /** The chain the new authority's address is on, so target rows show that address and balance. */
+    chainId: ChainId
     handleSelect: (target: WalletAccount) => void
 }
 
@@ -69,6 +74,7 @@ export const useRekeyToSharedSelectTargetScreen =
         return {
             sourceAddress,
             targets,
+            chainId: scope.chainId,
             handleSelect,
         }
     }

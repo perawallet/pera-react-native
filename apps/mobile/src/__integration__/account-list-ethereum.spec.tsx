@@ -179,7 +179,7 @@ describe('Flow: Account list with Ethereum registered', () => {
         expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
     })
 
-    it('Given an Algorand and an Ethereum account, when the list renders, then each row shows its chain badge and its own native balance', async () => {
+    it("Given an Algorand and an Ethereum account, when the list renders, then rows carry no chain badge or native balance, only each account's fiat total", async () => {
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
@@ -188,16 +188,13 @@ describe('Flow: Account list with Ethereum registered', () => {
 
         const ethRow = rowOf(ETHEREUM_ACCOUNT)
         const algoRow = rowOf(ALGORAND_ACCOUNT)
-        expect(within(ethRow).getByText('Ethereum')).toBeTruthy()
-        expect(within(algoRow).getByText('Algorand')).toBeTruthy()
-        await waitFor(() => {
-            expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
-        })
-        // Each row prices its native balance on its own chain.
         await waitFor(() => {
             expect(within(ethRow).getByText(/3,000\.00/)).toBeTruthy()
         })
         expect(within(algoRow).getByText(/^\$ ?3\.00$/)).toBeTruthy()
+        expect(within(ethRow).queryByText('Ethereum')).toBeNull()
+        expect(within(algoRow).queryByText('Algorand')).toBeNull()
+        expect(within(ethRow).queryByText(/1\.5/)).toBeNull()
     })
 
     it('Given an ALGO preference stored before the upgrade, when a multi-chain list renders, then the Ethereum row and the portfolio total are in fiat', async () => {
@@ -264,9 +261,6 @@ describe('Flow: Account list with Ethereum registered', () => {
         renderMenu()
 
         const ethRow = rowOf(ETHEREUM_ACCOUNT)
-        await waitFor(() => {
-            expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
-        })
         await waitFor(() => {
             expect(within(ethRow).getByText('---')).toBeTruthy()
         })

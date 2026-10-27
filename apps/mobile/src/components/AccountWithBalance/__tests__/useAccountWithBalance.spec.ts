@@ -20,9 +20,10 @@ import type {
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useAccountWithBalance } from '../useAccountWithBalance'
 
-const mockUseIsOnTestTier = vi.fn()
 const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
+const mockHoldingSources = vi.fn()
+const mockTotalsQuery = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -47,9 +48,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 (account.chains as Record<string, { address: string }>)[chainId]
                     ?.address ?? '',
             ),
-        useAccountValueTotalsQuery: () => ({
-            accountValueTotals: mockAccountValueTotals,
-        }),
+        useAccountValueTotalsQuery: (...args: unknown[]) => {
+            mockTotalsQuery(...args)
+            return { accountValueTotals: mockAccountValueTotals }
+        },
+        useAccountHoldingSources: (account: WalletAccount) =>
+            mockHoldingSources(account),
     }
 })
 
@@ -70,8 +74,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useIsOnTestTier: (chainIds: readonly string[]) =>
-        mockUseIsOnTestTier(chainIds),
     useIsChainSwitchedOff: (chainId: string) => mockIsSwitchedOff(chainId),
 }))
 
@@ -104,10 +106,18 @@ describe('useAccountWithBalance', () => {
     })
 
     beforeEach(() => {
-        mockUseIsOnTestTier.mockReset().mockReturnValue(false)
         mockIsSwitchedOff.mockReset().mockReturnValue(false)
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
+        mockTotalsQuery.mockReset()
+        mockHoldingSources
+            .mockReset()
+            .mockImplementation((account: WalletAccount) =>
+                Object.entries(account.chains).map(([chainId, entry]) => ({
+                    address: (entry as { address: string }).address,
+                    scope: { chainId, networkId: 'mainnet' },
+                })),
+            )
     })
 
     it("reads the given chain's address, scope and native asset over the account's own chain", () => {
@@ -150,6 +160,7 @@ describe('useAccountWithBalance', () => {
         mockBasis.current = 'fiat'
         mockAccountValueTotals.set(ETH_ADDRESS, {
             nativeValue: new Decimal('1.5'),
+            fiatValue: new Decimal(3000),
         })
 
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
@@ -259,12 +270,161 @@ describe('useAccountWithBalance', () => {
         expect(result.current.availability).toEqual({ isAvailable: false })
     })
 
-    it("marks the account as test tier from its chains' networks", () => {
-        mockUseIsOnTestTier.mockReturnValue(true)
+    describe('crossChainTotal', () => {
+        beforeEach(() => {
+            mockBasis.current = 'fiat'
+        })
 
-        const { result } = renderHook(() => useAccountWithBalance(ALGO_ACCOUNT))
+        it('is unset on a row scoped to one chain', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS, 'ethereum'),
+            )
 
-        expect(mockUseIsOnTestTier).toHaveBeenCalledWith(['algorand'])
-        expect(result.current.isTestTier).toBe(true)
+            expect(result.current.crossChainTotal).toBeUndefined()
+        })
+
+        it('is unset while the wallet holds a single chain', () => {
+            mockBasis.current = 'native'
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ALGO_ACCOUNT),
+            )
+
+            expect(result.current.crossChainTotal).toBeUndefined()
+        })
+
+        it("sums the account's fiat value across its chains, in the preferred currency", () => {
+            mockAccountValueTotals.set(ALGO_ADDRESS, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal(2),
+                fiatValue: new Decimal(20),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: new Decimal(60),
+            })
+        })
+
+        it('is unknown, not a partial sum, when one chain is unpriced', () => {
+            mockAccountValueTotals.set(ALGO_ADDRESS, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal(2),
+                fiatValue: null,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: null,
+            })
+        })
+
+        it("is still loading while any chain's totals are", () => {
+            mockAccountValueTotals.set(ALGO_ADDRESS, {
+                nativeValue: new Decimal(1),
+                fiatValue: null,
+            })
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(0),
+                isPending: true,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: undefined,
+            })
+        })
+
+        it('leaves holdings on a test network out of the total', () => {
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+                {
+                    address: ETH_ADDRESS,
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                },
+            ])
+            mockAccountValueTotals.set(ALGO_ADDRESS, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal(2),
+                fiatValue: new Decimal(20),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: new Decimal(40),
+            })
+        })
+
+        it('has no fiat total when every chain is on a test network', () => {
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'testOnly',
+            })
+        })
+
+        it("is unavailable when every one of the account's chains is switched off", () => {
+            mockHoldingSources.mockReturnValue([])
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'unavailable',
+            })
+        })
+
+        it("still values the account when only its own chain's kill switch is on", () => {
+            mockIsSwitchedOff.mockImplementation(
+                (chainId: string) => chainId === 'algorand',
+            )
+
+            renderHook(() => useAccountWithBalance(BOTH_CHAINS))
+
+            expect(mockTotalsQuery).toHaveBeenCalledWith(
+                [BOTH_CHAINS],
+                expect.anything(),
+                true,
+            )
+        })
     })
 })

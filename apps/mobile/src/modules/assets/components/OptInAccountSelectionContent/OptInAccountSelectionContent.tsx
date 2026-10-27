@@ -63,6 +63,7 @@ export const OptInAccountSelectionContent = ({
                 highlightedAddress={highlightedAddress}
                 emptyBody={t('add_asset.select_account.empty')}
                 rowTestIDPrefix='opt_in_account'
+                chainId={chainId}
                 isEmbedded
             />
         </PWSheetLayout>

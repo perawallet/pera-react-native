@@ -18,7 +18,8 @@ import { useRekeyToSharedSelectTargetScreen } from './useRekeyToSharedSelectTarg
 
 export const RekeyToSharedSelectTargetScreen = () => {
     const { t } = useLanguage()
-    const { targets, handleSelect } = useRekeyToSharedSelectTargetScreen()
+    const { targets, chainId, handleSelect } =
+        useRekeyToSharedSelectTargetScreen()
 
     return (
         <PWScreen
@@ -35,6 +36,7 @@ export const RekeyToSharedSelectTargetScreen = () => {
                 onSelect={handleSelect}
                 emptyBody={t('rekey.to_shared.select.empty')}
                 rowTestIDPrefix='rekey-target-row'
+                chainId={chainId}
             />
         </PWScreen>
     )

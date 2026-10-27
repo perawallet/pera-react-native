@@ -18,7 +18,8 @@ import { useRekeyToQuantumSelectTargetScreen } from './useRekeyToQuantumSelectTa
 
 export const RekeyToQuantumSelectTargetScreen = () => {
     const { t } = useLanguage()
-    const { targets, handleSelect } = useRekeyToQuantumSelectTargetScreen()
+    const { targets, chainId, handleSelect } =
+        useRekeyToQuantumSelectTargetScreen()
 
     return (
         <PWScreen
@@ -35,6 +36,7 @@ export const RekeyToQuantumSelectTargetScreen = () => {
                 onSelect={handleSelect}
                 emptyBody={t('rekey.to_quantum.select.empty')}
                 rowTestIDPrefix='rekey-target-row'
+                chainId={chainId}
             />
         </PWScreen>
     )
