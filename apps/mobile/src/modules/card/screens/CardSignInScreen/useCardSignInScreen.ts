@@ -102,6 +102,10 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     const route = useRoute<RouteProp<PeraCardStackParamList, 'CardSignIn'>>()
 
     const finishesRegistration = route.params?.finishesRegistration ?? false
+    // The prefilled email is the onboarding's own; the field stays editable.
+    const onboardingEmail = finishesRegistration
+        ? route.params?.email
+        : undefined
 
     useEffect(() => {
         const email = route.params?.email
@@ -167,6 +171,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     password,
                     otpCode: otp,
                     linkConsent: finishesRegistration,
+                    onboardingEmail,
                 })
 
                 // Credentials accepted but a 2FA code is required — ask Baanx
@@ -305,6 +310,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         [
             login,
             finishesRegistration,
+            onboardingEmail,
             restoreEscrowCardAsync,
             accounts,
             navigation,

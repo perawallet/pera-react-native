@@ -50,6 +50,7 @@ const {
     storeState: {
         consentSetId: null as string | null,
         countryIso: null as string | null,
+        onboardingId: null as string | null,
     },
 }))
 vi.mock('../../api/auth', () => ({
@@ -102,6 +103,7 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
         vi.clearAllMocks()
         storeState.consentSetId = null
         storeState.countryIso = null
+        storeState.onboardingId = null
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -163,38 +165,67 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
         expect(linkOnboardingConsent).not.toHaveBeenCalled()
     })
 
-    it('links the consent stashed during onboarding when the sign-in finishes this registration', async () => {
-        storeState.consentSetId = 'cs_1'
-        loginRequest.mockResolvedValue({
-            accessToken: 'ephemeral-login-token',
-            userId: 'u1',
-            isOtpRequired: false,
-            phase: null,
-            verificationState: 'VERIFIED',
-            isLinked: true,
-        })
-        acquireCardSessionTokens.mockResolvedValue({
-            accessToken: 'oauth-access',
-            refreshToken: 'oauth-refresh',
-        })
-        linkOnboardingConsent.mockResolvedValue(undefined)
+    describe('when the sign-in finishes this registration', () => {
+        const signIn = async (params: {
+            email: string
+            onboardingEmail?: string
+        }) => {
+            storeState.consentSetId = 'cs_1'
+            loginRequest.mockResolvedValue({
+                accessToken: 'ephemeral-login-token',
+                userId: 'u1',
+                isOtpRequired: false,
+                phase: null,
+                verificationState: 'VERIFIED',
+                isLinked: true,
+            })
+            acquireCardSessionTokens.mockResolvedValue({
+                accessToken: 'oauth-access',
+                refreshToken: 'oauth-refresh',
+            })
+            linkOnboardingConsent.mockResolvedValue(undefined)
+            const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+                wrapper,
+            })
+            result.current.mutate({
+                ...params,
+                password: 'pw',
+                linkConsent: true,
+            })
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        }
 
-        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
-            wrapper,
-        })
-        result.current.mutate({
-            email: 'e@x.com',
-            password: 'pw',
-            linkConsent: true,
+        it('links the stashed consent for the email this device onboarded with', async () => {
+            await signIn({ email: 'E@x.com ', onboardingEmail: 'e@x.com' })
+
+            expect(linkOnboardingConsent).toHaveBeenCalledWith({
+                consentSetId: 'cs_1',
+                userId: 'u1',
+                scope: SCOPE,
+            })
+            expect(setConsentSetId).toHaveBeenCalledWith(null)
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(linkOnboardingConsent).toHaveBeenCalledWith({
-            consentSetId: 'cs_1',
-            userId: 'u1',
-            scope: SCOPE,
+        it('keeps the stash when the edited email signs in another user', async () => {
+            await signIn({ email: 'b@x.com', onboardingEmail: 'e@x.com' })
+
+            expect(linkOnboardingConsent).not.toHaveBeenCalled()
+            expect(setConsentSetId).not.toHaveBeenCalled()
         })
-        expect(setConsentSetId).toHaveBeenCalledWith(null)
+
+        it('falls back to the onboarding id when the email is unknown', async () => {
+            storeState.onboardingId = 'u1'
+            await signIn({ email: 'e@x.com' })
+
+            expect(linkOnboardingConsent).toHaveBeenCalled()
+        })
+
+        it('keeps the stash when the email is unknown and the user is not this onboarding', async () => {
+            storeState.onboardingId = 'someone-else'
+            await signIn({ email: 'e@x.com' })
+
+            expect(linkOnboardingConsent).not.toHaveBeenCalled()
+        })
     })
 
     it('never binds a stale stash to a plain sign-in', async () => {

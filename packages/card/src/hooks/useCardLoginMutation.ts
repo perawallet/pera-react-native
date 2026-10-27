@@ -32,10 +32,15 @@ export type CardLoginParams = {
     otpCode?: string
     /**
      * This sign-in finishes this device's registration, so the consent set
-     * stashed during onboarding belongs to this user and gets linked.
+     * stashed during onboarding is linked if this is the user who onboarded.
      */
     linkConsent?: boolean
+    /** The email this device onboarded with, when the screen knows it. */
+    onboardingEmail?: string
 }
+
+const isSameEmail = (a: string, b: string): boolean =>
+    a.trim().toLowerCase() === b.trim().toLowerCase()
 
 /**
  * Login outcome plus the durable OAuth token pair. `tokens` is set only when
@@ -113,7 +118,10 @@ export const useCardLoginMutation = (
                 useCardStore.getState().markLoginLocked()
             }
         },
-        onSuccess: async (result, { password, linkConsent }) => {
+        onSuccess: async (
+            result,
+            { email, password, linkConsent, onboardingEmail },
+        ) => {
             const store = useCardStore.getState()
             // Persist only the durable OAuth pair — never the ephemeral login
             // token. Null tokens mean OTP is still required or registration is
@@ -127,12 +135,22 @@ export const useCardLoginMutation = (
                 if (result.userId !== null) {
                     store.adoptCardUser(result.userId)
                     // A stash left by an abandoned sign-up must never be bound
-                    // to whoever signs in next.
-                    if (linkConsent) {
+                    // to whoever signs in next, and the email stays editable.
+                    // Baanx hasn't confirmed the account keeps the onboarding
+                    // id, so that fallback can only skip a link, never misbind.
+                    const isOnboardingUser =
+                        onboardingEmail !== undefined
+                            ? isSameEmail(onboardingEmail, email)
+                            : result.userId === store.onboardingId
+                    if (linkConsent && isOnboardingUser) {
                         await linkStashedOnboardingConsent({
                             userId: result.userId,
                             scope,
                         })
+                    } else if (linkConsent) {
+                        logger.warn(
+                            'Card consent stash kept: signed in as another user',
+                        )
                     }
                 }
                 return

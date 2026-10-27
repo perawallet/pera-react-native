@@ -217,11 +217,14 @@ describe('useCardSignInScreen', () => {
         expect(mockRestoreMutateAsync).not.toHaveBeenCalled()
         // A plain sign-in never links a stashed consent set.
         expect(mockMutateAsync).toHaveBeenCalledWith(
-            expect.objectContaining({ linkConsent: false }),
+            expect.objectContaining({
+                linkConsent: false,
+                onboardingEmail: undefined,
+            }),
         )
     })
 
-    it('asks the login to link the consent when the sign-in finishes this registration', async () => {
+    it('asks the login to link the consent for the onboarding email when the sign-in finishes this registration', async () => {
         mockRouteParams = {
             email: 'user@example.com',
             finishesRegistration: true,
@@ -247,7 +250,10 @@ describe('useCardSignInScreen', () => {
         })
 
         expect(mockMutateAsync).toHaveBeenCalledWith(
-            expect.objectContaining({ linkConsent: true }),
+            expect.objectContaining({
+                linkConsent: true,
+                onboardingEmail: 'user@example.com',
+            }),
         )
     })
 
