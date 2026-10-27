@@ -37,6 +37,7 @@ import {
 import { OnboardingStep } from '../../models'
 import { useCardStore } from '../../store'
 import { useFinalizeRegistrationMutation } from '../useFinalizeRegistrationMutation'
+import { getLoginPassword } from '../../store/login-password'
 
 const SCOPE: ChainScope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
 
@@ -116,7 +117,7 @@ describe('useFinalizeRegistrationMutation', () => {
         expect(state.onboardingStep).toBe(OnboardingStep.Completed)
         expect(state.cardUserId).toBe('user_1')
         expect(state.consentSetId).toBeNull()
-        expect(state.password).toBeNull()
+        expect(state.hasPassword).toBe(false)
     })
 
     it('records every login against the budget, and none without a password', async () => {
@@ -152,7 +153,7 @@ describe('useFinalizeRegistrationMutation', () => {
         await expect(finalize()).resolves.toBe('locked')
 
         expect(useCardStore.getState().loginAttempts.isLocked).toBe(true)
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it('waits out a 429 rate limit instead of reading it as a lock', async () => {
@@ -161,7 +162,7 @@ describe('useFinalizeRegistrationMutation', () => {
         await expect(finalize()).resolves.toBe('not-ready')
 
         expect(useCardStore.getState().loginAttempts.isLocked).toBe(false)
-        expect(useCardStore.getState().password).toBe('Correct-Horse-1234')
+        expect(getLoginPassword()).toBe('Correct-Horse-1234')
     })
 
     it('keeps the consent stash when the link fails, without failing the finalize', async () => {
@@ -192,7 +193,7 @@ describe('useFinalizeRegistrationMutation', () => {
         await expect(finalize()).resolves.toBe('otp-required')
 
         expect(setCardSession).not.toHaveBeenCalled()
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it('asks for a sign-in when the credentials are refused', async () => {
@@ -203,7 +204,7 @@ describe('useFinalizeRegistrationMutation', () => {
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Verification,
         )
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it("reads Baanx's 400 that only lacks the 2FA code as otp-required", async () => {
@@ -223,7 +224,7 @@ describe('useFinalizeRegistrationMutation', () => {
 
         await expect(finalize()).resolves.toBe('not-ready')
 
-        expect(useCardStore.getState().password).toBe('Correct-Horse-1234')
+        expect(getLoginPassword()).toBe('Correct-Horse-1234')
     })
 
     it('waits when the login names a phase but no token yet', async () => {
@@ -236,7 +237,7 @@ describe('useFinalizeRegistrationMutation', () => {
         await expect(finalize()).resolves.toBe('not-ready')
 
         expect(setCardSession).not.toHaveBeenCalled()
-        expect(useCardStore.getState().password).toBe('Correct-Horse-1234')
+        expect(getLoginPassword()).toBe('Correct-Horse-1234')
     })
 
     it('asks for a sign-in when the login answers without a token or phase', async () => {
@@ -258,6 +259,8 @@ describe('useFinalizeRegistrationMutation', () => {
                 isAutomatic: true,
             }),
         ).rejects.toThrow('keystore')
-        await waitFor(() => expect(useCardStore.getState().password).toBeNull())
+        await waitFor(() =>
+            expect(useCardStore.getState().hasPassword).toBe(false),
+        )
     })
 })

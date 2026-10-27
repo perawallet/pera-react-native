@@ -50,6 +50,7 @@ import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutat
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useCardStore } from '../../store'
 import { OnboardingPhase, OnboardingStep } from '../../models'
+import { getLoginPassword } from '../../store/login-password'
 
 const SCOPES: ChainScope[] = [
     { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
@@ -143,7 +144,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
         // Held in memory for the login that creates the session after KYC.
-        expect(useCardStore.getState().password).toBe('pw')
+        expect(getLoginPassword()).toBe('pw')
         // email/verify only stores the onboarding id — it doesn't advance the
         // step. The phone/send and phone/verify calls that follow move it on.
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -447,7 +448,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         })
         expect(useCardStore.getState().consentSetId).toBeNull()
         expect(useCardStore.getState().cardUserId).toBe('user_1')
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it('useSubmitConsentMutation forwards the payload, stashes the consentSetId, and does not advance the step', async () => {

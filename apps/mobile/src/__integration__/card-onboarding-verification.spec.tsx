@@ -212,7 +212,7 @@ describe('Flow: Card onboarding — identity verification', () => {
         const state = useCardStore.getState()
         expect(state.onboardingStep).toBe(OnboardingStep.Completed)
         expect(state.cardUserId).toBe('user_1')
-        expect(state.password).toBeNull()
+        expect(state.hasPassword).toBe(false)
     })
 
     it('Given the post-KYC login answers that the account is locked, then the checklist says so and never logs in again', async () => {
@@ -242,7 +242,7 @@ describe('Flow: Card onboarding — identity verification', () => {
             screen.queryByTestId('card-onboarding-status-documents-try-again'),
         ).toBeNull()
         expect(loginSpy).toHaveBeenCalledTimes(1)
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it('Given the post-KYC login finds the account not created yet, then the checklist says it is being set up and offers one retry per tap', async () => {

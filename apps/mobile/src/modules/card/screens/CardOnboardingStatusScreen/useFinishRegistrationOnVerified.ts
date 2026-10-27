@@ -92,7 +92,7 @@ export const useFinishRegistrationOnVerified = (
     const { infoToast } = useToast()
     const isFocused = useIsFocused()
     const loginAttempts = useCardStore(state => state.loginAttempts)
-    const hasPassword = useCardStore(state => state.password !== null)
+    const hasPassword = useCardStore(state => state.hasPassword)
     const { mutateAsync: finalize, isPending } =
         useFinalizeRegistrationMutation(scope)
     // Re-renders when a time-based rule (spacing, slow copy) changes.

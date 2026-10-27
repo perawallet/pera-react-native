@@ -23,10 +23,10 @@ describe('useClearPasswordOnExit', () => {
             .recordLoginAttempt({ isAutomatic: true, at: 1000 })
         const { unmount } = renderHook(() => useClearPasswordOnExit())
 
-        expect(useCardStore.getState().password).toBe('Correct-Horse-1234')
+        expect(useCardStore.getState().hasPassword).toBe(true)
 
         unmount()
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
         expect(useCardStore.getState().loginAttempts.lastAt).toBeNull()
     })
 })

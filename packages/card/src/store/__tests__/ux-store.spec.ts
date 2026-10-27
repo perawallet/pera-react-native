@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { CardStatus, FundingType, OnboardingStep } from '../../models'
+import { getLoginPassword } from '../login-password'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -110,7 +111,7 @@ describe('useCardStore', () => {
             result.current.setPassword('Correct-Horse-1234')
         })
 
-        expect(result.current.password).toBe('Correct-Horse-1234')
+        expect(getLoginPassword()).toBe('Correct-Horse-1234')
         const persisted = (
             useCardStore as unknown as {
                 persist: {
@@ -125,7 +126,7 @@ describe('useCardStore', () => {
         expect(persisted).not.toHaveProperty('password')
 
         act(() => result.current.resetOnboardingProgress())
-        expect(result.current.password).toBeNull()
+        expect(result.current.hasPassword).toBe(false)
     })
 
     test('the login budget counts attempts, locks, and clears with the password', async () => {
@@ -158,7 +159,7 @@ describe('useCardStore', () => {
 
         act(() => result.current.markLoginLocked())
         expect(result.current.loginAttempts.isLocked).toBe(true)
-        expect(result.current.password).toBeNull()
+        expect(result.current.hasPassword).toBe(false)
 
         act(() => result.current.clearLoginSecrets())
         expect(result.current.loginAttempts).toEqual({

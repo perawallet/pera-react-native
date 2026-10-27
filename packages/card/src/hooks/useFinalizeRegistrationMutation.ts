@@ -22,6 +22,7 @@ import {
 } from '../api/errors'
 import type { LoginResult } from '../models'
 import { useCardStore } from '../store'
+import { getLoginPassword } from '../store/login-password'
 import { finalizeCardRegistration } from './finalizeCardRegistration'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -89,8 +90,9 @@ export const useFinalizeRegistrationMutation = (
         FinalizeRegistrationParams
     >({
         mutationFn: async ({ email, isAutomatic }) => {
-            const { password, recordLoginAttempt } = useCardStore.getState()
+            const password = getLoginPassword()
             if (password === null) return 'password-required'
+            const { recordLoginAttempt } = useCardStore.getState()
             recordLoginAttempt({ isAutomatic, at: Date.now() })
 
             let login: LoginResult

@@ -45,7 +45,7 @@ describe('useCardLogout', () => {
         await result.current.logout()
 
         expect(clearCardSession).toHaveBeenCalledTimes(1)
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
         expect(invalidateSpy).toHaveBeenCalledWith(
             expect.objectContaining({ predicate: expect.any(Function) }),
         )

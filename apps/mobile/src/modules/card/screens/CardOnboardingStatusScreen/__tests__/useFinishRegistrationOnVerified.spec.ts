@@ -237,7 +237,7 @@ describe('useFinishRegistrationOnVerified', () => {
 
         expect(mockFinalize).toHaveBeenCalledTimes(1)
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(useCardStore.getState().password).toBeNull()
+        expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
     it('says the account is being set up, then that it is taking longer than usual after ten minutes', async () => {

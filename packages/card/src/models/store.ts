@@ -34,14 +34,14 @@ export type CardUxState = BaseStoreState & {
     /** Transient OTP — memory only, excluded from `partialize`. */
     verificationCode: Nullable<string>
     /**
-     * The password from email/verify or a mid-onboarding sign-in, held so the
-     * post-KYC login can create the session without asking again. Memory only,
-     * excluded from `partialize`. Cleared once that login settles, on logout,
-     * on a fresh sign-up and when the onboarding navigator unmounts; a killed
-     * app falls back to the sign-in screen.
+     * A password from email/verify or a mid-onboarding sign-in is held, outside
+     * the store, so the post-KYC login can create the session without asking
+     * again. Memory only. Cleared once that login settles, on logout, on a
+     * fresh sign-up and when the onboarding navigator unmounts; a killed app
+     * falls back to the sign-in screen.
      */
-    password: Nullable<string>
-    /** Budget for the logins that use {@link password}; same lifetime. */
+    hasPassword: boolean
+    /** Budget for the logins that use that password; same lifetime. */
     loginAttempts: LoginAttempts
     /**
      * Drives the inline "code invalid" error. Transient — never persisted,

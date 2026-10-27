@@ -27,18 +27,19 @@ import {
     OnboardingStep,
     type CardUxState,
 } from '../models'
+import { setLoginPassword } from './login-password'
 
 const STORE_NAME = 'card-store'
 
 // Client-only UX state. Server truth (card status, transactions, user) lives
-// in React Query; PAN/CVV/PIN/tokens never enter this store. The onboarding
-// password does, memory only, for the post-KYC login (see `partialize`).
+// in React Query; secrets (PAN/CVV/PIN/tokens, the onboarding password) never
+// enter this store. It only mirrors whether `login-password` holds a password.
 const initialState = {
     onboardingStep: OnboardingStep.EmailSend,
     email: null,
     countryIso: null,
     verificationCode: null,
-    password: null,
+    hasPassword: false,
     loginAttempts: INITIAL_LOGIN_ATTEMPTS,
     codeVerificationError: null,
     phoneCountryCode: null,
@@ -112,7 +113,10 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
-            setPassword: password => set({ password }),
+            setPassword: password => {
+                setLoginPassword(password)
+                set({ hasPassword: password !== null })
+            },
             recordLoginAttempt: ({ isAutomatic, at }) =>
                 set(state => ({
                     loginAttempts: {
@@ -124,13 +128,20 @@ export const useCardStore: UseBoundStore<
                         lastAt: at,
                     },
                 })),
-            markLoginLocked: () =>
+            markLoginLocked: () => {
+                setLoginPassword(null)
                 set(state => ({
-                    password: null,
+                    hasPassword: false,
                     loginAttempts: { ...state.loginAttempts, isLocked: true },
-                })),
-            clearLoginSecrets: () =>
-                set({ password: null, loginAttempts: INITIAL_LOGIN_ATTEMPTS }),
+                }))
+            },
+            clearLoginSecrets: () => {
+                setLoginPassword(null)
+                set({
+                    hasPassword: false,
+                    loginAttempts: INITIAL_LOGIN_ATTEMPTS,
+                })
+            },
             setCodeVerificationError: target =>
                 set({ codeVerificationError: target }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
@@ -190,13 +201,14 @@ export const useCardStore: UseBoundStore<
                 }),
             // Reset only the onboarding-flow fields (so a fresh sign-up
             // re-locks the setup checklist); card-snapshot/filters stay intact.
-            resetOnboardingProgress: () =>
+            resetOnboardingProgress: () => {
+                setLoginPassword(null)
                 set({
                     onboardingStep: initialState.onboardingStep,
                     email: initialState.email,
                     countryIso: initialState.countryIso,
                     verificationCode: initialState.verificationCode,
-                    password: initialState.password,
+                    hasPassword: initialState.hasPassword,
                     loginAttempts: initialState.loginAttempts,
                     codeVerificationError: initialState.codeVerificationError,
                     phoneCountryCode: initialState.phoneCountryCode,
@@ -209,15 +221,19 @@ export const useCardStore: UseBoundStore<
                     connectedFundingSourceAddress:
                         initialState.connectedFundingSourceAddress,
                     selectedFundingType: initialState.selectedFundingType,
-                }),
-            resetState: () => set(initialState),
+                })
+            },
+            resetState: () => {
+                setLoginPassword(null)
+                set(initialState)
+            },
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
             version: 1,
             migrate: migrateCardUxState,
-            // `verificationCode`, `password` and `loginAttempts` are
+            // `verificationCode`, `hasPassword` and `loginAttempts` are
             // intentionally omitted: secrets and their budget never touch disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
             // omitted: KYC PII must not sit in unencrypted MMKV. The trade-off
