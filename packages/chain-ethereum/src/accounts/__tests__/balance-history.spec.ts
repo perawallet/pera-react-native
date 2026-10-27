@@ -34,6 +34,7 @@ import {
     type GridPoint,
 } from '../balance-history'
 import { peraEvmHandlers } from '../msw-handlers'
+import { nativeWhitelistItem } from '../../assets/api/msw-handlers'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { TEST_PERA_URL, testChainContext } from '../../__tests__/context'
 
@@ -76,6 +77,7 @@ const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const ETH_ID = ETHEREUM.nativeAsset.assetId
 const ETH = 'eip155:1/slip44:60'
 const USDC_CAIP19 = `eip155:1/erc20:${USDC.toLowerCase()}`
+const DAI_CAIP19 = 'eip155:1/erc20:0x6b175474e89094c44da98b954eedeac495271d0f'
 const NOW = Date.parse('2026-10-21T14:30:00Z')
 const SERVICES = ['assets', 'prices']
 
@@ -372,6 +374,43 @@ describe('the adapter methods', () => {
             ['1001', '0.5005'],
             ['2002', '1.001'],
         ])
+    })
+
+    it('values a token held only in the past with no local row by its backend decimals', async () => {
+        const dai = {
+            ...nativeWhitelistItem(1),
+            asset_id: DAI_CAIP19,
+            type: 'erc20' as const,
+            fraction_decimals: 18,
+        }
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: { 1: [nativeWhitelistItem(1), dai] },
+                assets: { [DAI_CAIP19]: dai },
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T00:00:00Z', {
+                            [ALICE.toLowerCase()]: {
+                                [DAI_CAIP19]: '2000000000000000000',
+                            },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                    [DAI_CAIP19]: [chartPoint('2026-10-21T00:00:00Z', '1')],
+                },
+            }),
+        )
+
+        const points = await ops().fetchPortfolioHistory!(
+            [ALICE],
+            'one-month',
+            SCOPE,
+        )
+
+        expect(points.map(p => p.usdValue.toFixed())).toEqual(['2', '0'])
     })
 
     it('answers no points on a chain the backend serves no balance history for', async () => {

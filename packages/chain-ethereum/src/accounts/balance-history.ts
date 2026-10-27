@@ -42,7 +42,9 @@ import {
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import {
+    ASSETS_MAX_IDS,
     ASSETS_SERVICE,
+    fetchAssetItems,
     fetchPriceChart,
     fetchWhitelist,
     PRICES_SERVICE,
@@ -336,6 +338,17 @@ export const createEthereumBalanceHistoryOps = (
             })) {
                 decimals.set(asset.assetId, asset.decimals)
             }
+        }
+        // A token held only in the past may have no local row (sold before
+        // import, fresh install); dropping it would read the history low.
+        const unknown = tokenIds.filter(id => !decimals.has(id))
+        for (const batch of partition(unknown, ASSETS_MAX_IDS)) {
+            const items = await fetchAssetItems(scope, chain, batch)
+            items.forEach(({ fraction_decimals }, index) => {
+                if (fraction_decimals !== null) {
+                    decimals.set(batch[index]!, fraction_decimals)
+                }
+            })
         }
         const priced = await Promise.all(
             [...assetIdByCaip19].map(async ([caip19, assetId]) => {
