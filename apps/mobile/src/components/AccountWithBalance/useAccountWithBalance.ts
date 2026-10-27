@@ -32,7 +32,11 @@ import {
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import type {
+    Maybe,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
@@ -111,7 +115,7 @@ export const useAccountWithBalance = (
         if (values.some(value => !value || value.isPending)) {
             return { kind: 'fiat', value: undefined }
         }
-        const usdTotal = values.reduce<Maybe<Decimal>>(
+        const usdTotal = values.reduce<Nullable<Decimal>>(
             (total, value) =>
                 total === null || !value || value.fiatValue === null
                     ? null
