@@ -71,7 +71,10 @@ const viewWith = (call: EvmStandardCall): EthereumTransactionView => ({
     call,
 })
 
-const approve = (value: bigint, spender = SPENDER): EvmStandardCall => ({
+const approve = (
+    value: bigint,
+    spender: `0x${string}` = SPENDER,
+): EvmStandardCall => ({
     kind: 'approve',
     contract: TOKEN,
     spender,
