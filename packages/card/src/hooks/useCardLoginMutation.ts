@@ -147,9 +147,9 @@ export const useCardLoginMutation = (
                             userId: result.userId,
                             scope,
                         })
-                    } else if (linkConsent) {
+                    } else if (linkConsent && store.consentSetId !== null) {
                         logger.warn(
-                            'Card consent stash kept: signed in as another user',
+                            'Card consent stash kept: the signed-in user is not confirmed as this onboarding',
                         )
                     }
                 }
