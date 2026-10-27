@@ -86,6 +86,20 @@ describe('AccountDisplay', () => {
         expect(screen.queryByTestId(SECONDARY_ROW)).toBeNull()
     })
 
+    it('renders no second line for a badges slot that resolved to nothing', () => {
+        mockDisplayResult.secondaryText = undefined
+        mockDisplayResult.renderSecondary = false
+
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                badges={null}
+            />,
+        )
+
+        expect(screen.queryByTestId(SECONDARY_ROW)).toBeNull()
+    })
+
     it('ignores badges on the Pera Card presentation', () => {
         render(
             <AccountDisplay

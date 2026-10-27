@@ -171,7 +171,7 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {(renderSecondary || badges !== undefined) && (
+                {(renderSecondary || !!badges) && (
                     <PWView
                         style={styles.secondaryRow}
                         testID='account_display_secondary_row'
