@@ -3181,6 +3181,15 @@
             "deadline_label": "Fecha límite",
             "never": "Nunca"
         },
+        "collection_approval": {
+            "warning": "Esto permite al operador transferir todos los artículos que tienes en esta colección, incluidos los que recibas después, hasta que lo revoques.",
+            "operator_label": "Operador",
+            "operator_caption": "Operador: {{address}}",
+            "collection_label": "Colección"
+        },
+        "token_approval": {
+            "revoke_note": "Esto retira el permiso de la dirección para mover este activo."
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguien",
             "description": "Una solicitud de firma de datos es una petición para firmar datos arbitrarios. Los servicios la usan habitualmente para verificar la propiedad de una cuenta y no conlleva ninguna comisión.",
@@ -3308,6 +3317,8 @@
             "asset_freeze": "Congelación de activo",
             "app_call": "Llamada a app",
             "contract_call": "Llamada a contrato",
+            "approval": "Aprobación",
+            "revoke_approval": "Revocar aprobación",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

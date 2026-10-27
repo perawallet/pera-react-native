@@ -3181,6 +3181,15 @@
             "deadline_label": "Date limite",
             "never": "Jamais"
         },
+        "collection_approval": {
+            "warning": "Cela permet à l'opérateur de transférer tous les éléments que vous détenez dans cette collection, y compris ceux que vous recevrez plus tard, jusqu'à ce que vous révoquiez cette autorisation.",
+            "operator_label": "Opérateur",
+            "operator_caption": "Opérateur : {{address}}",
+            "collection_label": "Collection"
+        },
+        "token_approval": {
+            "revoke_note": "Cela retire à l'adresse l'autorisation de déplacer cet actif."
+        },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
             "description": "Une demande de signature de données est une demande de signature de données arbitraires. Elle est couramment utilisée par les services pour vérifier la propriété d’un compte et n’entraîne aucuns frais.",
@@ -3308,6 +3317,8 @@
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
             "contract_call": "Appel de contrat",
+            "approval": "Autorisation",
+            "revoke_approval": "Révoquer l'autorisation",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

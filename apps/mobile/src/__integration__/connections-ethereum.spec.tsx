@@ -78,6 +78,7 @@ import {
     evmTransactionReceipt,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore } from '@perawallet/wallet-core-kms'
+import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import {
     findTransactionBatch,
@@ -568,6 +569,135 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(answerOf(walletKit)).toMatchObject({
                         error: { code: 4001 },
                     })
+                })
+            })
+
+            describe('an unlimited token approval', () => {
+                const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+                const SPENDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+                // approve(SPENDER, 2^256-1)
+                const APPROVE_DATA = `0x095ea7b3${SPENDER.slice(2).toLowerCase().padStart(64, '0')}${'f'.repeat(64)}`
+
+                const reviewApproval = async () => {
+                    await upsertAssets({
+                        items: [
+                            {
+                                ...nativeAssetFor('ethereum'),
+                                assetId: USDC,
+                                name: 'USD Coin',
+                                unitName: 'USDC',
+                                decimals: 6,
+                            },
+                        ],
+                        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    })
+                    const walletKit = await settle()
+                    renderSignReview()
+                    sendTransaction(walletKit, {
+                        from: CHECKSUMMED_ETH_ADDRESS,
+                        to: USDC,
+                        value: '0x0',
+                        data: APPROVE_DATA,
+                    })
+                    const request = await queued()
+                    await waitFor(
+                        () => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'signing_transaction_review',
+                                ),
+                            ).not.toHaveLength(0)
+                        },
+                        { timeout: 5000 },
+                    )
+                    return { walletKit, request }
+                }
+
+                describe('with contractDecoding on', () => {
+                    beforeEach(() => {
+                        // One override per chain, so dappConnect is restated.
+                        setCapabilityOverrides(
+                            { dappConnect: true, contractDecoding: true },
+                            'ethereum',
+                        )
+                    })
+
+                    it('Given a dApp approves a spender for unlimited USDC, when it is reviewed, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                        const { walletKit, request } = await reviewApproval()
+
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'message-signing-spend-approval-warning',
+                                ),
+                            ).not.toHaveLength(0)
+                        })
+                        expect(
+                            screen.getAllByText(
+                                'transactions.list_item.approval',
+                            ),
+                        ).not.toHaveLength(0)
+                        expect(
+                            screen.getAllByText(
+                                'signing.spend_approval.unlimited',
+                            ),
+                        ).not.toHaveLength(0)
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByText('USDC'),
+                            ).not.toHaveLength(0)
+                        })
+                        expect(
+                            screen.queryByTestId(
+                                'ethereum_contract_call_warning',
+                            ),
+                        ).toBeNull()
+
+                        fireEvent.click(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-warning',
+                            )[0],
+                        )
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'message-signing-spend-approval-row-unlimited',
+                                ),
+                            ).not.toHaveLength(0)
+                        })
+
+                        await act(async () => {
+                            await request.approve([], { txIds: [HASH] })
+                        })
+                        await waitFor(() => {
+                            expect(answerOf(walletKit)).toMatchObject({
+                                id: 7,
+                                result: HASH,
+                            })
+                        })
+                    })
+                })
+
+                it('Given contractDecoding is off, when the same approval is reviewed, then it is still an unrecognised contract call', async () => {
+                    await reviewApproval()
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'ethereum_contract_call_warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'transactions.list_item.contract_call',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-warning',
+                        ),
+                    ).toBeNull()
                 })
             })
 
