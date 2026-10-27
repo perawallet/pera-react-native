@@ -35,6 +35,7 @@ export const withMidReadBlock = async (
     const server = createServer((req, res) => {
         const chunks: Buffer[] = []
         req.on('data', (chunk: Buffer) => chunks.push(chunk))
+        req.on('error', () => res.destroy())
         req.on('end', () => {
             void (async () => {
                 try {
@@ -53,10 +54,12 @@ export const withMidReadBlock = async (
                         hasFired = true
                         await onAfterBlockNumber()
                     }
-                    res.setHeader('content-type', 'application/json')
+                    res.writeHead(upstream.status, {
+                        'content-type': 'application/json',
+                    })
                     res.end(answer)
                 } catch (error) {
-                    res.statusCode = 502
+                    res.writeHead(502, { 'content-type': 'text/plain' })
                     res.end(String(error))
                 }
             })()

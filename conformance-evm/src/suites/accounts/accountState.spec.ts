@@ -195,6 +195,12 @@ describe('evm account state', () => {
             const viaProxy: ChainContext = {
                 ...withAssetsService(env),
                 getEndpoints: () => ({ [env.scope.networkId]: proxy.url }),
+                // The callback runs while the app's block-number read is held open.
+                timeouts: {
+                    ...env.ctx.timeouts,
+                    readMs: 60_000,
+                    submitMs: 60_000,
+                },
             }
             state = await createEthereumAccountStateOps(
                 viaProxy,
