@@ -12,6 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountWithBalance } from '../AccountWithBalance'
 
@@ -22,6 +23,7 @@ const mockHookResult = {
         | { isAvailable: true; nativeAsset: { assetId: string } }
         | { isAvailable: false },
     nativeValue: undefined,
+    preferredValue: undefined as Decimal | null | undefined,
     isMultiChain: false,
     isTestTier: false,
 }
@@ -56,6 +58,8 @@ describe('AccountWithBalance', () => {
     beforeEach(() => {
         mockHookResult.isTestTier = false
         mockHookResult.isMultiChain = false
+        mockHookResult.preferredValue = undefined
+        mockPreferredAmount.mockClear()
         mockHookResult.availability = {
             isAvailable: true,
             nativeAsset: { assetId: '0' },
@@ -119,5 +123,26 @@ describe('AccountWithBalance', () => {
                 sourceAssetId: '0',
             }),
         )
+    })
+
+    it("shows a multi-chain row's own fiat value rather than re-pricing its native balance", () => {
+        mockHookResult.isMultiChain = true
+        mockHookResult.preferredValue = null
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        const props = mockPreferredAmount.mock.calls.at(-1)?.[0]
+        expect(props).toMatchObject({ value: null })
+        expect(props).not.toHaveProperty('sourceAmount')
+    })
+
+    it('converts the native balance on a single-chain row', () => {
+        mockHookResult.preferredValue = new Decimal(5)
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        const props = mockPreferredAmount.mock.calls.at(-1)?.[0]
+        expect(props).toHaveProperty('sourceAmount')
+        expect(props).not.toHaveProperty('value')
     })
 })

@@ -42,6 +42,7 @@ export const AccountWithBalance = ({
         chainName,
         availability,
         nativeValue,
+        preferredValue,
         isMultiChain,
         isTestTier,
     } = useAccountWithBalance(account, chainId)
@@ -79,17 +80,29 @@ export const AccountWithBalance = ({
                         variant='bodyLarge'
                         weight={500}
                     />
-                    {/* Converts on the account's own chain, which keeps the
-                        ALGO-preferred fallback for an ALGO balance. */}
-                    <PreferredAmount
-                        sourceAssetId={availability.nativeAsset.assetId}
-                        sourceAmount={nativeValue}
-                        scope={scope}
-                        density='compact'
-                        variant='footnoteMedium'
-                        weight={400}
-                        style={styles.fiatBalance}
-                    />
+                    {isMultiChain ? (
+                        // Re-pricing the native balance would read a missing
+                        // price as $0; the account's own fiat value keeps it unknown.
+                        <PreferredAmount
+                            value={preferredValue}
+                            density='compact'
+                            variant='footnoteMedium'
+                            weight={400}
+                            style={styles.fiatBalance}
+                        />
+                    ) : (
+                        // Converts on the account's own chain, which keeps the
+                        // ALGO-preferred fallback for an ALGO balance.
+                        <PreferredAmount
+                            sourceAssetId={availability.nativeAsset.assetId}
+                            sourceAmount={nativeValue}
+                            scope={scope}
+                            density='compact'
+                            variant='footnoteMedium'
+                            weight={400}
+                            style={styles.fiatBalance}
+                        />
+                    )}
                 </PWView>
             )}
         </PWView>
