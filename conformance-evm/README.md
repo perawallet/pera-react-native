@@ -15,8 +15,8 @@ every call the suite makes reaches a node.
 
 ## Why mocks cannot prove this
 
-Every EVM unit spec in the repo talks to MSW, which answers what the test author expects. These
-bug classes are invisible to that:
+A unit spec that reaches a node talks to MSW or a hand-written fake, which answers what the test
+author expects. These bug classes are invisible to that:
 
 - **Chain-id binding.** A transaction signed for one chain id must be refused by every other
   chain's node, and the reviewer must refuse a chain id other than the scope's. Only a node with
@@ -128,7 +128,7 @@ with a trailing `n`, so `300000n` against `300000` means a `number` leaked in wh
 
 ## Pinned behaviour
 
-These are app behaviours the suite pins against a real node, each a bug class a mock let through:
+These are app behaviours the suite pins against a real node, each a bug class a mock cannot catch:
 
 - An imported raw private key resolves a signing scheme and signs (`suites/derivation/rawKey.spec.ts`).
 - The planner refuses to plan or assemble a payload missing a nonce, a gas limit or a max fee, and
