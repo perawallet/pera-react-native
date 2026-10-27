@@ -79,8 +79,10 @@ Open Verification Quiz
     Wait Until Page Contains Element    ${BACKUP_VERIFICATION_NEXT}    timeout=20s
 
 Answer Quiz Correctly
-    [Documentation]    Each item reads "Select word #N" and each option's ID carries its word, so the
-    ...                right option is addressable once N is known. Logging is off throughout.
+    [Documentation]    Each item reads "Select word #N", so the word to pick is known once N is. An
+    ...                option's ID carries its POSITION rather than its word - deliberately, since a
+    ...                word in a testID becomes a resource-id on Android - so the option is matched
+    ...                on what it displays. Logging is off throughout.
     @{items}=    Get WebElements    ${QUIZ_ITEM_ANY}
     ${count}=    Get Length    ${items}
     Should Be True    ${count} > 0    msg=The quiz shows no items, so nothing is verified.
@@ -91,9 +93,10 @@ Answer Quiz Correctly
             ${digits}=    Get Regexp Matches    ${label}    \\d+
             Should Not Be Empty    ${digits}    msg=A quiz label no longer carries the word position.
             ${word}=    Get From List    ${PASSPHRASE}    ${{int($digits[0]) - 1}}
+            ${prefix}=    Set Variable    backup_verification_item_${i}_option_
             # The locator holds a seed word, and a failed tap would print it in the failure message.
             ${tapped}=    Run Keyword And Return Status
-            ...    Tap    xpath=//*[@resource-id='backup_verification_item_${i}_option_${word}' or @name='backup_verification_item_${i}_option_${word}' or @content-desc='backup_verification_item_${i}_option_${word}']
+            ...    Tap    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
             IF    not ${tapped}    Fail    Could not pick the answer for quiz item ${i}.
         END
     FINALLY

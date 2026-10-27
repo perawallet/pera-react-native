@@ -264,46 +264,50 @@ Quiz Option Locator
     ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
     RETURN    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or @resource-id='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
 
-Quiz Option Words
-    [Documentation]    The words item ${index} is offering, read off the options themselves.
-    [Arguments]    ${index}
-    ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
-    # The option is a touchable whose word sits in a child text node, so reading the option
-    # itself gives back an empty string on Android - which then went on as the "wrong word".
-    @{elements}=    Get WebElements
-    ...    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')]//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
-    @{words}=    Create List
-    FOR    ${element}    IN    @{elements}
-        ${text}=    Get Text    ${element}
-        ${word}=    Set Variable    ${{ $text.strip() }}
-        ${known}=    Evaluate    $word in $words
-        IF    $word and not ${known}    Append To List    ${words}    ${word}
-    END
-    RETURN    @{words}
+Quiz Option At
+    [Documentation]    The option sitting at ${position} under item ${index}, whatever it shows.
+    [Arguments]    ${index}    ${position}
+    ${id}=    Set Variable    cloud_backup_verify_item_${index}_option_${position}
+    RETURN    xpath=//*[@resource-id='${id}' or @name='${id}']
 
-Distractor For
-    [Documentation]    An option the app offers for the item that is not the correct word.
+Distractor Position For
+    [Documentation]    Where item ${index} is offering something other than the word it asked for.
     ...
-    ...                The options render a moment after the item scrolls into view, and reading
-    ...                them in that moment returns only the one word that is already there. "The
-    ...                quiz offered no alternative" is then a statement about our timing, not about
-    ...                the app, so keep asking for a few seconds before believing it.
+    ...                An option's testID carries its position and the word is only on the display,
+    ...                so the word has to be matched, not read. Reading it back does not work: on
+    ...                Android the option itself returns empty, and on iOS only some of the options
+    ...                answer at all - which arrived as "the quiz offers no alternative", a claim
+    ...                about what we could see rather than about what the app was showing.
+    ...
+    ...                The options draw a moment after the item scrolls in, so this keeps asking.
     [Arguments]    ${index}    ${correct}
-    @{options}=    Wait Until Keyword Succeeds    5s    0.5s
-    ...    Quiz Options Other Than    ${index}    ${correct}
-    RETURN    ${options}[0]
+    ${position}=    Wait Until Keyword Succeeds    15s    1s
+    ...    Position Not Showing The Asked Word    ${index}    ${correct}
+    RETURN    ${position}
 
-Quiz Options Other Than
+Position Not Showing The Asked Word
     [Arguments]    ${index}    ${correct}
-    @{options}=    Quiz Option Words    ${index}
-    Remove Values From List    ${options}    ${correct}
-    Should Not Be Empty    ${options}
-    ...    msg=Quiz item ${index} offers no word other than the correct "${correct}", so answering it proves nothing.
-    RETURN    @{options}
+    ${prefix}=    Set Variable    cloud_backup_verify_item_${index}_option_
+    @{options}=    Get WebElements
+    ...    xpath=//*[starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')]
+    ${count}=    Get Length    ${options}
+    # Every position looks wrong if the word cannot be matched at all, and this would then hand back
+    # the correct answer - which the case can only report as the app having accepted a wrong one.
+    ${asked}=    Quiz Option Locator    ${index}    ${correct}
+    Page Should Contain Element    ${asked}
+    ...    message=No option under item ${index} carries the word the quiz asked for, so nothing here can be called wrong.
+    FOR    ${position}    IN RANGE    ${count}
+        ${id}=    Set Variable    ${prefix}${position}
+        ${other}=    Run Keyword And Return Status    Page Should Contain Element
+        ...    xpath=//*[(@resource-id='${id}' or @name='${id}') and not(@text='${correct}' or @label='${correct}' or @name='${correct}' or .//*[@text='${correct}' or @label='${correct}' or @name='${correct}'])]
+        IF    ${other}    RETURN    ${position}
+    END
+    Fail    Item ${index} offers nothing but the word it asked for, so answering it wrong proves nothing.
 
 Answer Verify Quiz
     [Documentation]    Answers every item from the passphrase the setup screen showed. With
-    ...                wrong_index, that one item gets a distractor instead; returns the word used.
+    ...                wrong_index, that one item gets a distractor instead; returns which option
+    ...                that was, by position, so a failure can name it without naming a seed word.
     ...                Each item is answered once: selection is a style only, so a replaced answer
     ...                cannot be read back to confirm it took.
     [Arguments]    ${words}    ${wrong_index}=${-1}
@@ -314,11 +318,13 @@ Answer Verify Quiz
         ${n}=    Asked Word Position    ${i}
         ${word}=    Get From List    ${words}    ${{int($n) - 1}}
         IF    ${i} == ${wrong_index}
-            ${word}=    Distractor For    ${i}    ${word}
-            VAR    ${wrong}    ${word}
+            ${position}=    Distractor Position For    ${i}    ${word}
+            ${option}=    Quiz Option At    ${i}    ${position}
+            VAR    ${wrong}    item ${i}'s option ${position}
+        ELSE
+            ${option}=    Quiz Option Locator    ${i}    ${word}
         END
         # The last item's options sit just above the sticky footer, below where Swipe Until In View settles.
-        ${option}=    Quiz Option Locator    ${i}    ${word}
         Scroll Until Tappable    ${option}
         Tap    ${option}
     END
