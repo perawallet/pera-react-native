@@ -30,6 +30,7 @@ import {
 } from '../../harness/contracts'
 import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET, anvilRpc } from '../../harness/evmnet'
+import { OP_STACK_ORACLE_READINGS } from '../../vectors/opStackPredeploys'
 import {
     buildTransfer,
     expectEvmConformant,
@@ -38,8 +39,11 @@ import {
 
 const RECIPIENT: Address = '0x000000000000000000000000000000000000dEaD'
 
-const oracleFlag = async (sig: string): Promise<string> =>
-    castCall({ chain: 'base', to: OP_STACK_GAS_PRICE_ORACLE, sig })
+const readOracle = async (
+    sig: string,
+    args: readonly string[] = [],
+): Promise<string> =>
+    castCall({ chain: 'base', to: OP_STACK_GAS_PRICE_ORACLE, sig, args })
 
 /**
  * Proves Base's fee read prices the OP-stack L1 data and operator fees from
@@ -49,17 +53,33 @@ const oracleFlag = async (sig: string): Promise<string> =>
  * transaction the oracle prices like the node does.
  */
 describe('evm op-stack l1 fee (base)', () => {
-    it('serves the captured oracle with every fee upgrade active', async () => {
-        // Node acceptance: the installed predeploys answer as Base Sepolia's do.
+    it("answers exactly as Base Sepolia's oracle did at the captured block", async () => {
         for (const flag of [
             'isEcotone()(bool)',
             'isFjord()(bool)',
             'isIsthmus()(bool)',
         ]) {
-            expect(await oracleFlag(flag)).toBe('true')
+            expect(await readOracle(flag)).toBe('true')
         }
-        expect(BigInt(await oracleFlag('l1BaseFee()'))).toBeGreaterThan(0n)
-        expect(BigInt(await oracleFlag('blobBaseFee()'))).toBeGreaterThan(0n)
+        const amount = async (sig: string, args?: readonly string[]) =>
+            BigInt(await readOracle(sig, args))
+
+        // Oracle parity: the live chain's own answers, recorded by the capture.
+        const expected = OP_STACK_ORACLE_READINGS
+        expect(await amount('l1BaseFee()')).toBe(expected.l1BaseFee)
+        expect(await amount('blobBaseFee()')).toBe(expected.blobBaseFee)
+        expect(await amount('baseFeeScalar()')).toBe(expected.baseFeeScalar)
+        expect(await amount('blobBaseFeeScalar()')).toBe(
+            expected.blobBaseFeeScalar,
+        )
+        for (const { data, fee } of expected.l1Fees) {
+            expect(await amount('getL1Fee(bytes)', [data])).toBe(fee)
+        }
+        expect(
+            await amount('getOperatorFee(uint256)', [
+                expected.operatorFee.gasUsed.toString(),
+            ]),
+        ).toBe(expected.operatorFee.fee)
     })
 
     it('estimates the oracle surcharge and the node charges exactly it', async () => {

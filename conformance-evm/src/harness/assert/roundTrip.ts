@@ -223,9 +223,14 @@ export const expectEvmConformant = async ({
         'eth_getTransactionReceipt',
         [hash],
     )
+    const receiptL1Fee = quantity(nodeReceipt.l1Fee)
     const l1Fee =
-        quantity(nodeReceipt.l1Fee) ??
+        receiptL1Fee ??
         (await opStackChargeWithoutReceiptField(env, raw, receipt))
+    const l1FeeSource =
+        receiptL1Fee === undefined && env.chain === 'base'
+            ? ' priced by the GasPriceOracle, which matches the node only below the Fjord 100-byte minimum transaction size; a larger transaction can differ here'
+            : ''
     const value = intent.value ?? 0n
     const credited = sameAddress(intent.to, intent.from) ? value : 0n
     const spent =
@@ -237,7 +242,7 @@ export const expectEvmConformant = async ({
     const expectedAfter = balanceBefore - spent
     if (balanceAfter !== expectedAfter) {
         fail(
-            `sender balance moved by ${balanceBefore - balanceAfter} wei in block ${receipt.blockNumber}, expected ${spent} (value ${value - credited}, gas ${receipt.gasUsed} × ${receipt.effectiveGasPrice}, l1Fee ${l1Fee})`,
+            `sender balance moved by ${balanceBefore - balanceAfter} wei in block ${receipt.blockNumber}, expected ${spent} (value ${value - credited}, gas ${receipt.gasUsed} × ${receipt.effectiveGasPrice}, l1Fee ${l1Fee}${l1FeeSource})`,
             formatFieldDiff({ balanceAfter: expectedAfter }, { balanceAfter }),
         )
     }

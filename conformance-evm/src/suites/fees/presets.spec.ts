@@ -19,10 +19,15 @@ import {
 import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/createEvmClient'
 import { readEvmFeePresets } from '@perawallet/wallet-core-chain-ethereum/transfer/fees'
 
-import { createRawKeyEvmAccount, fundEvmAccount } from '../../harness/accounts'
+import {
+    createRawKeyEvmAccount,
+    fundEvmAccount,
+    nativeBalanceOf,
+} from '../../harness/accounts'
 import {
     ANVIL_DEV_PRIVATE_KEY,
     castAddressFromPrivateKey,
+    castCall,
     castCalldata,
     castMktx,
     castSend,
@@ -266,6 +271,10 @@ describe('evm fee presets', () => {
                 to: recipient.address,
                 value: 1n,
                 data: undefined,
+                effect: async () =>
+                    expect(await nativeBalanceOf(env, recipient.address)).toBe(
+                        1n,
+                    ),
             },
             {
                 assetRef: { chainId: env.chain, assetId: token },
@@ -276,6 +285,17 @@ describe('evm fee presets', () => {
                     recipient.address,
                     (10n ** 18n).toString(),
                 ]),
+                effect: async () =>
+                    expect(
+                        (
+                            await castCall({
+                                chain: env.chain,
+                                to: token,
+                                sig: 'balanceOf(address)(uint256)',
+                                args: [recipient.address],
+                            })
+                        ).split(' ')[0],
+                    ).toBe((10n ** 18n).toString()),
             },
             {
                 assetRef: { chainId: env.chain, assetId: nftAssetId },
@@ -286,6 +306,15 @@ describe('evm fee presets', () => {
                     'safeTransferFrom(address,address,uint256)',
                     [sender.address, recipient.address, tokenId.toString()],
                 ),
+                effect: async () =>
+                    expect(
+                        await castCall({
+                            chain: env.chain,
+                            to: nft,
+                            sig: 'ownerOf(uint256)(address)',
+                            args: [tokenId.toString()],
+                        }),
+                    ).toBe(recipient.address),
             },
         ]
         for (const [nonce, transfer] of transfers.entries()) {
@@ -296,7 +325,9 @@ describe('evm fee presets', () => {
                 amount: transfer.amount,
             })
             const { raw, hash } = await signAndSend(env, sender, unsigned)
-            const receipt = await expectEvmConformant({
+            // Node acceptance: expectEvmConformant requires a successful
+            // receipt, so the unpadded limit sufficed; out of gas would revert.
+            await expectEvmConformant({
                 env,
                 intent: {
                     chainId: EVMNET.ethereum.eip155ChainId,
@@ -311,8 +342,7 @@ describe('evm fee presets', () => {
                 raw,
                 hash,
             })
-            // Node acceptance: the unpadded estimate is enough.
-            expect(receipt.gasUsed).toBeLessThanOrEqual(fees.gas)
+            await transfer.effect()
         }
     })
 })
