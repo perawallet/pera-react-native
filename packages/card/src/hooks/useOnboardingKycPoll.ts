@@ -128,7 +128,12 @@ export const useOnboardingKycPoll = (
             : BACKOFF_POLL_INTERVAL_MS
     }
 
-    const [isRecordGone, setIsRecordGone] = useState(false)
+    // Keyed to the id it was read for: a sign-in can bridge a new onboarding
+    // id onto the mounted checklist, and that record must still be polled.
+    const [goneOnboardingId, setGoneOnboardingId] =
+        useState<Nullable<string>>(null)
+    const isRecordGone =
+        onboardingId !== null && goneOnboardingId === onboardingId
     const [classifiedRecordError, setClassifiedRecordError] =
         useState<unknown>(null)
     const onboardingQuery = useOnboardingDetailsQuery(scope, {
@@ -150,16 +155,19 @@ export const useOnboardingKycPoll = (
     const recordError = onboardingQuery.error
     useEffect(() => {
         if (!recordError) return
+        const errorOnboardingId = onboardingId
         let isCurrent = true
         void getCardApiError(recordError).then(apiError => {
             if (!isCurrent) return
-            if (isOnboardingNotFoundError(apiError)) setIsRecordGone(true)
+            if (isOnboardingNotFoundError(apiError)) {
+                setGoneOnboardingId(errorOnboardingId)
+            }
             setClassifiedRecordError(recordError)
         })
         return () => {
             isCurrent = false
         }
-    }, [recordError])
+    }, [recordError, onboardingId])
     const recordVerificationState =
         onboardingQuery.data?.verificationState ?? null
     useEffect(() => {
@@ -244,13 +252,24 @@ export const useOnboardingKycPoll = (
         }
     }, [dataUpdatedAt, hasReportedBack])
 
-    const restartPolling = useCallback(() => {
+    const resetPollBudget = useCallback(() => {
         pollFailuresRef.current = 0
         unresolvedPollsRef.current = 0
         pollStartedAtRef.current = Date.now()
+        verifiedSinceRef.current = null
         setHasPollTimedOut(false)
+        setGoneOnboardingId(null)
+    }, [])
+
+    const restartPolling = useCallback(() => {
+        resetPollBudget()
         void refetch()
-    }, [refetch])
+    }, [resetPollBudget, refetch])
+
+    // A newly bridged onboarding id gets its own polling budget.
+    useEffect(() => {
+        resetPollBudget()
+    }, [onboardingId, resetPollBudget])
 
     const stableRefetch = useCallback(() => {
         void refetch()

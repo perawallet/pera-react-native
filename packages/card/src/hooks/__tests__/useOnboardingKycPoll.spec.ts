@@ -94,6 +94,7 @@ vi.mock('../useCardUserQuery', () => ({
     },
 }))
 
+let mockOnboardingId = 'mock-onboarding-id'
 let mockVerifiedOnboardingId: string | null = null
 const mockSetVerifiedOnboardingId = vi.fn()
 vi.mock('../../store', () => ({
@@ -106,7 +107,7 @@ vi.mock('../../store', () => ({
         }) => unknown,
     ) =>
         selector({
-            onboardingId: 'mock-onboarding-id',
+            onboardingId: mockOnboardingId,
             verifiedOnboardingId: mockVerifiedOnboardingId,
             setVerifiedOnboardingId: mockSetVerifiedOnboardingId,
             onboardingStep: mockOnboardingStep,
@@ -140,6 +141,7 @@ beforeEach(() => {
     mockPhase = null
     mockQueryError = null
     mockVerifiedOnboardingId = null
+    mockOnboardingId = 'mock-onboarding-id'
     mockIsAuthenticated = false
     mockUserVerificationState = undefined
     mockUserQueryOptions = undefined
@@ -277,6 +279,44 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(result.current.verificationState).toBeNull()
         expect(result.current.hasAccountSignal).toBe(false)
         expect(result.current.isLoading).toBe(false)
+    })
+
+    it('polls the new record once a sign-in bridges a new onboarding id', async () => {
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+
+        mockOnboardingId = 'user-2'
+        mockQueryError = null
+        mockVerificationState = 'PENDING'
+        rerender()
+
+        expect(result.current.isRecordMissing).toBe(false)
+        expect(result.current.verificationState).toBe('PENDING')
+        expect(scheduledInterval()).not.toBe(false)
+    })
+
+    it('forgets a gone record when polling is restarted', async () => {
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+
+        act(() => {
+            result.current.restartPolling()
+        })
+
+        expect(result.current.isRecordMissing).toBe(false)
+        expect(mockRefetch).toHaveBeenCalled()
     })
 
     it('remembers the record it reads as verified', () => {

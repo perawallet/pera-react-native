@@ -11,7 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Linking } from 'react-native'
 import {
@@ -377,6 +377,52 @@ describe('Flow: Card onboarding — identity verification', () => {
                 await screen.findByTestId('card-sign-in-email-input'),
             ).toBeTruthy()
             expect(loginSpy).not.toHaveBeenCalled()
+        })
+
+        it('when a sign-in bridges a new onboarding id, then the same checklist polls the new record', async () => {
+            // The old id is gone; the one the sign-in bridges is under review.
+            server.use(
+                http.get('*/v1/auth/register', ({ request }) => {
+                    const onboardingId = new URL(request.url).searchParams.get(
+                        'onboardingId',
+                    )
+                    return onboardingId === 'user-2'
+                        ? HttpResponse.json(
+                              {
+                                  id: 'user-2',
+                                  verificationState: 'PENDING',
+                                  phase: 'MAILING_ADDRESS',
+                              },
+                              { status: 200 },
+                          )
+                        : HttpResponse.json(
+                              { message: 'Invalid onboarding ID' },
+                              { status: 404 },
+                          )
+                }),
+            )
+            renderStatusWithSignIn()
+            expect(
+                await screen.findByText(
+                    'peraCard.setup_status.documents_record_missing_body',
+                ),
+            ).toBeTruthy()
+
+            // What a mid-onboarding sign-in does before it returns here.
+            act(() => {
+                useCardStore.getState().setOnboardingId('user-2')
+            })
+
+            expect(
+                await screen.findByTestId(
+                    'card-onboarding-status-pending-label',
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByText(
+                    'peraCard.setup_status.documents_record_missing_body',
+                ),
+            ).toBeNull()
         })
     })
 
