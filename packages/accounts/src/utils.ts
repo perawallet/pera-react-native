@@ -54,6 +54,25 @@ const isTruncationOfAddress = (name: string, address: string) => {
     )
 }
 
+/**
+ * The account's name is just its own address on `chainId`: full, the chain
+ * codec's truncation, or any `...`/`…` cut of it. That isn't a distinguishing
+ * label, so callers treat the account as unnamed.
+ */
+export const isNamedAfterAddress = (
+    account: WalletAccount,
+    chainId: ChainId,
+): boolean => {
+    const address = chainAccountOf(account, chainId)?.address
+    if (!account.name || !address) return false
+    return (
+        account.name === address ||
+        isTruncationOfAddress(account.name, address) ||
+        (addressCodecs.has(chainId) &&
+            addressCodecs.get(chainId).truncate(address) === account.name)
+    )
+}
+
 /** The account's name, or its address on `chainId` truncated by the chain's codec when it has none. */
 export const getAccountDisplayName = (
     account: Nullable<WalletAccount>,
@@ -62,14 +81,10 @@ export const getAccountDisplayName = (
     if (!account) return 'No Account'
     const address = chainAccountOf(account, chainId)?.address
     if (!address) return account.name || 'No Address Found'
-    // A name that is just the account's own address — full or any truncation of
-    // it — isn't a distinguishing label. Treat it as unnamed so callers render
-    // a single truncated address instead of the address twice.
-    const isAddressName =
-        !!account.name &&
-        (account.name === address ||
-            isTruncationOfAddress(account.name, address))
-    if (account.name && !isAddressName) return account.name
+    // Unnamed renders a single truncated address rather than the address twice.
+    if (account.name && !isNamedAfterAddress(account, chainId)) {
+        return account.name
+    }
     return addressCodecs.has(chainId)
         ? addressCodecs.get(chainId).truncate(address)
         : address

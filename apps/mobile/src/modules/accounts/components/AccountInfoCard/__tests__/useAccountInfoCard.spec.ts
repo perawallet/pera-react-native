@@ -115,7 +115,11 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
         has: () => true,
         get: (chainId: string) => ({
             truncate: (address: string) => `${chainId}:${address}`,
-            normalize: (address: string) => address.toUpperCase(),
+            isValid: (address: string) => !address.startsWith('bad'),
+            normalize: (address: string) => {
+                if (address.startsWith('bad')) throw new Error('bad address')
+                return address.toUpperCase()
+            },
         }),
     },
 }))
@@ -382,6 +386,19 @@ describe('useAccountInfoCard', () => {
             })
         })
 
+        test('copies an address its codec cannot parse as stored, rather than throwing', () => {
+            const malformed = hdSibling('malformed', {
+                ethereum: { address: 'bad-address', keyPairId: 'key-8' },
+            })
+            withHdGroup([hdAccount, malformed])
+
+            const { result } = render()
+
+            expect(result.current.structureRows[1].chains[0].copyValue).toBe(
+                'bad-address',
+            )
+        })
+
         test('falls back to main and sub labels for unnamed accounts', () => {
             const unnamedMain = { ...hdAccount, name: undefined }
             const namedAfterTruncation = hdSibling(
@@ -478,6 +495,18 @@ describe('useAccountInfoCard', () => {
 
             act(() => result.current.handleToggleRow(hdAccount.id))
 
+            expect(result.current.structureRows[0].canExpand).toBe(false)
+            expect(result.current.expandedRowId).toBeUndefined()
+        })
+
+        test('never opens a row with no chain shown', () => {
+            withHdGroup([hdAccount, sibling])
+            mockSwitchedOff = ['algorand', 'ethereum']
+            const { result } = render()
+
+            act(() => result.current.handleToggleRow('hd-sibling'))
+
+            expect(result.current.structureRows[1].canExpand).toBe(false)
             expect(result.current.expandedRowId).toBeUndefined()
         })
 

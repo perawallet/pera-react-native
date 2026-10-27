@@ -70,9 +70,9 @@ export const AccountStructureTreeRow = ({
                     <PWTouchableOpacity
                         style={styles.accountRow}
                         onPress={handlePress}
-                        disabled={row.isViewing}
+                        disabled={!row.canExpand}
                         // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
-                        aria-expanded={isExpanded}
+                        aria-expanded={row.canExpand ? isExpanded : undefined}
                         testID={`account_structure_row_${row.account.id}`}
                     >
                         <AccountIcon
@@ -88,12 +88,13 @@ export const AccountStructureTreeRow = ({
                             </PWText>
                             <ChainIconStack chainIds={chainIds} />
                         </PWView>
-                        {row.isViewing ? (
+                        {row.isViewing && (
                             <PWBadge
                                 variant='positive'
                                 value={t('account_info.viewing')}
                             />
-                        ) : (
+                        )}
+                        {row.canExpand && (
                             <PWIcon
                                 name='chevron-down'
                                 size='sm'

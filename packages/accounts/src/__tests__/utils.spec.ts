@@ -24,6 +24,7 @@ import {
     isLedgerAccount,
     isMultisigAccount,
     isDelegatedAccount,
+    isNamedAfterAddress,
     isSameAddress,
     isWatchAccount,
 } from '../utils'
@@ -122,6 +123,42 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
     test('returns "No Account" when the account is null', () => {
         expect(getAccountDisplayName(null, FAKE_CHAIN_ID)).toBe('No Account')
+    })
+})
+
+describe('services/accounts/utils - isNamedAfterAddress', () => {
+    test.each([
+        ['the full address', LONG_ADDRESS],
+        ["the codec's own truncation", 'ABC~XYZ'],
+        ['a legacy 6+6 truncation', 'ABCDEF...UVWXYZ'],
+        ['a unicode-ellipsis truncation', 'ABCDEF…UVWXYZ'],
+    ])('is true for a name that is %s', (_, name) => {
+        expect(
+            isNamedAfterAddress(named(LONG_ADDRESS, name), FAKE_CHAIN_ID),
+        ).toBe(true)
+    })
+
+    test.each([
+        ['a custom name', 'Savings'],
+        ['a custom name that only looks like a truncation', 'ABCDEF...WRONG'],
+        ['no name', undefined],
+    ])('is false for %s', (_, name) => {
+        expect(
+            isNamedAfterAddress(named(LONG_ADDRESS, name), FAKE_CHAIN_ID),
+        ).toBe(false)
+    })
+
+    test('is false on a chain the account holds no address on', () => {
+        const account = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: LONG_ADDRESS },
+        })
+
+        expect(
+            isNamedAfterAddress(
+                { ...account, name: LONG_ADDRESS },
+                OTHER_CHAIN_ID,
+            ),
+        ).toBe(false)
     })
 })
 
