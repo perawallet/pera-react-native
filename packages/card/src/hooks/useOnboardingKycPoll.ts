@@ -138,7 +138,12 @@ export const useOnboardingKycPoll = (
     const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
         isAuthenticated ? userQuery : onboardingQuery
 
-    const verificationState = data?.verificationState ?? null
+    // Baanx only turns a record into an account once KYC verifies, and a cold
+    // start after that finds no record to read the verdict from.
+    const verificationState =
+        !isAuthenticated && isRecordGone
+            ? VerificationState.Verified
+            : (data?.verificationState ?? null)
     const isStateUnknown =
         data !== undefined && data !== null && verificationState === null
     // React Query's own loading flag — true only while the first fetch is

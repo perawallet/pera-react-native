@@ -310,6 +310,41 @@ describe('Flow: Card onboarding — identity verification', () => {
         )
     })
 
+    it('Given the app restarts after Baanx turned the record into an account, then sign-in opens instead of asking to verify again', async () => {
+        const loginSpy = vi.fn()
+        server.use(
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json(
+                    { message: 'Invalid onboarding ID' },
+                    { status: 404 },
+                ),
+            ),
+            http.post('*/v1/auth/login', () => {
+                loginSpy()
+                return HttpResponse.json({}, { status: 400 })
+            }),
+        )
+
+        renderWithNavigation(
+            CardOnboardingStatusScreen,
+            'CardOnboardingStatus',
+            {
+                additionalScreens: [
+                    { name: 'CardSignIn', component: CardSignInScreen },
+                ],
+            },
+        )
+
+        expect(
+            await screen.findByTestId('card-sign-in-email-input'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('card-onboarding-status-documents-verify'),
+        ).toBeNull()
+        // The password didn't survive the restart, so there is nothing to log in with.
+        expect(loginSpy).not.toHaveBeenCalled()
+    })
+
     it('Given registration is incomplete, then the Connect Funds row stays inactive', () => {
         mockOnboardingDetails('PENDING')
 

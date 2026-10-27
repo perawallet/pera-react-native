@@ -223,6 +223,18 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         await waitFor(() => expect(result.current.hasAccountSignal).toBe(true))
     })
 
+    it('reads a record gone on a cold start as verified, since only a verified record becomes an account', async () => {
+        mockVerificationState = undefined
+        mockQueryError = { response: { status: 404 } }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        expect(result.current.verificationState).toBeNull()
+
+        await waitFor(() =>
+            expect(result.current.verificationState).toBe('VERIFIED'),
+        )
+        expect(result.current.hasAccountSignal).toBe(true)
+    })
+
     it('does not read an outage as the account existing', async () => {
         mockVerificationState = 'VERIFIED'
         mockQueryError = { response: { status: 503 } }
@@ -232,6 +244,7 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         })
 
         expect(result.current.hasAccountSignal).toBe(false)
+        expect(result.current.verificationState).toBe('VERIFIED')
     })
 
     it('passes the scope and enabled gate through to the query', () => {
