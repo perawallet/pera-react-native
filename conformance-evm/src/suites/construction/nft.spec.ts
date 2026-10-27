@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import { describe, expect, it } from 'vitest'
-import {
-    PeraAssetType,
-    PeraAssetVerificationTier,
-    upsertAssets,
-} from '@perawallet/wallet-core-assets'
-import { toEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/caip19'
 
 import { createRawKeyEvmAccount, fundEvmAccount } from '../../harness/accounts'
 import {
@@ -27,42 +20,14 @@ import {
     castSend,
 } from '../../harness/cast'
 import { deployContract } from '../../harness/contracts'
-import {
-    createEvmConformanceEnv,
-    type EvmConformanceEnv,
-} from '../../harness/context'
+import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET } from '../../harness/evmnet'
-import { buildTransfer, expectEvmConformant, signAndSend } from './support'
-
-// The builder reads the standard from the asset store, which the NFT sync fills.
-const storeNft = async (
-    env: EvmConformanceEnv,
-    contract: `0x${string}`,
-    tokenId: bigint,
-    standard: 'erc721' | 'erc1155',
-) => {
-    const assetId = toEvmNftAssetId(contract, tokenId.toString())
-    await upsertAssets({
-        scope: env.scope,
-        items: [
-            {
-                assetId,
-                name: 'Conformance NFT',
-                decimals: 0,
-                totalSupply: new Decimal(0),
-                creator: { address: contract },
-                peraMetadata: {
-                    isDeleted: false,
-                    verificationTier: PeraAssetVerificationTier.unverified,
-                    type: PeraAssetType.collectible,
-                    isUnique: standard === 'erc721',
-                    collectible: { standard },
-                },
-            },
-        ],
-    })
-    return assetId
-}
+import {
+    buildTransfer,
+    expectEvmConformant,
+    signAndSend,
+    storeNft,
+} from './support'
 
 /**
  * Proves the NFT branch of the transfer builder emits the `safeTransferFrom`

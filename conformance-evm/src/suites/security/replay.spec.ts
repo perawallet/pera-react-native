@@ -20,7 +20,6 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '@perawallet/wallet-core-chain-ethereum/signing/adapter'
-import { ethereumCallSummary } from '@perawallet/wallet-core-chain-ethereum/signing/review'
 import { createEvmTransferAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/builder'
 
 import {
@@ -58,38 +57,6 @@ const buildTransfer = async (
         { scope: env.scope },
     )
     return unsigned
-}
-
-// Base only: its transfer builder reads the OP GasPriceOracle predeploy, which
-// Anvil does not carry.
-const handBuiltTransfer = (
-    env: EvmConformanceEnv,
-    from: EvmConformanceAccount,
-    to: EvmConformanceAccount,
-    wei: bigint,
-): UnsignedTransaction => {
-    const payload: EthereumTransactionPayload = {
-        from: from.address,
-        transaction: {
-            type: 'eip1559',
-            chainId: EVMNET[env.chain].eip155ChainId,
-            nonce: 0,
-            to: to.address,
-            value: wei,
-            gas: 21_000n,
-            maxFeePerGas: 3_000_000_000n,
-            maxPriorityFeePerGas: 1_000_000_000n,
-        },
-    }
-    return {
-        scope: env.scope,
-        payload,
-        summary: ethereumCallSummary(
-            { from: from.address, to: to.address, value: wei, data: '0x' },
-            env.evmChain,
-        ),
-        chainData: { family: 'evm' },
-    }
 }
 
 /**
@@ -180,9 +147,7 @@ describe('evm replay protection', () => {
             const raw = await signTransactionWithApp(
                 env,
                 sender,
-                chain === 'base'
-                    ? handBuiltTransfer(env, sender, recipient, 1000n)
-                    : await buildTransfer(env, sender, recipient, 1000n),
+                await buildTransfer(env, sender, recipient, 1000n),
             )
 
             expect(parseTransaction(raw).chainId).toBe(

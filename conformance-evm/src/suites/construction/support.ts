@@ -12,11 +12,18 @@
 
 import { Decimal } from 'decimal.js'
 import type { Address, Hex } from 'viem'
+import {
+    PeraAssetType,
+    PeraAssetVerificationTier,
+    upsertAssets,
+} from '@perawallet/wallet-core-assets'
 import type {
     AssetRef,
+    FeePreset,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EthereumTransactionPayload } from '@perawallet/wallet-core-chain-ethereum/signing/adapter'
+import { toEvmNftAssetId } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/caip19'
 import { createEvmTransferAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/builder'
 
 import type { EvmConformanceAccount } from '../../harness/accounts'
@@ -39,6 +46,7 @@ export const buildTransfer = async (
         to: Address
         assetRef: AssetRef
         amount: bigint
+        feePreset?: FeePreset
     },
 ): Promise<{ unsigned: UnsignedTransaction; fees: AppChosenFees }> => {
     const [unsigned] = await createEvmTransferAdapter(
@@ -52,7 +60,7 @@ export const buildTransfer = async (
             assetRef: input.assetRef,
             amount: new Decimal(input.amount.toString()),
         },
-        { scope: env.scope },
+        { scope: env.scope, feePreset: input.feePreset },
     )
     const { transaction } = unsigned.payload as EthereumTransactionPayload
     const fees = {
@@ -82,6 +90,36 @@ export const signAndSend = async (
     const raw = await signTransactionWithApp(env, sender, unsigned)
     const { hash } = await broadcastAndConfirm(env, raw)
     return { raw, hash }
+}
+
+// The builder reads the standard from the asset store, which the NFT sync fills.
+export const storeNft = async (
+    env: EvmConformanceEnv,
+    contract: `0x${string}`,
+    tokenId: bigint,
+    standard: 'erc721' | 'erc1155',
+) => {
+    const assetId = toEvmNftAssetId(contract, tokenId.toString())
+    await upsertAssets({
+        scope: env.scope,
+        items: [
+            {
+                assetId,
+                name: 'Conformance NFT',
+                decimals: 0,
+                totalSupply: new Decimal(0),
+                creator: { address: contract },
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: PeraAssetVerificationTier.unverified,
+                    type: PeraAssetType.collectible,
+                    isUnique: standard === 'erc721',
+                    collectible: { standard },
+                },
+            },
+        ],
+    })
+    return assetId
 }
 
 export { expectEvmConformant }
