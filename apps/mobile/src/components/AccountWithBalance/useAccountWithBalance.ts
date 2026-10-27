@@ -28,15 +28,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
-    useIsOnTestTier,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type {
-    Maybe,
-    Nullable,
-    Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
@@ -46,7 +41,7 @@ import {
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
     | { kind: 'fiat'; value: Maybe<Decimal> }
-    /** Every chain the account holds on is a test network, whose funds never count as money. */
+    /** Every chain the account holds on is a test network, whose funds never count as money; the row shows no value. */
     | { kind: 'testOnly' }
     /** Every chain the account is on is switched off. */
     | { kind: 'unavailable' }
@@ -63,7 +58,6 @@ export type UseAccountWithBalanceResult = {
     preferredValue: Maybe<Decimal>
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
-    isTestTier: boolean
     /**
      * Set when no chain was asked for and the wallet spans chains: the row then
      * stands for the whole account, so it shows this in place of one chain's balance.
@@ -90,11 +84,6 @@ export const useAccountWithBalance = (
         homeScope,
         isChainAgnostic ? sources.length > 0 : availability.isAvailable,
     )
-    const chainIds = useMemo(
-        () => Object.keys(account.chains) as ChainId[],
-        [account.chains],
-    )
-    const isTestTier = useIsOnTestTier(chainIds)
 
     const chainName = chainDisplayNameOf(chainId)
 
@@ -135,7 +124,6 @@ export const useAccountWithBalance = (
                 ? usdToPreferred(totals.fiatValue)
                 : undefined,
         isMultiChain: basis === 'fiat',
-        isTestTier,
         crossChainTotal,
     }
 }

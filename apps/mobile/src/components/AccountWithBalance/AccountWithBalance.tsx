@@ -12,13 +12,12 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWBadge, PWView, type PWViewProps } from '@components/core'
+import { PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountWithBalance } from './useAccountWithBalance'
 
@@ -36,7 +35,6 @@ export const AccountWithBalance = ({
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles({ isHighlighted })
-    const { t } = useLanguage()
     const {
         scope,
         chainName,
@@ -44,26 +42,14 @@ export const AccountWithBalance = ({
         nativeValue,
         preferredValue,
         isMultiChain,
-        isTestTier,
         crossChainTotal,
     } = useAccountWithBalance(account, chainId)
-    const testTierBadge = (
-        <PWBadge
-            variant='testnet'
-            value={t('common.network_label.testnet')}
-        />
-    )
     // A chain-agnostic row stands for every chain the account is on, so no one
-    // chain's badge applies; with no fiat total, the tier badge takes its place.
-    const hasChainBadge = !crossChainTotal && isMultiChain && !!chainName
-    const hasTierBadgeUnderName =
-        isTestTier && crossChainTotal?.kind !== 'testOnly'
+    // chain's badge applies. No row carries a TestNet badge: developer mode puts
+    // every chain on a test network at once, and the app-wide bar already says so.
     const badges =
-        hasChainBadge || hasTierBadgeUnderName ? (
-            <>
-                {hasChainBadge && <ChainBadge name={chainName} />}
-                {hasTierBadgeUnderName && testTierBadge}
-            </>
+        !crossChainTotal && isMultiChain && !!chainName ? (
+            <ChainBadge name={chainName} />
         ) : undefined
 
     const renderBalance = () => {
@@ -75,7 +61,7 @@ export const AccountWithBalance = ({
                     )
                 }
                 case 'testOnly': {
-                    return testTierBadge
+                    return null
                 }
                 case 'fiat': {
                     return (

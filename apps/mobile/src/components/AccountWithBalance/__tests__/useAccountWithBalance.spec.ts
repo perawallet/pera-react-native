@@ -20,7 +20,6 @@ import type {
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useAccountWithBalance } from '../useAccountWithBalance'
 
-const mockUseIsOnTestTier = vi.fn()
 const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
@@ -75,8 +74,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useIsOnTestTier: (chainIds: readonly string[]) =>
-        mockUseIsOnTestTier(chainIds),
     useIsChainSwitchedOff: (chainId: string) => mockIsSwitchedOff(chainId),
 }))
 
@@ -109,7 +106,6 @@ describe('useAccountWithBalance', () => {
     })
 
     beforeEach(() => {
-        mockUseIsOnTestTier.mockReset().mockReturnValue(false)
         mockIsSwitchedOff.mockReset().mockReturnValue(false)
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
@@ -272,15 +268,6 @@ describe('useAccountWithBalance', () => {
 
         expect(mockIsSwitchedOff).toHaveBeenCalledWith('ethereum')
         expect(result.current.availability).toEqual({ isAvailable: false })
-    })
-
-    it("marks the account as test tier from its chains' networks", () => {
-        mockUseIsOnTestTier.mockReturnValue(true)
-
-        const { result } = renderHook(() => useAccountWithBalance(ALGO_ACCOUNT))
-
-        expect(mockUseIsOnTestTier).toHaveBeenCalledWith(['algorand'])
-        expect(result.current.isTestTier).toBe(true)
     })
 
     describe('crossChainTotal', () => {
