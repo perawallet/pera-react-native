@@ -105,3 +105,6 @@ changed between them. A case that is green twice is not yet proof of anything, b
 changes is a defect in the test, the app, or the device — and worth finding before CI does. A case
 that only ever alternates between passing and skipping is reported apart from those, as
 `CONDITIONAL`: it is the suite stating a condition it ran under, not a verdict that moved.
+
+Compare passes from the same commit. A changed verdict is what flakiness looks like, but it is
+also what a fix looks like, so passes taken either side of one report the repaired cases as flaky.

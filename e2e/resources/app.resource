@@ -4,6 +4,7 @@ Documentation       Shared session, wallet and fixture keywords. The platform ad
 ...                 Close Sheet and ${MENU_TAB}.
 Library             AppiumLibrary    run_on_failure=Nothing
 Library             libraries/NavTrace.py
+Library             OperatingSystem
 Resource            platforms/${PLATFORM}.resource
 
 
@@ -21,8 +22,13 @@ ${MENU_SETTINGS_BUTTON}         xpath=//*[@resource-id='menu_settings_button' or
 ${SETTINGS_SCREEN}              xpath=//*[@resource-id='settings_screen' or @name='settings_screen']
 ${SETTINGS_SECURITY_ITEM}       xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
 ${DELETE_ALL_SUCCESS_SHEET}     xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
-# Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
-${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_')]
+# Screens that can show a recovery phrase or a private key, matched on their containers so a
+# half-drawn one counts too. Three of these were missing, and the view-passphrase sheet - whose
+# whole purpose is showing the phrase - was one of them: it draws its own words as
+# view_passphrase_bottom_sheet_word_N rather than through PassphraseGrid, so the passphrase_word_
+# prefix never matched it. Android blacks these out itself, which hid the gap; iOS does not, and
+# prevent-screen-capture there stops recording rather than a driver's screenshot.
+${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_') or starts-with(@name,'view_passphrase_bottom_sheet') or starts-with(@content-desc,'view_passphrase_bottom_sheet') or starts-with(@resource-id,'view_passphrase_bottom_sheet') or starts-with(@name,'reveal_private_key_bottom_sheet') or starts-with(@content-desc,'reveal_private_key_bottom_sheet') or starts-with(@resource-id,'reveal_private_key_bottom_sheet') or starts-with(@name,'cloud_backup_verify_item_') or starts-with(@content-desc,'cloud_backup_verify_item_') or starts-with(@resource-id,'cloud_backup_verify_item_')]
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @resource-id='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @resource-id='tab_menu_button' or @name='numpad_key_1' or @content-desc='numpad_key_1' or @resource-id='numpad_key_1']
 ${PIN_PAD_KEY}                  xpath=//*[@resource-id='numpad_key_1' or @name='numpad_key_1' or @content-desc='numpad_key_1']
@@ -179,6 +185,14 @@ Tap Until
         ${arrived}=    Run Keyword And Return Status
         ...    Wait Until Page Contains Element    ${anchor}    timeout=${timeout}
         IF    ${arrived}    RETURN
+        # A tap that took the control off screen was acted on, so there is nothing to tap again:
+        # the retry finds nothing and fails saying the control went missing, which describes the
+        # tap landing rather than the screen that never came. Stop here and say that instead.
+        ${still_offered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${locator}
+        IF    not ${still_offered}
+            Fail    ${locator} was acted on - it is gone from the screen - but ${anchor} did not follow within ${timeout}.
+        END
         Log    ${locator} did not bring up ${anchor} in ${timeout}; tapping it again.    level=WARN
     END
     Fail    ${locator} did not bring up ${anchor} over three taps.
@@ -218,6 +232,12 @@ Capture Failure Screenshot
     ELSE
         ${name}=    Evaluate    re.sub(r'[^A-Za-z0-9]+', '-', $TEST_NAME).strip('-')    modules=re
         Run Keyword And Ignore Error    Capture Page Screenshot    ${OUTPUT DIR}/failed-${name}.png
+        # Android blacks out capture-protected screens, so the picture of a failure on one is a
+        # black rectangle that proves only which screens those are. The tree is the only evidence
+        # left there, and it is safe to keep for exactly the reason the screenshot was: this runs
+        # only where no recovery phrase was found on screen.
+        ${source}=    Run Keyword And Ignore Error    Get Source
+        Run Keyword And Ignore Error    Create File    ${OUTPUT DIR}/failed-${name}.xml    ${source}[1]
     END
 
 Reset To Fresh Wallet

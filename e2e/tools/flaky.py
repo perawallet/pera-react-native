@@ -5,6 +5,10 @@ Usage: python tools/flaky.py results/flaky-android-p1 results/flaky-android-p2 [
 A suite that is green once proves only that it can be green. A case that passes in
 one pass and fails in another is flaky, and belongs nowhere near a merge gate until
 the reason is known — so compare the passes rather than trusting the last one.
+
+Compare passes from the same code. This reports a verdict that changed, which is
+what flakiness looks like, but it is also what a fix looks like: run it across a
+commit that repaired three cases and it will name those three as flaky.
 """
 
 import sys
