@@ -19,7 +19,11 @@ import { createEthereumAccountStateOps } from '@perawallet/wallet-core-chain-eth
 import { createEvmBroadcasterAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/broadcaster'
 
 import { createRawKeyEvmAccount, fundEvmAccount } from '../../harness/accounts'
-import { ANVIL_DEV_PRIVATE_KEY, castSend } from '../../harness/cast'
+import {
+    ANVIL_DEV_PRIVATE_KEY,
+    castCalldata,
+    castSend,
+} from '../../harness/cast'
 import { deployContract } from '../../harness/contracts'
 import {
     createEvmConformanceEnv,
@@ -149,6 +153,39 @@ describe('evm account state', () => {
         expect(amountOf(six)?.toFixed()).toBe(sixAmount.toString())
         expect(amountOf(empty)).toBeUndefined()
         expect(state.observedRound).toBe(Number(await blockNumber(env)))
+
+        // Pinning: after the head moves on and changes every balance, the
+        // state still equals the node's answers at observedRound, not the head's.
+        const round = `0x${state.observedRound!.toString(16)}`
+        await fundEvmAccount(env, holder.address, 1n)
+        await castSend({
+            chain: env.chain,
+            privateKey: ANVIL_DEV_PRIVATE_KEY,
+            to: token,
+            sig: 'transfer(address,uint256)',
+            args: [holder.address, '1'],
+        })
+        const balanceOfData = await castCalldata('balanceOf(address)', [
+            holder.address,
+        ])
+        const atRound = await anvilRpc<Hex>(env.chain, 'eth_call', [
+            { to: token, data: balanceOfData },
+            round,
+        ])
+        const atHead = await anvilRpc<Hex>(env.chain, 'eth_call', [
+            { to: token, data: balanceOfData },
+            'latest',
+        ])
+        expect(atHead).not.toBe(atRound)
+        expect(amountOf(token)?.toFixed()).toBe(BigInt(atRound).toString())
+        expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
+            BigInt(
+                await anvilRpc<Hex>(env.chain, 'eth_getBalance', [
+                    holder.address,
+                    round,
+                ]),
+            ).toString(),
+        )
     })
 
     it('reports the pooled transaction in the pending nonce only', async () => {

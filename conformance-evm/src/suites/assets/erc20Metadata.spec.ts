@@ -73,16 +73,8 @@ describe('evm erc20 metadata', () => {
             'constructor(bytes32,bytes32,uint256)',
         )
 
-        const outcome = await readErc20(
-            env.ctx,
-            env.evmChain,
-            token,
-            env.scope,
-        ).then(
-            asset => asset,
-            (error: unknown) => error,
-        )
+        const asset = await readErc20(env.ctx, env.evmChain, token, env.scope)
 
-        expect(outcome).toMatchObject({ name: 'Maker', unitName: 'MKR' })
+        expect(asset).toMatchObject({ name: 'Maker', unitName: 'MKR' })
     })
 })

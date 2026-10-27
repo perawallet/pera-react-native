@@ -12,7 +12,7 @@
 
 import { afterEach, beforeAll, vi } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
-import { installMulticall3 } from './src/harness/contracts'
+import { installMulticall3, topUpDevFunder } from './src/harness/contracts'
 import {
     EVMNET_CHAINS,
     assertEvmnetReachable,
@@ -67,6 +67,7 @@ beforeAll(async () => {
     await eachChain(async chain => {
         await assertEvmnetReachable(chain)
         await installMulticall3(chain)
+        await topUpDevFunder(chain)
     })
 })
 

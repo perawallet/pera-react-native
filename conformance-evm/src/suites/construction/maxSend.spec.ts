@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { fetchAndPersistAccount } from '@perawallet/wallet-core-accounts'
 import { createEvmTransferAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/builder'
@@ -21,7 +22,7 @@ import {
     nativeBalanceOf,
 } from '../../harness/accounts'
 import { createEvmConformanceEnv } from '../../harness/context'
-import { EVMNET } from '../../harness/evmnet'
+import { EVMNET, anvilRpc } from '../../harness/evmnet'
 import { buildTransfer, expectEvmConformant, signAndSend } from './support'
 
 /**
@@ -89,10 +90,19 @@ describe('evm max send', () => {
             hash,
         })
 
+        // The reserve covers the worst case the built transaction can be charged.
+        expect(fees.gas * fees.maxFeePerGas).toBeLessThanOrEqual(
+            BigInt(capFee.toFixed()),
+        )
+        const receipt = await anvilRpc<{
+            gasUsed: Hex
+            effectiveGasPrice: Hex
+        }>(env.chain, 'eth_getTransactionReceipt', [hash])
+        const feePaid =
+            BigInt(receipt.gasUsed) * BigInt(receipt.effectiveGasPrice)
         const remaining = await nativeBalanceOf(env, sender.address)
+        expect(remaining).toBe(funded - max - feePaid)
         expect(remaining).toBeGreaterThanOrEqual(0n)
-        // Dust is the cap-priced fee less the fee actually charged, so at most the cap.
-        expect(remaining).toBeLessThanOrEqual(BigInt(capFee.toFixed()))
         expect(await nativeBalanceOf(env, recipient.address)).toBe(max)
     })
 })

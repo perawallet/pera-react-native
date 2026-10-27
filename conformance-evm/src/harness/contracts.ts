@@ -24,7 +24,11 @@ import {
 } from 'viem'
 
 import { MULTICALL3_RUNTIME_BYTECODE } from '../vectors/multicall3'
-import { ANVIL_DEV_PRIVATE_KEY, castSend } from './cast'
+import {
+    ANVIL_DEV_PRIVATE_KEY,
+    castAddressFromPrivateKey,
+    castSend,
+} from './cast'
 import { type EvmnetChain, anvilRpc } from './evmnet'
 
 export type ContractName =
@@ -98,4 +102,20 @@ export const installMulticall3 = async (chain: EvmnetChain): Promise<void> => {
         MULTICALL3_ADDRESS,
         MULTICALL3_RUNTIME_BYTECODE,
     ])
+}
+
+const DEV_FUNDER_FLOOR = 1000n * 10n ** 18n
+
+/** A long-lived evmnet drains the dev key across runs; refilling it keeps a spent funder from surfacing as an obscure insufficient-funds error. */
+export const topUpDevFunder = async (chain: EvmnetChain): Promise<void> => {
+    const funder = await castAddressFromPrivateKey(ANVIL_DEV_PRIVATE_KEY)
+    const balance = BigInt(
+        await anvilRpc<Hex>(chain, 'eth_getBalance', [funder, 'latest']),
+    )
+    if (balance < DEV_FUNDER_FLOOR) {
+        await anvilRpc(chain, 'anvil_setBalance', [
+            funder,
+            `0x${(1_000_000n * 10n ** 18n).toString(16)}`,
+        ])
+    }
 }
