@@ -140,10 +140,16 @@ const viewOfNative = (
 }
 
 // A dApp's call recognised from its calldata keeps a contract-call view, so
-// recognition never lets it sign without review.
-const isAutoApproved = (transaction: ReviewedTransaction): boolean =>
-    AUTO_APPROVED_KINDS.has(transaction.summary.kind) &&
-    viewOfNative(transaction)?.kind !== 'contract-call'
+// recognition never lets it sign without review; a view that can't be read
+// never does either.
+const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
+    const kind = viewOfNative(transaction)?.kind
+    return (
+        AUTO_APPROVED_KINDS.has(transaction.summary.kind) &&
+        kind !== undefined &&
+        kind !== 'contract-call'
+    )
+}
 
 // The wallet's own calls are explained by the proofs their summaries pass.
 const isRecognising = (context: ReviewContext): boolean =>

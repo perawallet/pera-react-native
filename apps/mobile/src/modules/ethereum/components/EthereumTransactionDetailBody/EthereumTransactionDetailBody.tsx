@@ -18,7 +18,9 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DetailBodyProps } from '@modules/signing'
+import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
+import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
 
@@ -42,7 +44,58 @@ export const EthereumTransactionDetailBody = ({
         amount,
         isAmountLoading,
         maxFee,
+        standardCall,
+        isTransfer,
     } = presentation
+
+    let callDetails
+    if (standardCall && !isTransfer) {
+        // The approval first, then the raw call it was read from.
+        callDetails = (
+            <>
+                <EthereumApprovalDetails presentation={presentation} />
+                <EthereumContractCallDetails presentation={presentation} />
+            </>
+        )
+    } else if (!isTransfer) {
+        callDetails = (
+            <EthereumContractCallDetails presentation={presentation} />
+        )
+    } else {
+        callDetails = (
+            <>
+                {!!counterparty && (
+                    <KeyValueRow
+                        testID='ethereum_detail_to'
+                        title={t('transactions.common.to')}
+                    >
+                        <AddressDisplay
+                            address={counterparty}
+                            displayType='address-only'
+                        />
+                    </KeyValueRow>
+                )}
+                <EthereumTransferAssetRows
+                    presentation={presentation}
+                    testIDPrefix='ethereum_detail'
+                />
+                {(!!amount || isAmountLoading) && (
+                    <KeyValueRow
+                        testID='ethereum_detail_amount'
+                        title={t('transactions.common.amount')}
+                    >
+                        <AssetAmount
+                            asset={amount?.asset}
+                            value={amount?.value}
+                            isLoading={isAmountLoading}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
+                    </KeyValueRow>
+                )}
+            </>
+        )
+    }
 
     return (
         <PWView style={styles.container}>
@@ -75,53 +128,7 @@ export const EthereumTransactionDetailBody = ({
                     />
                 </KeyValueRow>
 
-                {view.kind === 'contract-call' ? (
-                    <EthereumContractCallDetails presentation={presentation} />
-                ) : (
-                    <>
-                        {!!counterparty && (
-                            <KeyValueRow
-                                testID='ethereum_detail_to'
-                                title={t('transactions.common.to')}
-                            >
-                                <AddressDisplay
-                                    address={counterparty}
-                                    displayType='address-only'
-                                />
-                            </KeyValueRow>
-                        )}
-
-                        {!!view.token && (
-                            <KeyValueRow
-                                testID='ethereum_detail_asset'
-                                title={t('transactions.common.asset')}
-                            >
-                                <PWView style={styles.asset}>
-                                    {!!amount?.asset && (
-                                        <PWText>{amount.asset.unitName}</PWText>
-                                    )}
-                                    <AddressDisplay
-                                        address={view.token.contract}
-                                        displayType='address-only'
-                                    />
-                                </PWView>
-                            </KeyValueRow>
-                        )}
-
-                        <KeyValueRow
-                            testID='ethereum_detail_amount'
-                            title={t('transactions.common.amount')}
-                        >
-                            <AssetAmount
-                                asset={amount?.asset}
-                                value={amount?.value}
-                                isLoading={isAmountLoading}
-                                showSymbol
-                                ignorePrivacyMode
-                            />
-                        </KeyValueRow>
-                    </>
-                )}
+                {callDetails}
 
                 <KeyValueRow
                     testID='ethereum_max_fee'

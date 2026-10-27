@@ -33,17 +33,16 @@ export type UseSpendApprovalWarningResult = {
     deadlineText: string
 }
 
-export type UseCollectionApprovalWarningResult = {
-    rows: SpendApprovalWarningRow[]
-}
-
 type RowCopy = {
     icon: IconName
     message: I18nKey
     emphasis?: I18nKey
 }
 
-const ROW_COPY: Record<SpendApprovalWarningRow['type'], RowCopy> = {
+// A collection approval has no allowance; its own hook builds that row.
+type SpendRowType = Exclude<SpendApprovalWarningRow['type'], 'collection'>
+
+const ROW_COPY: Record<SpendRowType, RowCopy> = {
     spend: {
         icon: 'outflow',
         message: i18nKey('signing.spend_approval.spend_warning'),
@@ -61,11 +60,6 @@ const ROW_COPY: Record<SpendApprovalWarningRow['type'], RowCopy> = {
         icon: 'pending',
         message: i18nKey('signing.spend_approval.long_deadline_warning'),
     },
-    collection: {
-        icon: 'warning',
-        message: i18nKey('signing.collection_approval.warning'),
-        emphasis: i18nKey('signing.spend_approval.spend_warning_bold'),
-    },
 }
 
 export const useSpendApprovalWarning = (
@@ -75,7 +69,7 @@ export const useSpendApprovalWarning = (
 
     return useMemo(() => {
         const { spender, allowances, deadline, isLongLived } = approval
-        const types: SpendApprovalWarningRow['type'][] = ['spend']
+        const types: SpendRowType[] = ['spend']
         if (allowances.some(allowance => allowance.amount === undefined)) {
             types.push('unlimited')
         }
@@ -109,27 +103,4 @@ export const useSpendApprovalWarning = (
                     : formatDatetime(new Date(deadline)),
         }
     }, [approval, t])
-}
-
-export const useCollectionApprovalWarning = (
-    operator: string,
-): UseCollectionApprovalWarningResult => {
-    const { t } = useLanguage()
-
-    return useMemo(() => {
-        const { icon, message, emphasis } = ROW_COPY.collection
-        return {
-            rows: [
-                {
-                    type: 'collection',
-                    icon,
-                    message: t(message),
-                    emphasis: emphasis ? t(emphasis) : undefined,
-                    caption: t('signing.spend_approval.spender_caption', {
-                        address: operator,
-                    }),
-                },
-            ],
-        }
-    }, [operator, t])
 }

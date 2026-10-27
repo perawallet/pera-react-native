@@ -3181,6 +3181,7 @@
         "collection_approval": {
             "warning": "Cela permet à l'opérateur de transférer tous les éléments que vous détenez dans cette collection, y compris ceux que vous recevrez plus tard, jusqu'à ce que vous révoquiez cette autorisation.",
             "operator_label": "Opérateur",
+            "operator_caption": "Opérateur : {{address}}",
             "collection_label": "Collection"
         },
         "token_approval": {

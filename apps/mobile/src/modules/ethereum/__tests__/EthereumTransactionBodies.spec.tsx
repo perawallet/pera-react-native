@@ -17,6 +17,7 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
@@ -36,6 +37,13 @@ const mockNavigate = vi.hoisted(() => vi.fn())
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ navigate: mockNavigate }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainCapability: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -120,6 +128,7 @@ describe('Ethereum transaction bodies', () => {
             isPending: false,
         } as unknown as ReturnType<typeof useSingleAssetDetailsQuery>)
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
+        vi.mocked(useChainCapability).mockReturnValue(false)
     })
 
     describe('review', () => {
@@ -363,6 +372,126 @@ describe('Ethereum transaction bodies', () => {
             expect(screen.getByText('transactions.list_item.send')).toBeTruthy()
             expect(screen.getByText(SHORT_RECIPIENT)).toBeTruthy()
             expect(onPress).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('with contractDecoding on', () => {
+        const HOLDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+
+        // The contract-call fixture is a dApp's unlimited approve; its view
+        // already carries the decoded call.
+        const withCall = (
+            call: Record<string, unknown>,
+        ): TransactionNative => ({
+            family: 'evm',
+            transaction: {
+                ...(natives['contract-call'].transaction as object),
+                call,
+            },
+        })
+
+        beforeEach(() => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
+        })
+
+        it('reviews an unlimited approve as an approval with the spend warning, not as an unknown call', () => {
+            render(
+                <TransactionReviewBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            expect(
+                screen.getByText('transactions.list_item.approval'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('message-signing-spend-approval-warning'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('ethereum_contract_call_warning'),
+            ).toBeNull()
+        })
+
+        it('details an approval opened from a list with the spend warning and the raw call it was read from', () => {
+            render(
+                <TransactionDetailBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            expect(
+                screen.getByText('transactions.list_item.approval'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('message-signing-spend-approval-warning'),
+            ).toBeTruthy()
+            expect(textOf('ethereum_contract_call_selector')).toContain(
+                '0x095ea7b3',
+            )
+            expect(
+                screen.queryByTestId('ethereum_contract_call_warning'),
+            ).toBeNull()
+        })
+
+        it("details a dApp's token transfer by its holder, recipient, token and amount", () => {
+            render(
+                <TransactionDetailBody
+                    transaction={withCall({
+                        kind: 'transfer-from',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: HOLDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        value: new Decimal(5_000_000),
+                    })}
+                />,
+            )
+
+            expect(textOf('ethereum_detail_sender')).toContain(
+                truncateAlgorandAddress(HOLDER),
+            )
+            expect(textOf('ethereum_detail_to')).toContain(SHORT_RECIPIENT)
+            expect(textOf('ethereum_detail_asset')).toContain('USDC')
+            expect(textOf('ethereum_detail_amount')).toMatch(/USDC.*5/)
+            expect(
+                screen.queryByTestId('ethereum_contract_call_warning'),
+            ).toBeNull()
+        })
+
+        it('lists every item of an NFT batch, a repeated token id included', () => {
+            render(
+                <TransactionReviewBody
+                    transaction={withCall({
+                        kind: 'erc1155-transfer',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: ETHEREUM_FIXTURE_SENDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        items: [
+                            { tokenId: '7', amount: new Decimal(3) },
+                            { tokenId: '7', amount: new Decimal(1) },
+                        ],
+                    })}
+                />,
+            )
+
+            expect(
+                screen.getByTestId('ethereum_review_nft_item_0'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('ethereum_review_nft_item_1'),
+            ).toBeTruthy()
+        })
+
+        it('titles the preview row of an approval as one', () => {
+            render(
+                <TransactionPreviewRow
+                    transaction={natives['contract-call']}
+                    onPress={vi.fn()}
+                />,
+            )
+
+            expect(
+                screen.getByText('transactions.list_item.approval'),
+            ).toBeTruthy()
         })
     })
 })

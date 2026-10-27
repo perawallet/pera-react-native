@@ -183,6 +183,42 @@ describe('useEthereumStandardCall', () => {
         })
     })
 
+    it('presents a zero approve on a token with no fungible record as a grant, not a revocation', () => {
+        expect(render(approve(0n)).standardCall).toMatchObject({
+            kind: 'token-approval',
+            spendApproval: {
+                allowances: [
+                    {
+                        assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                        amount: new Decimal(0),
+                    },
+                ],
+            },
+        })
+    })
+
+    it('presents a zero approve as a grant while the token record is still loading', () => {
+        mockRecords({}, [TOKEN])
+
+        expect(render(approve(0n)).standardCall).toHaveProperty('spendApproval')
+    })
+
+    it('presents a zero increaseAllowance as a grant even on a known token', () => {
+        mockRecords({ [TOKEN]: USDC })
+
+        expect(
+            render({
+                kind: 'increase-allowance',
+                contract: TOKEN,
+                spender: SPENDER,
+                value: new Decimal(0),
+            }).standardCall,
+        ).toMatchObject({
+            kind: 'token-approval',
+            spendApproval: { spender: SPENDER },
+        })
+    })
+
     it('presents setApprovalForAll as a collection approval, granted or revoked', () => {
         const grant: EvmStandardCall = {
             kind: 'set-approval-for-all',

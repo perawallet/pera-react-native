@@ -35,7 +35,4 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.sm,
         gap: theme.spacing.lg,
     },
-    asset: {
-        gap: theme.spacing.xs,
-    },
 }))

@@ -124,6 +124,22 @@ const nftAssetIdOf = (
 const collectionNameOf = (asset: Nullable<PeraAsset>): string | undefined =>
     asset?.peraMetadata?.collectible?.collection?.name
 
+// Granting nothing still reads as a grant: a zero `approve` on an ERC-721
+// approves token #0, and a zero `increaseAllowance` leaves the allowance as it was.
+const zeroGrantOf = (
+    call: Extract<EvmStandardCall, { kind: 'approve' | 'increase-allowance' }>,
+    chainId: ChainScope['chainId'],
+): SpendApproval => ({
+    spender: call.spender,
+    allowances: [
+        {
+            assetRef: { chainId, assetId: call.contract },
+            amount: new Decimal(0),
+        },
+    ],
+    isLongLived: true,
+})
+
 const present = (
     call: EvmStandardCall,
     chainId: ChainScope['chainId'],
@@ -183,11 +199,17 @@ const present = (
                     isRevocation: call.spender.toLowerCase() === ZERO_ADDRESS,
                 }
             }
+            // Only a fungible token's zero approve is known to revoke.
+            const isRevocation = call.value.isZero() && !!token.asset
             return {
                 kind: 'token-approval',
                 contract: call.contract,
                 spender: call.spender,
-                spendApproval: spendApprovalOfCall(call, chainId),
+                ...(!isRevocation && {
+                    spendApproval:
+                        spendApprovalOfCall(call, chainId) ??
+                        zeroGrantOf(call, chainId),
+                }),
             }
         }
         case 'increase-allowance': {
@@ -195,7 +217,9 @@ const present = (
                 kind: 'token-approval',
                 contract: call.contract,
                 spender: call.spender,
-                spendApproval: spendApprovalOfCall(call, chainId),
+                spendApproval:
+                    spendApprovalOfCall(call, chainId) ??
+                    zeroGrantOf(call, chainId),
             }
         }
         case 'set-approval-for-all': {

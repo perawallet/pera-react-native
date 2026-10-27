@@ -3173,6 +3173,7 @@
         "collection_approval": {
             "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",
             "operator_label": "Operator",
+            "operator_caption": "Operator: {{address}}",
             "collection_label": "Sammlung"
         },
         "token_approval": {

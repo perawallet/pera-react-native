@@ -3181,6 +3181,7 @@
         "collection_approval": {
             "warning": "Bu, operatörün bu koleksiyonda sahip olduğun tüm öğeleri, sonradan alacakların dahil, iptal edene kadar transfer etmesine izin verir.",
             "operator_label": "Operatör",
+            "operator_caption": "Operatör: {{address}}",
             "collection_label": "Koleksiyon"
         },
         "token_approval": {

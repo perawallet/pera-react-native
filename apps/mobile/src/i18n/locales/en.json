@@ -3181,6 +3181,7 @@
         "collection_approval": {
             "warning": "This lets the operator transfer every item you hold in this collection, including ones you get later, until you revoke it.",
             "operator_label": "Operator",
+            "operator_caption": "Operator: {{address}}",
             "collection_label": "Collection"
         },
         "token_approval": {

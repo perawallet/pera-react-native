@@ -18,8 +18,8 @@ import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SpendApprovalWarningContent } from '../SpendApprovalWarning/SpendApprovalWarningContent'
-import { useCollectionApprovalWarning } from '../SpendApprovalWarning/useSpendApprovalWarning'
 import { useStyles } from './styles'
+import { useCollectionApprovalWarning } from './useCollectionApprovalWarning'
 
 export type CollectionApprovalWarningProps = {
     operator: string

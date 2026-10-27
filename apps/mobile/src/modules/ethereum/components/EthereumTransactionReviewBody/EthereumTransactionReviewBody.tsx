@@ -14,15 +14,13 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
-import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
+import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumReviewHeader } from './EthereumReviewHeader'
 import { useStyles } from './styles'
@@ -43,138 +41,23 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const {
-        view,
-        amount,
-        maxFee,
-        signingAccount,
-        scope,
-        collectible,
-        standardCall,
-        sender,
-        nftItems,
-        isTransfer,
-    } = presentation
-    const tokenContract =
-        view.token?.contract ??
-        (standardCall?.kind === 'token-transfer'
-            ? standardCall.contract
-            : undefined)
-    const nftContract =
-        view.nft?.contract ??
-        (standardCall?.kind === 'nft-transfer'
-            ? standardCall.contract
-            : undefined)
-
+    const { maxFee, signingAccount, scope, standardCall, isTransfer } =
+        presentation
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
-
-    const senderRow = sender ? (
-        <KeyValueRow
-            testID='ethereum_review_sender'
-            title={t('transactions.common.from')}
-        >
-            <AddressDisplay
-                address={sender}
-                displayType='address-only'
-            />
-        </KeyValueRow>
-    ) : null
 
     let details = null
     if (standardCall && !isTransfer) {
         details = <EthereumApprovalDetails presentation={presentation} />
     } else if (!isTransfer) {
         details = <EthereumContractCallDetails presentation={presentation} />
-    } else if (tokenContract) {
+    } else {
         details = (
-            <>
-                {senderRow}
-                <KeyValueRow
-                    testID='ethereum_review_asset'
-                    title={t('transactions.common.asset')}
-                >
-                    <PWView style={styles.asset}>
-                        {!!amount?.asset && (
-                            <PWText>{amount.asset.unitName}</PWText>
-                        )}
-                        <AddressDisplay
-                            address={tokenContract}
-                            displayType='address-only'
-                        />
-                    </PWView>
-                </KeyValueRow>
-            </>
-        )
-    } else if (nftContract && collectible) {
-        details = (
-            <>
-                {senderRow}
-                <KeyValueRow
-                    testID='ethereum_review_nft'
-                    title={t('transactions.common.asset')}
-                >
-                    <PWView style={styles.nft}>
-                        {!!amount?.asset && (
-                            <AssetIcon
-                                asset={amount.asset}
-                                shape='square'
-                                size='xl'
-                            />
-                        )}
-                        <PWView style={styles.asset}>
-                            <PWText>
-                                {t('transactions.list_item.nft_subtitle', {
-                                    collection:
-                                        collectible.collectionName ??
-                                        nftContract,
-                                    tokenId: collectible.tokenId,
-                                })}
-                            </PWText>
-                            <AddressDisplay
-                                address={nftContract}
-                                displayType='address-only'
-                            />
-                        </PWView>
-                    </PWView>
-                </KeyValueRow>
-            </>
-        )
-    } else if (nftContract && nftItems) {
-        const collection =
-            standardCall?.kind === 'nft-transfer'
-                ? (standardCall.collectionName ?? nftContract)
-                : nftContract
-        details = (
-            <>
-                {senderRow}
-                <KeyValueRow
-                    testID='ethereum_review_nft_collection'
-                    title={t('signing.collection_approval.collection_label')}
-                >
-                    <AddressDisplay
-                        address={nftContract}
-                        displayType='address-only'
-                    />
-                </KeyValueRow>
-                {nftItems.map(item => (
-                    <KeyValueRow
-                        key={item.tokenId}
-                        testID={`ethereum_review_nft_item_${item.tokenId}`}
-                        title={t('transactions.list_item.nft_subtitle', {
-                            collection,
-                            tokenId: item.tokenId,
-                        })}
-                    >
-                        <AssetAmount
-                            asset={null}
-                            value={item.amount}
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                ))}
-            </>
+            <EthereumTransferAssetRows
+                presentation={presentation}
+                testIDPrefix='ethereum_review'
+            />
         )
     }
 
