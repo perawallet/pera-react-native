@@ -151,7 +151,10 @@ export const AccountActionsContent = ({
             {actions.map(action => (
                 <PWTouchableOpacity
                     key={action.id}
-                    style={styles.optionRow}
+                    style={[
+                        styles.optionRow,
+                        action.isDisabled && styles.optionRowDisabled,
+                    ]}
                     onPress={action.onPress}
                     disabled={action.isDisabled}
                     testID={`account-actions-${action.id}`}
