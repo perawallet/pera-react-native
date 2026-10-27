@@ -39,15 +39,37 @@ vi.mock('@hooks/useLanguage', () => ({
             if (params?.number != null)
                 return key.replace('{{number}}', String(params.number))
             if (params?.count != null) return `${key} (${params.count})`
+            if (params?.network != null) return `${key} (${params.network})`
             return key
         },
     }),
 }))
 
+type ChainOption = { chainId: string; isEnabled: boolean; address?: string }
+
+const enabledOptionsOf = (account: WalletAccount): ChainOption[] =>
+    Object.entries(account.chains).map(([chainId, entry]) => ({
+        chainId,
+        isEnabled: true,
+        address: entry?.address,
+    }))
+
 const mockUseHdSeedGroups = vi.fn()
 const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
+const mockOptionsFor = vi.fn<(account: WalletAccount) => ChainOption[]>()
+let mockSwitchedOff: string[] = []
+
+let mockIsMultichain = true
+vi.mock('../../../hooks/useIsMultichain', () => ({
+    useIsMultichain: () => mockIsMultichain,
+}))
+
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'base',
+    useCapableChainIds: () => ['base'],
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -64,6 +86,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useCanSignWith: () => mockUseCanSignWith(),
         useDelegatedTransition: () => mockUseDelegatedTransition(),
+        accountChainOptions: (
+            account: WalletAccount,
+            isOn: (chainId: string) => boolean,
+        ) => mockOptionsFor(account).filter(option => isOn(option.chainId)),
     }
 })
 
@@ -75,6 +101,22 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
+    },
+    chainDisplayNameOf: (chainId: string) =>
+        ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[chainId],
+    useSwitchedOffChainIds: () => mockSwitchedOff,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-contract')
+    >()),
+    addressCodecs: {
+        has: () => true,
+        get: (chainId: string) => ({
+            truncate: (address: string) => `${chainId}:${address}`,
+            normalize: (address: string) => address.toUpperCase(),
+        }),
     },
 }))
 
@@ -135,6 +177,9 @@ describe('useAccountInfoCard', () => {
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         useAccountsStore.setState({ accounts: [] })
+        mockOptionsFor.mockImplementation(enabledOptionsOf)
+        mockSwitchedOff = []
+        mockIsMultichain = true
         mockUseHdSeedGroups.mockReturnValue({
             hdSeedGroups: [
                 {
@@ -169,8 +214,9 @@ describe('useAccountInfoCard', () => {
         expect(result.current.showStructure).toBe(true)
         expect(result.current.structureIcon).toBe('wallet')
         expect(result.current.structureLabel).toBe('account_info.wallet_label')
-        expect(result.current.structureAccounts).toEqual([hdAccount])
-        expect(result.current.structureMainAddress).toBe('HD_ADDR')
+        expect(result.current.structureRows.map(row => row.account)).toEqual([
+            hdAccount,
+        ])
     })
 
     test('Ledger account: showStructure true with deviceName and ledger icon', () => {
@@ -180,11 +226,12 @@ describe('useAccountInfoCard', () => {
         expect(result.current.showStructure).toBe(true)
         expect(result.current.structureIcon).toBe('ledger')
         expect(result.current.structureLabel).toBe('My Ledger')
-        expect(result.current.structureAccounts).toEqual([ledgerAccount])
-        expect(result.current.structureMainAddress).toBe('LEDGER_ADDR')
+        expect(result.current.structureRows.map(row => row.account)).toEqual([
+            ledgerAccount,
+        ])
     })
 
-    test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
+    test("Ledger account with sub-addresses: the device's first account is the main one", () => {
         const subLedgerAccount: HardwareWalletAccount = {
             id: 'ledger-sub-account',
             custody: {
@@ -217,10 +264,11 @@ describe('useAccountInfoCard', () => {
                 onClose: vi.fn(),
             }),
         )
-        expect(result.current.structureMainAddress).toBe('LEDGER_ADDR')
-        expect(result.current.structureAccounts).toEqual([
-            ledgerAccount,
-            subLedgerAccount,
+        expect(
+            result.current.structureRows.map(row => [row.account, row.name]),
+        ).toEqual([
+            [ledgerAccount, 'account_info.main_address'],
+            [subLedgerAccount, 'account_info.sub_address'],
         ])
     })
 
@@ -229,8 +277,307 @@ describe('useAccountInfoCard', () => {
             useAccountInfoCard({ account: watchAccount, onClose: vi.fn() }),
         )
         expect(result.current.showStructure).toBe(false)
-        expect(result.current.structureAccounts).toEqual([])
-        expect(result.current.structureMainAddress).toBe('')
+        expect(result.current.structureRows).toEqual([])
+    })
+
+    describe('structure rows', () => {
+        const hdSibling = (
+            id: string,
+            chains: WalletAccount['chains'],
+            name?: string,
+        ): LocalAccount => ({
+            id,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 1, keyIndex: 0 },
+            },
+            chains,
+            name,
+        })
+
+        const withHdGroup = (accounts: WalletAccount[]) =>
+            mockUseHdSeedGroups.mockReturnValue({
+                hdSeedGroups: [
+                    {
+                        keyPairId: 'key-1',
+                        accounts,
+                        firstAccount: accounts[0],
+                        accountCount: accounts.length,
+                    },
+                ],
+                hasMultipleHdSeeds: false,
+            })
+
+        const render = (account: WalletAccount = hdAccount) =>
+            renderHook(() => useAccountInfoCard({ account, onClose: vi.fn() }))
+
+        const sibling = hdSibling('hd-sibling', {
+            algorand: { address: 'SIB_ADDR', keyPairId: 'key-2' },
+            ethereum: { address: '0xabc', keyPairId: 'key-3' },
+        })
+
+        test('lists each account in the wallet with its enabled chains in order', () => {
+            withHdGroup([hdAccount, sibling])
+            mockOptionsFor.mockImplementation(account =>
+                account.id === hdAccount.id
+                    ? [
+                          {
+                              chainId: 'algorand',
+                              isEnabled: true,
+                              address: 'HD_ADDR',
+                          },
+                          {
+                              chainId: 'ethereum',
+                              isEnabled: true,
+                              address: '0xdef',
+                          },
+                          {
+                              chainId: 'base',
+                              isEnabled: false,
+                              address: '0xdef',
+                          },
+                      ]
+                    : enabledOptionsOf(account),
+            )
+
+            const { result } = render()
+
+            expect(
+                result.current.structureRows[0].chains.map(c => c.chainId),
+            ).toEqual(['algorand', 'ethereum'])
+        })
+
+        test("marks only the sheet's account as viewing", () => {
+            withHdGroup([hdAccount, sibling])
+
+            const { result } = render()
+
+            expect(
+                result.current.structureRows.map(row => row.isViewing),
+            ).toEqual([true, false])
+        })
+
+        test('drops chains the user switched off', () => {
+            withHdGroup([hdAccount, sibling])
+            mockSwitchedOff = ['ethereum']
+
+            const { result } = render()
+
+            expect(
+                result.current.structureRows[1].chains.map(c => c.chainId),
+            ).toEqual(['algorand'])
+        })
+
+        test('gives truncated and normalized addresses per chain', () => {
+            withHdGroup([hdAccount, sibling])
+
+            const { result } = render()
+
+            expect(result.current.structureRows[1].chains[1]).toEqual({
+                chainId: 'ethereum',
+                displayName: 'Ethereum',
+                address: 'ethereum:0xabc',
+                copyValue: '0XABC',
+            })
+        })
+
+        test('falls back to main and sub labels for unnamed accounts', () => {
+            const unnamedMain = { ...hdAccount, name: undefined }
+            const namedAfterTruncation = hdSibling(
+                'truncated-name',
+                { ethereum: { address: '0xabc', keyPairId: 'key-3' } },
+                'ethereum:0xabc',
+            )
+            const namedAfterAddress = hdSibling(
+                'full-name',
+                { algorand: { address: 'FULL_ADDR', keyPairId: 'key-4' } },
+                'FULL_ADDR',
+            )
+            const named = hdSibling(
+                'savings',
+                { algorand: { address: 'SAV_ADDR', keyPairId: 'key-5' } },
+                'Savings',
+            )
+            withHdGroup([
+                unnamedMain,
+                namedAfterTruncation,
+                namedAfterAddress,
+                named,
+            ])
+
+            const { result } = render(unnamedMain)
+
+            expect(result.current.structureRows.map(row => row.name)).toEqual([
+                'account_info.main_address',
+                'account_info.sub_address',
+                'account_info.sub_address',
+                'Savings',
+            ])
+        })
+
+        test('treats a legacy auto-name cut from its own address as unnamed', () => {
+            const legacyNamed = hdSibling(
+                'legacy-name',
+                {
+                    algorand: {
+                        address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                        keyPairId: 'key-7',
+                    },
+                },
+                'ABCDEF...UVWXYZ',
+            )
+            withHdGroup([hdAccount, legacyNamed])
+
+            const { result } = render()
+
+            expect(result.current.structureRows[1].name).toBe(
+                'account_info.sub_address',
+            )
+        })
+
+        test('treats a name cut from a switched-off chain address as unnamed', () => {
+            const ethereumNamed = hdSibling(
+                'switched-off-name',
+                {
+                    algorand: { address: 'SIB_ADDR', keyPairId: 'key-2' },
+                    ethereum: { address: '0xabc', keyPairId: 'key-3' },
+                },
+                '0xabc',
+            )
+            withHdGroup([hdAccount, ethereumNamed])
+            mockSwitchedOff = ['ethereum']
+
+            const { result } = render()
+
+            expect(result.current.structureRows[1].name).toBe(
+                'account_info.sub_address',
+            )
+        })
+
+        test('opens one row at a time and closes it on a second tap', () => {
+            const third = hdSibling('hd-third', {
+                algorand: { address: 'THIRD_ADDR', keyPairId: 'key-6' },
+            })
+            withHdGroup([hdAccount, sibling, third])
+            const { result } = render()
+
+            act(() => result.current.handleToggleRow('hd-sibling'))
+            expect(result.current.expandedRowId).toBe('hd-sibling')
+
+            act(() => result.current.handleToggleRow('hd-third'))
+            expect(result.current.expandedRowId).toBe('hd-third')
+
+            act(() => result.current.handleToggleRow('hd-third'))
+            expect(result.current.expandedRowId).toBeUndefined()
+        })
+
+        test('never opens the viewing row', () => {
+            withHdGroup([hdAccount, sibling])
+            const { result } = render()
+
+            act(() => result.current.handleToggleRow(hdAccount.id))
+
+            expect(result.current.expandedRowId).toBeUndefined()
+        })
+
+        test('gives the subtitle to Universal Wallets only', () => {
+            const { result: hd } = render()
+            const { result: ledger } = render(ledgerAccount)
+
+            expect(hd.current.structureSubtitle).toBe(
+                'account_info.universal_wallet_subtitle',
+            )
+            expect(ledger.current.structureSubtitle).toBeUndefined()
+            expect(
+                ledger.current.structureRows[0].chains.map(c => c.chainId),
+            ).toEqual(['algorand'])
+        })
+
+        test('uses the plain scan label when one chain is active', () => {
+            mockIsMultichain = false
+
+            const { result } = render()
+
+            expect(result.current.scanLabel).toBe(
+                'account_info.scan_new_addresses',
+            )
+        })
+
+        test('drops the subtitle when one chain is active', () => {
+            mockIsMultichain = false
+
+            const { result } = render()
+
+            expect(result.current.structureSubtitle).toBeUndefined()
+        })
+
+        test('reports whether more than one chain is active', () => {
+            const { result: multichain } = render()
+            mockIsMultichain = false
+            const { result: singleChain } = render()
+
+            expect(multichain.current.isMultichain).toBe(true)
+            expect(singleChain.current.isMultichain).toBe(false)
+        })
+
+        test('names the chain a Universal Wallet scan walks', () => {
+            const { result } = render()
+
+            expect(result.current.scanLabel).toBe(
+                'account_info.scan_new_accounts (Algorand)',
+            )
+        })
+
+        test("names the Ledger account's own chain in its scan label", () => {
+            const ethereumLedger: HardwareWalletAccount = {
+                ...ledgerAccount,
+                chains: { ethereum: { address: '0xledger' } },
+            }
+            mockUseLedgerDeviceGroups.mockReturnValue({
+                ledgerDeviceGroups: [
+                    {
+                        deviceId: 'device-abc',
+                        deviceName: 'My Ledger',
+                        accounts: [ethereumLedger],
+                        firstAccount: ethereumLedger,
+                        accountCount: 1,
+                    },
+                ],
+                hasMultipleLedgerDevices: false,
+            })
+
+            const { result } = render(ethereumLedger)
+
+            expect(result.current.scanLabel).toBe(
+                'account_info.scan_new_accounts (Ethereum)',
+            )
+        })
+
+        test('names the first Ledger chain when the device account is on no Ledger chain', () => {
+            const chainless: HardwareWalletAccount = {
+                ...ledgerAccount,
+                chains: {},
+            }
+            mockUseLedgerDeviceGroups.mockReturnValue({
+                ledgerDeviceGroups: [
+                    {
+                        deviceId: 'device-abc',
+                        deviceName: 'My Ledger',
+                        accounts: [chainless],
+                        firstAccount: chainless,
+                        accountCount: 1,
+                    },
+                ],
+                hasMultipleLedgerDevices: false,
+            })
+
+            const { result } = render(chainless)
+
+            expect(result.current.scanLabel).toBe(
+                'account_info.scan_new_accounts (Base)',
+            )
+        })
     })
 
     test('Multisig account: resolves the shared account type label', () => {

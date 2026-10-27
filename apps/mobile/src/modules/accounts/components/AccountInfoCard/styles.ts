@@ -89,6 +89,15 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.lg,
     },
+    walletInfo: {
+        flex: 1,
+    },
+    walletSubtitle: {
+        color: theme.colors.textGray,
+    },
+    treeRow: {
+        gap: theme.spacing.sm,
+    },
     walletCircle: {
         width: WALLET_CIRCLE_SIZE,
         height: WALLET_CIRCLE_SIZE,
@@ -123,6 +132,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGray,
     },
     accountRow: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.lg,
@@ -132,23 +142,60 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     accountInfo: {
-        flexDirection: 'column',
+        flex: 1,
+        minWidth: 0,
+    },
+    accountInfoWithChains: {
+        gap: theme.spacing.xxs,
     },
     addressText: {
         color: theme.colors.textGrayLighter,
     },
+    chevronExpanded: {
+        transform: [{ rotate: '180deg' }],
+    },
+    addressPanelRow: {
+        flexDirection: 'row',
+    },
+    // Carries the tree's line past an open panel down to the next row.
+    connectorSpine: {
+        position: 'absolute',
+        top: -theme.spacing.sm,
+        bottom: -theme.spacing.lg,
+        left: CONNECTOR_INDENT,
+        width: theme.borders.sm,
+        backgroundColor: theme.colors.layerGray,
+    },
+    addressPanel: {
+        flex: 1,
+        gap: theme.spacing.sm,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    addressRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+    },
+    addressChainName: {
+        color: theme.colors.textGray,
+    },
     scanButton: {
         backgroundColor: theme.colors.buttonSquareBg,
         borderRadius: theme.borderRadius.sm,
-        height: SCAN_BUTTON_HEIGHT,
+        // The label names a chain, so it can wrap; the pill grows with it.
+        minHeight: SCAN_BUTTON_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
         gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.xs,
         marginLeft: CONNECTOR_INDENT + CONNECTOR_COLUMN_WIDTH,
     },
     scanButtonText: {
+        flexShrink: 1,
         color: theme.colors.buttonSquareIcon,
     },
     rekeyedSection: {

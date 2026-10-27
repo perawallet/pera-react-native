@@ -48,7 +48,7 @@ export type SearchAccountsParams =
           /**
            * If discovery finds only the master account and no rekeyed accounts,
            * surface a "No new addresses found" toast before exiting. Used by
-           * the AccountInfoCard "Scan new addresses" entry point so the user
+           * the AccountInfoCard wallet-structure scan button so the user
            * gets feedback that the scan completed without results. Mutually
            * exclusive with `createIfEmpty`.
            */

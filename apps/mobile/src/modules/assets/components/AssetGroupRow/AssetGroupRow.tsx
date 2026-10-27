@@ -16,13 +16,13 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainIconStack } from '@modules/chain-ui/icon'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
 import type { AssetFiatConverter } from '../../hooks/useAssetListFiatConverter'
 import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
-import { ChainIconStack } from './ChainIconStack'
 import { useAssetGroupRow } from './useAssetGroupRow'
 import { useStyles } from './styles'
 
