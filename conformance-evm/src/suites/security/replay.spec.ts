@@ -60,8 +60,8 @@ const buildTransfer = async (
     return unsigned
 }
 
-// Hand-built so every chain is covered: Base's transfer builder needs the OP
-// GasPriceOracle predeploy, which the matrix does not depend on.
+// Base only: its transfer builder reads the OP GasPriceOracle predeploy, which
+// Anvil does not carry.
 const handBuiltTransfer = (
     env: EvmConformanceEnv,
     from: EvmConformanceAccount,
@@ -180,7 +180,9 @@ describe('evm replay protection', () => {
             const raw = await signTransactionWithApp(
                 env,
                 sender,
-                handBuiltTransfer(env, sender, recipient, 1000n),
+                chain === 'base'
+                    ? handBuiltTransfer(env, sender, recipient, 1000n)
+                    : await buildTransfer(env, sender, recipient, 1000n),
             )
 
             expect(parseTransaction(raw).chainId).toBe(

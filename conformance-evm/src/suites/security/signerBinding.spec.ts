@@ -32,6 +32,7 @@ import type {
 
 import {
     createRawKeyEvmAccount,
+    fundEvmAccount,
     type EvmConformanceAccount,
 } from '../../harness/accounts'
 import { castMktx } from '../../harness/cast'
@@ -40,7 +41,7 @@ import {
     type EvmConformanceEnv,
 } from '../../harness/context'
 import { EVMNET } from '../../harness/evmnet'
-import { rejectionOf } from '../../harness/submit'
+import { broadcastAndConfirm, rejectionOf } from '../../harness/submit'
 
 const CHAIN_ID = EVMNET.ethereum.eip155ChainId
 
@@ -122,6 +123,7 @@ describe('evm signer binding', () => {
         const env = await createEvmConformanceEnv('ethereum')
         const a = await createRawKeyEvmAccount(env)
         const b = await createRawKeyEvmAccount(env)
+        await fundEvmAccount(env, a.address, 10n ** 18n)
         const unsigned = unsignedTransfer(env, a, b)
         const group = await analyze(env, unsigned, a, [a.walletAccount])
         const { keyStore, sign } = spiedKeyStore(env)
@@ -134,6 +136,9 @@ describe('evm signer binding', () => {
                 serializedTransaction: raw as TransactionSerializedEIP1559,
             }),
         ).toBe(a.address)
+        // Node acceptance: the node attributes the mined transaction to A too.
+        const { receipt } = await broadcastAndConfirm(env, raw)
+        expect(receipt.from.toLowerCase()).toBe(a.address.toLowerCase())
         expect(sign).toHaveBeenCalledTimes(1)
         expect(sign).toHaveBeenCalledWith(
             a.keyPairId,
@@ -175,6 +180,7 @@ describe('evm signer binding', () => {
         const env = await createEvmConformanceEnv('ethereum')
         const a = await createRawKeyEvmAccount(env)
         const b = await createRawKeyEvmAccount(env)
+        await fundEvmAccount(env, a.address, 10n ** 18n)
         const everyone = [a.walletAccount, b.walletAccount]
         // A's transaction, presented as B's to sign.
         const unsigned = unsignedTransfer(env, a, b)
@@ -211,6 +217,9 @@ describe('evm signer binding', () => {
                 serializedTransaction: raw as TransactionSerializedEIP1559,
             }),
         ).toBe(a.address)
+        // Node acceptance: the node attributes the mined transaction to A too.
+        const { receipt } = await broadcastAndConfirm(env, raw)
+        expect(receipt.from.toLowerCase()).toBe(a.address.toLowerCase())
         expect(sign).toHaveBeenCalledTimes(1)
         expect(sign.mock.calls[0][0]).toBe(a.keyPairId)
         expect(sign.mock.calls[0][0]).not.toBe(b.keyPairId)
@@ -229,24 +238,26 @@ describe('evm signer binding', () => {
             SIGNING_KEY_DOMAIN,
         )
 
-        expect(() =>
-            planner.assemble(unsigned, [
-                {
-                    requestIndex: 0,
-                    signer: b.address,
-                    scheme: 'secp256k1',
-                    bytes,
-                },
-            ]),
-        ).toThrow(
+        await expect(
+            Promise.resolve(
+                planner.assemble(unsigned, [
+                    {
+                        requestIndex: 0,
+                        signer: b.address,
+                        scheme: 'secp256k1',
+                        bytes,
+                    },
+                ]),
+            ),
+        ).rejects.toThrow(
             'An EVM transaction takes exactly one secp256k1 signature, from its sender',
         )
     })
 
-    it.fails('does not assemble a transaction whose signature recovers to someone other than its sender (finding: assemble trusts the signer label, so a signature mislabelled as the sender is assembled and the node attributes it to the key holder)', async () => {
-        // signPlannedGroups always labels signatures with the key it used, so
-        // this is defense in depth, not a reachable attack: B's signature
-        // labelled as A's assembles into a transaction the node attributes to B.
+    it("refuses another key's signature labelled as the sender's", async () => {
+        // Signers label a signature with the address they were asked for, not
+        // the key that signed (a device can hold a different key than the one
+        // checked at connect), so the label alone must not decide the sender.
         const env = await createEvmConformanceEnv('ethereum')
         const a = await createRawKeyEvmAccount(env)
         const b = await createRawKeyEvmAccount(env)
@@ -259,7 +270,7 @@ describe('evm signer binding', () => {
             SIGNING_KEY_DOMAIN,
         )
 
-        const mislabelled = await Promise.resolve(
+        const error = await rejectionOf(async () =>
             planner.assemble(unsigned, [
                 {
                     requestIndex: 0,
@@ -268,8 +279,10 @@ describe('evm signer binding', () => {
                     bytes,
                 },
             ]),
-        ).catch(() => undefined)
-        expect(mislabelled).toBeUndefined()
+        )
+        expect((error as Error).message).toBe(
+            `The signature recovers to ${b.address}, not the sender ${a.address}`,
+        )
     })
 
     describe('payload types', () => {
