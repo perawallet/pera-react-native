@@ -17,19 +17,26 @@ import { FilterSelection } from '@components/FilterSelection'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
+import {
+    assetRefKey,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 
 type AddAssetScreenProps = {
     variant?: AddAssetContentVariant
-    chainId: ChainId
+    chainId: Nullable<ChainId>
 }
 
 // AssetSearchItem draws its own full-width separator; render no list divider.
 const NoSeparator = () => null
+
+const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
+    assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
 export const AddAssetView = ({
     variant = 'asset',
@@ -44,6 +51,7 @@ export const AddAssetView = ({
         searchQuery,
         handleSearchChange,
         results,
+        showsNetwork,
         isLoading,
         isError,
         isOffline,
@@ -52,28 +60,29 @@ export const AddAssetView = ({
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-        optedInAssetIds,
-        optingInAssetIds,
-        canManageAssets,
+        isOptedIn,
+        isOptingIn,
+        canAdd,
         handleRequestAdd,
         t,
     } = useAddAssetView({ variant, chainId })
 
     const renderItem = useCallback(
-        ({ item }: { item: DisplayableAsset }) => (
+        ({ item }: { item: ScopedAssetSearchResult }) => (
             <AssetSearchItem
-                item={item}
-                isOptedIn={optedInAssetIds.has(item.assetId)}
-                isOptingIn={optingInAssetIds.has(item.assetId)}
-                onAdd={canManageAssets ? handleRequestAdd : undefined}
+                item={item.asset}
+                isOptedIn={isOptedIn(item)}
+                isOptingIn={isOptingIn(item)}
+                onAdd={canAdd(item) ? () => handleRequestAdd(item) : undefined}
+                chainId={showsNetwork ? item.scope.chainId : undefined}
             />
         ),
-        [optedInAssetIds, optingInAssetIds, canManageAssets, handleRequestAdd],
+        [isOptedIn, isOptingIn, canAdd, handleRequestAdd, showsNetwork],
     )
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage?.()
+            fetchNextPage()
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
@@ -109,7 +118,7 @@ export const AddAssetView = ({
             <AssetSelectionList
                 data={results}
                 renderItem={renderItem}
-                keyExtractor={item => item.assetId}
+                keyExtractor={resultKey}
                 searchValue={searchQuery}
                 onSearchChange={handleSearchChange}
                 searchPlaceholder={

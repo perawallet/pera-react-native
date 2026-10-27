@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-// Asset discovery: AddAssetView -> debounce -> useAssetSearchQuery ->
+// Asset discovery: AddAssetView -> debounce -> useAssetSearchAcrossScopesQuery ->
 // GET /v1/assets/search/. Covers all three verification tiers round-tripping,
 // cursor pagination via the `next` URL, the `enabled` gate that keeps empty
 // queries from firing, and the sheet offering no network chips while Algorand
 // is the only chain.
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
     act,
     cleanup,
@@ -29,11 +29,25 @@ import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
+import { useAssetSearchAcrossScopesQuery } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+// The integration setup registers whichever chains config enables, and a
+// local .env may enable more.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand'], capabilities: {} },
+        },
+    }
+})
 
 const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
@@ -79,7 +93,7 @@ describe('Flow: Asset discovery (search)', () => {
         )
 
         const { result } = renderHook(
-            () => useAssetSearchQuery('coin', MAINNET),
+            () => useAssetSearchAcrossScopesQuery('coin', [MAINNET]),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -97,7 +111,9 @@ describe('Flow: Asset discovery (search)', () => {
         // renderer reads `verificationTier` to decide which icon
         // to show). The transform from API `verification_tier` to
         // domain `verificationTier` is what we're proving end-to-end.
-        const byId = new Map(result.current.results.map(r => [r.assetId, r]))
+        const byId = new Map(
+            result.current.results.map(({ asset }) => [asset.assetId, asset]),
+        )
         expect(byId.get('31566704')?.peraMetadata?.verificationTier).toBe(
             'verified',
         )
@@ -173,7 +189,7 @@ describe('Flow: Asset discovery (search)', () => {
         )
 
         const { result } = renderHook(
-            () => useAssetSearchQuery('asset', MAINNET),
+            () => useAssetSearchAcrossScopesQuery('asset', [MAINNET]),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -188,7 +204,7 @@ describe('Flow: Asset discovery (search)', () => {
             },
             { timeout: 5000 },
         )
-        expect(result.current.results[0].assetId).toBe('111')
+        expect(result.current.results[0]?.asset.assetId).toBe('111')
 
         // Trigger pagination — the hook extracts the cursor from
         // the `next` URL and passes it as a query param. The mock
@@ -204,10 +220,9 @@ describe('Flow: Asset discovery (search)', () => {
             { timeout: 5000 },
         )
         // Both pages are merged in order — page 1 then page 2.
-        expect(result.current.results.map(r => r.assetId)).toEqual([
-            '111',
-            '222',
-        ])
+        expect(
+            result.current.results.map(({ asset }) => asset.assetId),
+        ).toEqual(['111', '222'])
         // hasNextPage flips off because page 2's `next` is null.
         expect(result.current.hasNextPage).toBe(false)
         // Two requests: one per page.
@@ -221,7 +236,10 @@ describe('Flow: Asset discovery (search)', () => {
         // the query is the gate the AddAssetView uses while the
         // search input is empty.
         const { result } = renderHook(
-            () => useAssetSearchQuery('', MAINNET, { enabled: false }),
+            () =>
+                useAssetSearchAcrossScopesQuery('', [MAINNET], {
+                    enabled: false,
+                }),
             { wrapper: createQueryClientWrapper() },
         )
 

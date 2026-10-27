@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWLoadingIndicator, PWView } from '@components/core'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 // Import the leaf directly (not the AssetItem barrel) so the search row doesn't
 // drag in AccountAssetItemView -> CollectibleListItem -> CollectibleThumbnail.
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
+import { ChainLabel } from '../AssetGroupRow'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {
@@ -23,6 +25,8 @@ type AssetSearchItemProps = {
     isOptingIn: boolean
     /** Omitted where the asset can't be added: the row shows no add action. */
     onAdd?: (assetId: string) => void
+    /** Names the asset's network, for results that span chains. */
+    chainId?: ChainId
 }
 
 export const AssetSearchItem = ({
@@ -30,6 +34,7 @@ export const AssetSearchItem = ({
     isOptedIn,
     isOptingIn,
     onAdd,
+    chainId,
 }: AssetSearchItemProps) => {
     const styles = useStyles()
 
@@ -58,6 +63,7 @@ export const AssetSearchItem = ({
             <AssetItemView
                 asset={item}
                 right={action}
+                footer={chainId ? <ChainLabel chainId={chainId} /> : undefined}
                 onPress={onAdd ? () => onAdd(item.assetId) : undefined}
                 disabled={!onAdd || isOptedIn || isOptingIn}
                 style={styles.container}

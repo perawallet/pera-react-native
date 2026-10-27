@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     AssetSearchUnsupportedError,
@@ -28,9 +29,16 @@ import {
     isNativeAssetId,
     nativeAssetFor,
     searchAssets,
+    searchAssetsAcrossScopes,
+    type AssetsChainAdapter,
 } from '../chain-adapter'
+import type { DisplayableAsset } from '../models'
 import { fetchAndPersistPrices } from '../sync/price-syncer'
-import { FAKE_NATIVE_ASSET, registerFakeAssetsAdapter } from './fakeAssetsChain'
+import {
+    FAKE_NATIVE_ASSET,
+    fakeAssetsAdapter,
+    registerFakeAssetsAdapter,
+} from './fakeAssetsChain'
 
 describe('assetsAdapterFor / nativeAssetFor', () => {
     it("resolve a scope's chain to its registered adapter and native asset", () => {
@@ -184,6 +192,123 @@ describe('scope wrappers', () => {
             { chainId: 'algorand', assetId: '7' },
             { chainId: 'algorand', networkId: 'mainnet' },
         )
+    })
+})
+
+describe('searchAssetsAcrossScopes', () => {
+    const ALGORAND = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+    const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    const asset = (assetId: string): DisplayableAsset => ({ assetId })
+    const registerBoth = (
+        algorandSearch: AssetsChainAdapter['search'],
+        ethereumSearch: AssetsChainAdapter['search'],
+    ) => {
+        registerFakeAssetsAdapter({ search: algorandSearch })
+        assetsChainAdapters.register(
+            fakeAssetsAdapter({
+                chainId: 'ethereum' as ChainId,
+                search: ethereumSearch,
+            }),
+        )
+    }
+
+    it('searches every scope from its start and keeps each hit with its scope, in scope order', async () => {
+        const algorandSearch = vi
+            .fn()
+            .mockResolvedValue({ results: [asset('1')], nextCursor: 'A2' })
+        const ethereumSearch = vi.fn().mockResolvedValue({
+            results: [asset('native')],
+            nextCursor: undefined,
+        })
+        registerBoth(algorandSearch, ethereumSearch)
+
+        const page = await searchAssetsAcrossScopes(
+            { query: 'usd', hasCollectible: false },
+            [ALGORAND, ETHEREUM],
+        )
+
+        expect(page).toEqual({
+            results: [
+                { scope: ALGORAND, asset: asset('1') },
+                { scope: ETHEREUM, asset: asset('native') },
+            ],
+            nextCursors: ['A2', null],
+        })
+        expect(algorandSearch).toHaveBeenCalledWith(
+            { query: 'usd', cursor: undefined, hasCollectible: false },
+            ALGORAND,
+        )
+        expect(ethereumSearch).toHaveBeenCalledWith(
+            { query: 'usd', cursor: undefined, hasCollectible: false },
+            ETHEREUM,
+        )
+    })
+
+    it('continues only the scopes that have more, and ends once none has', async () => {
+        const algorandSearch = vi
+            .fn()
+            .mockResolvedValue({ results: [asset('2')], nextCursor: undefined })
+        const ethereumSearch = vi.fn()
+        registerBoth(algorandSearch, ethereumSearch)
+
+        const page = await searchAssetsAcrossScopes(
+            { query: 'usd', cursors: ['A2', null] },
+            [ALGORAND, ETHEREUM],
+        )
+
+        expect(page).toEqual({
+            results: [{ scope: ALGORAND, asset: asset('2') }],
+            nextCursors: undefined,
+        })
+        expect(algorandSearch).toHaveBeenCalledWith(
+            { query: 'usd', cursor: 'A2', hasCollectible: undefined },
+            ALGORAND,
+        )
+        expect(ethereumSearch).not.toHaveBeenCalled()
+    })
+
+    it("keeps the other scopes' hits when one fails, and stops searching the failed one", async () => {
+        registerBoth(
+            vi.fn().mockRejectedValue(new Error('down')),
+            vi.fn().mockResolvedValue({
+                results: [asset('native')],
+                nextCursor: 'E2',
+            }),
+        )
+
+        const page = await searchAssetsAcrossScopes({ query: '' }, [
+            ALGORAND,
+            ETHEREUM,
+        ])
+
+        expect(page).toEqual({
+            results: [{ scope: ETHEREUM, asset: asset('native') }],
+            nextCursors: [null, 'E2'],
+        })
+    })
+
+    it('rejects with the first failure when every scope fails', async () => {
+        const failure = new Error('algorand down')
+        registerBoth(
+            vi.fn().mockRejectedValue(failure),
+            vi.fn().mockRejectedValue(new Error('ethereum down')),
+        )
+
+        await expect(
+            searchAssetsAcrossScopes({ query: '' }, [ALGORAND, ETHEREUM]),
+        ).rejects.toBe(failure)
+    })
+
+    it('rejects with the failure when the scopes that answered found nothing', async () => {
+        const failure = new Error('algorand down')
+        registerBoth(
+            vi.fn().mockRejectedValue(failure),
+            vi.fn().mockResolvedValue({ results: [], nextCursor: undefined }),
+        )
+
+        await expect(
+            searchAssetsAcrossScopes({ query: 'usd' }, [ALGORAND, ETHEREUM]),
+        ).rejects.toBe(failure)
     })
 })
 

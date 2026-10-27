@@ -12,7 +12,8 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { Decimal } from 'decimal.js'
+import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
@@ -25,6 +26,22 @@ import {
     setCapabilityOverrides,
     setChainEnabled,
 } from '@test-utils/capability-overrides'
+
+const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM_SCOPE = {
+    chainId: 'ethereum' as ChainId,
+    networkId: 'mainnet',
+} as const
+
+const onAlgorand = (assetId: string): ScopedAssetSearchResult => ({
+    scope: ALGORAND_SCOPE,
+    asset: { assetId, name: 'Test Asset', unitName: 'TST' },
+})
+const onEthereum = (assetId: string): ScopedAssetSearchResult => ({
+    scope: ETHEREUM_SCOPE,
+    asset: { assetId, name: 'Test Token', unitName: 'TTK' },
+})
+const TEST_ASSET = onAlgorand('999')
 
 const mockAccount = {
     id: 'test-account',
@@ -40,6 +57,17 @@ const { mockGetSelectedAccount, mockEnableChain, mockEligibleChains } =
         mockEligibleChains: vi.fn((): string[] => ['algorand']),
     }))
 
+const { mockUseAccountAssetsQuery } = vi.hoisted(() => ({
+    mockUseAccountAssetsQuery: vi.fn((_sources: unknown) => ({
+        holdings: [
+            {
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                assetId: '123',
+            },
+        ],
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -52,24 +80,57 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ),
         useEnableChain: () => mockEnableChain,
         eligibleChainsInFamily: mockEligibleChains,
-        useAccountBalancesQuery: vi.fn(() => ({
-            accountBalances: new Map([
-                [
-                    'test-address',
-                    {
-                        assetBalances: [
-                            {
-                                assetId: '123',
-                                amount: new Decimal(1),
-                                nativeValue: new Decimal(1),
-                            },
-                        ],
-                    },
-                ],
-            ]),
-        })),
+        useAccountHoldingSources: (account: unknown) =>
+            account
+                ? [
+                      {
+                          address: 'test-address',
+                          scope: { chainId: 'algorand', networkId: 'mainnet' },
+                      },
+                  ]
+                : [],
+        useAccountAssetsQuery: (sources: unknown) =>
+            mockUseAccountAssetsQuery(sources),
     }
 })
+
+const { mockUseAssetSearch, defaultSearchResult } = vi.hoisted(() => {
+    const defaultSearchResult = {
+        results: [] as unknown[],
+        isLoading: false,
+        isError: false,
+        error: null as unknown,
+        isPaused: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+    }
+    return {
+        defaultSearchResult,
+        mockUseAssetSearch: vi.fn(
+            (_query: string, _scopes: unknown, _options?: unknown) =>
+                defaultSearchResult,
+        ),
+    }
+})
+
+const mockSearch = (overrides: Partial<typeof defaultSearchResult>): void => {
+    mockUseAssetSearch.mockReturnValue({
+        ...defaultSearchResult,
+        ...overrides,
+    })
+}
+
+const lastSearchedScopes = (): unknown => mockUseAssetSearch.mock.lastCall?.[1]
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useAssetSearchAcrossScopesQuery: (
+        query: string,
+        scopes: unknown,
+        options?: unknown,
+    ) => mockUseAssetSearch(query, scopes, options),
+}))
 
 const { mockOptIn } = vi.hoisted(() => ({
     mockOptIn: vi.fn().mockResolvedValue({ txIds: ['tx1'] }),
@@ -98,45 +159,6 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
-    const defaultGlobalSearchResult = {
-        value: '',
-        setValue: vi.fn(),
-        results: {
-            remoteAssets: [
-                { assetId: '999', name: 'Test Asset', unitName: 'TST' },
-            ],
-        },
-        isLoading: false,
-        isRemoteError: false,
-        remoteError: null as unknown,
-        isRemotePaused: false,
-        isRemoteUnavailableOnNetwork: false,
-        hasNextRemotePage: false,
-        isFetchingNextRemotePage: false,
-        fetchNextRemotePage: vi.fn(),
-    }
-    return {
-        defaultGlobalSearchResult,
-        mockUseGlobalSearch: vi.fn(
-            (_scope?: unknown) => defaultGlobalSearchResult,
-        ),
-    }
-})
-
-const mockGlobalSearch = (
-    overrides: Partial<typeof defaultGlobalSearchResult>,
-): void => {
-    mockUseGlobalSearch.mockReturnValueOnce({
-        ...defaultGlobalSearchResult,
-        ...overrides,
-    })
-}
-
-vi.mock('@perawallet/wallet-core-search', () => ({
-    useGlobalSearch: (scope: unknown) => mockUseGlobalSearch(scope),
-}))
-
 let hasInternetMock = true
 const setHasInternet = (hasInternet: boolean): void => {
     hasInternetMock = hasInternet
@@ -152,6 +174,19 @@ vi.mock('@constants/ui', () => ({
     LONG_PROMPT_DISPLAY_DELAY: 600,
 }))
 
+// Settles at once unless a test holds back the value the search last saw.
+const { debounced } = vi.hoisted(() => ({
+    debounced: { heldValue: undefined as unknown },
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    useDebouncedValue: <T>(value: T): T =>
+        debounced.heldValue === undefined ? value : (debounced.heldValue as T),
+}))
+
 const { mockRequestByType } = vi.hoisted(() => ({
     mockRequestByType: vi.fn(),
 }))
@@ -165,12 +200,15 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useAddAssetView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseAssetSearch.mockReturnValue(defaultSearchResult)
         mockGetSelectedAccount.mockReturnValue(mockAccount)
         setHasInternet(true)
     })
 
     afterEach(() => {
         setHasInternet(true)
+        act(() => useRemoteConfigStore.getState().resetState())
+        restoreAlgorandOnlyChains()
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
@@ -182,7 +220,7 @@ describe('useAddAssetView', () => {
         )
 
         await act(async () => {
-            await result.current.handleRequestAdd('999')
+            await result.current.handleRequestAdd(TEST_ASSET)
         })
 
         expect(mockShowError).not.toHaveBeenCalled()
@@ -201,7 +239,7 @@ describe('useAddAssetView', () => {
         )
 
         await act(async () => {
-            await result.current.handleRequestAdd('999')
+            await result.current.handleRequestAdd(TEST_ASSET)
         })
 
         expect(mockShowError).toHaveBeenCalledWith(
@@ -236,7 +274,7 @@ describe('useAddAssetView', () => {
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(TEST_ASSET)
             })
 
             expect(mockEnableChain).toHaveBeenCalledWith(
@@ -266,7 +304,7 @@ describe('useAddAssetView', () => {
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(TEST_ASSET)
             })
 
             expect(mockEnableChain).not.toHaveBeenCalled()
@@ -288,7 +326,7 @@ describe('useAddAssetView', () => {
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(TEST_ASSET)
             })
 
             expect(mockEnableChain).not.toHaveBeenCalled()
@@ -304,7 +342,7 @@ describe('useAddAssetView', () => {
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(TEST_ASSET)
             })
 
             expect(mockShowError).toHaveBeenCalledWith(
@@ -323,7 +361,7 @@ describe('useAddAssetView', () => {
         )
 
         await act(async () => {
-            await result.current.handleRequestAdd('999')
+            await result.current.handleRequestAdd(TEST_ASSET)
         })
 
         expect(mockOptIn).not.toHaveBeenCalled()
@@ -337,7 +375,7 @@ describe('useAddAssetView', () => {
         )
 
         await act(async () => {
-            await result.current.handleRequestAdd('999')
+            await result.current.handleRequestAdd(TEST_ASSET)
         })
 
         expect(mockRequestByType).toHaveBeenCalledWith(
@@ -351,8 +389,49 @@ describe('useAddAssetView', () => {
         )
     })
 
-    it('surfaces the remote search error instead of hardcoding isError false', () => {
-        mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
+    it('shows a held asset as added on its own chain only', () => {
+        registerEthereumChain()
+
+        const { result } = renderHook(() => useAddAssetView({ chainId: null }))
+
+        expect(result.current.isOptedIn(onAlgorand('123'))).toBe(true)
+        expect(result.current.isOptedIn(onEthereum('123'))).toBe(false)
+        expect(result.current.isOptedIn(onAlgorand('999'))).toBe(false)
+    })
+
+    describe('while the query debounces', () => {
+        afterEach(() => {
+            debounced.heldValue = undefined
+        })
+
+        it('is loading until a typed query is searched', () => {
+            debounced.heldValue = ''
+            const { result, rerender } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            act(() => result.current.handleSearchChange('usd'))
+            expect(result.current.isLoading).toBe(true)
+
+            debounced.heldValue = undefined
+            rerender()
+            expect(result.current.isLoading).toBe(false)
+        })
+
+        it('is not loading while a cleared query debounces', () => {
+            debounced.heldValue = 'usd'
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
+
+            act(() => result.current.handleSearchChange(''))
+
+            expect(result.current.isLoading).toBe(false)
+        })
+    })
+
+    it('surfaces the search error', () => {
+        mockSearch({ isError: true })
 
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
@@ -365,10 +444,9 @@ describe('useAddAssetView', () => {
         ['an integrity refusal', true],
         ['any other failure', false],
     ])('flags the integrity arm for %s', (_case, isRefusal) => {
-        mockGlobalSearch({
-            isRemoteError: true,
-            isRemotePaused: false,
-            remoteError: isRefusal
+        mockSearch({
+            isError: true,
+            error: isRefusal
                 ? new IntegrityRequiredError({
                       code: 'APP_INTEGRITY_TOKEN_REQUIRED',
                       status: 403,
@@ -385,7 +463,7 @@ describe('useAddAssetView', () => {
     })
 
     it('is offline when the search query is paused (true-offline regime)', () => {
-        mockGlobalSearch({ isRemoteError: false, isRemotePaused: true })
+        mockSearch({ isPaused: true })
 
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
@@ -394,68 +472,60 @@ describe('useAddAssetView', () => {
         expect(result.current.isOffline).toBe(true)
     })
 
-    it('is unavailable when the network has no Pera backend', () => {
-        mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
+    it('collapses search error to offline when device has no internet', () => {
+        setHasInternet(false)
+        mockSearch({ isError: true })
+
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('is unavailable, not failed or offline, when no chain can search assets', () => {
+        act(() => setCapabilityOverrides({ assetSearch: false }))
 
         const { result } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
         )
 
         expect(result.current.isUnavailable).toBe(true)
-    })
-
-    it('does not report unavailable as an error or as offline', () => {
-        mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
-
-        const { result } = renderHook(() =>
-            useAddAssetView({ chainId: 'algorand' }),
-        )
-
         expect(result.current.isError).toBe(false)
         expect(result.current.isOffline).toBe(false)
+        expect(lastSearchedScopes()).toEqual([])
     })
 
     describe('network chips', () => {
-        afterEach(() => {
-            act(() => useRemoteConfigStore.getState().resetState())
-            restoreAlgorandOnlyChains()
-        })
-
-        // Ethereum ships without asset search; tests that need a second chip
-        // switch it on, as the Feature Flags screen would.
-        const registerSearchableEthereum = () => {
-            registerEthereumChain()
-            act(() => setCapabilityOverrides({ assetSearch: true }, 'ethereum'))
-        }
-
         it('offers no chips while only one chain is registered', () => {
             const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
+                useAddAssetView({ chainId: null }),
             )
 
             expect(result.current.chainOptions).toEqual([])
             expect(result.current.selectedChainId).toBe('algorand')
+            expect(result.current.showsNetwork).toBe(false)
         })
 
-        it('offers no chip for a chain that cannot search assets', () => {
+        it('offers All, then one chip per chain that can search assets, in registry order', () => {
             registerEthereumChain()
 
             const { result } = renderHook(() =>
                 useAddAssetView({ chainId: 'algorand' }),
             )
 
-            expect(result.current.chainOptions).toEqual([])
-            expect(result.current.selectedChainId).toBe('algorand')
-        })
-
-        it('offers one chip per chain that can search assets, in registry order', () => {
-            registerSearchableEthereum()
-
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
-            )
-
-            expect(result.current.chainOptions).toEqual([
+            expect(
+                result.current.chainOptions.map(({ value, label, testID }) => ({
+                    value,
+                    label,
+                    testID,
+                })),
+            ).toEqual([
+                {
+                    value: null,
+                    label: 'account_details.assets.network_filter_all',
+                    testID: 'add_asset_network_filter_all',
+                },
                 {
                     value: 'algorand',
                     label: 'Algorand',
@@ -469,25 +539,70 @@ describe('useAddAssetView', () => {
             ])
         })
 
-        it('searches on the picked chain', () => {
-            registerSearchableEthereum()
+        it('offers no chip for a chain that cannot search assets', () => {
+            registerEthereumChain()
+            act(() =>
+                setCapabilityOverrides({ assetSearch: false }, 'ethereum'),
+            )
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('algorand')
+        })
+
+        it.each([
+            ['All', null, [ALGORAND_SCOPE, ETHEREUM_SCOPE]],
+            ['Ethereum', 'ethereum', [ETHEREUM_SCOPE]],
+        ] as const)(
+            'opens on the %s chip it was given and searches there',
+            (_chip, chainId, scopes) => {
+                registerEthereumChain()
+
+                const { result } = renderHook(() =>
+                    useAddAssetView({ chainId }),
+                )
+
+                expect(result.current.selectedChainId).toBe(chainId)
+                expect(lastSearchedScopes()).toEqual(scopes)
+            },
+        )
+
+        it('searches on the picked chip, and on every chain under All', () => {
+            registerEthereumChain()
             const { result } = renderHook(() =>
                 useAddAssetView({ chainId: 'algorand' }),
             )
-            expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
-                expect.objectContaining({ chainId: 'algorand' }),
-            )
+            expect(lastSearchedScopes()).toEqual([ALGORAND_SCOPE])
 
             act(() => result.current.handleSelectChain('ethereum'))
-
             expect(result.current.selectedChainId).toBe('ethereum')
-            expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
-                expect.objectContaining({ chainId: 'ethereum' }),
+            expect(lastSearchedScopes()).toEqual([ETHEREUM_SCOPE])
+
+            act(() => result.current.handleSelectChain(null))
+            expect(result.current.selectedChainId).toBeNull()
+            expect(lastSearchedScopes()).toEqual([
+                ALGORAND_SCOPE,
+                ETHEREUM_SCOPE,
+            ])
+        })
+
+        it('names each row’s network only while the results span chains', () => {
+            registerEthereumChain()
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
             )
+            expect(result.current.showsNetwork).toBe(true)
+
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.showsNetwork).toBe(false)
         })
 
         it('leaves a switched-off chain out and opens on the first offered chain instead', () => {
-            registerSearchableEthereum()
+            registerEthereumChain()
             act(() => setChainEnabled('algorand', false))
 
             const { result } = renderHook(() =>
@@ -498,35 +613,32 @@ describe('useAddAssetView', () => {
             expect(result.current.selectedChainId).toBe('ethereum')
         })
 
-        it('offers adding only on a chain that can manage assets', () => {
-            registerSearchableEthereum()
+        it('offers adding only on a chain that can manage assets, under All too', () => {
+            registerEthereumChain()
             const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
+                useAddAssetView({ chainId: null }),
             )
-            expect(result.current.canManageAssets).toBe(true)
+            expect(result.current.canAdd(onAlgorand('999'))).toBe(true)
+            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(false)
 
             act(() => result.current.handleSelectChain('ethereum'))
 
-            expect(result.current.canManageAssets).toBe(false)
+            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(false)
         })
 
         it('shows an asset as added only on the chain it was added on', async () => {
-            registerSearchableEthereum()
+            registerEthereumChain()
             mockRequestByType.mockResolvedValueOnce('confirm')
             const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
+                useAddAssetView({ chainId: null }),
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(onAlgorand('999'))
             })
-            expect(result.current.optedInAssetIds.has('999')).toBe(true)
 
-            act(() => result.current.handleSelectChain('ethereum'))
-            expect(result.current.optedInAssetIds.has('999')).toBe(false)
-
-            act(() => result.current.handleSelectChain('algorand'))
-            expect(result.current.optedInAssetIds.has('999')).toBe(true)
+            expect(result.current.isOptedIn(onAlgorand('999'))).toBe(true)
+            expect(result.current.isOptedIn(onEthereum('999'))).toBe(false)
         })
 
         it('adds nothing on a chain that cannot manage assets', async () => {
@@ -536,22 +648,27 @@ describe('useAddAssetView', () => {
             )
 
             await act(async () => {
-                await result.current.handleRequestAdd('999')
+                await result.current.handleRequestAdd(TEST_ASSET)
             })
 
             expect(mockEnableChain).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
         })
-    })
 
-    it('collapses search error to offline when device has no internet', () => {
-        setHasInternet(false)
-        mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
+        it('keeps the NFT sheet to chains that can add, with no All, and searches for NFTs', () => {
+            registerEthereumChain()
 
-        const { result } = renderHook(() =>
-            useAddAssetView({ chainId: 'algorand' }),
-        )
+            const { result } = renderHook(() =>
+                useAddAssetView({ variant: 'collectible', chainId: null }),
+            )
 
-        expect(result.current.isOffline).toBe(true)
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('algorand')
+            expect(mockUseAssetSearch).toHaveBeenLastCalledWith(
+                '',
+                [ALGORAND_SCOPE],
+                { hasCollectible: true },
+            )
+        })
     })
 })

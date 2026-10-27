@@ -20,7 +20,7 @@ export * from './useAssetAuthoritiesQuery'
 export * from './useInvalidateAssetPrices'
 export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
-export * from './useAssetSearchQuery'
+export * from './useAssetSearchAcrossScopesQuery'
 export * from './useNativeAsset'
 export * from './useIsNativeAssetId'
 

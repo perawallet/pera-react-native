@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheet } from '@modules/bottom-sheet'
@@ -22,7 +23,8 @@ export type AddAssetContentVariant = 'asset' | 'collectible'
 
 export type AddAssetContentProps = {
     variant?: AddAssetContentVariant
-    chainId: ChainId
+    /** The network chip the sheet opens on; null opens on All. */
+    chainId: Nullable<ChainId>
 }
 
 export const AddAssetContent = ({

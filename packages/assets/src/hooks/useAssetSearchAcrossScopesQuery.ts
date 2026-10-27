@@ -11,67 +11,69 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { searchAssets } from '../chain-adapter'
-import type { DisplayableAsset } from '../models/assets'
-import { MODULE_PREFIX } from './querykeys'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    searchAssetsAcrossScopes,
+    type ScopedAssetSearchCursors,
+    type ScopedAssetSearchResult,
+} from '../chain-adapter'
+import { MODULE_PREFIX } from './querykeys'
 
-type UseAssetSearchQueryOptions = {
+type UseAssetSearchAcrossScopesQueryOptions = {
     hasCollectible?: boolean
     /** Skip the query entirely when false. Defaults to true. */
     enabled?: boolean
 }
 
-type UseAssetSearchQueryResult = {
-    results: DisplayableAsset[]
+type UseAssetSearchAcrossScopesQueryResult = {
+    results: ScopedAssetSearchResult[]
     isLoading: boolean
     isError: boolean
     /** The failure behind `isError`, for callers that branch on its kind; null otherwise. */
     error: unknown
-    /** True when the query is paused because the device is offline
-     *  (`fetchStatus === 'paused'`), instead of actively pending. */
+    /** True when the query is paused because the device is offline. */
     isPaused: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
-    /** True when the active network has no Pera backend — this can never succeed here. */
-    isUnavailableOnNetwork: boolean
 }
 
-const getAssetSearchQueryKey = (
+const getAssetSearchAcrossScopesQueryKey = (
     query: string,
-    scope: ChainScope,
+    scopes: readonly ChainScope[],
     hasCollectible: boolean,
-) => [MODULE_PREFIX, 'search', { query, scope, hasCollectible }]
+) => [MODULE_PREFIX, 'search-across-scopes', { query, scopes, hasCollectible }]
 
-export const useAssetSearchQuery = (
+/**
+ * Callers pass only scopes whose chain can search assets: a scope that can't
+ * fails its share of every page.
+ */
+export const useAssetSearchAcrossScopesQuery = (
     query: string,
-    scope: ChainScope,
-    options?: UseAssetSearchQueryOptions,
-): UseAssetSearchQueryResult => {
+    scopes: readonly ChainScope[],
+    options?: UseAssetSearchAcrossScopesQueryOptions,
+): UseAssetSearchAcrossScopesQueryResult => {
     const hasCollectible = options?.hasCollectible ?? false
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'assetSearch',
-    )
-    const enabled = (options?.enabled ?? true) && !isUnavailableOnNetwork
 
     const infiniteQuery = useInfiniteQuery({
-        queryKey: getAssetSearchQueryKey(query, scope, hasCollectible),
+        queryKey: getAssetSearchAcrossScopesQueryKey(
+            query,
+            scopes,
+            hasCollectible,
+        ),
         queryFn: ({ pageParam }) =>
-            searchAssets({ query, cursor: pageParam, hasCollectible }, scope),
-        enabled,
-        initialPageParam: undefined as Optional<string>,
-        getNextPageParam: lastPage => lastPage.nextCursor,
+            searchAssetsAcrossScopes(
+                { query, cursors: pageParam, hasCollectible },
+                scopes,
+            ),
+        enabled: (options?.enabled ?? true) && scopes.length > 0,
+        initialPageParam: undefined as Optional<ScopedAssetSearchCursors>,
+        getNextPageParam: lastPage => lastPage.nextCursors,
     })
 
-    const results =
-        infiniteQuery.data?.pages.flatMap(page => page.results) ?? []
-
     return {
-        results,
+        results: infiniteQuery.data?.pages.flatMap(page => page.results) ?? [],
         isLoading: infiniteQuery.isLoading,
         isError: infiniteQuery.isError,
         error: infiniteQuery.error ?? null,
@@ -79,8 +81,7 @@ export const useAssetSearchQuery = (
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
         fetchNextPage: () => void infiniteQuery.fetchNextPage(),
-        isUnavailableOnNetwork,
     }
 }
 
-export type { UseAssetSearchQueryResult }
+export type { UseAssetSearchAcrossScopesQueryResult }

@@ -40,6 +40,7 @@ const ENABLED = [
     'receive',
     'history',
     'assets',
+    'assetSearch',
     'pricing',
     'watchAccounts',
     'privateKeys',

@@ -34,6 +34,8 @@ export type AssetItemViewProps = {
     titleAccessory?: ReactNode
     /** Replaces the secondary line under the name; the deleted label still wins. */
     subtitle?: ReactNode
+    /** A further line under the secondary one, such as the asset's network. */
+    footer?: ReactNode
     iconSize?: PWIconSize
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
@@ -50,6 +52,7 @@ export const AssetItemView = ({
     right,
     titleAccessory,
     subtitle: subtitleOverride,
+    footer,
     iconSize = 'xl',
     logoUrl,
     showFavorite = false,
@@ -151,6 +154,7 @@ export const AssetItemView = ({
                     ) : null}
                 </PWView>
                 {subtitle}
+                {footer}
             </PWView>
             {right ? <PWView style={styles.rightSlot}>{right}</PWView> : null}
         </PWTouchableOpacity>

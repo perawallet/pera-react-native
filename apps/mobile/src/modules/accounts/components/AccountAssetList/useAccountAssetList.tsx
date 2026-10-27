@@ -40,21 +40,19 @@ import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainDisplayNameOf,
     useIsChainSwitchedOff,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ChainIcon } from '@modules/chain-ui/icon'
 import {
     AddAssetContent,
+    toChainFilterOptions,
     useAssetListFiatConverter,
     useGroupedHoldings,
     type AssetFiatConverter,
@@ -70,8 +68,6 @@ import {
     type ManageAssetsAction,
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
-
-const CHAIN_CHIP_ICON_SIZE = 16
 
 type UseAccountAssetListResult = {
     /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
@@ -141,8 +137,6 @@ export const useAccountAssetList = ({
             chain: { chainId: scope.chainId, capability: 'manageAssets' },
         }) && !isOwnChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
-    // Assets are added on the manageAssets chain, not necessarily the account's own.
-    const addAssetChainId = useCapableChainId('manageAssets')
 
     const sources = useAccountHoldingSources(account)
     // A primitive, so the row press handler keeps its identity across renders.
@@ -177,27 +171,14 @@ export const useAccountAssetList = ({
         [sources, selectedChainId],
     )
     const chainFilterOptions = useMemo(
-        (): FilterOption<Nullable<ChainId>>[] =>
-            sources.length < 2
-                ? []
-                : [
-                      {
-                          value: null,
-                          label: t('account_details.assets.network_filter_all'),
-                          testID: 'asset_network_filter_all',
-                      },
-                      ...sources.map(({ scope: { chainId } }) => ({
-                          value: chainId,
-                          label: chainDisplayNameOf(chainId) ?? chainId,
-                          icon: (
-                              <ChainIcon
-                                  chainId={chainId}
-                                  size={CHAIN_CHIP_ICON_SIZE}
-                              />
-                          ),
-                          testID: `asset_network_filter_${chainId}`,
-                      })),
-                  ],
+        () =>
+            toChainFilterOptions(
+                sources.map(({ scope: { chainId } }) => chainId),
+                {
+                    allLabel: t('account_details.assets.network_filter_all'),
+                    testIDPrefix: 'asset_network_filter',
+                },
+            ),
         [sources, t],
     )
 
@@ -381,14 +362,14 @@ export const useAccountAssetList = ({
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
         void requestBottomSheet<void>({
-            contents: <AddAssetContent chainId={addAssetChainId} />,
+            contents: <AddAssetContent chainId={selectedChainId} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, addAssetChainId, scope.chainId])
+    }, [requestBottomSheet, selectedChainId, scope.chainId])
 
     const handleOpenManage = useCallback(async () => {
         trackEvent(AssetDetailsEvent.ManageAsset, {

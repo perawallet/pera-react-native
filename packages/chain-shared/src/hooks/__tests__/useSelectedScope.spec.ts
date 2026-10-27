@@ -24,6 +24,7 @@ import {
     useSelectedChainMode,
     useSelectedNetworkId,
     useSelectedScope,
+    useSelectedScopes,
     useWalletDeployment,
 } from '../useSelectedScope'
 
@@ -105,5 +106,33 @@ describe('useSelectedScope', () => {
         })
 
         expect(result.current).toBe('sepolia')
+    })
+
+    test("useSelectedScopes resolves each chain's scope in order, keeping its identity until a network changes", () => {
+        const { result, rerender } = renderHook(
+            ({ chainIds }: { chainIds: ChainId[] }) =>
+                useSelectedScopes(chainIds),
+            { initialProps: { chainIds: ['algorand' as ChainId] } },
+        )
+        const first = result.current
+        expect(first).toEqual([{ chainId: 'algorand', networkId: 'mainnet' }])
+
+        rerender({ chainIds: ['algorand' as ChainId] })
+        expect(result.current).toBe(first)
+
+        act(() => {
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
+        })
+
+        expect(result.current).toEqual([
+            { chainId: 'algorand', networkId: 'betanet' },
+        ])
+    })
+
+    test('useSelectedScopes returns none for no chains', () => {
+        const { result } = renderHook(() => useSelectedScopes([]))
+
+        expect(result.current).toEqual([])
     })
 })

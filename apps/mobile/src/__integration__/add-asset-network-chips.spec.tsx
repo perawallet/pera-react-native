@@ -10,16 +10,24 @@
  limitations under the License
  */
 
-// Add Asset with a second chain registered: only chains that can search assets
-// get a network chip, the search follows the picked chip, and a chain that
-// can't manage assets offers no add action.
+// Add Asset with Ethereum registered beside Algorand: All lists both chains'
+// assets with each row's network, a network chip narrows the list to that
+// chain, and only a chain that can manage assets offers the add action.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    assetsAdapterFor,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { server } from '@test-utils/msw-server'
@@ -39,6 +47,16 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         },
     }
 })
+
+const ETHEREUM_MAINNET: ChainScope = {
+    chainId: 'ethereum' as ChainId,
+    networkId: 'mainnet',
+}
+const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+const ETHEREUM_LISTED: DisplayableAsset[] = [
+    { assetId: 'native', name: 'Ether', unitName: 'ETH' },
+    { assetId: DAI, name: 'Dai Stablecoin', unitName: 'DAI' },
+]
 
 describe('Flow: Add Asset with a second chain registered', () => {
     beforeEach(() => {
@@ -69,51 +87,66 @@ describe('Flow: Add Asset with a second chain registered', () => {
                 },
             }),
         )
+        // Ethereum's token list comes from Pera services a CI build leaves
+        // unconfigured, so its search is stubbed at the adapter; the chain
+        // package's own tests cover the request and the matching.
+        vi.spyOn(
+            assetsAdapterFor(ETHEREUM_MAINNET),
+            'search',
+        ).mockImplementation(async ({ query }) => ({
+            results: ETHEREUM_LISTED.filter(asset =>
+                asset.name?.toLowerCase().includes(query.trim().toLowerCase()),
+            ),
+            nextCursor: undefined,
+        }))
     })
 
     afterEach(() => {
+        vi.restoreAllMocks()
         useAccountsStore.getState().setAccounts([])
         useRemoteConfigStore.getState().resetState()
     })
 
-    const renderAddAsset = () =>
+    const renderAddAsset = (chainId: Nullable<ChainId>) =>
         renderWithNavigation(
-            () => <AddAssetView chainId={LEGACY_CHAIN_ID} />,
+            () => <AddAssetView chainId={chainId} />,
             'AddAsset',
         )
 
-    it('Given Ethereum is registered without asset search, when Add Asset opens, then it searches Algorand with no network chips', async () => {
-        renderAddAsset()
+    it("Given Add Asset opens on All, then it lists both chains' assets, each with its network, and offers adding only on Algorand", async () => {
+        renderAddAsset(null)
 
         await waitFor(() => {
             expect(screen.getByText('USD Coin')).toBeTruthy()
+            expect(screen.getByText('Dai Stablecoin')).toBeTruthy()
         })
-        expect(
-            screen.queryByTestId('add_asset_network_filter_algorand'),
-        ).toBeNull()
-        expect(
-            screen.queryByTestId('add_asset_network_filter_ethereum'),
-        ).toBeNull()
-    })
-
-    it('Given Ethereum can search assets, when the user picks Ethereum and then Algorand, then the search follows the picked chip', async () => {
-        setCapabilityOverrides({ assetSearch: true }, 'ethereum')
-        renderAddAsset()
-
-        await waitFor(() => {
-            expect(screen.getByText('USD Coin')).toBeTruthy()
-        })
-        expect(
-            screen.getByTestId('add_asset_network_filter_algorand'),
-        ).toBeTruthy()
+        expect(screen.getByText('Ether')).toBeTruthy()
+        expect(screen.getByTestId('add_asset_network_filter_all')).toBeTruthy()
+        expect(screen.getAllByTestId('chain_label_algorand')).toHaveLength(1)
+        expect(screen.getAllByTestId('chain_label_ethereum')).toHaveLength(2)
         expect(
             screen.getByTestId('asset_search_item_add_31566704'),
         ).toBeTruthy()
+        expect(screen.queryByTestId(`asset_search_item_add_${DAI}`)).toBeNull()
+    })
 
-        fireEvent.click(screen.getByTestId('add_asset_network_filter_ethereum'))
+    it('Given Add Asset opens on Ethereum, when the user searches and then picks Algorand, then the list follows the chip and the search', async () => {
+        renderAddAsset('ethereum' as ChainId)
 
         await waitFor(() => {
-            expect(screen.queryByText('USD Coin')).toBeNull()
+            expect(screen.getByText('Dai Stablecoin')).toBeTruthy()
+        })
+        expect(screen.getByText('Ether')).toBeTruthy()
+        expect(screen.queryByText('USD Coin')).toBeNull()
+        expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+
+        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
+            target: { value: 'dai' },
+        })
+
+        await waitFor(() => {
+            expect(screen.queryByText('Ether')).toBeNull()
+            expect(screen.getByText('Dai Stablecoin')).toBeTruthy()
         })
 
         fireEvent.click(screen.getByTestId('add_asset_network_filter_algorand'))
@@ -121,19 +154,16 @@ describe('Flow: Add Asset with a second chain registered', () => {
         await waitFor(() => {
             expect(screen.getByText('USD Coin')).toBeTruthy()
         })
+        expect(screen.queryByText('Dai Stablecoin')).toBeNull()
     })
 
-    it('Given the picked chain can search but not manage assets, when results load, then the rows offer no add action', async () => {
-        setCapabilityOverrides({ assetSearch: true }, 'ethereum')
+    it('Given Algorand cannot manage assets, when results load, then no row offers the add action', async () => {
         setCapabilityOverrides({ manageAssets: false }, 'algorand')
-        renderAddAsset()
+        renderAddAsset('algorand')
 
         await waitFor(() => {
             expect(screen.getByText('USD Coin')).toBeTruthy()
         })
-        expect(
-            screen.getByTestId('add_asset_network_filter_ethereum'),
-        ).toBeTruthy()
         expect(
             screen.queryByTestId('asset_search_item_add_31566704'),
         ).toBeNull()

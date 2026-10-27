@@ -302,10 +302,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         error: null,
         isSuccess: false,
     })),
-    useAssetSearchQuery: vi.fn(() => ({
+    useAssetSearchAcrossScopesQuery: vi.fn(() => ({
         results: [],
         isLoading: false,
         isError: false,
+        error: null,
+        isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
         fetchNextPage: vi.fn(),

@@ -236,3 +236,66 @@ export const searchAssets = async (
     if (!adapter.search) throw new AssetSearchUnsupportedError(adapter.chainId)
     return adapter.search(params, scope)
 }
+
+export type ScopedAssetSearchResult = {
+    scope: ChainScope
+    asset: DisplayableAsset
+}
+
+/** One per searched scope, in its order: that scope's next cursor, or null once it has no more. */
+export type ScopedAssetSearchCursors = readonly Nullable<string>[]
+
+export type ScopedAssetSearchParams = Omit<AssetSearchParams, 'cursor'> & {
+    /** Absent for the first page, which searches every scope from its start. */
+    cursors?: ScopedAssetSearchCursors
+}
+
+export type ScopedAssetSearchPage = {
+    results: ScopedAssetSearchResult[]
+    /** Undefined once no scope has more. */
+    nextCursors: Optional<ScopedAssetSearchCursors>
+}
+
+/**
+ * One page from each scope that still has more, concatenated in `scopes`
+ * order. A scope whose search fails stops being searched while the others'
+ * hits still show; a page with no hits rejects with the first failure, so a
+ * failed search never reads as an empty one.
+ */
+export const searchAssetsAcrossScopes = async (
+    { cursors, ...params }: ScopedAssetSearchParams,
+    scopes: readonly ChainScope[],
+): Promise<ScopedAssetSearchPage> => {
+    const searched = scopes.flatMap((scope, index) => {
+        const cursor = cursors ? cursors[index] : undefined
+        return cursor === null
+            ? []
+            : [
+                  {
+                      index,
+                      scope,
+                      page: searchAssets({ ...params, cursor }, scope),
+                  },
+              ]
+    })
+    const settled = await Promise.allSettled(searched.map(({ page }) => page))
+
+    const nextCursors: Nullable<string>[] = scopes.map(() => null)
+    const results = searched.flatMap(({ index, scope }, position) => {
+        const outcome = settled[position]!
+        if (outcome.status === 'rejected') return []
+        nextCursors[index] = outcome.value.nextCursor ?? null
+        return outcome.value.results.map(asset => ({ scope, asset }))
+    })
+    const failure = settled.find(
+        (outcome): outcome is PromiseRejectedResult =>
+            outcome.status === 'rejected',
+    )
+    if (results.length === 0 && failure) throw failure.reason
+    return {
+        results,
+        nextCursors: nextCursors.some(cursor => cursor !== null)
+            ? nextCursors
+            : undefined,
+    }
+}
