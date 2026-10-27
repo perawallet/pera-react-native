@@ -31,7 +31,8 @@ import {
 const STORE_NAME = 'card-store'
 
 // Client-only UX state. Server truth (card status, transactions, user) lives
-// in React Query; secrets (PAN/CVV/PIN/tokens) never enter this store.
+// in React Query; PAN/CVV/PIN/tokens never enter this store. The onboarding
+// password does, memory only, for the post-KYC login (see `partialize`).
 const initialState = {
     onboardingStep: OnboardingStep.EmailSend,
     email: null,
