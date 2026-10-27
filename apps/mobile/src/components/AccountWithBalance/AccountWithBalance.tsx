@@ -69,13 +69,15 @@ export const AccountWithBalance = ({
     const renderBalance = () => {
         if (crossChainTotal) {
             switch (crossChainTotal.kind) {
-                case 'unavailable':
+                case 'unavailable': {
                     return (
                         <ChainUnavailableNotice testID='account_chain_unavailable' />
                     )
-                case 'testOnly':
+                }
+                case 'testOnly': {
                     return testTierBadge
-                case 'fiat':
+                }
+                case 'fiat': {
                     return (
                         <PWView style={styles.balanceContainer}>
                             <PreferredAmount
@@ -86,6 +88,7 @@ export const AccountWithBalance = ({
                             />
                         </PWView>
                     )
+                }
             }
         }
         if (!availability.isAvailable) {
