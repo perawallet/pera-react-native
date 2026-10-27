@@ -221,6 +221,12 @@ describe('Flow: Account list with Ethereum registered', () => {
             ).toBeTruthy()
         })
         expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/10,000/)).toBeNull()
+        // The ALGO row's fiat line stays in fiat rather than repeating the ALGO amount.
+        await waitFor(() => {
+            expect(
+                within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
+            ).toBeTruthy()
+        })
         await waitFor(() => {
             expect(
                 screen.getByTestId('portfolio_total_value').textContent,
