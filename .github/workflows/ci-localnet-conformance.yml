@@ -1,6 +1,6 @@
 name: CI / LocalNet Conformance
 
-# Runs conformance/ (30 files, 117 tests) against a real LocalNet node instead
+# Runs conformance/ against a real LocalNet node instead
 # of mocks — see conformance/README.md. Nightly because it needs Docker
 # + a booted chain (too slow/flaky for every push); also gated on PR to the
 # packages this suite actually exercises, so a regression is caught before
@@ -9,6 +9,8 @@ name: CI / LocalNet Conformance
 # Keep the `paths` filter below in step with what the suite imports. A package
 # the suite exercises but does not list here is the bad case: it regresses on a
 # PR that never runs this workflow, and only the next nightly catches it.
+# lanekeep's pera/conformance-workflow-paths fails when a workspace dependency
+# in conformance/package.json is missing; transitive ones are listed by hand.
 
 on:
     schedule:
@@ -19,7 +21,6 @@ on:
     pull_request:
         paths:
             - 'conformance/**'
-            - 'packages/blockchain/**'
             - 'packages/signing/**'
             - 'packages/kms/**'
             # The send-flow and history param types and page constants the
@@ -43,6 +44,8 @@ on:
             # The schema and migrations the store-migration suite hydrates
             # account chain state from.
             - 'packages/database/**'
+            - 'packages/shared/**'
+            - 'extensions/provider/**'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:
@@ -73,6 +76,8 @@ jobs:
               with:
                   node-version-file: '.tool-versions'
 
+            # Path list and key match ci-cache-warm.yml's save exactly; a
+            # mismatch is a miss on every run.
             - name: Restore node_modules
               id: node-modules
               uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -83,6 +88,7 @@ jobs:
                       packages/*/node_modules
                       extensions/*/node_modules
                       conformance/node_modules
+                      conformance-evm/node_modules
                   key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
             - name: Install dependencies
