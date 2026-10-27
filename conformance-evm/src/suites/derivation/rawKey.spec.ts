@@ -67,15 +67,20 @@ describe('evm raw-key import conformance', () => {
             ['1', hex32(1n)],
             ['n - 1', hex32(ORDER - 1n)],
         ])('accepts the range boundary %s', (_label, input) => {
-            expect(parseEthereumPrivateKey(input)).toHaveLength(32)
+            expect(parseEthereumPrivateKey(input)).toEqual(
+                Uint8Array.from(Buffer.from(input, 'hex')),
+            )
+            expect(
+                formatEthereumPrivateKey(parseEthereumPrivateKey(input)),
+            ).toBe(`0x${input}`)
         })
 
-        it('accepts the key with and without the 0x prefix, yielding the same bytes', () => {
+        it('accepts the key with and without the 0x prefix, yielding its bytes', () => {
             const key = ANVIL_DEV_MNEMONIC_VECTOR.privateKeys[0]
+            const bytes = Uint8Array.from(Buffer.from(key.slice(2), 'hex'))
 
-            expect(parseEthereumPrivateKey(key)).toEqual(
-                parseEthereumPrivateKey(key.slice(2)),
-            )
+            expect(parseEthereumPrivateKey(key)).toEqual(bytes)
+            expect(parseEthereumPrivateKey(key.slice(2))).toEqual(bytes)
         })
 
         it('round-trips through formatEthereumPrivateKey to lowercase 0x hex', () => {
@@ -98,10 +103,7 @@ describe('evm raw-key import conformance', () => {
         expect(account.address).toBe(ANVIL_DEV_MNEMONIC_VECTOR.addresses[1])
     })
 
-    // credentialScheme resolves a standalone local key through a null-seed key
-    // kind, and ethereumLocalKeyKinds declares only the BIP-39 kind, so the
-    // signing machine throws CannotSignError for an imported EVM key.
-    it.fails('signs a transfer the node accepts as declared (finding: a raw-key EVM account cannot be signed with, so an imported private key can receive but never send)', async () => {
+    it('signs a transfer the node accepts as declared', async () => {
         const env = await createEvmConformanceEnv('ethereum')
         const sender = await createRawKeyEvmAccount(env)
         const recipient = await createRawKeyEvmAccount(env)
