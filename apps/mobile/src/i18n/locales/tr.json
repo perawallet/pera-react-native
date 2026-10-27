@@ -2652,6 +2652,7 @@
         "qrview": {
             "error_title": "Hesap seçilmedi",
             "error_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç",
+            "chain_unavailable_title": "{{chain}} bu hesapta kullanılamıyor",
             "copy_address": "Adresi kopyala",
             "share": "Adresi paylaş"
         }

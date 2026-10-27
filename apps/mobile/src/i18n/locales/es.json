@@ -2652,6 +2652,7 @@
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
             "error_body": "No se ha seleccionado ninguna cuenta, selecciona una primero",
+            "chain_unavailable_title": "{{chain}} no está disponible para esta cuenta",
             "copy_address": "Copiar dirección",
             "share": "Compartir dirección"
         }
