@@ -124,29 +124,35 @@ const isStandardCall = (value: unknown): boolean => {
     if (!isRecord(value) || !isAddressValue(value.contract)) return false
     switch (value.kind) {
         case 'transfer':
-        case 'transfer-from':
+        case 'transfer-from': {
             return isTransferParties(value) && Decimal.isDecimal(value.value)
-        case 'erc721-safe-transfer':
+        }
+        case 'erc721-safe-transfer': {
             return isTransferParties(value) && isDigits(value.tokenId)
-        case 'erc1155-transfer':
+        }
+        case 'erc1155-transfer': {
             return (
                 isTransferParties(value) &&
                 Array.isArray(value.items) &&
                 value.items.length > 0 &&
                 value.items.every(isNftItem)
             )
+        }
         case 'approve':
-        case 'increase-allowance':
+        case 'increase-allowance': {
             return (
                 isAddressValue(value.spender) && Decimal.isDecimal(value.value)
             )
-        case 'set-approval-for-all':
+        }
+        case 'set-approval-for-all': {
             return (
                 isAddressValue(value.operator) &&
                 typeof value.isApproved === 'boolean'
             )
-        default:
+        }
+        default: {
             return false
+        }
     }
 }
 

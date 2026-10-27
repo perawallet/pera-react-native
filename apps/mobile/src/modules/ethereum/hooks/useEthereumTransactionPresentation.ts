@@ -114,13 +114,16 @@ const counterpartyOf = (
 ): string => {
     switch (standardCall.kind) {
         case 'token-transfer':
-        case 'nft-transfer':
+        case 'nft-transfer': {
             return standardCall.to
+        }
         case 'token-approval':
-        case 'nft-approval':
+        case 'nft-approval': {
             return standardCall.spender
-        case 'collection-approval':
+        }
+        case 'collection-approval': {
             return standardCall.operator
+        }
     }
 }
 

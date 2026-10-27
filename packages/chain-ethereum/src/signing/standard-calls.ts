@@ -66,7 +66,7 @@ const toCall = (
     const address = (index: number) => getAddress(args[index] as Address)
     const uint = (index: number) => args[index] as bigint
     switch (item.name) {
-        case 'transfer':
+        case 'transfer': {
             return {
                 kind: 'transfer',
                 contract,
@@ -74,7 +74,8 @@ const toCall = (
                 to: address(0),
                 value: toDecimal(uint(1)),
             }
-        case 'transferFrom':
+        }
+        case 'transferFrom': {
             return {
                 kind: 'transfer-from',
                 contract,
@@ -82,7 +83,8 @@ const toCall = (
                 to: address(1),
                 value: toDecimal(uint(2)),
             }
-        case 'safeTransferFrom':
+        }
+        case 'safeTransferFrom': {
             return item.inputs.length === 5
                 ? {
                       kind: 'erc1155-transfer',
@@ -103,6 +105,7 @@ const toCall = (
                       to: address(1),
                       tokenId: uint(2).toString(),
                   }
+        }
         case 'safeBatchTransferFrom': {
             const ids = args[2] as readonly bigint[]
             const amounts = args[3] as readonly bigint[]
@@ -121,29 +124,33 @@ const toCall = (
                 })),
             }
         }
-        case 'approve':
+        case 'approve': {
             return {
                 kind: 'approve',
                 contract,
                 spender: address(0),
                 value: toDecimal(uint(1)),
             }
-        case 'increaseAllowance':
+        }
+        case 'increaseAllowance': {
             return {
                 kind: 'increase-allowance',
                 contract,
                 spender: address(0),
                 value: toDecimal(uint(1)),
             }
-        case 'setApprovalForAll':
+        }
+        case 'setApprovalForAll': {
             return {
                 kind: 'set-approval-for-all',
                 contract,
                 operator: address(0),
                 isApproved: args[1] as boolean,
             }
-        default:
+        }
+        default: {
             return undefined
+        }
     }
 }
 
@@ -206,17 +213,20 @@ export const standardCallSummary = (
     const chainId = chain.row.id
     switch (call.kind) {
         case 'approve':
-        case 'increase-allowance':
+        case 'increase-allowance': {
             return approvalSummary(call, call.spender)
-        case 'set-approval-for-all':
+        }
+        case 'set-approval-for-all': {
             return approvalSummary(call, call.operator)
+        }
         case 'transfer':
-        case 'transfer-from':
+        case 'transfer-from': {
             return sendSummary('token-transfer', call.from, call.to, {
                 assetRef: { chainId, assetId: call.contract },
                 value: call.value,
             })
-        case 'erc721-safe-transfer':
+        }
+        case 'erc721-safe-transfer': {
             return sendSummary('nft-transfer', call.from, call.to, {
                 assetRef: {
                     chainId,
@@ -224,6 +234,7 @@ export const standardCallSummary = (
                 },
                 value: new Decimal(1),
             })
+        }
         case 'erc1155-transfer': {
             const changes = call.items.map(item => ({
                 assetRef: {
@@ -279,13 +290,16 @@ export const approvalWarningOf = (
     if (isRevocation(call)) return undefined
     switch (call.kind) {
         case 'approve':
-        case 'increase-allowance':
+        case 'increase-allowance': {
             return toAllowanceAmount(BigInt(call.value.toFixed())) === undefined
                 ? { ...UNLIMITED_APPROVAL_WARNING }
                 : { ...LIMITED_APPROVAL_WARNING }
-        case 'set-approval-for-all':
+        }
+        case 'set-approval-for-all': {
             return { ...COLLECTION_APPROVAL_WARNING }
-        default:
+        }
+        default: {
             return undefined
+        }
     }
 }

@@ -103,17 +103,21 @@ const nftAssetIdOf = (
     isFungibleSettled: boolean,
 ): string => {
     switch (call.kind) {
-        case 'erc721-safe-transfer':
+        case 'erc721-safe-transfer': {
             return toEvmNftAssetId(call.contract, call.tokenId)
-        case 'erc1155-transfer':
+        }
+        case 'erc1155-transfer': {
             return toEvmNftAssetId(call.contract, call.items[0].tokenId)
+        }
         case 'transfer-from':
-        case 'approve':
+        case 'approve': {
             return isFungibleSettled && !hasFungibleRecord
                 ? toEvmNftAssetId(call.contract, call.value.toFixed())
                 : ''
-        default:
+        }
+        default: {
             return ''
+        }
     }
 }
 
@@ -128,7 +132,7 @@ const present = (
 ): EthereumStandardCallPresentation => {
     switch (call.kind) {
         case 'transfer':
-        case 'transfer-from':
+        case 'transfer-from': {
             if (call.kind === 'transfer-from' && nft) {
                 return {
                     kind: 'nft-transfer',
@@ -152,8 +156,9 @@ const present = (
                 to: call.to,
                 amount: token,
             }
+        }
         case 'erc721-safe-transfer':
-        case 'erc1155-transfer':
+        case 'erc1155-transfer': {
             return {
                 kind: 'nft-transfer',
                 contract: call.contract,
@@ -166,7 +171,8 @@ const present = (
                 collectionName: collectionNameOf(nft),
                 asset: nft,
             }
-        case 'approve':
+        }
+        case 'approve': {
             if (nft) {
                 return {
                     kind: 'nft-approval',
@@ -183,20 +189,23 @@ const present = (
                 spender: call.spender,
                 spendApproval: spendApprovalOfCall(call, chainId),
             }
-        case 'increase-allowance':
+        }
+        case 'increase-allowance': {
             return {
                 kind: 'token-approval',
                 contract: call.contract,
                 spender: call.spender,
                 spendApproval: spendApprovalOfCall(call, chainId),
             }
-        case 'set-approval-for-all':
+        }
+        case 'set-approval-for-all': {
             return {
                 kind: 'collection-approval',
                 contract: call.contract,
                 operator: call.operator,
                 isApproved: call.isApproved,
             }
+        }
     }
 }
 
