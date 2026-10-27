@@ -81,7 +81,11 @@ tracer's post-reset snapshot instead of a fixed delay.
 
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
-`e2e/tools/parity.py` fails unless every scenario passed on both platforms.
+`e2e/tools/parity.py` compares two passes — `parity.py results/final-android results/final-ios`,
+each a pass directory or a single `output.xml`. It fails on a scenario that passed on one platform
+and failed on the other, or that ran on only one. It does not require a pass on both: around fifty
+scenarios per platform skip for reasons the app cannot change, and a gate nobody can get green is
+one everybody learns to route around.
 
 ## Checking the tooling itself
 
@@ -90,6 +94,7 @@ platforms, so keep it when renaming a case and never reuse one for a different b
 ```sh
 e2e/.venv/bin/python e2e/tools/test_parity.py
 e2e/.venv/bin/python e2e/tools/test_nav_trace.py
+e2e/.venv/bin/python e2e/tools/test_flaky.py
 ```
 
 Each file runs its own checks under `__main__` rather than through pytest, which is not in
@@ -97,4 +102,6 @@ Each file runs its own checks under `__main__` rather than through pytest, which
 
 `e2e/tools/flaky.py` takes two or more passes of the same platform and names the cases whose verdict
 changed between them. A case that is green twice is not yet proof of anything, but one that
-changes is a defect in the test, the app, or the device — and worth finding before CI does.
+changes is a defect in the test, the app, or the device — and worth finding before CI does. A case
+that only ever alternates between passing and skipping is reported apart from those, as
+`CONDITIONAL`: it is the suite stating a condition it ran under, not a verdict that moved.

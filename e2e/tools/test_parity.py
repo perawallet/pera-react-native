@@ -4,7 +4,10 @@ Plain asserts and a __main__ runner rather than pytest, which is not in
 requirements.txt and so was never actually run against this file.
 """
 
-from parity import BLOCKING, matrix, verdict
+import tempfile
+from pathlib import Path
+
+from parity import BLOCKING, matrix, outputs_under, verdict
 
 
 def test_a_scenario_working_on_one_platform_and_broken_on_the_other_blocks():
@@ -43,6 +46,22 @@ def test_matrix_labels_every_scenario_from_either_platform():
         ("c", "missing"),
         ("d", "missing"),
     ]
+
+
+def test_a_pass_directory_is_read_whichever_way_the_runner_laid_it_out():
+    # A full pass writes a directory per suite; a single-suite run writes straight into
+    # the pass directory. Reading only the nested form let the gate be pointed at one
+    # suite but never at the pass it exists to gate.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "nested" / "accounts").mkdir(parents=True)
+        (root / "nested" / "accounts" / "output.xml").touch()
+        (root / "flat").mkdir()
+        (root / "flat" / "output.xml").touch()
+
+        assert outputs_under(root / "nested") == [root / "nested" / "accounts" / "output.xml"]
+        assert outputs_under(root / "flat") == [root / "flat" / "output.xml"]
+        assert outputs_under(root / "flat" / "output.xml") == [root / "flat" / "output.xml"]
 
 
 if __name__ == "__main__":

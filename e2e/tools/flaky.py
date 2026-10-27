@@ -42,7 +42,11 @@ def collect(pass_dir):
     """
     status, unreadable = {}, []
     setup_failures = 0
-    outputs = sorted(Path(pass_dir).glob("*/output.xml"))
+    # A full pass writes one directory per suite; a single-suite run writes straight into
+    # the pass directory. Reading only the first called a perfectly good single-suite run
+    # incomplete and refused to compare it.
+    outputs = sorted(Path(pass_dir).glob("output.xml"))
+    outputs += sorted(Path(pass_dir).glob("*/output.xml"))
     if not outputs:
         unreadable.append(f"{pass_dir}: no suite output at all")
     for output in outputs:
@@ -63,6 +67,28 @@ def collect(pass_dir):
     return status, unreadable
 
 
+def classify(seen, pass_count):
+    """Split the cases into the ones worth acting on, by how their verdicts differ.
+
+    A case that passes once and fails once has an unstable verdict. One that passes
+    once and skips once does not: skips here are the suite stating a condition it ran
+    under - no backend key, a flag off, an intro screen a device only shows once - so
+    calling those flaky buries the few cases that really do change their mind among
+    dozens that simply were not asked.
+    """
+    flaky, conditional, missing = [], [], []
+    for name, verdicts in sorted(seen.items()):
+        if len(verdicts) < pass_count:
+            missing.append((name, verdicts))
+        elif len(set(verdicts)) == 1:
+            continue
+        elif "FAIL" in verdicts:
+            flaky.append((name, verdicts))
+        else:
+            conditional.append((name, verdicts))
+    return flaky, conditional, missing
+
+
 def main(dirs):
     collected = [collect(d) for d in dirs]
     passes = [status for status, _ in collected]
@@ -75,23 +101,21 @@ def main(dirs):
         print("\nA pass that did not finish cannot be compared; rerun it.")
         return 2
     seen = defaultdict(list)
-    for name, verdicts in ((n, p) for p in passes for n in p):
-        seen[name].append(verdicts[name])
+    for name, pass_status in ((n, p) for p in passes for n in p):
+        seen[name].append(pass_status[name])
 
-    flaky, missing = [], []
-    for name, verdicts in sorted(seen.items()):
-        if len(verdicts) < len(passes):
-            missing.append((name, verdicts))
-        elif len(set(verdicts)) > 1:
-            flaky.append((name, verdicts))
+    flaky, conditional, missing = classify(seen, len(passes))
 
     for name, verdicts in flaky:
-        print(f"FLAKY    {name}  {' '.join(verdicts)}")
+        print(f"FLAKY        {name}  {' '.join(verdicts)}")
+    for name, verdicts in conditional:
+        print(f"CONDITIONAL  {name}  {' '.join(verdicts)}")
     for name, verdicts in missing:
-        print(f"MISSING  {name}  ran in {len(verdicts)} of {len(passes)} passes")
+        print(f"MISSING      {name}  ran in {len(verdicts)} of {len(passes)} passes")
 
-    print(f"\n{len(seen)} cases over {len(passes)} passes: "
-          f"{len(flaky)} flaky, {len(missing)} did not run every pass")
+    print(f"\n{len(seen)} cases over {len(passes)} passes: {len(flaky)} flaky, "
+          f"{len(conditional)} ran only under some conditions, "
+          f"{len(missing)} did not run every pass")
     return 1 if flaky else 0
 
 

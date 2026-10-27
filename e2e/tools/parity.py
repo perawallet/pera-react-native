@@ -1,12 +1,15 @@
 """Two-platform result matrix from Robot output files.
 
-Usage: python e2e/tools/parity.py results/android/output.xml results/ios/output.xml
+Usage: python e2e/tools/parity.py results/final-android results/final-ios
+
+Each argument is a pass directory, or a single output.xml.
 
 Exits non-zero when a scenario did not pass on both platforms, or ran on only one.
 """
 
 import sys
 from collections import Counter
+from pathlib import Path
 
 from robot.api import ExecutionResult, ResultVisitor
 
@@ -23,10 +26,29 @@ class _Collect(ResultVisitor):
             self.status[f"(untagged) {test.longname}"] = test.status
 
 
+def outputs_under(path):
+    """Every Robot output file one argument names.
+
+    The runner writes a directory per suite, so a whole pass has no single output.xml
+    to point at. Taking only a file meant the parity gate could be run against one
+    suite at a time and never against the pass it is meant to gate.
+    """
+    path = Path(path)
+    if path.is_file():
+        return [path]
+    files = sorted(path.glob("output.xml")) + sorted(path.glob("*/output.xml"))
+    if not files:
+        sys.exit(f"{path}: no Robot output files here")
+    return files
+
+
 def collect(path):
-    visitor = _Collect()
-    ExecutionResult(path).visit(visitor)
-    return visitor.status
+    status = {}
+    for output in outputs_under(path):
+        visitor = _Collect()
+        ExecutionResult(str(output)).visit(visitor)
+        status.update(visitor.status)
+    return status
 
 
 def verdict(a, i):
