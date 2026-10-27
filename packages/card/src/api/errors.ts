@@ -221,12 +221,10 @@ export const isAccountLockedError = (apiError: CardApiError): boolean => {
 
 /**
  * GET /v1/auth/register stops answering for an onboarding id once Baanx has
- * turned the record into an account ("Invalid onboarding ID").
+ * turned the record into an account ("Invalid onboarding ID"). Matched on the
+ * message, since a missing route's bare 404 is an outage, not a verdict.
  */
 export const isOnboardingNotFoundError = (apiError: CardApiError): boolean => {
-    if (apiError.status === 404) {
-        return true
-    }
     const text =
         `${apiError.code ?? ''} ${apiError.message ?? ''}`.toLowerCase()
     // indexOf, not /onboarding.*not found/: the unbounded `.*` is quadratic

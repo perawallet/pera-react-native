@@ -103,29 +103,33 @@ export const useOnboardingKycPoll = (
             : BACKOFF_POLL_INTERVAL_MS
     }
 
+    const [isRecordGone, setIsRecordGone] = useState(false)
+    const [classifiedRecordError, setClassifiedRecordError] =
+        useState<unknown>(null)
     const onboardingQuery = useOnboardingDetailsQuery(scope, {
         onboardingId,
         enabled: enabled && !isAuthenticated && !isRegistrationComplete,
         refetchInterval: query =>
-            nextPollInterval(
-                query.state.data?.verificationState ?? null,
-                query.state.data?.phase === OnboardingPhase.Account,
-            ),
+            isRecordGone
+                ? false
+                : nextPollInterval(
+                      query.state.data?.verificationState ?? null,
+                      query.state.data?.phase === OnboardingPhase.Account,
+                  ),
     })
     const userQuery = useCardUserQuery(scope, {
         enabled: enabled && isAuthenticated,
         refetchInterval: query =>
             nextPollInterval(query.state.data?.verificationState ?? null, true),
     })
-    const [isRecordGone, setIsRecordGone] = useState(false)
     const recordError = onboardingQuery.error
     useEffect(() => {
         if (!recordError) return
         let isCurrent = true
         void getCardApiError(recordError).then(apiError => {
-            if (isCurrent && isOnboardingNotFoundError(apiError)) {
-                setIsRecordGone(true)
-            }
+            if (!isCurrent) return
+            if (isOnboardingNotFoundError(apiError)) setIsRecordGone(true)
+            setClassifiedRecordError(recordError)
         })
         return () => {
             isCurrent = false
@@ -144,6 +148,12 @@ export const useOnboardingKycPoll = (
         !isAuthenticated && isRecordGone
             ? VerificationState.Verified
             : (data?.verificationState ?? null)
+    // Until a record error is read, it may still turn out to mean verified.
+    const isReadingRecordError =
+        !isAuthenticated &&
+        data === undefined &&
+        recordError !== null &&
+        recordError !== classifiedRecordError
     const isStateUnknown =
         data !== undefined && data !== null && verificationState === null
     // React Query's own loading flag — true only while the first fetch is
@@ -201,7 +211,7 @@ export const useOnboardingKycPoll = (
     return {
         verificationState,
         isStateUnknown,
-        isLoading,
+        isLoading: isLoading || isReadingRecordError,
         hasPollTimedOut,
         hasAccountSignal,
         restartPolling,

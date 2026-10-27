@@ -225,14 +225,32 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
 
     it('reads a record gone on a cold start as verified, since only a verified record becomes an account', async () => {
         mockVerificationState = undefined
-        mockQueryError = { response: { status: 404 } }
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
         const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        // Held as loading so the row never offers KYC on a gone record.
         expect(result.current.verificationState).toBeNull()
+        expect(result.current.isLoading).toBe(true)
 
         await waitFor(() =>
             expect(result.current.verificationState).toBe('VERIFIED'),
         )
+        expect(result.current.isLoading).toBe(false)
         expect(result.current.hasAccountSignal).toBe(true)
+        expect(scheduledInterval()).toBe(false)
+    })
+
+    it('stops reading a record error as loading once it turns out to be an outage', async () => {
+        mockVerificationState = undefined
+        mockQueryError = { response: { status: 503 } }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        expect(result.current.isLoading).toBe(true)
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.verificationState).toBeNull()
+        expect(result.current.hasAccountSignal).toBe(false)
     })
 
     it('does not read an outage as the account existing', async () => {

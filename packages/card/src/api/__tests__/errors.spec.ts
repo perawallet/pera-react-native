@@ -55,10 +55,13 @@ describe('isAccountLockedError', () => {
 
 describe('isOnboardingNotFoundError', () => {
     it.each([
-        ['a 404', { status: 404 }],
         [
             'Invalid onboarding ID',
             { status: 400, message: 'Invalid onboarding ID' },
+        ],
+        [
+            'a 404 that names the onboarding',
+            { status: 404, message: 'Invalid onboarding ID' },
         ],
         [
             'an onboarding record not found',
@@ -70,6 +73,7 @@ describe('isOnboardingNotFoundError', () => {
 
     it.each([
         ['an outage', { status: 503 }],
+        ['a missing route', { status: 404, message: 'Not Found' }],
         [
             '"not found" before "onboarding"',
             { status: 400, message: 'Not found while onboarding' },
