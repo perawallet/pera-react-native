@@ -15,8 +15,10 @@
 import { describe, it, expect } from 'vitest'
 import {
     canAttemptAutomaticLogin,
+    hasLoginAttemptsLeft,
     INITIAL_LOGIN_ATTEMPTS,
     LOGIN_ATTEMPT_SPACING_MS,
+    MAX_LOGIN_ATTEMPTS,
     msUntilNextLoginAttempt,
 } from '../login-attempts'
 
@@ -70,7 +72,26 @@ describe('login attempt budget', () => {
     it('never allows a third automatic login', () => {
         expect(
             canAttemptAutomaticLogin(
-                { automatic: 2, lastAt: NOW - 10 * 60_000, isLocked: false },
+                {
+                    automatic: 2,
+                    total: 2,
+                    lastAt: NOW - 10 * 60_000,
+                    isLocked: false,
+                },
+                { now: NOW, hasAccountSignal: true },
+            ),
+        ).toBe(false)
+    })
+
+    it('stops automatic logins once the session total is spent', () => {
+        expect(
+            canAttemptAutomaticLogin(
+                {
+                    automatic: 1,
+                    total: MAX_LOGIN_ATTEMPTS,
+                    lastAt: NOW - 10 * 60_000,
+                    isLocked: false,
+                },
                 { now: NOW, hasAccountSignal: true },
             ),
         ).toBe(false)
@@ -83,6 +104,27 @@ describe('login attempt budget', () => {
                 { now: NOW, hasAccountSignal: true },
             ),
         ).toBe(false)
+    })
+
+    it.each([
+        ['nothing has run', INITIAL_LOGIN_ATTEMPTS, true],
+        [
+            'one login is left',
+            { ...INITIAL_LOGIN_ATTEMPTS, total: MAX_LOGIN_ATTEMPTS - 1 },
+            true,
+        ],
+        [
+            'the session total is spent',
+            { ...INITIAL_LOGIN_ATTEMPTS, total: MAX_LOGIN_ATTEMPTS },
+            false,
+        ],
+        [
+            'the account is locked',
+            { ...INITIAL_LOGIN_ATTEMPTS, isLocked: true },
+            false,
+        ],
+    ])('has logins left when %s: %s', (_label, attempts, expected) => {
+        expect(hasLoginAttemptsLeft(attempts)).toBe(expected)
     })
 
     it('reports no wait when nothing has run, or the spacing has passed', () => {

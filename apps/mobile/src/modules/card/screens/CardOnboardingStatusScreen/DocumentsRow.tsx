@@ -70,6 +70,14 @@ const DOCUMENTS_ROW: Record<
         bodyKey: i18nKey('peraCard.setup_status.documents_preparing_slow_body'),
         showsPendingLabel: true,
     },
+    'preparing-stalled': {
+        icon: 'info',
+        variant: 'error',
+        bodyKey: i18nKey(
+            'peraCard.setup_status.documents_preparing_stalled_body',
+        ),
+        showsPendingLabel: false,
+    },
     'account-locked': {
         icon: 'cross',
         variant: 'error',
@@ -148,6 +156,7 @@ export const DocumentsRow = ({
                 />
             ) : null}
             {documentsState === 'preparing-slow' ||
+            documentsState === 'preparing-stalled' ||
             documentsState === 'account-locked' ? (
                 <PWText
                     variant='footnoteMedium'

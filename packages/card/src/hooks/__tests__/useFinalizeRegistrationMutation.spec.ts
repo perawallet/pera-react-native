@@ -130,6 +130,7 @@ describe('useFinalizeRegistrationMutation', () => {
 
         expect(useCardStore.getState().loginAttempts).toMatchObject({
             automatic: 1,
+            total: 1,
             lastAt: expect.any(Number),
         })
 

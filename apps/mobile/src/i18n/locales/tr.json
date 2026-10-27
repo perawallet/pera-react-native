@@ -1826,6 +1826,7 @@
             "documents_verified_body": "Kimliğin doğrulandı.",
             "documents_preparing_body": "Kimliğin doğrulandı. Hesabını hazırlıyoruz, bu birkaç dakika sürebilir.",
             "documents_preparing_slow_body": "Kimliğin doğrulandı ancak hesabını hazırlamak normalden uzun sürüyor. Denemeye devam ediyoruz.",
+            "documents_preparing_stalled_body": "Kimliğin doğrulandı ancak hesabını hazırlamayı tamamlayamadık. Tamamlamak için destek ekibiyle iletişime geç.",
             "documents_account_locked_body": "Pera Card hesabın geçici olarak kilitlendi. Kilidi açmak için destek ekibiyle iletişime geç.",
             "documents_rejected_body": "Kimliğini doğrulayamadık. Yardım için lütfen destek ekibiyle iletişime geç.",
             "documents_error_body": "Doğrulama durumunu kontrol edemedik. Lütfen tekrar dene.",

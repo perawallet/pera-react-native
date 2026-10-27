@@ -417,6 +417,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it.each([
         ['preparing', 'preparing'],
         ['slow', 'preparing-slow'],
+        ['stalled', 'preparing-stalled'],
     ])(
         'shows the account as being prepared (%s) while Baanx finishes it',
         (accountPreparation, documentsState) => {

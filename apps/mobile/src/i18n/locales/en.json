@@ -1826,6 +1826,7 @@
             "documents_verified_body": "Your identity has been verified.",
             "documents_preparing_body": "Your identity is verified. We're setting up your account, which can take a few minutes.",
             "documents_preparing_slow_body": "Your identity is verified, but setting up your account is taking longer than usual. We'll keep trying.",
+            "documents_preparing_stalled_body": "Your identity is verified, but we couldn't finish setting up your account. Contact support to complete it.",
             "documents_account_locked_body": "Your Pera Card account is temporarily locked. Contact support to unlock it.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
             "documents_error_body": "We couldn't check your verification status. Please try again.",

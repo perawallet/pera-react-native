@@ -139,6 +139,7 @@ describe('useCardStore', () => {
         })
         expect(result.current.loginAttempts).toEqual({
             automatic: 1,
+            total: 2,
             lastAt: 2000,
             isLocked: false,
         })
@@ -162,6 +163,7 @@ describe('useCardStore', () => {
         act(() => result.current.clearLoginSecrets())
         expect(result.current.loginAttempts).toEqual({
             automatic: 0,
+            total: 0,
             lastAt: null,
             isLocked: false,
         })

@@ -119,6 +119,7 @@ export const useCardStore: UseBoundStore<
                         automatic:
                             state.loginAttempts.automatic +
                             (isAutomatic ? 1 : 0),
+                        total: state.loginAttempts.total + 1,
                         lastAt: at,
                     },
                 })),

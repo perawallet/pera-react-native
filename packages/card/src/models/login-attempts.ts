@@ -20,6 +20,8 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type LoginAttempts = {
     /** Logins the app started on its own this onboarding session. */
     automatic: number
+    /** Logins of any kind (automatic, retry or sign-in) this session. */
+    total: number
     /** Epoch ms of the last login of any kind (automatic, retry or sign-in). */
     lastAt: Nullable<number>
     /** Baanx answered that the account is locked; nothing retries after that. */
@@ -28,12 +30,20 @@ export type LoginAttempts = {
 
 export const INITIAL_LOGIN_ATTEMPTS: LoginAttempts = {
     automatic: 0,
+    total: 0,
     lastAt: null,
     isLocked: false,
 }
 
 export const MAX_AUTOMATIC_LOGIN_ATTEMPTS = 2
+// Kept under the lockout threshold common to login APIs; Baanx hasn't
+// published its own.
+export const MAX_LOGIN_ATTEMPTS = 3
 export const LOGIN_ATTEMPT_SPACING_MS = 2 * 60_000
+
+/** False once the session's logins are spent or Baanx locked the account. */
+export const hasLoginAttemptsLeft = (attempts: LoginAttempts): boolean =>
+    !attempts.isLocked && attempts.total < MAX_LOGIN_ATTEMPTS
 
 /** Milliseconds until another login may run; 0 when one may run now. */
 export const msUntilNextLoginAttempt = (
@@ -47,13 +57,13 @@ export const msUntilNextLoginAttempt = (
 /**
  * The first automatic login runs only when no login has run yet this
  * session; the second only once the onboarding record says the account
- * exists. Both respect the spacing and the lock.
+ * exists. Both respect the spacing, the session total and the lock.
  */
 export const canAttemptAutomaticLogin = (
     attempts: LoginAttempts,
     { now, hasAccountSignal }: { now: number; hasAccountSignal: boolean },
 ): boolean =>
-    !attempts.isLocked &&
+    hasLoginAttemptsLeft(attempts) &&
     attempts.automatic < MAX_AUTOMATIC_LOGIN_ATTEMPTS &&
     msUntilNextLoginAttempt(attempts, now) === 0 &&
     (attempts.lastAt === null || hasAccountSignal)

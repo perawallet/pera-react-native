@@ -21,6 +21,7 @@ import type { AccountPreparation } from './useFinishRegistrationOnVerified'
  * - `pending`: submitted and under review.
  * - `preparing` / `preparing-slow`: verified, and Baanx is still creating
  *   the account (for longer than usual in the second case).
+ * - `preparing-stalled`: the same, with no logins left this session.
  * - `account-locked`: Baanx locked the account after repeated failed logins.
  */
 export type DocumentsState =
@@ -30,6 +31,7 @@ export type DocumentsState =
     | 'verified'
     | 'preparing'
     | 'preparing-slow'
+    | 'preparing-stalled'
     | 'account-locked'
     | 'rejected'
     | 'error'
@@ -60,6 +62,7 @@ export const resolveDocumentsState = (
         case VerificationState.Verified: {
             if (accountPreparation === 'preparing') return 'preparing'
             if (accountPreparation === 'slow') return 'preparing-slow'
+            if (accountPreparation === 'stalled') return 'preparing-stalled'
             return 'verified'
         }
         case VerificationState.Pending: {

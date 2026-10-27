@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     LOGIN_ATTEMPT_SPACING_MS,
+    MAX_LOGIN_ATTEMPTS,
     useCardStore,
     type FinalizeRegistrationOutcome,
 } from '@perawallet/wallet-core-card'
@@ -192,6 +193,26 @@ describe('useFinishRegistrationOnVerified', () => {
         expect(result.current.canTryAgain).toBe(false)
         // A tap is not automatic, so it leaves the automatic budget alone.
         expect(useCardStore.getState().loginAttempts.automatic).toBe(1)
+    })
+
+    it('stops logging in, tapped or not, once the session total is spent', async () => {
+        const { result, rerender } = renderFinish(VERIFIED)
+        await flush()
+        for (let tap = 1; tap < MAX_LOGIN_ATTEMPTS; tap++) {
+            await advance(LOGIN_ATTEMPT_SPACING_MS)
+            act(() => result.current.handleTryAgain())
+            await flush()
+        }
+        expect(mockFinalize).toHaveBeenCalledTimes(MAX_LOGIN_ATTEMPTS)
+
+        await advance(LOGIN_ATTEMPT_SPACING_MS)
+        rerender({ ...VERIFIED, hasAccountSignal: true })
+        act(() => result.current.handleTryAgain())
+        await advance(60 * 60_000)
+
+        expect(mockFinalize).toHaveBeenCalledTimes(MAX_LOGIN_ATTEMPTS)
+        expect(result.current.canTryAgain).toBe(false)
+        expect(result.current.accountPreparation).toBe('stalled')
     })
 
     it('stops everything once Baanx says the account is locked', async () => {

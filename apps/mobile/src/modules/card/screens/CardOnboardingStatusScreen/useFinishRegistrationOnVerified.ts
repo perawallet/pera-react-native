@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import {
     canAttemptAutomaticLogin,
+    hasLoginAttemptsLeft,
     msUntilNextLoginAttempt,
     useCardStore,
     useFinalizeRegistrationMutation,
@@ -33,8 +34,10 @@ export const FINISH_REGISTRATION_SLOW_AFTER_MS = 10 * 60_000
  * - `none`: nothing is waiting on Baanx.
  * - `preparing`: KYC is verified and Baanx is still creating the account.
  * - `slow`: the same, for longer than Baanx normally takes.
+ * - `stalled`: the same, with this session's logins spent, so only support
+ *   can finish it.
  */
-export type AccountPreparation = 'none' | 'preparing' | 'slow'
+export type AccountPreparation = 'none' | 'preparing' | 'slow' | 'stalled'
 
 export type UseFinishRegistrationOnVerifiedParams = {
     verificationState: Nullable<VerificationState>
@@ -50,7 +53,10 @@ export type UseFinishRegistrationOnVerifiedResult = {
     accountPreparation: AccountPreparation
     /** Baanx locked the account after repeated failed logins. */
     isLoginLocked: boolean
-    /** A tap may run one login now: none in flight and the spacing has passed. */
+    /**
+     * A tap may run one login now: none in flight, the spacing has passed and
+     * the session has logins left.
+     */
     canTryAgain: boolean
     handleTryAgain: () => void
 }
@@ -60,7 +66,8 @@ export type UseFinishRegistrationOnVerifiedResult = {
  * yields no session as a failed attempt, locking the account after repeated
  * ones. So this runs one automatic login on the verdict, a second only once
  * the onboarding record says the account exists, and otherwise waits for the
- * user's "Try again". Every login respects the budget in the card store.
+ * user's "Try again". Every login, tapped or not, spends the same session
+ * budget in the card store.
  */
 export const useFinishRegistrationOnVerified = (
     scope: ChainScope,
@@ -90,6 +97,7 @@ export const useFinishRegistrationOnVerified = (
         !isRegistrationComplete &&
         !isAuthenticated
     const isLoginLocked = loginAttempts.isLocked && !isRegistrationComplete
+    const hasAttemptsLeft = hasLoginAttemptsLeft(loginAttempts)
 
     const sendToSignIn = useCallback(() => {
         if (hasSentToSignInRef.current) return
@@ -188,7 +196,7 @@ export const useFinishRegistrationOnVerified = (
     const handleTryAgain = useCallback(() => {
         if (
             !isWaitingOnBaanx ||
-            loginAttempts.isLocked ||
+            !hasLoginAttemptsLeft(loginAttempts) ||
             msUntilNextLoginAttempt(loginAttempts, Date.now()) > 0
         ) {
             return
@@ -199,11 +207,14 @@ export const useFinishRegistrationOnVerified = (
     return {
         accountPreparation: !isPreparing
             ? 'none'
-            : msUntilSlow === 0
-              ? 'slow'
-              : 'preparing',
+            : !hasAttemptsLeft && !isPending
+              ? 'stalled'
+              : msUntilSlow === 0
+                ? 'slow'
+                : 'preparing',
         isLoginLocked,
-        canTryAgain: isPreparing && !isPending && msUntilNext === 0,
+        canTryAgain:
+            isPreparing && !isPending && msUntilNext === 0 && hasAttemptsLeft,
         handleTryAgain,
     }
 }
