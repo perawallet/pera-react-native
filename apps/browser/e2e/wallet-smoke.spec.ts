@@ -215,7 +215,7 @@ test('the More sheet (PWSheetLayout) renders real content, not blank', async () 
         timeout: 20_000,
     })
     await openMoreSheet(page)
-    await expect(page.getByText('Networks', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('account_networks_title')).toBeVisible()
     await expect(page.getByTestId('account_network_algorand_qr')).toBeVisible()
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
     await dismissSheet(page)

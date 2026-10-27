@@ -52,9 +52,11 @@ export const useChainCapabilityCheck = (): ((
     )
     return ({ chain, anyChain }) => {
         const { chains } = getProvider()
+        // A stored account can hold a chain this build doesn't register; it has no capabilities here.
         return (
             (chain === undefined ||
-                chains.capabilities(chain.chainId)[chain.capability]) &&
+                (chains.has(chain.chainId) &&
+                    chains.capabilities(chain.chainId)[chain.capability])) &&
             (anyChain === undefined ||
                 chains
                     .list()
@@ -110,5 +112,6 @@ export const useIsCapabilityRestricted = (
 ): boolean => {
     // Subscribes to the mode and override changes the registry read depends on.
     useChainCapabilityCheck()
-    return getProvider().chains.isRestricted(chainId, capability)
+    const { chains } = getProvider()
+    return chains.has(chainId) && chains.isRestricted(chainId, capability)
 }

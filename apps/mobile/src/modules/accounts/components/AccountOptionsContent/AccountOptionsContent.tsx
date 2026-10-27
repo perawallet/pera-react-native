@@ -157,6 +157,7 @@ export const AccountOptionsContent = ({
             <PWText
                 variant='h3'
                 style={styles.networksTitle}
+                testID='account_networks_title'
             >
                 {t('account_options.networks_title')}
             </PWText>

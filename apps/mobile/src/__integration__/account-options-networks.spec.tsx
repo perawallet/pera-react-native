@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
 import {
     afterAll,
     beforeAll,
@@ -20,7 +19,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 
 import {
@@ -34,7 +33,6 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { useKMS, type HDWalletKeyResult } from '@perawallet/wallet-core-kms'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -43,13 +41,15 @@ import {
 } from '@test-utils/database-setup'
 import { server } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
-import { BottomSheetManager, useBottomSheet } from '@modules/bottom-sheet'
+import { longPress } from '@test-utils/rnw'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 
 import {
-    HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24_INDICES,
-} from './__fixtures__/onboarding'
+    hdSiblingOf,
+    seedHdAccount,
+    SheetHost,
+} from './__fixtures__/accountOptions'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const ETHEREUM_RPC_URL = 'https://ethereum.rpc.test/'
@@ -81,62 +81,22 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const HD_ACCOUNT_ID = 'hd-root'
-
-const seedHdAccount = async (): Promise<WalletAccount> => {
-    const { result: kms } = renderHook(() => useKMS())
-    let rootKey: HDWalletKeyResult | null = null
-    await waitFor(async () => {
-        rootKey = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
-        })
-        expect(rootKey).not.toBeNull()
-    })
-    const account: WalletAccount = {
-        id: HD_ACCOUNT_ID,
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        chains: {
-            algorand: {
-                address: HD_TEST_ADDRESS,
-                keyPairId: rootKey!.seedKey.id ?? '',
-            },
-        },
-        name: 'HD Root',
-    }
-    useAccountsStore.getState().setAccounts([account])
-    return account
-}
-
 const AccountOptionsHost = ({
     account,
     onShowAddress = () => {},
 }: {
     account: WalletAccount
     onShowAddress?: (account: WalletAccount, chainId: ChainId) => void
-}) => {
-    const { request } = useBottomSheet()
-    useEffect(() => {
-        void request({
-            contents: (
-                <AccountOptionsContent
-                    account={account}
-                    onShowAddress={onShowAddress}
-                />
-            ),
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-    return <BottomSheetManager />
-}
+}) => (
+    <SheetHost
+        contents={
+            <AccountOptionsContent
+                account={account}
+                onShowAddress={onShowAddress}
+            />
+        }
+    />
+)
 
 describe('Flow: the account options sheet lists the account on each network', () => {
     beforeAll(async () => {
@@ -296,6 +256,16 @@ describe('Flow: the account options sheet lists the account on each network', ()
         expect(screen.queryByTestId('account_network_ethereum')).toBeNull()
     })
 
+    it('Given a multichain build, when the sheet opens, then the network rows are headed "Networks"', async () => {
+        const account = await seedHdAccount()
+
+        render(<AccountOptionsHost account={account} />)
+
+        expect(
+            (await screen.findByTestId('account_networks_title')).textContent,
+        ).toBe('account_options.networks_title')
+    })
+
     it('Given an HD account, when the user taps "See wallet structure", then the structure opens as before', async () => {
         const account = await seedHdAccount()
 
@@ -308,5 +278,38 @@ describe('Flow: the account options sheet lists the account on each network', ()
         expect(
             await screen.findByText('account_info.hide_wallet_structure'),
         ).toBeTruthy()
+    })
+
+    it("Given two accounts in one Universal Wallet, when the user opens the wallet structure, then the sheet's account is marked Viewing and the other opens to its addresses", async () => {
+        const account = await seedHdAccount()
+        useAccountsStore
+            .getState()
+            .setAccounts([account, hdSiblingOf(account, ALGO25_TEST_ADDRESS)])
+
+        render(<AccountOptionsHost account={account} />)
+        fireEvent.click(
+            await screen.findByText('account_info.see_wallet_structure'),
+        )
+
+        expect(await screen.findByText('account_info.viewing')).toBeTruthy()
+
+        const siblingRow = screen.getByTestId(
+            'account_structure_row_hd-sibling',
+        )
+        expect(siblingRow.getAttribute('aria-expanded')).toBe('false')
+
+        fireEvent.click(siblingRow)
+        await waitFor(() =>
+            expect(siblingRow.getAttribute('aria-expanded')).toBe('true'),
+        )
+        await longPress(
+            await screen.findByTestId('account_structure_address_algorand'),
+        )
+
+        await waitFor(() =>
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ALGO25_TEST_ADDRESS,
+            ),
+        )
     })
 })
