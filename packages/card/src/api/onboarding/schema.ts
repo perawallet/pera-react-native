@@ -97,6 +97,10 @@ export type RegisterVerificationApiResponse = z.infer<
     typeof registerVerificationResponseSchema
 >
 
+// The KYC poll parses this record every few seconds, so a profile field in a
+// shape we don't expect reads as missing instead of failing the poll.
+const lenient = <T extends z.ZodType>(schema: T) => schema.nullish().catch(null)
+
 // GET /v1/auth/register?onboardingId= — onboarding status. We model the KYC
 // state the verification screen polls, the `phase` that routes the flow, and
 // the profile fields used to prefill the forms on resume; Zod strips the rest.
@@ -105,24 +109,24 @@ export const onboardingDetailsResponseSchema = z.object({
     // (same "unknown" bucket as an unmodelled string) instead of throwing.
     verificationState: z.string().nullish(),
     phase: z.string().nullish(),
-    email: z.string().nullish(),
-    countryOfResidence: z.string().nullish(),
-    firstName: z.string().optional().nullable(),
-    lastName: z.string().optional().nullable(),
+    email: lenient(z.string()),
+    countryOfResidence: lenient(z.string()),
+    firstName: lenient(z.string()),
+    lastName: lenient(z.string()),
     /** ISO datetime, e.g. `1997-11-08T00:00:00.000Z`. */
-    dateOfBirth: z.string().optional().nullable(),
+    dateOfBirth: lenient(z.string()),
     /** ISO 3166-1 alpha-2; null until the user provides it. */
-    countryOfNationality: z.string().optional().nullable(),
-    countryOfBirth: z.string().optional().nullable(),
-    additionalNationalities: z.array(z.string()).nullish(),
-    portugalInvestmentScheme: z.boolean().nullish(),
-    occupation: z.string().nullish(),
-    occupationOther: z.string().nullish(),
-    sourceOfWealth: z.string().nullish(),
-    sourceOfWealthOther: z.string().nullish(),
-    businessSector: z.string().nullish(),
-    estimatedAnnualIncome: z.string().nullish(),
-    incomeCountries: z.array(z.string()).nullish(),
+    countryOfNationality: lenient(z.string()),
+    countryOfBirth: lenient(z.string()),
+    additionalNationalities: lenient(z.array(z.string())),
+    portugalInvestmentScheme: lenient(z.boolean()),
+    occupation: lenient(z.string()),
+    occupationOther: lenient(z.string()),
+    sourceOfWealth: lenient(z.string()),
+    sourceOfWealthOther: lenient(z.string()),
+    businessSector: lenient(z.string()),
+    estimatedAnnualIncome: lenient(z.string()),
+    incomeCountries: lenient(z.array(z.string())),
 })
 export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema

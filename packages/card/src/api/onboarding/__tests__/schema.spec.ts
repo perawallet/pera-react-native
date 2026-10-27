@@ -102,6 +102,28 @@ describe('onboardingDetailsResponseSchema', () => {
             countryOfNationality: 'GB',
         })
     })
+
+    it('reads a profile field in an unexpected shape as missing, so the poll survives', () => {
+        const parsed = onboardingDetailsResponseSchema.parse({
+            verificationState: 'VERIFIED',
+            phase: 'ACCOUNT',
+            estimatedAnnualIncome: 30000,
+            additionalNationalities: [{ iso: 'PT' }],
+        })
+
+        expect(parsed).toMatchObject({
+            verificationState: 'VERIFIED',
+            phase: 'ACCOUNT',
+            estimatedAnnualIncome: null,
+            additionalNationalities: null,
+        })
+    })
+
+    it('still fails on a verification state it cannot read', () => {
+        expect(() =>
+            onboardingDetailsResponseSchema.parse({ verificationState: 1 }),
+        ).toThrow()
+    })
 })
 
 describe('registrationSettingsResponseSchema', () => {
