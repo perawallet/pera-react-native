@@ -52,7 +52,6 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ChainIcon } from '@modules/chain-ui/icon'
 import {
     AddAssetContent,
     useAssetListFiatConverter,
@@ -70,8 +69,6 @@ import {
     type ManageAssetsAction,
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
-
-const CHAIN_CHIP_ICON_SIZE = 16
 
 type UseAccountAssetListResult = {
     /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
@@ -189,12 +186,6 @@ export const useAccountAssetList = ({
                       ...sources.map(({ scope: { chainId } }) => ({
                           value: chainId,
                           label: chainDisplayNameOf(chainId) ?? chainId,
-                          icon: (
-                              <ChainIcon
-                                  chainId={chainId}
-                                  size={CHAIN_CHIP_ICON_SIZE}
-                              />
-                          ),
                           testID: `asset_network_filter_${chainId}`,
                       })),
                   ],

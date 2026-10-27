@@ -69,25 +69,4 @@ describe('FilterSelection', () => {
         fireEvent.click(screen.getByTestId('filter-pending'))
         expect(onSelect).toHaveBeenCalledWith('pending')
     })
-
-    it("draws an option's icon beside its label", () => {
-        const options: FilterOption<Filter>[] = [
-            {
-                value: 'crypto',
-                label: 'Crypto',
-                icon: <span data-testid='crypto-icon' />,
-            },
-        ]
-
-        render(
-            <FilterSelection
-                options={options}
-                selectedValue='crypto'
-                onSelect={vi.fn()}
-            />,
-        )
-
-        expect(screen.getByTestId('crypto-icon')).toBeTruthy()
-        expect(screen.getByText('Crypto')).toBeTruthy()
-    })
 })
