@@ -2385,6 +2385,7 @@
         "last_7_days": "Derniers 7 jours",
         "last_30_days": "Derniers 30 jours",
         "last_year": "Dernière année",
+        "partial_total": "Exclut les avoirs sans prix",
         "info": {
             "title": "Comment nous calculons la valeur du portfolio",
             "body": "La valeur totale du portfolio est calculée en additionnant la valeur de tous les actifs et des Algo disponibles sur vos comptes, hors comptes de suivi.\n\nLes valeurs des actifs sont calculées à partir de cours quotidiens fournis par plusieurs partenaires de l’écosystème.  Certaines valeurs d’actifs n’étant pas disponibles, la valeur totale du portfolio doit être considérée comme une estimation."

@@ -2385,6 +2385,7 @@
         "last_7_days": "Son 7 gün",
         "last_30_days": "Son 30 gün",
         "last_year": "Son 1 yıl",
+        "partial_total": "Fiyatı olmayan varlıklar hariç",
         "info": {
             "title": "Portföy değerini nasıl hesaplıyoruz",
             "body": "Toplam portföy değeri, izleme hesapları hariç olmak üzere hesaplarındaki tüm varlıkların ve kullanılabilir Algo miktarının değeri toplanarak hesaplanır.\n\nVarlık değerleri, çeşitli ekosistem partnerlerinden alınan günlük değerlere göre hesaplanır.  Bazı varlıkların değerleri mevcut olmadığı için toplam portföy değeri bir tahmin olarak kabul edilmelidir."

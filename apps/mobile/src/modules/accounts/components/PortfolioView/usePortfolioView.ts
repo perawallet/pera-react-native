@@ -39,8 +39,10 @@ export type UsePortfolioViewResult = {
     basis: AccountValueBasis
     /** `null` when unknown — renders as a placeholder, not 0. */
     portfolioNativeValue: Nullable<Decimal>
-    /** `null` while any account is unpriced or the rate is unresolved — renders as a placeholder, not 0. */
+    /** `null` when the total is unknown or the rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
+    /** The `fiat` total is a number that leaves out holdings without a price. */
+    isPreferredValuePartial: boolean
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     /**
@@ -63,6 +65,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioNativeValue,
         portfolioUsdValue,
         portfolioFiatValue,
+        isPortfolioFiatValuePartial,
         hasFiatTotal,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
@@ -90,6 +93,10 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
+        isPreferredValuePartial:
+            basis === 'fiat' &&
+            isPortfolioFiatValuePartial &&
+            portfolioPreferredValue !== null,
         hasFiatTotal,
         hasBalanceHistory,
         isPending,
