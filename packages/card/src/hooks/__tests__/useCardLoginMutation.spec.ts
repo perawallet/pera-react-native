@@ -161,6 +161,7 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
         // A token means registration finished: the checklist's details step is done.
         expect(setOnboardingStep).toHaveBeenCalledWith(OnboardingStep.Completed)
         expect(clearLoginSecrets).toHaveBeenCalled()
+        expect(recordLoginAttempt).not.toHaveBeenCalled()
         // Nothing was stashed, so there is nothing to link.
         expect(linkOnboardingConsent).not.toHaveBeenCalled()
     })
@@ -303,6 +304,11 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
         expect(setOnboardingId).not.toHaveBeenCalled()
         expect(result.current.data?.isOtpRequired).toBe(true)
         expect(result.current.data?.tokens).toBeNull()
+        // Baanx counts the round without a session toward its lock.
+        expect(recordLoginAttempt).toHaveBeenCalledWith({
+            isAutomatic: false,
+            at: expect.any(Number),
+        })
     })
 
     it('resolves KYC state and bridges userId to onboardingId for a mid-onboarding login', async () => {
@@ -410,7 +416,7 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
         expect(markLoginLocked).toHaveBeenCalled()
     })
 
-    it('leaves the lock alone for an ordinary refusal', async () => {
+    it('counts an ordinary refusal toward the budget without locking', async () => {
         loginRequest.mockRejectedValue({ response: { status: 401 } })
 
         const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
@@ -420,5 +426,21 @@ describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(markLoginLocked).not.toHaveBeenCalled()
+        expect(recordLoginAttempt).toHaveBeenCalledWith({
+            isAutomatic: false,
+            at: expect.any(Number),
+        })
+    })
+
+    it('does not count a login Baanx never answered', async () => {
+        loginRequest.mockRejectedValue(new Error('Network request failed'))
+
+        const { result } = renderHook(() => useCardLoginMutation(SCOPE), {
+            wrapper,
+        })
+        result.current.mutate({ email: 'e@x.com', password: 'pw' })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(recordLoginAttempt).not.toHaveBeenCalled()
     })
 })

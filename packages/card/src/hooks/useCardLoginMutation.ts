@@ -113,10 +113,16 @@ export const useCardLoginMutation = (
             return { ...result, tokens: null, countryOfResidence: null }
         },
         throwOnError: false,
+        // Baanx counts every login that ends without a session toward its
+        // lock, typed ones included, so each is recorded and the post-KYC
+        // logins budget around them. A request Baanx never answered isn't.
         onError: async error => {
-            if (isAccountLockedError(await getCardApiError(error))) {
-                useCardStore.getState().markLoginLocked()
+            const apiError = await getCardApiError(error)
+            const store = useCardStore.getState()
+            if (apiError.status !== undefined) {
+                store.recordLoginAttempt({ isAutomatic: false, at: Date.now() })
             }
+            if (isAccountLockedError(apiError)) store.markLoginLocked()
         },
         onSuccess: async (
             result,
@@ -155,6 +161,8 @@ export const useCardLoginMutation = (
                 }
                 return
             }
+            // An OTP round or a mid-onboarding login, both without a session.
+            store.recordLoginAttempt({ isAutomatic: false, at: Date.now() })
             // Mid-onboarding: bridge userId -> onboardingId so the resumed
             // onboarding/KYC screens (keyed on onboardingId) can read state and
             // start KYC. The password is held, memory only, for the login that
@@ -162,9 +170,6 @@ export const useCardLoginMutation = (
             if (result.phase !== null && result.userId !== null) {
                 store.setOnboardingId(result.userId)
                 store.setPassword(password)
-                // Baanx counts it as a failed login; the post-KYC logins space
-                // themselves from it.
-                store.recordLoginAttempt({ isAutomatic: false, at: Date.now() })
                 if (store.countryIso === null && result.countryOfResidence) {
                     store.setCountryIso(result.countryOfResidence)
                 }
