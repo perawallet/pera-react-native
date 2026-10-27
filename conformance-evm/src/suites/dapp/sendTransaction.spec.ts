@@ -21,12 +21,9 @@ import type { EthereumTransactionPayload } from '@perawallet/wallet-core-chain-e
 
 import { createRawKeyEvmAccount, fundEvmAccount } from '../../harness/accounts'
 import { expectEvmConformant } from '../../harness/assert/roundTrip'
-import { castCall, castCalldata, castEstimate } from '../../harness/cast'
+import { castAllowanceOf, castCalldata, castEstimate } from '../../harness/cast'
 import { deployContract } from '../../harness/contracts'
-import {
-    createEvmConformanceEnv,
-    type EvmConformanceEnv,
-} from '../../harness/context'
+import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET } from '../../harness/evmnet'
 import { signTransactionWithApp } from '../../harness/sign'
 import { broadcastAndConfirm } from '../../harness/submit'
@@ -76,22 +73,6 @@ const dappRequest = (
     return validated.request
 }
 
-const allowanceOf = async (
-    env: EvmConformanceEnv,
-    token: Address,
-    owner: Address,
-): Promise<bigint> =>
-    BigInt(
-        (
-            await castCall({
-                chain: env.chain,
-                to: token,
-                sig: 'allowance(address,address)(uint256)',
-                args: [owner, SPENDER],
-            })
-        ).split(' ')[0],
-    )
-
 const sanityChecked = (raw: Hex) => {
     const fees = feesOf(raw)
     expect(fees.maxFeePerGas).toBeGreaterThanOrEqual(fees.maxPriorityFeePerGas)
@@ -134,7 +115,9 @@ describe('evm dapp eth_sendTransaction against a node', () => {
             raw,
             hash,
         })
-        expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
+        expect(
+            await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+        ).toBe(ALLOWANCE)
     })
 
     it("uses the node's estimate when the dApp gives no gas", async () => {
@@ -172,7 +155,9 @@ describe('evm dapp eth_sendTransaction against a node', () => {
             raw,
             hash,
         })
-        expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
+        expect(
+            await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+        ).toBe(ALLOWANCE)
     })
 
     it("signs a dApp's too-low gas verbatim: the node mines it out of gas and the allowance stays unset", async () => {
@@ -196,6 +181,8 @@ describe('evm dapp eth_sendTransaction against a node', () => {
         const receipt = await minedReceipt(env.chain, hash)
         expect(receipt.status).toBe('0x0')
         expect(BigInt(receipt.gasUsed)).toBe(gas)
-        expect(await allowanceOf(env, token, owner.address)).toBe(0n)
+        expect(
+            await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+        ).toBe(0n)
     })
 })

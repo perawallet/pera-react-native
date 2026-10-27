@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import { parseTransaction } from 'viem'
 import type { Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
@@ -20,7 +19,6 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '@perawallet/wallet-core-chain-ethereum/signing/adapter'
-import { createEvmTransferAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/builder'
 
 import {
     createRawKeyEvmAccount,
@@ -36,28 +34,22 @@ import {
 import { EVMNET, EVMNET_CHAINS, anvilRpc } from '../../harness/evmnet'
 import { signTransactionWithApp } from '../../harness/sign'
 import { broadcastAndConfirm, rejectionOf } from '../../harness/submit'
+import { buildTransfer } from '../construction/support'
 
-const buildTransfer = async (
+const nativeTransfer = async (
     env: EvmConformanceEnv,
     from: EvmConformanceAccount,
     to: EvmConformanceAccount,
     wei: bigint,
-): Promise<UnsignedTransaction> => {
-    const [unsigned] = await createEvmTransferAdapter(
-        env.ctx,
-        env.evmChain,
-    ).build(
-        {
-            kind: 'transfer',
+): Promise<UnsignedTransaction> =>
+    (
+        await buildTransfer(env, {
             from: from.address,
             to: to.address,
             assetRef: env.evmChain.descriptor.nativeAsset.ref,
-            amount: new Decimal(wei.toString()),
-        },
-        { scope: env.scope },
-    )
-    return unsigned
-}
+            amount: wei,
+        })
+    ).unsigned
 
 /**
  * Proves a signature cannot be replayed across EVM chains: the app binds each
@@ -79,7 +71,7 @@ describe('evm replay protection', () => {
         const raw = await signTransactionWithApp(
             ethereum,
             sender,
-            await buildTransfer(ethereum, sender, recipient, 1000n),
+            await nativeTransfer(ethereum, sender, recipient, 1000n),
         )
         expect(parseTransaction(raw).chainId).toBe(
             EVMNET.ethereum.eip155ChainId,
@@ -113,7 +105,7 @@ describe('evm replay protection', () => {
         const env = envFor(session, 'ethereum')
         const sender = await createRawKeyEvmAccount(env)
         const recipient = await createRawKeyEvmAccount(env)
-        const built = await buildTransfer(env, sender, recipient, 1n)
+        const built = await nativeTransfer(env, sender, recipient, 1n)
         const payload = built.payload as EthereumTransactionPayload
         const foreign: UnsignedTransaction = {
             ...built,
@@ -147,7 +139,7 @@ describe('evm replay protection', () => {
             const raw = await signTransactionWithApp(
                 env,
                 sender,
-                await buildTransfer(env, sender, recipient, 1000n),
+                await nativeTransfer(env, sender, recipient, 1000n),
             )
 
             expect(parseTransaction(raw).chainId).toBe(

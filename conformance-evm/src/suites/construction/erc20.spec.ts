@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import { createRawKeyEvmAccount, fundEvmAccount } from '../../harness/accounts'
 import {
     ANVIL_DEV_PRIVATE_KEY,
-    castCall,
+    castBalanceOf,
     castCalldata,
     castSend,
 } from '../../harness/cast'
@@ -23,22 +23,6 @@ import { deployContract, type ContractName } from '../../harness/contracts'
 import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET } from '../../harness/evmnet'
 import { buildTransfer, expectEvmConformant, signAndSend } from './support'
-
-const balanceOf = async (
-    chain: 'ethereum',
-    token: `0x${string}`,
-    holder: string,
-): Promise<bigint> =>
-    BigInt(
-        (
-            await castCall({
-                chain,
-                to: token as `0x${string}`,
-                sig: 'balanceOf(address)(uint256)',
-                args: [holder],
-            })
-        ).split(' ')[0],
-    )
 
 /**
  * Proves the transfer builder's ERC-20 transactions call the token with the
@@ -99,16 +83,18 @@ describe('evm erc20 transfer construction', () => {
             'TestToken',
             amount,
         )
-        expect(await balanceOf('ethereum', token, recipient.address)).toBe(
+        expect(await castBalanceOf('ethereum', token, recipient.address)).toBe(
             amount,
         )
-        expect(await balanceOf('ethereum', token, sender.address)).toBe(amount)
+        expect(await castBalanceOf('ethereum', token, sender.address)).toBe(
+            amount,
+        )
     })
 
     it('transfers a 6-decimal token amount', async () => {
         const amount = 1_234_567n
         const { recipient, token } = await transferOn('SixDecimalToken', amount)
-        expect(await balanceOf('ethereum', token, recipient.address)).toBe(
+        expect(await castBalanceOf('ethereum', token, recipient.address)).toBe(
             amount,
         )
     })

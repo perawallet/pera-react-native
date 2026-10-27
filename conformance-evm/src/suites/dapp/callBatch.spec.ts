@@ -56,7 +56,8 @@ import {
 import { expectEvmConformant } from '../../harness/assert/roundTrip'
 import {
     ANVIL_DEV_PRIVATE_KEY,
-    castCall,
+    castAllowanceOf,
+    castBalanceOf,
     castCalldata,
     castSend,
 } from '../../harness/cast'
@@ -272,27 +273,6 @@ const pendingNonceOf = async (
         ),
     )
 
-const tokenRead = async (
-    env: EvmConformanceEnv,
-    token: Address,
-    sig: string,
-    args: string[],
-): Promise<bigint> =>
-    BigInt(
-        (await castCall({ chain: env.chain, to: token, sig, args })).split(
-            ' ',
-        )[0],
-    )
-
-const balanceOf = (env: EvmConformanceEnv, token: Address, holder: Address) =>
-    tokenRead(env, token, 'balanceOf(address)(uint256)', [holder])
-
-const allowanceOf = (env: EvmConformanceEnv, token: Address, owner: Address) =>
-    tokenRead(env, token, 'allowance(address,address)(uint256)', [
-        owner,
-        SPENDER,
-    ])
-
 /** The node holds exactly `count` of the sender's transactions and pools none. */
 const expectNothingSentPast = async (
     env: EvmConformanceEnv,
@@ -454,12 +434,16 @@ describe('evm dapp wallet_sendCalls against a node', () => {
             })
         }
 
-        expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
-        expect(await balanceOf(env, token, RECIPIENT)).toBe(FIRST_AMOUNT)
-        expect(await balanceOf(env, token, SECOND_RECIPIENT)).toBe(
+        expect(
+            await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+        ).toBe(ALLOWANCE)
+        expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(
+            FIRST_AMOUNT,
+        )
+        expect(await castBalanceOf(env.chain, token, SECOND_RECIPIENT)).toBe(
             SECOND_AMOUNT,
         )
-        expect(await balanceOf(env, token, owner.address)).toBe(
+        expect(await castBalanceOf(env.chain, token, owner.address)).toBe(
             HELD - FIRST_AMOUNT - SECOND_AMOUNT,
         )
         // A settled batch's review vouches for nothing more.
@@ -525,8 +509,10 @@ describe('evm dapp wallet_sendCalls against a node', () => {
             ).toEqual(batch.txIds)
             expect(status.receipts[0].status).toBe('0x1')
             await expectNothingSentPast(env, owner.address, 1)
-            expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
-            expect(await balanceOf(env, token, RECIPIENT)).toBe(0n)
+            expect(
+                await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+            ).toBe(ALLOWANCE)
+            expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(0n)
         })
 
         it('with explicit gas is mined and reverts: the batch stops there and the third call is never sent', async () => {
@@ -579,8 +565,10 @@ describe('evm dapp wallet_sendCalls against a node', () => {
                 '0x0',
             ])
             await expectNothingSentPast(env, owner.address, 2)
-            expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
-            expect(await balanceOf(env, token, RECIPIENT)).toBe(0n)
+            expect(
+                await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+            ).toBe(ALLOWANCE)
+            expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(0n)
         })
     })
 
@@ -654,8 +642,10 @@ describe('evm dapp wallet_sendCalls against a node', () => {
                 '0x1',
             ])
             await expectNothingSentPast(env, owner.address, 1)
-            expect(await balanceOf(env, token, RECIPIENT)).toBe(0n)
-            expect(await balanceOf(env, token, SECOND_RECIPIENT)).toBe(0n)
+            expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(0n)
+            expect(
+                await castBalanceOf(env.chain, token, SECOND_RECIPIENT),
+            ).toBe(0n)
         } finally {
             await setNextBaseFee(env, restoredBaseFee)
         }
@@ -761,11 +751,15 @@ describe('evm dapp wallet_sendCalls against a node', () => {
                 (await readEthereumCallsStatus(env.ctx, env.evmChain, batch))
                     .status,
             ).toBe(200)
-            expect(await allowanceOf(env, token, owner.address)).toBe(ALLOWANCE)
-            expect(await balanceOf(env, token, RECIPIENT)).toBe(FIRST_AMOUNT)
-            expect(await balanceOf(env, token, SECOND_RECIPIENT)).toBe(
-                SECOND_AMOUNT,
+            expect(
+                await castAllowanceOf(env.chain, token, owner.address, SPENDER),
+            ).toBe(ALLOWANCE)
+            expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(
+                FIRST_AMOUNT,
             )
+            expect(
+                await castBalanceOf(env.chain, token, SECOND_RECIPIENT),
+            ).toBe(SECOND_AMOUNT)
         } finally {
             await proxy.close()
         }

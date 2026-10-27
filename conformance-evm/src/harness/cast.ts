@@ -280,6 +280,35 @@ export const castCall = (input: {
         ...(input.args ?? []),
     ])
 
+// cast prints a uint256 as `1000 [1e3]`; the first word is the value.
+const castUint = async (
+    chain: EvmnetChain,
+    to: Address,
+    sig: string,
+    args: readonly string[],
+): Promise<bigint> =>
+    BigInt((await castCall({ chain, to, sig, args })).split(' ')[0])
+
+/** The token's own `balanceOf`, in base units. */
+export const castBalanceOf = (
+    chain: EvmnetChain,
+    token: Address,
+    holder: Address,
+): Promise<bigint> =>
+    castUint(chain, token, 'balanceOf(address)(uint256)', [holder])
+
+/** The token's own `allowance`, in base units. */
+export const castAllowanceOf = (
+    chain: EvmnetChain,
+    token: Address,
+    owner: Address,
+    spender: Address,
+): Promise<bigint> =>
+    castUint(chain, token, 'allowance(address,address)(uint256)', [
+        owner,
+        spender,
+    ])
+
 export const fundFromDev = async (
     chain: EvmnetChain,
     to: Address,
