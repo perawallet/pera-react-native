@@ -290,5 +290,11 @@ export const fundFromDev = async (
         })
     ).hash
 
+/** ABI-encodes a call (selector plus arguments) without touching a node. */
+export const castCalldata = async (
+    signature: string,
+    args: readonly string[] = [],
+): Promise<Hex> => (await oracle(['calldata', signature, ...args])) as Hex
+
 export const castChecksumAddress = async (address: string): Promise<Address> =>
     (await oracle(['to-check-sum-address', address])) as Address

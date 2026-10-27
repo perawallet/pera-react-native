@@ -25,6 +25,7 @@ import {
 import {
     castAddressFromMnemonic,
     castAddressFromPrivateKey,
+    castCalldata,
     castChecksumAddress,
     castDecodeTransaction,
     castMktx,
@@ -201,5 +202,14 @@ describe('cast oracle', () => {
 
         expect(first).toMatch(/^0x[0-9a-f]{130}$/)
         expect(second).toBe(first)
+    })
+
+    it('encodes an ERC-20 transfer under the published selector', async () => {
+        const data = await castCalldata('transfer(address,uint256)', [
+            V.addresses[1],
+            '1',
+        ])
+        expect(data.slice(0, 10)).toBe('0xa9059cbb')
+        expect(data).toHaveLength(10 + 128)
     })
 })

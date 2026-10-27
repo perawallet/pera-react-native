@@ -31,15 +31,12 @@ import {
     castSignTypedData,
     castVerifyMessage,
 } from '../../harness/cast'
+import { SECP256K1_HALF_ORDER } from '../../harness/curve'
 import { createEvmConformanceEnv } from '../../harness/context'
 import { EVMNET } from '../../harness/evmnet'
 import { signMessageWithApp } from '../../harness/sign'
 import { rejectionOf } from '../../harness/submit'
 import { EIP712_MAIL_VECTOR } from '../../vectors/knownAnswerVectors'
-
-const ORDER = BigInt(
-    '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141',
-)
 
 const sepoliaChainId = EVMNET.ethereum.eip155ChainId
 
@@ -127,7 +124,7 @@ describe('evm message signing conformance', () => {
                 )
                 expect(['1b', '1c']).toContain(signature.slice(-2))
                 const s = BigInt(`0x${signature.slice(66, 130)}`)
-                expect(s).toBeLessThanOrEqual(ORDER / 2n)
+                expect(s).toBeLessThanOrEqual(SECP256K1_HALF_ORDER)
                 // Round-trip: viem and cast both recover the account.
                 expect(
                     await recoverMessageAddress({
@@ -206,7 +203,7 @@ describe('evm message signing conformance', () => {
             )
         })
 
-        it('signs the EIP-712 Mail example to its published signature', async () => {
+        it('refuses the EIP-712 Mail example on a foreign domain and signs it on this chain as cast does', async () => {
             const env = await createEvmConformanceEnv('ethereum')
             const account = await createRawKeyEvmAccount(
                 env,
@@ -289,6 +286,42 @@ describe('evm message signing conformance', () => {
                     `The typed data is for EIP-155 chain ${chainId}, not ${env.scope.networkId}`,
                 )
             }
+        })
+
+        it('signs typed data with no domain chainId, as cast does', async () => {
+            const env = await createEvmConformanceEnv('ethereum')
+            const account = await createRawKeyEvmAccount(env)
+            const base = typedDataFor(sepoliaChainId)
+            const { chainId: _omitted, ...domain } = base.domain
+            const typedData = {
+                ...base,
+                types: {
+                    ...base.types,
+                    EIP712Domain: base.types.EIP712Domain.filter(
+                        field => field.name !== 'chainId',
+                    ),
+                },
+                domain,
+            }
+
+            // EIP-712 makes chainId optional; such a signature is bound to no chain, so a
+            // policy change that starts refusing it must show up here.
+            expect(
+                await signMessageWithApp(
+                    env,
+                    account,
+                    typedDataMessageRequest(
+                        env.scope,
+                        account.address,
+                        typedData,
+                    ),
+                ),
+            ).toEqual(
+                await castSignTypedData({
+                    privateKey: account.privateKey,
+                    typedData,
+                }),
+            )
         })
 
         it('parses a domain chainId from number, bigint, decimal and hex text', () => {

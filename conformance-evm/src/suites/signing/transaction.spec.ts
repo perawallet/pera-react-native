@@ -30,19 +30,22 @@ import {
     type EvmConformanceAccount,
 } from '../../harness/accounts'
 import { expectEvmConformant } from '../../harness/assert/roundTrip'
-import { ANVIL_DEV_PRIVATE_KEY, castMktx, castSend } from '../../harness/cast'
+import {
+    ANVIL_DEV_PRIVATE_KEY,
+    castCall,
+    castCalldata,
+    castMktx,
+    castSend,
+} from '../../harness/cast'
+import { SECP256K1_HALF_ORDER } from '../../harness/curve'
 import { deployContract } from '../../harness/contracts'
 import {
     createEvmConformanceEnv,
     type EvmConformanceEnv,
 } from '../../harness/context'
+import { EVMNET } from '../../harness/evmnet'
 import { signTransactionWithApp } from '../../harness/sign'
 import { broadcastAndConfirm } from '../../harness/submit'
-
-const ORDER = BigInt(
-    '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141',
-)
-const HALF_ORDER = ORDER / 2n
 
 const payloadOf = (unsigned: UnsignedTransaction) => {
     const { transaction } = unsigned.payload as EthereumTransactionPayload
@@ -108,7 +111,7 @@ describe('evm transaction signing conformance', () => {
             s: Hex
             yParity: number
         }
-        expect(BigInt(s)).toBeLessThanOrEqual(HALF_ORDER)
+        expect(BigInt(s)).toBeLessThanOrEqual(SECP256K1_HALF_ORDER)
         expect(BigInt(r)).toBeGreaterThan(0n)
         expect([0, 1]).toContain(yParity)
 
@@ -146,6 +149,13 @@ describe('evm transaction signing conformance', () => {
             { scope: env.scope },
         )
         const fields = payloadOf(unsigned)
+        // Gas and fees are the app's estimate; only their sanity is checked.
+        expect(fields.gas).toBe(21_000n)
+        expect(fields.maxFeePerGas).toBeGreaterThanOrEqual(
+            fields.maxPriorityFeePerGas,
+        )
+        expect(fields.chainId).toBe(EVMNET.ethereum.eip155ChainId)
+        expect(fields.nonce).toBe(0)
 
         const { raw, hash } = await proveSigned(env, sender, unsigned)
 
@@ -153,9 +163,9 @@ describe('evm transaction signing conformance', () => {
         await expectEvmConformant({
             env,
             intent: {
-                chainId: fields.chainId,
+                chainId: EVMNET.ethereum.eip155ChainId,
                 from: sender.address,
-                nonce: fields.nonce,
+                nonce: 0,
                 to: recipient.address,
                 value: wei,
                 gas: fields.gas,
@@ -201,6 +211,11 @@ describe('evm transaction signing conformance', () => {
         const fields = payloadOf(unsigned)
         expect(fields.to.toLowerCase()).toBe(token.toLowerCase())
         expect(fields.value).toBe(0n)
+        expect(fields.chainId).toBe(EVMNET.ethereum.eip155ChainId)
+        expect(fields.nonce).toBe(0)
+        expect(fields.maxFeePerGas).toBeGreaterThanOrEqual(
+            fields.maxPriorityFeePerGas,
+        )
 
         const { raw, hash } = await proveSigned(env, sender, unsigned)
 
@@ -208,11 +223,14 @@ describe('evm transaction signing conformance', () => {
         await expectEvmConformant({
             env,
             intent: {
-                chainId: fields.chainId,
+                chainId: EVMNET.ethereum.eip155ChainId,
                 from: sender.address,
-                nonce: fields.nonce,
+                nonce: 0,
                 to: token,
-                data: fields.data!,
+                data: await castCalldata('transfer(address,uint256)', [
+                    recipient.address,
+                    amount.toString(),
+                ]),
                 gas: fields.gas,
                 maxFeePerGas: fields.maxFeePerGas,
                 maxPriorityFeePerGas: fields.maxPriorityFeePerGas,
@@ -220,5 +238,17 @@ describe('evm transaction signing conformance', () => {
             raw,
             hash,
         })
+        expect(
+            BigInt(
+                (
+                    await castCall({
+                        chain: env.chain,
+                        to: token,
+                        sig: 'balanceOf(address)(uint256)',
+                        args: [recipient.address],
+                    })
+                ).split(' ')[0],
+            ),
+        ).toBe(amount)
     })
 })
