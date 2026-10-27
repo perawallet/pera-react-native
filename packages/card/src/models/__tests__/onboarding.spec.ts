@@ -23,6 +23,7 @@ import {
     passwordSetSchema,
     personalDetailsSchema,
     additionalDetailsSchema,
+    createAdditionalDetailsSchema,
 } from '../onboarding'
 
 const parse = (password: string, confirmPassword = password) =>
@@ -420,5 +421,42 @@ describe('additionalDetailsSchema', () => {
 
         expect(result.success).toBe(false)
         expect(result.error?.issues[0].path[0]).toBe(path)
+    })
+
+    it('does not require an option where the environment lists none', () => {
+        const schema = createAdditionalDetailsSchema({
+            hasOccupations: false,
+            hasSourcesOfWealth: false,
+            hasBusinessSectors: false,
+        })
+
+        expect(
+            schema.safeParse({
+                ...valid,
+                occupation: '',
+                sourceOfWealth: '',
+                businessSector: '',
+            }).success,
+        ).toBe(true)
+    })
+
+    it('requires each option only where its list has options', () => {
+        const schema = createAdditionalDetailsSchema({
+            hasOccupations: true,
+            hasSourcesOfWealth: false,
+            hasBusinessSectors: true,
+        })
+
+        const result = schema.safeParse({
+            ...valid,
+            occupation: '',
+            sourceOfWealth: '',
+            businessSector: '',
+        })
+
+        expect(result.error?.issues.map(issue => issue.path[0])).toEqual([
+            'occupation',
+            'businessSector',
+        ])
     })
 })

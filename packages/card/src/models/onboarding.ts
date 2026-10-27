@@ -153,14 +153,17 @@ export type AdditionalDetailsInput = {
     tin: string
     /** ISO 3166-1 alpha-2 of the issuing country; Baanx rejects `US`. */
     tinCountry: string
-    /** Keys from the matching GET /v1/auth/settings lists. */
-    occupation: string
+    /**
+     * Keys from the matching GET /v1/auth/settings lists; omitted when the
+     * environment lists none.
+     */
+    occupation?: string
     /** Only with {@link OTHER_OCCUPATION_KEY}. */
     occupationOther?: string
-    sourceOfWealth: string
+    sourceOfWealth?: string
     /** Only with {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
     sourceOfWealthOther?: string
-    businessSector: string
+    businessSector?: string
     estimatedAnnualIncome: string
     /** ISO 3166-1 alpha-2, one to three. */
     incomeCountries: string[]
@@ -490,25 +493,53 @@ const TIN_MAX_LENGTH = 20
 const OTHER_TEXT_MAX_LENGTH = 100
 const MAX_INCOME_COUNTRIES = 3
 
-/** Validation for the additional-details onboarding step. */
-export const additionalDetailsSchema = z
-    .object({
-        tin: z.string().trim().min(1).max(TIN_MAX_LENGTH),
-        tinCountry: z.string().length(2),
-        occupation: z.string().min(1),
-        /** Empty unless the occupation is {@link OTHER_OCCUPATION_KEY}. */
-        occupationOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
-        sourceOfWealth: z.string().min(1),
-        /** Empty unless the source is {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
-        sourceOfWealthOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
-        businessSector: z.string().min(1),
-        estimatedAnnualIncome: estimatedAnnualIncomeSchema,
-        incomeCountries: z
-            .array(z.string().length(2))
-            .min(1)
-            .max(MAX_INCOME_COUNTRIES),
-    })
-    .superRefine((values, ctx) => {
+const additionalDetailsBaseSchema = z.object({
+    tin: z.string().trim().min(1).max(TIN_MAX_LENGTH),
+    tinCountry: z.string().length(2),
+    /** Option keys; empty when the environment lists no options. */
+    occupation: z.string(),
+    /** Empty unless the occupation is {@link OTHER_OCCUPATION_KEY}. */
+    occupationOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+    sourceOfWealth: z.string(),
+    /** Empty unless the source is {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
+    sourceOfWealthOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+    businessSector: z.string(),
+    estimatedAnnualIncome: estimatedAnnualIncomeSchema,
+    incomeCountries: z
+        .array(z.string().length(2))
+        .min(1)
+        .max(MAX_INCOME_COUNTRIES),
+})
+
+/**
+ * Validation for the additional-details onboarding step. Like employment in
+ * personal details, an option is required only where the environment lists
+ * options for it.
+ */
+export const createAdditionalDetailsSchema = ({
+    hasOccupations,
+    hasSourcesOfWealth,
+    hasBusinessSectors,
+}: {
+    hasOccupations: boolean
+    hasSourcesOfWealth: boolean
+    hasBusinessSectors: boolean
+}) =>
+    additionalDetailsBaseSchema.superRefine((values, ctx) => {
+        const requiredOptions = [
+            ['occupation', hasOccupations, 'occupation-required'],
+            ['sourceOfWealth', hasSourcesOfWealth, 'source-of-wealth-required'],
+            ['businessSector', hasBusinessSectors, 'business-sector-required'],
+        ] as const
+        for (const [field, isListed, message] of requiredOptions) {
+            if (isListed && !values[field]) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: [field],
+                    message,
+                })
+            }
+        }
         if (values.tinCountry === US_ISO) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -548,6 +579,12 @@ export const additionalDetailsSchema = z
         }
     })
 
+export const additionalDetailsSchema = createAdditionalDetailsSchema({
+    hasOccupations: true,
+    hasSourcesOfWealth: true,
+    hasBusinessSectors: true,
+})
+
 export type AdditionalDetailsFormValues = z.infer<
-    typeof additionalDetailsSchema
+    typeof additionalDetailsBaseSchema
 >

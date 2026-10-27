@@ -65,7 +65,7 @@ const ICT: RegistrationOption = {
     name: 'Information and communication',
 }
 
-const mockSettings = {
+const SETTINGS = {
     countries: [PORTUGAL, SPAIN, FRANCE, GERMANY, USA],
     usStates: [],
     occupations: [IT_PRO, OTHER_OCCUPATION],
@@ -74,6 +74,7 @@ const mockSettings = {
     employmentSectors: [],
     employmentStatuses: [],
 }
+let mockSettings = SETTINGS
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -223,6 +224,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
         mockCountryIso = 'PT'
         mockIsRecordLoading = false
         mockRecord = undefined
+        mockSettings = SETTINGS
         mockMutateAsync.mockResolvedValue({ phase: 'PHYSICAL_ADDRESS' })
     })
 
@@ -313,6 +315,39 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
         expect(mockTrackEvent).toHaveBeenCalledWith(
             'card_onb_create_addlDetails_continue',
         )
+    })
+
+    it('hides, and leaves out of the request, the options an environment lists none of', async () => {
+        mockSettings = {
+            ...SETTINGS,
+            occupations: [],
+            sourcesOfWealth: [],
+            businessSectors: [],
+        }
+        const { result } = renderScreenHook()
+        await waitFor(() =>
+            expect(result.current.selectedTinCountry).toEqual(PORTUGAL),
+        )
+        expect(result.current.hasOccupations).toBe(false)
+        expect(result.current.hasSourcesOfWealth).toBe(false)
+        expect(result.current.hasBusinessSectors).toBe(false)
+
+        act(() => {
+            result.current.setTin('123456789')
+            result.current.setIncome('30000')
+        })
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+            onboardingId: 'mock-onboarding-id',
+            tin: '123456789',
+            tinCountry: 'PT',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT'],
+        })
     })
 
     it('requires the free text for the "other" occupation and sends it', async () => {

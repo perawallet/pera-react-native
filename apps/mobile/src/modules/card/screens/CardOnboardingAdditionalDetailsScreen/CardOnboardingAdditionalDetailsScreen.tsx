@@ -37,6 +37,9 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
         isRecordLoading,
         selectedTinCountry,
         handleSelectTinCountry,
+        hasOccupations,
+        hasSourcesOfWealth,
+        hasBusinessSectors,
         selectedOccupation,
         isOccupationOther,
         handleSelectOccupation,
@@ -135,15 +138,17 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                         testID='card-onboarding-tin-country-field'
                     />
 
-                    <OptionSelectorField
-                        label={t(
-                            'peraCard.additional_details.occupation_label',
-                        )}
-                        placeholder={optionPlaceholder}
-                        value={selectedOccupation?.name}
-                        onPress={handleSelectOccupation}
-                        testID='card-onboarding-occupation-field'
-                    />
+                    {hasOccupations ? (
+                        <OptionSelectorField
+                            label={t(
+                                'peraCard.additional_details.occupation_label',
+                            )}
+                            placeholder={optionPlaceholder}
+                            value={selectedOccupation?.name}
+                            onPress={handleSelectOccupation}
+                            testID='card-onboarding-occupation-field'
+                        />
+                    ) : null}
                     {isOccupationOther ? (
                         <Controller
                             control={control}
@@ -166,15 +171,17 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                         />
                     ) : null}
 
-                    <OptionSelectorField
-                        label={t(
-                            'peraCard.additional_details.source_of_wealth_label',
-                        )}
-                        placeholder={optionPlaceholder}
-                        value={selectedSourceOfWealth?.name}
-                        onPress={handleSelectSourceOfWealth}
-                        testID='card-onboarding-source-of-wealth-field'
-                    />
+                    {hasSourcesOfWealth ? (
+                        <OptionSelectorField
+                            label={t(
+                                'peraCard.additional_details.source_of_wealth_label',
+                            )}
+                            placeholder={optionPlaceholder}
+                            value={selectedSourceOfWealth?.name}
+                            onPress={handleSelectSourceOfWealth}
+                            testID='card-onboarding-source-of-wealth-field'
+                        />
+                    ) : null}
                     {isSourceOfWealthOther ? (
                         <Controller
                             control={control}
@@ -197,15 +204,17 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                         />
                     ) : null}
 
-                    <OptionSelectorField
-                        label={t(
-                            'peraCard.additional_details.business_sector_label',
-                        )}
-                        placeholder={optionPlaceholder}
-                        value={selectedBusinessSector?.name}
-                        onPress={handleSelectBusinessSector}
-                        testID='card-onboarding-business-sector-field'
-                    />
+                    {hasBusinessSectors ? (
+                        <OptionSelectorField
+                            label={t(
+                                'peraCard.additional_details.business_sector_label',
+                            )}
+                            placeholder={optionPlaceholder}
+                            value={selectedBusinessSector?.name}
+                            onPress={handleSelectBusinessSector}
+                            testID='card-onboarding-business-sector-field'
+                        />
+                    ) : null}
 
                     <AnnualIncomeField control={control} />
 

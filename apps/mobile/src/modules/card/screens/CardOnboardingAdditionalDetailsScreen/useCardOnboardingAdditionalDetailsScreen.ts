@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-    additionalDetailsSchema,
+    createAdditionalDetailsSchema,
     getCardApiError,
     OTHER_OCCUPATION_KEY,
     OTHER_SOURCE_OF_WEALTH_KEY,
@@ -57,6 +57,10 @@ export type UseCardOnboardingAdditionalDetailsScreenResult = {
     isRecordLoading: boolean
     selectedTinCountry: Optional<SupportedCountry>
     handleSelectTinCountry: () => void
+    /** The environment lists options for the field; it hides otherwise. */
+    hasOccupations: boolean
+    hasSourcesOfWealth: boolean
+    hasBusinessSectors: boolean
     selectedOccupation: Optional<RegistrationOption>
     /** The "other" occupation was picked, so its free-text field shows. */
     isOccupationOther: boolean
@@ -97,6 +101,23 @@ export const useCardOnboardingAdditionalDetailsScreen =
         const { data: settings } = useRegistrationSettingsQuery(scope)
         const { data: onboardingDetails, isLoading: isRecordLoading } =
             useOnboardingDetailsQuery(scope, { onboardingId })
+        // Required until the settings say an environment lists none.
+        const hasOccupations = settings ? settings.occupations.length > 0 : true
+        const hasSourcesOfWealth = settings
+            ? settings.sourcesOfWealth.length > 0
+            : true
+        const hasBusinessSectors = settings
+            ? settings.businessSectors.length > 0
+            : true
+        const additionalDetailsSchema = useMemo(
+            () =>
+                createAdditionalDetailsSchema({
+                    hasOccupations,
+                    hasSourcesOfWealth,
+                    hasBusinessSectors,
+                }),
+            [hasOccupations, hasSourcesOfWealth, hasBusinessSectors],
+        )
 
         const {
             control,
@@ -266,16 +287,22 @@ export const useCardOnboardingAdditionalDetailsScreen =
                     onboardingId,
                     tin: values.tin,
                     tinCountry: values.tinCountry,
-                    occupation: values.occupation,
+                    ...(values.occupation
+                        ? { occupation: values.occupation }
+                        : {}),
                     // Baanx refuses the free text unless "other" was picked.
                     ...(values.occupation === OTHER_OCCUPATION_KEY
                         ? { occupationOther: values.occupationOther }
                         : {}),
-                    sourceOfWealth: values.sourceOfWealth,
+                    ...(values.sourceOfWealth
+                        ? { sourceOfWealth: values.sourceOfWealth }
+                        : {}),
                     ...(values.sourceOfWealth === OTHER_SOURCE_OF_WEALTH_KEY
                         ? { sourceOfWealthOther: values.sourceOfWealthOther }
                         : {}),
-                    businessSector: values.businessSector,
+                    ...(values.businessSector
+                        ? { businessSector: values.businessSector }
+                        : {}),
                     estimatedAnnualIncome: values.estimatedAnnualIncome,
                     incomeCountries: values.incomeCountries,
                 })
@@ -306,6 +333,9 @@ export const useCardOnboardingAdditionalDetailsScreen =
             isRecordLoading,
             selectedTinCountry: tinCountry.selected,
             handleSelectTinCountry: tinCountry.handleSelect,
+            hasOccupations,
+            hasSourcesOfWealth,
+            hasBusinessSectors,
             selectedOccupation: occupation.selected,
             isOccupationOther,
             handleSelectOccupation: occupation.handleSelect,
