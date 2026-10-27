@@ -301,7 +301,7 @@ describe('unreachableChainsNoteOf', () => {
 
     it('firstUnreachableChainsNote gives no note when another held account can reach the chain', () => {
         const local = testAccount('local')
-        const reaching = testAccount('watch')
+        const reaching = testAccount('hardware')
         vi.mocked(eligibleChains).mockImplementation(account =>
             account === reaching
                 ? [FAKE_CHAIN_ID, OTHER_CHAIN_ID]
@@ -311,5 +311,19 @@ describe('unreachableChainsNoteOf', () => {
         expect(
             firstUnreachableChainsNote([local, reaching], [OTHER_CHAIN_ID]),
         ).toBeNull()
+    })
+
+    it("firstUnreachableChainsNote still gives the kind's note when only a watch account reaches the chain", () => {
+        const local = testAccount('local')
+        const watch = testAccount('watch')
+        vi.mocked(eligibleChains).mockImplementation(account =>
+            account === watch
+                ? [FAKE_CHAIN_ID, OTHER_CHAIN_ID]
+                : [FAKE_CHAIN_ID],
+        )
+
+        expect(
+            firstUnreachableChainsNote([local, watch], [OTHER_CHAIN_ID]),
+        ).toBe(NOTE)
     })
 })

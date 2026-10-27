@@ -19,6 +19,7 @@ import type {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters, type AccountKindId } from '../chain-adapter'
+import { hasCustody } from '../credentials/accessors'
 import { eligibleChains } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
 import {
@@ -110,7 +111,8 @@ export const unreachableChainsNoteOf = (
 /**
  * The first of `accounts`' notes for being missing from one of `chainIds`.
  * Null when any of them can reach one of the chains: the fix is then to add
- * the network to that account, which a kind's note would misattribute.
+ * the network to that account, which a kind's note would misattribute. A
+ * watch account doesn't count, since it can't sign there.
  */
 export const firstUnreachableChainsNote = (
     accounts: readonly WalletAccount[],
@@ -119,6 +121,7 @@ export const firstUnreachableChainsNote = (
     const { chains } = getProvider()
     const registered = chainIds.filter(chainId => chains.has(chainId))
     const isReachableByAny = accounts.some(account => {
+        if (hasCustody(account, 'watch')) return false
         const reachable = eligibleChains(account)
         return registered.some(chainId => reachable.includes(chainId))
     })
