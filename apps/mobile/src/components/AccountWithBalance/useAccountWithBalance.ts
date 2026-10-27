@@ -29,6 +29,7 @@ import {
     useIsOnTestTier,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import {
     useChainAvailability,
@@ -43,6 +44,8 @@ export type UseAccountWithBalanceResult = {
     availability: ChainAvailability
     /** In the account's own native asset. `undefined` until loaded, `null` when unknown; both render a placeholder, not 0. */
     nativeValue: Maybe<Decimal>
+    /** The account's fiat value on `scope`'s chain, in the preferred currency. `undefined` until loaded, `null` when unpriced or the rate is unresolved; both render a placeholder, not 0. */
+    preferredValue: Maybe<Decimal>
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
     isTestTier: boolean
@@ -57,6 +60,7 @@ export const useAccountWithBalance = (
     const { chainId } = scope
     const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
+    const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
@@ -78,6 +82,10 @@ export const useAccountWithBalance = (
         chainName,
         availability,
         nativeValue: totals?.nativeValue,
+        preferredValue:
+            totals && !totals.isPending
+                ? usdToPreferred(totals.fiatValue)
+                : undefined,
         isMultiChain: basis === 'fiat',
         isTestTier,
     }

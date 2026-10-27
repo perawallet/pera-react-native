@@ -2381,6 +2381,7 @@
         "last_7_days": "Letzte 7 Tage",
         "last_30_days": "Letzte 30 Tage",
         "last_year": "Letztes Jahr",
+        "partial_total": "Bestände ohne Preis nicht enthalten",
         "info": {
             "title": "So berechnen wir den Portfoliowert",
             "body": "Der Gesamtportfoliowert wird berechnet, indem der Wert aller Assets und des verfügbaren Algo in deinen Konten addiert wird, ausgenommen Beobachtungskonten.\n\nAsset-Werte werden anhand täglicher Werte von mehreren Ökosystem-Partnern berechnet. Da einige Asset-Werte nicht verfügbar sind, sollte der Gesamtportfoliowert als Schätzung betrachtet werden."

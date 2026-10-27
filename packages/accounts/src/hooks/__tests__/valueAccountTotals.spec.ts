@@ -67,6 +67,15 @@ describe('valueAccountTotals', () => {
         expect(valued.nativeValue).toEqual(new Decimal(7))
     })
 
+    it('prices only what has a price, counting an unpriced native balance as 0', () => {
+        const priced = valueAccountTotals(totals('1.5', 2000, 12), true)
+        const unpriced = valueAccountTotals(totals(7, null, 30), true)
+
+        expect(priced.pricedFiatValue).toEqual(priced.fiatValue)
+        expect(unpriced.fiatValue).toBeNull()
+        expect(unpriced.pricedFiatValue).toEqual(new Decimal(30))
+    })
+
     it('values nothing before the first read', () => {
         const valued = valueAccountTotals(undefined, true)
 

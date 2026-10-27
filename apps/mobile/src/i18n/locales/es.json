@@ -2389,6 +2389,7 @@
         "last_7_days": "Últimos 7 días",
         "last_30_days": "Últimos 30 días",
         "last_year": "Último año",
+        "partial_total": "Excluye tenencias sin precio",
         "info": {
             "title": "Cómo calculamos el valor del portafolio",
             "body": "El valor total del portafolio se calcula sumando el valor de todos tus activos y el Algo disponible en tus cuentas, excluyendo las cuentas de observación.\n\nLos valores de los activos se calculan a partir de los valores diarios obtenidos de varios socios del ecosistema.  Como algunos valores de activos no están disponibles, el valor total del portafolio debe considerarse una estimación."

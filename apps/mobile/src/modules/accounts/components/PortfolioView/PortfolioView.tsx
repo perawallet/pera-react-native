@@ -66,6 +66,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
+        isPreferredValuePartial,
         hasFiatTotal,
         hasBalanceHistory,
         isPending,
@@ -179,18 +180,29 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                         </PWView>
                     </PWView>
                     {basis === 'fiat' ? (
-                        <PreferredAmount
-                            testID='portfolio_total_value'
-                            variant='h2'
-                            style={styles.primaryCurrency}
-                            value={
-                                selectedPoint
-                                    ? selectedPoint.preferredValue
-                                    : portfolioPreferredValue
-                            }
-                            density='compact'
-                            isLoading={isPending}
-                        />
+                        <>
+                            <PreferredAmount
+                                testID='portfolio_total_value'
+                                variant='h2'
+                                style={styles.primaryCurrency}
+                                value={
+                                    selectedPoint
+                                        ? selectedPoint.preferredValue
+                                        : portfolioPreferredValue
+                                }
+                                density='compact'
+                                isLoading={isPending}
+                            />
+                            {isPreferredValuePartial && !selectedPoint && (
+                                <PWText
+                                    testID='portfolio_total_partial_notice'
+                                    variant='caption'
+                                    style={styles.partialNotice}
+                                >
+                                    {t('portfolio.partial_total')}
+                                </PWText>
+                            )}
+                        </>
                     ) : (
                         <>
                             <AssetAmount

@@ -312,6 +312,79 @@ describe('useAccountValueTotalsQuery', () => {
             expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+            expect(result.current.isPortfolioFiatValuePartial).toBe(false)
+        })
+
+        const renderWithEthereum = async (
+            algorandTotals: ReturnType<typeof totals>,
+            ethereumTotals: ReturnType<typeof totals>,
+        ) => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    Promise.resolve(
+                        accountAddress === 'A1'
+                            ? algorandTotals
+                            : ethereumTotals,
+                    ),
+            )
+            const hook = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() =>
+                expect(hook.result.current.isPending).toBe(false),
+            )
+            return hook
+        }
+
+        it('sums the priced accounts and flags the total when one is unpriced', async () => {
+            const { result } = await renderWithEthereum(
+                totals(10, 20),
+                totals(1, 0, null),
+            )
+
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toBeNull()
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
+            expect(result.current.isPortfolioFiatValuePartial).toBe(true)
+        })
+
+        it('leaves the fiat total unknown when nothing held is priced', async () => {
+            const { result } = await renderWithEthereum(
+                totals(1, 0, null),
+                totals(1, 0, null),
+            )
+
+            expect(result.current.portfolioFiatValue).toBeNull()
+            expect(result.current.isPortfolioFiatValuePartial).toBe(false)
+        })
+
+        it('keeps a real zero total for unpriced chains holding nothing', async () => {
+            const { result } = await renderWithEthereum(
+                totals(0, 0, null),
+                totals(0, 0, null),
+            )
+
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(0))
+            expect(result.current.isPortfolioFiatValuePartial).toBe(false)
+        })
+
+        it('counts the priced tokens of an account whose native balance is unpriced', async () => {
+            const { result } = await renderWithEthereum(
+                totals(10, 20),
+                totals(1, 25, null),
+            )
+
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toBeNull()
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(65))
+            expect(result.current.isPortfolioFiatValuePartial).toBe(true)
         })
 
         it('leaves the native total unknown, not ASA-less, while the ALGO price is unloaded and no Ethereum account exists', async () => {
@@ -411,28 +484,17 @@ describe('useAccountValueTotalsQuery', () => {
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
         })
 
-        it('leaves the fiat total unknown, not zero, while the ALGO price is unloaded', async () => {
-            mockGetAccountPortfolioTotals.mockImplementation(
-                ({ accountAddress }: { accountAddress: string }) =>
-                    accountAddress === 'A1'
-                        ? Promise.resolve(totals(1, 5, null))
-                        : Promise.resolve(totals(1, 0, 3000)),
+        it('sums what is priced, flagged as partial, while the ALGO price is unloaded', async () => {
+            const { result } = await renderWithEthereum(
+                totals(1, 5, null),
+                totals(1, 0, 3000),
             )
-
-            const { result } = renderHook(
-                () =>
-                    useAccountValueTotalsQuery(
-                        [makeAccount('A1'), ethereumAccount],
-                        SCOPE,
-                    ),
-                { wrapper: createWrapper() },
-            )
-            await waitFor(() => expect(result.current.isPending).toBe(false))
 
             expect(
                 result.current.accountValueTotals.get('A1')?.fiatValue,
             ).toBeNull()
-            expect(result.current.portfolioFiatValue).toBeNull()
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3005))
+            expect(result.current.isPortfolioFiatValuePartial).toBe(true)
         })
     })
 
@@ -577,6 +639,43 @@ describe('useAccountValueTotalsQuery', () => {
                 expect(result.current.portfolioFiatValue).toEqual(
                     new Decimal(40),
                 )
+            } finally {
+                useNetworkStore.getState().setMode('live')
+            }
+        })
+
+        it('does not flag the total for an unpriced account on a test network it leaves out', async () => {
+            registerBothChains()
+            useNetworkStore.getState().setMode('developer')
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    Promise.resolve(
+                        accountAddress === 'A1'
+                            ? totals(10, 20)
+                            : totals(1, 0, null),
+                    ),
+            )
+
+            try {
+                const { result } = renderHook(
+                    () =>
+                        useAccountValueTotalsQuery(
+                            [makeAccount('A1'), makeSecondChainAccount('E1')],
+                            SCOPE,
+                        ),
+                    { wrapper: createWrapper() },
+                )
+                await waitFor(() =>
+                    expect(result.current.isPending).toBe(false),
+                )
+
+                expect(
+                    result.current.accountValueTotals.get('E1')?.fiatValue,
+                ).toBeNull()
+                expect(result.current.portfolioFiatValue).toEqual(
+                    new Decimal(40),
+                )
+                expect(result.current.isPortfolioFiatValuePartial).toBe(false)
             } finally {
                 useNetworkStore.getState().setMode('live')
             }
