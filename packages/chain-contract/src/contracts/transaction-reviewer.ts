@@ -23,6 +23,7 @@ import { createChainAdapterRegistry } from '../registry'
 export type ReviewWarningType =
     | 'high-fee'
     | 'unknown-contract'
+    | 'token-approval'
     | 'large-amount'
     | 'close-account'
     | 'rekey'
