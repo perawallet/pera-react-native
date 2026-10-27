@@ -48,7 +48,6 @@ export const AccountOptionsContent = ({
         topActions,
         sharedAccountOptions,
         networks,
-        networksTitle,
         isRekeyed,
         canUndoRekey,
         authAccount,
@@ -160,7 +159,7 @@ export const AccountOptionsContent = ({
                 style={styles.networksTitle}
                 testID='account_networks_title'
             >
-                {networksTitle}
+                {t('account_options.networks_title')}
             </PWText>
             <AccountNetworkList
                 networks={networks}

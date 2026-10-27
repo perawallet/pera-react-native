@@ -71,18 +71,15 @@ export const AccountStructureTreeRow = ({
                         style={styles.accountRow}
                         onPress={handlePress}
                         disabled={row.isViewing}
+                        // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
+                        aria-expanded={isExpanded}
                         testID={`account_structure_row_${row.account.id}`}
                     >
                         <AccountIcon
                             account={row.account}
                             size='lg'
                         />
-                        <PWView
-                            style={[
-                                styles.accountInfo,
-                                styles.accountInfoWithChains,
-                            ]}
-                        >
+                        <PWView style={styles.accountInfoWithChains}>
                             <PWText
                                 variant='bodyLarge'
                                 truncate

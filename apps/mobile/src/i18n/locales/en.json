@@ -415,7 +415,6 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
-        "networks_title_for_account": "{{name}} on each network",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
         "see_all_networks": "See all networks",

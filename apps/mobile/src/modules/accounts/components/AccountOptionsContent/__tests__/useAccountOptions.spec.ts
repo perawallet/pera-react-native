@@ -132,19 +132,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-const mocks = vi.hoisted(() => ({ isMultichain: true }))
-vi.mock('../../../hooks/useIsMultichain', () => ({
-    useIsMultichain: () => mocks.isMultichain,
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params?.name != null ? `${key}:${params.name}` : key,
-        currentLanguage: 'en',
-        changeLanguage: () => undefined,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -285,7 +273,6 @@ describe('useAccountOptions', () => {
     }
 
     beforeEach(() => {
-        mocks.isMultichain = true
         registerLegacyAddressCodec(() => true)
         registerAlgorandAccountsAdapter()
         registerAlgorandMultisigAdapter()
@@ -525,49 +512,6 @@ describe('useAccountOptions', () => {
             expect(mockOpenRevealPrivateKeyFlow).toHaveBeenCalledWith(
                 'acc-pk',
                 ETHEREUM_CHAIN_ID,
-            )
-        })
-    })
-
-    describe('networks heading', () => {
-        const render = (account: WalletAccount) =>
-            renderHook(() =>
-                useAccountOptions({
-                    account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
-
-        it('names the account in the networks heading', () => {
-            const { result } = render(algo25Account)
-
-            expect(result.current.networksTitle).toBe(
-                'account_options.networks_title_for_account:My Account',
-            )
-        })
-
-        it('uses the truncated address for an account named after its address', () => {
-            const { result } = render({
-                ...algo25Account,
-                id: 'acc-named-after-address',
-                name: 'ALGO25ADDRESS',
-            })
-
-            expect(result.current.networksTitle).toBe(
-                `account_options.networks_title_for_account:${addressCodecs
-                    .get('algorand')
-                    .truncate('ALGO25ADDRESS')}`,
-            )
-        })
-
-        it('uses the plain Networks heading when one chain is active', () => {
-            mocks.isMultichain = false
-
-            const { result } = render(algo25Account)
-
-            expect(result.current.networksTitle).toBe(
-                'account_options.networks_title',
             )
         })
     })

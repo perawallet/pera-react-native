@@ -256,6 +256,16 @@ describe('Flow: the account options sheet lists the account on each network', ()
         expect(screen.queryByTestId('account_network_ethereum')).toBeNull()
     })
 
+    it('Given a multichain build, when the sheet opens, then the network rows are headed "Networks"', async () => {
+        const account = await seedHdAccount()
+
+        render(<AccountOptionsHost account={account} />)
+
+        expect(
+            (await screen.findByTestId('account_networks_title')).textContent,
+        ).toBe('account_options.networks_title')
+    })
+
     it('Given an HD account, when the user taps "See wallet structure", then the structure opens as before', async () => {
         const account = await seedHdAccount()
 
@@ -283,7 +293,15 @@ describe('Flow: the account options sheet lists the account on each network', ()
 
         expect(await screen.findByText('account_info.viewing')).toBeTruthy()
 
-        fireEvent.click(screen.getByTestId('account_structure_row_hd-sibling'))
+        const siblingRow = screen.getByTestId(
+            'account_structure_row_hd-sibling',
+        )
+        expect(siblingRow.getAttribute('aria-expanded')).toBe('false')
+
+        fireEvent.click(siblingRow)
+        await waitFor(() =>
+            expect(siblingRow.getAttribute('aria-expanded')).toBe('true'),
+        )
         await longPress(
             await screen.findByTestId('account_structure_address_algorand'),
         )

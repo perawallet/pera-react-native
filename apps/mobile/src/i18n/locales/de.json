@@ -415,7 +415,6 @@
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
         "view_private_key": "Privaten Schlüssel anzeigen",
         "networks_title": "Netzwerke",
-        "networks_title_for_account": "{{name}} in jedem Netzwerk",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
         "see_all_networks": "Alle Netzwerke anzeigen",

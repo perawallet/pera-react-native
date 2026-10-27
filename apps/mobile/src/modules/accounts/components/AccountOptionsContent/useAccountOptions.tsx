@@ -15,7 +15,6 @@ import {
     type WalletAccount,
     addressOn,
     authorityOf,
-    getAccountDisplayName,
     hasRecoverySeed,
     hasSigningKeys,
     isMultisigAccount,
@@ -62,7 +61,6 @@ import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
-import { useIsMultichain } from '../../hooks/useIsMultichain'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -94,7 +92,6 @@ export type UseAccountOptionsResult = {
     topActions: SheetOption[]
     sharedAccountOptions: SheetOption[]
     networks: UseAccountNetworksResult
-    networksTitle: string
     isCloudBackupAvailable: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
@@ -131,7 +128,6 @@ export const useAccountOptions = ({
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
-    const isMultichain = useIsMultichain()
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
 
@@ -543,17 +539,10 @@ export const useAccountOptions = ({
         handleExportShareAccount,
     ])
 
-    const networksTitle = isMultichain
-        ? t('account_options.networks_title_for_account', {
-              name: getAccountDisplayName(networks.account, accountChainId),
-          })
-        : t('account_options.networks_title')
-
     return {
         topActions,
         sharedAccountOptions,
         networks,
-        networksTitle,
         isCloudBackupAvailable,
         isRekeyed,
         canUndoRekey,

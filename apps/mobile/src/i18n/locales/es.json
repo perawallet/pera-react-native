@@ -415,7 +415,6 @@
         "remove_rekey_error_message": "No puedes eliminar esta cuenta antes de eliminar sus {{count}} cuenta(s) con rekey",
         "view_private_key": "Ver clave privada",
         "networks_title": "Redes",
-        "networks_title_for_account": "{{name}} en cada red",
         "add_network": "Añadir",
         "add_network_error": "No se pudo añadir esta red",
         "see_all_networks": "Ver todas las redes",

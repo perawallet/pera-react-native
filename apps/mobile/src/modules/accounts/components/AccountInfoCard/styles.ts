@@ -146,6 +146,8 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
     },
     accountInfoWithChains: {
+        flex: 1,
+        minWidth: 0,
         gap: theme.spacing.xxs,
     },
     addressText: {
@@ -184,7 +186,7 @@ export const useStyles = makeStyles(theme => ({
     scanButton: {
         backgroundColor: theme.colors.buttonSquareBg,
         borderRadius: theme.borderRadius.sm,
-        // The label names a chain, so it can wrap; the pill grows with it.
+        // Longer translations wrap; the pill grows with the label.
         minHeight: SCAN_BUTTON_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',

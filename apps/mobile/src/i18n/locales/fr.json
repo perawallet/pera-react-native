@@ -415,7 +415,6 @@
         "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)",
         "view_private_key": "Voir la clé privée",
         "networks_title": "Réseaux",
-        "networks_title_for_account": "{{name}} sur chaque réseau",
         "add_network": "Ajouter",
         "add_network_error": "Impossible d’ajouter ce réseau",
         "see_all_networks": "Voir tous les réseaux",

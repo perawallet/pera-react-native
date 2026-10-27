@@ -199,14 +199,16 @@ export const useAccountInfoCard = ({
                         .normalize(option.address ?? ''),
                 }
             })
-            const hasRealName = !!member.name && !isNamedAfterOwnAddress(member)
             const fallbackName =
                 member.id === structureGroup.firstAccount.id
                     ? t('account_info.main_address')
                     : t('account_info.sub_address')
             return {
                 account: member,
-                name: hasRealName ? (member.name ?? '') : fallbackName,
+                name:
+                    member.name && !isNamedAfterOwnAddress(member)
+                        ? member.name
+                        : fallbackName,
                 isViewing: member.id === account.id,
                 chains,
             }
@@ -253,7 +255,6 @@ export const useAccountInfoCard = ({
             navigationRef.navigate('AddAccount', {
                 screen: 'LedgerFetchAccounts',
                 params: {
-                    // The rescan runs on a chain the account is on, not the default one.
                     chainId: scanChainId,
                     deviceId: hardwareDetails.deviceId,
                     deviceName: hardwareDetails.deviceName,
