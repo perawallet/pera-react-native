@@ -15226,7 +15226,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 

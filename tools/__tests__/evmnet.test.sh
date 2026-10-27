@@ -67,12 +67,15 @@ while read -r name port id; do
         { buf = buf $0 "\n" }
         index($0, n) { found = 1 }
         END { printf "%s", buf }' "$COMPOSE_FILE_PATH")
-    check "$name serves chain id $id" "yes" \
-        "$(echo "$block" | grep -q -- "- \"$id\"" && echo "$block" | grep -q -- '- "--chain-id"' && echo yes || echo no)"
+    check "$name serves chain id $id (flag directly followed by its id)" "yes" \
+        "$(echo "$block" | grep -A1 -- '- "--chain-id"' | grep -q -- "- \"$id\"" && echo yes || echo no)"
     check "$name binds port $port" "yes" \
         "$(echo "$block" | grep -q "127.0.0.1:$port:8545" && echo yes || echo no)"
+    if [ "$name" = pera_evmnet_base ]; then want=yes; else want=no; fi
+    check "$name OP-stack mode is $want" "$want" \
+        "$(echo "$block" | grep -q -- '"--optimism"' && echo yes || echo no)"
 done <<<"$TABLE"
-check "base runs the OP-stack mode" "1" \
+check "only one service runs the OP-stack mode" "1" \
     "$(grep -c -- '--optimism' "$COMPOSE_FILE_PATH")"
 
 run "$BASH_BIN" "$EVMNET" start >/dev/null

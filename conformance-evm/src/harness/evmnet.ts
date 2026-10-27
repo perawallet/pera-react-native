@@ -86,20 +86,42 @@ type JsonRpcResponse<T> = {
     error?: { code: number; message: string }
 }
 
-const rpcAt = async <T>(
+const RPC_TIMEOUT_MS = 10_000
+
+export const rpcAt = async <T>(
     url: string,
     method: string,
     params: readonly unknown[] = [],
+    timeoutMs = RPC_TIMEOUT_MS,
 ): Promise<T> => {
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    })
-    const body = (await response.json()) as JsonRpcResponse<T>
+    // A node that accepts the connection and then stalls would otherwise hold
+    // the test until the 120 s test timeout.
+    let response: Response
+    try {
+        response = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+            signal: AbortSignal.timeout(timeoutMs),
+        })
+    } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(`${method} to ${url} failed: ${reason}`)
+    }
+    if (!response.ok) {
+        throw new Error(
+            `${method} to ${url} returned HTTP ${response.status} ${response.statusText}`,
+        )
+    }
+    let body: JsonRpcResponse<T>
+    try {
+        body = (await response.json()) as JsonRpcResponse<T>
+    } catch {
+        throw new Error(`${method} to ${url} returned a body that is not JSON`)
+    }
     if (body.error !== undefined) {
         throw new Error(
-            `${method} failed with JSON-RPC error ${body.error.code}: ${body.error.message}`,
+            `${method} to ${url} failed with JSON-RPC error ${body.error.code}: ${body.error.message}`,
         )
     }
     return body.result as T
