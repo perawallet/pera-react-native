@@ -417,6 +417,7 @@
         "networks_title": "Ağlar",
         "add_network": "Ekle",
         "add_network_error": "Bu ağ eklenemedi",
+        "add_network_success": "{{network}} ağı eklendi",
         "see_all_networks": "Tüm ağları gör",
         "view_passphrase": "Passphrase’i görüntüle",
         "network_options": "Diğer seçenekler"
