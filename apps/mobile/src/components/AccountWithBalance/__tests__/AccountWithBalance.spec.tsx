@@ -17,6 +17,7 @@ import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { AccountWithBalance } from '../AccountWithBalance'
+import type { CrossChainTotal } from '../useAccountWithBalance'
 
 const mockHookResult = {
     scope: { chainId: 'algorand', networkId: 'mainnet' },
@@ -28,10 +29,12 @@ const mockHookResult = {
     preferredValue: undefined as Decimal | null | undefined,
     isMultiChain: false,
     isTestTier: false,
+    crossChainTotal: undefined as CrossChainTotal | undefined,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
 const mockPreferredAmount = vi.fn((_props: unknown) => null)
+const mockAssetAmount = vi.fn((_props: unknown) => null)
 
 vi.mock('../useAccountWithBalance', () => ({
     useAccountWithBalance: (...args: unknown[]) =>
@@ -46,7 +49,7 @@ vi.mock('@components/AccountDisplay', () => ({
 }))
 
 vi.mock('@components/AssetAmount', () => ({
-    AssetAmount: () => null,
+    AssetAmount: (props: unknown) => mockAssetAmount(props),
 }))
 
 vi.mock('@components/PreferredAmount', () => ({
@@ -64,7 +67,10 @@ describe('AccountWithBalance', () => {
         mockHookResult.isTestTier = false
         mockHookResult.isMultiChain = false
         mockHookResult.preferredValue = undefined
+        mockHookResult.crossChainTotal = undefined
         mockPreferredAmount.mockClear()
+        mockAssetAmount.mockClear()
+        mockAccountDisplay.mockClear()
         mockHookResult.availability = {
             isAvailable: true,
             nativeAsset: { assetId: '0' },
@@ -97,8 +103,6 @@ describe('AccountWithBalance', () => {
     })
 
     it('passes no badges to a single-chain mainnet row', () => {
-        mockAccountDisplay.mockClear()
-
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(mockAccountDisplay).toHaveBeenCalledWith(
@@ -184,5 +188,72 @@ describe('AccountWithBalance', () => {
         const props = mockPreferredAmount.mock.calls.at(-1)?.[0]
         expect(props).toHaveProperty('sourceAmount')
         expect(props).not.toHaveProperty('value')
+    })
+
+    describe('chain-agnostic row', () => {
+        beforeEach(() => {
+            mockHookResult.isMultiChain = true
+        })
+
+        it("shows the account's type and cross-chain total, not one chain's badge, address or native balance", () => {
+            const total = new Decimal(42)
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: total }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(screen.queryByText('Algorand')).toBeNull()
+            expect(mockAccountDisplay).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    alwaysShowAccountType: true,
+                    badges: undefined,
+                }),
+            )
+            expect(mockAssetAmount).not.toHaveBeenCalled()
+            expect(mockPreferredAmount).toHaveBeenCalledWith(
+                expect.objectContaining({ value: total }),
+            )
+        })
+
+        it('puts the tier badge in place of the total when every chain is on a test network', () => {
+            mockHookResult.isTestTier = true
+            mockHookResult.crossChainTotal = { kind: 'testOnly' }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                screen.getByText('common.network_label.testnet'),
+            ).toBeTruthy()
+            expect(
+                within(screen.getByTestId('account_display')).queryByText(
+                    'common.network_label.testnet',
+                ),
+            ).toBeNull()
+            expect(mockPreferredAmount).not.toHaveBeenCalled()
+        })
+
+        it('keeps the tier badge under the name beside a total that leaves test holdings out', () => {
+            mockHookResult.isTestTier = true
+            mockHookResult.crossChainTotal = {
+                kind: 'fiat',
+                value: new Decimal(1),
+            }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                within(screen.getByTestId('account_display')).getByText(
+                    'common.network_label.testnet',
+                ),
+            ).toBeTruthy()
+        })
+
+        it("shows the unavailable notice when all of the account's chains are switched off", () => {
+            mockHookResult.crossChainTotal = { kind: 'unavailable' }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(screen.getByTestId('account_chain_unavailable')).toBeTruthy()
+            expect(mockPreferredAmount).not.toHaveBeenCalled()
+        })
     })
 })

@@ -55,6 +55,8 @@ export type AccountDisplayProps = {
      * NFD) display the account type on the secondary line instead.
      */
     showAccountType?: boolean
+    /** Shows the account type on the secondary line even for a named account, in place of its address or NFD. */
+    alwaysShowAccountType?: boolean
     /** The chain whose name and address to show; defaults to the legacy chain. */
     chainId?: ChainId
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
@@ -71,6 +73,7 @@ export const AccountDisplay = ({
     noBorder,
     compact = false,
     showAccountType = false,
+    alwaysShowAccountType = false,
     chainId,
     badges,
     ...rest
@@ -88,6 +91,7 @@ export const AccountDisplay = ({
         account,
         compact,
         showAccountType,
+        alwaysShowAccountType,
         iconSize,
         chainId,
     })

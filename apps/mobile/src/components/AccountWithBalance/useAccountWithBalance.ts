@@ -11,15 +11,17 @@
  */
 
 import { useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     accountValueOf,
     useAccountChainId,
+    useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    isTestTierScope,
     LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
@@ -31,10 +33,19 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
     type ChainAvailability,
 } from '@hooks/useChainAvailability'
+
+export type CrossChainTotal =
+    /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
+    | { kind: 'fiat'; value: Maybe<Decimal> }
+    /** Every chain the account holds on is a test network, whose funds never count as money. */
+    | { kind: 'testOnly' }
+    /** Every chain the account is on is switched off. */
+    | { kind: 'unavailable' }
 
 export type UseAccountWithBalanceResult = {
     /** `chainId`, else the account's own chain, at its selected network; where its native asset is priced. */
@@ -49,6 +60,11 @@ export type UseAccountWithBalanceResult = {
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
     isTestTier: boolean
+    /**
+     * Set when no chain was asked for and the wallet spans chains: the row then
+     * stands for the whole account, so it shows this in place of one chain's balance.
+     */
+    crossChainTotal: Optional<CrossChainTotal>
 }
 
 export const useAccountWithBalance = (
@@ -62,10 +78,13 @@ export const useAccountWithBalance = (
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
+    const isChainAgnostic = chainOverride === undefined && basis === 'fiat'
+    // Leaves out switched-off chains, so their last-synced values can't count.
+    const sources = useAccountHoldingSources(account)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         homeScope,
-        availability.isAvailable,
+        isChainAgnostic ? sources.length > 0 : availability.isAvailable,
     )
     const chainIds = useMemo(
         () => Object.keys(account.chains) as ChainId[],
@@ -76,6 +95,31 @@ export const useAccountWithBalance = (
     const chainName = chainDisplayNameOf(chainId)
 
     const totals = accountValueOf(account, chainId, accountValueTotals)
+
+    // Matches the account overview's headline: test-network holdings stay out,
+    // and one unknown chain makes the total unknown rather than understated.
+    const crossChainTotal = useMemo((): Optional<CrossChainTotal> => {
+        if (!isChainAgnostic) return undefined
+        if (sources.length === 0) return { kind: 'unavailable' }
+        const counted = sources.filter(
+            source => !isTestTierScope(getProvider().chains, source.scope),
+        )
+        if (counted.length === 0) return { kind: 'testOnly' }
+        const values = counted.map(source =>
+            accountValueTotals.get(source.address),
+        )
+        if (values.some(value => !value || value.isPending)) {
+            return { kind: 'fiat', value: undefined }
+        }
+        const usdTotal = values.reduce<Maybe<Decimal>>(
+            (total, value) =>
+                total === null || !value || value.fiatValue === null
+                    ? null
+                    : total.plus(value.fiatValue),
+            new Decimal(0),
+        )
+        return { kind: 'fiat', value: usdToPreferred(usdTotal) }
+    }, [isChainAgnostic, sources, accountValueTotals, usdToPreferred])
 
     return {
         scope,
@@ -88,5 +132,6 @@ export const useAccountWithBalance = (
                 : undefined,
         isMultiChain: basis === 'fiat',
         isTestTier,
+        crossChainTotal,
     }
 }

@@ -45,20 +45,92 @@ export const AccountWithBalance = ({
         preferredValue,
         isMultiChain,
         isTestTier,
+        crossChainTotal,
     } = useAccountWithBalance(account, chainId)
-    const hasChainBadge = isMultiChain && !!chainName
+    const testTierBadge = (
+        <PWBadge
+            variant='testnet'
+            value={t('common.network_label.testnet')}
+        />
+    )
+    // A chain-agnostic row stands for every chain the account is on, so no one
+    // chain's badge applies; with no fiat total, the tier badge takes its place.
+    const hasChainBadge = !crossChainTotal && isMultiChain && !!chainName
+    const hasTierBadgeUnderName =
+        isTestTier && crossChainTotal?.kind !== 'testOnly'
     const badges =
-        hasChainBadge || isTestTier ? (
+        hasChainBadge || hasTierBadgeUnderName ? (
             <>
                 {hasChainBadge && <ChainBadge name={chainName} />}
-                {isTestTier && (
-                    <PWBadge
-                        variant='testnet'
-                        value={t('common.network_label.testnet')}
-                    />
-                )}
+                {hasTierBadgeUnderName && testTierBadge}
             </>
         ) : undefined
+
+    const renderBalance = () => {
+        if (crossChainTotal) {
+            switch (crossChainTotal.kind) {
+                case 'unavailable':
+                    return (
+                        <ChainUnavailableNotice testID='account_chain_unavailable' />
+                    )
+                case 'testOnly':
+                    return testTierBadge
+                case 'fiat':
+                    return (
+                        <PWView style={styles.balanceContainer}>
+                            <PreferredAmount
+                                value={crossChainTotal.value}
+                                density='compact'
+                                variant='bodyLarge'
+                                weight={500}
+                            />
+                        </PWView>
+                    )
+            }
+        }
+        if (!availability.isAvailable) {
+            return (
+                <ChainUnavailableNotice
+                    chainName={chainName}
+                    testID='account_chain_unavailable'
+                />
+            )
+        }
+        return (
+            <PWView style={styles.balanceContainer}>
+                <AssetAmount
+                    asset={availability.nativeAsset}
+                    value={nativeValue}
+                    density='compact'
+                    variant='bodyLarge'
+                    weight={500}
+                />
+                {isMultiChain ? (
+                    // Re-pricing the native balance would read a missing
+                    // price as $0; the account's own fiat value keeps it unknown.
+                    <PreferredAmount
+                        value={preferredValue}
+                        density='compact'
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.fiatBalance}
+                    />
+                ) : (
+                    // Converts on the account's own chain, which keeps the
+                    // ALGO-preferred fallback for an ALGO balance.
+                    <PreferredAmount
+                        sourceAssetId={availability.nativeAsset.assetId}
+                        sourceAmount={nativeValue}
+                        scope={scope}
+                        density='compact'
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.fiatBalance}
+                    />
+                )}
+            </PWView>
+        )
+    }
 
     return (
         <PWView
@@ -70,48 +142,11 @@ export const AccountWithBalance = ({
                 chainId={chainId}
                 showChevron={false}
                 showAccountType
+                alwaysShowAccountType={!!crossChainTotal}
                 badges={badges}
                 style={styles.accountDisplay}
             />
-            {!availability.isAvailable ? (
-                <ChainUnavailableNotice
-                    chainName={chainName}
-                    testID='account_chain_unavailable'
-                />
-            ) : (
-                <PWView style={styles.balanceContainer}>
-                    <AssetAmount
-                        asset={availability.nativeAsset}
-                        value={nativeValue}
-                        density='compact'
-                        variant='bodyLarge'
-                        weight={500}
-                    />
-                    {isMultiChain ? (
-                        // Re-pricing the native balance would read a missing
-                        // price as $0; the account's own fiat value keeps it unknown.
-                        <PreferredAmount
-                            value={preferredValue}
-                            density='compact'
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.fiatBalance}
-                        />
-                    ) : (
-                        // Converts on the account's own chain, which keeps the
-                        // ALGO-preferred fallback for an ALGO balance.
-                        <PreferredAmount
-                            sourceAssetId={availability.nativeAsset.assetId}
-                            sourceAmount={nativeValue}
-                            scope={scope}
-                            density='compact'
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.fiatBalance}
-                        />
-                    )}
-                </PWView>
-            )}
+            {renderBalance()}
         </PWView>
     )
 }
