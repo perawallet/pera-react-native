@@ -80,6 +80,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
             monotonicClock,
             deviceInfo: {
                 getDevicePlatform: () => 'ios',
+                getDeviceCountry: () => 'US',
                 getDeviceModel: () => 'iPhone',
                 getDeviceId: () => 'test-device-id',
                 getVersion: () => '1.0.0',
@@ -228,6 +229,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         monotonicClock: { now: () => null },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
+            getDeviceCountry: () => 'US',
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',

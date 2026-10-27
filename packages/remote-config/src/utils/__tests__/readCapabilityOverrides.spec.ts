@@ -33,15 +33,18 @@ vi.mock('../areConfigOverridesIgnored', () => ({
 
 const KEY = 'chain_algorand_overrides'
 
+const SWAP_COUNTRIES = 'swap_restricted_countries'
+
 let remoteValues: Record<string, string> = {}
 
-const useRemote = (values: Record<string, string>): void => {
+const useRemote = (values: Record<string, string>, country = 'US'): void => {
     remoteValues = values
     vi.mocked(getProvider).mockReturnValue({
         remoteConfig: {
             getStringValue: (key: string, fallback = '') =>
                 remoteValues[key] ?? fallback,
         },
+        deviceInfo: { getDeviceCountry: () => country },
     } as unknown as ReturnType<typeof getProvider>)
 }
 
@@ -165,6 +168,44 @@ describe('readCapabilityOverrides', () => {
         })
     })
 
+    test('turns swap off on every chain, over a remote true, where the device country is listed', () => {
+        useRemote(
+            {
+                [SWAP_COUNTRIES]: '["GB"]',
+                [KEY]: '{"capabilities":{"swap":true,"staking":false}}',
+            },
+            'GB',
+        )
+
+        expect(readCapabilityOverrides().remote).toEqual(
+            Object.fromEntries(
+                CHAIN_IDS.map(chainId => [
+                    chainId,
+                    chainId === 'algorand'
+                        ? { swap: false, staking: false }
+                        : { swap: false },
+                ]),
+            ),
+        )
+    })
+
+    test('leaves swap alone where the device country is not listed', () => {
+        useRemote({ [SWAP_COUNTRIES]: '["GB"]' }, 'US')
+
+        expect(readCapabilityOverrides().remote).toEqual(emptyLayer())
+    })
+
+    test('reads a country list saved on the Feature Flags screen', () => {
+        useRemote({}, 'GB')
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride(SWAP_COUNTRIES, '["GB"]')
+
+        expect(readCapabilityOverrides().remote.algorand).toEqual({
+            swap: false,
+        })
+    })
+
     describe('through the chain registry', () => {
         const build = Object.fromEntries(
             CHAIN_CAPABILITIES.map(capability => [capability, true]),
@@ -189,6 +230,14 @@ describe('readCapabilityOverrides', () => {
 
             setDeveloper(null)
             expect(registry.capabilities('algorand').staking).toBe(false)
+        })
+
+        test('a developer true still re-enables swap in a restricted country', () => {
+            useRemote({ [SWAP_COUNTRIES]: '["GB"]' }, 'GB')
+            expect(registry.capabilities('algorand').swap).toBe(false)
+
+            setDeveloper('{"capabilities":{"swap":true}}')
+            expect(registry.capabilities('algorand').swap).toBe(true)
         })
 
         test('the remote kill switch turns every capability off and back on, leaving the chain registered', () => {

@@ -131,6 +131,23 @@ describe('Flow: capability gating', () => {
             expect(screen.getByTestId('send_button')).toBeTruthy()
             expect(screen.queryByTestId('swap_button')).toBeNull()
         })
+
+        it('removes the Swap button where swap_restricted_countries lists the device region', async () => {
+            await enableOverrides()
+            setCapabilityOverrides({})
+            const country = getProvider().deviceInfo.getDeviceCountry()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride(
+                    'swap_restricted_countries',
+                    JSON.stringify([country]),
+                )
+
+            renderWithNavigation(PanelScreen, 'Panel')
+
+            expect(screen.getByTestId('send_button')).toBeTruthy()
+            expect(screen.queryByTestId('swap_button')).toBeNull()
+        })
     })
 
     describe('Menu entry points', () => {

@@ -20,9 +20,12 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { RemoteConfigKeys } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRemoteConfigStore } from '../store'
 import { areConfigOverridesIgnored } from './areConfigOverridesIgnored'
+import { isDeviceCountryRestricted } from './countryRestrictions'
+import { readRemoteConfigWithOverrides } from './readRemoteConfigWithOverrides'
 
 export interface ChainOverrides {
     enabled?: boolean
@@ -101,6 +104,19 @@ export const readCapabilityOverrides = (): ChainCapabilityOverrides => {
         const enabled = fromDeveloper.enabled ?? fromRemote.enabled
         if (enabled !== undefined) {
             chainEnabled[chainId] = enabled
+        }
+    }
+
+    // Above any remote chain value, so a chain blob can't re-enable swap there;
+    // the developer layer still can, for testing.
+    if (
+        isDeviceCountryRestricted(
+            readRemoteConfigWithOverrides(remoteConfig, saved),
+            RemoteConfigKeys.swap_restricted_countries,
+        )
+    ) {
+        for (const chainId of CHAIN_IDS) {
+            remote[chainId] = { ...remote[chainId], swap: false }
         }
     }
 

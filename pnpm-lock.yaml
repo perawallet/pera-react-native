@@ -3500,6 +3500,9 @@ importers:
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../chain-shared
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
