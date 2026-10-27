@@ -3484,6 +3484,7 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
+            "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",

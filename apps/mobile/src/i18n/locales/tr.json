@@ -3484,6 +3484,7 @@
             "permissions_sign_transaction": "İşlem imzalama talep etme",
             "permissions_sign_data": "Serbest veri imzalama talep etme",
             "accounts_title": "HESAPLARI SEÇ",
+            "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
             "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",

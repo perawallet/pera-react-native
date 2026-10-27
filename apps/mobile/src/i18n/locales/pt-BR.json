@@ -3507,6 +3507,7 @@
             "permissions_sign_transaction": "Solicitar assinatura de transações",
             "permissions_sign_data": "Solicitar assinatura de dados arbitrários",
             "accounts_title": "SELECIONAR CONTAS",
+            "no_accounts": "Nenhuma das suas contas pode se conectar nesta rede.",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
             "success_sheet_body": "Volte para {{name}} para continuar e concluir sua operação. Você encontra todas as sessões conectadas na página de configurações dedicada.",
             "success_sheet_return_to_dapp": "Voltar para {{name}}",

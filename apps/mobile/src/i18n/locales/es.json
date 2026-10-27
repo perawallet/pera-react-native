@@ -3484,6 +3484,7 @@
             "permissions_sign_transaction": "Solicitar la firma de transacciones",
             "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
             "accounts_title": "SELECCIONAR CUENTAS",
+            "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "success_sheet_return_to_dapp": "Volver a {{name}}",
