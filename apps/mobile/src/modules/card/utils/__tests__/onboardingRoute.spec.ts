@@ -54,7 +54,13 @@ describe('getOnboardingNextRoute', () => {
         ['under review', { verificationState: VerificationState.Pending }],
         ['verified', { verificationState: VerificationState.Verified }],
         ['rejected', { verificationState: VerificationState.Rejected }],
-        ['with the account created', { phase: OnboardingPhase.Account }],
+        [
+            'verified with every step done',
+            {
+                phase: OnboardingPhase.Account,
+                verificationState: VerificationState.Verified,
+            },
+        ],
     ])(
         'waits on the checklist at the KYC step when KYC is %s',
         (_label, override) => {

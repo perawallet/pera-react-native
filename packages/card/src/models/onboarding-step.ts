@@ -13,7 +13,7 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OnboardingStep, US_ISO } from './onboarding'
 import { OnboardingPhase } from './session'
-import { VerificationState } from './user'
+import { isKycSubmitted, VerificationState } from './user'
 
 export type OnboardingStepInput = {
     /** What Baanx says it expects next; null when it sent none we model. */
@@ -101,7 +101,12 @@ export const resolveOnboardingStep = (
                 : OnboardingStep.Verification
         }
         case OnboardingPhase.Account: {
-            return OnboardingStep.Verification
+            // Baanx documents ACCOUNT as every step done, which only follows
+            // KYC. The Veriff-era flow sent it before the phone step, so a
+            // record without submitted KYC still resumes there.
+            return isKycSubmitted(input.verificationState)
+                ? OnboardingStep.Verification
+                : contactStep(input.hasContactVerificationId)
         }
         case null: {
             return stepFromLocalOrder(input)

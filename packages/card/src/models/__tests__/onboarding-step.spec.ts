@@ -103,6 +103,19 @@ const CASES: Case[] = [
         verificationState: VerificationState.Verified,
         step: OnboardingStep.Verification,
     },
+    // The Veriff-era meaning: the account exists and the phone step is next.
+    {
+        label: 'account phase before KYC',
+        phase: OnboardingPhase.Account,
+        verificationState: VerificationState.Unverified,
+        step: OnboardingStep.PhoneSend,
+    },
+    {
+        label: 'account phase before KYC on a device without the contact id',
+        phase: OnboardingPhase.Account,
+        hasContactVerificationId: false,
+        step: OnboardingStep.EmailSend,
+    },
     // No phase: the device's own order.
     {
         label: 'no phase after phone verification',
