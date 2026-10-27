@@ -73,7 +73,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isStateUnknown: mockIsStateUnknown,
             isLoading: mockIsLoading,
             hasPollTimedOut: mockHasPollTimedOut,
-            hasAccountSignal: false,
+            hasAccountSignal: mockHasAccountSignal,
             restartPolling: mockRestartPolling,
             refetch: vi.fn(),
         }),
@@ -141,6 +141,7 @@ const mockCheckFundingAddress = vi.fn()
 const mockShowCardError = vi.fn()
 let mockIsStateUnknown = false
 let mockIsLoading = false
+let mockHasAccountSignal = false
 const mockRestartPolling = vi.fn()
 vi.mock('@modules/card/hooks', async () => ({
     // Real support hook (over the mocked webview + capabilities) so the
@@ -271,6 +272,7 @@ beforeEach(() => {
     mockIsStateUnknown = false
     mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
+    mockHasAccountSignal = false
     mockConnectedAddress = null
     mockStoredFundingType = null
     mockAccounts = []
@@ -407,12 +409,36 @@ describe('useCardOnboardingStatusScreen', () => {
             expect.anything(),
             {
                 verificationState: 'VERIFIED',
+                areDetailsSubmitted: true,
                 isRegistrationComplete: false,
                 isAuthenticated: false,
                 email: 'john@example.com',
                 hasAccountSignal: false,
             },
         )
+    })
+
+    it('tells the finish-registration hook when a verified record still owes forms', () => {
+        mockVerificationState = 'VERIFIED'
+        mockOnboardingRecord = {
+            phase: 'PERSONAL_INFORMATION',
+            email: 'john@example.com',
+        }
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(mockFinishRegistration).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.objectContaining({ areDetailsSubmitted: false }),
+        )
+    })
+
+    it('reads every form as in once the record has become an account', () => {
+        mockOnboardingStep = OnboardingStep.EmailSend
+        mockVerificationState = 'VERIFIED'
+        mockHasAccountSignal = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.areDetailsSubmitted).toBe(true)
     })
 
     it.each([

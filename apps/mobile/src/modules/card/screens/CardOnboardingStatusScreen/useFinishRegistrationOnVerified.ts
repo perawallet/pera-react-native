@@ -47,6 +47,8 @@ export type AccountPreparation =
 
 export type UseFinishRegistrationOnVerifiedParams = {
     verificationState: Nullable<VerificationState>
+    /** A record verified under the old order can still owe forms; no login runs until they're in. */
+    areDetailsSubmitted: boolean
     isRegistrationComplete: boolean
     isAuthenticated: boolean
     /** The login is keyed on it; from the onboarding record or this device. */
@@ -81,6 +83,7 @@ export const useFinishRegistrationOnVerified = (
     scope: ChainScope,
     {
         verificationState,
+        areDetailsSubmitted,
         isRegistrationComplete,
         isAuthenticated,
         email,
@@ -104,6 +107,7 @@ export const useFinishRegistrationOnVerified = (
 
     const isWaitingOnBaanx =
         verificationState === VerificationState.Verified &&
+        areDetailsSubmitted &&
         !isRegistrationComplete &&
         !isAuthenticated
     const isLoginLocked = loginAttempts.isLocked && !isRegistrationComplete

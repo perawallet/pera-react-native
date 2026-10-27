@@ -76,6 +76,7 @@ import {
 const SCOPE: ChainScope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
 const VERIFIED: UseFinishRegistrationOnVerifiedParams = {
     verificationState: 'VERIFIED',
+    areDetailsSubmitted: true,
     isRegistrationComplete: false,
     isAuthenticated: false,
     email: 'john@example.com',
@@ -317,6 +318,7 @@ describe('useFinishRegistrationOnVerified', () => {
             'KYC is still under review',
             { verificationState: 'PENDING' as const },
         ],
+        ['a verified record still owes forms', { areDetailsSubmitted: false }],
         ['registration is complete', { isRegistrationComplete: true }],
         ['a session already exists', { isAuthenticated: true }],
     ])('does nothing while %s', async (_label, override) => {
@@ -324,6 +326,7 @@ describe('useFinishRegistrationOnVerified', () => {
         await flush()
 
         expect(mockFinalize).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
         expect(result.current.accountPreparation).toBe('none')
     })
 })

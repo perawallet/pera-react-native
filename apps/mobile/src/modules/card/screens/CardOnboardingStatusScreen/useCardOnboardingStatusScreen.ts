@@ -125,9 +125,11 @@ export const useCardOnboardingStatusScreen =
             hasSession: isAuthenticated,
             hasContactVerificationId,
         })
+        // A record that became an account has every form in.
         const areDetailsSubmitted =
             nextScreen === 'CardOnboardingVerification' ||
-            nextScreen === 'CardOnboardingStatus'
+            nextScreen === 'CardOnboardingStatus' ||
+            hasAccountSignal
 
         const storedEmail = useCardStore(state => state.email)
         const {
@@ -139,6 +141,7 @@ export const useCardOnboardingStatusScreen =
         } = useFinishRegistrationOnVerified(scope, {
             hasAccountSignal,
             verificationState,
+            areDetailsSubmitted,
             isRegistrationComplete,
             isAuthenticated,
             email: onboardingRecord?.email ?? storedEmail ?? null,
