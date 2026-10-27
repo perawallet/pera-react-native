@@ -294,6 +294,39 @@ describe('Flow: the account options sheet lists the account on each network', ()
         ).toBeNull()
         expect(screen.queryByTestId('account_option_rekey-account')).toBeNull()
         expect(screen.queryByTestId('account_network_ethereum')).toBeNull()
+        expect(
+            screen.queryByTestId('account_networks_unreachable_note'),
+        ).toBeNull()
+    })
+
+    it('Given an Algo25 account, then the Networks section says other networks are unavailable, and Learn More opens the account type info', async () => {
+        const algo25: WalletAccount = {
+            id: 'algo25',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                algorand: { address: HD_TEST_ADDRESS, keyPairId: 'algo25-key' },
+            },
+            name: 'Algo25',
+        }
+        useAccountsStore.getState().setAccounts([algo25])
+
+        render(<AccountOptionsHost account={algo25} />)
+
+        const note = await screen.findByTestId(
+            'account_networks_unreachable_note',
+        )
+        expect(note.textContent).toContain(
+            'account_type_info.standard_unreachable_chains_note',
+        )
+        expect(screen.queryByTestId('account_network_ethereum')).toBeNull()
+
+        fireEvent.click(
+            screen.getByTestId('account_networks_unreachable_learn_more'),
+        )
+
+        expect(
+            await screen.findByText('account_type_info.standard_description'),
+        ).toBeTruthy()
     })
 
     it('Given an HD account, when the user taps "See wallet structure", then the structure opens as before', async () => {
@@ -308,5 +341,8 @@ describe('Flow: the account options sheet lists the account on each network', ()
         expect(
             await screen.findByText('account_info.hide_wallet_structure'),
         ).toBeTruthy()
+        expect(
+            screen.queryByTestId('account_networks_unreachable_note'),
+        ).toBeNull()
     })
 })
