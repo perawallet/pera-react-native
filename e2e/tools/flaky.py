@@ -23,18 +23,37 @@ from robot.api import ExecutionResult, ResultVisitor
 # pass reported a hundred and thirty-nine "flaky" cases that were nothing of the kind.
 DEAD_RUN_SHARE = 0.5
 
+# A driver session that dies takes every verdict after it with it: those cases failed on a
+# connection, not on the app. One is enough to make a pass unreadable, where suite setups
+# failing only mean a dead device in bulk - a single suite can collapse on its own merits.
+# Half the cases in one accounts run carried these and the share test missed it by a hair,
+# which is the sort of margin a judgement like this should not rest on.
+SESSION_LOST = (
+    "invalidsessionid",
+    "nosuchdriver",
+    "session is either terminated",
+    "remotedisconnected",
+    "connection aborted",
+)
+
 
 class _Collect(ResultVisitor):
     def __init__(self):
         self.status = {}
         self.setup_failures = 0
+        self.session_lost = 0
 
     def visit_test(self, test):
         ids = [t[3:] for t in test.tags if t.startswith("id:")] or [test.longname]
         for scenario in ids:
             self.status[scenario] = test.status
-        if test.status == "FAIL" and "suite setup failed" in (test.message or "").lower():
+        if test.status != "FAIL":
+            return
+        message = (test.message or "").lower()
+        if "suite setup failed" in message:
             self.setup_failures += 1
+        if any(signature in message for signature in SESSION_LOST):
+            self.session_lost += 1
 
 
 def collect(pass_dir):
@@ -45,7 +64,7 @@ def collect(pass_dir):
     not flaky, and the comparison comes out clean on evidence that is not there.
     """
     status, unreadable = {}, []
-    setup_failures = 0
+    setup_failures = session_lost = 0
     # A full pass writes one directory per suite; a single-suite run writes straight into
     # the pass directory. Reading only the first called a perfectly good single-suite run
     # incomplete and refused to compare it.
@@ -62,13 +81,26 @@ def collect(pass_dir):
             continue
         status.update(visitor.status)
         setup_failures += visitor.setup_failures
+        session_lost += visitor.session_lost
 
-    if status and setup_failures / len(status) > DEAD_RUN_SHARE:
-        unreadable.append(
-            f"{setup_failures} of {len(status)} cases failed in suite setup - "
+    unreadable += unreadable_reasons(len(status), setup_failures, session_lost)
+    return status, unreadable
+
+
+def unreadable_reasons(case_count, setup_failures, session_lost):
+    """Why a pass cannot be compared, if it cannot."""
+    reasons = []
+    if session_lost:
+        reasons.append(
+            f"{session_lost} cases failed on a driver session that was already gone - "
+            "the device or Appium went away mid-pass, so these are not verdicts about the cases"
+        )
+    if case_count and setup_failures / case_count > DEAD_RUN_SHARE:
+        reasons.append(
+            f"{setup_failures} of {case_count} cases failed in suite setup - "
             "the device went away mid-pass, so these are not verdicts about the cases"
         )
-    return status, unreadable
+    return reasons
 
 
 def classify(seen, pass_count):
