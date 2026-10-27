@@ -59,6 +59,7 @@ export const SendAccountSelectionContent = ({
                     highlighted && chainAccountOf(highlighted, chainId)?.address
                 }
                 rowTestIDPrefix='send_account'
+                chainId={chainId}
                 isEmbedded
             />
         </PWSheetLayout>
