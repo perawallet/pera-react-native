@@ -35,8 +35,41 @@ vi.mock('@components/core', () => ({
 const ETHEREUM = 'ethereum' as ChainId
 
 describe('useEnableChainAction', () => {
+    let pendingFrames: FrameRequestCallback[]
+
+    const flushFrame = () =>
+        act(() => {
+            pendingFrames.splice(0).forEach(frame => frame(0))
+        })
+
     beforeEach(() => {
         vi.clearAllMocks()
+        pendingFrames = []
+        vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(
+            frame => pendingFrames.push(frame),
+        )
+    })
+
+    it('shows the chain as enabling before it starts deriving on the next frame', async () => {
+        mocks.enableChain.mockReturnValue(new Promise(() => {}))
+        const { result } = renderHook(() => useEnableChainAction('Failed'))
+
+        act(() => {
+            result.current.enableChain('hd', ETHEREUM)
+        })
+
+        expect(result.current.enablingChainId).toBe(ETHEREUM)
+        expect(mocks.enableChain).not.toHaveBeenCalled()
+
+        await flushFrame()
+
+        await waitFor(() =>
+            expect(mocks.enableChain).toHaveBeenCalledWith(
+                'hd',
+                ETHEREUM,
+                'user',
+            ),
+        )
     })
 
     it('enables the chain for the user and hands back the account', async () => {
@@ -50,14 +83,21 @@ describe('useEnableChainAction', () => {
         })
 
         expect(result.current.enablingChainId).toBe(ETHEREUM)
-        expect(mocks.enableChain).toHaveBeenCalledWith('hd', ETHEREUM, 'user')
+        await flushFrame()
+        await waitFor(() =>
+            expect(mocks.enableChain).toHaveBeenCalledWith(
+                'hd',
+                ETHEREUM,
+                'user',
+            ),
+        )
         await waitFor(() => expect(onEnabled).toHaveBeenCalledWith(enabled))
         await waitFor(() =>
             expect(result.current.enablingChainId).toBeUndefined(),
         )
     })
 
-    it('enables once when called twice before it settles', () => {
+    it('enables once when called twice before it settles', async () => {
         mocks.enableChain.mockReturnValue(new Promise(() => {}))
         const { result } = renderHook(() => useEnableChainAction('Failed'))
 
@@ -65,8 +105,9 @@ describe('useEnableChainAction', () => {
             result.current.enableChain('hd', ETHEREUM)
             result.current.enableChain('hd', ETHEREUM)
         })
+        await flushFrame()
 
-        expect(mocks.enableChain).toHaveBeenCalledTimes(1)
+        await waitFor(() => expect(mocks.enableChain).toHaveBeenCalledTimes(1))
     })
 
     it('reports a failure under the given title and allows another try', async () => {
@@ -78,6 +119,7 @@ describe('useEnableChainAction', () => {
         act(() => {
             result.current.enableChain('hd', ETHEREUM, onEnabled)
         })
+        await flushFrame()
 
         await waitFor(() =>
             expect(mocks.showError).toHaveBeenCalledWith(error, 'Failed', {
@@ -93,6 +135,7 @@ describe('useEnableChainAction', () => {
         act(() => {
             result.current.enableChain('hd', ETHEREUM)
         })
-        expect(mocks.enableChain).toHaveBeenCalledTimes(2)
+        await flushFrame()
+        await waitFor(() => expect(mocks.enableChain).toHaveBeenCalledTimes(2))
     })
 })
