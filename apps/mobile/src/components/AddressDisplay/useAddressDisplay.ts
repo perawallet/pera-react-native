@@ -37,6 +37,7 @@ import {
     getChainDescriptor,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { IconName } from '@components/core'
@@ -137,6 +138,7 @@ export const useAddressDisplay = ({
     const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const scope = addressScope ?? legacyScope
     const { copyToClipboard } = useClipboard()
+    const { confirmReuse } = useAddressReuseGuard()
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
     const { contacts } = useContacts()
@@ -176,7 +178,9 @@ export const useAddressDisplay = ({
     const fallbackIconName: IconName = `accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`
 
     const copyAddress = () => {
-        void copyToClipboard(address)
+        void (async () => {
+            if (await confirmReuse(address)) await copyToClipboard(address)
+        })()
     }
 
     const unifiedLabels = useMemo(
