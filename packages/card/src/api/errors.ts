@@ -221,11 +221,20 @@ export const isAccountLockedError = (apiError: CardApiError): boolean =>
  * GET /v1/auth/register stops answering for an onboarding id once Baanx has
  * turned the record into an account ("Invalid onboarding ID").
  */
-export const isOnboardingNotFoundError = (apiError: CardApiError): boolean =>
-    apiError.status === 404 ||
-    /invalid onboarding id|onboarding.*not found/i.test(
-        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+export const isOnboardingNotFoundError = (apiError: CardApiError): boolean => {
+    if (apiError.status === 404) {
+        return true
+    }
+    const text =
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`.toLowerCase()
+    // indexOf, not /onboarding.*not found/: the unbounded `.*` is quadratic
+    // on a server message that repeats "onboarding".
+    const onboardingAt = text.indexOf('onboarding')
+    return (
+        text.includes('invalid onboarding id') ||
+        (onboardingAt !== -1 && text.includes('not found', onboardingAt))
     )
+}
 
 /**
  * A rejected email/password on login. Baanx documents 400 but its dev API

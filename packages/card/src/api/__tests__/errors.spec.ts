@@ -58,12 +58,26 @@ describe('isOnboardingNotFoundError', () => {
             'Invalid onboarding ID',
             { status: 400, message: 'Invalid onboarding ID' },
         ],
+        [
+            'an onboarding record not found',
+            { status: 400, message: 'Onboarding record not found' },
+        ],
     ])('reads %s as a record turned into an account', (_label, apiError) => {
         expect(isOnboardingNotFoundError(apiError)).toBe(true)
     })
 
-    it('does not read an outage as not found', () => {
-        expect(isOnboardingNotFoundError({ status: 503 })).toBe(false)
+    it.each([
+        ['an outage', { status: 503 }],
+        [
+            '"not found" before "onboarding"',
+            { status: 400, message: 'Not found while onboarding' },
+        ],
+        [
+            'a message that only repeats "onboarding"',
+            { status: 400, message: 'onboarding '.repeat(10_000) },
+        ],
+    ])('does not read %s as not found', (_label, apiError) => {
+        expect(isOnboardingNotFoundError(apiError)).toBe(false)
     })
 })
 
