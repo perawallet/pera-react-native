@@ -203,6 +203,18 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(result.current.hasAccountSignal).toBe(false)
     })
 
+    it('stops watching a verified record for the account after half an hour', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+        renderHook(() => useOnboardingKycPoll(SCOPE))
+        expect(scheduledInterval()).toBe(4000)
+
+        vi.advanceTimersByTime(30 * 60_000)
+
+        expect(scheduledInterval()).toBe(false)
+    })
+
     it('stops once the verified record says the account exists, and signals it', () => {
         mockVerificationState = 'VERIFIED'
         mockPhase = 'ACCOUNT'

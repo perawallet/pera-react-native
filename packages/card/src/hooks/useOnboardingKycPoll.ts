@@ -27,6 +27,9 @@ const ACTIVE_POLL_INTERVAL_MS = 4000
 const BACKOFF_POLL_INTERVAL_MS = 15_000
 const ACTIVE_POLL_WINDOW_MS = 60_000
 
+/** How long a verified record is watched for the account; Try again covers a slower Baanx. */
+const VERIFIED_WATCH_LIMIT_MS = 30 * 60_000
+
 /** Consecutive poll failures (~12s) before giving up. */
 const POLL_FAILURE_LIMIT = 3
 
@@ -85,6 +88,7 @@ export const useOnboardingKycPoll = (
     const { isAuthenticated } = useCardSession()
     const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
     const pollStartedAtRef = useRef(Date.now())
+    const verifiedSinceRef = useRef<Nullable<number>>(null)
 
     // Function form so polling stops on the very fetch that lands a decision,
     // with no mirror state and no one-render lag.
@@ -98,6 +102,15 @@ export const useOnboardingKycPoll = (
         // A verified record keeps being watched until Baanx turns it into an
         // account, which is what lets the post-KYC login run.
         if (isDecided(state) && isAccountCreated) return false
+        if (state === VerificationState.Verified) {
+            verifiedSinceRef.current ??= Date.now()
+            if (
+                Date.now() - verifiedSinceRef.current >=
+                VERIFIED_WATCH_LIMIT_MS
+            ) {
+                return false
+            }
+        }
         return Date.now() - pollStartedAtRef.current < ACTIVE_POLL_WINDOW_MS
             ? ACTIVE_POLL_INTERVAL_MS
             : BACKOFF_POLL_INTERVAL_MS
