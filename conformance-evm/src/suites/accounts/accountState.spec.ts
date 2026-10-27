@@ -30,6 +30,7 @@ import {
     type EvmConformanceEnv,
 } from '../../harness/context'
 import { anvilRpc, mine, withAutomineOff } from '../../harness/evmnet'
+import { withMidReadBlock } from '../../harness/rpcProxy'
 import { signTransactionWithApp } from '../../harness/sign'
 import { buildTransfer, signAndSend } from '../construction/support'
 
@@ -153,39 +154,104 @@ describe('evm account state', () => {
         expect(amountOf(six)?.toFixed()).toBe(sixAmount.toString())
         expect(amountOf(empty)).toBeUndefined()
         expect(state.observedRound).toBe(Number(await blockNumber(env)))
+    })
 
-        // Pinning: after the head moves on and changes every balance, the
-        // state still equals the node's answers at observedRound, not the head's.
-        const round = `0x${state.observedRound!.toString(16)}`
-        await fundEvmAccount(env, holder.address, 1n)
-        await castSend({
-            chain: env.chain,
-            privateKey: ANVIL_DEV_PRIVATE_KEY,
-            to: token,
-            sig: 'transfer(address,uint256)',
-            args: [holder.address, '1'],
+    it('reads balances and nonces at the block it announced even when the head moves mid-read', async () => {
+        const env = await createEvmConformanceEnv('ethereum')
+        const holder = await createRawKeyEvmAccount(env)
+        const other = await createRawKeyEvmAccount(env)
+        const funded = 2n ** 62n
+        await fundEvmAccount(env, holder.address, funded)
+        const tokenAmount = 2n ** 64n + 3n
+        const token = await mintToken(
+            env,
+            'TestToken',
+            holder.address,
+            tokenAmount,
+        )
+        whitelist.tokens = [token]
+
+        // Runs after the app has been told the head and before it reads
+        // anything: the holder's balance, token balance and nonce all change.
+        const proxy = await withMidReadBlock(env.chain, async () => {
+            await fundEvmAccount(env, holder.address, 1n)
+            await castSend({
+                chain: env.chain,
+                privateKey: ANVIL_DEV_PRIVATE_KEY,
+                to: token,
+                sig: 'transfer(address,uint256)',
+                args: [holder.address, '1'],
+            })
+            const { unsigned } = await buildTransfer(env, {
+                from: holder.address,
+                to: other.address,
+                assetRef: env.evmChain.descriptor.nativeAsset.ref,
+                amount: 1n,
+            })
+            await signAndSend(env, holder, unsigned)
         })
+        let state
+        try {
+            const viaProxy: ChainContext = {
+                ...withAssetsService(env),
+                getEndpoints: () => ({ [env.scope.networkId]: proxy.url }),
+            }
+            state = await createEthereumAccountStateOps(
+                viaProxy,
+                env.evmChain,
+            ).fetchAccountState(holder.address, env.scope, NO_PRIOR)
+        } finally {
+            await proxy.close()
+        }
+
+        const round = `0x${state.observedRound!.toString(16)}`
         const balanceOfData = await castCalldata('balanceOf(address)', [
             holder.address,
         ])
-        const atRound = await anvilRpc<Hex>(env.chain, 'eth_call', [
-            { to: token, data: balanceOfData },
-            round,
-        ])
-        const atHead = await anvilRpc<Hex>(env.chain, 'eth_call', [
-            { to: token, data: balanceOfData },
-            'latest',
-        ])
-        expect(atHead).not.toBe(atRound)
-        expect(amountOf(token)?.toFixed()).toBe(BigInt(atRound).toString())
-        expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
-            BigInt(
+        const at = async (tag: string) => ({
+            native: BigInt(
                 await anvilRpc<Hex>(env.chain, 'eth_getBalance', [
                     holder.address,
-                    round,
+                    tag,
                 ]),
-            ).toString(),
+            ),
+            token: BigInt(
+                await anvilRpc<Hex>(env.chain, 'eth_call', [
+                    { to: token, data: balanceOfData },
+                    tag,
+                ]),
+            ),
+            nonce: Number(
+                BigInt(
+                    await anvilRpc<Hex>(env.chain, 'eth_getTransactionCount', [
+                        holder.address,
+                        tag,
+                    ]),
+                ),
+            ),
+        })
+        const atRound = await at(round)
+        const atHead = await at('latest')
+        expect(atRound).toEqual({
+            native: funded,
+            token: tokenAmount,
+            nonce: 0,
+        })
+        expect(atHead.native).not.toBe(atRound.native)
+        expect(atHead.token).not.toBe(atRound.token)
+        expect(atHead.nonce).not.toBe(atRound.nonce)
+
+        const held = state.holdings.find(
+            h => h.assetId.toLowerCase() === token.toLowerCase(),
+        )?.amount
+        expect(state.nativeBalanceBaseUnits.toFixed()).toBe(
+            atRound.native.toString(),
         )
+        expect(held?.toFixed()).toBe(atRound.token.toString())
+        expect(state.chainState).toEqual({
+            family: 'evm',
+            nonce: { latest: atRound.nonce, pending: atHead.nonce },
+        })
     })
 
     it('reports the pooled transaction in the pending nonce only', async () => {
