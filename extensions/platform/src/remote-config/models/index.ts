@@ -30,6 +30,8 @@ export const RemoteConfigKeys = {
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_language_selection: 'enable_language_selection',
     enable_gift_cards: 'enable_gift_cards',
+    crypto_promotion_restricted_countries:
+        'crypto_promotion_restricted_countries',
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
@@ -97,6 +99,9 @@ export const RemoteConfigDefaults: Readonly<
     // itself is currently unavailable; testers force it on via the
     // developer-settings flag overrides.
     enable_gift_cards: false,
+    // Client device-region guard; the backend separately enforces IP restrictions.
+    // JSON array of ISO country codes; [] disables the client restriction.
+    crypto_promotion_restricted_countries: '[]',
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '2',
