@@ -24,7 +24,7 @@ type AssetSearchItemProps = {
     isOptedIn: boolean
     isOptingIn: boolean
     /** Omitted where the asset can't be added: the row shows no add action. */
-    onAdd?: (assetId: string) => void
+    onAdd?: () => void
     /** Names the asset's network, for results that span chains. */
     chainId?: ChainId
 }
@@ -64,7 +64,7 @@ export const AssetSearchItem = ({
                 asset={item}
                 right={action}
                 footer={chainId ? <ChainLabel chainId={chainId} /> : undefined}
-                onPress={onAdd ? () => onAdd(item.assetId) : undefined}
+                onPress={onAdd}
                 disabled={!onAdd || isOptedIn || isOptingIn}
                 style={styles.container}
             />

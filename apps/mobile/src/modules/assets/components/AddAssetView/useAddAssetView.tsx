@@ -128,8 +128,8 @@ export const useAddAssetView = (
     // A switched-off chain reports every capability off, so it's left out too.
     const searchableChainIds = useCapableChainIds('assetSearch')
     const manageableChainIds = useCapableChainIds('manageAssets')
-    // Ethereum's search lists no NFTs, and its NFTs need no adding, so the NFT
-    // sheet keeps to chains that can add.
+    // The NFT sheet adds by opting in, so it keeps to chains that can manage
+    // assets.
     const offeredChainIds = useMemo(
         () =>
             hasCollectible
@@ -321,6 +321,11 @@ export const useAddAssetView = (
         ],
     )
 
+    const requestAdd = useCallback(
+        (result: ScopedAssetSearchResult) => void handleRequestAdd(result),
+        [handleRequestAdd],
+    )
+
     return {
         chainOptions,
         selectedChainId,
@@ -340,8 +345,7 @@ export const useAddAssetView = (
         isOptedIn,
         isOptingIn,
         canAdd,
-        handleRequestAdd: (result: ScopedAssetSearchResult) =>
-            void handleRequestAdd(result),
+        handleRequestAdd: requestAdd,
         t,
     }
 }

@@ -157,7 +157,18 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage')
+// One `t` across renders, as react-i18next's is, so memoised callbacks that
+// depend on it keep their identity.
+vi.mock('@hooks/useLanguage', () => {
+    const t = (key: string) => key
+    return {
+        useLanguage: () => ({
+            t,
+            currentLanguage: 'en',
+            changeLanguage: () => undefined,
+        }),
+    }
+})
 
 let hasInternetMock = true
 const setHasInternet = (hasInternet: boolean): void => {
@@ -351,6 +362,17 @@ describe('useAddAssetView', () => {
             )
             expect(mockRequestByType).not.toHaveBeenCalled()
         })
+    })
+
+    it('keeps handleRequestAdd across renders, so the list rows aren’t rebuilt', () => {
+        const { result, rerender } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+        const first = result.current.handleRequestAdd
+
+        rerender()
+
+        expect(result.current.handleRequestAdd).toBe(first)
     })
 
     it('does not call optIn when user dismisses the confirmation sheet', async () => {
