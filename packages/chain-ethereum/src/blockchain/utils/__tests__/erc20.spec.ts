@@ -12,10 +12,20 @@
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { setupServer } from 'msw/node'
+import {
+    encodeAbiParameters,
+    stringToHex,
+    toFunctionSelector,
+    type Hex,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
 import { readErc20 } from '../erc20'
-import { erc20CallResponder, evmRpcHandlers } from '../../msw-handlers'
+import {
+    erc20CallResponder,
+    EvmRpcErrorFixture,
+    evmRpcHandlers,
+} from '../../msw-handlers'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -71,5 +81,45 @@ describe('readErc20', () => {
                 SCOPE,
             ),
         ).rejects.toThrow()
+    })
+
+    // MKR and SAI declare name() and symbol() as bytes32.
+    it('reads a token whose name and symbol are right-padded bytes32', async () => {
+        const MKR = '0x00000000000000000000000000000000000000dd'
+        const answers: Record<string, Hex> = {
+            [toFunctionSelector('name()')]: stringToHex('Maker', { size: 32 }),
+            [toFunctionSelector('symbol()')]: stringToHex('MKR', { size: 32 }),
+            [toFunctionSelector('decimals()')]: encodeAbiParameters(
+                [{ type: 'uint8' }],
+                [18],
+            ),
+            [toFunctionSelector('totalSupply()')]: encodeAbiParameters(
+                [{ type: 'uint256' }],
+                [10n ** 24n],
+            ),
+        }
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: params => {
+                        const { data } = params[0] as { data: Hex }
+                        return (
+                            answers[data.slice(0, 10)] ??
+                            new EvmRpcErrorFixture(3, 'execution reverted')
+                        )
+                    },
+                },
+            }),
+        )
+
+        const asset = await readErc20(testChainContext(), ETHEREUM, MKR, SCOPE)
+
+        expect(asset).toMatchObject({
+            name: 'Maker',
+            unitName: 'MKR',
+            decimals: 18,
+        })
+        expect(asset.totalSupply.toFixed()).toBe((10n ** 24n).toString())
     })
 })
