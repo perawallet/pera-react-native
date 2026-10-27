@@ -37,6 +37,9 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,
     },
+    optionRowDisabled: {
+        opacity: 0.5,
+    },
     optionTextContainer: {
         flex: 1,
         flexDirection: 'column',

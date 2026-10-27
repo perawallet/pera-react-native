@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
-        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves.",
+        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves. Las cuentas Algo25 solo admiten Algorand. Para usar Ethereum o Base, crea una Wallet universal.",
+        "standard_unreachable_chains_note": "Otras redes no están disponibles para las cuentas Algo25.",
         "ledger_title": "Cuenta Ledger",
         "ledger_description": "Tu cuenta es una cuenta Ledger. Se añadió a tu wallet directamente desde el dispositivo de hardware. Todas las transacciones de esta cuenta deben confirmarse en tu Ledger.",
         "watch_title": "Cuenta de observación",
@@ -2654,6 +2655,7 @@
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
             "error_body": "No se ha seleccionado ninguna cuenta, selecciona una primero",
+            "chain_unavailable_title": "{{chain}} no está disponible para esta cuenta",
             "copy_address": "Copiar dirección",
             "share": "Compartir dirección"
         }
@@ -3485,6 +3487,7 @@
             "permissions_sign_transaction": "Solicitar la firma de transacciones",
             "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
             "accounts_title": "SELECCIONAR CUENTAS",
+            "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "success_sheet_return_to_dapp": "Volver a {{name}}",

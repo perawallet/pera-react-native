@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     accounts: [] as unknown[],
     options: [] as Option[],
     accountChainOptions: vi.fn(),
+    unreachableChainsNoteOf: vi.fn(),
     enableChain: vi.fn(),
     showError: vi.fn(),
     showToast: vi.fn(),
@@ -37,6 +38,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     accountChainOptions: (...args: unknown[]) =>
         mocks.accountChainOptions(...args),
+    unreachableChainsNoteOf: (...args: unknown[]) =>
+        mocks.unreachableChainsNoteOf(...args),
     useAllAccounts: () => mocks.accounts,
     useEnableChain: () => mocks.enableChain,
 }))
@@ -63,6 +66,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         chains: {
+            list: () => [
+                { id: 'algorand' },
+                { id: 'ethereum' },
+                { id: 'base' },
+            ],
             get: (chainId: string) => ({
                 descriptor: {
                     family: chainId === 'algorand' ? 'algorand' : 'evm',
@@ -121,6 +129,40 @@ describe('useAccountNetworks', () => {
         mocks.switchedOff = []
         mocks.receiveOff.clear()
         mocks.accountChainOptions.mockImplementation(() => mocks.options)
+        mocks.unreachableChainsNoteOf.mockReturnValue(null)
+    })
+
+    it("words the kind's note for the chains that are on but out of the account's reach", () => {
+        mocks.unreachableChainsNoteOf.mockReturnValue('kind.unreachable_note')
+        mocks.switchedOff = ['base']
+
+        const { result } = render()
+
+        expect(result.current.unreachableChainsNote).toBe(
+            'kind.unreachable_note',
+        )
+        expect(mocks.unreachableChainsNoteOf).toHaveBeenCalledWith(account, [
+            'algorand',
+            'ethereum',
+        ])
+    })
+
+    it('shows no note when the account reaches every chain that is on', () => {
+        const { result } = render()
+
+        expect(result.current.unreachableChainsNote).toBeNull()
+    })
+
+    it("checks the store's current account for the note, not the sheet's snapshot", () => {
+        const current = { ...account, chains: { ...account.chains } }
+        mocks.accounts = [current]
+
+        render()
+
+        expect(mocks.unreachableChainsNoteOf).toHaveBeenCalledWith(
+            current,
+            expect.any(Array),
+        )
     })
 
     it('shows an Algorand-only account as one enabled row with its truncated address and QR', () => {

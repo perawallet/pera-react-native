@@ -15,10 +15,12 @@ import { useCallback, useEffect, useMemo } from 'react'
 import {
     addressOn,
     getAccountDisplayName,
+    unreachableChainsNoteOf,
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     trackScreen,
@@ -45,6 +47,9 @@ type UseQRViewScreenResult = {
     canReceive: boolean
     /** True when a picker (account or chain) led here, so back returns to it; false when back ends the flow. */
     canGoBack: boolean
+    /** The copy shown in place of the QR when the account can't receive. */
+    emptyTitle: string
+    emptyBody: string
     handleBack: () => void
     handleCopyAddress: () => void
     handleShareAddress: () => Promise<void>
@@ -95,6 +100,25 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
     }, [selectedAccount, scope])
     const canReceive = paymentUri !== ''
 
+    const { emptyTitle, emptyBody } = useMemo(() => {
+        const note =
+            selectedAccount && chainId
+                ? unreachableChainsNoteOf(selectedAccount, [chainId])
+                : null
+        if (note && chainId) {
+            return {
+                emptyTitle: t('receive_funds.qrview.chain_unavailable_title', {
+                    chain: chainDisplayNameOf(chainId) ?? chainId,
+                }),
+                emptyBody: t(note),
+            }
+        }
+        return {
+            emptyTitle: t('receive_funds.qrview.error_title'),
+            emptyBody: t('receive_funds.qrview.error_body'),
+        }
+    }, [selectedAccount, chainId, t])
+
     // Tracked here, not when the receive sheet opens: the sheet starts on
     // Choose Network, and only this view knows the chain the QR is for.
     const shownChainId = scope?.chainId
@@ -141,6 +165,8 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         paymentUri,
         canReceive,
         canGoBack: navigation.canGoBack(),
+        emptyTitle,
+        emptyBody,
         handleBack,
         handleCopyAddress,
         handleShareAddress,

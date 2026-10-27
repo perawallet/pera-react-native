@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Compte Algo25",
-        "standard_description": "Votre compte est un compte Algorand standard. Il n’a pas fait l’objet d’un rekey et n’est pas associé à un appareil Ledger. Il a été ajouté à votre wallet avec ses clés.",
+        "standard_description": "Votre compte est un compte Algorand standard. Il n’a pas fait l’objet d’un rekey et n’est pas associé à un appareil Ledger. Il a été ajouté à votre wallet avec ses clés. Les comptes Algo25 ne prennent en charge qu’Algorand. Pour utiliser Ethereum ou Base, créez un Universal Wallet.",
+        "standard_unreachable_chains_note": "Les autres réseaux ne sont pas disponibles pour les comptes Algo25.",
         "ledger_title": "Compte Ledger",
         "ledger_description": "Votre compte est un compte Ledger. Il a été ajouté à votre wallet directement depuis l’appareil physique. Toutes les transactions de ce compte doivent être confirmées sur votre Ledger.",
         "watch_title": "Compte de suivi",
@@ -2654,6 +2655,7 @@
         "qrview": {
             "error_title": "Aucun compte sélectionné",
             "error_body": "Aucun compte n’a été sélectionné, veuillez d’abord sélectionner un compte",
+            "chain_unavailable_title": "{{chain}} n’est pas disponible pour ce compte",
             "copy_address": "Copier l’adresse",
             "share": "Partager l’adresse"
         }
@@ -3485,6 +3487,7 @@
             "permissions_sign_transaction": "Demander la signature de transactions",
             "permissions_sign_data": "Demander la signature de données arbitraires",
             "accounts_title": "SÉLECTIONNER LES COMPTES",
+            "no_accounts": "Aucun de vos comptes ne peut se connecter sur ce réseau.",
             "success_sheet_title": "Connexion établie avec {{name}}",
             "success_sheet_body": "Veuillez retourner dans {{name}} pour continuer et terminer votre opération. Vous trouverez toutes les sessions connectées dans la page de paramètres dédiée.",
             "success_sheet_return_to_dapp": "Retourner dans {{name}}",

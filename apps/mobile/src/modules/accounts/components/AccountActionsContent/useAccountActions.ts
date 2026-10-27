@@ -12,14 +12,18 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    firstUnreachableChainsNote,
     useAccountsStore,
+    useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useSendAccountResolver,
     useSendFundsStore,
@@ -41,6 +45,8 @@ type UseAccountActionsResult = {
      */
     existingContacts: Contact[]
     canSend: boolean
+    /** Why no held account can send on the address's chain; null when one can, or no kind says why. */
+    sendUnavailableNote: Nullable<string>
     canAddWatchAccount: boolean
     openSendTransaction: () => void
     openWatchAddress: () => void
@@ -67,8 +73,16 @@ export const useAccountActions = ({
     const isSendOnChain = useCapability(
         chainId ? { chain: { chainId, capability: 'send' } } : {},
     )
-    const canSend =
-        isSendOnChain && (!chainId || resolveSender(chainId).kind !== 'none')
+    const hasNoSender =
+        isSendOnChain && !!chainId && resolveSender(chainId).kind === 'none'
+    const canSend = isSendOnChain && !hasNoSender
+    const { t } = useLanguage()
+    const accounts = useAllAccounts()
+    const sendUnavailableNote = useMemo(() => {
+        if (!hasNoSender || !chainId) return null
+        const note = firstUnreachableChainsNote(accounts, [chainId])
+        return note ? t(note) : null
+    }, [hasNoSender, chainId, accounts, t])
 
     const existingContacts = useMemo(
         // The address may be on any chain, so any of a contact's families can hold it.
@@ -146,6 +160,7 @@ export const useAccountActions = ({
     return {
         existingContacts,
         canSend,
+        sendUnavailableNote,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,

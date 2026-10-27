@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",
-        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi.",
+        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi. Algo25 hesapları yalnızca Algorand'ı destekler. Ethereum veya Base kullanmak için bir Universal Wallet oluştur.",
+        "standard_unreachable_chains_note": "Algo25 hesapları için diğer ağlar kullanılamaz.",
         "ledger_title": "Ledger hesabı",
         "ledger_description": "Hesabın bir Ledger hesabı. Cüzdanına doğrudan hardware wallet cihazından eklendi. Bu hesaba ait tüm işlemlerin Ledger’ında onaylanması gerekir.",
         "watch_title": "İzleme hesabı",
@@ -2654,6 +2655,7 @@
         "qrview": {
             "error_title": "Hesap seçilmedi",
             "error_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç",
+            "chain_unavailable_title": "{{chain}} bu hesapta kullanılamıyor",
             "copy_address": "Adresi kopyala",
             "share": "Adresi paylaş"
         }
@@ -3485,6 +3487,7 @@
             "permissions_sign_transaction": "İşlem imzalama talep etme",
             "permissions_sign_data": "Serbest veri imzalama talep etme",
             "accounts_title": "HESAPLARI SEÇ",
+            "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
             "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",

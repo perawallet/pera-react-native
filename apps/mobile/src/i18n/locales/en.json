@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
-        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
+        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys. Algo25 accounts support Algorand only. To use Ethereum or Base, create a Universal Wallet.",
+        "standard_unreachable_chains_note": "Other networks aren't available for Algo25 accounts.",
         "ledger_title": "Ledger account",
         "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
         "watch_title": "Watch account",
@@ -2654,6 +2655,7 @@
         "qrview": {
             "error_title": "No Account Selected",
             "error_body": "No account has been selected, please select an account first",
+            "chain_unavailable_title": "{{chain}} isn't available for this account",
             "copy_address": "Copy Address",
             "share": "Share Address"
         }
@@ -3485,6 +3487,7 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
+            "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",

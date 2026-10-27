@@ -26,6 +26,7 @@ const {
     errorToast,
     showError,
     pushWebView,
+    firstUnreachableChainsNote,
 } = vi.hoisted(() => ({
     trackEvent: vi.fn(),
     confirmQuantumDappUsage: vi.fn(
@@ -35,6 +36,7 @@ const {
     errorToast: vi.fn(),
     showError: vi.fn(),
     pushWebView: vi.fn(),
+    firstUnreachableChainsNote: vi.fn(),
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -86,6 +88,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAllAccounts: () => ACCOUNTS,
     useSigningAccountsOn: () => ACCOUNTS,
+    firstUnreachableChainsNote,
     useAccountValueTotalsQuery: (...args: unknown[]) => {
         totals.query(...args)
         return { accountValueTotals: totals.current }
@@ -121,6 +124,33 @@ const makeProposal = (overrides = {}) => ({
 describe('useConnectionApprovalView', () => {
     beforeEach(() => {
         confirmQuantumDappUsage.mockReset().mockResolvedValue('continue')
+        firstUnreachableChainsNote.mockReset().mockReturnValue(null)
+    })
+
+    it("words the empty-list note from a held account's kind that can't reach the requested chains", () => {
+        totals.sort.mockImplementation(() => ({ sortedAccounts: [] }))
+        firstUnreachableChainsNote.mockReturnValue('kind.unreachable_note')
+        const proposal = makeProposal()
+
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        expect(result.current.noAccountsNote).toBe('kind.unreachable_note')
+        expect(firstUnreachableChainsNote).toHaveBeenCalledWith(ACCOUNTS, [
+            'algorand',
+        ])
+    })
+
+    it('falls back to the generic empty-list note when no kind says why', () => {
+        totals.sort.mockImplementation(() => ({ sortedAccounts: [] }))
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(makeProposal() as never),
+        )
+
+        expect(result.current.noAccountsNote).toBe(
+            'walletconnect.request.no_accounts',
+        )
     })
 
     afterEach(() => {

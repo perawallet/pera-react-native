@@ -29,6 +29,9 @@ const KIND_COPY: Record<AccountType, AccountKindPresentation> = {
         infoBodyKey: i18nKey('account_type_info.standard_description'),
         glyph: 'accounts/glyph/algo25-account',
         supportUrl: config.accountTypeSupportUrl,
+        unreachableChainsNoteKey: i18nKey(
+            'account_type_info.standard_unreachable_chains_note',
+        ),
     },
     [AccountTypes.hdWallet]: {
         labelKey: i18nKey('account_info.type_universal_wallet'),
