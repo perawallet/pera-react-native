@@ -3461,6 +3461,16 @@
             "speed_up": "Speed Up",
             "cancel": "Cancel Transaction",
             "review_notice": "Replaces transaction {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Suspected address poisoning",
+            "title": "Suspected address poisoning",
+            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later. Don't copy it or send to it.",
+            "sender_label": "This address",
+            "reuse_title": "This address imitates one you know",
+            "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
+            "reuse_confirm": "Continue anyway",
+            "reuse_cancel": "Cancel"
         }
     },
     "tabbar": {

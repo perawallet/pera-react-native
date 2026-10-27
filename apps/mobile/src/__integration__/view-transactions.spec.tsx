@@ -588,7 +588,9 @@ describe('Flow: View transactions → tap into details', () => {
         // hasNextPage flips on when the DB returned a full page —
         // production gates `handleLoadMore` on this same flag.
         expect(result.current.hasNextPage).toBe(true)
-        expect(apiSpy).not.toHaveBeenCalled()
+        // The address-safety check reads this endpoint too, so only calls
+        // after load-more count; the older row below proves the page landed.
+        const callsBeforeLoadMore = apiSpy.mock.calls.length
 
         // Trigger the same path the list's onEndReached uses. wrap
         // in act so the resulting state mutations flush.
@@ -601,7 +603,9 @@ describe('Flow: View transactions → tap into details', () => {
         // now includes the older tx.
         await waitFor(
             () => {
-                expect(apiSpy).toHaveBeenCalled()
+                expect(apiSpy.mock.calls.length).toBeGreaterThan(
+                    callsBeforeLoadMore,
+                )
             },
             { timeout: 5000 },
         )

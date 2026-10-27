@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     i18nKey,
+    type ChainScope,
     type TransactionNative,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -32,17 +33,23 @@ import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     getNetworkErrorMessageKeys,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
-import { summarizeHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    summarizeHistoryItem,
+    type SuspectedPoisoning,
+} from '@perawallet/wallet-core-transactions'
 import {
     trackScreen,
     AnalyticsScreenName,
     AnalyticsMetadataKey,
 } from '@analytics'
+import type { AddressReuseGuard } from '@components/AddressReuseGuard'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { chainUiFor } from '@modules/chain-ui'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { useSuspectedAddressReuseGuard } from '@modules/transactions'
 import { useNoTransactionDetail } from './useNoTransactionDetail'
 
 type NavigationProp = StackNavigationProp<
@@ -63,10 +70,13 @@ type TransactionDetailsRenderState =
 
 type UseTransactionDetailsScreenResult = {
     renderState: TransactionDetailsRenderState
+    scope: ChainScope
     groupId?: string
     isExternal: boolean
     /** Only a history row carries a status, so a signing-flow transaction has none. */
     notice: Nullable<ChainNoticeContent>
+    suspectedPoisoning: Optional<SuspectedPoisoning>
+    addressReuseGuard: AddressReuseGuard
     handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
 }
@@ -83,7 +93,12 @@ export const useTransactionDetailsScreen =
             groupId,
             isExternal,
             historyTransaction,
+            suspectedPoisoning,
         } = route.params
+        const addressReuseGuard = useSuspectedAddressReuseGuard({
+            suspectedPoisoning,
+            scope,
+        })
 
         // Tracked in-screen rather than via the navigator's screenListeners: this
         // screen is also mounted inside the signing flow's own NavigationContainer
@@ -194,9 +209,12 @@ export const useTransactionDetailsScreen =
 
         return {
             renderState,
+            scope,
             groupId,
             isExternal: isExternal ?? false,
             notice,
+            suspectedPoisoning,
+            addressReuseGuard,
             handleRelatedTransactionPress,
             handleRetry,
         }

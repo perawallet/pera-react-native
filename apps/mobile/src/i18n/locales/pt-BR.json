@@ -3483,6 +3483,16 @@
             "speed_up": "Acelerar",
             "cancel": "Cancelar transação",
             "review_notice": "Substitui a transação {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Suspeita de envenenamento de endereço",
+            "title": "Suspeita de envenenamento de endereço",
+            "body": "Esta transferência não movimentou nada de valor e vem de um endereço criado para parecer com um que você conhece. Golpistas enviam isso para que o endereço deles apareça no seu histórico e seja copiado depois. Não copie esse endereço nem envie nada para ele.",
+            "sender_label": "Este endereço",
+            "reuse_title": "Este endereço imita um que você conhece",
+            "reuse_body": "Ele começa e termina como um endereço que você conhece, mas não é o mesmo. Compare os endereços completos antes de usá-lo.",
+            "reuse_confirm": "Continuar mesmo assim",
+            "reuse_cancel": "Cancelar"
         }
     },
     "tabbar": {

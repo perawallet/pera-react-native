@@ -29,6 +29,7 @@ import {
     fixtureEthereumDescriptor,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
 
@@ -54,6 +55,13 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 const mockUseTransactionDetailQuery = vi.fn()
+
+const { mockRequestSheet } = vi.hoisted(() => ({ mockRequestSheet: vi.fn() }))
+
+vi.mock('@modules/bottom-sheet', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/bottom-sheet')>()),
+    useBottomSheet: () => ({ request: mockRequestSheet }),
+}))
 
 vi.mock(
     '@perawallet/wallet-core-chain-algorand/blockchain',
@@ -473,6 +481,58 @@ describe('useTransactionDetailsScreen', () => {
             const { result } = renderHook(() => useTransactionDetailsScreen())
 
             expect(result.current.notice).toBeNull()
+        })
+    })
+
+    describe('a suspected poisoning entry', () => {
+        const REAL =
+            '2SSSXMFNG55PKDGKJB7MLTGIRSIYAXFCJAWSQFD6C3M7L6JLG5NJIBTGAA'
+        const LOOK_ALIKE =
+            '2SSSXMBXVWYMJ33BCFI5PED5O7LMFJZWXXSAJCU44W5M4NP4Q5YIJBTGAA'
+        const suspectedPoisoning = {
+            transactionId: 'TX123',
+            counterparty: LOOK_ALIKE,
+            imitates: { address: REAL, source: 'contact', name: 'Alice' },
+        }
+
+        it('carries the marker and warns only before its counterparty is copied', async () => {
+            registerAlgorandAddressCodec()
+            mockRequestSheet.mockResolvedValue(undefined)
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: 'TX123',
+                historyTransaction: historyItem,
+                suspectedPoisoning,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+            const { confirmReuse } = result.current.addressReuseGuard
+
+            expect(result.current.suspectedPoisoning).toEqual(
+                suspectedPoisoning,
+            )
+            await expect(confirmReuse(REAL)).resolves.toBe(true)
+            expect(mockRequestSheet).not.toHaveBeenCalled()
+            await expect(confirmReuse(LOOK_ALIKE)).resolves.toBe(false)
+            expect(mockRequestSheet).toHaveBeenCalledTimes(1)
+        })
+
+        it('guards nothing on an entry opened without the marker', async () => {
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: 'TX123',
+                historyTransaction: historyItem,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.suspectedPoisoning).toBeUndefined()
+            await expect(
+                result.current.addressReuseGuard.confirmReuse(
+                    suspectedPoisoning.counterparty,
+                ),
+            ).resolves.toBe(true)
+            expect(mockRequestSheet).not.toHaveBeenCalled()
         })
     })
 })

@@ -3461,6 +3461,16 @@
             "speed_up": "Hızlandır",
             "cancel": "İşlemi iptal et",
             "review_notice": "{{txId}} işleminin yerini alır"
+        },
+        "suspected_poisoning": {
+            "marker": "Şüpheli adres zehirlenmesi",
+            "title": "Şüpheli adres zehirlenmesi",
+            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir. Bu adresi kopyalama ve ona gönderim yapma.",
+            "sender_label": "Bu adres",
+            "reuse_title": "Bu adres tanıdığın bir adresi taklit ediyor",
+            "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
+            "reuse_confirm": "Yine de devam et",
+            "reuse_cancel": "İptal"
         }
     },
     "tabbar": {

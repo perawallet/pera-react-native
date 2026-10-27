@@ -3453,6 +3453,16 @@
             "speed_up": "Beschleunigen",
             "cancel": "Transaktion stornieren",
             "review_notice": "Ersetzt Transaktion {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Verdacht auf Address Poisoning",
+            "title": "Verdacht auf Address Poisoning",
+            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird. Kopiere sie nicht und sende nichts an sie.",
+            "sender_label": "Diese Adresse",
+            "reuse_title": "Diese Adresse imitiert eine, die du kennst",
+            "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
+            "reuse_confirm": "Trotzdem fortfahren",
+            "reuse_cancel": "Abbrechen"
         }
     },
     "tabbar": {

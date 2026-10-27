@@ -21,6 +21,7 @@ import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
     useCsvExportMutation,
+    type SuspectedPoisoning,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { shareFile } from '@utils/shareFile'
@@ -90,6 +91,8 @@ export type UseAssetTransactionListResult = {
     customRange?: CustomDateRange
     handleTransactionPress: (transaction: TransactionHistoryItem) => void
     handleOpenFilter: () => void
+    /** Keyed by transaction id. */
+    suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
 }
 
 export const useAssetTransactionList = ({
@@ -131,6 +134,7 @@ export const useAssetTransactionList = ({
         isLoadFailed,
         isLoadUnavailable,
         isLoadIntegrityBlocked,
+        suspectedPoisoningById,
     } = useTransactionHistoryRows({
         accountAddress,
         scope,
@@ -213,10 +217,13 @@ export const useAssetTransactionList = ({
                     scope,
                     transactionId: transaction.id,
                     historyTransaction: transaction,
+                    suspectedPoisoning: suspectedPoisoningById.get(
+                        transaction.id,
+                    ),
                 })
             }
         },
-        [navigation, scope],
+        [navigation, scope, suspectedPoisoningById],
     )
 
     const handleOpenFilter = useCallback(async () => {
@@ -293,6 +300,7 @@ export const useAssetTransactionList = ({
         activeFilter,
         customRange,
         handleTransactionPress,
+        suspectedPoisoningById,
         handleOpenFilter: () => void handleOpenFilter(),
     }
 }
