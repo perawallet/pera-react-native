@@ -84,19 +84,20 @@ export const compareEvmIntent = (
         maxPriorityFeePerGas: intent.maxPriorityFeePerGas,
         accessList: '[]',
     }
-    // RLP encodes zero value and empty calldata as nothing, so a decoder that
-    // leaves them out is reporting 0 and `0x`, not a missing field.
+    // RLP encodes zero, empty calldata and a creation's recipient as nothing,
+    // so a decoder that leaves them out is reporting 0, `0x` and no recipient,
+    // not a missing field.
     const actual: Record<string, unknown> = {
         type: transaction.type,
         chainId: transaction.chainId,
         from: lowercase(transaction.from),
         nonce: transaction.nonce,
-        to: lowercase(transaction.to),
+        to: lowercase(transaction.to ?? null),
         value: transaction.value ?? 0n,
         data: lowercase(transaction.data ?? transaction.input ?? '0x'),
         gas: transaction.gas,
         maxFeePerGas: transaction.maxFeePerGas,
-        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas ?? 0n,
         accessList: accessListText(transaction.accessList),
     }
     return {

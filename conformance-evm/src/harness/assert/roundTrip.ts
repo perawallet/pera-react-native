@@ -36,8 +36,13 @@ export type ExpectEvmConformantInput = {
     /** The exact bytes handed to the node, not a re-encoding of the builder's output. */
     raw: Hex
     hash: Hex
-    /** The sender's wei, read before broadcasting. */
-    senderBalanceBefore: bigint
+    /**
+     * Set only when another transaction in the receipt's block sends from or
+     * to the sender (automine off): the block's balance change then isn't this
+     * transaction's alone, so the caller asserts it. Refused when nothing else
+     * in the block touches the sender, so it can't switch the check off silently.
+     */
+    isBalanceAssertedByCaller?: true
 }
 
 type NodeTransaction = {
@@ -56,6 +61,10 @@ type NodeTransaction = {
 }
 
 type NodeReceipt = { l1Fee?: Hex }
+
+type NodeBlock = {
+    transactions: { hash: Hex; from: string; to: string | null }[]
+}
 
 const TRANSACTION_TYPES: Readonly<Record<string, string>> = {
     '0x0': 'legacy',
@@ -109,14 +118,15 @@ const sameAddress = (a: string | null, b: string | null): boolean =>
  * Asserts that the bytes the app submitted, and the transaction the node
  * holds, both match `intent` field for field; that the signature recovers to
  * the declared sender; that the receipt succeeded; and that the sender's wei
- * moved by exactly what the receipt accounts for, OP-stack L1 fee included.
+ * moved across the receipt's block by exactly what the receipt accounts for,
+ * OP-stack L1 fee included.
  */
 export const expectEvmConformant = async ({
     env,
     intent,
     raw,
     hash,
-    senderBalanceBefore,
+    isBalanceAssertedByCaller,
 }: ExpectEvmConformantInput): Promise<TransactionReceipt> => {
     // Without this the assertion could run against another transaction while
     // the submitted bytes went nowhere.
@@ -161,6 +171,31 @@ export const expectEvmConformant = async ({
     }
     assertMatchesIntent('node transaction', intent, fromNode(node))
 
+    // A transaction from someone else crediting the sender, or the sender's
+    // own second send, lands in the same balance change. Value moved by a
+    // contract's internal call is invisible here; such tests assert balances.
+    const block = await anvilRpc<NodeBlock>(env.chain, 'eth_getBlockByNumber', [
+        `0x${receipt.blockNumber.toString(16)}`,
+        true,
+    ])
+    const siblings = block.transactions.filter(
+        transaction =>
+            transaction.hash.toLowerCase() !== hash.toLowerCase() &&
+            (sameAddress(transaction.from, intent.from) ||
+                sameAddress(transaction.to, intent.from)),
+    )
+    if (siblings.length > 0 && !isBalanceAssertedByCaller) {
+        fail(
+            `block ${receipt.blockNumber} also holds ${siblings.map(t => t.hash).join(', ')}, which move the sender's balance; assert it in the caller and pass isBalanceAssertedByCaller`,
+        )
+    }
+    if (siblings.length === 0 && isBalanceAssertedByCaller) {
+        fail(
+            `nothing else in block ${receipt.blockNumber} touches the sender; drop isBalanceAssertedByCaller so the balance is asserted here`,
+        )
+    }
+    if (isBalanceAssertedByCaller) return receipt
+
     // viem's base receipt formatter does not know `l1Fee`, so it is read raw.
     const nodeReceipt = await anvilRpc<NodeReceipt>(
         env.chain,
@@ -172,19 +207,15 @@ export const expectEvmConformant = async ({
     const credited = sameAddress(intent.to, intent.from) ? value : 0n
     const spent =
         value - credited + receipt.gasUsed * receipt.effectiveGasPrice + l1Fee
-    const expectedAfter = senderBalanceBefore - spent
-    const actualAfter = await nativeBalanceOf(
-        env,
-        intent.from,
-        receipt.blockNumber,
-    )
-    if (actualAfter !== expectedAfter) {
+    const [balanceBefore, balanceAfter] = await Promise.all([
+        nativeBalanceOf(env, intent.from, receipt.blockNumber - 1n),
+        nativeBalanceOf(env, intent.from, receipt.blockNumber),
+    ])
+    const expectedAfter = balanceBefore - spent
+    if (balanceAfter !== expectedAfter) {
         fail(
-            `sender balance moved by ${senderBalanceBefore - actualAfter} wei, expected ${spent} (value ${value - credited}, gas ${receipt.gasUsed} × ${receipt.effectiveGasPrice}, l1Fee ${l1Fee})`,
-            formatFieldDiff(
-                { balanceAfter: expectedAfter },
-                { balanceAfter: actualAfter },
-            ),
+            `sender balance moved by ${balanceBefore - balanceAfter} wei in block ${receipt.blockNumber}, expected ${spent} (value ${value - credited}, gas ${receipt.gasUsed} × ${receipt.effectiveGasPrice}, l1Fee ${l1Fee})`,
+            formatFieldDiff({ balanceAfter: expectedAfter }, { balanceAfter }),
         )
     }
     return receipt

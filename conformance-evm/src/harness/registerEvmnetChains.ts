@@ -16,9 +16,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { evmChainModules } from '@perawallet/wallet-core-chain-ethereum/module'
 
-import { createEvmnetChainContext } from './context'
+import { createEvmnetChainContext, installedKms } from './context'
 import { EVMNET, EVMNET_CHAINS, type EvmnetChain } from './evmnet'
-import { latestEvmKms } from './keystore'
 
 /**
  * Registers the six chains as the app's bootstrap does, on testnet scopes
@@ -37,6 +36,6 @@ export const registerEvmnetChains = (chains: ChainRegistry): void =>
         entry =>
             createEvmnetChainContext(
                 entry.chainId as EvmnetChain,
-                latestEvmKms,
+                installedKms,
             ),
     )

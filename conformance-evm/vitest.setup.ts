@@ -21,9 +21,10 @@ import {
     type EvmnetChain,
 } from './src/harness/evmnet'
 import {
-    latestEvmKeyStore,
-    latestEvmKeystoreState,
-} from './src/harness/keystore'
+    installedKeyStore,
+    installedKeystoreState,
+    resetEvmConformanceSession,
+} from './src/harness/context'
 import { registerEvmnetChains } from './src/harness/registerEvmnetChains'
 
 // The real provider pulls in RN-native modules (react-native-mmkv) that cannot
@@ -45,7 +46,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             return chains
         },
         get key() {
-            return { store: latestEvmKeyStore() }
+            return { store: installedKeyStore() }
         },
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
@@ -55,7 +56,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
     }),
-    getKeystoreStore: () => latestEvmKeystoreState(),
+    getKeystoreStore: () => installedKeystoreState(),
 }))
 
 const eachChain = <T>(
@@ -70,28 +71,34 @@ beforeAll(async () => {
 })
 
 // A test that leaves automine off or a transaction pooled would make every
-// later file wait on a block, or race on a nonce, far from the cause.
+// later file wait on a block, or race on a nonce, far from the cause. The
+// session is retired either way, so a test that forgets to create its own
+// fails instead of reusing this one's keys and ledger.
 afterEach(async () => {
-    const leaks = (
-        await eachChain(async chain => {
-            const [automine, pool] = await Promise.all([
-                isAutomine(chain),
-                txpoolCounts(chain),
-            ])
-            const problems = [
-                ...(automine ? [] : ['automine is off']),
-                ...(pool.pending === 0 && pool.queued === 0
-                    ? []
-                    : [
-                          `txpool holds ${pool.pending} pending and ${pool.queued} queued`,
-                      ]),
-            ]
-            return problems.map(problem => `${chain}: ${problem}`)
-        })
-    ).flat()
-    if (leaks.length > 0) {
-        throw new Error(
-            `a test left evmnet dirty:\n${leaks.join('\n')}\nrestore automine with withAutomineOff and mine or drop what the test pooled`,
-        )
+    try {
+        const leaks = (
+            await eachChain(async chain => {
+                const [automine, pool] = await Promise.all([
+                    isAutomine(chain),
+                    txpoolCounts(chain),
+                ])
+                const problems = [
+                    ...(automine ? [] : ['automine is off']),
+                    ...(pool.pending === 0 && pool.queued === 0
+                        ? []
+                        : [
+                              `txpool holds ${pool.pending} pending and ${pool.queued} queued`,
+                          ]),
+                ]
+                return problems.map(problem => `${chain}: ${problem}`)
+            })
+        ).flat()
+        if (leaks.length > 0) {
+            throw new Error(
+                `a test left evmnet dirty:\n${leaks.join('\n')}\nrestore automine with withAutomineOff and mine or drop what the test pooled`,
+            )
+        }
+    } finally {
+        resetEvmConformanceSession()
     }
 })

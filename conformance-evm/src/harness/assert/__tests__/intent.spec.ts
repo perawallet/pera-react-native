@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { parseTransaction, serializeTransaction } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { formatFieldDiff } from '@perawallet/conformance/harness/assert/diff'
 
@@ -104,6 +105,43 @@ describe('compareEvmIntent', () => {
         }
 
         expect(compareEvmIntent(INTENT, transaction).ok).toBe(false)
+    })
+
+    // viem's decoder leaves RLP-empty fields out rather than reporting them
+    // empty, so these go through the real decoder, not a hand-built object.
+    const parsed = (
+        fields: Partial<EvmTxnIntent>,
+    ): ComparableEvmTransaction => ({
+        ...parseTransaction(
+            serializeTransaction({
+                type: 'eip1559',
+                chainId: INTENT.chainId,
+                nonce: INTENT.nonce,
+                to: INTENT.to ?? undefined,
+                value: INTENT.value,
+                gas: INTENT.gas,
+                maxFeePerGas: INTENT.maxFeePerGas,
+                maxPriorityFeePerGas: INTENT.maxPriorityFeePerGas,
+                ...fields,
+                ...(fields.to === null && { to: undefined }),
+            }),
+        ),
+        from: FROM,
+    })
+
+    it('reads a parsed contract creation as having no recipient', () => {
+        const intent = { ...INTENT, to: null, data: '0x6080' as const }
+
+        expect(diffOf(intent, parsed({ to: null, data: '0x6080' }))).toBe('')
+    })
+
+    it('reads a parsed zero tip as zero', () => {
+        const intent = { ...INTENT, maxPriorityFeePerGas: 0n }
+
+        expect(diffOf(intent, parsed({ maxPriorityFeePerGas: 0n }))).toBe('')
+        expect(diffOf(INTENT, parsed({ maxPriorityFeePerGas: 0n }))).toMatch(
+            /^maxPriorityFeePerGas\s+1000000000n\s+0n$/m,
+        )
     })
 
     it('compares the recipient of a contract creation as absent', () => {

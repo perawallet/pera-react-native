@@ -32,35 +32,6 @@ export type EvmConformanceKeyStore = {
     kms: ChainKeyStore
 }
 
-const emptyStore = new Store<KeyStoreState>({ keys: [], status: 'idle' })
-let latest: EvmConformanceKeyStore | undefined
-
-/**
- * What the provider mock's `getKeystoreStore()` and `key.store` resolve to:
- * app code that reads the live keystore sees the most recent env's keys.
- */
-export const latestEvmKeyStore = (): ConformanceKeyStore | undefined =>
-    latest?.keyStore
-
-export const latestEvmKeystoreState = (): Store<KeyStoreState> =>
-    latest?.keyStore.store ?? emptyStore
-
-const current = (): ChainKeyStore => {
-    if (!latest) {
-        throw new Error(
-            'no conformance keystore exists yet; create one with createEvmConformanceEnv',
-        )
-    }
-    return latest.kms
-}
-
-/** For a context registered before any env exists; it fails loudly until one does. */
-export const latestEvmKms: ChainKeyStore = {
-    deriveFromSeed: (...args) => current().deriveFromSeed(...args),
-    importRawKey: (...args) => current().importRawKey(...args),
-    sign: (...args) => current().sign(...args),
-}
-
 /**
  * The provider's keystore stack with only custody swapped: keystore-core over
  * the conformance memory driver, the engine's default shims plus the
@@ -89,6 +60,5 @@ export const createEvmConformanceKeyStore =
             importRawKey: core.importRawKey,
             sign: core.sign,
         }
-        latest = { keyStore, kms }
-        return latest
+        return { keyStore, kms }
     }
