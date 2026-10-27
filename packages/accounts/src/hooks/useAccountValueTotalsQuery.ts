@@ -77,10 +77,13 @@ export type UseAccountValueTotalsQueryResult = {
     portfolioUsdValue: Nullable<Decimal>
     /**
      * Over every account on every registered chain, leaving out holdings on a
-     * test-tier network; `null` when any counted fiat value is unknown — see
-     * `fiatValue`.
+     * test-tier network. Sums what is priced, skipping an account whose
+     * `fiatValue` is unknown; `null` only when something counted is unknown
+     * and nothing counted is priced.
      */
     portfolioFiatValue: Nullable<Decimal>
+    /** `portfolioFiatValue` is a number that leaves out a counted account whose `fiatValue` is unknown. */
+    isPortfolioFiatValuePartial: boolean
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     isPending: boolean
@@ -94,6 +97,7 @@ const EMPTY_RESULT_BASE = {
     portfolioNativeValue: new Decimal(0),
     portfolioUsdValue: new Decimal(0),
     portfolioFiatValue: new Decimal(0),
+    isPortfolioFiatValuePartial: false,
     isPending: false,
     isFetched: false,
     isRefetching: false,
@@ -227,16 +231,18 @@ export const useAccountValueTotalsQuery = (
         const isUnconvertibleUnknown = otherChainIds.length > 0
         let portfolioNativeValue: Nullable<Decimal> = new Decimal(0)
         let portfolioUsdValue: Nullable<Decimal> = new Decimal(0)
-        let portfolioFiatValue: Nullable<Decimal> = new Decimal(0)
+        let pricedFiatSum = new Decimal(0)
+        let hasUnpricedFiat = false
         const accountValueTotals: AccountValueTotalsMap = new Map(
             entries.map((entry, i) => {
                 const { address, isHome, scope: accountScope } = entry
                 const r = results[i]
-                const { nativeValue, usdValue, fiatValue } = valueAccountTotals(
-                    r?.data,
-                    pricedChains.has(accountScope.chainId),
-                    isUnconvertibleUnknown,
-                )
+                const { nativeValue, usdValue, fiatValue, pricedFiatValue } =
+                    valueAccountTotals(
+                        r?.data,
+                        pricedChains.has(accountScope.chainId),
+                        isUnconvertibleUnknown,
+                    )
 
                 // One unknown account makes a portfolio total unknown —
                 // silently summing the rest would understate it.
@@ -252,11 +258,11 @@ export const useAccountValueTotalsQuery = (
                             ? null
                             : portfolioUsdValue.plus(usdValue)
                 }
+                // The cross-chain fiat total sums the priced part instead and
+                // flags what it leaves out, so one unpriced chain can't blank it.
                 if (entry.hasFiatTotal) {
-                    portfolioFiatValue =
-                        portfolioFiatValue === null || fiatValue === null
-                            ? null
-                            : portfolioFiatValue.plus(fiatValue)
+                    pricedFiatSum = pricedFiatSum.plus(pricedFiatValue)
+                    hasUnpricedFiat ||= fiatValue === null
                 }
 
                 return [
@@ -274,11 +280,16 @@ export const useAccountValueTotalsQuery = (
             }),
         )
 
+        const portfolioFiatValue =
+            hasUnpricedFiat && pricedFiatSum.isZero() ? null : pricedFiatSum
+
         return {
             accountValueTotals,
             portfolioNativeValue,
             portfolioUsdValue,
             portfolioFiatValue,
+            isPortfolioFiatValuePartial:
+                hasUnpricedFiat && portfolioFiatValue !== null,
             hasFiatTotal,
             isPending: results.some(r => r.isPending),
             isFetched: results.every(r => r.isFetched),
