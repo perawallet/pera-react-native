@@ -93,6 +93,8 @@ vi.mock('../../parser', () => ({
 const mockCardOnboarding = vi.hoisted(() => ({
     onboardingId: null as string | null,
     onboardingStep: 'EMAIL_SEND',
+    escrowCardAddress: null as string | null,
+    escrowCardApproved: false,
 }))
 vi.mock('@perawallet/wallet-core-card', () => ({
     OnboardingStep: { Completed: 'COMPLETED' },
@@ -2124,6 +2126,8 @@ describe('useDeepLink', () => {
         beforeEach(() => {
             mockCardOnboarding.onboardingId = null
             mockCardOnboarding.onboardingStep = 'EMAIL_SEND'
+            mockCardOnboarding.escrowCardAddress = null
+            mockCardOnboarding.escrowCardApproved = false
             mockGetCurrentRoute.mockReturnValue(undefined)
         })
 
@@ -2153,9 +2157,11 @@ describe('useDeepLink', () => {
             expect(vi.mocked(StackActions.replace)).not.toHaveBeenCalled()
         })
 
-        it('opens the card home once onboarding is complete', async () => {
+        it('opens the card home once the card exists', async () => {
             mockCardOnboarding.onboardingId = 'ob_1'
             mockCardOnboarding.onboardingStep = 'COMPLETED'
+            mockCardOnboarding.escrowCardAddress = 'CARD_ADDRESS'
+            mockCardOnboarding.escrowCardApproved = true
 
             await openOnboardingStatus()
 

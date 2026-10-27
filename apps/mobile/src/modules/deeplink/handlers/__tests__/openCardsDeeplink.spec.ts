@@ -17,6 +17,7 @@ import { getCardDeeplinkTarget } from '../openCardsDeeplink'
 const IN_PROGRESS = {
     onboardingId: 'ob_1',
     onboardingStep: OnboardingStep.Verification,
+    hasApprovedCard: false,
 }
 
 describe('getCardDeeplinkTarget', () => {
@@ -29,13 +30,24 @@ describe('getCardDeeplinkTarget', () => {
         },
     )
 
-    it('opens the card home once onboarding is complete', () => {
+    it('opens the card home once the card exists', () => {
         expect(
             getCardDeeplinkTarget('onboarding-status', {
                 onboardingId: 'ob_1',
                 onboardingStep: OnboardingStep.Completed,
+                hasApprovedCard: true,
             }),
         ).toBe('card-home')
+    })
+
+    it('opens the checklist for a signed-in user whose card is not created yet', () => {
+        expect(
+            getCardDeeplinkTarget('onboarding-status', {
+                onboardingId: 'ob_1',
+                onboardingStep: OnboardingStep.Completed,
+                hasApprovedCard: false,
+            }),
+        ).toBe('onboarding-status')
     })
 
     it('keeps the intro when this device has no onboarding', () => {
@@ -43,6 +55,7 @@ describe('getCardDeeplinkTarget', () => {
             getCardDeeplinkTarget('onboarding-status', {
                 onboardingId: null,
                 onboardingStep: OnboardingStep.EmailSend,
+                hasApprovedCard: false,
             }),
         ).toBe('intro')
     })

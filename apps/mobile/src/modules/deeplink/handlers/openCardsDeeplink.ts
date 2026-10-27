@@ -31,11 +31,20 @@ export const getCardDeeplinkTarget = (
     {
         onboardingId,
         onboardingStep,
-    }: { onboardingId: Nullable<string>; onboardingStep: OnboardingStep },
+        hasApprovedCard,
+    }: {
+        onboardingId: Nullable<string>
+        onboardingStep: OnboardingStep
+        /** The escrow card exists and is approved, like the account switcher checks. */
+        hasApprovedCard: boolean
+    },
 ): CardDeeplinkTarget => {
     const cleanPath = (path ?? '').replace(/^\/+|\/+$/g, '')
     if (cleanPath !== CARD_ONBOARDING_STATUS_PATH) return 'intro'
-    if (onboardingStep === OnboardingStep.Completed) return 'card-home'
+    // A session alone doesn't mean the card exists; the checklist creates it.
+    if (onboardingStep === OnboardingStep.Completed) {
+        return hasApprovedCard ? 'card-home' : 'onboarding-status'
+    }
     return onboardingId !== null ? 'onboarding-status' : 'intro'
 }
 
@@ -43,8 +52,18 @@ export const openCardsDeeplink = (
     path: Optional<string>,
     replaceCurrentScreen: boolean,
 ): void => {
-    const { onboardingId, onboardingStep } = useCardStore.getState()
-    switch (getCardDeeplinkTarget(path, { onboardingId, onboardingStep })) {
+    const {
+        onboardingId,
+        onboardingStep,
+        escrowCardAddress,
+        escrowCardApproved,
+    } = useCardStore.getState()
+    const target = getCardDeeplinkTarget(path, {
+        onboardingId,
+        onboardingStep,
+        hasApprovedCard: escrowCardAddress !== null && escrowCardApproved,
+    })
+    switch (target) {
         case 'onboarding-status': {
             // Returning from KYC usually lands on the checklist that is already
             // open; replacing or remounting it would restart its polling.
