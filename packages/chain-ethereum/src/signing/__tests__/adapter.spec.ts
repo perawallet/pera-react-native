@@ -11,14 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-    bytesToHex,
-    concat,
-    hexToBytes,
-    keccak256,
-    serializeTransaction,
-} from 'viem'
-import { privateKeyToAccount, sign } from 'viem/accounts'
+import { bytesToHex, hexToBytes, keccak256, serializeTransaction } from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import {
     i18nKey,
@@ -41,6 +34,15 @@ import {
 } from './fixtures'
 
 const KEY_PAIR_ID = 'kms-entry-1'
+
+// `cast wallet sign --no-hash` with the throwaway key 0x11…11 over TRANSFER's
+// digest, recovery byte rewritten from 27 to the key store's 0. Precomputed
+// because the package may import no secp256k1 library, test code included.
+const TRANSFER_DIGEST =
+    '0x82afed965c7aa87b5689c5eb049f2b77e23ae7819f6e081b8a3198c1ed5195f8'
+const THROWAWAY_ADDRESS = '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A'
+const THROWAWAY_SIGNATURE =
+    '0x764d939f4b88606c6685952521906ff0363c6852c1fe2f9d6304119e891a8ec5679ab442427e23a613c49055a2654ee5957443031d6e1e85dc922e8d3083888000'
 
 const unsigned = (
     transaction: TransactionSerializableEIP1559,
@@ -109,18 +111,11 @@ describe('ethereumPlannerAdapter', () => {
     it("refuses another key's signature labelled as the sender's", async () => {
         const input = unsigned(TRANSFER)
         const [request] = plan(input)
-        // A fixed throwaway key, not the sender's.
-        const other = privateKeyToAccount(`0x${'11'.repeat(32)}`)
-        const { r, s, yParity } = await sign({
-            hash: bytesToHex(request.payload),
-            privateKey: `0x${'11'.repeat(32)}`,
-        })
-        const bytes = hexToBytes(
-            concat([r, s, yParity === 0 ? '0x00' : '0x01']),
-        )
+        const bytes = hexToBytes(THROWAWAY_SIGNATURE)
 
+        expect(bytesToHex(request.payload)).toBe(TRANSFER_DIGEST)
         await expect(assemble(input, [signature({ bytes })])).rejects.toThrow(
-            `The signature recovers to ${other.address}, not the sender ${SENDER}`,
+            `The signature recovers to ${THROWAWAY_ADDRESS}, not the sender ${SENDER}`,
         )
     })
 
