@@ -417,6 +417,7 @@
         "networks_title": "Netzwerke",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
+        "add_network_success": "{{network}} hinzugefügt",
         "see_all_networks": "Alle Netzwerke anzeigen",
         "view_passphrase": "Wiederherstellungsphrase anzeigen",
         "network_options": "Weitere Optionen"

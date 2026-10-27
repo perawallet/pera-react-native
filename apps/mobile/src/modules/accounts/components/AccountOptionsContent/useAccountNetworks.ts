@@ -27,9 +27,11 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useEnableChainAction } from '@hooks/useEnableChainAction'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { displayChainOption } from '@utils/chainOptionDisplay'
 import {
     trackEvent,
@@ -80,6 +82,7 @@ export const useAccountNetworks = ({
 }: UseAccountNetworksParams): UseAccountNetworksResult => {
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
+    const { showToast } = useToast()
     const { enablingChainId: addingChainId, enableChain } =
         useEnableChainAction(t('account_options.add_network_error'))
     const checkCapability = useChainCapabilityCheck()
@@ -146,10 +149,22 @@ export const useAccountNetworks = ({
 
     const handleAddNetwork = useCallback(
         (chainId: ChainId) => {
-            if (rowByChain.get(chainId)?.isEnabled !== false) return
-            enableChain(account.id, chainId)
+            const row = rowByChain.get(chainId)
+            if (row?.isEnabled !== false) return
+            enableChain(account.id, chainId, () =>
+                showToast(
+                    {
+                        title: t('account_options.add_network_success', {
+                            network: row.displayName,
+                        }),
+                        body: '',
+                        type: 'success',
+                    },
+                    { notifier: bottomSheetNotifier.current ?? undefined },
+                ),
+            )
         },
-        [rowByChain, account.id, enableChain],
+        [rowByChain, account.id, enableChain, showToast, t],
     )
 
     const handleCopyAddress = useCallback(
