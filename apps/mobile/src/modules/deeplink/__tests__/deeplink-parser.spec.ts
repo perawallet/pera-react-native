@@ -461,24 +461,30 @@ describe('Deeplink Parser - dev locale tour', () => {
 })
 
 describe('Deeplink Parser - dev e2e fixture', () => {
-    it.each(['home', 'contacts-empty', 'contacts-one'])(
-        'parses the %s fixture',
-        name => {
-            const parsed = parseDeeplink(
-                `perawallet://app/dev/e2e-fixture?name=${name}`,
-            )
+    it.each([
+        'home',
+        'contacts-empty',
+        'contacts-one',
+        'contacts-50',
+        'contacts-250',
+        'contacts-500',
+        'contacts-1000',
+    ])('parses the %s fixture', name => {
+        const parsed = parseDeeplink(
+            `perawallet://app/dev/e2e-fixture?name=${name}`,
+        )
 
-            expect(parsed).toMatchObject({
-                type: 'DEV_E2E_FIXTURE',
-                fixture: name,
-            })
-        },
-    )
+        expect(parsed).toMatchObject({
+            type: 'DEV_E2E_FIXTURE',
+            fixture: name,
+        })
+    })
 
     it.each([
         'perawallet://app/dev/e2e-fixture',
         'perawallet://app/dev/e2e-fixture?name=',
         'perawallet://app/dev/e2e-fixture?name=wallet-with-funds',
+        'perawallet://app/dev/e2e-fixture?name=contacts-7',
         'perawallet://app/dev/e2e-fixture-extra?name=contacts-empty',
     ])('rejects %s at the parse boundary and falls through to HOME', url => {
         expect(parseDevE2eFixtureUri(url)).toBeNull()

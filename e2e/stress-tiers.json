@@ -1,0 +1,9 @@
+{
+  "tiers": {
+    "S": { "accounts": 10, "assets": 100, "nfts": 50, "transactions": 1000, "contacts": 50, "wcSessions": 5 },
+    "M": { "accounts": 50, "assets": 500, "nfts": 250, "transactions": 5000, "contacts": 250, "wcSessions": 15 },
+    "L": { "accounts": 100, "assets": 1000, "nfts": 500, "transactions": 10000, "contacts": 500, "wcSessions": 30 },
+    "XL": { "accounts": 200, "assets": 2000, "nfts": 1000, "transactions": 20000, "contacts": 1000, "wcSessions": 50 }
+  },
+  "thresholdsMs": { "slow": 2000, "unusable": 5000, "timeout": 20000 }
+}

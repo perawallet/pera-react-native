@@ -12,6 +12,8 @@
 
 import type { AnyParsedDeeplink } from '@perawallet/wallet-core-deeplinks'
 
+import type { E2eStressContactCount } from './e2e-fixture-names'
+
 /**
  * The locale tour's discriminant, declared as a type with deliberately no
  * runtime member anywhere. Only the tour's own parser produces it and only the
@@ -42,7 +44,11 @@ export interface DevLocaleTourDeeplink {
     run?: 'all'
 }
 
-export type E2eFixtureName = 'home' | 'contacts-empty' | 'contacts-one'
+export type E2eFixtureName =
+    | 'home'
+    | 'contacts-empty'
+    | 'contacts-one'
+    | `contacts-${E2eStressContactCount}`
 
 /**
  * `perawallet://app/dev/e2e-fixture?name=<fixture>` puts the app into a named

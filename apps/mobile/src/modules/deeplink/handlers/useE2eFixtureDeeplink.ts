@@ -21,6 +21,10 @@ import {
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 
+import {
+    E2E_STRESS_CONTACT_COUNTS,
+    type E2eStressContactCount,
+} from '../e2e-fixture-names'
 import type { DevE2eFixtureDeeplink, E2eFixtureName } from '../types'
 import { snapshotOnNextState, startNavTracer } from './e2eNavTracer'
 
@@ -30,8 +34,37 @@ export type E2eFixtureDeeplinkHandler = (
     deeplink: Pick<DevE2eFixtureDeeplink, 'fixture'>,
 ) => void
 
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+
+// No checksum, like the mock contacts: the contact UI only formats and truncates
+// the address. The index sits in the low digits so every address differs.
+const syntheticAddress = (index: number): string => {
+    let digits = ''
+    let rest = index
+    do {
+        digits = BASE32[rest % 32] + digits
+        rest = Math.floor(rest / 32)
+    } while (rest > 0)
+    return digits.padStart(58, 'A')
+}
+
+const stressContacts = (count: number): Contact[] =>
+    Array.from({ length: count }, (_, index) => ({
+        id: `e2e-stress-contact-${index}`,
+        name: `Stress contact ${index}`,
+        addresses: { algorand: syntheticAddress(index) },
+    }))
+
+const STRESS_FIXTURE_CONTACTS = Object.fromEntries(
+    E2E_STRESS_CONTACT_COUNTS.map(count => [
+        `contacts-${count}`,
+        stressContacts(count),
+    ]),
+) as Record<`contacts-${E2eStressContactCount}`, Contact[]>
+
 // e2e/resources/contacts.resource mirrors these values; change both together.
 const FIXTURE_CONTACTS: Record<Exclude<E2eFixtureName, 'home'>, Contact[]> = {
+    ...STRESS_FIXTURE_CONTACTS,
     'contacts-empty': [],
     'contacts-one': [
         {

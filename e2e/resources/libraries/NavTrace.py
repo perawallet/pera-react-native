@@ -14,17 +14,24 @@ import base64
 import json
 import os
 import time
+from pathlib import Path
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
 TAG = "[E2E-NAV]"
 BOUNCE_MS = 400
+STRESS_TIERS = Path(__file__).resolve().parent.parent.parent / "stress-tiers.json"
 # Screens outside the tab shell that each fixture opens on purpose; anything else mounted
 # right after it is a leak.
 FIXTURE_LANDING = {
     "fixture:contacts-empty": {"Contacts", "Contacts/ContactsList"},
     "fixture:contacts-one": {"Contacts", "Contacts/ContactsList"},
+    # One contacts-<n> fixture per stress tier; stress-tiers.json is the list.
+    **{
+        f"fixture:contacts-{tier['contacts']}": {"Contacts", "Contacts/ContactsList"}
+        for tier in json.loads(STRESS_TIERS.read_text())["tiers"].values()
+    },
 }
 
 

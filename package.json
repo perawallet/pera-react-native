@@ -19,7 +19,7 @@
     "lint:docs": "node tools/check-doc-hygiene.mjs",
     "lint:docs:warn": "node tools/check-doc-hygiene.mjs --warn-only",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",
-    "test": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test && pnpm test:lanekeep",
+    "test": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test && pnpm test:lanekeep && pnpm test:tools",
     "test:lanekeep": "vitest run lanekeep/__tests__",
     "test:unit": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test:unit",
     "test:coverage": "bash tools/dev/rebuild-native.sh && bash tools/dev/generate-config.sh && turbo run test -- --coverage",
@@ -46,12 +46,17 @@
     "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "check:dts-emit": "node tools/check-dts-emit.mjs",
     "check:layer-tiers": "node tools/check-layer-tiers.mjs",
-    "fallow": "fallow --skip health"
+    "fallow": "fallow --skip health",
+    "stress:seed": "tsx tools/stress/seed-testnet-wallet.ts",
+    "test:tools": "vitest run tools/stress",
+    "test:e2e-tools": "python3 -m pytest -q e2e/tools"
   },
   "devDependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@scure/bip39": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "algosdk": "catalog:",
     "eslint": "catalog:",

@@ -311,6 +311,11 @@ describes, not the test that uses it, so it stays reusable.
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
 BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
 
+## Stress testing
+
+Data-scale and latency measurements on real devices are not part of the suite; see
+[STRESS_TESTING.md](STRESS_TESTING.md).
+
 ## Locale tour (i18n screenshot QA)
 
 A dev-build-only tool for visually checking translated and pseudolocalized text across the app's
