@@ -205,6 +205,19 @@ describe('useAccountWithBalance', () => {
             expect(result.current.preferredValue).toBeNull()
         })
 
+        it('is unknown when the native balance is unpriced, even with priced tokens', () => {
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: null,
+                fiatValue: null,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.preferredValue).toBeNull()
+        })
+
         it('is a real 0 for a zero balance', () => {
             mockAccountValueTotals.set(ETH_ADDRESS, {
                 nativeValue: new Decimal(0),

@@ -77,12 +77,12 @@ export type UseAccountValueTotalsQueryResult = {
     portfolioUsdValue: Nullable<Decimal>
     /**
      * Over every account on every registered chain, leaving out holdings on a
-     * test-tier network. Sums what is priced, skipping an account whose
-     * `fiatValue` is unknown; `null` only when something counted is unknown
-     * and nothing counted is priced.
+     * test-tier network. Sums each counted account's priced holdings, an
+     * unpriced native balance counting 0; `null` only when something counted
+     * is unknown and nothing counted is priced.
      */
     portfolioFiatValue: Nullable<Decimal>
-    /** `portfolioFiatValue` is a number that leaves out a counted account whose `fiatValue` is unknown. */
+    /** `portfolioFiatValue` is a number that leaves out the unpriced native balance of a counted account. */
     isPortfolioFiatValuePartial: boolean
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
