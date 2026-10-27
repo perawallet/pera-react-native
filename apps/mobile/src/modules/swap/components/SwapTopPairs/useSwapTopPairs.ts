@@ -12,6 +12,10 @@
 
 import { useCallback } from 'react'
 import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
+import {
     useSwaps,
     useTopPairsQuery,
     type TopPairItem,
@@ -21,6 +25,24 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 const TOP_PAIRS_LIMIT = 5
+function parseRestrictedCountries(value: string): string[] {
+    try {
+        const countries: unknown = JSON.parse(value)
+        if (
+            Array.isArray(countries) &&
+            countries.every(
+                country =>
+                    typeof country === 'string' &&
+                    /^[a-z]{2}$/i.test(country.trim()),
+            )
+        ) {
+            return countries.map(country => country.trim().toUpperCase())
+        }
+    } catch {
+        // Use the empty default if remote config is malformed.
+    }
+    return []
+}
 
 export type UseSwapTopPairsResult = {
     pairs: TopPairItem[]
@@ -31,12 +53,23 @@ export type UseSwapTopPairsResult = {
 
 export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     const { setFromAsset, setToAsset } = useSwaps(scope)
-    const { analytics } = usePeraProvider()
+    const { analytics, deviceInfo } = usePeraProvider()
+    const remoteConfig = useRemoteConfig()
+    // Device-region UI guard; the backend must enforce restrictions by IP country.
+    const restrictedCountries = parseRestrictedCountries(
+        remoteConfig.getStringValue(
+            RemoteConfigKeys.crypto_promotion_restricted_countries,
+            '[]',
+        ),
+    )
+    const isRestricted = restrictedCountries.includes(
+        deviceInfo.getDeviceCountry()?.toUpperCase() ?? '',
+    )
     const {
         data: pairs = [],
         isLoading,
         isError,
-    } = useTopPairsQuery(scope, TOP_PAIRS_LIMIT)
+    } = useTopPairsQuery(scope, TOP_PAIRS_LIMIT, !isRestricted)
 
     const handlePairPress = useCallback(
         (pair: TopPairItem) => {
@@ -56,7 +89,8 @@ export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     )
 
     return {
-        pairs,
+        // The persisted query cache can still hold pairs fetched before.
+        pairs: isRestricted ? [] : pairs,
         isLoading,
         isError,
         handlePairPress,
