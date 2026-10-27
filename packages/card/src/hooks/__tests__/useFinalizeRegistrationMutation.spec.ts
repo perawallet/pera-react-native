@@ -154,6 +154,15 @@ describe('useFinalizeRegistrationMutation', () => {
         expect(useCardStore.getState().password).toBeNull()
     })
 
+    it('waits out a 429 rate limit instead of reading it as a lock', async () => {
+        loginRequest.mockRejectedValue({ response: { status: 429 } })
+
+        await expect(finalize()).resolves.toBe('not-ready')
+
+        expect(useCardStore.getState().loginAttempts.isLocked).toBe(false)
+        expect(useCardStore.getState().password).toBe('Correct-Horse-1234')
+    })
+
     it('keeps the consent stash when the link fails, without failing the finalize', async () => {
         useCardStore.getState().setConsentSetId('cs_1')
         linkOnboardingConsent.mockRejectedValue(new Error('network'))

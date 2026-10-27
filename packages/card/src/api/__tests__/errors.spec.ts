@@ -27,17 +27,13 @@ import {
 describe('isAccountLockedError', () => {
     it.each([
         ['a 423', { status: 423 }],
-        ['a 429', { status: 429 }],
+        ['a 403 that says locked', { status: 403, message: 'Account Locked' }],
         [
-            'a 403 that says locked',
+            'a 403 that carries the support address',
             {
                 status: 403,
-                message: 'Account Locked, contact support@baanx.com',
+                message: 'Too many attempts, contact support@cl-cards.com',
             },
-        ],
-        [
-            'any answer that says locked',
-            { status: 400, message: 'user locked' },
         ],
     ])('reads %s as locked', (_label, apiError) => {
         expect(isAccountLockedError(apiError)).toBe(true)
@@ -45,7 +41,13 @@ describe('isAccountLockedError', () => {
 
     it.each([
         ['a plain 401', { status: 401 }],
-        ['a 403 without the word', { status: 403, message: 'Forbidden' }],
+        ['a 429 rate limit', { status: 429, message: 'Too many requests' }],
+        ['a bare 403', { status: 403, message: 'Forbidden' }],
+        ['a 403 that says unlocked', { status: 403, message: 'Unlocked' }],
+        [
+            'another status that says locked',
+            { status: 400, message: 'user locked' },
+        ],
     ])('does not read %s as locked', (_label, apiError) => {
         expect(isAccountLockedError(apiError)).toBe(false)
     })

@@ -208,14 +208,16 @@ export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
 
 /**
- * Baanx locks an account after repeated failed logins (documented as a 403
- * whose message carries the support address); 423 and 429 are read the same
- * way, as is any answer that says "locked".
+ * Baanx documents a lock after repeated failed logins as a 403 whose message
+ * carries the support address, so a bare 403 (e.g. from a WAF) doesn't count.
+ * A 429 is a rate limit that passes, not a lock.
  */
-export const isAccountLockedError = (apiError: CardApiError): boolean =>
-    apiError.status === 423 ||
-    apiError.status === 429 ||
-    /locked/i.test(`${apiError.code ?? ''} ${apiError.message ?? ''}`)
+export const isAccountLockedError = (apiError: CardApiError): boolean => {
+    if (apiError.status === 423) return true
+    if (apiError.status !== 403) return false
+    const message = apiError.message ?? ''
+    return /\blocked\b/i.test(message) || message.includes('@')
+}
 
 /**
  * GET /v1/auth/register stops answering for an onboarding id once Baanx has
