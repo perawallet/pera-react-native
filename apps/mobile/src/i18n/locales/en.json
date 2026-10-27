@@ -417,6 +417,7 @@
         "networks_title": "Networks",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
+        "add_network_success": "{{network}} added",
         "see_all_networks": "See all networks",
         "view_passphrase": "View passphrase",
         "network_options": "More options"
@@ -426,6 +427,9 @@
         "see_wallet_structure": "See wallet structure",
         "hide_wallet_structure": "Hide wallet structure",
         "scan_new_addresses": "Scan new addresses",
+        "scan_new_accounts": "Scan for new {{network}} accounts",
+        "universal_wallet_subtitle": "One passphrase, all networks",
+        "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
         "main_address": "Main Address",
         "sub_address": "Sub Address",
@@ -447,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
-        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
+        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys. Algo25 accounts support Algorand only. To use Ethereum or Base, create a Universal Wallet.",
+        "standard_unreachable_chains_note": "Other networks aren't available for Algo25 accounts.",
         "ledger_title": "Ledger account",
         "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
         "watch_title": "Watch account",
@@ -2384,6 +2389,7 @@
         "last_7_days": "Last 7 Days",
         "last_30_days": "Last 30 Days",
         "last_year": "Last 1 Year",
+        "partial_total": "Excludes holdings without a price",
         "info": {
             "title": "How we calculate portfolio value",
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
@@ -2650,6 +2656,7 @@
         "qrview": {
             "error_title": "No Account Selected",
             "error_body": "No account has been selected, please select an account first",
+            "chain_unavailable_title": "{{chain}} isn't available for this account",
             "copy_address": "Copy Address",
             "share": "Share Address"
         }
@@ -3481,6 +3488,7 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
+            "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",
@@ -4468,5 +4476,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum & EVM networks"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Fee estimated when this call is reached"
+        }
     }
 }

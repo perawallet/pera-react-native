@@ -95,6 +95,9 @@ export const useStyles = makeStyles(theme => {
         primaryCurrency: {
             color: theme.colors.textMain,
         },
+        partialNotice: {
+            color: theme.colors.textGray,
+        },
         chartContainer: {
             gap: theme.spacing.md,
             marginTop: theme.spacing.md,

@@ -97,4 +97,4 @@ export {
 export {
     ALGORAND_HISTORY_SUMMARY_GOLDENS,
     type HistorySummaryGolden,
-} from './transactions/__tests__/history-summary-goldens'
+} from './test-utils/history-summary-goldens'

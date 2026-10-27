@@ -83,3 +83,17 @@ export class ConnectionsError extends AppError {
         this.failure = FAILURE_BY_CODE[code]
     }
 }
+
+/**
+ * A refusal whose wire code the chain picks, for codes no `DappRequestFailure`
+ * names. The peer gets `wireCode`; the user-facing copy stays the invalid-payload one.
+ */
+export class DappRequestCodedError extends ConnectionsError {
+    constructor(
+        public readonly wireCode: number,
+        message: string,
+    ) {
+        super('invalid-payload', message)
+        this.name = 'DappRequestCodedError'
+    }
+}

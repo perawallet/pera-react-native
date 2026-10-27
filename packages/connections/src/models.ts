@@ -43,6 +43,8 @@ export const WALLET_OPERATION_TYPES = [
     'sign-message',
     'sign-typed-data',
     'switch-network',
+    'send-batch',
+    'show-batch',
 ] as const
 
 export type WalletOperationType = (typeof WALLET_OPERATION_TYPES)[number]
@@ -73,6 +75,13 @@ export type WalletOperation =
     | { type: MessageOperationType; request: DappMessageRequest }
     /** Adds `networkId` to the connection, once the user agrees; the wallet's selection never moves. */
     | { type: 'switch-network'; networkId: NetworkId }
+    | {
+          type: 'send-batch'
+          /** Opaque here: only the chain whose `sendBatch.validate` produced it reads it. */
+          request: unknown
+      }
+    /** Shows the user a batch the peer sent earlier; nothing is signed. */
+    | { type: 'show-batch'; batchId: string }
 
 /** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
@@ -84,6 +93,9 @@ export type WalletOperationResult =
     | { type: MessageOperationType; signature: Uint8Array }
     /** The connection now holds the network; the wire answer is the chain's. */
     | { type: 'switch-network' }
+    /** `batchId` is what the peer tracks the batch by. */
+    | { type: 'send-batch'; batchId: string }
+    | { type: 'show-batch' }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =
@@ -166,6 +178,13 @@ type MessageBase = {
     verifiedOrigin?: string
     respond(result: WalletOperationResult): Promise<void>
     reject(error: Error): Promise<void>
+    /**
+     * The user approved and the answer is being produced where no expiry or
+     * surface can interrupt it (a broadcast underway). A handler that expires
+     * requests on its own clock stops for this one; only `respond` or
+     * `reject` answers it now.
+     */
+    commit?(): void
 }
 
 export type InboundMessage =

@@ -14,7 +14,7 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 import {
     EMPTY_ALGORAND_HISTORY_DATA,
     type AlgorandHistoryData,
-} from '../../history-data'
+} from '../transactions/history-data'
 
 export type AlgorandHistoryFacts = Partial<Omit<AlgorandHistoryData, 'family'>>
 

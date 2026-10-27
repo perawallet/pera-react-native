@@ -36,6 +36,14 @@ function resolveMarketingVersion(env) {
 
 // Determine app variant based on environment
 function getAppVariant(env) {
+  // Opt-in like E2E_FIXTURES: the on-device benchmark app wipes and reseeds its
+  // own storage, so it must never share an identity with a shipped build.
+  if (env.BENCH === '1') {
+    if (env.APP_ENV === 'production') {
+      throw new Error('BENCH=1 is refused for a production bundle');
+    }
+    return 'bench';
+  }
   switch (env.APP_ENV) {
     case 'staging': { return 'staging';
     }
@@ -52,6 +60,12 @@ const bundleIdentifiers = {
     ios: 'com.algorandllc.perarn.staging',
     android: 'com.algorand.perarn.staging',
   },
+  // The Android id is the one placeholder google-services.json client nothing
+  // else uses, so processGoogleServices passes without a new Firebase app.
+  bench: {
+    ios: 'com.algorandllc.perarn.bench',
+    android: 'com.algorand.perarn',
+  },
   staging: {
     ios: 'com.algorandllc.perarn.staging',
     android: 'com.algorand.perarn.staging',
@@ -65,6 +79,7 @@ const bundleIdentifiers = {
 // App names per environment
 const appNames = {
   dev: 'Pera 7 Dev',
+  bench: 'Pera Bench',
   staging: 'Pera 7 Staging',
   production: 'Pera Algo Wallet',
 };
@@ -72,9 +87,34 @@ const appNames = {
 // Expo project slugs
 const slugs = {
   dev: 'pera-dev',
+  bench: 'pera-bench',
   staging: 'pera-staging',
   production: 'pera',
 };
+
+// The bench app uses none of the capabilities that need provisioning on a new
+// App ID, and the passkey-autofill extension target needs its own. The iCloud
+// plugin writes its entitlements through a mod that runs after
+// ios.entitlements is cleared, so it has to be left out rather than cleared.
+const BENCH_EXCLUDED_PLUGINS = [
+  'react-native-cloud-storage',
+  '@react-native-google-signin/google-signin',
+  '@algorandfoundation/react-native-passkey-autofill',
+  './plugins/withAutofillExtensionBundleId',
+  './plugins/withPasskeyAutofillFixes',
+  './plugins/withProductionAssociatedDomains',
+];
+
+function withBenchOverrides(config) {
+  return {
+    ...config,
+    ios: { ...config.ios, entitlements: {} },
+    plugins: config.plugins.filter(
+      (plugin) =>
+        !BENCH_EXCLUDED_PLUGINS.includes(Array.isArray(plugin) ? plugin[0] : plugin),
+    ),
+  };
+}
 
 function buildAppConfig(env) {
   const variant = getAppVariant(env);
@@ -131,7 +171,7 @@ function buildAppConfig(env) {
       : []),
   ];
 
-  return {
+  const config = {
     name: appNames[variant],
     slug: slugs[variant],
     version: resolveMarketingVersion(env),
@@ -612,6 +652,8 @@ function buildAppConfig(env) {
       typedRoutes: false,
     },
   };
+
+  return variant === 'bench' ? withBenchOverrides(config) : config;
 }
 
 module.exports = { buildAppConfig };

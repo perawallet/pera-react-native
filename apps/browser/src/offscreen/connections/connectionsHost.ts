@@ -10,10 +10,16 @@
  limitations under the License
  */
 
-import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
-import { AppError, logger } from '@perawallet/wallet-core-shared'
+import type {
+    ChainId,
+    NetworkId,
+    SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { AppError, logger, toError } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
+    DappRequestFailedError,
+    DappRequestRejectedError,
     matchesScope,
     waitForPairingOutcome,
     type ConnectionProposal,
@@ -22,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-connections'
 import { WalletConnectInvalidNetworkError } from '@perawallet/wallet-core-walletconnect'
 import {
+    decodeSignedTransactions,
     decodeWalletOperationResult,
     encodeWalletOperation,
     isConnectionsControlMessage,
@@ -43,6 +50,11 @@ export type ConnectionsHostDeps = {
      */
     requestApproval: (request: ConnectionApprovalRequest) => Promise<void>
     broadcastEvent: (event: ConnectionsEvent) => Promise<void>
+    /**
+     * Records and broadcasts signed transactions on their own scope's node;
+     * resolves with their ids once the node accepts them.
+     */
+    submitSignedTransactions: (signed: SignedTransaction[]) => Promise<string[]>
 }
 
 export type ConnectionsHost = {
@@ -343,10 +355,79 @@ export const startConnectionsHost = (
                 decodeWalletOperationResult(message.outcome.result),
             )
         } else {
-            await request.reject(new Error(message.outcome.message))
+            await request.reject(
+                message.outcome.isUserRejection
+                    ? new DappRequestRejectedError()
+                    : new DappRequestFailedError(
+                          message.outcome.message,
+                          message.outcome.failure,
+                      ),
+            )
         }
         requests.delete(key)
         return ok()
+    }
+
+    // The approval surface signed this send and may already be gone: from
+    // here only the broadcast's own outcome answers the dApp.
+    const submitSend = async (
+        message: Extract<ConnectionsControlMessage, { kind: 'submit-send' }>,
+    ): Promise<ConnectionsControlResponse> => {
+        const key = requestKey(message.connectionId, message.correlationId)
+        const request = requests.get(key)
+        if (!request) return fail(`Unknown request ${key}`)
+        if (request.operation.type !== 'send-transaction') {
+            return fail(`Request ${key} is not a send`)
+        }
+        const signed = decodeSignedTransactions(message.signedTransactions)
+        if (signed.some(({ scope }) => scope.chainId !== request.chainId)) {
+            return fail(`Request ${key} is not for ${signed[0]?.scope.chainId}`)
+        }
+        // Claimed before the broadcast, so a late decline or withdrawal finds
+        // nothing to answer.
+        requests.delete(key)
+        request.commit?.()
+        let txId: string
+        try {
+            const [submitted] = await deps.submitSignedTransactions(signed)
+            if (submitted === undefined) {
+                throw new Error('The node returned no transaction id')
+            }
+            txId = submitted
+        } catch (error) {
+            const failure = toError(error)
+            await request.reject(failure).catch((rejectError: unknown) => {
+                logger.warn(
+                    '[connections-host] send failure never reached the peer',
+                    {
+                        key,
+                        error: rejectError,
+                    },
+                )
+            })
+            return ok({
+                failure: {
+                    name: failure.name,
+                    message: failure.message,
+                    ...(failure instanceof AppError &&
+                        failure.metadata.messageKey && {
+                            messageKey: failure.metadata.messageKey,
+                        }),
+                },
+            })
+        }
+        await request
+            .respond({ type: 'send-transaction', txId })
+            .catch((error: unknown) => {
+                logger.warn(
+                    '[connections-host] send answer never reached the peer',
+                    {
+                        key,
+                        error,
+                    },
+                )
+            })
+        return ok({ txIds: [txId] })
     }
 
     const dispatch = (
@@ -380,6 +461,9 @@ export const startConnectionsHost = (
             }
             case 'respond': {
                 return respond(message)
+            }
+            case 'submit-send': {
+                return submitSend(message)
             }
         }
     }

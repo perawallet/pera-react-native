@@ -15,6 +15,7 @@ import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/tes
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
     ConnectionsError,
+    DappRequestCodedError,
     type ConnectionHandlerContext,
     type ConnectionProposal,
     type InboundMessage,
@@ -146,6 +147,31 @@ const ethereumAdapter: DappRequestChainAdapter = {
                 }
                 if (method === 'eth_unanswerable') {
                     return { kind: 'public-data', answer: () => null }
+                }
+                if (method === 'eth_later') {
+                    return {
+                        kind: 'public-data',
+                        answer: async () => ({ settled: true }),
+                    }
+                }
+                if (method === 'eth_unknownBundle') {
+                    return {
+                        kind: 'public-data',
+                        answer: async () => {
+                            throw new DappRequestCodedError(
+                                5730,
+                                'Unknown bundle id',
+                            )
+                        },
+                    }
+                }
+                if (method === 'eth_broken') {
+                    return {
+                        kind: 'public-data',
+                        answer: () => {
+                            throw new Error('database at /private/path')
+                        },
+                    }
                 }
                 if (method === 'eth_chainId') {
                     return {
@@ -498,6 +524,64 @@ describe('requests', () => {
         })
     })
 
+    it('answers public data the chain settles later once it settles', async () => {
+        const { walletKit, context } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({ method: 'eth_later', chainId: ETH_MAINNET }),
+        )
+        await flush()
+
+        expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                result: { settled: true },
+            },
+        })
+    })
+
+    it('answers public data the chain refuses in its own code with that code and message', async () => {
+        const { walletKit } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({ method: 'eth_unknownBundle', chainId: ETH_MAINNET }),
+        )
+        await flush()
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: { code: 5730, message: 'Unknown bundle id' },
+            },
+        })
+    })
+
+    it('answers public data that failed in the wallet as an internal error, without its message', async () => {
+        const { walletKit } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({ method: 'eth_broken', chainId: ETH_MAINNET }),
+        )
+        await flush()
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: { code: -32_603, message: 'Internal error' },
+            },
+        })
+    })
+
     it('answers public data the chain cannot give with the unselected-chain code', async () => {
         const { walletKit } = await open(seeded())
 
@@ -630,6 +714,11 @@ describe('a request’s answer', () => {
             -32_602,
         ],
         ['a plain failure', new Error('node down'), JSON_RPC_SERVER_ERROR],
+        [
+            'a refusal in the chain’s own code',
+            new DappRequestCodedError(5720, 'Duplicate id'),
+            5720,
+        ],
     ])('sends eip155 %s as its code', async (_, error, code) => {
         const { walletKit, message } = await delivered(ETH_SEND)
 

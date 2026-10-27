@@ -15,7 +15,7 @@ import {
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 import {
     connectionScope,
@@ -31,6 +31,7 @@ import {
 import {
     dappRequestChainAdapters,
     dappRequestFailureOf,
+    dappRequestWireCodeOf,
     type DappRequestFailure,
     type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
@@ -81,6 +82,9 @@ import { toPeerVerification } from './verification'
  * failed or rejected request — dApps are tuned to it on both protocols.
  */
 const JSON_RPC_SERVER_ERROR = -32_000
+
+/** JSON-RPC's internal error, for a public-data answer that failed in the wallet. */
+const JSON_RPC_INTERNAL_ERROR = -32_603
 
 /**
  * The two session events the CAIP-25 namespace conventions define, and the
@@ -582,7 +586,7 @@ export const createWalletConnectV2Handler = (
             answerPublicData(
                 topic,
                 id,
-                route.answer(authorizedAccounts, networkId),
+                () => route.answer(authorizedAccounts, networkId),
                 support,
             )
             return
@@ -656,6 +660,7 @@ export const createWalletConnectV2Handler = (
                     jsonrpc: '2.0',
                     error: {
                         code:
+                            dappRequestWireCodeOf(error) ??
                             (failure && support.toWireErrorCode?.(failure)) ??
                             JSON_RPC_SERVER_ERROR,
                         message: error.message,
@@ -792,25 +797,47 @@ export const createWalletConnectV2Handler = (
 
     // Never surfaced to the user: the dApp asks unprompted, and a refusal
     // only leaves what it asked about unknown. Only an absent answer refuses,
-    // so a falsy result still reaches the dApp.
+    // so a falsy result still reaches the dApp. Only a chain's own wire code
+    // carries the error's message; anything else could name wallet internals.
     const answerPublicData = (
         topic: string,
         id: number,
-        result: Nullable<unknown>,
+        answer: () => Nullable<unknown> | Promise<Nullable<unknown>>,
         support: WalletConnectSupport,
     ): void => {
         if (!client || !sdk) return
-        void client
-            .respondSessionRequest({
-                topic,
-                response:
+        const activeClient = client
+        void Promise.resolve()
+            .then(answer)
+            .then(
+                (result): WalletKitJsonRpcResponse =>
                     result === null || result === undefined
                         ? refusalResponse(id, 'UNSUPPORTED_CHAINS', {
                               support,
                               failure: 'unselected-chain',
                           })
                         : { id, jsonrpc: '2.0', result },
-            })
+                (error: unknown): WalletKitJsonRpcResponse => {
+                    const wireCode = dappRequestWireCodeOf(toError(error))
+                    return {
+                        id,
+                        jsonrpc: '2.0',
+                        error:
+                            wireCode === undefined
+                                ? {
+                                      code: JSON_RPC_INTERNAL_ERROR,
+                                      message: 'Internal error',
+                                  }
+                                : {
+                                      code: wireCode,
+                                      message: toError(error).message,
+                                  },
+                    }
+                },
+            )
+            .then(response =>
+                activeClient.respondSessionRequest({ topic, response }),
+            )
             .catch((deliveryError: unknown) => {
                 logger.warn('[WC v2] public data delivery failed', {
                     connectionId: topic,

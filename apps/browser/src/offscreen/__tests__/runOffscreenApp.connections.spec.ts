@@ -236,13 +236,19 @@ describe('runOffscreenApp connections wiring', () => {
         canSignWith.mockReturnValue(true)
     })
 
+    const submitSignedTransactions = vi.fn(async () => ['0xh'])
+
     const boot = async (
         onDatabaseReset: () => Promise<void> = vi
             .fn()
             .mockResolvedValue(undefined),
     ) => {
         const { runOffscreenApp } = await import('../runOffscreenApp')
-        await runOffscreenApp({ registerChainAdapters, onDatabaseReset })
+        await runOffscreenApp({
+            registerChainAdapters,
+            onDatabaseReset,
+            submitSignedTransactions,
+        })
     }
 
     it('migrates with a recovery that hands a database reset to the web shell', async () => {
@@ -388,6 +394,7 @@ describe('runOffscreenApp connections wiring', () => {
         expect(deps.registry).toBe(registry)
         expect(deps.requestApproval).toBe(sendConnectionApprovalRequest)
         expect(deps.broadcastEvent).toBe(broadcastConnectionsEvent)
+        expect(deps.submitSignedTransactions).toBe(submitSignedTransactions)
         expect(onConnectionsControlMessage).toHaveBeenCalledWith(
             handleControlMessage,
         )
@@ -476,6 +483,7 @@ describe('runOffscreenApp connections wiring', () => {
             runOffscreenApp({
                 registerChainAdapters,
                 onDatabaseReset: vi.fn().mockResolvedValue(undefined),
+                submitSignedTransactions,
             }),
         ).resolves.toBeUndefined()
     })

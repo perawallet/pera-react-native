@@ -38,6 +38,7 @@ type ActionRow = {
     title: string
     subtitle: string
     onPress: () => void
+    isDisabled?: boolean
 }
 
 export const AccountActionsContent = ({
@@ -51,6 +52,7 @@ export const AccountActionsContent = ({
     const {
         existingContacts,
         canSend,
+        sendUnavailableNote,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
@@ -95,7 +97,18 @@ export const AccountActionsContent = ({
                       onPress: openSendTransaction,
                   },
               ]
-            : []),
+            : sendUnavailableNote
+              ? [
+                    {
+                        id: 'send-transaction',
+                        icon: 'transactions/send' as const,
+                        title: t('address_actions.send_transaction'),
+                        subtitle: sendUnavailableNote,
+                        onPress: () => undefined,
+                        isDisabled: true,
+                    },
+                ]
+              : []),
         ...(canAddWatchAccount
             ? [
                   {
@@ -138,8 +151,12 @@ export const AccountActionsContent = ({
             {actions.map(action => (
                 <PWTouchableOpacity
                     key={action.id}
-                    style={styles.optionRow}
+                    style={[
+                        styles.optionRow,
+                        action.isDisabled && styles.optionRowDisabled,
+                    ]}
                     onPress={action.onPress}
+                    disabled={action.isDisabled}
                     testID={`account-actions-${action.id}`}
                 >
                     <PWIcon
@@ -151,7 +168,7 @@ export const AccountActionsContent = ({
                         <PWText
                             variant='body'
                             style={styles.optionSubtitle}
-                            numberOfLines={1}
+                            numberOfLines={action.isDisabled ? 2 : 1}
                         >
                             {action.subtitle}
                         </PWText>

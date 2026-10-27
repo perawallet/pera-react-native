@@ -19,9 +19,15 @@ import {
     afterEach,
     type Mock,
 } from 'vitest'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type NetworkId,
+    type SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
+    dappRequestFailureOf,
     type ConnectionErrorScope,
     type ConnectionProposal,
     type ConnectionRegistry,
@@ -35,6 +41,7 @@ import {
     type ConnectionApprovalRequest,
     type ConnectionsControlCommand,
     type ConnectionsEvent,
+    type WireSignedTransaction,
 } from '@perawallet/wallet-core-browser-runtime'
 import { startConnectionsHost, type ConnectionsHost } from '../connectionsHost'
 
@@ -150,6 +157,9 @@ describe('startConnectionsHost', () => {
         (request: ConnectionApprovalRequest) => Promise<void>
     >
     let broadcastEvent: Mock<(event: ConnectionsEvent) => Promise<void>>
+    let submitSignedTransactions: Mock<
+        (signed: SignedTransaction[]) => Promise<string[]>
+    >
 
     const control = (command: ConnectionsControlCommand) =>
         host.handleControlMessage({
@@ -161,6 +171,7 @@ describe('startConnectionsHost', () => {
         fake = makeFakeRegistry()
         requestApproval = vi.fn(async () => {})
         broadcastEvent = vi.fn(async () => {})
+        submitSignedTransactions = vi.fn(async () => ['0xh'])
         host = startConnectionsHost({
             registry: fake.registry,
             activeNetworkId: () => 'mainnet' as NetworkId,
@@ -170,6 +181,7 @@ describe('startConnectionsHost', () => {
                 ),
             requestApproval,
             broadcastEvent,
+            submitSignedTransactions,
         })
     })
 
@@ -328,6 +340,154 @@ describe('startConnectionsHost', () => {
     })
 
     describe('requests', () => {
+        describe('submit-send', () => {
+            const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+            const WIRE: WireSignedTransaction[] = [
+                { scope: SCOPE, id: '0xh', bytes: 'AQID' },
+            ]
+            const sendRequest = () =>
+                makeRequest({
+                    chainId: 'ethereum',
+                    sourceType: 'injected',
+                    operation: {
+                        type: 'send-transaction',
+                        request: { to: '0x1' },
+                    },
+                    commit: vi.fn(),
+                })
+            const submit = (signedTransactions = WIRE) =>
+                control({
+                    kind: 'submit-send',
+                    connectionId: 'conn-1',
+                    correlationId: '7',
+                    signedTransactions,
+                })
+
+            it('commits, broadcasts and answers a handed-off send with its hash', async () => {
+                const request = sendRequest()
+                fake.emitMessage(request)
+                const order: string[] = []
+                vi.mocked(request.commit!).mockImplementation(() => {
+                    order.push('commit')
+                })
+                submitSignedTransactions.mockImplementation(async () => {
+                    order.push('submit')
+                    return ['0xh']
+                })
+
+                expect(await submit()).toEqual({
+                    ok: true,
+                    result: { txIds: ['0xh'] },
+                })
+                expect(order).toEqual(['commit', 'submit'])
+                expect(submitSignedTransactions).toHaveBeenCalledWith([
+                    {
+                        scope: SCOPE,
+                        id: '0xh',
+                        bytes: new Uint8Array([1, 2, 3]),
+                    },
+                ])
+                expect(request.respond).toHaveBeenCalledWith({
+                    type: 'send-transaction',
+                    txId: '0xh',
+                })
+            })
+
+            it('a second submit-send for the same request is refused and broadcasts nothing', async () => {
+                fake.emitMessage(sendRequest())
+                await submit()
+
+                expect(await submit()).toMatchObject({ ok: false })
+                expect(submitSignedTransactions).toHaveBeenCalledTimes(1)
+            })
+
+            it("a node refusal rejects the request with the chain's error and reports it", async () => {
+                const request = sendRequest()
+                fake.emitMessage(request)
+                const refusal = new AppError('insufficient funds', {
+                    category: ErrorCategory.CONNECTIONS,
+                    messageKey: i18nKey('errors.general.title'),
+                })
+                submitSignedTransactions.mockRejectedValue(refusal)
+
+                expect(await submit()).toEqual({
+                    ok: true,
+                    result: {
+                        failure: {
+                            name: refusal.name,
+                            message: 'insufficient funds',
+                            messageKey: 'errors.general.title',
+                        },
+                    },
+                })
+                expect(request.reject).toHaveBeenCalledWith(refusal)
+                expect(request.respond).not.toHaveBeenCalled()
+            })
+
+            it('an unknown-outcome submit answers the dApp, not as a user rejection', async () => {
+                const request = sendRequest()
+                fake.emitMessage(request)
+                submitSignedTransactions.mockRejectedValue(
+                    new Error('submit timed out'),
+                )
+
+                await submit()
+
+                const error = vi.mocked(request.reject).mock.calls[0]![0]
+                expect(error.message).toBe('submit timed out')
+                expect(dappRequestFailureOf(error)).toBeUndefined()
+            })
+
+            it('refuses transactions for another chain without claiming the request', async () => {
+                const request = sendRequest()
+                fake.emitMessage(request)
+
+                expect(
+                    await submit([
+                        {
+                            scope: {
+                                chainId: 'algorand',
+                                networkId: 'mainnet',
+                            },
+                            id: '0xh',
+                            bytes: 'AQID',
+                        },
+                    ]),
+                ).toMatchObject({ ok: false })
+                expect(submitSignedTransactions).not.toHaveBeenCalled()
+                expect(request.commit).not.toHaveBeenCalled()
+
+                expect(await submit()).toMatchObject({ ok: true })
+            })
+
+            it('refuses a submit for a request that is not a send', async () => {
+                fake.emitMessage(makeRequest())
+
+                expect(await submit()).toMatchObject({ ok: false })
+                expect(submitSignedTransactions).not.toHaveBeenCalled()
+            })
+
+            it('a late decline after a submit finds nothing to answer', async () => {
+                const request = sendRequest()
+                fake.emitMessage(request)
+                await submit()
+
+                expect(
+                    await control({
+                        kind: 'respond',
+                        connectionId: 'conn-1',
+                        correlationId: '7',
+                        outcome: {
+                            ok: false,
+                            message: 'Request declined',
+                            isUserRejection: true,
+                        },
+                    }),
+                ).toMatchObject({ ok: false })
+                expect(request.reject).not.toHaveBeenCalled()
+            })
+        })
+
         it('requests an approval carrying the wire-encoded operation', () => {
             const request = makeRequest({
                 operation: {
@@ -512,6 +672,64 @@ describe('startConnectionsHost', () => {
                 expect.objectContaining({ message: 'Request declined' }),
             )
             expect(response).toEqual({ ok: true })
+        })
+
+        it('a declined approval rejects the request as user-rejected', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Request declined',
+                    isUserRejection: true,
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(dappRequestFailureOf(error)).toBe('user-rejected')
+        })
+
+        it('an approval that failed to open rejects with its message', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Approval window failed to open',
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(error.message).toBe('Approval window failed to open')
+            expect(dappRequestFailureOf(error)).toBeUndefined()
+        })
+
+        it('a wallet-side failure rejects with its failure kind, not as user-rejected', async () => {
+            const request = makeRequest()
+            fake.emitMessage(request)
+
+            await control({
+                kind: 'respond',
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: false,
+                    message: 'Request failed',
+                    failure: 'unauthorized-account',
+                },
+            })
+
+            const error = (request.reject as Mock).mock.calls[0][0] as Error
+            expect(error.message).toBe('Request failed')
+            expect(dappRequestFailureOf(error)).toBe('unauthorized-account')
         })
 
         it('reports a failed delivery as { ok: false }', async () => {

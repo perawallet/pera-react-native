@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { keccak256, type Hex } from 'viem'
+import {
+    bytesToHex,
+    keccak256,
+    type Hex,
+    type TransactionSerialized,
+} from 'viem'
 import type {
     ChainContext,
     ChainScope,
@@ -30,12 +35,15 @@ import {
     reconcileEthereumSubmissions,
     type SubmissionSettledHandlers,
 } from './reconcile'
+import { resumeEthereumCallBatches } from '../connect/callBatch/executor'
 import {
+    ETHEREUM_CONFIRMATION_TIMEOUT_MS,
+    historyEntryOfSigned,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
 } from './submission'
 
-export const ETHEREUM_CONFIRMATION_TIMEOUT_MS = 3 * 60_000
+export { ETHEREUM_CONFIRMATION_TIMEOUT_MS }
 
 export type EthereumBroadcasterOptions = {
     confirmationTimeoutMs?: number
@@ -119,19 +127,41 @@ export const createEvmBroadcasterAdapter = (
                 return { type: 'submitted', txIds }
             },
         }),
-        submitAndAutoRefresh: () =>
-            Promise.reject(
-                new Error('Ethereum submits through createSubmitTransport'),
-            ),
+        // Confirmation is the reconciler's, as for the pipeline's transport.
+        submitAndAutoRefresh: async (scope, signedTransactions, options) => {
+            const bytes = signedTransactions.map(signed => signed.bytes)
+            return submitAndRecordEthereumTransactions({
+                client: clientFor(scope),
+                chain,
+                scope,
+                signedTransactions: bytes,
+                historyEntries: await Promise.all(
+                    bytes.map(serialized =>
+                        historyEntryOfSigned(
+                            bytesToHex(serialized) as TransactionSerialized,
+                            chain,
+                        ),
+                    ),
+                ),
+                flow: options?.flow ?? 'pipeline',
+            })
+        },
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
         findStaleGroupReason: async () => null,
-        reconcileOpenSubmissions: () =>
-            reconcileEthereumSubmissions({
+        // Batches resume after the ledger is settled, since they read its
+        // verdicts; not awaited, as a batch can wait minutes on a receipt.
+        reconcileOpenSubmissions: async () => {
+            const summary = await reconcileEthereumSubmissions({
                 chain,
                 settleHandlers,
                 getClient: clientFor,
-            }),
+            })
+            void resumeEthereumCallBatches(ctx, chain, {
+                confirmationTimeoutMs: timeout,
+            })
+            return summary
+        },
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
         }),

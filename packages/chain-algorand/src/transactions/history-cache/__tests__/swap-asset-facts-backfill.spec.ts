@@ -31,7 +31,10 @@ import {
     type AlgorandHistoryData,
 } from '../../history-data'
 import { backfillSwapAssetFacts } from '../swap-asset-facts-backfill'
-import { flatHistoryItem, type FlatHistoryItem } from './history-item'
+import {
+    flatHistoryItem,
+    type FlatHistoryItem,
+} from '../../../test-utils/history-item'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 // 2026-09-02T10:21:41Z. The window is padded a day either side so the row is

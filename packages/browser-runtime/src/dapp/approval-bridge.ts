@@ -14,13 +14,20 @@ import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { SourceType } from '@perawallet/wallet-core-connections'
 import { pendingCapacityBreach } from '@perawallet/wallet-core-connections/capacity'
+import {
+    DAPP_REQUEST_FAILURES,
+    type DappRequestFailure,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import type {
     ConnectionKind,
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import {
+    isWireSignedTransactions,
     isWireWalletOperationResult,
     type ConnectionErrorReason,
+    type WireSignedSendOutcome,
+    type WireSignedTransaction,
     type WireWalletOperation,
     type WireWalletOperationResult,
 } from '../connections/protocol'
@@ -147,6 +154,8 @@ export const APPROVAL_WINDOW_HEIGHT = 600
 const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
     'resolve-approval': ['connection-proposal'],
     'resolve-connection-request': ['connection-request'],
+    'fail-connection-request': ['connection-request'],
+    'submit-connection-request': ['connection-request'],
     'resolve-passkey': ['passkey-create', 'passkey-get'],
     'reject-passkey': ['passkey-create', 'passkey-get'],
 }
@@ -166,10 +175,41 @@ const isDecisionKindAllowed = (
 /** Settles an approval that nothing may answer any more; see `withdrawConnectionRequest`. */
 export const APPROVAL_WITHDRAWN: unique symbol = Symbol('approval-withdrawn')
 
+/**
+ * The wallet refused the request without the user declining it (a failed
+ * build, a revoked grant). `failure` is what the dApp's namespace maps to its
+ * own wire code; absent, the dApp gets a generic internal error.
+ */
+export type ConnectionRequestFailed = {
+    failed: { failure?: Exclude<DappRequestFailure, 'user-rejected'> }
+}
+
+/**
+ * The surface signed a send for the host to broadcast and answer. The window
+ * stays open; `reportOutcome` hands it the broadcast's result to show.
+ */
+export type ConnectionRequestSubmitted = {
+    submitted: WireSignedTransaction[]
+    reportOutcome: (outcome: WireSignedSendOutcome) => void
+}
+
+/** `null` is the user declining, or closing the surface. */
 export type ConnectionRequestDecision =
     | { result: WireWalletOperationResult }
+    | ConnectionRequestFailed
+    | ConnectionRequestSubmitted
     | typeof APPROVAL_WITHDRAWN
     | null
+
+// A user rejection travels only as `reject-approval`, so a failure claiming
+// one is dropped to the generic failure rather than trusted.
+export const toWalletFailure = (
+    value: unknown,
+): ConnectionRequestFailed['failed']['failure'] =>
+    DAPP_REQUEST_FAILURES.find(
+        (known): known is Exclude<DappRequestFailure, 'user-rejected'> =>
+            known === value && known !== 'user-rejected',
+    )
 
 /** Callers surface this to the dApp as a declined request rather than opening a surface. */
 export class ApprovalRejectedError extends Error {
@@ -203,6 +243,9 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     private popupAttemptRequestId: string | null = null
     private keepAliveTimer: ReturnType<typeof setInterval> | null = null
     private keepAliveSince = 0
+    // A submitted send is settled but still owes its window an outcome; an
+    // idled worker would drop that reply while the host broadcasts.
+    private submissionsAwaitingOutcome = 0
 
     constructor(private readonly chromeLike: typeof chrome = chrome) {}
 
@@ -245,7 +288,10 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         verifiedOrigin?: string
     }): Promise<ConnectionRequestDecision> {
         const decision = this.awaitApproval<
-            { result: WireWalletOperationResult } | typeof APPROVAL_WITHDRAWN
+            | { result: WireWalletOperationResult }
+            | ConnectionRequestFailed
+            | ConnectionRequestSubmitted
+            | typeof APPROVAL_WITHDRAWN
         >({
             ...ctx,
             kind: 'connection-request',
@@ -335,7 +381,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         if (this.keepAliveTimer !== null) return
         this.keepAliveTimer = setInterval(() => {
             if (
-                this.pending.size === 0 ||
+                this.isIdle() ||
                 Date.now() - this.keepAliveSince > APPROVAL_KEEPALIVE_MAX_MS
             ) {
                 this.stopKeepAlive()
@@ -343,6 +389,10 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             }
             void this.chromeLike.runtime.getPlatformInfo().catch(() => {})
         }, APPROVAL_KEEPALIVE_INTERVAL_MS)
+    }
+
+    private isIdle(): boolean {
+        return this.pending.size === 0 && this.submissionsAwaitingOutcome === 0
     }
 
     private stopKeepAlive(): void {
@@ -529,6 +579,8 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             credential?: SerializedCredential
             reason?: string
             result?: unknown
+            failure?: unknown
+            signedTransactions?: unknown
         }
         if (msg?.scope !== DAPP_APPROVAL_SCOPE) return false
         if (!isTrustedExtensionPageSender(sender, this.chromeLike)) {
@@ -591,6 +643,38 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 sendResponse({ ok: true })
                 return true
             }
+            case 'fail-connection-request': {
+                this.finish(msg.requestId!, {
+                    failed: { failure: toWalletFailure(msg.failure) },
+                } satisfies ConnectionRequestFailed)
+                sendResponse({ ok: true })
+                return true
+            }
+            case 'submit-connection-request': {
+                if (!isWireSignedTransactions(msg.signedTransactions)) {
+                    sendResponse({
+                        ok: false,
+                        error: 'malformed signed transactions',
+                    })
+                    return true
+                }
+                // Settled now, so nothing the surface does from here (a close,
+                // a pagehide reject) can answer the dApp; the host owns the send.
+                this.submissionsAwaitingOutcome++
+                this.finish(
+                    msg.requestId!,
+                    {
+                        submitted: msg.signedTransactions,
+                        reportOutcome: outcome => {
+                            this.submissionsAwaitingOutcome--
+                            if (this.isIdle()) this.stopKeepAlive()
+                            sendResponse({ ok: true, outcome })
+                        },
+                    } satisfies ConnectionRequestSubmitted,
+                    { keepSurface: true },
+                )
+                return true
+            }
             case 'reject-approval': {
                 this.finish(msg.requestId!, null)
                 sendResponse({ ok: true })
@@ -646,11 +730,15 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         // because openApprovalWindow registers the id before any onRemoved can fire.
     }
 
-    private finish(requestId: string, decision: unknown): void {
+    private finish(
+        requestId: string,
+        decision: unknown,
+        { keepSurface = false }: { keepSurface?: boolean } = {},
+    ): void {
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
-        if (this.pending.size === 0) this.stopKeepAlive()
+        if (this.isIdle()) this.stopKeepAlive()
         // Settled by any route; the unclaimed timer has nothing left to guard.
         if (entry.unclaimedTimer !== undefined) {
             clearTimeout(entry.unclaimedTimer)
@@ -662,11 +750,13 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         }
         if (entry.surface === 'window' && typeof entry.windowId === 'number') {
             this.windowToRequest.delete(entry.windowId)
-            this.selfClosedWindowIds.add(entry.windowId)
-            // Best-effort close on programmatic resolve; ignore if already gone.
-            void this.chromeLike.windows
-                .remove?.(entry.windowId)
-                .catch(() => {})
+            if (!keepSurface) {
+                this.selfClosedWindowIds.add(entry.windowId)
+                // Best-effort close on programmatic resolve; ignore if already gone.
+                void this.chromeLike.windows
+                    .remove?.(entry.windowId)
+                    .catch(() => {})
+            }
         }
         entry.settle(decision)
     }

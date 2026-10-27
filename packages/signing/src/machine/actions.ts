@@ -24,7 +24,9 @@ import {
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import { recordReviewApproval } from '../db/repository'
 import {
+    isInteractiveSource,
     isKeyedByPlanner,
     type SignableGroup,
     type SigningResult,
@@ -49,6 +51,7 @@ import type {
     SigningMachineInput,
 } from './context'
 import type {
+    ReviewApproval,
     SignRequest,
     TransactionSignRequest,
     UnsignedTransactionSignRequest,
@@ -107,6 +110,28 @@ export const buildGroupSignerMap = (
 
 // A transaction request's `approve` gets its chain's wire-encoded signed
 // transactions, whichever signer produced them.
+// Reaching delivery means the user approved this review, so what it listed is
+// recorded here, never by the caller, for the transactions signed after it. A
+// batch of one still lists `followingTxs`, empty: its first call may be rebuilt
+// and signed again after a restart.
+const approvalOf = async (
+    request: TransactionSignRequest,
+    scope: ChainScope,
+): Promise<ReviewApproval | undefined> => {
+    if (
+        !isUnsignedTransactionRequest(request) ||
+        request.followingTxs === undefined ||
+        !isInteractiveSource(request.sourceType)
+    ) {
+        return undefined
+    }
+    const token = await recordReviewApproval({
+        scope,
+        transactions: [...request.txs, ...request.followingTxs],
+    })
+    return { token }
+}
+
 const transactionApproveOf = (
     request: TransactionSignRequest,
     scope: ChainScope,
@@ -117,15 +142,17 @@ const transactionApproveOf = (
         (async (result, submission) => {
             // Already in the chain's wire form, and a chain with no
             // planner adapter has no `signedTransactionsOf` to ask.
-            await approve(
+            const signed =
                 result.signedData.type === 'signed-transactions'
                     ? result.signedData.signed
                     : plannerAdapterForScope(scope).signedTransactionsOf(
                           result,
                           scope,
-                      ),
-                submission,
-            )
+                      )
+            const approval = await approvalOf(request, scope)
+            await (approval
+                ? approve(signed, submission, approval)
+                : approve(signed, submission))
         })
     )
 }

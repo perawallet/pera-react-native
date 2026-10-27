@@ -26,7 +26,10 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { algorandHistoryDataOf } from '../../history-data'
-import { flatHistoryItem, type FlatHistoryItem } from './history-item'
+import {
+    flatHistoryItem,
+    type FlatHistoryItem,
+} from '../../../test-utils/history-item'
 import { algorandNetworkOf } from '../../../network-id'
 import { fetchIndexerCloseAmount } from '../../history/indexer/endpoints'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'

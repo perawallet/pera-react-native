@@ -25,7 +25,11 @@ const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockAccountValueTotals = new Map<
     string,
-    { nativeValue: Decimal | null }
+    {
+        nativeValue: Decimal | null
+        fiatValue?: Decimal | null
+        isPending?: boolean
+    }
 >()
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
@@ -48,6 +52,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         }),
     }
 })
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: () => ({
+        usdToPreferred: (value: Decimal | null | undefined) =>
+            value ? value.times(2) : null,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     findNativeAsset: (chainId: string) => ({
@@ -161,6 +172,82 @@ describe('useAccountWithBalance', () => {
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
 
         expect(result.current.nativeValue).toBeNull()
+    })
+
+    describe('preferredValue', () => {
+        beforeEach(() => {
+            mockBasis.current = 'fiat'
+        })
+
+        it("is the account's fiat value in the preferred currency", () => {
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal('1.5'),
+                fiatValue: new Decimal(3000),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.preferredValue).toEqual(new Decimal(6000))
+        })
+
+        it('is unknown, not 0, when the balance has no price', () => {
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal('5.77'),
+                fiatValue: null,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.preferredValue).toBeNull()
+        })
+
+        it('is unknown when the native balance is unpriced, even with priced tokens', () => {
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: null,
+                fiatValue: null,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.preferredValue).toBeNull()
+        })
+
+        it('is a real 0 for a zero balance', () => {
+            mockAccountValueTotals.set(ETH_ADDRESS, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(0),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.preferredValue).toEqual(new Decimal(0))
+        })
+
+        it('is undefined until the totals have loaded', () => {
+            mockAccountValueTotals.set(ALGO_ADDRESS, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(0),
+                isPending: true,
+            })
+
+            const { result: pending } = renderHook(() =>
+                useAccountWithBalance(ALGO_ACCOUNT),
+            )
+            const { result: missing } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(pending.current.preferredValue).toBeUndefined()
+            expect(missing.current.preferredValue).toBeUndefined()
+        })
     })
 
     it("flags an account whose chain's kill switch is off", () => {

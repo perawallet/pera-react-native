@@ -23,13 +23,20 @@ import {
 import { http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
-import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
+import {
+    getAddress,
+    hexToBytes,
+    keccak256,
+    parseTransaction,
+    type RpcTransaction,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
     SubmissionError,
     getUnsyncedSubmissionSpends,
     getSubmissionAttemptsWithHistoryEntry,
+    recordSubmissionAttempt,
     SubmissionAttemptsSchema,
     TransportError,
     type SigningResult,
@@ -53,10 +60,12 @@ import {
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
     SENDER,
+    VIEM_ERC20_TRANSFER,
     VIEM_TRANSFER_NONCE_0,
     VIEM_TRANSFER_NONCE_0_SPED_UP,
     VIEM_TRANSFER_NONCE_0_UNDERPRICED,
 } from '../../signing/__tests__/fixtures'
+import { ethereumCallSummary } from '../../signing/review'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 import { submitEthereumTransactions } from '../submission'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -118,6 +127,108 @@ describe('Ethereum broadcaster adapter', () => {
     })
 
     const rows = () => db.select().from(SubmissionAttemptsSchema).all()
+
+    describe('submitAndAutoRefresh', () => {
+        const SIGNED = [{ scope: SCOPE, id: HASH, bytes: BYTES }]
+
+        it('records the attempt with the call’s history entry and resolves with the hash', async () => {
+            useRpc()
+            const parsed = parseTransaction(VIEM_TRANSFER_NONCE_0)
+
+            const txIds = await adapter.submitAndAutoRefresh(SCOPE, SIGNED)
+
+            expect(txIds).toEqual([HASH])
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: SCOPE,
+            })
+            expect(attempt!.historyEntry).toEqual({
+                summary: ethereumCallSummary(
+                    {
+                        from: SENDER,
+                        to: getAddress(parsed.to!),
+                        value: parsed.value ?? 0n,
+                        data: parsed.data ?? '0x',
+                    },
+                    ETHEREUM,
+                ),
+                chainData: { family: 'evm' },
+                fee: new Decimal('420000000000000'),
+            })
+            expect(await getOpenSubmissionAttempts({ db })).toMatchObject([
+                { txIds: [HASH], flow: 'pipeline', sender: SENDER },
+            ])
+        })
+
+        it('marks a node refusal failed and rethrows it', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).rejects.toMatchObject({ classification: 'rejected-by-node' })
+            expect(await rows()).toMatchObject([{ status: 'failed' }])
+        })
+
+        it('refuses a send whose nonce another open send holds, without recording or sending it', async () => {
+            useRpc()
+            await recordSubmissionAttempt({
+                db,
+                scope: SCOPE,
+                txIds: ['0xother'],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 0,
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).rejects.toMatchObject({
+                classification: 'rejected-by-node',
+                nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+            })
+            expect(await rows()).toHaveLength(1)
+        })
+
+        it('still resends a transaction whose own open row holds the nonce', async () => {
+            useRpc()
+            await recordSubmissionAttempt({
+                db,
+                scope: SCOPE,
+                txIds: [HASH],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 0,
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).resolves.toEqual([HASH])
+        })
+
+        it('submits to the scope it is given, not the selected network', async () => {
+            useRpc()
+            const onSepolia = createEvmBroadcasterAdapter(
+                {
+                    ...testChainContext(),
+                    getScope: () => ({
+                        chainId: 'ethereum',
+                        networkId: 'sepolia',
+                    }),
+                },
+                ETHEREUM,
+            )
+
+            const txIds = await onSepolia.submitAndAutoRefresh(SCOPE, SIGNED)
+
+            expect(txIds).toEqual([HASH])
+            expect(await rows()).toMatchObject([{ scope: 'ethereum/mainnet' }])
+        })
+    })
 
     describe('submit transport', () => {
         it('records an open pipeline row with the nonce and sender, then returns the hash', async () => {
@@ -354,6 +465,19 @@ describe('Ethereum broadcaster adapter', () => {
             ])
         })
 
+        it('refuses a different call at a held nonce as a collision, without sending or recording it', async () => {
+            useCountingRpc()
+            await sendBytes(VIEM_TRANSFER_NONCE_0)
+            sends.mockClear()
+
+            await expect(sendBytes(VIEM_ERC20_TRANSFER)).rejects.toMatchObject({
+                classification: 'rejected-by-node',
+                nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+            })
+            expect(sends).not.toHaveBeenCalled()
+            expect(await rows()).toHaveLength(1)
+        })
+
         it('refuses a replacement under the 10% bump without sending or recording it', async () => {
             useCountingRpc()
             await sendBytes(VIEM_TRANSFER_NONCE_0)
@@ -479,12 +603,6 @@ describe('Ethereum broadcaster adapter', () => {
                 classification: 'unknown-outcome',
                 metadata: { retryable: true },
             })
-        })
-
-        it('refuses submitAndAutoRefresh, which takes the Algorand envelope', async () => {
-            await expect(
-                adapter.submitAndAutoRefresh(SCOPE, []),
-            ).rejects.toThrow(/createSubmitTransport/)
         })
 
         it('has nothing to check for an unsigned request', async () => {

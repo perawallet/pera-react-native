@@ -13,6 +13,7 @@
 import {
     BaseError,
     bytesToHex,
+    getAddress,
     keccak256,
     parseTransaction,
     recoverTransactionAddress,
@@ -44,12 +45,16 @@ import {
     toEvmError,
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
+import { ethereumCallSummary } from '../signing/review'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently.
 const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
 
 /** Resolves false only when the node says it has no such transaction. */
+// How long a receipt is awaited before the reconciler is left to settle the send.
+export const ETHEREUM_CONFIRMATION_TIMEOUT_MS = 3 * 60_000
+
 export const isTransactionKnownToNode = async (
     client: PublicClient,
     hash: Hex,
@@ -216,12 +221,65 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
+const isSameAddress = (a: string | null | undefined, b: string): boolean =>
+    a != null && getAddress(a) === getAddress(b)
+
+// Two sends built before either was recorded pick the same nonce, and the
+// second would replace the first, leaving its dApp a hash that never mines.
+// A speed-up resends the original's call and a cancel sends nothing to the
+// sender; any other transaction at a held nonce is that collision.
+const isNonceCollision = (
+    replaced: SubmissionAttempt | undefined,
+    parsed: ReturnType<typeof parseTransaction>,
+    sender: string,
+): boolean => {
+    if (!replaced) return false
+    const original =
+        replaced.rawTransaction != null
+            ? readReplaceableTransaction(replaced.rawTransaction)
+            : null
+    if (!original) return true
+    const value = parsed.value ?? 0n
+    const data = (parsed.data ?? '0x').toLowerCase()
+    const isSpeedUp =
+        (original.to == null
+            ? parsed.to == null
+            : isSameAddress(parsed.to, original.to)) &&
+        value === (original.value ?? 0n) &&
+        data === (original.data ?? '0x').toLowerCase()
+    const isCancel =
+        isSameAddress(parsed.to, sender) && value === 0n && data === '0x'
+    return !isSpeedUp && !isCancel
+}
+
+/** The entry the send's build put on its unsigned transaction, read back from the signed bytes. */
+export const historyEntryOfSigned = async (
+    serializedTransaction: TransactionSerialized,
+    chain: EvmChain,
+): Promise<SubmissionHistoryEntry> => {
+    const { to, value, data } = parseTransaction(serializedTransaction)
+    const from = await recoverTransactionAddress({ serializedTransaction })
+    return {
+        summary: ethereumCallSummary(
+            {
+                from,
+                to: to == null ? undefined : getAddress(to),
+                value: value ?? 0n,
+                data: data ?? '0x',
+            },
+            chain,
+        ),
+        chainData: { family: 'evm' },
+    }
+}
+
 /**
  * Writes each transaction's ledger row before sending it, so a send that gets
  * no answer still holds its nonce. A ledger write failure never blocks the
- * send. A send at a nonce an open attempt already holds replaces it: the row
- * links the two, and one that doesn't outbid the original by the node's
- * minimum bump is refused without being sent.
+ * send. A speed-up or cancel at a nonce an open attempt already holds replaces
+ * it: the row links the two, and one that doesn't outbid the original by the
+ * node's minimum bump is refused without being sent. Any other send at a held
+ * nonce is refused the same way.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
@@ -254,6 +312,15 @@ export const submitAndRecordEthereumTransactions = async ({
                     hash,
                 )
             })
+        }
+        if (isNonceCollision(replaced, parsed, sender)) {
+            throw new SubmissionError(
+                [hash],
+                'rejected-by-node',
+                new EvmError(EvmErrorCode.NONCE_TOO_LOW, {
+                    symbol: chain.row.nativeAsset.symbol,
+                }),
+            )
         }
         if (isUnderpricedReplacement(replaced, parsed)) {
             throw underpricedReplacement(hash)

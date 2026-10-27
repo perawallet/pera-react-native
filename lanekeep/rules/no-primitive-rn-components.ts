@@ -29,8 +29,12 @@ export default defineRule({
     },
     gates: productionSource({
         fileContains: ['react-native'],
-        // The wrappers themselves must import the primitives they wrap.
-        pathNotMatches: ['apps/mobile/src/components/core/**'],
+        // The wrappers themselves must import the primitives they wrap, and
+        // the benchmark app is a separate app with no theme to wrap them in.
+        pathNotMatches: [
+            'apps/mobile/src/components/core/**',
+            'apps/benchmarks/**',
+        ],
     }),
     query: `
         (import_statement

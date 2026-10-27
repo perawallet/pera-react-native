@@ -417,6 +417,7 @@
         "networks_title": "Ağlar",
         "add_network": "Ekle",
         "add_network_error": "Bu ağ eklenemedi",
+        "add_network_success": "{{network}} ağı eklendi",
         "see_all_networks": "Tüm ağları gör",
         "view_passphrase": "Passphrase’i görüntüle",
         "network_options": "Diğer seçenekler"
@@ -426,6 +427,9 @@
         "see_wallet_structure": "Cüzdan yapısını gör",
         "hide_wallet_structure": "Cüzdan yapısını gizle",
         "scan_new_addresses": "Yeni adresleri tara",
+        "scan_new_accounts": "Yeni {{network}} hesaplarını tara",
+        "universal_wallet_subtitle": "Tek passphrase, tüm ağlar",
+        "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
         "main_address": "Ana adres",
         "sub_address": "Alt adres",
@@ -447,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 hesabı",
-        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi.",
+        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi. Algo25 hesapları yalnızca Algorand'ı destekler. Ethereum veya Base kullanmak için bir Universal Wallet oluştur.",
+        "standard_unreachable_chains_note": "Algo25 hesapları için diğer ağlar kullanılamaz.",
         "ledger_title": "Ledger hesabı",
         "ledger_description": "Hesabın bir Ledger hesabı. Cüzdanına doğrudan hardware wallet cihazından eklendi. Bu hesaba ait tüm işlemlerin Ledger’ında onaylanması gerekir.",
         "watch_title": "İzleme hesabı",
@@ -2384,6 +2389,7 @@
         "last_7_days": "Son 7 gün",
         "last_30_days": "Son 30 gün",
         "last_year": "Son 1 yıl",
+        "partial_total": "Fiyatı olmayan varlıklar hariç",
         "info": {
             "title": "Portföy değerini nasıl hesaplıyoruz",
             "body": "Toplam portföy değeri, izleme hesapları hariç olmak üzere hesaplarındaki tüm varlıkların ve kullanılabilir Algo miktarının değeri toplanarak hesaplanır.\n\nVarlık değerleri, çeşitli ekosistem partnerlerinden alınan günlük değerlere göre hesaplanır.  Bazı varlıkların değerleri mevcut olmadığı için toplam portföy değeri bir tahmin olarak kabul edilmelidir."
@@ -2650,6 +2656,7 @@
         "qrview": {
             "error_title": "Hesap seçilmedi",
             "error_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç",
+            "chain_unavailable_title": "{{chain}} bu hesapta kullanılamıyor",
             "copy_address": "Adresi kopyala",
             "share": "Adresi paylaş"
         }
@@ -3481,6 +3488,7 @@
             "permissions_sign_transaction": "İşlem imzalama talep etme",
             "permissions_sign_data": "Serbest veri imzalama talep etme",
             "accounts_title": "HESAPLARI SEÇ",
+            "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
             "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",
@@ -4468,5 +4476,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum ve EVM ağları"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Ücret, bu çağrının sırası geldiğinde tahmin edilir"
+        }
     }
 }

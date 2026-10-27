@@ -417,6 +417,7 @@
         "networks_title": "Redes",
         "add_network": "Adicionar",
         "add_network_error": "Não foi possível adicionar esta rede",
+        "add_network_success": "Rede {{network}} adicionada",
         "see_all_networks": "Ver todas as redes",
         "view_passphrase": "Ver passphrase",
         "network_options": "Mais opções"
@@ -426,6 +427,9 @@
         "see_wallet_structure": "Ver estrutura da wallet",
         "hide_wallet_structure": "Ocultar estrutura da wallet",
         "scan_new_addresses": "Buscar novos endereços",
+        "scan_new_accounts": "Buscar novas contas em {{network}}",
+        "universal_wallet_subtitle": "Uma passphrase, todas as redes",
+        "viewing": "Atual",
         "wallet_label": "Wallet nº {{number}}",
         "main_address": "Endereço principal",
         "sub_address": "Subendereço",
@@ -447,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Conta Algo25",
-        "standard_description": "Sua conta é uma conta Algorand padrão. Ela não passou por rekey e não está associada a um dispositivo Ledger. Ela foi adicionada à sua wallet com as próprias chaves.",
+        "standard_description": "Sua conta é uma conta Algorand padrão. Ela não passou por rekey e não está associada a um dispositivo Ledger. Ela foi adicionada à sua wallet com as próprias chaves. Contas Algo25 são compatíveis apenas com Algorand. Para usar Ethereum ou Base, crie uma Universal Wallet.",
+        "standard_unreachable_chains_note": "Outras redes não estão disponíveis para contas Algo25.",
         "ledger_title": "Conta Ledger",
         "ledger_description": "Sua conta é uma conta Ledger. Ela foi adicionada à sua wallet diretamente pelo dispositivo de hardware. Todas as transações desta conta precisam ser confirmadas no seu Ledger.",
         "watch_title": "Conta de observação",
@@ -2399,6 +2404,7 @@
         "last_7_days": "Últimos 7 dias",
         "last_30_days": "Últimos 30 dias",
         "last_year": "Último ano",
+        "partial_total": "Exclui posições sem preço",
         "info": {
             "title": "Como calculamos o valor do portfólio",
             "body": "O valor total do portfólio é calculado somando o valor de todos os ativos e do Algo disponíveis nas suas contas, excluindo as contas de observação.\n\nOs valores dos ativos são calculados com base em valores diários obtidos de vários parceiros do ecossistema. Como alguns valores de ativos não estão disponíveis, o valor total do portfólio deve ser considerado uma estimativa."
@@ -2666,6 +2672,7 @@
         "qrview": {
             "error_title": "Nenhuma conta selecionada",
             "error_body": "Nenhuma conta foi selecionada. Selecione uma conta primeiro",
+            "chain_unavailable_title": "{{chain}} não está disponível para esta conta",
             "copy_address": "Copiar endereço",
             "share": "Compartilhar endereço"
         }
@@ -3504,6 +3511,7 @@
             "permissions_sign_transaction": "Solicitar assinatura de transações",
             "permissions_sign_data": "Solicitar assinatura de dados arbitrários",
             "accounts_title": "SELECIONAR CONTAS",
+            "no_accounts": "Nenhuma das suas contas pode se conectar nesta rede.",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
             "success_sheet_body": "Volte para {{name}} para continuar e concluir sua operação. Você encontra todas as sessões conectadas na página de configurações dedicada.",
             "success_sheet_return_to_dapp": "Voltar para {{name}}",
@@ -4497,5 +4505,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum e redes EVM"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Taxa estimada quando chegar a vez desta chamada"
+        }
     }
 }

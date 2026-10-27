@@ -110,15 +110,18 @@ export const App = (): React.JSX.Element => {
                     mod,
                     { registerChainAdapters },
                     { markDatabaseResetNoticePending },
+                    { submitHandedOffSend },
                 ] = await Promise.all([
                     import('@browser/offscreen/runOffscreenApp'),
                     import('./bootstrap/chain-adapters'),
                     import('./bootstrap/databaseResetNotice'),
+                    import('./bootstrap/submitHandedOffSend'),
                 ])
                 await registerTransports()
                 await mod.runOffscreenApp({
                     registerChainAdapters,
                     onDatabaseReset: markDatabaseResetNoticePending,
+                    submitSignedTransactions: submitHandedOffSend,
                 })
                 setShell(() => OffscreenStatus)
                 return

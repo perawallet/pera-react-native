@@ -95,6 +95,16 @@ export const useStyles = makeStyles(theme => ({
         borderColor: theme.colors.layerGrayLightest,
         borderRadius: theme.borderRadius.full,
     },
+    unreachableNote: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        columnGap: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.md,
+    },
+    unreachableNoteText: {
+        color: theme.colors.textGray,
+    },
     sharedAccountOptions: {
         marginBottom: theme.spacing.lg,
     },

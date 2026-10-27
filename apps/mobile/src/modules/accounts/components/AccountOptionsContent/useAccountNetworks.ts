@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     accountChainOptions,
+    unreachableChainsNoteOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -26,10 +27,12 @@ import {
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useEnableChainAction } from '@hooks/useEnableChainAction'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { displayChainOption } from '@utils/chainOptionDisplay'
 import {
     trackEvent,
@@ -64,6 +67,8 @@ export type UseAccountNetworksResult = {
     account: WalletAccount
     visibleRows: AccountNetworkRow[]
     hiddenRows: AccountNetworkRow[]
+    /** Why the account's kind is missing from chains that are on; null when it reaches them all. */
+    unreachableChainsNote: Nullable<string>
     handleShowAllNetworks: () => void
     expandedChainId: Optional<ChainId>
     handleToggleExpanded: (chainId: ChainId) => void
@@ -80,6 +85,7 @@ export const useAccountNetworks = ({
 }: UseAccountNetworksParams): UseAccountNetworksResult => {
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
+    const { showToast } = useToast()
     const { enablingChainId: addingChainId, enableChain } =
         useEnableChainAction(t('account_options.add_network_error'))
     const checkCapability = useChainCapabilityCheck()
@@ -125,6 +131,21 @@ export const useAccountNetworks = ({
         })
     }, [options, checkCapability])
 
+    const unreachableChainsNoteKey = useMemo(
+        () =>
+            unreachableChainsNoteOf(
+                account,
+                getProvider()
+                    .chains.list()
+                    .map(({ id }) => id)
+                    .filter(chainId => !switchedOff.includes(chainId)),
+            ),
+        [account, switchedOff],
+    )
+    const unreachableChainsNote = unreachableChainsNoteKey
+        ? t(unreachableChainsNoteKey)
+        : null
+
     const rowByChain = useMemo(
         () => new Map(rows.map(row => [row.chainId, row])),
         [rows],
@@ -146,10 +167,22 @@ export const useAccountNetworks = ({
 
     const handleAddNetwork = useCallback(
         (chainId: ChainId) => {
-            if (rowByChain.get(chainId)?.isEnabled !== false) return
-            enableChain(account.id, chainId)
+            const row = rowByChain.get(chainId)
+            if (row?.isEnabled !== false) return
+            enableChain(account.id, chainId, () =>
+                showToast(
+                    {
+                        title: t('account_options.add_network_success', {
+                            network: row.displayName,
+                        }),
+                        body: '',
+                        type: 'success',
+                    },
+                    { notifier: bottomSheetNotifier.current ?? undefined },
+                ),
+            )
         },
-        [rowByChain, account.id, enableChain],
+        [rowByChain, account.id, enableChain, showToast, t],
     )
 
     const handleCopyAddress = useCallback(
@@ -177,6 +210,7 @@ export const useAccountNetworks = ({
         account,
         visibleRows,
         hiddenRows,
+        unreachableChainsNote,
         handleShowAllNetworks,
         expandedChainId,
         handleToggleExpanded,

@@ -40,6 +40,7 @@ import {
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useVaultLockState } from '@modules/vault'
+import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { queryClient } from '@providers/QueryProvider'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
@@ -153,6 +154,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             )
             backfillAccountRecords()
             await initializeDatabase(getProvider().database)
+            useDatabaseReadinessStore.getState().setReadiness('ready')
             await seedNativeAssets(getDatabase())
             await hydrateAccountChainStates()
             initializeSyncService({
@@ -170,6 +172,9 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         }
         bootstrap().catch(error => {
             logger.error('Web shell bootstrap failed', { error })
+            const { readiness, setReadiness } =
+                useDatabaseReadinessStore.getState()
+            if (readiness === 'pending') setReadiness('failed')
             setHasBootstrapError(true)
         })
     }, [isUnlocked])

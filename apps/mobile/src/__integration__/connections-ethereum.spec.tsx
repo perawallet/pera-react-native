@@ -39,7 +39,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { seedAlgo25Signer } from '@test-utils/signing-review'
+import { renderSignReview, seedAlgo25Signer } from '@test-utils/signing-review'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
 import {
     makeProposal,
@@ -72,7 +72,19 @@ import {
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
-import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import {
+    DEFAULT_EVM_RPC_RESPONSES,
+    evmRpcHandlers,
+    evmTransactionReceipt,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import { kmsCore } from '@perawallet/wallet-core-kms'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
+import {
+    findTransactionBatch,
+    signTransactionsInBackground,
+} from '@perawallet/wallet-core-signing'
+import { approvalGate } from '@packages/signing/src/pipeline/approvalGate'
+import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     decodeFromBase64,
@@ -145,9 +157,13 @@ const ETHEREUM_METHODS = [
     'personal_sign',
     'eth_signTypedData_v4',
     'wallet_switchEthereumChain',
+    'wallet_sendCalls',
     'eth_accounts',
     'eth_requestAccounts',
     'eth_chainId',
+    'wallet_getCapabilities',
+    'wallet_getCallsStatus',
+    'wallet_showCallsStatus',
 ]
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
@@ -405,7 +421,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             send(2, 'eth_signTransaction')
             send(3, 'eth_chainId')
             send(4, 'eth_sendRawTransaction')
-            send(5, 'wallet_sendCalls')
+            send(5, 'eth_sign')
 
             await waitFor(() => {
                 expect(walletKit.respondSessionRequest).toHaveBeenCalledTimes(5)
@@ -470,6 +486,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             // The nonce comes from the submission ledger.
             beforeAll(setupTestDatabase)
             beforeEach(resetTestDatabase)
+            // A request approved without the review leaves its actor in the
+            // module registry, which keeps the next request's review blank.
+            beforeEach(__resetSigningActorRegistryForTests)
             afterAll(teardownTestDatabase)
 
             const queued = async (): Promise<QueuedRequest> => {
@@ -500,6 +519,37 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         result: HASH,
                     })
                 })
+            })
+
+            it('Given a valid request, when it is queued, then the review shows the Ethereum transaction with its max fee', async () => {
+                const walletKit = await settle()
+                // Mounted first so the request FAQ is acknowledged before the
+                // request arrives; otherwise its sheet covers the review.
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('signing_transaction_review'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                expect(
+                    screen.getAllByTestId('ethereum_max_fee'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.queryByText(
+                        'signing.transaction_view.invalid_title',
+                    ),
+                ).toBeNull()
             })
 
             it('Given a queued request, when the user rejects it, then the dApp receives 4001', async () => {
@@ -550,6 +600,311 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(pendingSignRequests()).toHaveLength(0)
                 },
             )
+        })
+
+        describe('wallet_sendCalls', () => {
+            const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+            const ROUTER = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
+            // approve(ROUTER, 1e6), then a call the router reads it in.
+            const APPROVE = {
+                to: TOKEN,
+                data: `0x095ea7b3${ROUTER.slice(2).toLowerCase().padStart(64, '0')}${(1_000_000).toString(16).padStart(64, '0')}`,
+            }
+            const SWAP = { to: ROUTER, data: '0x5ae401dc', value: '0x0' }
+
+            // Ethereum keys never exist in JS, so every digest gets one real
+            // r‖s‖v: the bytes parse and recover, and differ per transaction.
+            const FIXED_SIGNATURE = Uint8Array.from(
+                Buffer.from(
+                    '923c0f4c3ec362322e052c7d1f1d6ea2a364621802f4428c6508a4fe71a655ef332789ab7ace0f5c627bcda10589e4e437c568bfb39cd09f4dc40da8789c05ac01',
+                    'hex',
+                ),
+            )
+
+            const sent: string[] = []
+
+            /** Mines each send at once, with the receipt status of its place in the batch. */
+            const node = (statuses: readonly ('0x1' | '0x0')[] = []) => {
+                server.use(
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_getTransactionCount: () =>
+                                `0x${sent.length.toString(16)}`,
+                            eth_sendRawTransaction: params => {
+                                const respond =
+                                    DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
+                                const hash = (
+                                    typeof respond === 'function'
+                                        ? respond(params)
+                                        : respond
+                                ) as `0x${string}`
+                                sent.push(hash)
+                                return hash
+                            },
+                            eth_getTransactionByHash: params =>
+                                sent.includes(params[0] as string)
+                                    ? ({ blockNumber: null } as never)
+                                    : null,
+                            eth_getTransactionReceipt: params => {
+                                const index = sent.indexOf(params[0] as string)
+                                return index === -1
+                                    ? null
+                                    : evmTransactionReceipt({
+                                          transactionHash:
+                                              params[0] as `0x${string}`,
+                                          status: statuses[index] ?? '0x1',
+                                      })
+                            },
+                        },
+                    }),
+                )
+            }
+
+            const settle = async (statuses?: readonly ('0x1' | '0x0')[]) => {
+                node(statuses)
+                await mountProvider()
+                const walletKit = await propose(
+                    eip155Namespace('requiredNamespaces'),
+                )
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+                return walletKit
+            }
+
+            const request = (
+                walletKit: FakeWalletKit,
+                id: number,
+                method: string,
+                params: unknown[],
+            ) =>
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id,
+                            method,
+                            params,
+                            chainId: ETH_MAINNET,
+                        }),
+                    )
+                })
+
+            const sendCalls = (
+                walletKit: FakeWalletKit,
+                batch: Record<string, unknown> = {},
+            ) =>
+                request(walletKit, 9, 'wallet_sendCalls', [
+                    {
+                        version: '2.0.0',
+                        id: 'approve-then-swap',
+                        chainId: '0x1',
+                        from: CHECKSUMMED_ETH_ADDRESS,
+                        atomicRequired: false,
+                        calls: [APPROVE, SWAP],
+                        ...batch,
+                    },
+                ])
+
+            const answerTo = (walletKit: FakeWalletKit, id: number) =>
+                (walletKit.respondSessionRequest as Mock).mock.calls
+                    .map(([{ response }]) => response)
+                    .find(response => response.id === id)
+
+            const batchSettled = () =>
+                waitFor(
+                    async () => {
+                        const batch = await findTransactionBatch({
+                            chainId: 'ethereum',
+                            batchId: 'approve-then-swap',
+                            senders: [CHECKSUMMED_ETH_ADDRESS],
+                        })
+                        expect(batch).toBeTruthy()
+                        expect(batch?.outcome).not.toBe('running')
+                    },
+                    { timeout: 15_000 },
+                )
+
+            const callsStatus = async (walletKit: FakeWalletKit) => {
+                request(walletKit, 11, 'wallet_getCallsStatus', [
+                    'approve-then-swap',
+                ])
+                await waitFor(() => {
+                    expect(answerTo(walletKit, 11)).toBeTruthy()
+                })
+                return answerTo(walletKit, 11).result
+            }
+
+            // Approves through the review's own gate, so the pipeline signs the
+            // first call and hands it to the batch.
+            const approveReview = async (following = 1) => {
+                await waitFor(() => {
+                    expect(pendingSignRequests()).toHaveLength(1)
+                })
+                const [review] = pendingSignRequests() as unknown as {
+                    id: string
+                    txs: unknown[]
+                    followingTxs: unknown[]
+                }[]
+                expect(review.txs).toHaveLength(1)
+                expect(review.followingTxs).toHaveLength(following)
+                await waitFor(() => {
+                    expect(approvalGate.isRegistered(review.id)).toBe(true)
+                })
+                act(() => {
+                    approvalGate.approve(review.id)
+                })
+            }
+
+            beforeAll(setupTestDatabase)
+            beforeEach(async () => {
+                // Earlier tests answer their requests directly, leaving their
+                // actors parked at the review; only one actor runs at a time.
+                __resetSigningActorRegistryForTests()
+                await resetTestDatabase()
+                sent.length = 0
+                useSecurityStore.getState().setAppLockActive(false)
+                vi.spyOn(kmsCore, 'sign').mockResolvedValue(FIXED_SIGNATURE)
+            })
+            afterEach(() => {
+                vi.restoreAllMocks()
+            })
+            afterAll(teardownTestDatabase)
+
+            it('Given an approve-then-swap batch, when it is reviewed once, then both calls land in order and its status is 200 with two receipts', async () => {
+                const walletKit = await settle()
+
+                sendCalls(walletKit)
+                await approveReview()
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit, 9)).toMatchObject({
+                        result: { id: 'approve-then-swap' },
+                    })
+                })
+                await batchSettled()
+                const status = await callsStatus(walletKit)
+
+                expect(sent).toHaveLength(2)
+                expect(status).toMatchObject({
+                    id: 'approve-then-swap',
+                    chainId: '0x1',
+                    atomic: false,
+                    status: 200,
+                })
+                expect(
+                    status.receipts.map(
+                        (receipt: { transactionHash: string }) =>
+                            receipt.transactionHash,
+                    ),
+                ).toEqual(sent)
+                // The swap was signed with no second review.
+                expect(pendingSignRequests()).toHaveLength(0)
+            })
+
+            it('Given a batch of one call, when it is reviewed and approved, then it lands and its status is 200 with one receipt', async () => {
+                const walletKit = await settle()
+
+                sendCalls(walletKit, { calls: [APPROVE] })
+                await approveReview(0)
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit, 9)).toMatchObject({
+                        result: { id: 'approve-then-swap' },
+                    })
+                })
+                await batchSettled()
+                const status = await callsStatus(walletKit)
+
+                expect(sent).toHaveLength(1)
+                expect(status).toMatchObject({ status: 200 })
+                expect(status.receipts).toHaveLength(1)
+            })
+
+            it('Given the swap reverts, when the batch runs, then its status is 600', async () => {
+                const walletKit = await settle(['0x1', '0x0'])
+
+                sendCalls(walletKit)
+                await approveReview()
+                await batchSettled()
+
+                expect(await callsStatus(walletKit)).toMatchObject({
+                    status: 600,
+                })
+                expect(sent).toHaveLength(2)
+            })
+
+            it('Given the approval reverts, when the batch runs, then its status is 500 and the swap is never broadcast', async () => {
+                const walletKit = await settle(['0x0'])
+
+                sendCalls(walletKit)
+                await approveReview()
+                await batchSettled()
+
+                expect(await callsStatus(walletKit)).toMatchObject({
+                    status: 500,
+                })
+                expect(sent).toHaveLength(1)
+            })
+
+            it('Given a contract call no approved review showed, when it is signed in the background under a made-up approval, then the pipeline refuses it', async () => {
+                const walletKit = await settle()
+                sendCalls(walletKit)
+                await waitFor(() => {
+                    expect(pendingSignRequests()).toHaveLength(1)
+                })
+                const [review] = pendingSignRequests() as unknown as {
+                    txs: Parameters<typeof signTransactionsInBackground>[0]
+                    reject: () => Promise<void>
+                }[]
+                const [unexplained] = review.txs
+                await act(async () => {
+                    await review.reject()
+                })
+                useSigningStore.getState().resetState()
+                __resetSigningActorRegistryForTests()
+
+                const signing = signTransactionsInBackground(
+                    [unexplained],
+                    { name: 'Forged', description: 'No review behind it' },
+                    { token: 'made-up', positions: [0] },
+                )
+
+                await expect(signing).rejects.toMatchObject({
+                    name: 'ReviewRequiredError',
+                })
+                expect(kmsCore.sign).not.toHaveBeenCalled()
+                expect(sent).toHaveLength(0)
+            })
+
+            it('Given a batch that requires atomic execution, when it arrives, then it is refused with 5760 and nothing is shown', async () => {
+                const walletKit = await settle()
+
+                sendCalls(walletKit, { atomicRequired: true })
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit, 9)).toMatchObject({
+                        error: { code: 5760 },
+                    })
+                })
+                expect(pendingSignRequests()).toHaveLength(0)
+            })
+
+            it('Given a held account, when the dApp asks for capabilities, then atomic execution is reported unsupported', async () => {
+                const walletKit = await settle()
+
+                request(walletKit, 10, 'wallet_getCapabilities', [
+                    CHECKSUMMED_ETH_ADDRESS,
+                    ['0x1'],
+                ])
+
+                await waitFor(() => {
+                    expect(answerTo(walletKit, 10)).toMatchObject({
+                        result: {
+                            '0x1': { atomic: { status: 'unsupported' } },
+                        },
+                    })
+                })
+            })
         })
 
         describe('network switching and session events', () => {

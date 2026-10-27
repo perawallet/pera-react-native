@@ -15,6 +15,7 @@ import type {
     ChainId,
     ChainScope,
     NetworkId,
+    SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -574,27 +575,122 @@ const enqueueSendTransactionRequest = (
                     forgetRequest(deps, message)
                     return
                 }
+                const { submitSignedSend } = deps
+                let isHandedOff = false
+                // Once handed off, the receiver answers the peer; nothing here
+                // may decline it again.
+                const lifecycleMessage: RequestMessage = {
+                    ...message,
+                    reject: error =>
+                        isHandedOff ? Promise.resolve() : message.reject(error),
+                }
                 const signRequest: UnsignedTransactionSignRequest = {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    // Routes an external source to the chain's broadcaster, which
-                    // answers through `approve` once the transaction is submitted.
-                    transport: 'network',
+                    // `network` routes an external source to the chain's
+                    // broadcaster, which answers through `approve` once the
+                    // transaction is submitted; `callback` only signs.
+                    transport: submitSignedSend ? 'callback' : 'network',
                     sourceType: message.sourceType,
                     transportId: message.connectionId,
                     sourceMetadata: message.peer,
                     verifiedOrigin: message.verifiedOrigin,
                     txs: [transaction],
-                    approve: async (_signed, submission) => {
-                        const txId = submission?.txIds[0]
-                        if (txId === undefined) {
+                    approve: submitSignedSend
+                        ? async signed => {
+                              const outcome = await submitSignedSend(
+                                  signed.filter(
+                                      (tx): tx is SignedTransaction => !!tx,
+                                  ),
+                              )
+                              isHandedOff = true
+                              forgetRequest(deps, message)
+                              if (outcome.status === 'failed') {
+                                  onError?.(outcome.error, {
+                                      connectionId: message.connectionId,
+                                  })
+                              }
+                          }
+                        : async (_signed, submission) => {
+                              const txId = submission?.txIds[0]
+                              if (txId === undefined) {
+                                  throw new Error(
+                                      'The transaction was approved without being submitted',
+                                  )
+                              }
+                              await message.respond({
+                                  type: 'send-transaction',
+                                  txId,
+                              })
+                              forgetRequest(deps, message)
+                          },
+                    ...requestLifecycle(
+                        lifecycleMessage,
+                        deps,
+                        () => signRequest,
+                    ),
+                }
+                addSignRequest(signRequest)
+                settleTrackedRequest(deps, message, signRequest)
+            },
+            (error: unknown) => {
+                forgetRequest(deps, message)
+                declineRequest(message, toError(error), onError)
+            },
+        )
+}
+
+// Only the first transaction is signed by the review; the chain builds, signs
+// and sends each following one itself once the one before it has landed.
+const enqueueSendBatchRequest = (
+    message: RequestMessage,
+    request: unknown,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { addSignRequest, onError } = deps
+    const sending = dappRequestChainAdapters.get(message.chainId).sendBatch
+    if (!sending) {
+        declineRequest(
+            message,
+            new Error(`${message.chainId} sends no batch for a dApp`),
+            onError,
+        )
+        return
+    }
+
+    trackRequest(deps, message, null)
+    Promise.resolve()
+        .then(() => sending.prepare(request))
+        .then(
+            prepared => {
+                if (
+                    deps.pendingRequests.get(requestKey(message))?.isWithdrawn
+                ) {
+                    forgetRequest(deps, message)
+                    return
+                }
+                const signRequest: UnsignedTransactionSignRequest = {
+                    id: generateOrderedUniqueId(),
+                    type: 'transactions',
+                    // Hands the signed first transaction back unsent: the
+                    // chain records the batch before anything is broadcast.
+                    transport: 'callback',
+                    sourceType: message.sourceType,
+                    transportId: message.connectionId,
+                    sourceMetadata: message.peer,
+                    verifiedOrigin: message.verifiedOrigin,
+                    txs: [prepared.first],
+                    followingTxs: prepared.following,
+                    approve: async ([first], _submission, approval) => {
+                        if (!first || !approval) {
                             throw new Error(
-                                'The transaction was approved without being submitted',
+                                'The batch was approved without its first transaction signed or its review recorded',
                             )
                         }
+                        await sending.start(prepared, first, approval)
                         await message.respond({
-                            type: 'send-transaction',
-                            txId,
+                            type: 'send-batch',
+                            batchId: prepared.batchId,
                         })
                         forgetRequest(deps, message)
                     },
@@ -608,6 +704,53 @@ const enqueueSendTransactionRequest = (
                 declineRequest(message, toError(error), onError)
             },
         )
+}
+
+const UNKNOWN_BATCH_MESSAGE = 'No batch with this id was sent by this session'
+
+// Nothing is signed, so the user isn't told of a refusal. A chain with its own
+// code for an unknown id rejects `locate` with it rather than answering null.
+const enqueueShowBatchRequest = (
+    message: RequestMessage,
+    batchId: string,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const sending = dappRequestChainAdapters.get(message.chainId).sendBatch
+    if (!sending) {
+        declineRequest(
+            message,
+            new Error(`${message.chainId} sends no batch for a dApp`),
+            deps.onError,
+        )
+        return
+    }
+    Promise.resolve()
+        .then(() => sending.locate(batchId, message.authorizedAccounts))
+        .then(
+            located => {
+                if (!located) {
+                    rejectInBackground(
+                        message,
+                        new ConnectionsError(
+                            'invalid-payload',
+                            UNKNOWN_BATCH_MESSAGE,
+                        ),
+                    )
+                    return
+                }
+                deps.showTransaction?.(located)
+                return message.respond({ type: 'show-batch' })
+            },
+            (error: unknown) => {
+                rejectInBackground(message, toError(error))
+            },
+        )
+        .catch((error: unknown) => {
+            logger.warn('[connections] show-batch answer failed', {
+                connectionId: message.connectionId,
+                error,
+            })
+        })
 }
 
 /**
@@ -683,6 +826,12 @@ const enqueueNetworkSwitch = (
     )
 }
 
+/** Opens the wallet's own view of a transaction the peer asked about. */
+export type ShowTransaction = (target: {
+    scope: ChainScope
+    txId: string
+}) => void
+
 export type EnqueueInboundRequestDeps = {
     transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
@@ -704,7 +853,23 @@ export type EnqueueInboundRequestDeps = {
     onError?: ConnectionErrorReporter
     /** Without one a network switch is declined. */
     confirmNetworkSwitch?: ConfirmNetworkSwitch
+    /** Without one a batch the peer asks to show is answered but nothing opens. */
+    showTransaction?: ShowTransaction
+    /**
+     * Set by a surface that must not broadcast (the extension's approval
+     * window): the signed send goes here, and the receiver broadcasts it and
+     * answers the peer. Resolves with the receiver's outcome; a rejection
+     * means no outcome came back, so this surface still answers the peer, and
+     * a receiver that did take the send ignores that late answer.
+     */
+    submitSignedSend?: (
+        signed: SignedTransaction[],
+    ) => Promise<SignedSendOutcome>
 }
+
+export type SignedSendOutcome =
+    | { status: 'submitted'; txId: string }
+    | { status: 'failed'; error: Error }
 
 /**
  * Pure over its deps so the browser's approval window, which has no hook realm,
@@ -833,6 +998,16 @@ export const enqueueInboundRequest = (
         return
     }
 
+    if (message.operation.type === 'send-batch') {
+        enqueueSendBatchRequest(message, message.operation.request, deps)
+        return
+    }
+
+    if (message.operation.type === 'show-batch') {
+        enqueueShowBatchRequest(message, message.operation.batchId, deps)
+        return
+    }
+
     // The operation union is closed; the only remaining case is 'sign-data'.
     if (message.operation.type !== 'sign-data') {
         enqueueMessageRequest(
@@ -868,6 +1043,7 @@ export const useChainTransactionSigning = (
 
 export type UseConnectionSigningAdapterOptions = {
     confirmNetworkSwitch?: ConfirmNetworkSwitch
+    showTransaction?: ShowTransaction
 }
 
 /** Every handler normalises into `InboundMessage`, so a new connection kind needs no change here. */
@@ -877,6 +1053,7 @@ export const useConnectionSigningAdapter = (
     options?: UseConnectionSigningAdapterOptions,
 ): void => {
     const confirmNetworkSwitch = options?.confirmNetworkSwitch
+    const showTransaction = options?.showTransaction
     const transactionSigning = useChainTransactionSigning(chainId)
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
@@ -897,6 +1074,7 @@ export const useConnectionSigningAdapter = (
         pendingRequests: pendingRequestsRef.current,
         onError,
         confirmNetworkSwitch,
+        showTransaction,
     })
     depsRef.current = {
         transactionSigning,
@@ -908,6 +1086,7 @@ export const useConnectionSigningAdapter = (
         pendingRequests: pendingRequestsRef.current,
         onError,
         confirmNetworkSwitch,
+        showTransaction,
     }
 
     useEffect(

@@ -13,8 +13,10 @@
 import {
     isChainId,
     type ChainId,
+    type ChainScope,
     type I18nKey,
     type NetworkId,
+    type SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     ConnectionErrorScope,
@@ -25,8 +27,16 @@ import type {
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
 import {
+    DAPP_REQUEST_FAILURES,
+    type DappRequestFailure,
+} from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    AppError,
     decodeFromBase64,
     encodeToBase64,
+    ErrorCategory,
+    parseTypedJson,
+    stringifyTypedJson,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -66,6 +76,11 @@ export type WireWalletOperation =
     | Extract<WalletOperation, { type: MessageOperationType }>
     | Extract<WalletOperation, { type: 'switch-network' }>
     | {
+          type: 'send-transaction'
+          /** `stringifyTypedJson` of the request, whose bigints JSON drops. */
+          request: string
+      }
+    | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
       }
@@ -73,6 +88,7 @@ export type WireWalletOperation =
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
     | Extract<WalletOperationResult, { type: 'switch-network' }>
+    | Extract<WalletOperationResult, { type: 'send-transaction' }>
     | {
           type: MessageOperationType
           /** base64 of the signature. */
@@ -84,16 +100,31 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
-// The browser registers no chain that serves one, and its request holds bigints
-// that cannot cross a message hop.
-const refuseSendTransaction = (): never => {
-    throw new Error('send-transaction cannot cross a browser message hop')
+// The browser registers no chain that sends a batch for a dApp, and nothing
+// carries a batch's bigints across a message hop.
+const UNSERVED_TYPES = ['send-batch', 'show-batch'] as const
+
+type UnservedType = (typeof UNSERVED_TYPES)[number]
+
+const isUnserved = <T extends { type: string }>(
+    value: T,
+): value is Extract<T, { type: UnservedType }> =>
+    (UNSERVED_TYPES as readonly string[]).includes(value.type)
+
+const refuseUnserved = (type: UnservedType): never => {
+    throw new Error(`${type} cannot cross a browser message hop`)
 }
 
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
-    if (operation.type === 'send-transaction') return refuseSendTransaction()
+    if (isUnserved(operation)) return refuseUnserved(operation.type)
+    if (operation.type === 'send-transaction') {
+        return {
+            type: 'send-transaction',
+            request: stringifyTypedJson(operation.request),
+        }
+    }
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -116,6 +147,12 @@ export const encodeWalletOperation = (
 export const decodeWalletOperation = (
     operation: WireWalletOperation,
 ): WalletOperation => {
+    if (operation.type === 'send-transaction') {
+        return {
+            type: 'send-transaction',
+            request: parseTypedJson(operation.request),
+        }
+    }
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -138,7 +175,8 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
-    if (result.type === 'send-transaction') return refuseSendTransaction()
+    if (isUnserved(result)) return refuseUnserved(result.type)
+    if (result.type === 'send-transaction') return result
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
     if (result.type !== 'sign-data') {
@@ -158,6 +196,7 @@ export const decodeWalletOperationResult = (
 ): WalletOperationResult => {
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result
+    if (result.type === 'send-transaction') return result
     if (result.type !== 'sign-data') {
         return {
             type: result.type,
@@ -183,6 +222,9 @@ export const isWireWalletOperation = (
         }
         case 'switch-network': {
             return typeof value.networkId === 'string'
+        }
+        case 'send-transaction': {
+            return typeof value.request === 'string'
         }
         case 'sign-message':
         case 'sign-typed-data': {
@@ -214,6 +256,9 @@ export const isWireWalletOperationResult = (
         case 'switch-network': {
             return true
         }
+        case 'send-transaction': {
+            return typeof value.txId === 'string'
+        }
         case 'sign-message':
         case 'sign-typed-data': {
             return typeof value.signature === 'string'
@@ -229,6 +274,90 @@ export const isWireWalletOperationResult = (
 
 /** UI / service worker → offscreen registry host, request/response. */
 export const CONNECTIONS_CONTROL_SCOPE = 'pera-connections-control' as const
+
+/** A signed transaction on its way to be broadcast; `bytes` is base64. */
+export type WireSignedTransaction = {
+    scope: ChainScope
+    id: string
+    bytes: string
+}
+
+export const encodeSignedTransactions = (
+    signed: readonly SignedTransaction[],
+): WireSignedTransaction[] =>
+    signed.map(({ scope, id, bytes }) => ({
+        scope,
+        id,
+        bytes: encodeToBase64(bytes),
+    }))
+
+export const decodeSignedTransactions = (
+    wire: readonly WireSignedTransaction[],
+): SignedTransaction[] =>
+    wire.map(({ scope, id, bytes }) => ({
+        scope,
+        id,
+        bytes: decodeFromBase64(bytes),
+    }))
+
+const isWireScope = (value: unknown): value is ChainScope =>
+    isRecord(value) &&
+    isChainId(value.chainId) &&
+    typeof value.networkId === 'string'
+
+export const isWireSignedTransactions = (
+    value: unknown,
+): value is WireSignedTransaction[] =>
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+        (item: unknown) =>
+            isRecord(item) &&
+            isWireScope(item.scope) &&
+            typeof item.id === 'string' &&
+            typeof item.bytes === 'string',
+    )
+
+/** A broadcast that failed; `messageKey` is `AppError.metadata.messageKey`, as on the `error` event. */
+export type WireSubmitFailure = {
+    name: string
+    message: string
+    messageKey?: I18nKey
+}
+
+// Only an `AppError` reaches `resolveErrorCopy`'s translated branch, so an
+// error that crossed the wire with a key is rebuilt as one.
+export const rebuildWireError = ({
+    name,
+    message,
+    messageKey,
+}: WireSubmitFailure): Error => {
+    const error = messageKey
+        ? new AppError(message, {
+              category: ErrorCategory.CONNECTIONS,
+              messageKey,
+          })
+        : new Error(message)
+    error.name = name
+    return error
+}
+
+export type WireSignedSendOutcome =
+    | { ok: true; txId: string }
+    | ({ ok: false } & WireSubmitFailure)
+
+export const isWireSignedSendOutcome = (
+    value: unknown,
+): value is WireSignedSendOutcome => {
+    if (!isRecord(value)) return false
+    if (value.ok === true) return typeof value.txId === 'string'
+    return (
+        value.ok === false &&
+        typeof value.name === 'string' &&
+        typeof value.message === 'string' &&
+        isOptionalString(value.messageKey)
+    )
+}
 
 export type ConnectionsControlMessage = {
     scope: typeof CONNECTIONS_CONTROL_SCOPE
@@ -250,13 +379,27 @@ export type ConnectionsControlMessage = {
     | { kind: 'reconnect-all' }
     | { kind: 'approve-proposal'; proposalId: string; accounts: string[] }
     | { kind: 'reject-proposal'; proposalId: string; reason?: string }
+    /** Broadcast a send the approval surface signed, and answer its request. */
+    | {
+          kind: 'submit-send'
+          connectionId: string
+          correlationId: string
+          signedTransactions: WireSignedTransaction[]
+      }
     | {
           kind: 'respond'
           connectionId: string
           correlationId: string
           outcome:
               | { ok: true; result: WireWalletOperationResult }
-              | { ok: false; message: string }
+              | {
+                    ok: false
+                    /** Reaches the dApp; never wallet-private. */
+                    message: string
+                    isUserRejection?: boolean
+                    /** Mapped to the dApp's wire code; absent answers a generic internal error. A decline is `isUserRejection`, never this. */
+                    failure?: Exclude<DappRequestFailure, 'user-rejected'>
+                }
       }
 )
 
@@ -271,6 +414,7 @@ export type ConnectionsControlResultByKind = {
     'approve-proposal': { connection: Connection }
     'reject-proposal': void
     respond: void
+    'submit-send': { txIds: string[] } | { failure: WireSubmitFailure }
 }
 
 export type ConnectionsControlResult<K extends ConnectionsControlKind> =
@@ -296,7 +440,15 @@ const isRespondOutcome = (
 >['outcome'] => {
     if (!isRecord(value)) return false
     if (value.ok === true) return isWireWalletOperationResult(value.result)
-    return value.ok === false && typeof value.message === 'string'
+    return (
+        value.ok === false &&
+        typeof value.message === 'string' &&
+        (value.isUserRejection === undefined ||
+            typeof value.isUserRejection === 'boolean') &&
+        (value.failure === undefined ||
+            (value.failure !== 'user-rejected' &&
+                DAPP_REQUEST_FAILURES.some(known => known === value.failure)))
+    )
 }
 
 export const isConnectionsControlMessage = (
@@ -339,6 +491,13 @@ export const isConnectionsControlMessage = (
                 typeof value.connectionId === 'string' &&
                 typeof value.correlationId === 'string' &&
                 isRespondOutcome(value.outcome)
+            )
+        }
+        case 'submit-send': {
+            return (
+                typeof value.connectionId === 'string' &&
+                typeof value.correlationId === 'string' &&
+                isWireSignedTransactions(value.signedTransactions)
             )
         }
         default: {

@@ -12,7 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
-import { ChainIcon } from '@modules/chain-ui/icon'
+import { ChainIcon } from '../ChainIcon'
 import { useChainIconStack } from './useChainIconStack'
 import { CHAIN_ICON_SIZE, useStyles } from './styles'
 
