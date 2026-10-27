@@ -85,6 +85,15 @@ const CASES: Case[] = [
         localStep: OnboardingStep.Verification,
         step: OnboardingStep.Verification,
     },
+    // Another device: KYC only starts once every form is in.
+    {
+        label: 'mailing phase for a US resident on another device after KYC',
+        phase: OnboardingPhase.MailingAddress,
+        countryIso: 'US',
+        verificationState: VerificationState.Pending,
+        localStep: OnboardingStep.EmailSend,
+        step: OnboardingStep.Verification,
+    },
     // For anyone outside the US it means every form is in.
     {
         label: 'mailing phase outside the US',

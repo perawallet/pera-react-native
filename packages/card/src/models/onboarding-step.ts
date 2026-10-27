@@ -93,9 +93,12 @@ export const resolveOnboardingStep = (
             return OnboardingStep.Address
         }
         case OnboardingPhase.MailingAddress: {
+            // KYC only starts once every form is in, which covers a device
+            // that never saw this onboarding's mailing step.
             const isMailingSubmitted =
                 input.localStep === OnboardingStep.Verification ||
-                input.localStep === OnboardingStep.Completed
+                input.localStep === OnboardingStep.Completed ||
+                isKycSubmitted(input.verificationState)
             return input.countryIso === US_ISO && !isMailingSubmitted
                 ? OnboardingStep.MailingAddress
                 : OnboardingStep.Verification
