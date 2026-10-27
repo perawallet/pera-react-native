@@ -38,18 +38,35 @@ final class FormattingTests: XCTestCase {
     }
 }
 
-final class RelativeTimeTests: XCTestCase {
-    private let now = Date(timeIntervalSince1970: 10_000)
+final class UpdatedTimeTests: XCTestCase {
+    private let utc = TimeZone(identifier: "UTC")!
+    // 2026-10-27 14:05:00 UTC.
+    private let updated = Date(timeIntervalSince1970: 1_793_109_900)
 
-    func testReadsAsNowUnderAMinute() {
-        XCTAssertEqual(RelativeTime.shownDate(for: now.addingTimeInterval(-59), now: now), now)
+    private func text(now: Date, locale: String) -> String {
+        UpdatedTime.text(for: updated, now: now, locale: Locale(identifier: locale), timeZone: utc)
     }
 
-    func testFloorsToWholeMinutes() {
-        XCTAssertEqual(RelativeTime.shownDate(for: now.addingTimeInterval(-150), now: now), now.addingTimeInterval(-120))
+    func testShowsOnlyTheTimeTheSameDay() {
+        XCTAssertEqual(text(now: updated.addingTimeInterval(3 * 3600), locale: "en_GB"), "14:05")
     }
 
-    func testReadsAFutureDateAsNow() {
-        XCTAssertEqual(RelativeTime.shownDate(for: now.addingTimeInterval(30), now: now), now)
+    func testFollowsTheLanguagesClock() {
+        let now = updated.addingTimeInterval(60)
+
+        XCTAssertEqual(text(now: now, locale: "en_US").replacingOccurrences(of: "\u{202F}", with: " "), "2:05 PM")
+        XCTAssertEqual(text(now: now, locale: "de_DE"), "14:05")
+    }
+
+    func testAddsTheDayOnceItIsNoLongerToday() {
+        let shown = text(now: updated.addingTimeInterval(12 * 3600), locale: "en_GB")
+
+        XCTAssertTrue(shown.contains("27"), shown)
+        XCTAssertTrue(shown.contains("Oct"), shown)
+        XCTAssertTrue(shown.contains("14:05"), shown)
+    }
+
+    func testNeverShowsATimeAheadOfThePhonesClock() {
+        XCTAssertEqual(text(now: updated.addingTimeInterval(-120), locale: "en_GB"), "14:03")
     }
 }

@@ -163,9 +163,9 @@ Widgets render in the app's language, which can differ from the device's.
 
 App-pushed snapshots go stale whenever the app is not opened, and iOS suspends the app's JavaScript
 seconds after it is backgrounded, so the price and portfolio widgets fetch for themselves every 30
-minutes. Their timelines also carry one entry per minute until the next fetch, so "Updated 5 min ago"
-advances by the minute without spending the reload budget; iOS's live relative text counts seconds
-and cannot be slowed.
+minutes. "Updated" shows the data's clock time ("Updated 14:05", plus the day once not today), as
+the Watch and Android do: Android can't cheaply redraw a relative age every minute. Timelines keep
+one entry per minute until the next fetch, so row ages ("6 hr. ago") and the day still advance.
 
 ### Price
 

@@ -115,9 +115,8 @@ extension WidgetSnapshot {
     static var current: WidgetSnapshot? { SnapshotStore.load() }
 }
 
-/// "Updated 5 min ago" in the app's language, stepping once a minute: the
-/// view is re-rendered from one timeline entry per minute (see minuteEntries),
-/// since iOS's live relative text counts seconds and can't be slowed down.
+/// "Updated 14:05" in the app's language. Re-rendered from the minute entries
+/// (see minuteEntries), so the day appears once the data is from before midnight.
 struct UpdatedLabel: View {
     let prefix: String?
     let date: Date
@@ -126,22 +125,14 @@ struct UpdatedLabel: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        Text([prefix, relative].compactMap { $0 }.joined(separator: " "))
+        Text([prefix, UpdatedTime.text(for: date, now: now, locale: locale)].compactMap { $0 }.joined(separator: " "))
             .font(PeraFont.regular(10))
             .foregroundStyle(PeraColor.textGray)
             .lineLimit(1)
     }
-
-    private var relative: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = locale
-        formatter.unitsStyle = .short
-        formatter.dateTimeStyle = .named
-        return formatter.localizedString(for: RelativeTime.shownDate(for: date, now: now), relativeTo: now)
-    }
 }
 
-/// One entry per minute from now until `end`, so minute-step labels advance
+/// One entry per minute from now until `end`, so the rows' "5 min ago" ages advance
 /// between refreshes without spending the reload budget.
 func minuteEntries<Entry: TimelineEntry>(until end: Date, _ make: (Date) -> Entry) -> [Entry] {
     stride(from: Date.now.timeIntervalSinceReferenceDate, to: end.timeIntervalSinceReferenceDate, by: 60)
