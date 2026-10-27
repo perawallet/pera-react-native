@@ -80,6 +80,8 @@ const asSuspicious = (asset: PeraAsset): PeraAsset => ({
         isDeleted: false,
         ...asset.peraMetadata,
         verificationTier: PeraAssetVerificationTier.suspicious,
+        // The backend never groups a suspicious token.
+        crossChainAssetGroup: null,
     },
 })
 
@@ -156,6 +158,7 @@ const syncAssets =
             assetIds: tokenIds,
             scope,
             ttlMs: ASSET_CACHE_TTL_MS,
+            recheckUnreadGroup: true,
         })
         if (stale.length === 0) return
 

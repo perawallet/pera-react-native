@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import {
     fetchAssets,
+    fetchCrossChainAssetGroups,
     fetchAssetDetails,
     fetchPublicAssetDetails,
     fetchIndexerAssetDetails,
@@ -62,6 +63,62 @@ const validAssetsResponse = {
 describe('assets endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
+    })
+
+    describe('fetchCrossChainAssetGroups', () => {
+        const MAINNET = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+        const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+        test("posts each id as the network's CAIP-19 and answers the groups in request order", async () => {
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            asset_id: `${MAINNET}/asa:31566704`,
+                            cross_chain_asset_group: USDC_GROUP,
+                            name: 'USDC',
+                        },
+                        {
+                            asset_id: `${MAINNET}/asa:7`,
+                            cross_chain_asset_group: null,
+                        },
+                    ],
+                },
+            })
+
+            const groups = await fetchCrossChainAssetGroups(
+                ['31566704', '7'],
+                'mainnet',
+            )
+
+            expect(queryClientMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'POST',
+                    url: '/api/v4/assets/',
+                    data: {
+                        ids: [`${MAINNET}/asa:31566704`, `${MAINNET}/asa:7`],
+                    },
+                }),
+            )
+            expect(groups).toEqual([USDC_GROUP, null])
+        })
+
+        test('rejects an answer that does not line up with the request', async () => {
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            asset_id: `${MAINNET}/asa:7`,
+                            cross_chain_asset_group: USDC_GROUP,
+                        },
+                    ],
+                },
+            })
+
+            await expect(
+                fetchCrossChainAssetGroups(['31566704'], 'mainnet'),
+            ).rejects.toThrow()
+        })
     })
 
     test('fetchAssets calls /v1/assets/ with comma-joined asset_ids and include_deleted', async () => {

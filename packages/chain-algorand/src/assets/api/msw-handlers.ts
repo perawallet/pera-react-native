@@ -99,3 +99,33 @@ export const mockIndexerAssetDetails = ({
         HttpResponse.json(response, { status }),
     )
 }
+
+export type MockCrossChainAssetGroupsParams = {
+    /** Each grouped ASA's group, by ASA id; any other id answers null. */
+    groups?: Record<string, { id: string; name: string; symbol: string }>
+    status?: number
+}
+
+/**
+ * The v4 asset item, read only for its group. Answers a request naming
+ * Algorand ids alone and falls through otherwise, so an EVM handler on the
+ * same path still sees its own.
+ */
+export const mockCrossChainAssetGroups = ({
+    groups = {},
+    status = 200,
+}: MockCrossChainAssetGroupsParams = {}): HttpHandler =>
+    http.post('*/api/v4/assets/', async ({ request }) => {
+        const { ids } = (await request.clone().json()) as { ids: string[] }
+        if (!ids.every(id => id.startsWith('algorand:'))) return undefined
+        return HttpResponse.json(
+            {
+                results: ids.map(id => ({
+                    asset_id: id,
+                    cross_chain_asset_group:
+                        groups[id.slice(id.lastIndexOf(':') + 1)] ?? null,
+                })),
+            },
+            { status },
+        )
+    })

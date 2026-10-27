@@ -388,6 +388,65 @@ describe('asset sync queries', () => {
         })
     })
 
+    describe('getStaleOrMissingAssetIds — unread group recheck', () => {
+        const seed = (type: PeraAssetType = 'standard_asset') =>
+            upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            type,
+                        },
+                    }),
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+        // A row cached before assets carried their group.
+        const forgetGroup = () =>
+            db.run(
+                sql`update assets_pera set pera_metadata_json = json_remove(pera_metadata_json, '$.crossChainAssetGroup')`,
+            )
+
+        const recheck = (recheckUnreadGroup = true) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+                ttlMs: 60_000,
+                recheckUnreadGroup,
+            })
+
+        it('rechecks a fresh token no sync has read the group of', async () => {
+            await seed()
+            await forgetGroup()
+
+            expect(await recheck()).toEqual(['31566704'])
+        })
+
+        it('leaves a token whose group was read, even as none', async () => {
+            await seed()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves collectibles alone', async () => {
+            await seed('collectible')
+            await forgetGroup()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seed()
+            await forgetGroup()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
     describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
         // ARC19 media is mutable: the manager's acfg re-points the reserve
         // address at a new CID and the backend re-crawls, but only a re-fetch

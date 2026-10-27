@@ -72,6 +72,7 @@ const toPeraAsset = (
                   verificationTier: item.verification_tier,
                   logo: item.logo,
                   type: PeraAssetType.standard_asset,
+                  crossChainAssetGroup: item.cross_chain_asset_group,
               },
           }
 

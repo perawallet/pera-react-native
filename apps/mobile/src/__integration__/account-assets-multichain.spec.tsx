@@ -27,7 +27,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockAssetGroups } from '@perawallet/wallet-core-assets/test-handlers'
+import { mockCrossChainAssetGroups } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -112,7 +112,11 @@ describe("Flow: One account's assets across chains", () => {
         await resetTestDatabase()
         useRemoteConfigStore.getState().resetState()
         resetListView()
-        server.use(mockAssetGroups({ response: { results: [USDC_GROUP] } }))
+        server.use(
+            mockCrossChainAssetGroups({
+                groups: { [USDC_TEST_ASSET.assetId]: USDC_GROUP },
+            }),
+        )
         await seedHoldings()
     })
 

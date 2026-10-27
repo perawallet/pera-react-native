@@ -12,6 +12,7 @@
 
 import {
     fetchAssets,
+    fetchCrossChainAssetGroups,
     fetchIndexerAssetDetails,
     transformAssetResponse,
     transformIndexerAssetResponse,
@@ -59,12 +60,29 @@ const persistFromPeraBackend = async (
     scope: ChainScope,
     deviceId: Nullable<string>,
 ): Promise<void> => {
-    const response = await fetchAssets(
-        batch,
-        algorandNetworkOf(scope),
-        deviceId,
+    const network = algorandNetworkOf(scope)
+    // Only the v4 item carries the group, and it lacks fields Django's has, so
+    // a batch reads both until v4 carries them.
+    const [response, groups] = await Promise.all([
+        fetchAssets(batch, network, deviceId),
+        // A failed read leaves each stored group as it was.
+        fetchCrossChainAssetGroups(batch, network).catch(() => null),
+    ])
+    const groupOf = new Map(
+        groups?.map((group, index) => [batch[index], group]) ?? [],
     )
-    const assets = response.results.map(transformAssetResponse)
+    const assets = response.results.map(item => {
+        const asset = transformAssetResponse(item)
+        return asset.peraMetadata && groupOf.has(asset.assetId)
+            ? {
+                  ...asset,
+                  peraMetadata: {
+                      ...asset.peraMetadata,
+                      crossChainAssetGroup: groupOf.get(asset.assetId),
+                  },
+              }
+            : asset
+    })
     await upsertAssets({ items: assets, scope })
 }
 
@@ -178,6 +196,7 @@ export async function fetchAndPersistAssets(
             hasCollectibleShape: hasAlgorandNftShape,
         },
         recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
+        recheckUnreadGroup: true,
     })
     if (toFetch.length === 0) return
 

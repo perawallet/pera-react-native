@@ -24,7 +24,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { View } from 'react-native'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { mockAssetGroups } from '@perawallet/wallet-core-assets/test-handlers'
+import { mockCrossChainAssetGroups } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -41,6 +41,7 @@ import {
     TWO_CHAIN_ACCOUNT,
     USDC_GROUP,
 } from './__fixtures__/multichainHoldings'
+import { USDC_TEST_ASSET } from './__fixtures__/assets'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -70,7 +71,11 @@ describe('Flow: One asset held on two chains, picked per network', () => {
         await resetTestDatabase()
         useRemoteConfigStore.getState().resetState()
         useSendFundsStore.getState().reset()
-        server.use(mockAssetGroups({ response: { results: [USDC_GROUP] } }))
+        server.use(
+            mockCrossChainAssetGroups({
+                groups: { [USDC_TEST_ASSET.assetId]: USDC_GROUP },
+            }),
+        )
         await seedHoldings()
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(TWO_CHAIN_ACCOUNT.id)

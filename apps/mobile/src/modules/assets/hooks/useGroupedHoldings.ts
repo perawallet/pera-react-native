@@ -11,7 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { useAssetGroupsQuery } from '@perawallet/wallet-core-assets'
 import {
     buildGroupedHoldingItems,
     type GroupableHolding,
@@ -23,7 +22,7 @@ export type UseGroupedHoldingsParams<T extends GroupableHolding> = {
     holdings: T[]
     adapter: GroupableHoldingAdapter<T>
     expandedGroupIds: ReadonlySet<string>
-    /** Off where nothing could fold, so the groups request isn't sent. */
+    /** Off where nothing could fold, so no holding is asked for its group. */
     isEnabled: boolean
 }
 
@@ -31,26 +30,26 @@ export type UseGroupedHoldingsResult<T> = {
     items: GroupedHoldingItem<T>[]
 }
 
-const NO_GROUPS: never[] = []
-
 export const useGroupedHoldings = <T extends GroupableHolding>({
     holdings,
     adapter,
     expandedGroupIds,
     isEnabled,
 }: UseGroupedHoldingsParams<T>): UseGroupedHoldingsResult<T> => {
-    const { groups } = useAssetGroupsQuery({ enabled: isEnabled })
-    const effectiveGroups = isEnabled ? groups : NO_GROUPS
-
     const items = useMemo(
         () =>
-            buildGroupedHoldingItems({
-                holdings,
-                groups: effectiveGroups,
-                expandedGroupIds,
-                adapter,
-            }),
-        [holdings, effectiveGroups, expandedGroupIds, adapter],
+            isEnabled
+                ? buildGroupedHoldingItems({
+                      holdings,
+                      expandedGroupIds,
+                      adapter,
+                  })
+                : holdings.map(holding => ({
+                      kind: 'holding' as const,
+                      holding,
+                      isGroupMember: false,
+                  })),
+        [holdings, expandedGroupIds, adapter, isEnabled],
     )
 
     return { items }
