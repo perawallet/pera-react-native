@@ -1268,36 +1268,21 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../packages/accounts
-      '@perawallet/wallet-core-assets':
-        specifier: workspace:*
-        version: link:../packages/assets
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../packages/chain-contract
       '@perawallet/wallet-core-chain-ethereum':
         specifier: workspace:*
         version: link:../packages/chain-ethereum
-      '@perawallet/wallet-core-chain-shared':
-        specifier: workspace:*
-        version: link:../packages/chain-shared
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../packages/config
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../packages/database
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../packages/kms
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../packages/shared
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../packages/signing
-      '@perawallet/wallet-core-transactions':
-        specifier: workspace:*
-        version: link:../packages/transactions
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../extensions/provider

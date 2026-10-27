@@ -39,6 +39,9 @@
             "@perawallet/wallet-core-signing/*": ["../packages/signing/src/*"],
             "@perawallet/wallet-core-shared": ["../packages/shared/src"],
             "@perawallet/wallet-core-shared/*": ["../packages/shared/src/*"],
+            "@perawallet/wallet-extension-provider/keystore/shims/secp256k1": [
+                "../extensions/provider/src/keystore/shims/secp256k1/index.ts"
+            ],
             "@perawallet/wallet-core-transactions": [
                 "../packages/transactions/src"
             ],

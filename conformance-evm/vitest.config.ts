@@ -31,6 +31,16 @@ export default defineConfig({
             pkg('wallet-core-signing', 'signing'),
             pkg('wallet-core-shared', 'shared'),
             pkg('wallet-core-transactions', 'transactions'),
+            // Before the provider entry below, which would otherwise claim this
+            // subpath. The package exports no subpaths; this shim is the one the
+            // provider's keystore signs secp256k1 with.
+            [
+                '@perawallet/wallet-extension-provider/keystore/shims/secp256k1',
+                resolve(
+                    import.meta.dirname,
+                    '../extensions/provider/src/keystore/shims/secp256k1/index.ts',
+                ),
+            ],
             // Without it, `environment: 'node'` externalizes this bare specifier to
             // the built provider, whose react-native-mmkv import Node cannot load,
             // and an externalized module bypasses vitest.setup.ts's vi.mock.
