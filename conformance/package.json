@@ -3,6 +3,10 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
+    "exports": {
+        "./harness/keystore": "./src/harness/keystore.ts",
+        "./harness/assert/diff": "./src/harness/assert/diff.ts"
+    },
     "scripts": {
         "test:conformance": "vitest run",
         "test:conformance:watch": "vitest",

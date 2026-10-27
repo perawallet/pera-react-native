@@ -74,4 +74,8 @@ export const TEST_PATHS: ExemptPath[] = [
         glob: '**/conformance/src/**',
         reason: 'conformance harness: runs the real chain code against LocalNet, never bundled',
     },
+    {
+        glob: '**/conformance-evm/src/**',
+        reason: 'EVM conformance harness: runs the real chain code against Anvil, never bundled',
+    },
 ]
