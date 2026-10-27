@@ -29,6 +29,7 @@ import {
     getSubmissionAttemptsByTxIds,
     getTransactionBatch,
     recordTransactionBatch,
+    REVIEW_APPROVAL_TTL_MS,
     retireReviewApproval,
     signTransactionsInBackground,
     updateTransactionBatch,
@@ -360,6 +361,13 @@ const run = async (
         const txId = current.txIds[position]
 
         if (txId === undefined) {
+            // Checked here, not left to the signing pipeline: it reads the
+            // approval only for calls the chain won't auto-approve, so a
+            // transfer would otherwise sign on an approval of any age.
+            if (Date.now() - batch.createdAt > REVIEW_APPROVAL_TTL_MS) {
+                await save(reached, position, 'failed')
+                break
+            }
             await whenUnlocked()
             let unsigned: UnsignedTransaction
             let signed: SignedTransaction

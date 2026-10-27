@@ -19,7 +19,11 @@ import {
 } from '../../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
-import { callsStatusCodeOf, readEthereumCallsStatus } from '../status'
+import {
+    callsStatusCodeOf,
+    reachedCallTxIdOf,
+    readEthereumCallsStatus,
+} from '../status'
 import { SENDER, server } from './harness'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -37,6 +41,26 @@ describe('callsStatusCodeOf', () => {
         ['failed', 1, 600],
     ] as const)('reads %s at position %i as %i', (outcome, position, code) => {
         expect(callsStatusCodeOf({ outcome, position })).toBe(code)
+    })
+})
+
+describe('reachedCallTxIdOf', () => {
+    it.each([
+        [
+            'a batch that reverted at its third call',
+            ['0x1', '0x2', '0x3'],
+            2,
+            '0x3',
+        ],
+        [
+            'a batch that failed before signing its third call',
+            ['0x1', '0x2'],
+            2,
+            '0x2',
+        ],
+        ['a batch with nothing sent', [], 0, undefined],
+    ])('shows the reached call of %s', (_, txIds, position, txId) => {
+        expect(reachedCallTxIdOf({ txIds, position })).toBe(txId)
     })
 })
 

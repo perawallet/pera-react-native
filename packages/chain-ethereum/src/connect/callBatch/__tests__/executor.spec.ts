@@ -20,7 +20,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { bytesToHex, keccak256, type Hex } from 'viem'
+import {
+    bytesToHex,
+    encodeFunctionData,
+    erc20Abi,
+    keccak256,
+    type Hex,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     findTransactionBatch,
@@ -28,6 +34,7 @@ import {
     recordTransactionBatch,
     resolveSubmissionAttempt,
     retireReviewApproval,
+    REVIEW_APPROVAL_TTL_MS,
     updateTransactionBatch,
     type TransactionBatch,
 } from '@perawallet/wallet-core-signing'
@@ -532,6 +539,49 @@ describe('call batch execution', () => {
 
             expect(batch).toMatchObject({ outcome: 'confirmed' })
             expect(node.sentCount()).toBe(2)
+        })
+
+        it('Given a batch approved more than a day ago with a token transfer still to run, when it resumes, then it fails there and the transfer is never signed', async () => {
+            const node = fakeNode()
+            const signTransaction = vi.fn(signAsSender)
+            const transfer = {
+                to: TOKEN,
+                value: '0',
+                data: encodeFunctionData({
+                    abi: erc20Abi,
+                    functionName: 'transfer',
+                    args: [ROUTER, 1_000_000n],
+                }),
+            }
+            const approvedAt = Date.now() - REVIEW_APPROVAL_TTL_MS - 1
+            vi.spyOn(Date, 'now').mockReturnValueOnce(approvedAt)
+            const recorded = await recordTransactionBatch({
+                scope: MAINNET,
+                sender: SENDER,
+                batchId: 'batch-1',
+                approvalToken: APPROVAL.token,
+                payload: { ...PAYLOAD, calls: [PAYLOAD.calls[0], transfer] },
+                txIds: [`0x${'aa'.repeat(32)}`],
+            })
+            await updateTransactionBatch({
+                id: recorded.id,
+                txIds: recorded.txIds,
+                signedRaw: null,
+                position: 1,
+                outcome: 'running',
+            })
+
+            await resumeEthereumCallBatches(ctx, ETHEREUM, {
+                ...deps,
+                signTransaction,
+            })
+
+            expect(await readBatch()).toMatchObject({
+                outcome: 'failed',
+                position: 1,
+            })
+            expect(signTransaction).not.toHaveBeenCalled()
+            expect(node.sentCount()).toBe(0)
         })
     })
 })

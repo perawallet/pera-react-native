@@ -59,6 +59,16 @@ export const callsStatusCodeOf = ({
 }
 
 /**
+ * The call the batch reached, whose outcome the status reports; a batch that
+ * failed before signing its next call has no hash there, so the last one sent.
+ */
+export const reachedCallTxIdOf = ({
+    txIds,
+    position,
+}: Pick<TransactionBatch, 'txIds' | 'position'>): string | undefined =>
+    txIds[position] ?? txIds.at(-1)
+
+/**
  * Every network of the chain, or the ones asked about. Atomic execution would
  * need an EIP-7702 delegation to a smart account, which the wallet never signs.
  */

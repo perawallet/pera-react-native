@@ -27,7 +27,7 @@ import {
     type EthereumCallBatchRequest,
 } from './callBatch/params'
 import { prepareEthereumCallBatch } from './callBatch/prepare'
-import { findEthereumCallBatch } from './callBatch/status'
+import { findEthereumCallBatch, reachedCallTxIdOf } from './callBatch/status'
 import { createEvmWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
@@ -121,7 +121,7 @@ export const createEthereumDappRequestAdapter = (
                 batchId,
                 authorizedAccounts,
             )
-            const [txId] = batch.txIds
+            const txId = reachedCallTxIdOf(batch)
             return txId === undefined ? null : { scope: batch.scope, txId }
         },
     },
