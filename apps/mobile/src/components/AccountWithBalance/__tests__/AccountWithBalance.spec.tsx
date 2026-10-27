@@ -124,9 +124,7 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(
-            within(screen.getByTestId('account_display')).getByText(
-                'Algorand',
-            ),
+            within(screen.getByTestId('account_display')).getByText('Algorand'),
         ).toBeTruthy()
     })
 
