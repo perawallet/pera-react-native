@@ -19,11 +19,13 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
     ANVIL_DEV_MNEMONIC_VECTOR,
     EIP155_SIGNING_VECTOR,
+    EIP712_MAIL_VECTOR,
     EIP55_VECTORS,
 } from '../../vectors/knownAnswerVectors'
 import {
     castAddressFromMnemonic,
     castAddressFromPrivateKey,
+    castChecksumAddress,
     castDecodeTransaction,
     castMktx,
     castPrivateKeyFromMnemonic,
@@ -70,8 +72,30 @@ describe('cast oracle', () => {
         expect(await castAddressFromPrivateKey(key)).toBe(V.addresses[1])
     })
 
-    it.each(EIP55_VECTORS)('checksums %s as published in EIP-55', vector => {
-        expect(getAddress(vector.toLowerCase())).toBe(vector)
+    it.each(EIP55_VECTORS)(
+        'cast checksums %s as published in EIP-55',
+        async vector => {
+            expect(await castChecksumAddress(vector.toLowerCase())).toBe(vector)
+        },
+    )
+
+    it.each(EIP55_VECTORS)(
+        'viem agrees with the EIP-55 vector %s (cross-check only, not the oracle)',
+        vector => {
+            expect(getAddress(vector.toLowerCase())).toBe(vector)
+        },
+    )
+
+    it('signs the EIP-712 Mail example to the published v, r and s', async () => {
+        const v = EIP712_MAIL_VECTOR
+
+        const signature = await castSignTypedData({
+            privateKey: v.privateKey,
+            typedData: v.typedData,
+        })
+
+        expect(await castAddressFromPrivateKey(v.privateKey)).toBe(v.address)
+        expect(signature).toBe(`${v.r}${v.s.slice(2)}${v.v.toString(16)}`)
     })
 
     it('reproduces the signed legacy transaction published in EIP-155', async () => {
@@ -85,7 +109,6 @@ describe('cast oracle', () => {
             value: v.value,
             gas: v.gas,
             maxFeePerGas: v.gasPrice,
-            maxPriorityFeePerGas: v.gasPrice,
             legacy: true,
         })
 

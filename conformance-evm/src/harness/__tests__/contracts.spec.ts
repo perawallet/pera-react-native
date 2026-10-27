@@ -18,7 +18,7 @@ import {
     MULTICALL3_CODEHASH,
     MULTICALL3_RUNTIME_BYTECODE,
 } from '../../vectors/multicall3'
-import { castCall } from '../cast'
+import { ANVIL_DEV_PRIVATE_KEY, castCall, castSend } from '../cast'
 import { deployContract, installMulticall3, loadArtifact } from '../contracts'
 import { anvilRpc, assertEvmnetReachable } from '../evmnet'
 
@@ -104,6 +104,20 @@ describe('contract helpers', () => {
                     sig: 'revertWithReason()',
                 }),
             ).rejects.toThrow('conformance: reason')
+        })
+
+        it('rejects castSend when the mined transaction reverts', async () => {
+            const reverter = await deployContract('ethereum', 'Reverter')
+
+            await expect(
+                castSend({
+                    chain: 'ethereum',
+                    privateKey: ANVIL_DEV_PRIVATE_KEY,
+                    to: reverter,
+                    sig: 'revertBare()',
+                    gasLimit: 100_000n,
+                }),
+            ).rejects.toThrow(/failed|revert/i)
         })
 
         it('deploys TestNft721 advertising ERC-721 through ERC-165', async () => {

@@ -29,6 +29,7 @@ export const ANVIL_DEV_PRIVATE_KEY: Hex =
 // Oracle-only commands never touch a node, so any container will do.
 const ORACLE_CONTAINER = EVMNET.ethereum.container
 
+// execFile errors embed argv, so only Anvil dev keys and throwaway test keys may ever be passed.
 const docker = async (container: string, args: string[]): Promise<string> => {
     const { stdout } = await run(
         'docker',
@@ -94,7 +95,7 @@ type MktxInput = {
     gas: bigint
     /** Max fee per gas for EIP-1559, the gas price for legacy. */
     maxFeePerGas: bigint
-    maxPriorityFeePerGas: bigint
+    maxPriorityFeePerGas?: bigint
     legacy?: boolean
 } & ({ chain: EvmnetChain } | { chainId: number })
 
@@ -123,6 +124,9 @@ export const castMktx = async (input: MktxInput): Promise<Hex> => {
     if (input.legacy) {
         args.push('--legacy')
     } else {
+        if (input.maxPriorityFeePerGas === undefined) {
+            throw new Error('maxPriorityFeePerGas is required unless legacy')
+        }
         args.push('--priority-gas-price', input.maxPriorityFeePerGas.toString())
     }
     // A 0x-prefixed SIG is treated by cast as raw calldata.
@@ -163,8 +167,15 @@ export const castVerifyMessage = async (input: {
             input.signature,
         ])
         return true
-    } catch {
-        return false
+    } catch (error) {
+        const stderr = (error as { stderr?: unknown }).stderr
+        if (
+            typeof stderr === 'string' &&
+            stderr.includes('did not sign this message')
+        ) {
+            return false
+        }
+        throw error
     }
 }
 
@@ -189,7 +200,11 @@ export const castDecodeTransaction = async (
         unknown
     >
 
-type Receipt = { transactionHash: Hex; contractAddress: Address | null }
+type Receipt = {
+    status: Hex
+    transactionHash: Hex
+    contractAddress: Address | null
+}
 
 export const castSend = async (input: {
     chain: EvmnetChain
@@ -197,6 +212,8 @@ export const castSend = async (input: {
     to?: Address
     create?: Hex
     value?: bigint
+    /** Passing this bypasses cast's gas estimation, so a reverting call is mined and fails on its receipt. */
+    gasLimit?: bigint
     sig?: string
     args?: readonly string[]
 }): Promise<{ hash: Hex; contractAddress?: Address }> => {
@@ -211,17 +228,29 @@ export const castSend = async (input: {
     if (input.value !== undefined) {
         args.push('--value', input.value.toString())
     }
+    if (input.gasLimit !== undefined) {
+        args.push('--gas-limit', input.gasLimit.toString())
+    }
     if (input.create !== undefined) {
         args.push('--create', input.create)
-    } else if (input.to !== undefined) {
-        args.push('--', input.to)
     }
-    if (input.sig !== undefined) {
-        args.push(input.sig, ...(input.args ?? []))
+    const positionals = [
+        ...(input.create === undefined && input.to !== undefined
+            ? [input.to]
+            : []),
+        ...(input.sig !== undefined ? [input.sig, ...(input.args ?? [])] : []),
+    ]
+    if (positionals.length > 0) {
+        args.push('--', ...positionals)
     }
     const receipt = JSON.parse(
         await docker(EVMNET[input.chain].container, args),
     ) as Receipt
+    if (receipt.status !== '0x1') {
+        throw new Error(
+            `transaction ${receipt.transactionHash} on ${input.chain} failed with status ${receipt.status}`,
+        )
+    }
     return {
         hash: receipt.transactionHash,
         ...(receipt.contractAddress
@@ -241,6 +270,7 @@ export const castCall = (input: {
         'call',
         '--rpc-url',
         CONTAINER_RPC_URL,
+        '--',
         input.to,
         input.sig,
         ...(input.args ?? []),
@@ -259,3 +289,6 @@ export const fundFromDev = async (
             value: wei,
         })
     ).hash
+
+export const castChecksumAddress = async (address: string): Promise<Address> =>
+    (await oracle(['to-check-sum-address', address])) as Address

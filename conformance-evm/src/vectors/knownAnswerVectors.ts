@@ -66,3 +66,53 @@ export const EIP155_SIGNING_VECTOR = {
     value: bigint
     signedRlp: Hex
 }
+
+// The "Mail" example in the EIP-712 text; values are the asserted constants in
+// its reference implementation (assets/eip-712/Example.js). The key is
+// keccak256("cow"), whose address is 0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826.
+export const EIP712_MAIL_VECTOR = {
+    privateKey:
+        '0xc85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4',
+    address: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+    typedData: {
+        types: {
+            EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' },
+            ],
+            Person: [
+                { name: 'name', type: 'string' },
+                { name: 'wallet', type: 'address' },
+            ],
+            Mail: [
+                { name: 'from', type: 'Person' },
+                { name: 'to', type: 'Person' },
+                { name: 'contents', type: 'string' },
+            ],
+        },
+        primaryType: 'Mail',
+        domain: {
+            name: 'Ether Mail',
+            version: '1',
+            chainId: 1,
+            verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+        },
+        message: {
+            from: {
+                name: 'Cow',
+                wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+            },
+            to: {
+                name: 'Bob',
+                wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
+            },
+            contents: 'Hello, Bob!',
+        },
+    },
+    digest: '0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2',
+    v: 28,
+    r: '0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d',
+    s: '0x07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b91562',
+} as const
