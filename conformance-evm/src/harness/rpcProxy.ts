@@ -74,3 +74,54 @@ export const withMidReadBlock = async (
         },
     }
 }
+
+/**
+ * A JSON-RPC pass-through to a chain's Anvil node that `sever` cuts: every
+ * later request answers HTTP 503 without reaching the node, as when the app
+ * loses the node, or dies, between two calls it was about to make.
+ */
+export const withSeverableRpc = async (
+    chain: EvmnetChain,
+): Promise<{ url: string; sever: () => void; close: () => Promise<void> }> => {
+    let isSevered = false
+    const server = createServer((req, res) => {
+        const chunks: Buffer[] = []
+        req.on('data', (chunk: Buffer) => chunks.push(chunk))
+        req.on('error', () => res.destroy())
+        req.on('end', () => {
+            void (async () => {
+                if (isSevered) {
+                    res.writeHead(503, { 'content-type': 'text/plain' })
+                    res.end('severed')
+                    return
+                }
+                try {
+                    const upstream = await fetch(EVMNET[chain].rpcUrl, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: Buffer.concat(chunks).toString('utf8'),
+                    })
+                    const answer = await upstream.text()
+                    res.writeHead(upstream.status, {
+                        'content-type': 'application/json',
+                    })
+                    res.end(answer)
+                } catch (error) {
+                    res.writeHead(502, { 'content-type': 'text/plain' })
+                    res.end(String(error))
+                }
+            })()
+        })
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    return {
+        url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+        sever: () => {
+            isSevered = true
+        },
+        close: async () => {
+            server.closeAllConnections()
+            await new Promise(resolve => server.close(resolve))
+        },
+    }
+}

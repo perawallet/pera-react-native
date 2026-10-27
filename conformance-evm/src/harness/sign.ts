@@ -14,6 +14,7 @@ import { bytesToHex, type Hex } from 'viem'
 import type {
     MessageRequest,
     Signature,
+    SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { createEvmMessageSignerAdapter } from '@perawallet/wallet-core-chain-ethereum/signing/messages'
@@ -33,13 +34,14 @@ import type { EvmConformanceEnv } from './context'
  * Signs `unsigned` as the signing machine does for a wallet-built send: the
  * chain's reviewer analyses the group (deciding which held addresses sign),
  * then `signPlannedGroups` runs the planner, the keystore and assembly.
- * Returns the exact bytes the app would broadcast.
+ * Returns the signed transaction as the pipeline hands it back, with the id
+ * the app computed.
  */
-export const signTransactionWithApp = async (
+export const signedTransactionWithApp = async (
     env: EvmConformanceEnv,
     account: EvmConformanceAccount,
     unsigned: UnsignedTransaction,
-): Promise<Hex> => {
+): Promise<SignedTransaction> => {
     const allAccounts = [account.walletAccount]
     const group: SignableGroup = {
         data: { type: 'transactions', transactions: [unsigned] },
@@ -64,8 +66,16 @@ export const signTransactionWithApp = async (
         )
     }
     const [signed] = result.signedData.signed
-    return bytesToHex(signed.bytes)
+    return signed
 }
+
+/** {@link signedTransactionWithApp}'s exact bytes, as the app would broadcast them. */
+export const signTransactionWithApp = async (
+    env: EvmConformanceEnv,
+    account: EvmConformanceAccount,
+    unsigned: UnsignedTransaction,
+): Promise<Hex> =>
+    bytesToHex((await signedTransactionWithApp(env, account, unsigned)).bytes)
 
 /**
  * The message signer's own plan, the keystore's signature over each planned

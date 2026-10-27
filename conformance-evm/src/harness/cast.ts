@@ -294,6 +294,30 @@ export const fundFromDev = async (
         })
     ).hash
 
+/** The node's gas estimate for a call, in gas units, asked through cast at the head. */
+export const castEstimate = async (input: {
+    chain: EvmnetChain
+    from: Address
+    to: Address
+    value?: bigint
+    data: Hex
+}): Promise<bigint> =>
+    BigInt(
+        await docker(EVMNET[input.chain].container, [
+            'estimate',
+            '--rpc-url',
+            CONTAINER_RPC_URL,
+            '--from',
+            input.from,
+            ...(input.value === undefined
+                ? []
+                : ['--value', input.value.toString()]),
+            '--',
+            input.to,
+            input.data,
+        ]),
+    )
+
 /** ABI-encodes a call (selector plus arguments) without touching a node. */
 export const castCalldata = async (
     signature: string,
