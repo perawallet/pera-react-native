@@ -72,7 +72,6 @@ export const CardOnboardingStatusScreen = () => {
                         documentsState={documentsState}
                         onRetry={handleRetryStatus}
                         onVerify={handleVerifyIdentity}
-                        onOpenSupport={handleOpenSupport}
                         canTryAgain={canTryAgain}
                         onTryAgain={handleTryAgain}
                         onSignIn={handleSignIn}

@@ -22,7 +22,6 @@ import {
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
@@ -245,7 +244,7 @@ describe('Flow: Card onboarding — identity verification', () => {
         expect(useCardStore.getState().hasPassword).toBe(false)
     })
 
-    it('Given the post-KYC login finds the account not created yet, then the checklist says it is being set up and offers one retry per tap', async () => {
+    it('Given the post-KYC login finds the account not created yet, then the checklist says the account is being set up, with no retry yet', async () => {
         useCardStore.getState().setPassword('Correct-Horse-1234')
         const loginSpy = vi.fn()
         mockStartVerification()
@@ -273,12 +272,14 @@ describe('Flow: Card onboarding — identity verification', () => {
                 'peraCard.setup_status.documents_preparing_body',
             ),
         ).toBeTruthy()
-        // Inside the two-minute spacing the retry is offered but disabled.
-        const tryAgain = await screen.findByTestId(
-            'card-onboarding-status-documents-try-again',
-        )
-        expect(isElementDisabled(tryAgain)).toBe(true)
-        fireEvent.click(tryAgain)
+        expect(
+            screen.getByTestId('card-onboarding-status-pending-label')
+                .textContent,
+        ).toBe('peraCard.setup_status.documents_preparing_label')
+        // Try again only shows once setting up the account runs slow.
+        expect(
+            screen.queryByTestId('card-onboarding-status-documents-try-again'),
+        ).toBeNull()
         expect(loginSpy).toHaveBeenCalledTimes(1)
     })
 

@@ -11,14 +11,8 @@
  */
 
 import React from 'react'
-import { Trans } from 'react-i18next'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
-import {
-    PWButton,
-    PWText,
-    type IconName,
-    type PWIconVariant,
-} from '@components/core'
+import { PWButton, type IconName, type PWIconVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
 import type { DocumentsState } from './documentsState'
@@ -31,44 +25,42 @@ const DOCUMENTS_ROW: Record<
         icon: IconName
         variant: PWIconVariant
         bodyKey: I18nKey
-        showsPendingLabel: boolean
+        /** The small label above the title, for a state that's waiting. */
+        labelKey?: I18nKey
     }
 > = {
     locked: {
         icon: 'pending',
         variant: 'secondary',
         bodyKey: i18nKey('peraCard.setup_status.documents_locked_body'),
-        showsPendingLabel: false,
     },
     unverified: {
         icon: 'pending',
         variant: 'primary',
         bodyKey: i18nKey('peraCard.setup_status.documents_unverified_body'),
-        showsPendingLabel: false,
     },
     pending: {
         icon: 'pending',
         variant: 'warning',
         bodyKey: i18nKey('peraCard.setup_status.documents_pending_body'),
-        showsPendingLabel: true,
+        labelKey: i18nKey('peraCard.setup_status.documents_pending_label'),
     },
     verified: {
         icon: 'check',
         variant: 'positive',
         bodyKey: i18nKey('peraCard.setup_status.documents_verified_body'),
-        showsPendingLabel: false,
     },
     preparing: {
         icon: 'pending',
         variant: 'warning',
         bodyKey: i18nKey('peraCard.setup_status.documents_preparing_body'),
-        showsPendingLabel: true,
+        labelKey: i18nKey('peraCard.setup_status.documents_preparing_label'),
     },
     'preparing-slow': {
         icon: 'pending',
         variant: 'warning',
         bodyKey: i18nKey('peraCard.setup_status.documents_preparing_slow_body'),
-        showsPendingLabel: true,
+        labelKey: i18nKey('peraCard.setup_status.documents_preparing_label'),
     },
     'preparing-stalled': {
         icon: 'info',
@@ -76,37 +68,31 @@ const DOCUMENTS_ROW: Record<
         bodyKey: i18nKey(
             'peraCard.setup_status.documents_preparing_stalled_body',
         ),
-        showsPendingLabel: false,
     },
     'sign-in-required': {
         icon: 'info',
         variant: 'warning',
         bodyKey: i18nKey('peraCard.setup_status.sign_in_to_finish_body'),
-        showsPendingLabel: false,
     },
     'record-missing': {
         icon: 'info',
         variant: 'warning',
         bodyKey: i18nKey('peraCard.setup_status.documents_record_missing_body'),
-        showsPendingLabel: false,
     },
     'account-locked': {
         icon: 'cross',
         variant: 'error',
         bodyKey: i18nKey('peraCard.setup_status.documents_account_locked_body'),
-        showsPendingLabel: false,
     },
     rejected: {
         icon: 'cross',
         variant: 'error',
         bodyKey: i18nKey('peraCard.setup_status.documents_rejected_body'),
-        showsPendingLabel: false,
     },
     error: {
         icon: 'info',
         variant: 'error',
         bodyKey: i18nKey('peraCard.setup_status.documents_error_body'),
-        showsPendingLabel: false,
     },
 }
 
@@ -115,8 +101,7 @@ type DocumentsRowProps = {
     onRetry: () => void
     /** Resumes KYC from the unverified state. */
     onVerify: () => void
-    onOpenSupport: () => void
-    /** Enables the "Try again" login while the account is being set up. */
+    /** Enables the "Try again" login once setting up the account runs slow. */
     canTryAgain: boolean
     onTryAgain: () => void
     onSignIn: () => void
@@ -126,7 +111,6 @@ export const DocumentsRow = ({
     documentsState,
     onRetry,
     onVerify,
-    onOpenSupport,
     canTryAgain,
     onTryAgain,
     onSignIn,
@@ -140,11 +124,7 @@ export const DocumentsRow = ({
             icon={row.icon}
             iconVariant={row.variant}
             isInactive={documentsState === 'locked'}
-            pendingLabel={
-                row.showsPendingLabel
-                    ? t('peraCard.setup_status.documents_pending_label')
-                    : undefined
-            }
+            pendingLabel={row.labelKey ? t(row.labelKey) : undefined}
             title={t('peraCard.setup_status.documents_title')}
             body={t(row.bodyKey)}
             testID='card-onboarding-status-documents'
@@ -158,8 +138,7 @@ export const DocumentsRow = ({
                     testID='card-onboarding-status-documents-verify'
                 />
             ) : null}
-            {documentsState === 'preparing' ||
-            documentsState === 'preparing-slow' ? (
+            {documentsState === 'preparing-slow' ? (
                 <PWButton
                     variant='secondary'
                     title={t('peraCard.setup_status.documents_retry')}
@@ -178,26 +157,6 @@ export const DocumentsRow = ({
                     style={styles.detailsButton}
                     testID='card-onboarding-status-documents-sign-in'
                 />
-            ) : null}
-            {documentsState === 'preparing-slow' ||
-            documentsState === 'preparing-stalled' ||
-            documentsState === 'account-locked' ? (
-                <PWText
-                    variant='footnoteMedium'
-                    weight={400}
-                >
-                    <Trans
-                        i18nKey='peraCard.verification.contact_us'
-                        components={[
-                            <PWText
-                                key='link'
-                                variant='linkPositive'
-                                onPress={onOpenSupport}
-                                testID='card-onboarding-status-documents-contact-link'
-                            />,
-                        ]}
-                    />
-                </PWText>
             ) : null}
             {documentsState === 'error' ? (
                 <PWButton
