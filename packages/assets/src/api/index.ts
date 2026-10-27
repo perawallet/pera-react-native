@@ -10,6 +10,5 @@
  limitations under the License
  */
 
-export * from './prices'
 export * from './settings'
 export * from './groups'

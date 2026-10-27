@@ -164,6 +164,30 @@ describe('Flow: Asset details on its own network', () => {
         ).toBeNull()
     })
 
+    it('Given an Ethereum token, when its tabs render, then both show a chart and neither shows an unavailable notice', async () => {
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
+
+        expect(
+            await screen.findAllByTestId('chain_label_ethereum'),
+        ).toHaveLength(2)
+        expect(screen.getAllByText('chart.one_week.label')).toHaveLength(2)
+        expect(
+            screen.queryByText('common.network_unavailable.title'),
+        ).toBeNull()
+    })
+
+    it('Given an Algorand asset, when its tabs render, then both show a chart', async () => {
+        selectAccount(ALGORAND_ACCOUNT)
+        renderDetails({
+            assetId: USDC_TEST_ASSET.assetId,
+            chainId: 'algorand',
+        })
+
+        expect(await screen.findByTestId('asset_details_screen')).toBeTruthy()
+        expect(screen.getAllByText('chart.one_week.label')).toHaveLength(2)
+    })
+
     it('Given an account on Algorand alone, when an ASA opens, then no network line shows and both tabs remain', async () => {
         selectAccount(ALGORAND_ACCOUNT)
         renderDetails({

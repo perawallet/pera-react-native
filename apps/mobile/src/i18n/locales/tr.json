@@ -915,7 +915,7 @@
         },
         "network_unavailable": {
             "title": "Bu ağda kullanılamıyor",
-            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç.",
+            "body": "Pera hizmetleri bu ağda kullanılamıyor.",
             "generic_body": "Bu özellik şu anda kullanılamıyor."
         },
         "yes": "Evet",

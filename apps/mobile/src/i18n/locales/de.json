@@ -907,7 +907,7 @@
         },
         "network_unavailable": {
             "title": "Auf diesem Netzwerk nicht verfügbar",
-            "body": "Dies erfordert Pera-Services, die auf BetaNet oder benutzerdefinierten Knoten nicht verfügbar sind. Wechsel zu MainNet oder TestNet.",
+            "body": "Pera-Dienste sind in diesem Netzwerk nicht verfügbar.",
             "generic_body": "Diese Funktion ist gerade nicht verfügbar."
         },
         "yes": "Ja",

@@ -135,7 +135,7 @@ describe('usePortfolioView', () => {
         expect(result.current.hasBalanceHistory).toBe(true)
     })
 
-    it('drops the chart once the total counts a chain with no balance history', () => {
+    it('drops the chart once the total counts a chain the chart leaves out', () => {
         registerEthereumChain()
         vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
             {

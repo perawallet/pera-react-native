@@ -20,6 +20,11 @@ import {
     peraEvmHistoryHandlers,
     type PeraEvmHistoryFixtures,
 } from '../history/api/msw-handlers'
+import {
+    balanceHistoryPath,
+    type BalanceHistoryRequest,
+    type BalanceHistoryResponse,
+} from './balance-history'
 import { SHOULD_REFRESH_PATH, type ShouldRefreshResponse } from './endpoints'
 
 export type ShouldRefreshRequest = {
@@ -43,7 +48,26 @@ export type PeraEvmFixtures = PeraEvmAssetFixtures &
             | ((
                   request: ShouldRefreshRequest,
               ) => ShouldRefreshResponse | number)
+        /**
+         * A number is the HTTP status the endpoint fails with. Defaults to a
+         * chain the backend serves no balance history for.
+         */
+        balanceHistory?:
+            | BalanceHistoryResponse
+            | number
+            | ((
+                  request: BalanceHistoryRequest,
+              ) => BalanceHistoryResponse | number)
     }
+
+const notEnabled = () =>
+    HttpResponse.json(
+        {
+            error: 'Balance history is not enabled on this chain',
+            code: 'balance_history_not_enabled',
+        },
+        { status: 422 },
+    )
 
 const quietChain = ({
     last_refreshed_round,
@@ -55,8 +79,26 @@ const quietChain = ({
 /** The Pera backend's EVM endpoints. */
 export const peraEvmHandlers = ({
     blockFollowing = quietChain,
+    balanceHistory,
     ...fixtures
 }: PeraEvmFixtures = {}): RequestHandler[] => [
+    http.post(
+        `${(fixtures.baseUrl ?? '*').replace(/\/+$/, '')}${balanceHistoryPath(':chainId')}`,
+        async ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
+            if (balanceHistory === undefined) return notEnabled()
+            const outcome =
+                typeof balanceHistory === 'function'
+                    ? balanceHistory(
+                          (await request.json()) as BalanceHistoryRequest,
+                      )
+                    : balanceHistory
+            return typeof outcome === 'number'
+                ? HttpResponse.json({}, { status: outcome })
+                : HttpResponse.json(outcome)
+        },
+    ),
     http.post(
         `${(fixtures.baseUrl ?? '*').replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
         async ({ request }) => {

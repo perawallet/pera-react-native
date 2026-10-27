@@ -103,6 +103,9 @@ export const AssetMarkets = ({
     })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const hasPriceHistory = useCapability({
+        chain: { chainId: scope.chainId, capability: 'priceHistory' },
+    })
 
     const {
         data: assetDetails,
@@ -202,20 +205,22 @@ export const AssetMarkets = ({
                 </PWView>
             </PWView>
 
-            <ExpandablePanel isExpanded={chartVisible}>
-                <PWView style={styles.chartContainer}>
-                    <AssetPriceChart
-                        asset={asset}
-                        scope={scope}
-                        period={period}
-                        onSelectionChanged={handleDataPointSelection}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            </ExpandablePanel>
+            {hasPriceHistory && (
+                <ExpandablePanel isExpanded={chartVisible}>
+                    <PWView style={styles.chartContainer}>
+                        <AssetPriceChart
+                            asset={asset}
+                            scope={scope}
+                            period={period}
+                            onSelectionChanged={handleDataPointSelection}
+                        />
+                        <ChartPeriodSelection
+                            value={period}
+                            onChange={setPeriod}
+                        />
+                    </PWView>
+                </ExpandablePanel>
+            )}
 
             {canOpenDiscover && (
                 <PWTouchableOpacity

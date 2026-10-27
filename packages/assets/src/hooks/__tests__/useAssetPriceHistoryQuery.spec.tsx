@@ -41,8 +41,8 @@ const mocks = vi.hoisted(() => ({
     fetchAssetPriceHistory: vi.fn(),
 }))
 
-vi.mock('../../api', async importOriginal => {
-    const actual = await importOriginal<typeof import('../../api')>()
+vi.mock('../../chain-adapter', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../chain-adapter')>()
     return {
         ...actual,
         fetchAssetPriceHistory: mocks.fetchAssetPriceHistory,
@@ -86,7 +86,12 @@ describe('useAssetPriceHistoryQuery', () => {
         it('fetches data successfully and stores raw USD prices', async () => {
             const assetID = '123'
             const period = 'one-day'
-            const mockData = [{ datetime: '2023-01-01T00:00:00Z', price: '10' }]
+            const mockData = [
+                {
+                    timestamp: Date.parse('2023-01-01T00:00:00Z'),
+                    usdPrice: new Decimal(10),
+                },
+            ]
             mocks.fetchAssetPriceHistory.mockResolvedValue(mockData)
 
             const { result } = renderHook(
