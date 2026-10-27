@@ -131,9 +131,9 @@ export const messageSignerContractTests = (
             expect(() => plan(fixtures.malformedRequest)).toThrow()
         })
 
-        it('assembles the key store signatures into a signed message', () => {
+        it('assembles the key store signatures into a signed message', async () => {
             for (const request of requests) {
-                const signed = makeAdapter().assemble(
+                const signed = await makeAdapter().assemble(
                     request,
                     signaturesFor(request),
                 )
@@ -144,20 +144,24 @@ export const messageSignerContractTests = (
             }
         })
 
-        it('refuses to assemble without its signatures', () => {
+        it('refuses to assemble without its signatures', async () => {
             for (const request of requests) {
-                expect(() => makeAdapter().assemble(request, [])).toThrow()
+                await expect(async () =>
+                    makeAdapter().assemble(request, []),
+                ).rejects.toThrow()
             }
         })
 
-        it("refuses to assemble another signer's signature", () => {
+        it("refuses to assemble another signer's signature", async () => {
             for (const request of requests) {
                 const foreign = signaturesFor(request).map(signature => ({
                     ...signature,
                     signer: otherSigner,
                 }))
 
-                expect(() => makeAdapter().assemble(request, foreign)).toThrow()
+                await expect(async () =>
+                    makeAdapter().assemble(request, foreign),
+                ).rejects.toThrow()
             }
         })
     })

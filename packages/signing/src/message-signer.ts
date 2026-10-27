@@ -159,8 +159,14 @@ export interface MessageSignerChainAdapter {
      * than `context.account`, or the chain's own refusals.
      */
     plan(request: MessageRequest, context: MessagePlanContext): SigningRequest[]
-    /** @throws unless `signatures` answer `plan(request)` one for one. */
-    assemble(request: MessageRequest, signatures: Signature[]): SignedMessage
+    /**
+     * Throws unless `signatures` answer `plan(request)` one for one. May
+     * verify them first, so it can answer asynchronously.
+     */
+    assemble(
+        request: MessageRequest,
+        signatures: Signature[],
+    ): SignedMessage | Promise<SignedMessage>
     authData?: AuthDataSigner
 }
 
@@ -277,7 +283,7 @@ export const signMessages = async (
     }
 
     let offset = 0
-    return planned.map(({ adapter, request, plan }) => {
+    const assembled = planned.map(({ adapter, request, plan }) => {
         const signatures = plan.map(
             ({ requestIndex, signer, scheme }, index): Signature => ({
                 requestIndex,
@@ -289,4 +295,5 @@ export const signMessages = async (
         offset += plan.length
         return adapter.assemble(request, signatures)
     })
+    return Promise.all(assembled)
 }

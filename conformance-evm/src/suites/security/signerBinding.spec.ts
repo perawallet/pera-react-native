@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { bytesToHex, parseTransaction, recoverTransactionAddress } from 'viem'
+import {
+    bytesToHex,
+    parseTransaction,
+    recoverTransactionAddress,
+    toHex,
+} from 'viem'
 import type {
     Hex,
     TransactionSerializable,
@@ -18,8 +23,16 @@ import type {
 } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    MessageRequest,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { createEvmPlannerAdapter } from '@perawallet/wallet-core-chain-ethereum/signing/adapter'
+import {
+    createEvmMessageSignerAdapter,
+    personalSignMessageRequest,
+    typedDataMessageRequest,
+} from '@perawallet/wallet-core-chain-ethereum/signing/messages'
 import { ethereumCallSummary } from '@perawallet/wallet-core-chain-ethereum/signing/review'
 import { SIGNING_KEY_DOMAIN } from '@perawallet/wallet-core-signing/constants'
 import { signPlannedGroups } from '@perawallet/wallet-core-signing/machine/actors/signers/signPlannedGroups'
@@ -283,6 +296,50 @@ describe('evm signer binding', () => {
         expect((error as Error).message).toBe(
             `The signature recovers to ${b.address}, not the sender ${a.address}`,
         )
+    })
+
+    describe("refuses another key's message signature labelled as the signer's", () => {
+        const requests: [string, (env: EvmConformanceEnv, signer: string) => MessageRequest][] = [
+            [
+                'personal_sign',
+                (env, signer) =>
+                    personalSignMessageRequest(env.scope, signer, toHex('Pera')),
+            ],
+            [
+                'EIP-712',
+                (env, signer) =>
+                    typedDataMessageRequest(env.scope, signer, {
+                        types: { Note: [{ name: 'text', type: 'string' }] },
+                        primaryType: 'Note',
+                        domain: { name: 'Conformance', chainId: CHAIN_ID },
+                        message: { text: 'Pera' },
+                    }),
+            ],
+        ]
+
+        it.each(requests)('%s', async (_method, requestFor) => {
+            const env = await createEvmConformanceEnv('ethereum')
+            const a = await createRawKeyEvmAccount(env)
+            const b = await createRawKeyEvmAccount(env)
+            const signer = createEvmMessageSignerAdapter(env.evmChain)
+            const request = requestFor(env, a.address)
+            const [planned] = signer.plan(request, {
+                account: a.walletAccount,
+                accounts: [a.walletAccount],
+            })
+            const bytes = await env.kms.sign(
+                b.keyPairId,
+                planned.payload,
+                SIGNING_KEY_DOMAIN,
+            )
+
+            const error = await rejectionOf(async () =>
+                signer.assemble(request, [{ ...planned, bytes }]),
+            )
+            expect((error as Error).message).toBe(
+                `The signature recovers to ${b.address}, not the signer ${a.address}`,
+            )
+        })
     })
 
     describe('payload types', () => {

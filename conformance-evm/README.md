@@ -132,8 +132,8 @@ These are app behaviours the suite pins against a real node, each a bug class a 
 
 - An imported raw private key resolves a signing scheme and signs (`suites/derivation/rawKey.spec.ts`).
 - The planner refuses to plan or assemble a payload missing a nonce, a gas limit or a max fee, and
-  `assemble` recovers the signer and refuses a signature from any key but the sender's
-  (`suites/security/signerBinding.spec.ts`).
+  `assemble` recovers the signer and refuses a signature from any key but the sender's; message
+  assembly (`personal_sign`, EIP-712) refuses the same way (`suites/security/signerBinding.spec.ts`).
 - A token whose `name` and `symbol` are `bytes32` (MKR style) is readable
   (`suites/assets/erc20Metadata.spec.ts`).
 - A resend of bytes the node already pools, which Anvil refuses as `transaction already imported`,

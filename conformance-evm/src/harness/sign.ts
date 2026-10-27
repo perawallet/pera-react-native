@@ -104,6 +104,6 @@ export const signMessageWithApp = async (
             ),
         })
     }
-    const { signature } = signer.assemble(request, signatures)
+    const { signature } = await signer.assemble(request, signatures)
     return bytesToHex(signature.bytes)
 }
