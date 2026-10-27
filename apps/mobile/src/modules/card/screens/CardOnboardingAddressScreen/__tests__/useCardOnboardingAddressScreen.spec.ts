@@ -21,6 +21,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 
 const mockMutateAsync = vi.fn()
+const mockRefetchRecord = vi.fn()
 const mockConsentMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
 const mockSetAllowMarketing = vi.fn()
@@ -74,6 +75,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isError: false,
             refetch: vi.fn(),
         }),
+        useOnboardingDetailsQuery: () => ({ refetch: mockRefetchRecord }),
         useCardStore: Object.assign(
             (
                 selector: (state: {
@@ -463,11 +465,23 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
-    it('routes a duplicate submission to sign-in (registration finished but no session was stored)', async () => {
+    const GONE_RECORD = {
+        data: undefined,
+        error: {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        },
+    }
+
+    it("continues from the record's phase when a duplicate means an earlier save already landed", async () => {
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 409 },
             data: { message: 'Duplicate onboardingId - record already exists' },
         })
+        mockRefetchRecord.mockResolvedValueOnce({
+            data: { phase: 'MAILING_ADDRESS' },
+            error: null,
+        })
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
         fillValidAddress(result)
 
@@ -475,29 +489,72 @@ describe('useCardOnboardingAddressScreen', () => {
             result.current.handleConfirm()
         })
 
-        // The session token only arrives on a successful address response, so
-        // a duplicate retry must send the user to sign in for one — landing on
-        // the checklist tokenless would strand them.
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
-                email: undefined,
-                finishesRegistration: true,
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                phase: 'MAILING_ADDRESS',
+                localStep: OnboardingStep.Verification,
             }),
         )
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.address.already_registered_title',
-            'peraCard.address.already_registered_body',
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CardSignIn',
+            expect.anything(),
         )
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockInfoToast).not.toHaveBeenCalled()
     })
 
-    it("routes Baanx's 'Create user failed' to sign-in (user already created on an earlier attempt)", async () => {
-        // Seen live: the first address call created the user but errored, so
-        // every retry fails with this generic text. The account exists, so
-        // signing in is the only way to obtain the session token.
+    it.each([
+        [
+            'a duplicate',
+            {
+                response: { status: 409 },
+                data: {
+                    message: 'Duplicate onboardingId - record already exists',
+                },
+            },
+        ],
+        [
+            "Baanx's 'Create user failed'",
+            {
+                response: { status: 400 },
+                data: { message: 'Create user failed' },
+            },
+        ],
+    ])(
+        'routes %s to sign-in once the record has become an account',
+        async (_label, failure) => {
+            mockMutateAsync.mockRejectedValueOnce(failure)
+            mockRefetchRecord.mockResolvedValueOnce(GONE_RECORD)
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+            fillValidAddress(result)
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            await waitFor(() =>
+                expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
+                    email: undefined,
+                    finishesRegistration: true,
+                }),
+            )
+            expect(mockInfoToast).toHaveBeenCalledWith(
+                'peraCard.address.already_registered_title',
+                'peraCard.address.already_registered_body',
+            )
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        },
+    )
+
+    it('shows the error when the record cannot be read after a duplicate', async () => {
         mockMutateAsync.mockRejectedValueOnce({
-            response: { status: 400 },
-            data: { message: 'Create user failed' },
+            response: { status: 409 },
+            data: { message: 'Duplicate onboardingId - record already exists' },
+        })
+        mockRefetchRecord.mockResolvedValueOnce({
+            data: undefined,
+            error: { response: { status: 503 } },
         })
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
         fillValidAddress(result)
@@ -506,17 +563,12 @@ describe('useCardOnboardingAddressScreen', () => {
             result.current.handleConfirm()
         })
 
-        await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
-                email: undefined,
-                finishesRegistration: true,
-            }),
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CardSignIn',
+            expect.anything(),
         )
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.address.already_registered_title',
-            'peraCard.address.already_registered_body',
-        )
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('opens the intl Baanx card T&C and Pera platform T&C links', () => {

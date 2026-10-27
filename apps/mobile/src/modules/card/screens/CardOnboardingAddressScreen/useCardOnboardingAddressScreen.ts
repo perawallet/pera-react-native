@@ -18,10 +18,12 @@ import {
     addressSchema,
     getCardApiError,
     isDuplicateError,
+    isOnboardingNotFoundError,
     isUserAlreadyCreatedError,
     OnboardingStep,
     US_ISO,
     useCardStore,
+    useOnboardingDetailsQuery,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
     useSubmitConsentMutation,
@@ -115,6 +117,11 @@ export const useCardOnboardingAddressScreen =
         })
         const submitAddress = useSubmitAddressMutation(scope)
         const submitConsent = useSubmitConsentMutation(scope)
+        // Read only on a duplicate, to see where an earlier save left the record.
+        const { refetch: refetchRecord } = useOnboardingDetailsQuery(scope, {
+            onboardingId,
+            enabled: false,
+        })
         const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const [selectedCountry, setSelectedCountry] =
@@ -299,6 +306,9 @@ export const useCardOnboardingAddressScreen =
                     ? { usState: values.usState }
                     : {}),
             }
+            const nextLocalStep = address.isSameMailingAddress
+                ? OnboardingStep.Verification
+                : OnboardingStep.MailingAddress
             try {
                 // Baanx's two-step consent: create the set (T&Cs + marketing)
                 // before the address; it is linked to the user once the account
@@ -318,21 +328,36 @@ export const useCardOnboardingAddressScreen =
                 // The address response names no phase, so the residence and the
                 // mailing toggle decide; a token Baanx sent has already
                 // finished registration, which the router sees as a session.
-                goToNextStep({
-                    localStep: address.isSameMailingAddress
-                        ? OnboardingStep.Verification
-                        : OnboardingStep.MailingAddress,
-                })
+                goToNextStep({ localStep: nextLocalStep })
             } catch (error) {
-                // A duplicate means Baanx already holds a finished registration
-                // from an earlier attempt whose response was lost. Signing in
-                // is the only way to get its session; continuing would strand
-                // the user. Otherwise prefer Baanx's own message.
+                // The address step no longer creates the account, so a
+                // duplicate is usually an earlier save whose response was lost,
+                // and the record's phase says what's next. Only a record that's
+                // gone means the registration finished and needs a sign-in.
+                // Otherwise prefer Baanx's own message.
                 const apiError = await getCardApiError(error)
                 if (
                     isDuplicateError(apiError) ||
                     isUserAlreadyCreatedError(apiError)
                 ) {
+                    const { data: record, error: recordError } =
+                        await refetchRecord()
+                    if (record) {
+                        goToNextStep({
+                            phase: record.phase,
+                            localStep: nextLocalStep,
+                        })
+                        return
+                    }
+                    const isRecordGone =
+                        recordError !== null &&
+                        isOnboardingNotFoundError(
+                            await getCardApiError(recordError),
+                        )
+                    if (!isRecordGone) {
+                        await showError(error, apiError)
+                        return
+                    }
                     infoToast(
                         t('peraCard.address.already_registered_title'),
                         t('peraCard.address.already_registered_body'),
