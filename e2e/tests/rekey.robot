@@ -66,10 +66,6 @@ Rekey To Ledger Intro Opens
     Tap    ${TARGET_LEDGER}
     Wait Until Page Contains Element    ${LEDGER_INTRO_START}    timeout=15s
 
-Shared Account Rekey Reaches Target Selection
-    [Tags]    id:rekey.shared.select-target    p2    needs-harness
-    Skip    Needs a shared (multisig) account in the wallet; no fund-free keyword creates one yet.
-
 Rescan Rekeyed Settles Without An Error
     [Documentation]    A fresh account has nothing rekeyed to it, so the empty state is a pass; the
     ...                error state means discovery itself failed.
@@ -81,7 +77,7 @@ Rescan Lists The Account Rekeyed To This One
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
-    Page Should Contain Element    xpath=//*[@resource-id='rescan' or @name='rescan' or @content-desc='rescan']-rekeyed-row-${REKEYED_ADDRESS}
+    Page Should Contain Element    tid=rescan-rekeyed-row-${REKEYED_ADDRESS}
     Page Should Contain Element    ${RESCAN_SELECT_ALL}
     Page Should Contain Element    ${RESCAN_ADD}
     Page Should Contain Element    ${RESCAN_SKIP}
@@ -100,4 +96,4 @@ Skipping Rescan Adds Nothing And Returns Home
 
 Undo Rekey Confirmation Opens For A Rekeyed Account
     [Tags]    id:rekey.undo.confirm    p1    needs-funded    needs-testid    excludefromci
-    Skip    The account info card's Undo rekey link has no testID, and reaching it needs an already-rekeyed account.
+    Skip    Reaching the account info card's Undo rekey link (account_info_undo_rekey_link) needs an already-rekeyed account in the wallet, which no fund-free keyword adds.

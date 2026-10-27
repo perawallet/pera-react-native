@@ -51,8 +51,7 @@ ${ADD_ACCOUNT_CLOSE_BUTTON}         tid=add_account_close_button
 ${PASSPHRASE_GRID}                  tid=view_passphrase_bottom_sheet_grid
 ${NODE_CHAIN_NETWORKS}              tid=node_settings_chain_networks
 ${SWITCHER_ROWS}                    xpath=//*[starts-with(@content-desc, 'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
-# The watch intro's only button has no testID.
-${WATCH_INFO_CREATE_BUTTON}         xpath=//*[@text='Create a Watch Account' or @label='Create a Watch Account']
+${WATCH_INFO_CREATE_BUTTON}         tid=watch_info_create_button
 
 
 ${OPTION_ALGORAND_EXPAND}           tid=account_network_algorand_expand
@@ -98,8 +97,7 @@ Switcher Addresses
     RETURN    ${addresses}
 
 Count Accounts
-    [Documentation]    Leaves the app on Home with the switcher closed.
-    Go Home
+    [Documentation]    From Home; leaves the app on Home with the switcher closed.
     Open Account Switcher
     @{addresses}=    Switcher Addresses
     Go Home

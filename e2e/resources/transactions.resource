@@ -16,6 +16,7 @@ ${NOTIFICATIONS_TAB}        tid=tab_notifications
 ${TX_ROW_ANY}               xpath=//*[starts-with(@content-desc, 'transaction_row_') or starts-with(@resource-id, 'transaction_row_') or starts-with(@name,'transaction_row_')]
 ${NOTIFICATION_ROW_ANY}     xpath=//*[starts-with(@content-desc, 'notification_row_') or starts-with(@resource-id, 'notification_row_') or starts-with(@name,'notification_row_')]
 ${ASA_INBOX_ITEM}           tid=asa_inbox_item
+${INBOX_EMPTY_STATE}        tid=inbox_empty_state
 # Bare container testIDs: resource-id on Android, name on iOS.
 ${TX_DETAILS_SCREEN}        tid=transaction_details_screen
 ${TX_DETAIL_FEE}            tid=transaction_detail_fee

@@ -16,6 +16,8 @@ ${ANDROID_UDID}         ${EMPTY}
 ${ANDROID_SYSTEM_PORT}  8201
 ${WEBVIEW}             xpath=//android.webkit.WebView
 ${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @content-desc='Menu' or @name='Menu']
+# One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource).
+${STARTUP_PROMPT_ANY}   xpath=//*[@resource-id='pin_security_prompt_dont_ask_button' or @resource-id='banners_carousel_modal_close' or @resource-id='banner_prompt_close' or @resource-id='analytics_consent_prompt_decline_button' or @resource-id='biometrics_disabled_prompt_dismiss_button' or @resource-id='legacy_quantum_prompt_dismiss_button' or @content-desc='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @content-desc='banner_prompt_close' or @content-desc='analytics_consent_prompt_decline_button' or @content-desc='biometrics_disabled_prompt_dismiss_button' or @content-desc='legacy_quantum_prompt_dismiss_button']
 
 
 *** Keywords ***

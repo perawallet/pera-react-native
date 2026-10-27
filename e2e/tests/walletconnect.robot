@@ -35,7 +35,7 @@ Approving A Sign Request Returns The Signature
     Connect WC Session
     Send WC Request    /sign
     Wait For Sign Sheet    ${SIGNING_CONFIRM_SLIDE}
-    Drag Slide To Confirm    ${SIGNING_CONFIRM_SLIDE}
+    Slide To Confirm    ${SIGNING_CONFIRM_SLIDE}
     Wait Until Keyword Succeeds    25s    1s    Harness Sign Should Be Approved
 
 Disconnecting A Session Removes It From Settings

@@ -41,25 +41,6 @@ ${PIN_LOGGING_IN}               xpath=//*[contains(@text,'Logging in') or contai
 
 
 *** Keywords ***
-Switch Locator
-    [Documentation]    A switch in the given state. Android reports it as checked, iOS as value 1/0.
-    [Arguments]    ${test_id}    ${on}
-    IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${test_id}' or @resource-id='${test_id}' or @name='${test_id}') and (@checked='true' or @value='1')]
-    END
-    RETURN    xpath=//*[(@content-desc='${test_id}' or @resource-id='${test_id}' or @name='${test_id}') and (@checked='false' or @value='0')]
-
-Switch Is On
-    [Arguments]    ${test_id}
-    ${locator}=    Switch Locator    ${test_id}    ${True}
-    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-    RETURN    ${on}
-
-Switch Should Turn
-    [Arguments]    ${test_id}    ${on}
-    ${locator}=    Switch Locator    ${test_id}    ${on}
-    Wait Until Page Contains Element    ${locator}    timeout=10s
-
 Start On Security
     [Documentation]    Security screen, whatever the last case left: locked, wiped back to a decoy
     ...                wallet, or dropped to onboarding by a failed wipe. Sets no PIN, so a case that
@@ -155,7 +136,7 @@ Set Duress Pin
     [Arguments]    ${pin}
     Start Duress Pin Setup
     Enter New Pin Twice    ${pin}
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${True}
 
 Disable Duress Pin
     [Documentation]    Turning duress off asks for the regular PIN first, so someone holding an
@@ -165,7 +146,7 @@ Disable Duress Pin
     Wait Until Page Contains Element    ${PIN_VERIFY_TITLE}    timeout=15s
     Enter Pin    ${REGULAR_PIN}
     Wait Until Page Does Not Contain Element    ${PIN_SHEET}    timeout=15s
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${False}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${False}
 
 Ensure Duress Pin Off
     ${present}=    Reveal On Security Screen    ${DURESS_TOGGLE_ID}
@@ -262,7 +243,7 @@ Regular Pin Should Still Be Set
     ...    error=The regular PIN is gone, so a wipe ran when it should not have.
 
 Wallet Should Have Been Wiped
-    Switch Should Turn    ${PIN_TOGGLE_ID}    ${False}
+    Switch Should Be    ${PIN_TOGGLE_ID}    ${False}
     # The switch also reads off for a moment before the PIN record loads.
     ${pin_set}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${CHANGE_PIN_BUTTON}    timeout=3s

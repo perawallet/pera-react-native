@@ -172,16 +172,6 @@ Text Inside
     END
     RETURN    ${{ ' '.join($parts) }}
 
-Switch Is On
-    [Documentation]    Android reports a switch through `checked`, iOS through `value`.
-    [Arguments]    ${locator}
-    ${ok}    ${checked}=    Run Keyword And Ignore Error    Get Element Attribute    ${locator}    checked
-    IF    '${ok}' == 'PASS' and $checked is not None
-        RETURN    ${{ str($checked).lower() == 'true' }}
-    END
-    ${value}=    Get Element Attribute    ${locator}    value
-    RETURN    ${{ str($value).lower() in ('1', 'true') }}
-
 Open Pay Asset Picker
     Tap    ${SWAP_PAY_ASSET_SELECTOR}
     Wait Until Page Contains Element    ${ASSET_SEARCH_INPUT}    timeout=15s
@@ -324,13 +314,3 @@ Open Confirmation
     Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
-
-Slide To Confirm
-    [Documentation]    The slider is a gesture-handler pan, so a tap does nothing. One drag only: a
-    ...                retry could submit a second real swap.
-    ${loc}=    Get Element Location    ${CONFIRM_SLIDE}
-    ${size}=    Get Element Size    ${CONFIRM_SLIDE}
-    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
-    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.1)
-    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
-    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms

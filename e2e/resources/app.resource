@@ -4,6 +4,7 @@ Documentation       Shared session, wallet and fixture keywords. The platform ad
 ...                 Close Sheet and ${MENU_TAB}.
 Library             libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             libraries/NavTrace.py
+Library             String
 Resource            platforms/${PLATFORM}.resource
 
 
@@ -16,7 +17,13 @@ ${PIN_PROMPT_DONT_ASK}          tid=pin_security_prompt_dont_ask_button
 ${BANNERS_MODAL_CLOSE}          tid=banners_carousel_modal_close
 ${BANNER_PROMPT_CLOSE}          tid=banner_prompt_close
 ${ANALYTICS_CONSENT_DECLINE}    tid=analytics_consent_prompt_decline_button
-${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banner_prompt_close' or @resource-id='banner_prompt_close' or @name='banner_prompt_close' or @content-desc='analytics_consent_prompt_decline_button' or @resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
+${BIOMETRICS_PROMPT_DISMISS}    tid=biometrics_disabled_prompt_dismiss_button
+${LEGACY_QUANTUM_PROMPT_DISMISS}    tid=legacy_quantum_prompt_dismiss_button
+# Every prompt the app can raise over Home after launch (modules/prompts). The adapters define
+# ${STARTUP_PROMPT_ANY}, one probe that matches any of them; keep the three in step.
+@{STARTUP_PROMPT_IDS}           pin_security_prompt_dont_ask_button    banners_carousel_modal_close
+...                             banner_prompt_close    analytics_consent_prompt_decline_button
+...                             biometrics_disabled_prompt_dismiss_button    legacy_quantum_prompt_dismiss_button
 ${NAVIGATION_BACK_BUTTON}       tid=navigation_back_button
 ${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
 ${SETTINGS_SCREEN}              tid=settings_screen
@@ -127,10 +134,9 @@ Wait Clear Of Startup Prompts
     FOR    ${i}    IN RANGE    90
         ${any}=    Run Keyword And Return Status    Page Should Contain Element    ${STARTUP_PROMPT_ANY}
         IF    ${any}
-            Tap If Present    ${PIN_PROMPT_DONT_ASK}
-            Tap If Present    ${BANNERS_MODAL_CLOSE}
-            Tap If Present    ${BANNER_PROMPT_CLOSE}
-            Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
+            FOR    ${id}    IN    @{STARTUP_PROMPT_IDS}
+                Tap If Present    tid=${id}
+            END
             ${quiet_since}=    Evaluate    time.time()    modules=time
         ELSE IF    ${{time.time() - $quiet_since}} > 4
             RETURN
@@ -286,10 +292,65 @@ Tap If Shown
     [Arguments]    ${locator}    ${timeout}
     ${shown}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${locator}    timeout=${timeout}
-    IF    ${shown}    Click Element    ${locator}
+    IF    ${shown}    Tap    ${locator}
 
 Close Pera
     Close All Applications
+
+Scroll Until Present
+    [Documentation]    Swipes up until the element is in the tree. Enough for Android, which lists
+    ...                only what is on screen; iOS lists off-screen rows too, so a tap there still
+    ...                needs Scroll Until Tappable.
+    [Arguments]    ${locator}
+    FOR    ${i}    IN RANGE    6
+        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
+        IF    ${present}    RETURN
+        Swipe By Percent    50    75    50    30    duration=400ms
+    END
+    Wait Until Page Contains Element    ${locator}    timeout=5s
+
+Slide To Confirm
+    [Documentation]    The confirm control is a pan gesture; a tap does nothing. One drag only: a
+    ...                retry could submit a second real transaction.
+    [Arguments]    ${slide}
+    Wait Until Settled    ${slide}
+    ${loc}=    Get Element Location    ${slide}
+    ${size}=    Get Element Size    ${slide}
+    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
+    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.1)
+    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
+    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
+
+Bare Test Id
+    [Documentation]    The testID inside a locator: a bare id, a tid=<id>, or an XPath that names it
+    ...                as @resource-id. Splitting an XPath on its first '=' would return the whole
+    ...                predicate, which then goes into another XPath and does not parse.
+    [Arguments]    ${locator}
+    ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
+    IF    ${bare}    RETURN    ${bare}[0]
+    IF    '=' not in $locator    RETURN    ${locator}
+    RETURN    ${{ $locator.split('=', 1)[1] }}
+
+Switch Locator
+    [Documentation]    A switch (or radio) in the given state. Android reports it as checked; iOS as
+    ...                value 1/0 for a switch and "checked"/"unchecked" for a radio.
+    [Arguments]    ${locator}    ${on}
+    ${id}=    Bare Test Id    ${locator}
+    IF    ${on}
+        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1' or @value='checked')]
+    END
+    RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0' or @value='unchecked')]
+
+Switch Is On
+    [Arguments]    ${locator}
+    ${on_locator}=    Switch Locator    ${locator}    ${True}
+    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${on_locator}
+    RETURN    ${on}
+
+Switch Should Be
+    [Arguments]    ${locator}    ${on}
+    ${state}=    Switch Locator    ${locator}    ${on}
+    Wait Until Page Contains Element    ${state}    timeout=10s
 
 Scroll Until Tappable
     [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.

@@ -63,15 +63,6 @@ ${FLAG_OVERRIDE_CLOUD_BACKUP}           tid=feature_flag_override_${CLOUD_BACKUP
 
 
 *** Keywords ***
-Bare Test Id
-    [Documentation]    The testID inside one of this file's locators, a tid=<id> or an XPath that
-    ...                names it as @resource-id. Splitting an XPath on its first '=' would return
-    ...                the whole predicate, which then goes into another XPath and does not parse.
-    [Arguments]    ${locator}
-    ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
-    IF    ${bare}    RETURN    ${bare}[0]
-    RETURN    ${{ $locator.split('=', 1)[1] }}
-
 Scroll To
     [Documentation]    Brings an element on screen in one driver call.
     [Arguments]    ${locator}
@@ -90,27 +81,6 @@ Open From Settings
     Scroll To    ${item}
     Tap    ${item}
     Wait Until Page Contains Element    ${anchor}    timeout=15s
-
-Switch State Locator
-    [Documentation]    Android exposes a switch's state as checked, iOS as value 1/0.
-    [Arguments]    ${locator}    ${on}
-    ${id}=    Bare Test Id    ${locator}
-    IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1')]
-    END
-    RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0')]
-
-Switch Is On
-    [Arguments]    ${locator}
-    Wait Until Page Contains Element    ${locator}    timeout=15s
-    ${on_locator}=    Switch State Locator    ${locator}    ${True}
-    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${on_locator}
-    RETURN    ${on}
-
-Switch Should Be
-    [Arguments]    ${locator}    ${on}
-    ${state}=    Switch State Locator    ${locator}    ${on}
-    Wait Until Page Contains Element    ${state}    timeout=10s
 
 Flip Switch And Back
     [Documentation]    Proves the switch changes state both ways and leaves it as it was found.

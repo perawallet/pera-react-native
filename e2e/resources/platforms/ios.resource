@@ -17,6 +17,9 @@ ${IOS_WDA_PORT}         8100
 ${IOS_DEV_CLIENT_URL}   ${EMPTY}
 ${WEBVIEW}             xpath=//XCUIElementTypeWebView
 ${MENU_TAB}             tid=tab_menu_button
+# One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource). A predicate, not an
+# xpath: this is polled every half second after each launch, and an xpath walks the whole tree.
+${STARTUP_PROMPT_ANY}   predicate=name IN {'pin_security_prompt_dont_ask_button', 'banners_carousel_modal_close', 'banner_prompt_close', 'analytics_consent_prompt_decline_button', 'biometrics_disabled_prompt_dismiss_button', 'legacy_quantum_prompt_dismiss_button'}
 
 
 *** Keywords ***

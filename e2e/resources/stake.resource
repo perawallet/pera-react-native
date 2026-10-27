@@ -10,7 +10,7 @@ ${MENU_STAKING_BUTTON}          tid=menu_staking_button
 ${STAKING_SUBTITLE}             tid=staking-subtitle
 ${STAKING_HELP_BUTTON}          tid=staking-help-button
 ${STAKING_HELP_TITLE}           tid=staking-help-sheet-title
-${STAKING_ERROR_TITLE}          xpath=//*[@resource-id='staking-error-title' or @name='staking-error-title' or @content-desc='staking-error-title' or @resource-id='staking-error-title']
+${STAKING_ERROR_TITLE}          tid=staking-error-title
 # Card ids come from remote config, so match the prefix on either platform's id attribute.
 ${STAKING_FIRST_CARD}           xpath=(//*[starts-with(@content-desc, 'staking-project-card-') or starts-with(@resource-id, 'staking-project-card-') or starts-with(@name,'staking-project-card-')])[1]
 ${STAKING_DISCLAIMER_TITLE}     tid=staking-disclaimer-title

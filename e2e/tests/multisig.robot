@@ -54,7 +54,7 @@ Introduction Shows Every Time Create Shared Account Is Tapped
 Tapping The Backdrop Dismisses The Introduction
     [Tags]    id:multisig.intro.backdrop-dismiss    p1
     Open Multisig Introduction
-    Tap Screen At    0.5    0.08
+    Close Sheet
     Wait Until Page Does Not Contain Element    ${MULTISIG_INTRO_CONTINUE_BUTTON}    timeout=10s
     Page Should Contain Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}
     Page Should Not Contain Element    ${ADD_PARTICIPANT_BUTTON}

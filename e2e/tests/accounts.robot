@@ -30,9 +30,7 @@ Menu Tab Lists Core Entries
 
 Menu Opens Settings
     [Tags]    id:accounts.menu.settings    p1
-    Open Menu
-    Tap    ${MENU_SETTINGS_BUTTON}
-    Wait Until Page Contains Element    ${SETTINGS_SECURITY_ITEM}    timeout=20s
+    Open Settings
 
 Account Switcher Offers Add And Search
     [Tags]    id:accounts.switcher.controls    p1

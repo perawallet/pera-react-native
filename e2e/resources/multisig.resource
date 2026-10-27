@@ -31,6 +31,7 @@ ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        tid=add_account_see_other_options_button
 ${ADD_ACCOUNT_WATCH_BUTTON}             tid=add_account_watch_button
 ${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
 ${WATCH_SUBMIT_BUTTON}                  tid=watch_account_submit_button
+${WATCH_INFO_CREATE_BUTTON}             tid=watch_info_create_button
 
 ${MULTISIG_INTRO_CONTINUE_BUTTON}       tid=multisig_introduction_continue_button
 ${ADD_PARTICIPANT_BUTTON}               tid=add_participant_button
@@ -418,8 +419,8 @@ Ensure Watch Account
     Swipe By Percent    50    70    50    40
     Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}
     Tap    ${ADD_ACCOUNT_WATCH_BUTTON}
-    Wait Until Page Contains    Create a Watch Account    timeout=15s
-    Click Text    Create a Watch Account    exact_match=${True}
+    Wait Until Settled    ${WATCH_INFO_CREATE_BUTTON}
+    Tap    ${WATCH_INFO_CREATE_BUTTON}
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}
     Dismiss Keyboard

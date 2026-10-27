@@ -39,6 +39,11 @@ ${OPT_IN_ACCOUNT_ROW}           xpath=(//*[starts-with(@resource-id,'opt_in_acco
 ${OPT_IN_CONFIRM}               tid=opt_in_confirm
 ${OPT_IN_COPY_ID}               tid=opt_in_copy_id
 
+${MENU_PASTE_LINK_BUTTON}       tid=menu_paste_link_button
+${PASTE_LINK_INPUT}             tid=paste-link-input
+${PASTE_LINK_SUBMIT}            tid=paste-link-submit
+${PASTE_LINK_ERROR}             tid=paste-link-error
+
 
 *** Keywords ***
 Start On Settings
@@ -110,6 +115,20 @@ Next Should Be Refused For Lack Of Funds
     Wait Until Page Contains Element    ${INSUFFICIENT_BALANCE}    timeout=15s
     Page Should Contain Element    ${SEND_NEXT}
     Page Should Not Contain Element    ${SEND_CONFIRM}
+
+Paste Link
+    [Documentation]    Menu > Paste a Link: the in-app entry that accepts what the QR scanner accepts.
+    [Arguments]    ${text}
+    Go Home
+    Tap    ${MENU_TAB}
+    Wait Until Page Contains Element    ${MENU_PASTE_LINK_BUTTON}    timeout=15s
+    Wait Until Settled    ${MENU_PASTE_LINK_BUTTON}
+    Tap    ${MENU_PASTE_LINK_BUTTON}
+    Wait Until Settled    ${PASTE_LINK_INPUT}
+    Input Text    ${PASTE_LINK_INPUT}    ${text}
+    Dismiss Keyboard
+    Wait Until Settled    ${PASTE_LINK_SUBMIT}
+    Tap    ${PASTE_LINK_SUBMIT}
 
 Turn Pin Off After Test
     Capture Failure Screenshot

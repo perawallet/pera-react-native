@@ -657,6 +657,52 @@ jobs:
           path: apps/browser/test-results/
           retention-days: 7
 
+  # Tells the reviewer which device e2e suites the PR touches (e2e/tools/affected_flows.py) and
+  # how to run them: the device suite is not a pre-merge gate, so this is what makes it run at all
+  # for the changes that need it. The same text goes to the job summary, so a fork PR, whose token
+  # cannot comment, still shows it.
+  e2e-flows:
+    name: E2E flows affected
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Map the changed files onto the suites
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${REPO}/pulls/${PR}/files" --jq '.[].filename' >changed-files.txt
+          python3 e2e/tools/affected_flows.py --files changed-files.txt >e2e-flows.md
+          cat e2e-flows.md >>"$GITHUB_STEP_SUMMARY"
+          cat e2e-flows.md
+
+      # One comment per PR, found by its marker and edited on every push rather than added to.
+      # A fork's token cannot comment; its reviewer reads the job summary above instead.
+      - name: Post or update the PR comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          existing=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+            --jq '[.[] | select(.body | startswith("<!-- e2e-affected-flows -->"))][0].id // empty')
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${existing}" -F body=@e2e-flows.md >/dev/null
+          else
+            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -F body=@e2e-flows.md >/dev/null
+          fi
+
   gitleaks:
     name: Secret Scan
     runs-on: ubuntu-24.04

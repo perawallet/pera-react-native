@@ -56,8 +56,9 @@ ${REKEYED_SKIP}                         tid=import_rekeyed_addresses_skip_button
 ${REKEYED_CHECKBOX_ANY}                 xpath=//*[starts-with(@content-desc,'import_rekeyed_addresses_item_checkbox_') or starts-with(@resource-id, 'import_rekeyed_addresses_item_checkbox_') or starts-with(@name,'import_rekeyed_addresses_item_checkbox_')]
 ${ASB_INFO_CONTINUE}                    tid=asb_import_info_continue_button
 ${ASB_PICK_FILE_BUTTON}                 tid=asb_import_backup_pick_file_button
+${LEDGER_PAIR_START_BUTTON}             tid=ledger_pair_primary_button
+${LEDGER_PAIR_INFO_BUTTON}              tid=ledger_pair_info_button
 
-# The watch info screen's Create button has no testID yet; this is the ID it needs.
 ${WATCH_INFO_CREATE_BUTTON}             tid=watch_info_create_button
 ${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
 ${WATCH_SUBMIT_BUTTON}                  tid=watch_account_submit_button
@@ -261,15 +262,6 @@ Open Node Settings
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
     Tap    ${DEVELOPER_NODE_ITEM}
     Wait Until Page Contains Element    ${NODE_DEV_MODE_SWITCH}    timeout=15s
-
-Scroll Until Present
-    [Arguments]    ${locator}
-    FOR    ${i}    IN RANGE    6
-        ${present}=    Is Shown    ${locator}
-        IF    ${present}    RETURN
-        Swipe By Percent    50    75    50    30
-    END
-    Page Should Contain Element    ${locator}
 
 Is Shown
     [Arguments]    ${locator}

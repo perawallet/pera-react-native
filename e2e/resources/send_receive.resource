@@ -4,7 +4,7 @@ Documentation       Receive needs no funds, so it runs on the suite's own wallet
 ...                 24-word Universal wallet) whose primary address is E2E_FUNDED_ADDRESS; they skip
 ...                 when either is unset. Sends go to that same address, so a run spends only fees.
 Library             String
-Resource            app.resource
+Resource            accounts.resource
 
 
 *** Variables ***
@@ -84,11 +84,6 @@ Restore Suite Wallet
 Funded Account Row
     RETURN    tid=account_switcher_row_${FUNDED_ADDRESS}
 
-Open Account Switcher
-    Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
-    Tap    ${ACCOUNT_SELECTION_BUTTON}
-    Wait Until Settled    ${ACCOUNT_MENU_ADD_BUTTON}
-
 Select Account
     [Arguments]    ${row}
     Wait Until Page Contains Element    ${row}    timeout=15s
@@ -157,26 +152,6 @@ Set Testnet
         Wait Until Page Does Not Contain Element    ${TESTNET_RADIO}    timeout=15s
     END
     Go Home
-
-Scroll Until Present
-    [Arguments]    ${locator}
-    FOR    ${i}    IN RANGE    5
-        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-        IF    ${present}    RETURN
-        Swipe By Percent    50    75    50    30    duration=400ms
-    END
-    Wait Until Page Contains Element    ${locator}    timeout=5s
-
-Slide To Confirm
-    [Documentation]    The confirm control is a pan gesture; a tap does nothing.
-    [Arguments]    ${slide}
-    Wait Until Settled    ${slide}
-    ${loc}=    Get Element Location    ${slide}
-    ${size}=    Get Element Size    ${slide}
-    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
-    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.1)
-    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
-    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
 
 Open Receive
     # Home is still laying out after the reset, and a tap at a moving button misses it.

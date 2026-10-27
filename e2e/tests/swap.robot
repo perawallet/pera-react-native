@@ -444,7 +444,7 @@ Real ALGO To USDC Swap Completes And Lands In History
     ...    PERA_E2E_SWAP_ALLOW_SPEND is not 1; this case executes a real paid swap.
     Open Swap With Funded Account
     Open Confirmation
-    Slide To Confirm
+    Slide To Confirm    ${CONFIRM_SLIDE}
     # The sheet closes only after the swap is submitted and confirmed on chain.
     Wait Until Page Does Not Contain Element    ${CONFIRM_SLIDE}    timeout=120s
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=20s

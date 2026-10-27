@@ -27,7 +27,7 @@ ${QUANTUM_UNDERFUNDED}              tid=rekey-to-quantum-underfunded-notice
 ${LEDGER_INTRO_START}               tid=rekey-to-ledger-intro-start
 ${RESCAN_SELECT_ALL}                tid=rescan-rekeyed-select-all-checkbox
 ${RESCAN_ADD}                       tid=rescan-rekeyed-add
-${RESCAN_SKIP}                      xpath=//*[@resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip' or @content-desc='rescan-rekeyed-skip' or @resource-id='rescan-rekeyed-skip']
+${RESCAN_SKIP}                      tid=rescan-rekeyed-skip
 # Screen containers are not accessibility elements: Android exposes their testID only as
 # resource-id, iOS only as name.
 ${STANDARD_SELECT_TARGET}           tid=rekey-to-standard-select-target-screen

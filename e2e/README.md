@@ -66,7 +66,9 @@ python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios
 Adapters read `APPIUM_URL`, `ANDROID_UDID`, `ANDROID_PACKAGE`, `ANDROID_SYSTEM_PORT`, `IOS_UDID`,
 `IOS_WDA_PORT`, `IOS_BUNDLE_ID` and `IOS_DEV_CLIENT_URL` as Robot variables
 (`--variable NAME:value`). Several devices can run at once: give each Android device its own
-`ANDROID_SYSTEM_PORT` and each simulator its own `IOS_WDA_PORT`. Credentials for a device cloud go
+`ANDROID_SYSTEM_PORT` and each simulator its own `IOS_WDA_PORT`. `run.sh` takes a free port for
+each run unless the environment names one: a run killed mid-way leaves its UiAutomator2 server or
+WebDriverAgent on the adapter's default port, which otherwise fails every suite of the next run. Credentials for a device cloud go
 in the CI secret store and reach the run as environment variables; never commit them here.
 
 ## BrowserStack
@@ -95,6 +97,18 @@ an `.ipa` must be patched by `tools/qa/patch-ipa-for-browserstack.sh` first.
 The release smoke gate (`tools/qa/smoke-test.sh`) runs the `release-gate` case this way, and the
 "E2E / BrowserStack" workflow runs the whole suite against uploaded E2E builds.
 
+## Which suites a change affects
+
+`python e2e/tools/affected_flows.py` maps the files changed since `origin/main` (or `--files -`,
+one path per line) onto the suites in `tests/` and prints the `--include` expression that runs
+them. A path counts three ways, from the most exact to the coarsest: a testID the changed source
+declares that a suite locates; the app module or package the path belongs to (the tables in the
+script); and paths every screen depends on (navigation, bootstrap, native projects, the harness
+itself), which select the whole suite. Docs, the browser app and unit tests select nothing. The
+pre-merge CI posts the result on every pull request, so the reviewer sees which device flows to
+run before merging; `--format json` feeds a script. When a module or package gets a suite, or a
+suite starts covering a new module, extend the tables in the script and its test.
+
 ## Navigation trace
 
 E2E builds log every screen mount/unmount, focus/blur and app foreground/background
@@ -109,3 +123,9 @@ tracer's post-reset snapshot instead of a fixed delay.
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
 `e2e/tools/parity.py` fails unless every scenario passed on both platforms.
+
+## Checking the suite without a device
+
+`robot --dryrun --variable PLATFORM:<android|ios> e2e/tests` resolves every keyword and argument
+count on each adapter, which is what catches a renamed or duplicated keyword; run it for both
+platforms after editing a resource. `python -m pytest e2e/tools` covers the result tools.

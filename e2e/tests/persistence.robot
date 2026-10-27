@@ -12,8 +12,7 @@ Test Tags           persistence
 
 *** Test Cases ***
 Theme Survives A Restart
-    [Tags]    id:persistence.theme.restart    p1    needs-testid
-    Skip    The selected theme cannot be read: PWRadioButton exposes no selected state (apps/mobile/src/components/core/PWRadioButton/PWRadioButton.tsx).
+    [Tags]    id:persistence.theme.restart    p1
     Select Theme    dark
     Theme Should Be Selected    dark
     Relaunch Pera

@@ -60,6 +60,15 @@ Algorand Secure Backup Option Opens Its Import Flow
     Tap    ${ASB_INFO_CONTINUE}
     Wait Until Page Contains Element    ${ASB_PICK_FILE_BUTTON}    timeout=20s
 
+Pair Ledger Option Opens Its Intro
+    [Documentation]    Stops at the intro: anything past it needs a Ledger over Bluetooth.
+    [Tags]    id:onboarding.import.ledger-entry    p1
+    Start Without Wallet
+    Open Import Options From Welcome
+    Tap    ${IMPORT_OPTION_PAIR_LEDGER}
+    Wait Until Page Contains Element    ${LEDGER_PAIR_START_BUTTON}    timeout=20s
+    Page Should Contain Element    ${LEDGER_PAIR_INFO_BUTTON}
+
 Algo25 Wallet Is Recovered From Its 25 Word Phrase
     [Tags]    id:onboarding.import.algo25    p0    needs-funded    excludefromci
     Skip If    not $MNEMONIC_25    MNEMONIC_25_WORD is not set.
@@ -151,8 +160,7 @@ Closing Add Account Returns Home
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Watch Account Is Added From An Address
-    [Tags]    id:onboarding.add-account.watch    p1    needs-testid
-    Skip    WatchInfoScreen's Create button has no testID (watch_info_create_button).
+    [Tags]    id:onboarding.add-account.watch    p1
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options

@@ -79,17 +79,6 @@ Harness Sign Should Be Approved
     ${result}=    Harness Sign Result
     Should Be True    $result['done'] and not $result['rejected']    ${result}
 
-Drag Slide To Confirm
-    [Documentation]    The slide is a pan gesture, so a tap does nothing.
-    [Arguments]    ${slide}
-    Wait Until Settled    ${slide}
-    ${loc}=    Get Element Location    ${slide}
-    ${size}=    Get Element Size    ${slide}
-    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
-    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.10)
-    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
-    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
-
 Open WC Sessions From Settings
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
