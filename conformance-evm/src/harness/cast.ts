@@ -265,11 +265,15 @@ export const castCall = (input: {
     to: Address
     sig: string
     args?: readonly string[]
+    block?: bigint
 }): Promise<string> =>
     docker(EVMNET[input.chain].container, [
         'call',
         '--rpc-url',
         CONTAINER_RPC_URL,
+        ...(input.block === undefined
+            ? []
+            : ['--block', input.block.toString()]),
         '--',
         input.to,
         input.sig,

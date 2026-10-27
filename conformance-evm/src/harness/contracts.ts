@@ -21,12 +21,16 @@ import {
     type Hex,
     encodeAbiParameters,
     parseAbiParameters,
+    parseTransaction,
+    serializeTransaction,
 } from 'viem'
 
 import { MULTICALL3_RUNTIME_BYTECODE } from '../vectors/multicall3'
+import { OP_STACK_PREDEPLOYS } from '../vectors/opStackPredeploys'
 import {
     ANVIL_DEV_PRIVATE_KEY,
     castAddressFromPrivateKey,
+    castCall,
     castSend,
 } from './cast'
 import { type EvmnetChain, anvilRpc } from './evmnet'
@@ -102,6 +106,66 @@ export const installMulticall3 = async (chain: EvmnetChain): Promise<void> => {
         MULTICALL3_ADDRESS,
         MULTICALL3_RUNTIME_BYTECODE,
     ])
+}
+
+export const OP_STACK_GAS_PRICE_ORACLE: Address =
+    '0x420000000000000000000000000000000000000F'
+
+const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000'
+
+/** No deposit transaction ever updates L1Block on Anvil, so the L1 prices stay those of the captured block. */
+export const installOpStackPredeploys = async (
+    chain: 'base',
+): Promise<void> => {
+    for (const { address, code, storage } of OP_STACK_PREDEPLOYS) {
+        await anvilRpc(chain, 'anvil_setCode', [address, code])
+        for (const [slot, value] of storage) {
+            await anvilRpc(chain, 'anvil_setStorageAt', [address, slot, value])
+        }
+    }
+    // Once L1Block holds prices, Anvil refuses an eth_call whose sender can't
+    // pay the L1 data fee ("Insufficient funds for gas * price + value"),
+    // which OP nodes don't. A call without `from` runs as the zero address.
+    await anvilRpc(chain, 'anvil_setBalance', [
+        ZERO_ADDRESS,
+        `0x${(10n ** 24n).toString(16)}`,
+    ])
+}
+
+/**
+ * What the installed GasPriceOracle charges on top of gas for a signed
+ * transaction, in wei, read at `block`: the L1 data fee and the operator fee
+ * for `gasUsed`.
+ */
+export const oracleOpStackFees = async (input: {
+    chain: 'base'
+    raw: Hex
+    gasUsed: bigint
+    block: bigint
+}): Promise<{ l1DataFee: bigint; operatorFee: bigint }> => {
+    const {
+        r: _r,
+        s: _s,
+        v: _v,
+        yParity: _yParity,
+        ...unsigned
+    } = parseTransaction(input.raw)
+    const read = async (sig: string, arg: string): Promise<bigint> =>
+        BigInt(
+            await castCall({
+                chain: input.chain,
+                to: OP_STACK_GAS_PRICE_ORACLE,
+                sig,
+                args: [arg],
+                block: input.block,
+            }),
+        )
+    // The oracle takes the unsigned encoding and adds a signature's size itself.
+    const [l1DataFee, operatorFee] = await Promise.all([
+        read('getL1Fee(bytes)', serializeTransaction(unsigned)),
+        read('getOperatorFee(uint256)', input.gasUsed.toString()),
+    ])
+    return { l1DataFee, operatorFee }
 }
 
 const DEV_FUNDER_FLOOR = 1000n * 10n ** 18n

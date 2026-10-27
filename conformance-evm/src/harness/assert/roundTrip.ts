@@ -22,6 +22,7 @@ import { formatFieldDiff } from '@perawallet/conformance/harness/assert/diff'
 import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/createEvmClient'
 
 import { nativeBalanceOf } from '../accounts'
+import { oracleOpStackFees } from '../contracts'
 import type { EvmConformanceEnv } from '../context'
 import { anvilRpc } from '../evmnet'
 import {
@@ -110,6 +111,26 @@ const fromNode = (node: NodeTransaction): ComparableEvmTransaction => ({
     maxPriorityFeePerGas: quantity(node.maxPriorityFeePerGas),
     accessList: node.accessList,
 })
+
+// Anvil --optimism charges the L1 data fee from the installed L1Block but
+// leaves `l1Fee` out of the receipt, so the GasPriceOracle prices the same
+// bytes in its place. Exact only below the oracle's minimum transaction size,
+// where both clamp to the same fee: above it the oracle's flat signature
+// allowance and the node's compressed real signature can differ.
+const opStackChargeWithoutReceiptField = async (
+    env: EvmConformanceEnv,
+    raw: Hex,
+    receipt: TransactionReceipt,
+): Promise<bigint> => {
+    if (env.chain !== 'base') return 0n
+    const { l1DataFee, operatorFee } = await oracleOpStackFees({
+        chain: env.chain,
+        raw,
+        gasUsed: receipt.gasUsed,
+        block: receipt.blockNumber - 1n,
+    })
+    return l1DataFee + operatorFee
+}
 
 const sameAddress = (a: string | null, b: string | null): boolean =>
     a?.toLowerCase() === b?.toLowerCase()
@@ -202,7 +223,9 @@ export const expectEvmConformant = async ({
         'eth_getTransactionReceipt',
         [hash],
     )
-    const l1Fee = quantity(nodeReceipt.l1Fee) ?? 0n
+    const l1Fee =
+        quantity(nodeReceipt.l1Fee) ??
+        (await opStackChargeWithoutReceiptField(env, raw, receipt))
     const value = intent.value ?? 0n
     const credited = sameAddress(intent.to, intent.from) ? value : 0n
     const spent =
