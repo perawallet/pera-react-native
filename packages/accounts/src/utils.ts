@@ -66,8 +66,7 @@ export const isNamedAfterAddress = (
     const address = chainAccountOf(account, chainId)?.address
     if (!account.name || !address) return false
     return (
-        account.name === address ||
-        isTruncationOfAddress(account.name, address)
+        account.name === address || isTruncationOfAddress(account.name, address)
     )
 }
 
