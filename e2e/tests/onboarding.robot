@@ -151,8 +151,7 @@ Closing Add Account Returns Home
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Watch Account Is Added From An Address
-    [Tags]    id:onboarding.add-account.watch    p1    needs-testid
-    Skip    WatchInfoScreen's Create button has no testID (watch_info_create_button).
+    [Tags]    id:onboarding.add-account.watch    p1
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
