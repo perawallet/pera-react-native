@@ -294,7 +294,7 @@ export const fundFromDev = async (
 export const castCalldata = async (
     signature: string,
     args: readonly string[] = [],
-): Promise<Hex> => (await oracle(['calldata', signature, ...args])) as Hex
+): Promise<Hex> => (await oracle(['calldata', '--', signature, ...args])) as Hex
 
 export const castChecksumAddress = async (address: string): Promise<Address> =>
     (await oracle(['to-check-sum-address', address])) as Address
