@@ -129,7 +129,6 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 describe('services/accounts/utils - isNamedAfterAddress', () => {
     test.each([
         ['the full address', LONG_ADDRESS],
-        ["the codec's own truncation", 'ABC~XYZ'],
         ['a legacy 6+6 truncation', 'ABCDEF...UVWXYZ'],
         ['a unicode-ellipsis truncation', 'ABCDEF…UVWXYZ'],
     ])('is true for a name that is %s', (_, name) => {

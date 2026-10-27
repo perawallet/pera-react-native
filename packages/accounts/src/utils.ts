@@ -55,9 +55,9 @@ const isTruncationOfAddress = (name: string, address: string) => {
 }
 
 /**
- * The account's name is just its own address on `chainId`: full, the chain
- * codec's truncation, or any `...`/`…` cut of it. That isn't a distinguishing
- * label, so callers treat the account as unnamed.
+ * The account's name is just its own address on `chainId`, full or any
+ * `...`/`…` cut of it. That isn't a distinguishing label, so callers treat the
+ * account as unnamed.
  */
 export const isNamedAfterAddress = (
     account: WalletAccount,
@@ -67,9 +67,7 @@ export const isNamedAfterAddress = (
     if (!account.name || !address) return false
     return (
         account.name === address ||
-        isTruncationOfAddress(account.name, address) ||
-        (addressCodecs.has(chainId) &&
-            addressCodecs.get(chainId).truncate(address) === account.name)
+        isTruncationOfAddress(account.name, address)
     )
 }
 

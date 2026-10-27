@@ -404,7 +404,7 @@ describe('useAccountInfoCard', () => {
             const namedAfterTruncation = hdSibling(
                 'truncated-name',
                 { ethereum: { address: '0xabc', keyPairId: 'key-3' } },
-                'ethereum:0xabc',
+                '0x...c',
             )
             const namedAfterAddress = hdSibling(
                 'full-name',
