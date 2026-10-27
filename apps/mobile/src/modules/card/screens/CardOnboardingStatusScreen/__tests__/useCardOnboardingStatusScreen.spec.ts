@@ -52,6 +52,7 @@ const FINISH_IDLE = {
     isLoginLocked: false,
     canTryAgain: false,
     handleTryAgain: mockTryAgain,
+    handleSignIn: vi.fn(),
 }
 vi.mock('../useFinishRegistrationOnVerified', () => ({
     useFinishRegistrationOnVerified: (...args: unknown[]) =>
@@ -418,6 +419,7 @@ describe('useCardOnboardingStatusScreen', () => {
         ['preparing', 'preparing'],
         ['slow', 'preparing-slow'],
         ['stalled', 'preparing-stalled'],
+        ['sign-in', 'sign-in-required'],
     ])(
         'shows the account as being prepared (%s) while Baanx finishes it',
         (accountPreparation, documentsState) => {

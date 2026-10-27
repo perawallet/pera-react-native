@@ -78,6 +78,12 @@ const DOCUMENTS_ROW: Record<
         ),
         showsPendingLabel: false,
     },
+    'sign-in-required': {
+        icon: 'info',
+        variant: 'warning',
+        bodyKey: i18nKey('peraCard.setup_status.sign_in_to_finish_body'),
+        showsPendingLabel: false,
+    },
     'account-locked': {
         icon: 'cross',
         variant: 'error',
@@ -107,6 +113,7 @@ type DocumentsRowProps = {
     /** Enables the "Try again" login while the account is being set up. */
     canTryAgain: boolean
     onTryAgain: () => void
+    onSignIn: () => void
 }
 
 export const DocumentsRow = ({
@@ -116,6 +123,7 @@ export const DocumentsRow = ({
     onOpenSupport,
     canTryAgain,
     onTryAgain,
+    onSignIn,
 }: DocumentsRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -153,6 +161,15 @@ export const DocumentsRow = ({
                     isDisabled={!canTryAgain}
                     style={styles.detailsButton}
                     testID='card-onboarding-status-documents-try-again'
+                />
+            ) : null}
+            {documentsState === 'sign-in-required' ? (
+                <PWButton
+                    variant='primary'
+                    title={t('peraCard.sign_in.submit_button')}
+                    onPress={onSignIn}
+                    style={styles.detailsButton}
+                    testID='card-onboarding-status-documents-sign-in'
                 />
             ) : null}
             {documentsState === 'preparing-slow' ||

@@ -36,8 +36,14 @@ export const FINISH_REGISTRATION_SLOW_AFTER_MS = 10 * 60_000
  * - `slow`: the same, for longer than Baanx normally takes.
  * - `stalled`: the same, with this session's logins spent, so only support
  *   can finish it.
+ * - `sign-in`: KYC is verified and only the user's own sign-in can finish it.
  */
-export type AccountPreparation = 'none' | 'preparing' | 'slow' | 'stalled'
+export type AccountPreparation =
+    | 'none'
+    | 'preparing'
+    | 'slow'
+    | 'stalled'
+    | 'sign-in'
 
 export type UseFinishRegistrationOnVerifiedParams = {
     verificationState: Nullable<VerificationState>
@@ -59,6 +65,8 @@ export type UseFinishRegistrationOnVerifiedResult = {
      */
     canTryAgain: boolean
     handleTryAgain: () => void
+    /** Reopens the sign-in the user was sent to, if they backed out of it. */
+    handleSignIn: () => void
 }
 
 /**
@@ -84,12 +92,14 @@ export const useFinishRegistrationOnVerified = (
     const { infoToast } = useToast()
     const isFocused = useIsFocused()
     const loginAttempts = useCardStore(state => state.loginAttempts)
+    const hasPassword = useCardStore(state => state.password !== null)
     const { mutateAsync: finalize, isPending } =
         useFinalizeRegistrationMutation(scope)
     // Re-renders when a time-based rule (spacing, slow copy) changes.
     const [now, setNow] = useState(() => Date.now())
     const isInFlightRef = useRef(false)
     const hasSentToSignInRef = useRef(false)
+    const [hasSentToSignIn, setHasSentToSignIn] = useState(false)
     const [preparingSince, setPreparingSince] = useState<Nullable<number>>(null)
 
     const isWaitingOnBaanx =
@@ -98,19 +108,31 @@ export const useFinishRegistrationOnVerified = (
         !isAuthenticated
     const isLoginLocked = loginAttempts.isLocked && !isRegistrationComplete
     const hasAttemptsLeft = hasLoginAttemptsLeft(loginAttempts)
+    // A sign-in that came back mid-onboarding holds the password again, so the
+    // automatic login takes over from there.
+    const isSignInRequired =
+        isWaitingOnBaanx &&
+        !isLoginLocked &&
+        hasSentToSignIn &&
+        (!hasPassword || email === null)
 
-    const sendToSignIn = useCallback(() => {
-        if (hasSentToSignInRef.current) return
-        hasSentToSignInRef.current = true
-        infoToast(
-            t('peraCard.setup_status.sign_in_to_finish_title'),
-            t('peraCard.setup_status.sign_in_to_finish_body'),
-        )
+    const handleSignIn = useCallback(() => {
         navigation.navigate('CardSignIn', {
             email: email ?? undefined,
             finishesRegistration: true,
         })
-    }, [email, infoToast, navigation, t])
+    }, [email, navigation])
+
+    const sendToSignIn = useCallback(() => {
+        if (hasSentToSignInRef.current) return
+        hasSentToSignInRef.current = true
+        setHasSentToSignIn(true)
+        infoToast(
+            t('peraCard.setup_status.sign_in_to_finish_title'),
+            t('peraCard.setup_status.sign_in_to_finish_body'),
+        )
+        handleSignIn()
+    }, [handleSignIn, infoToast, t])
 
     const runLogin = useCallback(
         (isAutomatic: boolean) => {
@@ -204,17 +226,23 @@ export const useFinishRegistrationOnVerified = (
         runLogin(false)
     }, [isWaitingOnBaanx, loginAttempts, runLogin])
 
+    const resolveAccountPreparation = (): AccountPreparation => {
+        if (isSignInRequired) return 'sign-in'
+        if (!isPreparing) return 'none'
+        if (!hasAttemptsLeft && !isPending) return 'stalled'
+        return msUntilSlow === 0 ? 'slow' : 'preparing'
+    }
+
     return {
-        accountPreparation: !isPreparing
-            ? 'none'
-            : !hasAttemptsLeft && !isPending
-              ? 'stalled'
-              : msUntilSlow === 0
-                ? 'slow'
-                : 'preparing',
+        accountPreparation: resolveAccountPreparation(),
         isLoginLocked,
         canTryAgain:
-            isPreparing && !isPending && msUntilNext === 0 && hasAttemptsLeft,
+            isPreparing &&
+            !isSignInRequired &&
+            !isPending &&
+            msUntilNext === 0 &&
+            hasAttemptsLeft,
         handleTryAgain,
+        handleSignIn,
     }
 }

@@ -69,6 +69,7 @@ export type UseCardOnboardingStatusScreenResult = {
     /** One login, while the account is being set up and the spacing allows. */
     canTryAgain: boolean
     handleTryAgain: () => void
+    handleSignIn: () => void
     /** Recovers the documents-row error state (PENDING review) by re-polling. */
     handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
@@ -134,6 +135,7 @@ export const useCardOnboardingStatusScreen =
             isLoginLocked,
             canTryAgain,
             handleTryAgain,
+            handleSignIn,
         } = useFinishRegistrationOnVerified(scope, {
             hasAccountSignal,
             verificationState,
@@ -154,7 +156,9 @@ export const useCardOnboardingStatusScreen =
         const isIdentityVerified =
             documentsState === 'verified' ||
             documentsState === 'preparing' ||
-            documentsState === 'preparing-slow'
+            documentsState === 'preparing-slow' ||
+            documentsState === 'preparing-stalled' ||
+            documentsState === 'sign-in-required'
 
         const handleVerifyIdentity = useCallback(() => {
             trackEvent(CardEvent.CreateVerifyAccount)
@@ -237,6 +241,7 @@ export const useCardOnboardingStatusScreen =
             handleRetryStatus,
             canTryAgain,
             handleTryAgain,
+            handleSignIn,
             handleConnectAccount,
             handleLogout,
             handleOpenSupport,

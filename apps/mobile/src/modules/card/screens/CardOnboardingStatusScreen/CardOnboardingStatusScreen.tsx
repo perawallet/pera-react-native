@@ -42,6 +42,7 @@ export const CardOnboardingStatusScreen = () => {
         handleRetryStatus,
         canTryAgain,
         handleTryAgain,
+        handleSignIn,
         handleConnectAccount,
         handleLogout,
         handleOpenSupport,
@@ -74,6 +75,7 @@ export const CardOnboardingStatusScreen = () => {
                         onOpenSupport={handleOpenSupport}
                         canTryAgain={canTryAgain}
                         onTryAgain={handleTryAgain}
+                        onSignIn={handleSignIn}
                     />
                     <ConnectFundsRow
                         isFundsConnected={isFundsConnected}

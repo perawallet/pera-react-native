@@ -23,8 +23,8 @@ import {
     type FinalizeRegistrationOutcome,
 } from '@perawallet/wallet-core-card'
 
-// Stands in for the real mutation, including its one bookkeeping duty: every
-// login it runs is recorded against the budget.
+// Stands in for the real mutation, including its bookkeeping: every login it
+// runs is recorded against the budget, and a sign-in outcome drops the password.
 let mockOutcome: FinalizeRegistrationOutcome = 'not-ready'
 const mockFinalize = vi.fn(
     async ({ isAutomatic }: { email: string; isAutomatic: boolean }) => {
@@ -32,6 +32,12 @@ const mockFinalize = vi.fn(
             .getState()
             .recordLoginAttempt({ isAutomatic, at: Date.now() })
         if (mockOutcome === 'locked') useCardStore.getState().markLoginLocked()
+        if (
+            mockOutcome === 'otp-required' ||
+            mockOutcome === 'password-required'
+        ) {
+            useCardStore.getState().setPassword(null)
+        }
         return mockOutcome
     },
 )
@@ -264,8 +270,26 @@ describe('useFinishRegistrationOnVerified', () => {
         },
     )
 
+    it('keeps a way back to the sign-in after the user leaves it', async () => {
+        mockOutcome = 'password-required'
+        const { result } = renderFinish(VERIFIED)
+        await flush()
+        expect(mockNavigate).toHaveBeenCalledTimes(1)
+        expect(result.current.accountPreparation).toBe('sign-in')
+        expect(result.current.canTryAgain).toBe(false)
+
+        act(() => result.current.handleSignIn())
+
+        expect(mockNavigate).toHaveBeenCalledTimes(2)
+        expect(mockNavigate).toHaveBeenLastCalledWith('CardSignIn', {
+            email: 'john@example.com',
+            finishesRegistration: true,
+        })
+        expect(mockInfoToast).toHaveBeenCalledTimes(1)
+    })
+
     it('goes straight to sign in when no email is known', async () => {
-        renderFinish({ ...VERIFIED, email: null })
+        const { result } = renderFinish({ ...VERIFIED, email: null })
         await flush()
 
         expect(mockFinalize).not.toHaveBeenCalled()
@@ -273,6 +297,7 @@ describe('useFinishRegistrationOnVerified', () => {
             email: undefined,
             finishesRegistration: true,
         })
+        expect(result.current.accountPreparation).toBe('sign-in')
     })
 
     it('waits while the checklist is not on screen', async () => {
