@@ -472,6 +472,34 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             },
         )
 
+        it('Given a listed drainer and a contact, when a dApp asks to approve the drainer on a contract imitating the contact, then the review explains both warnings', async () => {
+            const walletKit = await connectEthereum()
+
+            send(walletKit, 'eth_sendTransaction', [
+                {
+                    from: SENDER,
+                    to: CONTACT_LOOK_ALIKE,
+                    value: '0x0',
+                    data: APPROVE_DRAINER_DATA,
+                },
+            ])
+            await findSlide(TRANSACTION_SLIDE)
+
+            await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
+            expect(
+                screen
+                    .getByTestId('request_address_look_alike_1')
+                    .textContent?.toLowerCase(),
+            ).toBe(CONTACT_LOOK_ALIKE)
+            expect(
+                screen.getByTestId('request_address_listed_body'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('request_address_look_alike_body'),
+            ).toBeTruthy()
+            await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
+        })
+
         it('Given a contact, when a dApp sends native ETH to an address imitating it, then the review compares both in full and signing waits on acknowledgement', async () => {
             const walletKit = await connectEthereum()
 

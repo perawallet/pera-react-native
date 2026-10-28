@@ -174,13 +174,23 @@ export const RequestAddressWarning = ({
                     )}
                 </PWText>
             </PWView>
-            <PWText style={styles.body}>
-                {t(
-                    hasListed
-                        ? 'signing.address_safety.listed_body'
-                        : 'signing.address_safety.look_alike_body',
-                )}
-            </PWText>
+            {hasListed && (
+                <PWText
+                    style={styles.body}
+                    {...getTestProps('request_address_listed_body')}
+                >
+                    {t('signing.address_safety.listed_body')}
+                </PWText>
+            )}
+            {/* A request can name both, and the look-alike rows need their own explanation. */}
+            {hasLookAlike && (
+                <PWText
+                    style={styles.body}
+                    {...getTestProps('request_address_look_alike_body')}
+                >
+                    {t('signing.address_safety.look_alike_body')}
+                </PWText>
+            )}
             {flaggedAddresses.map((flagged, index) =>
                 flagged.assessment.kind === 'listed' ? (
                     <ListedAddress
