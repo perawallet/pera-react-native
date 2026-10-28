@@ -233,6 +233,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     invalidateSpendableBalanceQueries: vi.fn(),
     invalidateTransactionQueries: vi.fn(),
     invalidateTransactionQueriesForAddresses: vi.fn(),
+    invalidateTransactionQueriesForChain: vi.fn(),
     invalidateTransactionQueriesForScope: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
@@ -1174,7 +1175,9 @@ describe('SyncService', () => {
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1', 'ADDR2'], TESTNET)
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1', 'ADDR2'], TESTNET, {
+                shouldRefetchAllPages: true,
+            })
         })
 
         it('scopes invalidation to the given addresses when no holdings changed', async () => {
@@ -1202,7 +1205,9 @@ describe('SyncService', () => {
             )
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET, {
+                shouldRefetchAllPages: true,
+            })
 
             vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
                 Promise.resolve({ changed: true, holdingsChanged: true }),
@@ -1260,7 +1265,9 @@ describe('SyncService', () => {
             )
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET, {
+                shouldRefetchAllPages: true,
+            })
 
             vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
                 Promise.resolve(),
@@ -1333,7 +1340,9 @@ describe('SyncService', () => {
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
             expect(
                 invalidateTransactionQueriesForAddresses,
-            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET)
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'], MAINNET, {
+                shouldRefetchAllPages: true,
+            })
         })
     })
 
@@ -2517,6 +2526,54 @@ describe('SyncService', () => {
                 useSyncCursorStore.getState = original
                 service.stop()
             }
+        })
+
+        it('invalidates only the chain that settled', async () => {
+            const {
+                invalidateTransactionQueries,
+                invalidateTransactionQueriesForChain,
+            } = await import('@perawallet/wallet-core-transactions')
+            mockChainList = [{ id: 'algorand' }, { id: 'ethereum' }]
+            mockBroadcasters.add('ethereum')
+            mockReconcileOpenSubmissions.mockImplementation(
+                async (chainId: string) => ({
+                    probed: 1,
+                    confirmed: chainId === 'ethereum' ? 1 : 0,
+                    failed: 0,
+                }),
+            )
+
+            service.start()
+            await flushMicrotasks()
+            service.stop()
+
+            expect(invalidateTransactionQueriesForChain).toHaveBeenCalledTimes(
+                1,
+            )
+            expect(invalidateTransactionQueriesForChain).toHaveBeenCalledWith(
+                queryClient,
+                'ethereum',
+            )
+            expect(invalidateTransactionQueries).not.toHaveBeenCalled()
+        })
+
+        it('invalidates a failed settle on its own chain too', async () => {
+            const { invalidateTransactionQueriesForChain } =
+                await import('@perawallet/wallet-core-transactions')
+            mockReconcileOpenSubmissions.mockResolvedValue({
+                probed: 1,
+                confirmed: 0,
+                failed: 1,
+            })
+
+            service.start()
+            await flushMicrotasks()
+            service.stop()
+
+            expect(invalidateTransactionQueriesForChain).toHaveBeenCalledWith(
+                queryClient,
+                'algorand',
+            )
         })
 
         it('settles open submissions of every broadcasting chain, even with no accounts', async () => {
