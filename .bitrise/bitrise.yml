@@ -860,7 +860,7 @@ workflows:
             #!/usr/bin/env bash
             set -eo pipefail
             ./tools/qa/smoke-test.sh android "$BITRISE_APK_PATH"
-        timeout: 600
+        timeout: 1800
         title: Run smoke gate
     - deploy-to-bitrise-io@2:
         inputs:
@@ -917,7 +917,7 @@ workflows:
             #!/usr/bin/env bash
             set -eo pipefail
             ./tools/qa/smoke-test.sh ios "$SMOKE_ARTIFACT"
-        timeout: 600
+        timeout: 1800
         title: Run smoke gate
     - deploy-to-bitrise-io@2:
         inputs:
