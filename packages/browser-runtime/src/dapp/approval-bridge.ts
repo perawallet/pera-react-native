@@ -627,10 +627,14 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 sendResponse(entry.approval)
                 return true
             }
+            // Each successful decision keeps its surface: the page shows its
+            // success state briefly, then closes itself.
             case 'resolve-approval': {
-                this.finish(msg.requestId!, {
-                    approvedAddresses: msg.approvedAddresses ?? [],
-                })
+                this.finish(
+                    msg.requestId!,
+                    { approvedAddresses: msg.approvedAddresses ?? [] },
+                    { keepSurface: true },
+                )
                 sendResponse({ ok: true })
                 return true
             }
@@ -639,7 +643,11 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                     sendResponse({ ok: false, error: 'missing result' })
                     return true
                 }
-                this.finish(msg.requestId!, { result: msg.result })
+                this.finish(
+                    msg.requestId!,
+                    { result: msg.result },
+                    { keepSurface: true },
+                )
                 sendResponse({ ok: true })
                 return true
             }
@@ -685,7 +693,11 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                     sendResponse({ ok: false, error: 'missing credential' })
                     return true
                 }
-                this.finish(msg.requestId!, { credential: msg.credential })
+                this.finish(
+                    msg.requestId!,
+                    { credential: msg.credential },
+                    { keepSurface: true },
+                )
                 sendResponse({ ok: true })
                 return true
             }
@@ -752,7 +764,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             this.windowToRequest.delete(entry.windowId)
             if (!keepSurface) {
                 this.selfClosedWindowIds.add(entry.windowId)
-                // Best-effort close on programmatic resolve; ignore if already gone.
+                // Best-effort close on a reject or withdraw; ignore if already gone.
                 void this.chromeLike.windows
                     .remove?.(entry.windowId)
                     .catch(() => {})

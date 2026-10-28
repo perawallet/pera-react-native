@@ -1145,6 +1145,114 @@ describe('ApprovalWindowBridge', () => {
         }
     })
 
+    // The approval page shows its success state before closing itself, so a
+    // successful decision must leave the window to it; a reject still closes.
+    describe('closing the approval window on settle', () => {
+        const openWindowApproval = async (
+            bridge: ApprovalWindowBridge,
+            requestId: string,
+            kind: 'proposal' | 'request' | 'passkey',
+        ): Promise<{ decision: Promise<unknown> }> => {
+            const decision =
+                kind === 'proposal'
+                    ? bridge.openConnectionProposal(
+                          proposalCtx(requestId, 'https://x.com'),
+                      )
+                    : kind === 'request'
+                      ? bridge.openConnectionRequest({
+                            requestId,
+                            origin: 'https://dapp.example',
+                            connectionId: 'client-1',
+                            correlationId: '42',
+                            chainId: 'algorand',
+                            operation: { type: 'sign-transactions', group: [] },
+                            authorizedAccounts: ['AAAA'],
+                            peer: { name: 'dApp', url: 'https://dapp.example' },
+                            sourceType: 'injected',
+                        })
+                      : bridge.openPasskeyGet({
+                            requestId,
+                            origin: 'https://webauthn.io',
+                            rpId: 'webauthn.io',
+                            options: { rpId: 'webauthn.io' } as any,
+                        })
+            await flush()
+            // Wrapped: returning the bare promise would make the caller await
+            // the decision itself.
+            return { decision }
+        }
+
+        it.each([
+            {
+                kind: 'proposal' as const,
+                message: { kind: 'resolve-approval', approvedAddresses: ['A'] },
+            },
+            {
+                kind: 'request' as const,
+                message: {
+                    kind: 'resolve-connection-request',
+                    result: { type: 'sign-transactions', signed: ['c3R4bg=='] },
+                },
+            },
+            {
+                kind: 'passkey' as const,
+                message: {
+                    kind: 'resolve-passkey',
+                    credential: { id: 'c', rawId: 'c', type: 'public-key' },
+                },
+            },
+        ])(
+            'leaves the window open on $message.kind, and a later user close changes nothing',
+            async ({ kind, message }) => {
+                const { chromeLike, fireMessage, closeWindow } = makeChrome()
+                const bridge = new ApprovalWindowBridge(chromeLike)
+                bridge.listen()
+                const { decision } = await openWindowApproval(
+                    bridge,
+                    'ok1',
+                    kind,
+                )
+
+                await fireMessage(
+                    {
+                        scope: DAPP_APPROVAL_SCOPE,
+                        requestId: 'ok1',
+                        ...message,
+                    },
+                    trustedSender,
+                )
+                const settled = await decision
+                closeWindow(100)
+
+                expect(settled).not.toBeNull()
+                expect(chromeLike.windows.remove).not.toHaveBeenCalled()
+            },
+        )
+
+        it('still closes the window itself on reject-approval', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const { decision } = await openWindowApproval(
+                bridge,
+                'no1',
+                'proposal',
+            )
+
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'reject-approval',
+                    requestId: 'no1',
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toBeNull()
+            expect(chromeLike.windows.remove).toHaveBeenCalledWith(100)
+        })
+    })
+
     it('finish() does not call windows.remove for a popup-surface approval resolved via resolve-approval', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
