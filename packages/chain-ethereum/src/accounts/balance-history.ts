@@ -369,7 +369,8 @@ export const createEthereumBalanceHistoryOps = (
     const fetchPortfolioHistory: AccountsChainAdapter['fetchPortfolioHistory'] =
         async (addresses, period, scope) => {
             eip155ChainIdOf(scope, chain)
-            if (addresses.length === 0 || !hasServices(ctx, scope)) return []
+            if (!hasServices(ctx, scope)) return null
+            if (addresses.length === 0) return []
             const [listed, holdings] = await Promise.all([
                 fetchWhitelist(scope, chain),
                 readHoldings(scope, addresses),
@@ -392,7 +393,8 @@ export const createEthereumBalanceHistoryOps = (
                 [...assetIdByCaip19.keys()],
                 period,
             )
-            if (!grid?.length) return []
+            if (grid === null) return null
+            if (grid.length === 0) return []
             const points = [
                 ...grid,
                 { timestamp: now(), balances: sumBalances(scope, holdings) },

@@ -25,7 +25,7 @@ import {
     CHAIN_CAPABILITIES,
     type ChainHoldingNative,
 } from '@perawallet/wallet-core-chain-contract'
-import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     accountKindId,
@@ -76,7 +76,8 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
         currency: string
         /** Handlers under which each declared history operation answers with `portfolio` and `balance`. */
         handlers: readonly RequestHandler[]
-        portfolio: readonly PortfolioHistoryPoint[]
+        /** `null` where the scope serves no portfolio history. */
+        portfolio: Nullable<readonly PortfolioHistoryPoint[]>
         balance: readonly HoldingBalanceHistoryPoint[]
     }
     /** Required when the adapter declares `fetchHoldingAcquisitionOrder`. */
@@ -422,7 +423,7 @@ export const accountsContractTests = (
                 // The server rejects any unhandled request, so a request fails this.
                 await expect(
                     fetchPortfolioHistory(['ANY'], 'one-day', scope),
-                ).resolves.toEqual([])
+                ).resolves.toBeNull()
                 await expect(
                     fetchHoldingBalanceHistory(
                         'ANY',

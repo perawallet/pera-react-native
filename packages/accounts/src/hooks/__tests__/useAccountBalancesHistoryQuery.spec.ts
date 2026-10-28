@@ -150,6 +150,27 @@ describe('useAccountBalancesHistoryQuery', () => {
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
             expect(result.current.data).toEqual([])
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+        })
+
+        it('flags isUnavailableOnNetwork when the network serves no history', async () => {
+            portfolioHistory().mockResolvedValue(null)
+
+            const { result } = renderHook(
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-week',
+                        selectedScope(),
+                    ),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() =>
+                expect(result.current.isUnavailableOnNetwork).toBe(true),
+            )
+            expect(result.current.data).toEqual([])
+            expect(result.current.isPending).toBe(false)
         })
 
         it('handles loading state', () => {
