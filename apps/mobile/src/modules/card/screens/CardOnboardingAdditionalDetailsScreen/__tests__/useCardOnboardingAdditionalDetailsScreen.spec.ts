@@ -64,6 +64,11 @@ const ICT: RegistrationOption = {
     key: 'information_and_communication',
     name: 'Information and communication',
 }
+// The mocked t echoes the key, so the band's name is its i18n key.
+const INCOME_20K_TO_50K: RegistrationOption = {
+    key: 'between_20k_and_50k',
+    name: 'peraCard.additional_details.annual_income_bands.between_20k_and_50k',
+}
 
 const SETTINGS = {
     countries: [PORTUGAL, SPAIN, FRANCE, GERMANY, USA],
@@ -163,10 +168,6 @@ const renderScreenHook = () =>
     renderHook(() => {
         const screen = useCardOnboardingAdditionalDetailsScreen()
         const tin = useController({ control: screen.control, name: 'tin' })
-        const income = useController({
-            control: screen.control,
-            name: 'estimatedAnnualIncome',
-        })
         const occupationOther = useController({
             control: screen.control,
             name: 'occupationOther',
@@ -174,7 +175,6 @@ const renderScreenHook = () =>
         return {
             ...screen,
             setTin: tin.field.onChange,
-            setIncome: income.field.onChange,
             setOccupationOther: occupationOther.field.onChange,
         }
     })
@@ -193,11 +193,22 @@ const pick = async (
     await waitFor(() => expect(mockRequest).toHaveBeenCalled())
 }
 
+const pickIncome = async (result: HookResult) => {
+    await pick(
+        result,
+        () => result.current.handleSelectAnnualIncome(),
+        INCOME_20K_TO_50K,
+    )
+    await waitFor(() =>
+        expect(result.current.selectedAnnualIncome).toEqual(INCOME_20K_TO_50K),
+    )
+}
+
 const fillValidForm = async (result: HookResult) => {
     act(() => {
         result.current.setTin('123456789')
-        result.current.setIncome('30000')
     })
+    await pickIncome(result)
     await pick(result, () => result.current.handleSelectOccupation(), IT_PRO)
     await waitFor(() =>
         expect(result.current.selectedOccupation).toEqual(IT_PRO),
@@ -265,7 +276,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
             sourceOfWealth: SALARY.key,
             sourceOfWealthOther: null,
             businessSector: ICT.key,
-            estimatedAnnualIncome: '42000',
+            estimatedAnnualIncome: 'more_than_100k',
             incomeCountries: ['ES', 'FR'],
         }
 
@@ -277,6 +288,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
         expect(result.current.isOccupationOther).toBe(true)
         expect(result.current.selectedSourceOfWealth).toEqual(SALARY)
         expect(result.current.selectedBusinessSector).toEqual(ICT)
+        expect(result.current.selectedAnnualIncome?.key).toBe('more_than_100k')
         expect(result.current.incomeCountries).toEqual([SPAIN, FRANCE])
 
         // The TIN is never returned, so it is the one field left to type.
@@ -284,6 +296,28 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
             result.current.setTin('123456789')
         })
         await waitFor(() => expect(result.current.isValid).toBe(true))
+    })
+
+    it('leaves the income unpicked when the record holds a value that is not one of the bands', async () => {
+        mockRecord = {
+            occupation: IT_PRO.key,
+            occupationOther: null,
+            sourceOfWealth: SALARY.key,
+            sourceOfWealthOther: null,
+            businessSector: ICT.key,
+            estimatedAnnualIncome: '42000',
+            incomeCountries: ['PT'],
+        }
+        const { result } = renderScreenHook()
+        await waitFor(() =>
+            expect(result.current.selectedOccupation).toEqual(IT_PRO),
+        )
+        act(() => {
+            result.current.setTin('123456789')
+        })
+
+        expect(result.current.selectedAnnualIncome).toBeUndefined()
+        expect(result.current.isValid).toBe(false)
     })
 
     it('posts the details and routes on with the phase Baanx returns', async () => {
@@ -305,7 +339,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
             occupation: IT_PRO.key,
             sourceOfWealth: SALARY.key,
             businessSector: ICT.key,
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT'],
         })
         expect(mockGoToNextStep).toHaveBeenCalledWith({
@@ -334,8 +368,8 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
 
         act(() => {
             result.current.setTin('123456789')
-            result.current.setIncome('30000')
         })
+        await pickIncome(result)
         await waitFor(() => expect(result.current.isValid).toBe(true))
         await act(async () => {
             result.current.handleConfirm()
@@ -345,7 +379,7 @@ describe('useCardOnboardingAdditionalDetailsScreen', () => {
             onboardingId: 'mock-onboarding-id',
             tin: '123456789',
             tinCountry: 'PT',
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT'],
         })
     })

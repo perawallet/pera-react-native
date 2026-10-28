@@ -53,6 +53,29 @@ describe('useCardOptionField', () => {
         })
     })
 
+    it('opens the picker over a fixed set of options the app owns', async () => {
+        const bands = [
+            { key: 'less_than_20k', name: 'Less than $20,000' },
+            { key: 'more_than_100k', name: 'More than $100,000' },
+        ]
+        mockRequest.mockResolvedValueOnce(bands[1])
+        const { result } = renderHook(() =>
+            useCardOptionField({
+                options: bands,
+                pickerTitle: 'Income',
+                onChange,
+            }),
+        )
+
+        act(() => result.current.handleSelect())
+
+        await waitFor(() => expect(result.current.selected).toEqual(bands[1]))
+        expect(mockRequest.mock.calls[0][0].contents.props).toEqual({
+            title: 'Income',
+            options: bands,
+        })
+    })
+
     it('keeps the choice when the picker is dismissed', async () => {
         mockRequest.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() =>

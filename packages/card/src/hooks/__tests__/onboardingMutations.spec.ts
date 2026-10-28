@@ -272,7 +272,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
             occupation: 'it_or_technology_professional',
             sourceOfWealth: 'employment_salaried',
             businessSector: 'information_and_communication',
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT'],
         }
         const { result } = renderHook(

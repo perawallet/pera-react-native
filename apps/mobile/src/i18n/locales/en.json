@@ -1764,7 +1764,12 @@
             "source_of_wealth_other_label": "Your Source of Wealth",
             "business_sector_label": "Business Sector",
             "annual_income_label": "Estimated Annual Income",
-            "annual_income_invalid": "Enter your estimated annual income (up to 50 characters)",
+            "annual_income_bands": {
+                "less_than_20k": "Less than $20,000",
+                "between_20k_and_50k": "$20,000 to $50,000",
+                "between_50k_and_100k": "$50,000 to $100,000",
+                "more_than_100k": "More than $100,000"
+            },
             "income_country_label": "Country Where You Earn Income",
             "add_income_country": "Add another country",
             "remove_country": "Remove",

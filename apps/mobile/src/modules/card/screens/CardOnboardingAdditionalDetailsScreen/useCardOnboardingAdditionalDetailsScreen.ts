@@ -15,6 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     createAdditionalDetailsSchema,
+    ESTIMATED_ANNUAL_INCOME_BANDS,
+    EstimatedAnnualIncome,
     getCardApiError,
     OTHER_OCCUPATION_KEY,
     OTHER_SOURCE_OF_WEALTH_KEY,
@@ -28,7 +30,7 @@ import {
     type RegistrationOption,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import {
@@ -47,6 +49,21 @@ const MAX_INCOME_COUNTRIES = 3
 
 /** Baanx answers this while its occupation and wealth lists are still loading. */
 const SERVICE_UNAVAILABLE_STATUS = 503
+
+const ANNUAL_INCOME_LABEL_KEYS: Record<EstimatedAnnualIncome, I18nKey> = {
+    [EstimatedAnnualIncome.LessThan20k]: i18nKey(
+        'peraCard.additional_details.annual_income_bands.less_than_20k',
+    ),
+    [EstimatedAnnualIncome.Between20kAnd50k]: i18nKey(
+        'peraCard.additional_details.annual_income_bands.between_20k_and_50k',
+    ),
+    [EstimatedAnnualIncome.Between50kAnd100k]: i18nKey(
+        'peraCard.additional_details.annual_income_bands.between_50k_and_100k',
+    ),
+    [EstimatedAnnualIncome.MoreThan100k]: i18nKey(
+        'peraCard.additional_details.annual_income_bands.more_than_100k',
+    ),
+}
 
 export type UseCardOnboardingAdditionalDetailsScreenResult = {
     control: Control<AdditionalDetailsFormValues>
@@ -70,6 +87,8 @@ export type UseCardOnboardingAdditionalDetailsScreenResult = {
     handleSelectSourceOfWealth: () => void
     selectedBusinessSector: Optional<RegistrationOption>
     handleSelectBusinessSector: () => void
+    selectedAnnualIncome: Optional<RegistrationOption>
+    handleSelectAnnualIncome: () => void
     incomeCountries: SupportedCountry[]
     hasDuplicateIncomeCountry: boolean
     canAddIncomeCountry: boolean
@@ -146,13 +165,20 @@ export const useCardOnboardingAdditionalDetailsScreen =
 
         const optionSetters = useMemo(() => {
             const set =
-                (field: 'occupation' | 'sourceOfWealth' | 'businessSector') =>
+                (
+                    field:
+                        | 'occupation'
+                        | 'sourceOfWealth'
+                        | 'businessSector'
+                        | 'estimatedAnnualIncome',
+                ) =>
                 (option: RegistrationOption) =>
                     setValue(field, option.key, { shouldValidate: true })
             return {
                 occupation: set('occupation'),
                 sourceOfWealth: set('sourceOfWealth'),
                 businessSector: set('businessSector'),
+                estimatedAnnualIncome: set('estimatedAnnualIncome'),
             }
         }, [setValue])
         const occupation = useCardOptionField({
@@ -171,6 +197,19 @@ export const useCardOnboardingAdditionalDetailsScreen =
             list: 'businessSectors',
             pickerTitle: t('peraCard.additional_details.business_sector_label'),
             onChange: optionSetters.businessSector,
+        })
+        const annualIncomeOptions = useMemo(
+            () =>
+                ESTIMATED_ANNUAL_INCOME_BANDS.map(key => ({
+                    key,
+                    name: t(ANNUAL_INCOME_LABEL_KEYS[key]),
+                })),
+            [t],
+        )
+        const annualIncome = useCardOptionField({
+            options: annualIncomeOptions,
+            pickerTitle: t('peraCard.additional_details.annual_income_label'),
+            onChange: optionSetters.estimatedAnnualIncome,
         })
         // Baanx rejects a US TIN country, so a US residence is no default.
         const tinCountry = usePreselectedCountryField({
@@ -207,6 +246,7 @@ export const useCardOnboardingAdditionalDetailsScreen =
         const prefillOccupation = occupation.setSelected
         const prefillSourceOfWealth = sourceOfWealth.setSelected
         const prefillBusinessSector = businessSector.setSelected
+        const prefillAnnualIncome = annualIncome.setSelected
         useEffect(() => {
             if (hasPrefilled.current || isRecordLoading) return
             if (!settings?.countries.length) return
@@ -249,10 +289,15 @@ export const useCardOnboardingAdditionalDetailsScreen =
                 onboardingDetails?.businessSector,
                 prefillBusinessSector,
             )
+            // A value that isn't one of the bands stays unpicked.
+            prefillOption(
+                annualIncomeOptions,
+                onboardingDetails?.estimatedAnnualIncome,
+                prefillAnnualIncome,
+            )
             const texts = {
                 occupationOther: onboardingDetails?.occupationOther,
                 sourceOfWealthOther: onboardingDetails?.sourceOfWealthOther,
-                estimatedAnnualIncome: onboardingDetails?.estimatedAnnualIncome,
             }
             for (const [field, value] of Object.entries(texts)) {
                 if (value) {
@@ -270,6 +315,8 @@ export const useCardOnboardingAdditionalDetailsScreen =
             prefillOccupation,
             prefillSourceOfWealth,
             prefillBusinessSector,
+            annualIncomeOptions,
+            prefillAnnualIncome,
             setValue,
         ])
 
@@ -344,6 +391,8 @@ export const useCardOnboardingAdditionalDetailsScreen =
             handleSelectSourceOfWealth: sourceOfWealth.handleSelect,
             selectedBusinessSector: businessSector.selected,
             handleSelectBusinessSector: businessSector.handleSelect,
+            selectedAnnualIncome: annualIncome.selected,
+            handleSelectAnnualIncome: annualIncome.handleSelect,
             incomeCountries: incomeCountries.countries,
             hasDuplicateIncomeCountry:
                 errors.incomeCountries?.message === 'income-country-duplicate',

@@ -1764,7 +1764,12 @@
             "source_of_wealth_other_label": "Varlıklarının kaynağı",
             "business_sector_label": "İş sektörü",
             "annual_income_label": "Tahmini yıllık gelir",
-            "annual_income_invalid": "Tahmini yıllık gelirini gir (en fazla 50 karakter)",
+            "annual_income_bands": {
+                "less_than_20k": "$20,000'den az",
+                "between_20k_and_50k": "$20,000 ile $50,000 arası",
+                "between_50k_and_100k": "$50,000 ile $100,000 arası",
+                "more_than_100k": "$100,000'den fazla"
+            },
             "income_country_label": "Gelir elde ettiğin ülke",
             "add_income_country": "Başka bir ülke ekle",
             "remove_country": "Kaldır",

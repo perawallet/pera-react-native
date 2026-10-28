@@ -66,11 +66,13 @@ const fillAdditionalDetails = async () => {
     fireEvent.change(await screen.findByTestId('card-onboarding-tin-input'), {
         target: { value: '123456789' },
     })
-    fireEvent.change(
-        screen.getByTestId('card-onboarding-annual-income-input'),
-        {
-            target: { value: '30000' },
-        },
+    // A fixed list of USD bands, with no search box.
+    fireEvent.click(screen.getByTestId('card-onboarding-annual-income-field'))
+    expect(await screen.findByTestId('card-option-less_than_20k')).toBeTruthy()
+    expect(screen.getByTestId('card-option-more_than_100k')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('card-option-between_20k_and_50k'))
+    await waitFor(() =>
+        expect(screen.queryByTestId('card-option-less_than_20k')).toBeNull(),
     )
     await pickOption('card-onboarding-occupation-field', OTHER_OCCUPATION_KEY)
     fireEvent.change(
@@ -201,7 +203,7 @@ describe('Flow: Card onboarding, additional details', () => {
             occupationOther: 'Beekeeper',
             sourceOfWealth: 'employment_salaried',
             businessSector: 'information_and_communication',
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT', 'ES'],
         })
     })

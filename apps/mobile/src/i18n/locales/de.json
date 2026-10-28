@@ -1756,7 +1756,12 @@
             "source_of_wealth_other_label": "Herkunft deines Vermögens",
             "business_sector_label": "Wirtschaftszweig",
             "annual_income_label": "Geschätztes Jahreseinkommen",
-            "annual_income_invalid": "Gib dein geschätztes Jahreseinkommen ein (höchstens 50 Zeichen)",
+            "annual_income_bands": {
+                "less_than_20k": "Weniger als $20,000",
+                "between_20k_and_50k": "$20,000 bis $50,000",
+                "between_50k_and_100k": "$50,000 bis $100,000",
+                "more_than_100k": "Mehr als $100,000"
+            },
             "income_country_label": "Land, in dem du Einkommen erzielst",
             "add_income_country": "Weiteres Land hinzufügen",
             "remove_country": "Entfernen",

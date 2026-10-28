@@ -327,7 +327,7 @@ describe('onboarding endpoints', () => {
                 sourceOfWealth: 'employment_salaried',
                 sourceOfWealthOther: null,
                 businessSector: 'information_and_communication',
-                estimatedAnnualIncome: '30000',
+                estimatedAnnualIncome: 'between_20k_and_50k',
                 incomeCountries: ['PT', 'ES'],
             },
         })
@@ -348,7 +348,7 @@ describe('onboarding endpoints', () => {
             sourceOfWealth: 'employment_salaried',
             sourceOfWealthOther: null,
             businessSector: 'information_and_communication',
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT', 'ES'],
         })
     })
@@ -471,7 +471,7 @@ describe('onboarding endpoints', () => {
             occupationOther: 'Beekeeper',
             sourceOfWealth: 'employment_salaried',
             businessSector: 'information_and_communication',
-            estimatedAnnualIncome: '30000',
+            estimatedAnnualIncome: 'between_20k_and_50k',
             incomeCountries: ['PT', 'ES'],
         }
 
