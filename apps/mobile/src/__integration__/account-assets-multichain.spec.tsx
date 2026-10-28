@@ -26,6 +26,7 @@ import { useRoute } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import { QueryClient } from '@tanstack/react-query'
 import {
+    hydrateAccountChainStates,
     insertAssetHolding,
     refreshAccountHoldings,
     useAccountsStore,
@@ -366,6 +367,8 @@ describe("Flow: One account's assets across chains", () => {
             scope: ALGO_SCOPE,
             amount: new Decimal(0),
         })
+        // As at startup: the stored chain state says this account has been read.
+        await hydrateAccountChainStates()
         useAccountsStore.getState().setAccounts([EMPTY_ALGORAND_ACCOUNT])
         renderList(EMPTY_ALGORAND_ACCOUNT)
         await screen.findByTestId('asset_network_filter_algorand')
