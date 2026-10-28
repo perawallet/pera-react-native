@@ -12,11 +12,15 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, vi } from 'vitest'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { formatDebugValue, shouldUseStackedLayout } from '../formatDebugValue'
 
-const ADDRESS = 'A'.repeat(58)
+const ADDRESS = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
 
 const circularObject: Record<string, unknown> = { name: 'loop' }
 circularObject.self = circularObject
@@ -25,6 +29,15 @@ const circularArray: unknown[] = []
 circularArray.push(circularArray)
 
 describe('formatDebugValue', () => {
+    beforeEach(() => {
+        registerLegacyAddressCodec(address => address === ADDRESS)
+    })
+
+    afterEach(() => {
+        addressCodecs.reset()
+        vi.restoreAllMocks()
+    })
+
     it.each([
         ['null', null, '(null)'],
         ['undefined', undefined, '(null)'],
@@ -61,17 +74,32 @@ describe('formatDebugValue', () => {
         expect(formatDebugValue(value)).toBe(expected)
     })
 
-    it('truncates a string shaped like an Algorand address', () => {
-        vi.mocked(truncateAlgorandAddress).mockReturnValueOnce('AAAA…AAAA')
+    it("truncates an address with its chain codec's short form", () => {
+        const truncate = vi
+            .spyOn(addressCodecs.get(LEGACY_CHAIN_ID), 'truncate')
+            .mockReturnValueOnce('AAAA…FKQ')
 
-        expect(formatDebugValue(ADDRESS)).toBe('AAAA…AAAA')
-        expect(truncateAlgorandAddress).toHaveBeenCalledWith(ADDRESS)
+        expect(formatDebugValue(ADDRESS)).toBe('AAAA…FKQ')
+        expect(truncate).toHaveBeenCalledWith(ADDRESS)
     })
 
-    it('leaves a lowercase 58-character string untruncated', () => {
-        const value = 'a'.repeat(58)
+    it.each(['A'.repeat(58), 'a'.repeat(58), ADDRESS.toLowerCase()])(
+        'leaves %s untouched: 58 characters, not an address',
+        value => {
+            const truncate = vi.spyOn(
+                addressCodecs.get(LEGACY_CHAIN_ID),
+                'truncate',
+            )
 
-        expect(formatDebugValue(value)).toBe(value)
+            expect(formatDebugValue(value)).toBe(value)
+            expect(truncate).not.toHaveBeenCalled()
+        },
+    )
+
+    it('leaves an address untouched when no chain has registered a codec', () => {
+        addressCodecs.reset()
+
+        expect(formatDebugValue(ADDRESS)).toBe(ADDRESS)
     })
 })
 
