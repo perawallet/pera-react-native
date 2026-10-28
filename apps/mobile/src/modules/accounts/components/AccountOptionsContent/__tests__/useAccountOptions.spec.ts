@@ -136,7 +136,17 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage')
+// Echoes the heading's name so the spec can see it is the sheet title.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            key === 'account_options.networks_title_named'
+                ? `${key} ${String(params?.name)}`
+                : key,
+        currentLanguage: 'en',
+        changeLanguage: () => undefined,
+    }),
+}))
 
 let mockIsMultichain = false
 vi.mock('../../../hooks/useIsMultichain', () => ({
@@ -356,7 +366,7 @@ describe('useAccountOptions', () => {
             mockIsMultichain = true
 
             expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
-                'account_options.networks_title_named',
+                'account_options.networks_title_named Savings',
             )
         })
 
@@ -1339,6 +1349,9 @@ describe('useAccountOptions', () => {
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             })
+            expect(arg.contents.props.details.name).toBe(
+                result.current.sheetTitle,
+            )
         })
 
         it('closes the options sheet and requests the export-share sheet when pressed', async () => {

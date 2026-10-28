@@ -290,12 +290,13 @@ describe('useAccountInfoCard', () => {
             id: string,
             chains: WalletAccount['chains'],
             name?: string,
+            account = 1,
         ): LocalAccount => ({
             id,
             custody: {
                 kind: 'local',
                 seed: 'bip39',
-                hd: { account: 1, keyIndex: 0 },
+                hd: { account, keyIndex: 0 },
             },
             chains,
             name,
@@ -411,11 +412,13 @@ describe('useAccountInfoCard', () => {
                 'full-name',
                 { algorand: { address: 'FULL_ADDR', keyPairId: 'key-4' } },
                 'FULL_ADDR',
+                2,
             )
             const named = hdSibling(
                 'savings',
                 { algorand: { address: 'SAV_ADDR', keyPairId: 'key-5' } },
                 'Savings',
+                3,
             )
             withHdGroup([
                 unnamedMain,
@@ -429,7 +432,7 @@ describe('useAccountInfoCard', () => {
             expect(result.current.structureRows.map(row => row.name)).toEqual([
                 'account_info.account_number #1',
                 'account_info.account_number #2',
-                'account_info.account_number #2',
+                'account_info.account_number #3',
                 'Savings',
             ])
         })
@@ -474,16 +477,12 @@ describe('useAccountInfoCard', () => {
         })
 
         test('keeps the remaining numbers when a middle account is removed', () => {
-            const third: LocalAccount = {
-                ...hdSibling('hd-third', {
-                    algorand: { address: 'THIRD_ADDR', keyPairId: 'key-6' },
-                }),
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 2, keyIndex: 0 },
-                },
-            }
+            const third = hdSibling(
+                'hd-third',
+                { algorand: { address: 'THIRD_ADDR', keyPairId: 'key-6' } },
+                undefined,
+                2,
+            )
             withHdGroup([hdAccount, third])
 
             const { result } = render()
