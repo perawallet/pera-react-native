@@ -3725,8 +3725,7 @@
         "introduction": {
             "title": "Tauschen in Pera",
             "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
-            "powered_by": "Unterstützt von ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Unterstützt von <0>P.E.R.A.</0>",
             "start_swapping": "Tauschen starten",
             "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Tauschpartners zu"
         },
@@ -3742,7 +3741,7 @@
             "you_pay": "Du zahlst",
             "you_receive": "Du erhältst",
             "to": "An",
-            "balance_label": "Guthaben: ",
+            "balance_label": "Guthaben: <0/>",
             "max": "MAX",
             "select_asset": "Auswählen"
         },
@@ -3822,7 +3821,7 @@
             },
             "list": {
                 "item": {
-                    "description": "{{amountIn}} {{unitIn}} getauscht gegen "
+                    "description": "<0/> getauscht gegen <1/>"
                 },
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",

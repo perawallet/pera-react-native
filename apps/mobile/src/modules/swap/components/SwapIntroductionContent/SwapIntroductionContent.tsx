@@ -67,10 +67,15 @@ export const SwapIntroductionContent = () => {
                 </PWText>
 
                 <PWText style={styles.poweredBy}>
-                    {t('swap.introduction.powered_by')}
-                    <PWText style={styles.poweredByBrand}>
-                        {t('swap.introduction.powered_by_brand')}
-                    </PWText>
+                    <Trans
+                        i18nKey='swap.introduction.powered_by'
+                        components={[
+                            <PWText
+                                key='brand'
+                                style={styles.poweredByBrand}
+                            />,
+                        ]}
+                    />
                 </PWText>
 
                 <PWButton

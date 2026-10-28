@@ -27,11 +27,16 @@ a missing key fails, and so does an extra one.
    Never translate a variable name.
 4. Preserve rich-text tags exactly: `<0>…</0>`, `<1>…</1>`. The numbers map to
    React components, and renumbering mis-renders. You may move a tagged span to
-   respect target word order, but the tag must still wrap the same content.
+   respect target word order, but the tag must still wrap the same content. A self-closing `<0/>` stands for a component that renders its own
+   content, such as an amount. Keep it self-closing and move it whole; `<0></0>`
+   renders it blank.
 5. Never translate brand or protocol names: Pera, Pera Wallet, Algorand,
    Algo, ALGO, ASA, MainNet, TestNet, WalletConnect, Ledger, Bidali, Meld,
    Discover, Pera Card, Vault, Face ID, Touch ID.
 6. Non-ASCII goes in literally (`á`, `ü`, `ç`, `ğ`, `ı`), never as `\uXXXX`.
+7. Never start or end a value with whitespace (`pera/no-split-sentences` checks
+   `en.json`). A sentence around a brand or an amount is one key with the
+   component as a tag, so each locale can put it where its grammar needs it.
 
 ## Terminology policy
 

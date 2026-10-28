@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import { Trans } from 'react-i18next'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import {
@@ -48,17 +48,13 @@ export const SwapHistoryListItem = ({
 }: SwapHistoryListItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
-    const { t } = useLanguage()
 
     const inDecimals = item.assetIn.decimals ?? 0
     const outDecimals = item.assetOut.decimals ?? 0
     const inUnit = item.assetIn.unitName ?? ''
     const outUnit = item.assetOut.unitName ?? ''
 
-    const descriptionPrefix = t('swap.history.list.item.description', {
-        amountIn: formatAmount(item.amountIn, inDecimals),
-        unitIn: inUnit,
-    })
+    const amountInLabel = `${formatAmount(item.amountIn, inDecimals)} ${inUnit}`
     const amountOutLabel = `${formatAmount(item.amountOut, outDecimals)} ${outUnit}`
     const dateLabel = item.completedDatetime
         ? formatDatetime(item.completedDatetime, undefined, 'medium')
@@ -80,8 +76,23 @@ export const SwapHistoryListItem = ({
                     variant='body'
                     style={styles.itemDescription}
                 >
-                    {descriptionPrefix}
-                    <PWText variant='bodySemibold'>{amountOutLabel}</PWText>
+                    <Trans
+                        i18nKey='swap.history.list.item.description'
+                        components={[
+                            <PWText
+                                key='amount-in'
+                                variant='body'
+                            >
+                                {amountInLabel}
+                            </PWText>,
+                            <PWText
+                                key='amount-out'
+                                variant='bodySemibold'
+                            >
+                                {amountOutLabel}
+                            </PWText>,
+                        ]}
+                    />
                     {!!dateLabel && (
                         <PWText
                             variant='body'
