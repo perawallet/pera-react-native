@@ -12,33 +12,66 @@
 
 import { useCallback, useMemo, useRef, useState, type RefObject } from 'react'
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWSheetLayoutScrollHandle } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { usePassphraseReach } from '../../hooks'
 
 export type UsePassphraseAcknowledgeContentParams = {
-    rowCount: number
+    address: string
 }
 
 export type UsePassphraseAcknowledgeContentResult = {
+    rowKeys: readonly I18nKey[]
+    scopeText: Nullable<string>
     checked: boolean[]
     allChecked: boolean
     toggle: (index: number) => void
     scrollRef: RefObject<PWSheetLayoutScrollHandle | null>
 }
 
+const SINGLE_NETWORK_ROW_KEYS = [
+    i18nKey('view_passphrase.acknowledge.row_screen'),
+    i18nKey('view_passphrase.acknowledge.row_share'),
+    i18nKey('view_passphrase.acknowledge.row_lose'),
+    i18nKey('view_passphrase.acknowledge.row_pera'),
+] as const
+
+const MULTI_NETWORK_ROW_KEYS = [
+    i18nKey('view_passphrase.acknowledge.row_screen'),
+    i18nKey('view_passphrase.acknowledge.row_share_all_networks'),
+    i18nKey('view_passphrase.acknowledge.row_lose'),
+    i18nKey('view_passphrase.acknowledge.row_pera'),
+] as const
+
+const ROW_COUNT = SINGLE_NETWORK_ROW_KEYS.length
+
 const buildInitialChecked = (rowCount: number): boolean[] =>
     Array.from({ length: rowCount }, () => false)
 
 export const usePassphraseAcknowledgeContent = ({
-    rowCount,
+    address,
 }: UsePassphraseAcknowledgeContentParams): UsePassphraseAcknowledgeContentResult => {
+    const { t } = useLanguage()
+    const { isMultiNetwork, networkNames } = usePassphraseReach({ address })
     const [checked, setChecked] = useState<boolean[]>(() =>
-        buildInitialChecked(rowCount),
+        buildInitialChecked(ROW_COUNT),
     )
     const scrollRef = useRef<PWSheetLayoutScrollHandle>(null)
 
+    const rowKeys = isMultiNetwork
+        ? MULTI_NETWORK_ROW_KEYS
+        : SINGLE_NETWORK_ROW_KEYS
+    const scopeText = isMultiNetwork
+        ? t('view_passphrase.acknowledge.scope', {
+              networks: networkNames.join(', '),
+          })
+        : null
+
     const allChecked = useMemo(
-        () => checked.length === rowCount && checked.every(Boolean),
-        [checked, rowCount],
+        () => checked.length === ROW_COUNT && checked.every(Boolean),
+        [checked],
     )
 
     const toggle = useCallback(
@@ -57,5 +90,5 @@ export const usePassphraseAcknowledgeContent = ({
         [checked],
     )
 
-    return { checked, allChecked, toggle, scrollRef }
+    return { rowKeys, scopeText, checked, allChecked, toggle, scrollRef }
 }

@@ -501,8 +501,10 @@
         "acknowledge": {
             "title": "Keep it secret. Keep it safe.",
             "description": "Confirm and acknowledge the following:",
+            "scope": "This passphrase controls your accounts on all networks: {{networks}}.",
             "row_screen": "Nobody can see my screen.",
             "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
+            "row_share_all_networks": "I risk losing all my funds on every network if I share my recovery passphrase with anyone.",
             "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
             "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
             "cta_reveal": "Reveal Recovery Passphrase",
@@ -512,7 +514,14 @@
             "title": "Passphrase",
             "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
             "error_title": "Could not retrieve passphrase",
-            "error_body": "Something went wrong. Please try again."
+            "error_body": "Something went wrong. Please try again.",
+            "reach_title": "This passphrase gives access to"
+        },
+        "compatibility": {
+            "title": "Using this passphrase in other wallets",
+            "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask can import these words. Your first account's address will match. Accounts you added later may use a derivation path those wallets don't scan by default.",
+            "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
     "reveal_private_key": {
