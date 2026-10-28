@@ -18,18 +18,19 @@ import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
-const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
-    useAccountHoldingsAcrossChainsQuery:
-        mockUseAccountHoldingsAcrossChainsQuery,
     useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
     ) => account.chains[chainId],
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -87,10 +88,6 @@ describe('useAccountAssetSelectionList', () => {
             accountBalances: new Map([
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
             ]),
-        })
-        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
-            assetBalances: [],
-            isPending: false,
         })
     })
 
@@ -190,186 +187,51 @@ describe('useAccountAssetSelectionList', () => {
     it("tags each of the account's own-chain holdings with that chain's scope", () => {
         const { result } = renderHook(() => useAccountAssetSelectionList({}))
 
+        expect(mockUseAccountBalancesQuery).toHaveBeenCalledWith(
+            [expect.anything()],
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
         expect(
             result.current.filteredBalanceData.every(
                 item => item.scope.chainId === 'algorand',
             ),
         ).toBe(true)
-        expect(mockUseAccountHoldingsAcrossChainsQuery).toHaveBeenCalledWith(
-            null,
-        )
     })
 
-    it("lists holdings on every chain when asked, each chain's native asset first", () => {
-        const account = {
+    it("lists only the given chain's holdings, read from the account's address there", () => {
+        mockUseSelectedAccount.mockReturnValue({
             chains: {
                 algorand: { address: 'TEST_ADDRESS' },
                 ethereum: { address: '0xabc' },
             },
-        }
-        mockUseSelectedAccount.mockReturnValue(account)
-        const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
-        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
-        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
-            assetBalances: [
-                { assetId: '0xTOKEN', amount: '5', scope: ETHEREUM },
-                { assetId: '31566704', amount: '500', scope: ALGORAND },
-                { assetId: 'native', amount: '1', scope: ETHEREUM },
-                { assetId: '0', amount: '1000000', scope: ALGORAND },
-            ],
-            isPending: false,
+        })
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map([
+                ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
+                [
+                    '0xabc',
+                    {
+                        assetBalances: [
+                            { assetId: '0xTOKEN', amount: '5' },
+                            { assetId: 'native', amount: '1' },
+                        ],
+                    },
+                ],
+            ]),
         })
 
         const { result } = renderHook(() =>
-            useAccountAssetSelectionList({ isAcrossChains: true }),
+            useAccountAssetSelectionList({ chainId: 'ethereum' }),
         )
 
-        expect(mockUseAccountHoldingsAcrossChainsQuery).toHaveBeenCalledWith(
-            account,
-        )
         expect(mockUseAccountBalancesQuery).toHaveBeenCalledWith(
-            [],
-            expect.anything(),
+            [expect.anything()],
+            { chainId: 'ethereum', networkId: 'mainnet' },
         )
         expect(
             result.current.filteredBalanceData.map(
                 item => `${item.scope.chainId}:${item.assetId}`,
             ),
-        ).toEqual([
-            'ethereum:native',
-            'algorand:0',
-            'ethereum:0xTOKEN',
-            'algorand:31566704',
-        ])
-    })
-
-    describe('grouping', () => {
-        const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
-        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
-        const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
-        const usdc = (
-            scope: typeof ALGORAND,
-            assetId: string,
-            amount: string,
-            group: Nullable<typeof USDC_GROUP> = USDC_GROUP,
-        ) => ({
-            assetId,
-            scope,
-            amount: new Decimal(amount),
-            usdPrice: new Decimal(1),
-            fiatValue: new Decimal(amount),
-            restriction: null,
-            asset: {
-                assetId,
-                name: 'USD Coin',
-                unitName: 'USDC',
-                decimals: 6,
-                peraMetadata: { crossChainAssetGroup: group },
-            },
-        })
-        const algoUsdc = usdc(ALGORAND, '31566704', '2.5')
-        const ethUsdc = usdc(ETHEREUM, '0xa0b8', '1.5')
-
-        const renderAcrossChains = (
-            params: Parameters<typeof useAccountAssetSelectionList>[0] = {},
-            assetBalances = [algoUsdc, ethUsdc],
-        ) => {
-            mockUseSelectedAccount.mockReturnValue({
-                chains: {
-                    algorand: { address: 'TEST_ADDRESS' },
-                    ethereum: { address: '0xabc' },
-                },
-            })
-            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
-                assetBalances,
-                isPending: false,
-            })
-            return renderHook(
-                ({ isVisible }) =>
-                    useAccountAssetSelectionList({
-                        isAcrossChains: true,
-                        isVisible,
-                        ...params,
-                    }),
-                { initialProps: { isVisible: true as Optional<boolean> } },
-            )
-        }
-
-        it('folds one asset held on two chains into a group whose members are the selectable rows', () => {
-            const { result } = renderAcrossChains()
-
-            expect(result.current.items.map(item => item.kind)).toEqual([
-                'group',
-            ])
-
-            act(() => result.current.toggleGroupExpanded('usdc'))
-
-            expect(
-                result.current.items.map(item =>
-                    item.kind === 'group'
-                        ? `group:${item.group.id}`
-                        : `${item.isGroupMember ? 'member' : 'row'}:${item.holding.scope.chainId}`,
-                ),
-            ).toEqual(['group:usdc', 'member:algorand', 'member:ethereum'])
-        })
-
-        it('lists a lone search match of a group as a plain row', () => {
-            const { result } = renderAcrossChains()
-
-            act(() => result.current.setSearchFilter('0xa0b8'))
-
-            expect(result.current.items).toEqual([
-                { kind: 'holding', holding: ethUsdc, isGroupMember: false },
-            ])
-        })
-
-        it('drops to a plain row when the filter leaves one member', () => {
-            const { result } = renderAcrossChains({
-                filterAsset: item => item.assetId !== '31566704',
-            })
-
-            expect(result.current.items.map(item => item.kind)).toEqual([
-                'holding',
-            ])
-        })
-
-        it('folds nothing when the list holds one chain', () => {
-            const { result } = renderAcrossChains({}, [
-                algoUsdc,
-                usdc(ALGORAND, '0xa0b8', '1.5'),
-            ])
-
-            expect(result.current.items.map(item => item.kind)).toEqual([
-                'holding',
-                'holding',
-            ])
-        })
-
-        it('lists every holding as before when none is in a group', () => {
-            const { result } = renderAcrossChains({}, [
-                usdc(ALGORAND, '31566704', '2.5', null),
-                usdc(ETHEREUM, '0xa0b8', '1.5', null),
-            ])
-            act(() => result.current.setSearchFilter('USD'))
-
-            expect(result.current.items).toEqual(
-                result.current.filteredBalanceData.map(holding => ({
-                    kind: 'holding',
-                    holding,
-                    isGroupMember: false,
-                })),
-            )
-            expect(result.current.items).toHaveLength(2)
-        })
-
-        it('collapses its groups when the picker is hidden', () => {
-            const { result, rerender } = renderAcrossChains()
-            act(() => result.current.toggleGroupExpanded('usdc'))
-            expect(result.current.items).toHaveLength(3)
-
-            rerender({ isVisible: false })
-
-            expect(result.current.items).toHaveLength(1)
-        })
+        ).toEqual(['ethereum:native', 'ethereum:0xTOKEN'])
     })
 })
