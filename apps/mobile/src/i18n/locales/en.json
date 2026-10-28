@@ -2712,6 +2712,7 @@
             "error_title": "No Account Selected",
             "error_body": "No account has been selected, please select an account first",
             "chain_unavailable_title": "{{chain}} isn't available for this account",
+            "receive_on": "Use this address to receive assets on {{chain}}",
             "copy_address": "Copy Address",
             "share": "Share Address"
         }

@@ -66,7 +66,23 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage')
+const { mockT } = vi.hoisted(() => ({
+    mockT: vi.fn((key: string, _options?: Record<string, unknown>) => key),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
+
+// Ethereum has a display name; Algorand is left without one to exercise the fallback.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: vi.fn((chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : undefined,
+    ),
+}))
 
 const navigation = vi.hoisted(() => ({
     canGoBack: vi.fn(() => false),
@@ -219,6 +235,28 @@ describe('useQRViewScreen', () => {
         expect(result.current.canReceive).toBe(true)
     })
 
+    it('names the chain the QR is for', () => {
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.chainId).toBe('ethereum')
+        expect(result.current.receiveCaption).toBe(
+            'receive_funds.qrview.receive_on',
+        )
+        expect(mockT).toHaveBeenCalledWith('receive_funds.qrview.receive_on', {
+            chain: 'Ethereum',
+        })
+    })
+
+    it('names the chain by its id when it has no display name', () => {
+        renderHook(() => useQRViewScreen())
+
+        expect(mockT).toHaveBeenCalledWith('receive_funds.qrview.receive_on', {
+            chain: 'algorand',
+        })
+    })
+
     it('cannot receive when there is no account', () => {
         givenAccount(undefined, null)
 
@@ -228,6 +266,8 @@ describe('useQRViewScreen', () => {
         expect(result.current.accountName).toBe('')
         expect(result.current.address).toBe('')
         expect(result.current.paymentUri).toBe('')
+        expect(result.current.chainId).toBeUndefined()
+        expect(result.current.receiveCaption).toBe('')
     })
 
     it("explains the account's kind can't use a pinned chain out of its reach", () => {

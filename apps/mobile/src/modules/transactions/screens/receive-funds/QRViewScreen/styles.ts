@@ -19,6 +19,14 @@ export const useStyles = makeStyles(theme => ({
     },
     qrContainer: {
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    logo: {
+        position: 'absolute',
+        padding: theme.spacing.xs,
+        borderRadius: theme.borderRadius.full,
+        // Matches the QR's own fixed white background, not the theme's.
+        backgroundColor: 'white',
     },
     addressContainer: {
         alignItems: 'center',
@@ -43,6 +51,10 @@ export const useStyles = makeStyles(theme => ({
         alignSelf: 'stretch',
     },
     address: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
+    caption: {
         color: theme.colors.textGray,
         textAlign: 'center',
     },

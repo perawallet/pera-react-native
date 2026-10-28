@@ -2712,6 +2712,7 @@
             "error_title": "Ninguna cuenta seleccionada",
             "error_body": "No se ha seleccionado ninguna cuenta, selecciona una primero",
             "chain_unavailable_title": "{{chain}} no está disponible para esta cuenta",
+            "receive_on": "Usa esta dirección para recibir activos en {{chain}}",
             "copy_address": "Copiar dirección",
             "share": "Compartir dirección"
         }
