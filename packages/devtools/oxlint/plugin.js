@@ -23,6 +23,7 @@ import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
+import { preferToError } from './rules/prefer-to-error.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -43,5 +44,6 @@ export default {
         'no-i18n-key-cast': noI18nKeyCast,
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
+        'prefer-to-error': preferToError,
     },
 }
