@@ -34,7 +34,7 @@ export type PanelButtonProps = {
     titleWeight: 'h3' | 'h4'
     variant?: 'default' | 'error'
     paddingStyle?: 'normal' | 'dense'
-    /** Optional badge shown inline next to the title (e.g. a "NEW" pill). */
+    /** Optional badge pinned to the top-right of the title (e.g. a "NEW" pill); a long title wraps beside it. */
     badge?: { label: string; variant?: PWBadgeProps['variant'] }
     /**
      * Optional link rendered below the description with its own press
@@ -92,14 +92,17 @@ export const PanelButton = (props: PanelButtonProps) => {
                         <PWText
                             style={themeStyle.textStyle}
                             variant={titleWeight}
-                            // A badged row is a highlighted one; keeping its
-                            // title to a single line holds the row height
-                            // steady across devices and font scales.
-                            truncate={!!badge}
                             {...getTestProps(testID, 'text')}
                         >
                             {title}
                         </PWText>
+                        {!!badge && (
+                            <PWBadge
+                                variant={badge.variant}
+                                value={badge.label}
+                                containerStyle={themeStyle.badgeContainerStyle}
+                            />
+                        )}
                         {rightIcon && <PWIcon name={rightIcon} />}
                     </PWView>
                     {!!description && (
@@ -107,39 +110,28 @@ export const PanelButton = (props: PanelButtonProps) => {
                             {description}
                         </PWText>
                     )}
-                    {(!!learnMore || !!badge) && (
+                    {!!learnMore && (
                         <PWView style={themeStyle.footerRowStyle}>
-                            {!!learnMore && (
-                                <PWTouchableOpacity
-                                    style={themeStyle.learnMoreStyle}
-                                    onPress={event => {
-                                        // Keep the tap on the link only — don't
-                                        // also trigger the row's onPress.
-                                        event?.stopPropagation?.()
-                                        learnMore.onPress()
-                                    }}
-                                    {...getTestProps(testID, 'learn_more')}
-                                >
-                                    {/*
+                            <PWTouchableOpacity
+                                style={themeStyle.learnMoreStyle}
+                                onPress={event => {
+                                    // Keep the tap on the link only — don't
+                                    // also trigger the row's onPress.
+                                    event?.stopPropagation?.()
+                                    learnMore.onPress()
+                                }}
+                                {...getTestProps(testID, 'learn_more')}
+                            >
+                                {/*
                                       linkPositive keeps the teal link tone in
                                       both themes (link's dark tone is the brand
                                       yellow), per the Quantum "Learn more"
                                       design.
                                     */}
-                                    <PWText variant='linkPositive'>
-                                        {learnMore.label}
-                                    </PWText>
-                                </PWTouchableOpacity>
-                            )}
-                            {!!badge && (
-                                <PWBadge
-                                    variant={badge.variant}
-                                    value={badge.label}
-                                    containerStyle={
-                                        themeStyle.badgeContainerStyle
-                                    }
-                                />
-                            )}
+                                <PWText variant='linkPositive'>
+                                    {learnMore.label}
+                                </PWText>
+                            </PWTouchableOpacity>
                         </PWView>
                     )}
                 </PWView>
