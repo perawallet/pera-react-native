@@ -24,8 +24,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
     'apps/mobile/src/components/RootComponent/RootComponent.tsx',
     'apps/mobile/src/components/TestnetIndicator/useTestnetIndicator.web.ts',
-    'apps/mobile/src/components/WealthChart/WealthChart.tsx',
-    'apps/mobile/src/components/WealthTrend/WealthTrend.tsx',
     'apps/mobile/src/hooks/useAccountTypeLabel.ts',
     'apps/mobile/src/hooks/useIsDataSigningBlocked.ts',
     'apps/mobile/src/hooks/useNetworkSwitchInvalidation.ts',

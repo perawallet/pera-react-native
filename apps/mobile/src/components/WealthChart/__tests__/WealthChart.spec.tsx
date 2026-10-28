@@ -11,17 +11,15 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
 import '../../../i18n'
 import { WealthChart } from '../WealthChart'
-import {
-    useAccountBalancesHistoryQuery,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
-import { Decimal } from 'decimal.js'
-
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { usePortfolioHistoryQuery } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -30,175 +28,91 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountBalancesHistoryQuery: vi.fn(() => ({
-            data: null,
-            isPending: false,
-        })),
-        useAllAccounts: vi.fn(() => []),
+        usePortfolioHistoryQuery: vi.fn(),
     }
 })
 
+const ALGORAND: ChainScope = {
+    chainId: 'algorand' as ChainId,
+    networkId: 'mainnet',
+}
+const ETHEREUM: ChainScope = {
+    chainId: 'ethereum' as ChainId,
+    networkId: 'mainnet',
+}
+const SOURCES = [
+    { address: 'ALGO', scope: ALGORAND },
+    { address: '0xeth', scope: ETHEREUM },
+]
+
+const mockHistory = (
+    overrides: Partial<ReturnType<typeof usePortfolioHistoryQuery>>,
+) =>
+    vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
+        data: [],
+        isPending: false,
+        isError: false,
+        isPaused: false,
+        error: null,
+        isUnavailableOnNetwork: false,
+        refetch: vi.fn(),
+        ...overrides,
+    })
+
+const renderChart = (enabled?: boolean) =>
+    render(
+        <WealthChart
+            sources={SOURCES}
+            currencyScope={ALGORAND}
+            period='one-week'
+            onSelectionChanged={vi.fn()}
+            enabled={enabled}
+        />,
+    )
+
 describe('WealthChart', () => {
-    it('renders loading state when isPending is true', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: true,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
+    beforeEach(() => {
+        vi.clearAllMocks()
     })
 
-    it('renders empty view when no data is available', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+    it('reads the summed history of exactly the sources it is given', () => {
+        mockHistory({})
 
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
+        renderChart(false)
+
+        expect(vi.mocked(usePortfolioHistoryQuery)).toHaveBeenLastCalledWith(
+            SOURCES,
+            'one-week',
+            ALGORAND,
+            false,
         )
-        expect(container).toBeTruthy()
     })
 
-    it('renders chart when data is available', () => {
-        const mockData = [
-            { preferredValue: new Decimal(100), datetime: new Date() },
-            { preferredValue: new Decimal(110), datetime: new Date() },
-        ]
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: mockData,
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+    it('shows the empty state when there is no history', () => {
+        mockHistory({})
 
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
+        renderChart()
 
-    it('uses single account address when account prop is provided', () => {
-        const mockAccount = {
-            name: 'Test',
-            chains: { algorand: { address: 'test-address' } },
-        }
-        const mockData = [
-            { preferredValue: new Decimal(100), datetime: new Date() },
-        ]
-
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: mockData,
-            isPending: false,
-        } as any as ReturnType<typeof useAccountBalancesHistoryQuery>) // eslint-disable-line @typescript-eslint/no-explicit-any
-
-        const { container } = render(
-            <WealthChart
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                account={mockAccount as any}
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('uses all account addresses when no account prop is provided', () => {
-        vi.mocked(useAllAccounts).mockReturnValue([
-            { chains: { algorand: { address: 'addr1' } } },
-            { chains: { algorand: { address: 'addr2' } } },
-        ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ preferredValue: new Decimal(200), datetime: new Date() }],
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
+        expect(
+            screen.getByText(
+                'You will see a chart here once you have some balance history',
+            ),
+        ).toBeTruthy()
     })
 
     it('renders the offline state instead of the spinner when the history query is paused', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: true,
-            isError: false,
-            isPaused: true,
-            refetch: vi.fn(),
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        mockHistory({ isPending: true, isPaused: true })
 
-        render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
+        renderChart()
 
         expect(screen.getByText('Offline Mode')).toBeTruthy()
     })
 
-    it('renders the network-unavailable state instead of the spinner on a network with no Pera backend', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: true,
-            isError: false,
-            isPaused: false,
-            refetch: vi.fn(),
-            isUnavailableOnNetwork: true,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+    it('renders the network-unavailable state when a source has no history on its network', () => {
+        mockHistory({ isUnavailableOnNetwork: true })
 
-        render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
+        renderChart()
 
         expect(screen.getByText('Not available on this network')).toBeTruthy()
-    })
-
-    it("reads an account's history on its own chain", () => {
-        registerEthereumChain()
-        const ethAddress = `0x${'d'.repeat(40)}`
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        render(
-            <WealthChart
-                account={{
-                    id: 'eth',
-                    custody: { kind: 'watch' },
-                    chains: { ethereum: { address: ethAddress } },
-                }}
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-
-        expect(
-            vi.mocked(useAccountBalancesHistoryQuery),
-        ).toHaveBeenLastCalledWith(
-            [ethAddress],
-            'one-week',
-            expect.objectContaining({ chainId: 'ethereum' }),
-            true,
-        )
     })
 })
