@@ -66,6 +66,18 @@ describe('pera/test-id-prop', () => {
             spread(member(id('props'), 'getTestProps')),
         ],
         [
+            'a computed member callee',
+            spread(
+                call(
+                    {
+                        ...member(id('testIds'), 'getTestProps'),
+                        computed: true,
+                    },
+                    [lit('x')],
+                ),
+            ),
+        ],
+        [
             'an object-literal spread',
             {
                 type: 'SpreadElement',
