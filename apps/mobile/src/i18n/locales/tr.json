@@ -3515,6 +3515,10 @@
             "title": "En popüler 5 swap",
             "volume_24h": "Hacim (24s)",
             "error": "En popüler swap’lar yüklenemedi"
+        },
+        "region_restricted": {
+            "title": "Swap kullanılamıyor",
+            "body": "Swap bölgende kullanılamıyor."
         }
     },
     "onramp": {

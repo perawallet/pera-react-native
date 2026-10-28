@@ -3538,6 +3538,10 @@
             "title": "Top 5 conversões",
             "volume_24h": "Volume (24h)",
             "error": "Não foi possível carregar as principais conversões"
+        },
+        "region_restricted": {
+            "title": "Swap indisponível",
+            "body": "O Swap não está disponível na sua região."
         }
     },
     "onramp": {

@@ -12,3 +12,4 @@
 
 export * from './useRemoteConfigOverrides'
 export * from './useRemoteConfig'
+export * from './useIsDeviceCountryRestricted'

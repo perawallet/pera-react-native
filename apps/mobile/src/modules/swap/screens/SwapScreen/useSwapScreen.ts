@@ -22,6 +22,10 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    RemoteConfigKeys,
+    useIsDeviceCountryRestricted,
+} from '@perawallet/wallet-core-remote-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     useAccountListPicker,
@@ -37,6 +41,7 @@ export type UseSwapScreenResult = {
     scope: Nullable<ChainScope>
     initialPayAmount: SwapFormInitialPayAmount | undefined
     accountPicker: AccountDrawerPickerProps
+    isRegionRestricted: boolean
 }
 
 export const useSwapScreen = (): UseSwapScreenResult => {
@@ -49,6 +54,9 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const signingAccounts = useSwapSigningAccounts()
     const accountPicker = useAccountListPicker(signingAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
+    const isRegionRestricted = useIsDeviceCountryRestricted(
+        RemoteConfigKeys.swap_restricted_countries,
+    )
 
     const resolvedAssets = scope
         ? resolveSwapRouteAssets(route.params, scope)
@@ -84,5 +92,5 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         [payAmount, assetInId],
     )
 
-    return { scope, initialPayAmount, accountPicker }
+    return { scope, initialPayAmount, accountPicker, isRegionRestricted }
 }

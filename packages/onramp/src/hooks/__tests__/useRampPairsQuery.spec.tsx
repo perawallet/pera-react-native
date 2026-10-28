@@ -18,6 +18,7 @@ import {
     describe,
     expect,
     test,
+    vi,
 } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -33,6 +34,19 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { registerFakeRampAdapter } from '../../__tests__/fakeRampAdapter'
 import { registerFakeChain } from '../../__tests__/fakeChains'
 
+const { restrictedKeys } = vi.hoisted(() => ({
+    restrictedKeys: new Set<string>(),
+}))
+
+vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-remote-config')
+    >()),
+    useRemoteConfig: () => ({}),
+    isDeviceCountryRestricted: (_: unknown, key: string) =>
+        restrictedKeys.has(key),
+}))
+
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const server = setupServer()
@@ -41,6 +55,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 beforeEach(() => {
+    restrictedKeys.clear()
     getProvider().chains.reset()
     registerFakeRampAdapter()
 })
@@ -214,5 +229,41 @@ describe('onramp/useRampPairsQuery', () => {
                 'pair-btc',
             ])
         })
+    })
+
+    describe('XO Swap', () => {
+        const xoPair: RampPairApiResponse = {
+            ...apiPair,
+            id: 'pair-xo',
+            provider: { ...apiPair.provider, id: 'XO' },
+        }
+
+        const offeredIds = async () => {
+            server.use(mockRampPairs({ response: [apiPair, xoPair] }))
+            const { result } = renderHook(
+                () => useRampPairsQuery({ scope: SCOPE }),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() =>
+                expect(result.current.data.length).toBeGreaterThan(0),
+            )
+            return result.current.data.map(pair => pair.id)
+        }
+
+        test('offers XO pairs outside the restricted countries', async () => {
+            expect(await offeredIds()).toEqual(['pair-1', 'pair-xo'])
+        })
+
+        test.each([
+            'xo_swap_restricted_countries',
+            'swap_restricted_countries',
+        ])(
+            'leaves XO pairs out where %s lists the device country',
+            async key => {
+                restrictedKeys.add(key)
+
+                expect(await offeredIds()).toEqual(['pair-1'])
+            },
+        )
     })
 })

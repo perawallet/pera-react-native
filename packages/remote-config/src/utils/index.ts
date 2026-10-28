@@ -13,3 +13,4 @@
 export * from './readRemoteConfigWithOverrides'
 export * from './areConfigOverridesIgnored'
 export * from './readCapabilityOverrides'
+export * from './countryRestrictions'

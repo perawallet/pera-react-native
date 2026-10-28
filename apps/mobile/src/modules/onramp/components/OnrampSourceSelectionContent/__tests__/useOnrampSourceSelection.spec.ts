@@ -198,4 +198,24 @@ describe('useOnrampSourceSelection', () => {
         // Searching disables the fiat collapse.
         expect(result.current.canExpandFiat).toBe(false)
     })
+
+    it('keeps the fiat/crypto chips while a crypto source exists, whatever the search', () => {
+        const { result } = renderHook(() => useOnrampSourceSelection())
+
+        act(() => result.current.setSearch('usd coin'))
+
+        expect(result.current.hasCryptoSources).toBe(true)
+    })
+
+    it('drops the fiat/crypto chips when no pair offers a crypto source', () => {
+        vi.mocked(useRampPairsQuery).mockReturnValue({
+            data: PAIRS.filter(p => p.sourceToken.countryCode),
+            isLoading: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+
+        const { result } = renderHook(() => useOnrampSourceSelection())
+
+        expect(result.current.hasCryptoSources).toBe(false)
+    })
 })
