@@ -190,6 +190,21 @@ describe('OfflineTolerantView', () => {
         expect(screen.queryByText('children-content')).toBeNull()
     })
 
+    it('uses the surface-specific unavailable body when provided', () => {
+        render(
+            <OfflineTolerantView
+                isOffline={false}
+                isUnavailable
+                unavailableBody='custom-unavailable-body'
+            >
+                <Children />
+            </OfflineTolerantView>,
+        )
+
+        expect(screen.getByText('custom-unavailable-body')).toBeTruthy()
+        expect(screen.queryByText('common.network_unavailable.body')).toBeNull()
+    })
+
     it('prefers the network-unavailable surface over offline and error', () => {
         render(
             <OfflineTolerantView

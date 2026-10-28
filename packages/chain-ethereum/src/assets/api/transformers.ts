@@ -18,6 +18,7 @@ import {
     type AssetPriceRow,
     type CollectibleMedia,
     type CollectibleMediaType,
+    type DisplayableAsset,
     type PeraAsset,
     type PeraCollectible,
 } from '@perawallet/wallet-core-assets'
@@ -32,6 +33,7 @@ import {
     whitelistItemSchema,
     type AssetItemSchemaOutput,
     type NftItemSchemaOutput,
+    type WhitelistItemSchemaOutput,
 } from './schema'
 
 /**
@@ -48,6 +50,8 @@ export type WhitelistRow = {
     /** App asset id: the native id or a checksummed contract address. */
     assetId: string
     type: 'native' | 'erc20'
+    /** The row as a search result shows it. */
+    asset: DisplayableAsset
 }
 
 // isFavorited and isPriceAlertEnabled stay unset: the persisted row keeps the
@@ -98,6 +102,19 @@ export const toPriceRow = (
         ? null
         : { assetId, usdPrice: new Decimal(item.usd_value) }
 
+const appAssetIdOfListed = (
+    { asset_id }: WhitelistItemSchemaOutput,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<string> => {
+    try {
+        return fromCaip19(asset_id, scope, chain)
+    } catch (error) {
+        if (error instanceof InvalidCaip19Error) return null
+        throw error
+    }
+}
+
 export const toWhitelistRow = (
     row: unknown,
     scope: ChainScope,
@@ -105,13 +122,25 @@ export const toWhitelistRow = (
 ): Nullable<WhitelistRow> => {
     const parsed = whitelistItemSchema.safeParse(row)
     if (!parsed.success) return null
-    const { type, asset_id } = parsed.data
+    const item = parsed.data
+    const { type } = item
     if (type !== 'native' && type !== 'erc20') return null
-    try {
-        return { assetId: fromCaip19(asset_id, scope, chain), type }
-    } catch (error) {
-        if (error instanceof InvalidCaip19Error) return null
-        throw error
+    const assetId = appAssetIdOfListed(item, scope, chain)
+    if (assetId === null) return null
+    return {
+        assetId,
+        type,
+        asset: {
+            assetId,
+            name: item.name ?? undefined,
+            unitName: item.unit_name ?? undefined,
+            decimals: item.fraction_decimals ?? undefined,
+            peraMetadata: {
+                logo: item.logo,
+                verificationTier: item.verification_tier,
+                type: PeraAssetType.standard_asset,
+            },
+        },
     }
 }
 

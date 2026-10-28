@@ -209,6 +209,22 @@ export class PeraNetworkError extends AppError {
 export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
     error instanceof PeraNetworkError
 
+const CHAIN_REFUSAL_CODES: readonly string[] = [
+    'unknown_chain',
+    'chain_not_enabled',
+]
+
+/**
+ * A 422 refusing the chain a request names: the backend doesn't know it, or
+ * hasn't switched it on yet. It switches chains on one at a time, without an
+ * app release.
+ */
+export const isChainRefusedError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    error.status === 422 &&
+    error.backendCode !== undefined &&
+    CHAIN_REFUSAL_CODES.includes(error.backendCode)
+
 /**
  * True when the failure means the device has no usable connection —
  * a typed offline PeraNetworkError, the fail-fast NoConnectionError thrown

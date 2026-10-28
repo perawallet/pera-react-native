@@ -22,6 +22,7 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'receive',
     'history',
     'assets',
+    'assetSearch',
     'pricing',
     'priceHistory',
     'balanceHistory',

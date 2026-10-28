@@ -34,4 +34,8 @@ export const useStyles = makeStyles(theme => ({
     noteIcon: {
         marginTop: theme.spacing.xs,
     },
+    incompleteNotice: {
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+    },
 }))

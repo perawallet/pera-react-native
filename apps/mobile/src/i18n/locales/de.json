@@ -98,9 +98,10 @@
         "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt"
     },
     "add_asset": {
-        "title": "Für ein Asset anmelden",
+        "title": "Asset hinzufügen",
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
+        "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",

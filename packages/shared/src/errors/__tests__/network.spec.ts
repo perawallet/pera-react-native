@@ -18,6 +18,7 @@ import {
     NoConnectionError,
     PeraNetworkError,
     getNetworkErrorMessageKeys,
+    isChainRefusedError,
     isConnectivityError,
     isNotFoundError,
     isPeraNetworkError,
@@ -288,6 +289,42 @@ describe('getNetworkErrorMessageKeys', () => {
         expect(getNetworkErrorMessageKeys(new NoConnectionError())).toEqual(
             keysFor('errors.network.no_connection'),
         )
+    })
+})
+
+describe('isChainRefusedError', () => {
+    it.each(['unknown_chain', 'chain_not_enabled'])(
+        'is true for a 422 with code %s',
+        backendCode => {
+            expect(
+                isChainRefusedError(
+                    new PeraNetworkError('client', {
+                        status: 422,
+                        backendCode,
+                    }),
+                ),
+            ).toBe(true)
+        },
+    )
+
+    it('is false for another 422 code, another status or a plain error', () => {
+        expect(
+            isChainRefusedError(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'invalid_asset_id',
+                }),
+            ),
+        ).toBe(false)
+        expect(
+            isChainRefusedError(
+                new PeraNetworkError('client', {
+                    status: 400,
+                    backendCode: 'chain_not_enabled',
+                }),
+            ),
+        ).toBe(false)
+        expect(isChainRefusedError(new Error('chain_not_enabled'))).toBe(false)
     })
 })
 

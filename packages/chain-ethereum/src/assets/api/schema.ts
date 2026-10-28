@@ -55,6 +55,8 @@ export const whitelistItemSchema = assetItemSchema.extend({
 
 export type WhitelistItemResponse = z.input<typeof whitelistItemSchema>
 
+export type WhitelistItemSchemaOutput = z.output<typeof whitelistItemSchema>
+
 export const assetsResponseSchema = z.object({
     results: z.array(assetItemSchema),
 })

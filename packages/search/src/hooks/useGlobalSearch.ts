@@ -16,16 +16,9 @@ import {
     useOwnedAssets,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
-import type {
-    DisplayableAsset,
-    PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import {
-    type Nullable,
-    useDebouncedValue,
-} from '@perawallet/wallet-core-shared'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     SEARCH_SCOPES,
@@ -42,15 +35,6 @@ const addressesOf = (account: WalletAccount): string[] =>
 const sortKeyOf = (account: WalletAccount): string =>
     account.name ?? addressesOf(account)[0] ?? ''
 
-export type RemoteAssetsOptions = {
-    /** Restrict remote asset results to collectibles (NFTs). */
-    hasCollectible?: boolean
-    /** When true, run the remote asset search even with an empty query so
-     *  the backend returns a default suggestion list. Local sections
-     *  (accounts, contacts, owned assets) remain empty until the user types. */
-    showOnEmptyQuery?: boolean
-}
-
 // Search reaches chain scopes only through accounts, so it borrows that type.
 type ChainScope = Parameters<typeof useOwnedAssets>[0]
 
@@ -61,10 +45,6 @@ export type UseGlobalSearchOptions = {
     /** Predicate applied to the local owned-assets set before substring
      *  matching. Useful to narrow to collectibles for NFT search. */
     assetFilter?: (asset: PeraAsset) => boolean
-    /** When provided, also runs a remote asset catalogue search and exposes
-     *  the results via `results.remoteAssets` (with paging controls).
-     *  Only meaningful when `'assets'` is in `scopes`. */
-    remoteAssets?: RemoteAssetsOptions
 }
 
 export type UseGlobalSearchResult = {
@@ -73,18 +53,6 @@ export type UseGlobalSearchResult = {
     results: GlobalSearchResults
     hasResults: boolean
     isLoading: boolean
-    hasNextRemotePage: boolean
-    isFetchingNextRemotePage: boolean
-    fetchNextRemotePage: Nullable<() => void>
-    /** Remote asset search failed (device believed online). */
-    isRemoteError: boolean
-    /** The failure behind `isRemoteError`, for callers that branch on its kind; null otherwise. */
-    remoteError: unknown
-    /** Remote asset search is paused because the device is offline. */
-    isRemotePaused: boolean
-    /** Remote asset search has no backend on this network, so retrying can
-     *  never help. Unlike `isRemotePaused`, reconnecting will not resolve it. */
-    isRemoteUnavailableOnNetwork: boolean
 }
 
 export const useGlobalSearch = (
@@ -94,8 +62,6 @@ export const useGlobalSearch = (
     const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS
     const scopes = options?.scopes ?? SEARCH_SCOPES
     const assetFilter = options?.assetFilter
-    const remoteAssetsOptions = options?.remoteAssets
-    const remoteAssetsEnabled = !!remoteAssetsOptions
 
     const includesAccounts = scopes.includes('accounts')
     const includesContacts = scopes.includes('contacts')
@@ -104,7 +70,6 @@ export const useGlobalSearch = (
     const [value, setValue] = useState('')
     const debouncedValue = useDebouncedValue(value, debounceMs)
     const hasQuery = debouncedValue.length > 0
-    const isDebouncing = value !== debouncedValue
 
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
@@ -118,22 +83,8 @@ export const useGlobalSearch = (
         return allOwnedAssets.filter(assetFilter)
     }, [includesAssets, allOwnedAssets, assetFilter])
 
-    const showRemoteOnEmpty = remoteAssetsOptions?.showOnEmptyQuery ?? false
-    const shouldRunRemoteAssets =
-        remoteAssetsEnabled && includesAssets && (hasQuery || showRemoteOnEmpty)
-    const remoteAssetQuery = useAssetSearchQuery(debouncedValue, chainScope, {
-        hasCollectible: remoteAssetsOptions?.hasCollectible,
-        enabled: shouldRunRemoteAssets,
-    })
-
     const results = useMemo<GlobalSearchResults>(() => {
-        if (!hasQuery) {
-            if (!shouldRunRemoteAssets) return EMPTY_GLOBAL_SEARCH_RESULTS
-            return {
-                ...EMPTY_GLOBAL_SEARCH_RESULTS,
-                remoteAssets: remoteAssetQuery.results ?? [],
-            }
-        }
+        if (!hasQuery) return EMPTY_GLOBAL_SEARCH_RESULTS
 
         const lowered = debouncedValue.toLowerCase()
         const compare = (a: string, b: string) =>
@@ -174,15 +125,10 @@ export const useGlobalSearch = (
                   )
             : []
 
-        const remoteAssets: DisplayableAsset[] = shouldRunRemoteAssets
-            ? (remoteAssetQuery.results ?? [])
-            : []
-
         return {
             accounts: matchingAccounts,
             contacts: matchingContacts,
             assets: matchingAssets,
-            remoteAssets,
         }
     }, [
         hasQuery,
@@ -193,54 +139,20 @@ export const useGlobalSearch = (
         accounts,
         findContacts,
         ownedAssets,
-        shouldRunRemoteAssets,
-        remoteAssetQuery.results,
     ])
 
     const hasResults =
         results.accounts.length > 0 ||
         results.contacts.length > 0 ||
-        results.assets.length > 0 ||
-        results.remoteAssets.length > 0
+        results.assets.length > 0
 
-    const isRemoteLoading = shouldRunRemoteAssets && remoteAssetQuery.isLoading
-    const hasUserQuery = value.length > 0
-    // Debouncing only counts as loading when a remote fetch will follow.
-    // For purely in-memory (client-side) filtering there is nothing to wait
-    // for, so treating the debounce window as loading would flash the skeleton
-    // on every keystroke.
-    const isLoadingTypedQuery =
-        hasUserQuery &&
-        ((isDebouncing && shouldRunRemoteAssets) ||
-            isOwnedAssetsLoading ||
-            isRemoteLoading)
-    const isLoadingEmptyQuerySuggestions =
-        !hasUserQuery && showRemoteOnEmpty && isRemoteLoading
-
+    // Filtering is in memory, so the debounce window isn't loading: counting
+    // it would flash the skeleton on every keystroke.
     return {
         value,
         setValue,
         results,
         hasResults,
-        isLoading: isLoadingTypedQuery || isLoadingEmptyQuerySuggestions,
-        hasNextRemotePage: shouldRunRemoteAssets
-            ? remoteAssetQuery.hasNextPage
-            : false,
-        isFetchingNextRemotePage: shouldRunRemoteAssets
-            ? remoteAssetQuery.isFetchingNextPage
-            : false,
-        fetchNextRemotePage: shouldRunRemoteAssets
-            ? remoteAssetQuery.fetchNextPage
-            : null,
-        isRemoteError: remoteAssetQuery.isError,
-        remoteError: remoteAssetQuery.error ?? null,
-        isRemotePaused: remoteAssetQuery.isPaused,
-        // Deliberately not gated on `shouldRunRemoteAssets`: the backend is
-        // absent whether or not a query is in flight, so the caller can say so
-        // before the user types rather than after an empty result comes back.
-        isRemoteUnavailableOnNetwork:
-            remoteAssetsEnabled &&
-            includesAssets &&
-            remoteAssetQuery.isUnavailableOnNetwork,
+        isLoading: value.length > 0 && isOwnedAssetsLoading,
     }
 }

@@ -101,6 +101,7 @@
         "title": "Adicionar um ativo",
         "search_placeholder": "Buscar por nome ou ID do ativo",
         "no_results": "Nenhum ativo encontrado",
+        "partial_results": "Não foi possível pesquisar em algumas redes, então alguns resultados podem estar faltando.",
         "opt_in": {
             "failed_title": "Falha ao adicionar o ativo",
             "success_title": "Ativo adicionado",

@@ -12,10 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Contact } from '@perawallet/wallet-core-contacts'
-import type {
-    DisplayableAsset,
-    PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export const SEARCH_SCOPES = ['accounts', 'contacts', 'assets'] as const
 export type SearchScope = (typeof SEARCH_SCOPES)[number]
@@ -24,12 +21,10 @@ export type GlobalSearchResults = {
     accounts: WalletAccount[]
     contacts: Contact[]
     assets: PeraAsset[]
-    remoteAssets: DisplayableAsset[]
 }
 
 export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResults = {
     accounts: [],
     contacts: [],
     assets: [],
-    remoteAssets: [],
 }

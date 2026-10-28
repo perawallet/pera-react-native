@@ -22,6 +22,8 @@ import {
     AppError,
     ErrorCategory,
     isAlgoAssetName,
+    isChainRefusedError,
+    isPeraServiceUnavailableError,
     type HistoryPeriod,
     type Nullable,
     type Optional,
@@ -201,6 +203,16 @@ export class AssetSearchUnsupportedError extends AppError {
     }
 }
 
+/**
+ * The scope can't be searched here, so the failure says nothing about what
+ * exists: the chain has no search, its network has no Pera services, or the
+ * backend hasn't switched the chain on.
+ */
+export const isAssetSearchUnavailableError = (error: unknown): boolean =>
+    error instanceof AssetSearchUnsupportedError ||
+    isPeraServiceUnavailableError(error) ||
+    isChainRefusedError(error)
+
 export class AssetPriceHistoryUnsupportedError extends AppError {
     readonly chainId: ChainId
 
@@ -269,6 +281,86 @@ export const searchAssets = async (
     const adapter = assetsAdapterFor(scope)
     if (!adapter.search) throw new AssetSearchUnsupportedError(adapter.chainId)
     return adapter.search(params, scope)
+}
+
+export type ScopedAssetSearchResult = {
+    scope: ChainScope
+    asset: DisplayableAsset
+}
+
+/** One per searched scope, in its order: that scope's next cursor, or null once it has no more. */
+export type ScopedAssetSearchCursors = readonly Nullable<string>[]
+
+export type ScopedAssetSearchParams = Omit<AssetSearchParams, 'cursor'> & {
+    /** Absent for the first page, which searches every scope from its start. */
+    cursors?: ScopedAssetSearchCursors
+}
+
+export type ScopedAssetSearchPage = {
+    results: ScopedAssetSearchResult[]
+    /** Undefined once no scope has more. */
+    nextCursors: Optional<ScopedAssetSearchCursors>
+    /** Scopes whose search failed on this page, so their hits are missing. */
+    failedScopes: ChainScope[]
+}
+
+/**
+ * One page from each scope that still has more, concatenated in `scopes`
+ * order. A scope whose search fails stops being searched while the others'
+ * hits still show, and is named in `failedScopes`; a page with no hits
+ * rejects with the first failure, so a failed search never reads as an empty
+ * one. A scope that can't be searched here
+ * ({@link isAssetSearchUnavailableError}) has nothing to find: it isn't named,
+ * and decides only a page no scope answered.
+ */
+export const searchAssetsAcrossScopes = async (
+    { cursors, ...params }: ScopedAssetSearchParams,
+    scopes: readonly ChainScope[],
+): Promise<ScopedAssetSearchPage> => {
+    const searched = scopes.flatMap((scope, index) => {
+        const cursor = cursors ? cursors[index] : undefined
+        return cursor === null
+            ? []
+            : [
+                  {
+                      index,
+                      scope,
+                      page: searchAssets({ ...params, cursor }, scope),
+                  },
+              ]
+    })
+    const settled = await Promise.allSettled(searched.map(({ page }) => page))
+
+    const nextCursors: Nullable<string>[] = scopes.map(() => null)
+    const results = searched.flatMap(({ index, scope }, position) => {
+        const outcome = settled[position]!
+        if (outcome.status === 'rejected') return []
+        nextCursors[index] = outcome.value.nextCursor ?? null
+        return outcome.value.results.map(asset => ({ scope, asset }))
+    })
+    const rejections = settled.filter(
+        (outcome): outcome is PromiseRejectedResult =>
+            outcome.status === 'rejected',
+    )
+    const hasAnswer = rejections.length < settled.length
+    const failure =
+        rejections.find(
+            ({ reason }) => !isAssetSearchUnavailableError(reason),
+        ) ?? (hasAnswer ? undefined : rejections[0])
+    if (results.length === 0 && failure) throw failure.reason
+    return {
+        results,
+        nextCursors: nextCursors.some(cursor => cursor !== null)
+            ? nextCursors
+            : undefined,
+        failedScopes: searched.flatMap(({ scope }, position) => {
+            const outcome = settled[position]!
+            return outcome.status === 'rejected' &&
+                !isAssetSearchUnavailableError(outcome.reason)
+                ? [scope]
+                : []
+        }),
+    }
 }
 
 /** Rejects with {@link AssetPriceHistoryUnsupportedError} on a chain that declares no `getPriceHistory`. */

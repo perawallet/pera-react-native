@@ -27,8 +27,9 @@ export type OfflineTolerantViewProps = {
      */
     isOffline: boolean
     /**
-     * The active network has no Pera backend at all (BetaNet, custom nodes).
-     * Permanent, not a connectivity blip — takes precedence over offline and
+     * No Pera backend serves this: the active network has none (BetaNet,
+     * custom nodes), or the backend hasn't switched the chain on.
+     * Not a connectivity blip — takes precedence over offline and
      * error, and renders with no retry button since retrying can never
      * succeed.
      */
@@ -59,6 +60,8 @@ export type OfflineTolerantViewProps = {
     retryLabel?: string
     /** Replaces the generic `common.error.body` copy on the error arm. */
     errorBody?: string
+    /** Replaces the BetaNet and custom-node copy on the unavailable arm. */
+    unavailableBody?: string
     offlineTestID?: string
     errorTestID?: string
     /** Applied to whichever surface replaces the children. */
@@ -85,6 +88,7 @@ export const OfflineTolerantView = ({
     isRetrying = false,
     retryLabel,
     errorBody,
+    unavailableBody,
     offlineTestID,
     errorTestID,
     style,
@@ -103,7 +107,7 @@ export const OfflineTolerantView = ({
             <EmptyView
                 icon='globe'
                 title={t('common.network_unavailable.title')}
-                body={t('common.network_unavailable.body')}
+                body={unavailableBody ?? t('common.network_unavailable.body')}
                 style={style}
             />
         )

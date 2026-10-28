@@ -24,9 +24,14 @@ import {
     upsertAssets,
     upsertNodeAssets,
     type AssetsChainAdapter,
+    type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { partition, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    partition,
+    PeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     eip155ChainIdOf,
     InvalidCaip19Error,
@@ -45,6 +50,7 @@ import {
     NFTS_SERVICE,
     PRICES_SERVICE,
 } from './api/endpoints'
+import { cachedWhitelist, type ListedTokens } from './api/whitelist-cache'
 import { toAssetMetadata, toNftAsset, toPriceRow } from './api/transformers'
 import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 
@@ -340,9 +346,46 @@ const getPriceHistory =
         return fetchPriceChart(scope, chain, assetId, { period })
     }
 
+// A contract address matches from its start only: a short query appears
+// somewhere in most addresses.
+const matchesQuery =
+    (needle: string) =>
+    (asset: DisplayableAsset): boolean =>
+        [asset.name, asset.unitName].some(text =>
+            text?.toLowerCase().includes(needle),
+        ) ||
+        (asset.assetId !== NATIVE_ASSET_ID &&
+            asset.assetId.toLowerCase().startsWith(needle))
+
+// The backend has no EVM token search, so its token list, which holds no
+// NFTs, is filtered here in one page.
+const search =
+    (
+        ctx: ChainContext,
+        chain: EvmChain,
+        listedTokens: ListedTokens,
+    ): NonNullable<AssetsChainAdapter['search']> =>
+    async ({ query, hasCollectible }, scope) => {
+        eip155ChainIdOf(scope, chain)
+        if (hasCollectible) return { results: [], nextCursor: undefined }
+        // An empty page would read as "No assets found" on a network that
+        // can't be searched at all.
+        if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
+            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
+        }
+        const assets = (await listedTokens(scope)).map(row => row.asset)
+        const needle = query.trim().toLowerCase()
+        return {
+            results: needle ? assets.filter(matchesQuery(needle)) : assets,
+            nextCursor: undefined,
+        }
+    }
+
+/** `listedTokens` is the chain's token list, shared with its accounts adapter. */
 export const createEthereumAssetsAdapter = (
     ctx: ChainContext,
     chain: EvmChain,
+    listedTokens: ListedTokens = cachedWhitelist(chain),
 ): AssetsChainAdapter => {
     return {
         chainId: chain.row.id,
@@ -361,6 +404,7 @@ export const createEthereumAssetsAdapter = (
             }
             return readErc20(ctx, chain, assetId, scope)
         },
+        search: search(ctx, chain, listedTokens),
         getPrices: getPrices(ctx, chain),
         getPriceHistory: getPriceHistory(ctx, chain),
     }

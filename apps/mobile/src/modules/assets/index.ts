@@ -48,6 +48,7 @@ export {
     type GroupedHoldingItem,
     type GroupedHoldingMember,
 } from './utils/groupedHoldings'
+export { toChainFilterOptions } from './utils/toChainFilterOptions'
 export type {
     AssetAboutParams,
     AssetAboutDisplay,
