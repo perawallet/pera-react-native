@@ -222,6 +222,7 @@ describe('useQRViewScreen', () => {
             'algorand://CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA',
         )
         expect(result.current.canReceive).toBe(true)
+        expect(result.current.chainId).toBe('algorand')
     })
 
     it('encodes an account on another chain through that chain codec at its network', () => {
