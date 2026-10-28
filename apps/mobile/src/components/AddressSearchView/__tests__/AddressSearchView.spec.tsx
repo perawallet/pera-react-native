@@ -54,7 +54,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getChainDescriptor: () => ({ family: 'algorand' }),
+    getChainDescriptor: () => ({ family: 'algorand', displayName: 'Algorand' }),
+}))
+
+// Echo params so a test can see what reaches the copy.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, string>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
 }))
 
 vi.mock('@modules/chain-ui', () => ({
@@ -418,7 +426,9 @@ describe('AddressSearchView', () => {
             ).toBeTruthy()
             expect(
                 screen.getByText(
-                    'address_entry.wrong_network.send_body.algorand',
+                    `address_entry.wrong_network.send_body.algorand ${JSON.stringify(
+                        { asset: 'ALGO', network: 'Algorand' },
+                    )}`,
                 ),
             ).toBeTruthy()
             expect(

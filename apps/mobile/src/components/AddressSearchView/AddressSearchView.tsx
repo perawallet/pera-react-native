@@ -47,7 +47,7 @@ export type WrongNetworkAddressCopy = {
     titleKey: I18nKey
     /** For a field that takes this family's addresses. */
     bodyKey: I18nKey
-    /** As `bodyKey`, while sending the `{{asset}}`. */
+    /** As `bodyKey`, while sending the `{{asset}}` on the `{{network}}` chain. */
     sendBodyKey: I18nKey
 }
 
@@ -247,9 +247,8 @@ export const AddressSearchView = ({
     const emptyComponent = useCallback(() => {
         const addressCopy =
             mismatchedFamily && chainUiFor(mismatchedFamily).wrongNetworkAddress
-        const expectedCopy = chainUiFor(
-            getChainDescriptor(scope.chainId).family,
-        ).wrongNetworkAddress
+        const descriptor = getChainDescriptor(scope.chainId)
+        const expectedCopy = chainUiFor(descriptor.family).wrongNetworkAddress
         if (addressCopy && expectedCopy) {
             return (
                 <EmptyView
@@ -258,6 +257,7 @@ export const AddressSearchView = ({
                         sendingAssetLabel
                             ? t(expectedCopy.sendBodyKey, {
                                   asset: sendingAssetLabel,
+                                  network: descriptor.displayName,
                               })
                             : t(expectedCopy.bodyKey)
                     }
