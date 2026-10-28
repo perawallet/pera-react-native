@@ -51,6 +51,7 @@ const mocks = vi.hoisted(() => {
         enablePasskeyUnlock: vi.fn(),
         requireVaultPassword: vi.fn(),
         trackEvent: vi.fn(),
+        showToast: vi.fn(),
         MockInvalidPasswordError,
         MockPasskeyPrfUnsupportedError,
         MockVaultReauthRequiredError,
@@ -72,6 +73,9 @@ vi.mock('@analytics', async importOriginal => ({
     trackEvent: mocks.trackEvent,
 }))
 vi.mock('@hooks/useLanguage')
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
+}))
 vi.mock('../../../hooks/useRequireVaultPassword', () => ({
     useRequireVaultPassword: () => ({
         requireVaultPassword: mocks.requireVaultPassword,
@@ -259,18 +263,81 @@ describe('usePasskeyUnlockSetup', () => {
             expect(failEvents()).toEqual([])
         })
 
-        it('calls onReauthRequired instead of opening the sheet when the surface provides it', async () => {
+        it('reports the outcome in place, with no toast, when the surface stays open', async () => {
             mocks.enablePasskeyUnlockWithSession.mockRejectedValueOnce(
                 new mocks.MockVaultReauthRequiredError(),
             )
-            const onReauthRequired = vi.fn()
-            const { result } = renderSetup({ onReauthRequired })
+            const { result } = renderSetup()
 
             await act(() => result.current.enableWithSession())
 
-            expect(result.current.status).toBe('idle')
-            expect(mocks.requireVaultPassword).not.toHaveBeenCalled()
-            expect(onReauthRequired).toHaveBeenCalledTimes(1)
+            expect(result.current.status).toBe('enabled')
+            expect(mocks.showToast).not.toHaveBeenCalled()
+        })
+
+        describe('when the surface closes itself for the password sheet', () => {
+            beforeEach(() => {
+                mocks.enablePasskeyUnlockWithSession.mockRejectedValueOnce(
+                    new mocks.MockVaultReauthRequiredError(),
+                )
+            })
+
+            it('closes the surface before asking for the password, then retries', async () => {
+                const order: string[] = []
+                const onBeforeReauth = vi.fn(() => {
+                    order.push('close')
+                })
+                mocks.requireVaultPassword.mockImplementationOnce(async () => {
+                    order.push('password')
+                    return true
+                })
+                const { result } = renderSetup({ onBeforeReauth })
+
+                await act(() => result.current.enableWithSession())
+
+                expect(order).toEqual(['close', 'password'])
+                expect(
+                    mocks.enablePasskeyUnlockWithSession,
+                ).toHaveBeenCalledTimes(2)
+            })
+
+            it('reports success in a toast', async () => {
+                const { result } = renderSetup({ onBeforeReauth: vi.fn() })
+
+                await act(() => result.current.enableWithSession())
+
+                expect(mocks.showToast).toHaveBeenCalledWith({
+                    title: 'vault.passkey_setup.success_title',
+                    body: 'vault.passkey_setup.success_body',
+                    type: 'success',
+                })
+            })
+
+            it('reports a failed retry in a toast with its hint', async () => {
+                mocks.enablePasskeyUnlockWithSession.mockRejectedValueOnce(
+                    new DOMException('closed', 'NotAllowedError'),
+                )
+                const { result } = renderSetup({ onBeforeReauth: vi.fn() })
+
+                await act(() => result.current.enableWithSession())
+
+                expect(mocks.showToast).toHaveBeenCalledWith({
+                    title: 'vault.passkey_setup.error_not_saved',
+                    body: 'vault.passkey_setup.hint_not_saved_body',
+                    type: 'error',
+                })
+                expect(failEvents()).toHaveLength(1)
+            })
+
+            it('shows no toast when the password sheet is dismissed', async () => {
+                mocks.requireVaultPassword.mockResolvedValueOnce(false)
+                const { result } = renderSetup({ onBeforeReauth: vi.fn() })
+
+                await act(() => result.current.enableWithSession())
+
+                expect(mocks.showToast).not.toHaveBeenCalled()
+                expect(failEvents()).toEqual([])
+            })
         })
 
         it('returns to idle without a sheet or a failure event when the vault is locked', async () => {

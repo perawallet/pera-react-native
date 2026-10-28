@@ -30,10 +30,10 @@ export const PasskeyUnlockOfferPrompt = ({
     const id = UserPreferences._passkeyUnlockOfferPrompt
     const { status, enableWithSession, recordSkip } = usePasskeyUnlockSetup({
         screen: 'prompt',
-        // A sheet requested while a prompt is on screen is held until the
-        // prompt closes, so the password re-check cannot run here. Hiding keeps
-        // the offer for the next open, which starts inside a fresh window.
-        onReauthRequired: () => onHide(id),
+        // A prompt on screen holds every new sheet, so it hides first and the
+        // password sheet presents once the hold lifts. Hiding, unlike
+        // dismissing, leaves the one-time offer unspent if the user cancels.
+        onBeforeReauth: () => onHide(id),
     })
 
     return (

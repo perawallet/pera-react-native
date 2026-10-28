@@ -27,7 +27,9 @@ import {
     type PasskeySetupScreen,
 } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { useRequireVaultPassword } from '../../hooks/useRequireVaultPassword'
+import { PASSKEY_SETUP_FAILURE_COPY } from './failureCopy'
 
 export type PasskeyUnlockSetupFailure =
     | 'not-saved'
@@ -84,8 +86,12 @@ const describeError = (
 export type UsePasskeyUnlockSetupParams = {
     screen: PasskeySetupScreen
     onEnabled?: () => void
-    /** Replaces the password sheet where one cannot present (the prompt). */
-    onReauthRequired?: () => void
+    /**
+     * Runs before the password sheet is requested, for a surface that holds
+     * new sheets while open (the prompt) and so closes itself. The outcome then
+     * has nowhere to land and is reported in a toast.
+     */
+    onBeforeReauth?: () => void
 }
 
 export type UsePasskeyUnlockSetupResult = {
@@ -99,7 +105,7 @@ export type UsePasskeyUnlockSetupResult = {
 export const usePasskeyUnlockSetup = ({
     screen,
     onEnabled,
-    onReauthRequired,
+    onBeforeReauth,
 }: UsePasskeyUnlockSetupParams): UsePasskeyUnlockSetupResult => {
     const [status, setStatusState] = useState<PasskeyUnlockSetupStatus>('idle')
     // The latest status, so a second tap during the ceremony is refused even
@@ -108,6 +114,7 @@ export const usePasskeyUnlockSetup = ({
     const hasTrackedViewRef = useRef(false)
     const { requireVaultPassword } = useRequireVaultPassword()
     const { t } = useLanguage()
+    const { showToast } = useToast()
 
     const setStatus = useCallback((next: PasskeyUnlockSetupStatus): void => {
         statusRef.current = next
@@ -123,7 +130,7 @@ export const usePasskeyUnlockSetup = ({
     // The warn log is what tells, on a store build, which DOMException each
     // passkey provider (1Password, iCloud Keychain) produces when it refuses.
     const fail = useCallback(
-        (error: unknown): void => {
+        (error: unknown): PasskeyUnlockSetupFailure => {
             const next = toPasskeySetupFailure(error)
             const { name, message } = describeError(error)
             logger.warn('Passkey unlock setup failed', {
@@ -139,6 +146,7 @@ export const usePasskeyUnlockSetup = ({
                 [Key.ErrorCause]: name ? `${next}:${name}` : next,
             })
             setStatus(next)
+            return next
         },
         [screen, setStatus],
     )
@@ -150,6 +158,29 @@ export const usePasskeyUnlockSetup = ({
         })
         onEnabled?.()
     }, [screen, setStatus, onEnabled])
+
+    // Renders an already classified outcome with the inline block's own copy,
+    // not a raw exception, so useErrorToast's generic resolution would lose
+    // the hint.
+    const reportInToast = useCallback(
+        (failure: PasskeyUnlockSetupFailure | null): void => {
+            if (!failure) {
+                showToast({
+                    title: t('vault.passkey_setup.success_title'),
+                    body: t('vault.passkey_setup.success_body'),
+                    type: 'success',
+                })
+                return
+            }
+            const copy = PASSKEY_SETUP_FAILURE_COPY[failure]
+            showToast({
+                title: t(copy.error),
+                body: copy.hint ? t(copy.hint.body) : '',
+                type: 'error',
+            })
+        },
+        [showToast, t],
+    )
 
     const enableWithSession = useCallback(async (): Promise<void> => {
         if (statusRef.current === 'pending') return
@@ -165,11 +196,8 @@ export const usePasskeyUnlockSetup = ({
                 fail(error)
                 return
             }
-            if (onReauthRequired) {
-                onReauthRequired()
-                setStatus('idle')
-                return
-            }
+            const isDetached = onBeforeReauth !== undefined
+            onBeforeReauth?.()
             const isVerified = await requireVaultPassword(
                 t('vault.passkey_setup.reauth_description'),
             )
@@ -177,15 +205,25 @@ export const usePasskeyUnlockSetup = ({
                 setStatus('idle')
                 return
             }
+            let failure: PasskeyUnlockSetupFailure | null = null
             try {
                 await enablePasskeyUnlockWithSession()
             } catch (retryError) {
-                fail(retryError)
-                return
+                failure = fail(retryError)
             }
+            if (isDetached) reportInToast(failure)
+            if (failure) return
         }
         succeed()
-    }, [setStatus, fail, succeed, onReauthRequired, requireVaultPassword, t])
+    }, [
+        setStatus,
+        fail,
+        succeed,
+        onBeforeReauth,
+        requireVaultPassword,
+        reportInToast,
+        t,
+    ])
 
     const enableWithPassword = useCallback(
         async (password: string): Promise<void> => {

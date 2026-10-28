@@ -20,8 +20,8 @@ import type { UsePasskeyUnlockOfferPromptResult } from './usePasskeyUnlockOfferP
 
 /**
  * Due only inside the keystore's reauth window, so enabling from the prompt
- * never needs the password. Re-read on every mount, because each popup open
- * is a new realm.
+ * usually needs no password; one that lapses while queued asks for it. Re-read
+ * on every mount, because each popup open is a new realm.
  */
 export const usePasskeyUnlockOfferPrompt =
     (): UsePasskeyUnlockOfferPromptResult => {

@@ -15,32 +15,8 @@ import { PWText, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PasskeyUnlockSetupFailure } from './usePasskeyUnlockSetup.web'
+import { PASSKEY_SETUP_FAILURE_COPY } from './failureCopy'
 import { useStyles } from './styles'
-
-// Literal keys, so the unused-translation-key lint can see every one.
-const COPY: Record<
-    PasskeyUnlockSetupFailure,
-    { error: string; hint: { title: string; body: string } | null }
-> = {
-    'not-saved': {
-        error: 'vault.passkey_setup.error_not_saved',
-        hint: {
-            title: 'vault.passkey_setup.hint_not_saved_title',
-            body: 'vault.passkey_setup.hint_not_saved_body',
-        },
-    },
-    'prf-unsupported': {
-        error: 'vault.passkey_setup.error_prf_unsupported',
-        hint: {
-            title: 'vault.passkey_setup.hint_prf_title',
-            body: 'vault.passkey_setup.hint_prf_body',
-        },
-    },
-    unexpected: {
-        error: 'vault.passkey_setup.error_unexpected',
-        hint: null,
-    },
-}
 
 type PasskeySetupFailureProps = {
     status: PasskeyUnlockSetupFailure
@@ -53,7 +29,7 @@ export const PasskeySetupFailure = ({
 }: PasskeySetupFailureProps): React.JSX.Element => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const copy = COPY[status]
+    const copy = PASSKEY_SETUP_FAILURE_COPY[status]
 
     return (
         <PWView style={styles.container}>
