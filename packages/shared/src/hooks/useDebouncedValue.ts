@@ -22,10 +22,10 @@ export const useDebouncedValue = <T>(
     const [debouncedValue, setDebouncedValue] = useState(value)
 
     useEffect(() => {
-        if (isEqual?.(value, debouncedValue)) return
-
         const timer = setTimeout(() => {
-            setDebouncedValue(value)
+            setDebouncedValue(previous =>
+                isEqual?.(value, previous) ? previous : value,
+            )
         }, delay)
 
         return () => {

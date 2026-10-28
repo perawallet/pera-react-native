@@ -44,9 +44,10 @@ export const useCardWalletBalanceQuery = (
         enabled: isAuthenticated,
     })
 
+    const { refetch: refetchQuery } = query
     const refetch = useCallback(() => {
-        void query.refetch()
-    }, [query.refetch])
+        void refetchQuery()
+    }, [refetchQuery])
 
     return {
         wallet: query.data ?? null,

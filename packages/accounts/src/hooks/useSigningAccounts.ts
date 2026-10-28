@@ -28,6 +28,7 @@ export const useSigningAccounts = (chainId: ChainId) => {
     return useMemo(
         () =>
             accounts.filter(account => canSignWith(account, accounts, chainId)),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canSignWith reads the chain-state store, not its arguments
         [accounts, chainId, chainStates],
     )
 }
@@ -51,6 +52,7 @@ export const useSigningAccountsOn = (
                 account =>
                     signingAddressesOn(account, accounts, chainIds).length > 0,
             ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainKey stands in for chainIds' content; networkKey and chainStates re-run it when the stores signingAddressesOn reads change
         [accounts, chainKey, chainStates, networkKey],
     )
 }

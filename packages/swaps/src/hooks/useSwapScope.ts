@@ -54,6 +54,7 @@ export const useSwapSigningAccounts = (): WalletAccount[] => {
                     canSignWith(account, accounts, chainId)
                 )
             }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canSignWith reads the chain-state store, not its arguments
         [accounts, swapChainOf, chainStates],
     )
 }

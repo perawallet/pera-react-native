@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import type { SigningLifecycleEvent } from '../pipeline/signingEvents'
 
@@ -28,10 +28,14 @@ export const useLastSigningEvent = <E extends SigningLifecycleEvent>(
         return null
     })
 
+    // Callers pass an inline type guard, so a ref keeps one subscription per requestId.
+    const predicateRef = useRef(predicate)
+    predicateRef.current = predicate
+
     useEffect(() => {
         const unsubscribe = signingEventBus.subscribe(event => {
             if (requestId && event.request.id !== requestId) return
-            if (predicate(event)) setLast(event)
+            if (predicateRef.current(event)) setLast(event)
         })
         return unsubscribe
     }, [requestId])

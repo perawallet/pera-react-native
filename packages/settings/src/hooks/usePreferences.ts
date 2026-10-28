@@ -15,6 +15,7 @@ import { useSettingsStore } from '../store'
 
 export const usePreferences = () => {
     const preferences = useSettingsStore(state => state.preferences)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the store's getPreference reads live state; preferences re-keys it so consumers' memos and effects re-read after a write
     const getPreference = useCallback(
         useSettingsStore(state => state.getPreference),
         [preferences],

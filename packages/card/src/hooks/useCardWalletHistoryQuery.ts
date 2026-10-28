@@ -61,9 +61,10 @@ export const useCardWalletHistoryQuery = (
         [query.data],
     )
 
+    const { fetchNextPage: fetchNextQueryPage } = query
     const fetchNextPage = useCallback(() => {
-        void query.fetchNextPage()
-    }, [query.fetchNextPage])
+        void fetchNextQueryPage()
+    }, [fetchNextQueryPage])
 
     return {
         entries,
