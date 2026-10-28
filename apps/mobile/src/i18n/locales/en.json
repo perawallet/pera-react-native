@@ -102,6 +102,11 @@
         "search_placeholder": "Search by name or asset ID",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
+        "not_listed": {
+            "title": "Not available yet",
+            "body": "Pera doesn't list assets on {{chain}} yet.",
+            "body_all": "Pera doesn't list assets on these networks yet."
+        },
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "success_title": "Opt-in successful",

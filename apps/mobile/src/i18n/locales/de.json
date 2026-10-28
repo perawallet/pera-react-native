@@ -102,6 +102,11 @@
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
         "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
+        "not_listed": {
+            "title": "Noch nicht verfügbar",
+            "body": "Pera listet auf {{chain}} noch keine Assets.",
+            "body_all": "Pera listet auf diesen Netzwerken noch keine Assets."
+        },
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",

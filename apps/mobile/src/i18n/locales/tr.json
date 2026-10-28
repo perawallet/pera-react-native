@@ -102,6 +102,11 @@
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
         "no_results": "Varlık bulunamadı",
         "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
+        "not_listed": {
+            "title": "Henüz kullanılamıyor",
+            "body": "Pera henüz {{chain}} ağındaki varlıkları listelemiyor.",
+            "body_all": "Pera henüz bu ağlardaki varlıkları listelemiyor."
+        },
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",

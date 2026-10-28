@@ -102,6 +102,11 @@
         "search_placeholder": "Rechercher par nom ou ID d’actif",
         "no_results": "Aucun actif trouvé",
         "partial_results": "Certains réseaux n’ont pas pu être consultés, des résultats peuvent donc manquer.",
+        "not_listed": {
+            "title": "Pas encore disponible",
+            "body": "Pera ne répertorie pas encore d’actifs sur {{chain}}.",
+            "body_all": "Pera ne répertorie pas encore d’actifs sur ces réseaux."
+        },
         "opt_in": {
             "failed_title": "Échec de l’ajout",
             "success_title": "Ajout réussi",

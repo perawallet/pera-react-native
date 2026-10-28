@@ -320,6 +320,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isLoading: false,
         isError: false,
         error: null,
+        isUnavailable: false,
+        unavailableReasons: [],
         isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
