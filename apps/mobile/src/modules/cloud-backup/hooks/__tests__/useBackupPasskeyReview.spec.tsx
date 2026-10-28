@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { useBackupPasskeyReview } from '../useBackupPasskeyReview'
 
 const {
     passkeysMock,
     reviewMock,
-    listPasskeysMock,
     busyItemsMock,
     showToastMock,
     errorToastMock,
@@ -41,7 +39,6 @@ const {
             }[],
         },
     },
-    listPasskeysMock: vi.fn(async () => []),
     busyItemsMock: { current: [] as string[] },
     showToastMock: vi.fn(),
     errorToastMock: vi.fn(),
@@ -65,15 +62,12 @@ vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
         deriveBackupPasskeyReview: () => reviewMock.current,
-        useListPasskeyMetadataForBackup: () => listPasskeysMock,
         backupBusyItemKey: (itemKind: string, id: string) =>
             `${itemKind}:${id}`,
         useBackupSyncActivityStore: (selector: (s: unknown) => unknown) =>
             selector({ busyItems: busyItemsMock.current }),
         useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
             selector({ syncState: null }),
-        useProvenPasskeysStore: (selector: (s: unknown) => unknown) =>
-            selector({ provenPasskeys: passkeysMock.current }),
         useBackupReviewActionMutation: (
             kind: string,
             options: Record<string, unknown>,
@@ -87,6 +81,14 @@ vi.mock('@perawallet/wallet-core-backup', async () => {
         },
     }
 })
+
+vi.mock('../useProvenPasskeysQuery', () => ({
+    useProvenPasskeysQuery: () => ({
+        passkeys: passkeysMock.current,
+        isLoading: false,
+        isResolved: true,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn() },
@@ -106,22 +108,10 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            mutations: { retry: false },
-            queries: { retry: false },
-        },
-    })
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
-
 const renderReview = () =>
-    renderHook(() => useBackupPasskeyReview(), { wrapper: createWrapper() })
+    renderHook(() => useBackupPasskeyReview(), {
+        wrapper: createQueryClientWrapper(),
+    })
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -152,12 +142,6 @@ describe('useBackupPasskeyReview', () => {
         ])
         expect(result.current.isBackedUp('cred-1')).toBe(true)
         expect(result.current.isBackedUp('cred-2')).toBe(false)
-    })
-
-    test('re-proves the device credentials when the screen opens', async () => {
-        renderReview()
-
-        await waitFor(() => expect(listPasskeysMock).toHaveBeenCalledTimes(1))
     })
 
     test('runs each row action against the passkey side of the mutation', async () => {

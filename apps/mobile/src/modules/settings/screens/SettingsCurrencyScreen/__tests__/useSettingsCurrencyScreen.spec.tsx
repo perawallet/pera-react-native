@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
+import {
+    createQueryClientWrapper,
+    createTestQueryClient,
+} from '@test-utils/render'
 import {
     ALGO_ASSET_NAME,
     IntegrityRequiredError,
@@ -56,12 +59,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 let queryClient: QueryClient
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-)
-
 const renderScreenHook = () =>
-    renderHook(() => useSettingsCurrencyScreen(), { wrapper })
+    renderHook(() => useSettingsCurrencyScreen(), {
+        wrapper: createQueryClientWrapper(queryClient),
+    })
 
 const setPreferredCurrency = (preferredCurrency: string) => {
     mockUseCurrency.mockReturnValue({
@@ -84,9 +85,7 @@ const seedCachedRate = (currencyId: string) => {
 describe('useSettingsCurrencyScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
+        queryClient = createTestQueryClient()
         useNetworkStatusStore.getState().setHasInternet(true)
         setPreferredCurrency('USD')
         mockUseCurrenciesQuery.mockReturnValue({

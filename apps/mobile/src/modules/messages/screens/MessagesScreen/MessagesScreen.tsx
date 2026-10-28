@@ -34,6 +34,7 @@ export const MessagesScreen = () => {
     const {
         initialRouteName,
         openSettingsModal,
+        openInboxInfo,
         activeTab,
         setActiveTab,
         showInboxBadge,
@@ -47,7 +48,13 @@ export const MessagesScreen = () => {
                     name='sliders'
                     onPress={openSettingsModal}
                 />
-            ) : null,
+            ) : (
+                <PWTouchableIcon
+                    name='info'
+                    onPress={openInboxInfo}
+                    testID='inbox_info_button'
+                />
+            ),
     })
 
     return (

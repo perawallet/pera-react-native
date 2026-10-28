@@ -102,6 +102,11 @@
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
         "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
+        "not_listed": {
+            "title": "Noch nicht verfügbar",
+            "body": "Pera listet auf {{chain}} noch keine Assets.",
+            "body_all": "Pera listet auf diesen Netzwerken noch keine Assets."
+        },
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",
@@ -1928,7 +1933,7 @@
         },
         "inbox": {
             "empty_title": "Keine ausstehenden Nachrichten",
-            "empty_body": "Du hast derzeit keine ausstehenden Nachrichten im Posteingang",
+            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, sowie Einladungen zu Gemeinschaftskonten und Signaturanfragen. Tokens in anderen Netzwerken kommen direkt in deinem Guthaben an.",
             "asa_requests_one": "1 eingehendes Asset",
             "asa_requests_other": "{{count}} eingehende Assets",
             "multisig_sign": {
@@ -1940,7 +1945,16 @@
                 "status_confirmed": "Bestätigt"
             },
             "invitation_title": "<0>Du wurdest eingeladen</0>, einem Gemeinschaftskonto {{address}} beizutreten",
-            "view_invitation_details": "Einladungsdetails anzeigen"
+            "view_invitation_details": "Einladungsdetails anzeigen",
+            "info": {
+                "title": "Über den Posteingang",
+                "algorand_title": "Algorand",
+                "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie beanspruchst oder ablehnst. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen kommen hier an.",
+                "other_networks_title": "Andere Netzwerke",
+                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets. Tokens, die dir dort gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
+                "find_tokens_body": "Du findest sie, indem du das Konto öffnest und dir seine Assets in diesem Netzwerk ansiehst.",
+                "learn_more": "Mehr erfahren"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset-Übertragungsanfragen",
@@ -2715,13 +2729,13 @@
             "cancel": "Abbrechen"
         }
     },
+    "chain_selection": {
+        "title": "Netzwerk wählen",
+        "add_action": "Hinzufügen"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Konto auswählen"
-        },
-        "chain_selection": {
-            "title": "Netzwerk wählen",
-            "add_action": "Hinzufügen"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",
@@ -2839,7 +2853,10 @@
             "title": "Asset auswählen",
             "search_placeholder": "Nach Asset-Name oder ID suchen",
             "no_results_title": "Keine passenden Assets",
-            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "empty_title": "Nichts zu senden auf {{network}}",
+            "empty_body": "Dieses Konto hat noch keine Assets auf {{network}}. Empfange welche, um mit dem Senden zu beginnen.",
+            "empty_receive_action": "Empfangen"
         },
         "bottom_sheet": {
             "no_account_title": "Kein Konto ausgewählt",
@@ -2924,13 +2941,17 @@
             "subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet.",
             "title_hardware": "Verbindung mit deinem Ledger-Gerät wird hergestellt",
             "subtitle_hardware": "Verbindung zu {{deviceName}} wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
-            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist."
+            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
+            "broadcast_subtitle": "Deine Transaktion wird an das Netzwerk {{network}} gesendet."
         },
         "success": {
             "title": "Transaktion verarbeitet",
             "asset_transferred_title": "Asset übertragen",
             "subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
+            "pending_title": "Transaktion gesendet",
+            "pending_subtitle": "Deine Transaktion wurde an das Netzwerk {{network}} gesendet und wartet auf Bestätigung.",
             "view_in_explorer": "Transaktionsdetails im Pera Explorer anzeigen",
+            "view_on_explorer": "Auf {{explorer}} anzeigen",
             "done": "Fertig"
         },
         "close_account": {
@@ -3343,6 +3364,23 @@
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
+        },
+        "address_safety": {
+            "listed_title": "Bekannte Betrugsadresse",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Wenn du signierst, könnte sie an deine Assets gelangen.",
+            "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "acknowledge": "Ich verstehe das Risiko und möchte trotzdem signieren",
+            "role": {
+                "recipient": "Empfänger",
+                "token_recipient": "Token-Empfänger",
+                "close_recipient": "Erhält das Restguthaben",
+                "new_authorizer": "Neue Signaturberechtigung",
+                "referenced_account": "Referenziertes Konto",
+                "target": "Vertrag",
+                "spender": "Berechtigte Adresse",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {

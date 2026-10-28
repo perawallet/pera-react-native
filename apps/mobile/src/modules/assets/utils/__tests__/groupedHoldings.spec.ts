@@ -21,7 +21,6 @@ import {
 import {
     buildGroupedHoldingItems,
     groupedHoldingItemKey,
-    spansChains,
     type GroupableHoldingAdapter,
     type GroupedHoldingItem,
 } from '../groupedHoldings'
@@ -233,23 +232,5 @@ describe('groupedHoldingItemKey', () => {
 
         const keys = items.map(groupedHoldingItemKey)
         expect(new Set(keys).size).toBe(keys.length)
-    })
-})
-
-describe('spansChains', () => {
-    it('is true only for holdings on two or more chains', () => {
-        expect(spansChains([])).toBe(false)
-        expect(
-            spansChains([
-                holding(ALGO_MAINNET, '0', '1'),
-                holding(ALGO_MAINNET, '31566704', '1'),
-            ]),
-        ).toBe(false)
-        expect(
-            spansChains([
-                holding(ALGO_MAINNET, '0', '1'),
-                holding(ETH_MAINNET, '0xA0b8', '1'),
-            ]),
-        ).toBe(true)
     })
 })

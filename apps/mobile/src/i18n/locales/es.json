@@ -102,6 +102,11 @@
         "search_placeholder": "Busca por nombre o ID de activo",
         "no_results": "No se encontraron activos",
         "partial_results": "No se pudo buscar en algunas redes, así que podrían faltar resultados.",
+        "not_listed": {
+            "title": "Aún no disponible",
+            "body": "Pera aún no incluye activos en {{chain}}.",
+            "body_all": "Pera aún no incluye activos en estas redes."
+        },
         "opt_in": {
             "failed_title": "No se pudo añadir el activo",
             "success_title": "Activo añadido",
@@ -1936,7 +1941,7 @@
         },
         "inbox": {
             "empty_title": "No hay mensajes pendientes",
-            "empty_body": "Ahora mismo no tienes mensajes pendientes en la bandeja",
+            "empty_body": "La bandeja guarda los activos de Algorand que te envían antes de que los hayas añadido, además de las invitaciones a cuentas compartidas y las solicitudes de firma. Los tokens de otras redes llegan directamente a tu saldo.",
             "asa_requests_one": "1 activo entrante",
             "asa_requests_other": "{{count}} activos entrantes",
             "multisig_sign": {
@@ -1948,7 +1953,16 @@
                 "status_confirmed": "Confirmada"
             },
             "invitation_title": "<0>Te han invitado</0> a unirte a una cuenta compartida {{address}}",
-            "view_invitation_details": "Ver detalles de la invitación"
+            "view_invitation_details": "Ver detalles de la invitación",
+            "info": {
+                "title": "Acerca de la bandeja",
+                "algorand_title": "Algorand",
+                "algorand_body": "Una cuenta de Algorand debe añadir un activo antes de poder tenerlo. Los activos que te envían antes de que los hayas añadido esperan aquí, en la bandeja, hasta que los reclames o los rechaces. Las invitaciones a cuentas compartidas y las solicitudes de firma también llegan aquí.",
+                "other_networks_title": "Otras redes",
+                "other_networks_body": "En redes como Ethereum y Base no hace falta añadir los tokens. Los que te envían allí llegan directamente a tu saldo y nunca aparecen en la bandeja.",
+                "find_tokens_body": "Para verlos, abre la cuenta y revisa sus activos en esa red.",
+                "learn_more": "Más información"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Solicitudes de transferencia de activos",
@@ -2723,13 +2737,13 @@
             "cancel": "Cancelar"
         }
     },
+    "chain_selection": {
+        "title": "Elegir red",
+        "add_action": "Añadir"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Seleccionar cuenta"
-        },
-        "chain_selection": {
-            "title": "Elegir red",
-            "add_action": "Añadir"
         },
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
@@ -2847,7 +2861,10 @@
             "title": "Seleccionar activo",
             "search_placeholder": "Buscar por nombre o ID del activo",
             "no_results_title": "No hay activos coincidentes",
-            "no_results_body": "Ningún activo coincide con tu búsqueda"
+            "no_results_body": "Ningún activo coincide con tu búsqueda",
+            "empty_title": "Nada que enviar en {{network}}",
+            "empty_body": "Esta cuenta aún no tiene activos en {{network}}. Recibe algunos para empezar a enviar.",
+            "empty_receive_action": "Recibir"
         },
         "bottom_sheet": {
             "no_account_title": "Ninguna cuenta seleccionada",
@@ -2932,13 +2949,17 @@
             "subtitle": "Tu transacción está siendo procesada por la red de Algorand.",
             "title_hardware": "Conectando con tu dispositivo Ledger",
             "subtitle_hardware": "Contactando con {{deviceName}}. Asegúrate de que está desbloqueado, dentro del alcance y con la app de {{appName}} abierta.",
-            "subtitle_hardware_noDevice": "Contactando con tu dispositivo Ledger. Asegúrate de que está desbloqueado, dentro del alcance y con la app de {{appName}} abierta."
+            "subtitle_hardware_noDevice": "Contactando con tu dispositivo Ledger. Asegúrate de que está desbloqueado, dentro del alcance y con la app de {{appName}} abierta.",
+            "broadcast_subtitle": "Tu transacción se está enviando a la red de {{network}}."
         },
         "success": {
             "title": "Transacción procesada",
             "asset_transferred_title": "Activo transferido",
             "subtitle": "Tu transacción se recibió correctamente en la red de Algorand",
+            "pending_title": "Transacción enviada",
+            "pending_subtitle": "Tu transacción se envió a la red de {{network}} y está esperando confirmación.",
             "view_in_explorer": "Ver el detalle de la transacción en Pera Explorer",
+            "view_on_explorer": "Ver en {{explorer}}",
             "done": "Listo"
         },
         "close_account": {
@@ -3351,6 +3372,23 @@
             "show_details": "Ver detalles",
             "details_title": "Detalles de la solicitud de autenticación",
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."
+        },
+        "address_safety": {
+            "listed_title": "Dirección de estafa conocida",
+            "listed_body": "Esta solicitud incluye una dirección de una lista pública de direcciones usadas para robar fondos. Si firmas, podría quedarse con tus activos.",
+            "look_alike_title": "Esta solicitud incluye una dirección que imita una que conoces",
+            "look_alike_body": "Empieza y termina como una dirección que conoces, pero los caracteres del medio son distintos. Los estafadores crean direcciones parecidas para engañarte. Compara las direcciones completas a continuación.",
+            "acknowledge": "Entiendo el riesgo y quiero firmar de todos modos",
+            "role": {
+                "recipient": "Destinatario",
+                "token_recipient": "Destinatario del token",
+                "close_recipient": "Recibe el saldo restante",
+                "new_authorizer": "Nueva autoridad de firma",
+                "referenced_account": "Cuenta referenciada",
+                "target": "Contrato",
+                "spender": "Dirección autorizada",
+                "operator": "Operador"
+            }
         }
     },
     "site_safety": {

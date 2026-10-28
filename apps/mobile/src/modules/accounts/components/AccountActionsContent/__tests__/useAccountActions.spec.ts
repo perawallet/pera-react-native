@@ -22,6 +22,7 @@ const {
     mockSetSelectedContact,
     mockRequestByType,
     mockSetDestination,
+    mockSetChainId,
     mockReset,
     mockResolveSender,
     mockPickSender,
@@ -34,6 +35,7 @@ const {
     mockSetSelectedContact: vi.fn(),
     mockRequestByType: vi.fn(),
     mockSetDestination: vi.fn(),
+    mockSetChainId: vi.fn(),
     mockReset: vi.fn(),
     mockResolveSender: vi.fn(),
     mockPickSender: vi.fn(),
@@ -78,6 +80,7 @@ vi.mock('@modules/transactions/hooks', () => ({
         getState: () => ({
             reset: mockReset,
             setDestination: mockSetDestination,
+            setChainId: mockSetChainId,
         }),
     },
 }))
@@ -178,6 +181,7 @@ describe('useAccountActions', () => {
 
         expect(mockReset).toHaveBeenCalled()
         expect(mockSetDestination).toHaveBeenCalledWith(ADDRESS)
+        expect(mockSetChainId).not.toHaveBeenCalled()
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
             {},
@@ -294,6 +298,8 @@ describe('useAccountActions', () => {
 
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('sender')
             expect(mockSetDestination).toHaveBeenCalledWith(ADDRESS)
+            // The address names its network, so the send skips Choose Network.
+            expect(mockSetChainId).toHaveBeenCalledWith('algorand')
             expect(mockRequestByType).toHaveBeenCalledWith(
                 'send-funds',
                 {},

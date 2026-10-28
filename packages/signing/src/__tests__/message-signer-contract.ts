@@ -92,6 +92,17 @@ export const messageSignerContractTests = (
             ).not.toThrow()
         })
 
+        it('names addresses for every request, and none for a malformed one, without throwing', () => {
+            for (const request of requests) {
+                expect(() =>
+                    makeAdapter().reviewedAddresses(request),
+                ).not.toThrow()
+            }
+            expect(
+                makeAdapter().reviewedAddresses(fixtures.malformedRequest),
+            ).toEqual([])
+        })
+
         it("plans the account's own signature, in order", () => {
             for (const request of requests) {
                 const planned = plan(request)

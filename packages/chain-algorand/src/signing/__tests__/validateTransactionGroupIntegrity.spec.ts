@@ -47,10 +47,8 @@ describe('validateTransactionGroupIntegrity', () => {
     })
 
     test('passes for a cross-account group (express-send shape)', () => {
-        // Express send: 3 txs, the middle one is signed by a different
-        // account (the receiver). The pipeline used to filter the middle
-        // tx out before validation, breaking the recompute. We now validate
-        // on the FULL request, so the cross-account group passes.
+        // Express send: the receiver signs the middle tx, and the group id
+        // still covers all three.
         const grouped = groupTransactions([
             makePayment(senderA, 1n),
             makePayment(senderB, 0n),

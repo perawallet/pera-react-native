@@ -99,7 +99,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('../../../components/send-funds/AddNoteContent', () => ({
+vi.mock('@modules/transactions/components/send-funds/AddNoteContent', () => ({
     AddNoteContent: () => null,
 }))
 

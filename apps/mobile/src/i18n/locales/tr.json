@@ -102,6 +102,11 @@
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
         "no_results": "Varlık bulunamadı",
         "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
+        "not_listed": {
+            "title": "Henüz kullanılamıyor",
+            "body": "Pera henüz {{chain}} ağındaki varlıkları listelemiyor.",
+            "body_all": "Pera henüz bu ağlardaki varlıkları listelemiyor."
+        },
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",
@@ -1936,7 +1941,7 @@
         },
         "inbox": {
             "empty_title": "Bekleyen mesaj yok",
-            "empty_body": "Şu anda gelen kutunda bekleyen mesaj yok",
+            "empty_body": "Gelen kutusu, opt-in olmadan önce sana gönderilen Algorand varlıklarını, paylaşılan hesap davetlerini ve imza isteklerini tutar. Diğer ağlardaki token’lar doğrudan bakiyene gelir.",
             "asa_requests_one": "1 gelen varlık",
             "asa_requests_other": "{{count}} gelen varlık",
             "multisig_sign": {
@@ -1948,7 +1953,16 @@
                 "status_confirmed": "Onaylandı"
             },
             "invitation_title": "{{address}} paylaşılan hesabına katılmak için <0>davet edildin</0>",
-            "view_invitation_details": "Davet ayrıntılarını görüntüle"
+            "view_invitation_details": "Davet ayrıntılarını görüntüle",
+            "info": {
+                "title": "Gelen kutusu hakkında",
+                "algorand_title": "Algorand",
+                "algorand_body": "Bir Algorand hesabının bir varlığı tutabilmesi için önce o varlığa opt-in olması gerekir. Opt-in olmadan önce sana gönderilen varlıklar, sen talep edene ya da reddedene kadar burada, gelen kutusunda bekler. Paylaşılan hesap davetleri ve imza istekleri de buraya gelir.",
+                "other_networks_title": "Diğer ağlar",
+                "other_networks_body": "Ethereum ve Base gibi ağlarda opt-in yoktur. Bu ağlarda sana gönderilen token’lar doğrudan bakiyene gelir ve gelen kutusunda hiç görünmez.",
+                "find_tokens_body": "Onları görmek için hesabı aç ve o ağdaki varlıklarına bak.",
+                "learn_more": "Daha fazla bilgi"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Varlık transfer istekleri",
@@ -2723,13 +2737,13 @@
             "cancel": "İptal"
         }
     },
+    "chain_selection": {
+        "title": "Ağ seç",
+        "add_action": "Ekle"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Hesap seç"
-        },
-        "chain_selection": {
-            "title": "Ağ seç",
-            "add_action": "Ekle"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",
@@ -2847,7 +2861,10 @@
             "title": "Varlık seç",
             "search_placeholder": "Varlık adına veya ID’ye göre ara",
             "no_results_title": "Eşleşen varlık yok",
-            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+            "no_results_body": "Arama terimine uyan varlık bulunamadı",
+            "empty_title": "{{network}} ağında gönderilecek bir şey yok",
+            "empty_body": "Bu hesabın {{network}} ağında henüz varlığı yok. Göndermeye başlamak için varlık al.",
+            "empty_receive_action": "Al"
         },
         "bottom_sheet": {
             "no_account_title": "Hesap seçilmedi",
@@ -2932,13 +2949,17 @@
             "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
             "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
-            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol."
+            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
+            "broadcast_subtitle": "İşlemin {{network}} ağına gönderiliyor."
         },
         "success": {
             "title": "İşlem gerçekleşti",
             "asset_transferred_title": "Varlık transfer edildi",
             "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "pending_title": "İşlem gönderildi",
+            "pending_subtitle": "İşlemin {{network}} ağına gönderildi ve onay bekliyor.",
             "view_in_explorer": "İşlem detayını Pera Explorer’da gör",
+            "view_on_explorer": "{{explorer}} sitesinde görüntüle",
             "done": "Bitti"
         },
         "close_account": {
@@ -3351,6 +3372,23 @@
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
+        },
+        "address_safety": {
+            "listed_title": "Bilinen dolandırıcılık adresi",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. İmzalarsan varlıkların bu adrese geçebilir.",
+            "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",
+            "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
+            "acknowledge": "Riski anlıyorum ve yine de imzalamak istiyorum",
+            "role": {
+                "recipient": "Alıcı",
+                "token_recipient": "Token alıcısı",
+                "close_recipient": "Kalan bakiyeyi alır",
+                "new_authorizer": "Yeni imza yetkilisi",
+                "referenced_account": "Başvurulan hesap",
+                "target": "Sözleşme",
+                "spender": "Yetkili adres",
+                "operator": "Operatör"
+            }
         }
     },
     "site_safety": {

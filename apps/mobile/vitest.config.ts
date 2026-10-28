@@ -12,7 +12,10 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
@@ -139,6 +142,14 @@ const singletons: AliasEntry[] = [
             './node_modules/@tanstack/react-query',
         ),
     },
+]
+
+// Need a real Node realm, which the vmThreads pool's per-file context isn't:
+// they redefine `window.location` or reach Node's module internals.
+const forksOnlySpecs = [
+    '__tests__/metro-resolver.spec.ts',
+    'src/components/CameraTabResult/__tests__/CameraTabResult.web.spec.tsx',
+    'src/modules/dapp/hooks/__tests__/useDappRequest.spec.ts',
 ]
 
 // These resolve through node_modules to the package's built `dist` rather
@@ -295,7 +306,7 @@ export default defineConfig({
                 extends: true,
                 test: {
                     name: 'unit',
-                    setupFiles: ['./vitest.setup.ts'],
+                    setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
                     // apps/browser's offscreen host is headless production
                     // code that lives with the extension shell, but its specs
                     // were written against this project's React Native mock
@@ -321,7 +332,17 @@ export default defineConfig({
                         '**/node_modules/**',
                         '**/dist/**',
                         '**/__integration__/**',
+                        ...forksOnlySpecs,
                     ],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'unit-forks',
+                    pool: 'forks',
+                    setupFiles: ['./vitest.setup.ts'],
+                    include: forksOnlySpecs,
                 },
             },
             {
@@ -344,6 +365,7 @@ export default defineConfig({
                 test: {
                     name: 'integration',
                     setupFiles: [
+                        vmGlobalsSetup,
                         './vitest.realm-setup.ts',
                         './vitest.setup.ts',
                         './vitest.integration-setup.ts',

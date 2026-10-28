@@ -102,6 +102,11 @@
         "search_placeholder": "Search by name or asset ID",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
+        "not_listed": {
+            "title": "Not available yet",
+            "body": "Pera doesn't list assets on {{chain}} yet.",
+            "body_all": "Pera doesn't list assets on these networks yet."
+        },
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "success_title": "Opt-in successful",
@@ -1936,7 +1941,7 @@
         },
         "inbox": {
             "empty_title": "No pending messages",
-            "empty_body": "You do not currently have any pending inbox messages",
+            "empty_body": "The inbox holds Algorand assets sent to you before you’ve opted in, along with shared account invitations and signature requests. Tokens on other networks arrive directly in your balance.",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_sign": {
@@ -1948,7 +1953,16 @@
                 "status_confirmed": "Confirmed"
             },
             "invitation_title": "<0>You've been invited</0> to join a shared account {{address}}",
-            "view_invitation_details": "View invitation details"
+            "view_invitation_details": "View invitation details",
+            "info": {
+                "title": "About the inbox",
+                "algorand_title": "Algorand",
+                "algorand_body": "An Algorand account must opt in to an asset before it can hold it. Assets sent to you before you’ve opted in wait here, in the inbox, until you claim or reject them. Shared account invitations and signature requests arrive here too.",
+                "other_networks_title": "Other networks",
+                "other_networks_body": "Networks such as Ethereum and Base have no opt-in. Tokens sent to you there arrive directly in your balance and never appear in the inbox.",
+                "find_tokens_body": "To see them, open the account and check its assets on that network.",
+                "learn_more": "Learn more"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -2723,13 +2737,13 @@
             "cancel": "Cancel"
         }
     },
+    "chain_selection": {
+        "title": "Choose Network",
+        "add_action": "Add"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
-        },
-        "chain_selection": {
-            "title": "Choose Network",
-            "add_action": "Add"
         },
         "qrview": {
             "error_title": "No Account Selected",
@@ -2847,7 +2861,10 @@
             "title": "Select Asset",
             "search_placeholder": "Search by asset name or ID",
             "no_results_title": "No Matching Assets",
-            "no_results_body": "No assets matched your search term"
+            "no_results_body": "No assets matched your search term",
+            "empty_title": "Nothing to send on {{network}}",
+            "empty_body": "This account has no assets on {{network}} yet. Receive some to start sending.",
+            "empty_receive_action": "Receive"
         },
         "bottom_sheet": {
             "no_account_title": "No Account Selected",
@@ -2932,13 +2949,17 @@
             "subtitle": "Your transaction is being processed by the Algorand network.",
             "title_hardware": "Connecting to your Ledger device",
             "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the {{appName}} app is open.",
-            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the {{appName}} app is open."
+            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the {{appName}} app is open.",
+            "broadcast_subtitle": "Your transaction is being sent to the {{network}} network."
         },
         "success": {
             "title": "Transaction Processed",
             "asset_transferred_title": "Asset Transferred",
             "subtitle": "Your transaction was successfully received by the Algorand network",
+            "pending_title": "Transaction Submitted",
+            "pending_subtitle": "Your transaction was sent to the {{network}} network and is waiting for confirmation.",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
+            "view_on_explorer": "View on {{explorer}}",
             "done": "Done"
         },
         "close_account": {
@@ -3351,6 +3372,23 @@
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
+        },
+        "address_safety": {
+            "listed_title": "Known scam address",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "look_alike_title": "This request names an address that imitates one you know",
+            "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
+            "acknowledge": "I understand the risk and want to sign anyway",
+            "role": {
+                "recipient": "Recipient",
+                "token_recipient": "Token recipient",
+                "close_recipient": "Receives the remaining balance",
+                "new_authorizer": "New signing authority",
+                "referenced_account": "Referenced account",
+                "target": "Contract",
+                "spender": "Spender",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {

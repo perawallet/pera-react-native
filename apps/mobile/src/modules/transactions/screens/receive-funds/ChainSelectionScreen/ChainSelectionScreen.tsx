@@ -10,56 +10,20 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWScrollView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { ChainRow } from '@modules/chain-ui'
-import { useStyles } from './styles'
+import { ChainSelectionList } from '../../../components/ChainSelectionList'
 import { useChainSelectionScreen } from './useChainSelectionScreen'
 
 export const ChainSelectionScreen = () => {
     const { rows, enablingChainId, handleSelectChain, handleAddChain } =
         useChainSelectionScreen()
-    const { t } = useLanguage()
-    const styles = useStyles()
 
     return (
-        <PWScrollView contentContainerStyle={styles.container}>
-            {rows.map(({ chainId, displayName, address, isEnabled }) => (
-                <ChainRow
-                    key={chainId}
-                    chainId={chainId}
-                    title={displayName}
-                    subtitle={address}
-                    right={
-                        isEnabled ? (
-                            <PWIcon
-                                variant='secondary'
-                                name='chevron-right'
-                            />
-                        ) : (
-                            <PWButton
-                                variant='helper'
-                                icon='plus'
-                                paddingStyle='dense'
-                                title={t(
-                                    'receive_funds.chain_selection.add_action',
-                                )}
-                                isLoading={enablingChainId === chainId}
-                                isDisabled={
-                                    enablingChainId !== undefined &&
-                                    enablingChainId !== chainId
-                                }
-                                onPress={() => handleAddChain(chainId)}
-                                testID={`receive_chain_add_${chainId}`}
-                            />
-                        )
-                    }
-                    onPress={
-                        isEnabled ? () => handleSelectChain(chainId) : undefined
-                    }
-                    testID={`receive_chain_row_${chainId}`}
-                />
-            ))}
-        </PWScrollView>
+        <ChainSelectionList
+            rows={rows}
+            enablingChainId={enablingChainId}
+            onSelectChain={handleSelectChain}
+            onAddChain={handleAddChain}
+            testIDPrefix='receive_chain'
+        />
     )
 }

@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {

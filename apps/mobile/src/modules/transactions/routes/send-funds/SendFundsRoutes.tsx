@@ -17,13 +17,10 @@ import {
 
 import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
-import {
-    isUniqueCollectible,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
-import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { AddContactScreen } from '@modules/contacts/routes'
 import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
+import { SendChainSelectionScreen } from '../../screens/send-funds/SendChainSelectionScreen'
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
 import { SelectDestinationScreen } from '../../screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionConfirmationScreen } from '../../screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
@@ -34,30 +31,14 @@ import { TransactionProcessingScreen } from '../../screens/send-funds/Transactio
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
+import { useSendFundsRoutes } from './useSendFundsRoutes'
 
 const Stack = createStackNavigator<SendFundsStackParamList>()
 
 export const SendFundsRoutes = () => {
-    const scope = useSendScope()
-    const { canSelectAsset, selectedAssetId, onFinished } = useSendFunds()
+    const { onFinished } = useSendFunds()
+    const { initialRouteName } = useSendFundsRoutes()
     const styles = useStyles()
-
-    const { data: assets } = useAssetsQuery(
-        scope,
-        selectedAssetId ? [selectedAssetId] : [],
-    )
-    const selectedAsset = selectedAssetId
-        ? assets.get(selectedAssetId)
-        : undefined
-    const isPureCollectible = selectedAsset
-        ? isUniqueCollectible(selectedAsset)
-        : false
-
-    const initialRouteName = canSelectAsset
-        ? 'AssetSelection'
-        : isPureCollectible
-          ? 'SelectDestination'
-          : 'InputAmount'
 
     return (
         <Stack.Navigator
@@ -77,16 +58,35 @@ export const SendFundsRoutes = () => {
             }}
         >
             <Stack.Screen
-                name='AssetSelection'
-                component={AssetSelectionScreen}
+                name='ChainSelection'
+                component={SendChainSelectionScreen}
                 options={{
-                    title: 'send_funds.asset_selection.title',
+                    title: 'chain_selection.title',
                     headerLeft: () => (
                         <PWIcon
                             name='cross'
                             onPress={onFinished}
                         />
                     ),
+                }}
+            />
+
+            <Stack.Screen
+                name='AssetSelection'
+                component={AssetSelectionScreen}
+                options={{
+                    title: 'send_funds.asset_selection.title',
+                    // Reached from Choose Network, the default back arrow returns there.
+                    ...(initialRouteName === 'AssetSelection'
+                        ? {
+                              headerLeft: () => (
+                                  <PWIcon
+                                      name='cross'
+                                      onPress={onFinished}
+                                  />
+                              ),
+                          }
+                        : {}),
                 }}
             />
 

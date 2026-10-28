@@ -102,6 +102,11 @@
         "search_placeholder": "Buscar por nome ou ID do ativo",
         "no_results": "Nenhum ativo encontrado",
         "partial_results": "Não foi possível pesquisar em algumas redes, então alguns resultados podem estar faltando.",
+        "not_listed": {
+            "title": "Ainda não disponível",
+            "body": "A Pera ainda não lista ativos em {{chain}}.",
+            "body_all": "A Pera ainda não lista ativos nestas redes."
+        },
         "opt_in": {
             "failed_title": "Falha ao adicionar o ativo",
             "success_title": "Ativo adicionado",
@@ -1938,7 +1943,7 @@
         },
         "inbox": {
             "empty_title": "Nenhuma mensagem pendente",
-            "empty_body": "Você não tem nenhuma mensagem pendente na caixa de entrada",
+            "empty_body": "A caixa de entrada guarda os ativos da Algorand enviados a você antes de você fazer opt-in, além de convites para contas compartilhadas e solicitações de assinatura. Tokens em outras redes chegam direto ao seu saldo.",
             "asa_requests_zero": "{{count}} ativos a receber",
             "asa_requests_one": "1 ativo a receber",
             "asa_requests_other": "{{count}} ativos a receber",
@@ -1951,7 +1956,16 @@
                 "status_confirmed": "Confirmada"
             },
             "invitation_title": "<0>Você recebeu um convite</0> para participar de uma conta compartilhada {{address}}",
-            "view_invitation_details": "Ver detalhes do convite"
+            "view_invitation_details": "Ver detalhes do convite",
+            "info": {
+                "title": "Sobre a caixa de entrada",
+                "algorand_title": "Algorand",
+                "algorand_body": "Uma conta Algorand precisa fazer opt-in em um ativo antes de poder mantê-lo. Os ativos enviados a você antes do opt-in ficam aqui, na caixa de entrada, até você recebê-los ou recusá-los. Convites para contas compartilhadas e solicitações de assinatura também chegam aqui.",
+                "other_networks_title": "Outras redes",
+                "other_networks_body": "Redes como Ethereum e Base não têm opt-in. Os tokens enviados a você nelas chegam direto ao seu saldo e nunca aparecem na caixa de entrada.",
+                "find_tokens_body": "Para vê-los, abra a conta e confira os ativos dela nessa rede.",
+                "learn_more": "Saiba mais"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Solicitações de transferência de ativos",
@@ -2739,13 +2753,13 @@
             "cancel": "Cancelar"
         }
     },
+    "chain_selection": {
+        "title": "Escolher rede",
+        "add_action": "Adicionar"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Selecionar conta"
-        },
-        "chain_selection": {
-            "title": "Escolher rede",
-            "add_action": "Adicionar"
         },
         "qrview": {
             "error_title": "Nenhuma conta selecionada",
@@ -2863,7 +2877,10 @@
             "title": "Selecionar ativo",
             "search_placeholder": "Buscar por nome ou ID do ativo",
             "no_results_title": "Nenhum ativo encontrado",
-            "no_results_body": "Nenhum ativo corresponde à sua busca"
+            "no_results_body": "Nenhum ativo corresponde à sua busca",
+            "empty_title": "Nada para enviar na rede {{network}}",
+            "empty_body": "Esta conta ainda não tem ativos na rede {{network}}. Receba alguns para começar a enviar.",
+            "empty_receive_action": "Receber"
         },
         "bottom_sheet": {
             "no_account_title": "Nenhuma conta selecionada",
@@ -2948,13 +2965,17 @@
             "subtitle": "Sua transação está sendo processada pela rede Algorand.",
             "title_hardware": "Conectando ao seu dispositivo Ledger",
             "subtitle_hardware": "Tentando conectar a {{deviceName}}. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
-            "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto."
+            "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
+            "broadcast_subtitle": "Sua transação está sendo enviada para a rede {{network}}."
         },
         "success": {
             "title": "Transação processada",
             "asset_transferred_title": "Ativo transferido",
             "subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
+            "pending_title": "Transação enviada",
+            "pending_subtitle": "Sua transação foi enviada para a rede {{network}} e está aguardando confirmação.",
             "view_in_explorer": "Ver detalhes da transação no Pera Explorer",
+            "view_on_explorer": "Ver no {{explorer}}",
             "done": "Concluir"
         },
         "close_account": {
@@ -3368,6 +3389,23 @@
             "show_details": "Mostrar detalhes",
             "details_title": "Detalhes da solicitação de autenticação",
             "details_description": "Revise todos os metadados desta solicitação de autenticação antes de aprovar."
+        },
+        "address_safety": {
+            "listed_title": "Endereço de golpe conhecido",
+            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos. Ao assinar, você pode entregar seus ativos a ele.",
+            "look_alike_title": "Esta solicitação inclui um endereço que imita um que você conhece",
+            "look_alike_body": "Ele começa e termina como um endereço que você conhece, mas os caracteres do meio são diferentes. Golpistas criam endereços parecidos para enganar você. Compare os endereços completos abaixo.",
+            "acknowledge": "Entendo o risco e quero assinar mesmo assim",
+            "role": {
+                "recipient": "Destinatário",
+                "token_recipient": "Destinatário do token",
+                "close_recipient": "Recebe o saldo restante",
+                "new_authorizer": "Nova autoridade de assinatura",
+                "referenced_account": "Conta referenciada",
+                "target": "Contrato",
+                "spender": "Endereço autorizado",
+                "operator": "Operador"
+            }
         }
     },
     "site_safety": {

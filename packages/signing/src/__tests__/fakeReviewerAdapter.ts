@@ -38,6 +38,7 @@ export const fakeReviewerAdapter = (
     resolveAllSignerAddresses: vi.fn(() => []),
     getDelegatedUnsignableReason: vi.fn(() => null),
     decodeArbitraryDataForDisplay: vi.fn(() => ({ kind: 'hex', hex: '' })),
+    reviewedAddresses: vi.fn(() => []),
     toTransactionNative: vi.fn(tx => tx as unknown as TransactionNative),
     ...overrides,
 })

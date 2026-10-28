@@ -11,7 +11,6 @@
  */
 
 // packages/backup/src/cloud/sync/__tests__/canonicalize.spec.ts
-// @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
 import { canonicalJson, contentHash } from '../canonicalize'

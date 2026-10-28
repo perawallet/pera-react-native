@@ -12,6 +12,27 @@ pnpm --filter mobile test    # Mobile app tests only
 Tests are colocated with source in `__tests__/` folders. `.spec.tsx` for anything with JSX,
 `.spec.ts` for pure logic and hooks.
 
+### Pool and environment
+
+Every workspace runs on Vitest's `vmThreads` pool, set once in `poolConfig`
+(`packages/devtools/vitest/pool.js`): each spec file gets a fresh VM context inside a long-lived
+worker, instead of a new process that boots jsdom and the module graph again. Two consequences:
+
+- The VM context lacks some Node globals that msw and WebCrypto users need. `vmGlobalsSetup` restores
+  them, so it is listed first in every workspace's `setupFiles`.
+- A spec that redefines `window.location` or `window.top`, reaches Node's module internals, or needs
+  `instanceof` to hold for an object from Node's own realm fails there. List it in that workspace's
+  forks-only specs (`forksOnlySpecs` in `apps/mobile/vitest.config.ts`, `FORKS_ONLY_SPECS` in
+  `packages/chain-algorand/vitest.config.ts`) and it runs in a `forks` project instead.
+
+Packages default to the `node` environment. A spec that needs the DOM, usually one that renders a
+hook with `renderHook`, opts in with a `// @vitest-environment jsdom` comment after its license
+header.
+
+lanekeep enforces all three: `pera/vitest-pool-config` (the pool and the setup),
+`pera/dom-spec-environment` (the pragma), and `pera/no-workspace-require-in-tests`, because a mock
+that `require()`s an ESM workspace package passes on Node 24 and fails on CI's Node 22.
+
 ## What to test
 
 The pyramid for this repo, from most to least invested in:
@@ -101,9 +122,11 @@ it('renders with secondary variant', () => {
 
 ## The mobile Vitest harness
 
-`apps/mobile/vitest.config.ts` defines two projects. Both start from `apps/mobile/vitest.setup.ts`,
-which is only an ordered list of imports from `apps/mobile/src/test-utils/mocks/`; each module there
-registers the `vi.mock`s for one concern and says why at the top of each mock:
+`apps/mobile/vitest.config.ts` defines the `unit` and `integration` projects, plus `unit-forks` for
+the forks-only specs. All three start from
+`apps/mobile/vitest.setup.ts`, which is only an ordered list of imports from
+`apps/mobile/src/test-utils/mocks/`; each module there registers the `vi.mock`s for one concern and
+says why at the top of each mock:
 
 | Module                                    | Covers                                                                    |
 | ----------------------------------------- | ------------------------------------------------------------------------- |

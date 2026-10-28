@@ -23,6 +23,7 @@ import {
     CONNECTIONS_CONTROL_SCOPE,
     WC_PAGE_PAIR_SCOPE,
 } from '@perawallet/wallet-core-browser-runtime'
+import { logger } from '@perawallet/wallet-core-shared'
 import { installConnectModalPairRoute } from '../connect-modal-pair'
 
 const URI = 'wc:topic@1?bridge=https%3A%2F%2Fb.example&key=00'
@@ -110,7 +111,7 @@ describe('installConnectModalPairRoute', () => {
     })
 
     it('does not produce an unhandled rejection when ensure/forward fails on a cold service worker', async () => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
         const boom = new Error('Could not establish connection')
         ensureOffscreenDocumentLike.mockRejectedValueOnce(boom)
 
@@ -128,7 +129,7 @@ describe('installConnectModalPairRoute', () => {
         await vi.waitFor(() => {
             expect(errorSpy).toHaveBeenCalledWith(
                 expect.stringContaining('connect-modal pair'),
-                boom,
+                { error: boom },
             )
         })
         expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()

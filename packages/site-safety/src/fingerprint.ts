@@ -30,6 +30,7 @@ export const fingerprintPhishingListEntries = (
         entries.deny,
         entries.allow,
         entries.impersonationTargets,
+        entries.addresses,
     ]) {
         for (const entry of list) {
             for (let i = 0; i < entry.length; i++) mix(entry.charCodeAt(i))

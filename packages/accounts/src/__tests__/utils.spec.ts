@@ -52,7 +52,7 @@ const OTHER_ADDRESS = '0x1234567890abcdef'
 const named = (address: string, name?: string): WalletAccount =>
     testAccount('hd', address, name === undefined ? {} : { name })
 
-describe('services/accounts/utils - getAccountDisplayName', () => {
+describe('utils - getAccountDisplayName', () => {
     test('returns the account name when present', () => {
         expect(
             getAccountDisplayName(named(LONG_ADDRESS, 'Named'), FAKE_CHAIN_ID),
@@ -144,7 +144,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     })
 })
 
-describe('services/accounts/utils - isNamedAfterOwnAddress', () => {
+describe('utils - isNamedAfterOwnAddress', () => {
     const twoChains = (name?: string): WalletAccount =>
         buildTestAccount(
             TEST_CUSTODY.hd,
@@ -192,7 +192,7 @@ describe('services/accounts/utils - isNamedAfterOwnAddress', () => {
     })
 })
 
-describe('services/accounts/utils - accountNumberOf', () => {
+describe('utils - accountNumberOf', () => {
     const hd = (account: number, keyIndex: number) =>
         buildTestAccount(
             { ...TEST_CUSTODY.hd, hd: { account, keyIndex } },
@@ -224,7 +224,7 @@ describe('services/accounts/utils - accountNumberOf', () => {
     )
 })
 
-describe('services/accounts/utils - custody guards', () => {
+describe('utils - custody guards', () => {
     const guards: Record<
         'hardware' | 'multisig' | 'watch',
         (account: WalletAccount) => boolean
@@ -264,7 +264,7 @@ describe('services/accounts/utils - custody guards', () => {
     })
 })
 
-describe('services/accounts/utils - signing capability', () => {
+describe('utils - signing capability', () => {
     test.each([
         ['local', true, true, true],
         ['hd', true, true, true],
@@ -299,7 +299,7 @@ describe('services/accounts/utils - signing capability', () => {
     })
 })
 
-describe('services/accounts/utils - authority wrappers', () => {
+describe('utils - authority wrappers', () => {
     const account = testAccount('local', 'A')
 
     beforeEach(() => {
@@ -362,7 +362,7 @@ describe('services/accounts/utils - authority wrappers', () => {
     })
 })
 
-describe('services/accounts/utils - address lookups', () => {
+describe('utils - address lookups', () => {
     const onFake = testAccount('watch', 'SHARED')
     const onOther = buildTestAccount(TEST_CUSTODY.watch, {
         [OTHER_CHAIN_ID]: { address: 'SHARED' },

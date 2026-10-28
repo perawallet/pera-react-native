@@ -24,7 +24,7 @@ describe('resolveAlgorandAssetFacts', () => {
     })
 
     it.each([0, 0n])(
-        'recognizes the %p id that cached and indexer rows can hold',
+        'recognizes the %o id that cached and indexer rows can hold',
         id => {
             expect(resolveAlgorandAssetFacts(id, PLACEHOLDER)).toEqual({
                 unitName: 'ALGO',
@@ -47,7 +47,7 @@ describe('resolveAlgorandAssetFacts', () => {
         ).toEqual(facts)
     })
 
-    it.each([null, undefined, ''])('treats %p as not ALGO', id => {
+    it.each([null, undefined, ''])('treats %o as not ALGO', id => {
         const facts = { unitName: '', decimals: 6 }
 
         expect(resolveAlgorandAssetFacts(id, facts)).toEqual(facts)

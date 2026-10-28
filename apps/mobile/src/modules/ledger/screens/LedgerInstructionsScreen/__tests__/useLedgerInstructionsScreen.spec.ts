@@ -43,10 +43,6 @@ vi.mock('../../../hooks', async importOriginal => ({
     }),
 }))
 
-vi.mock('@hooks/useCapableChainIds', () => ({
-    useCapableChainId: () => 'algorand',
-}))
-
 vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-hardware-wallet')

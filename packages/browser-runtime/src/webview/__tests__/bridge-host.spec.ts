@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import { createDiscoverBridgeHost } from '../bridge-host'
 import { WEBVIEW_BRIDGE_PORT_PREFIX } from '../bridge-wire'
 
@@ -82,6 +83,7 @@ describe('createDiscoverBridgeHost', () => {
     })
 
     it('rejects a port whose sender origin is not the Discover origin', () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const host = createDiscoverBridgeHost({
             token: 'tok1',
             trustedOrigins: [TRUSTED],
@@ -94,6 +96,10 @@ describe('createDiscoverBridgeHost', () => {
         connectListeners.forEach(cb => cb(evil))
         expect(evil.disconnect).toHaveBeenCalled()
         expect(host.isConnected()).toBe(false)
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[pera] discover bridge port rejected: origin mismatch',
+        )
+        warnSpy.mockRestore()
     })
 
     it('ignores ports for other tokens (another mount/surface)', () => {

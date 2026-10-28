@@ -70,7 +70,8 @@ type EthereumTransactionViewBase = {
     /**
      * Only on a contract call whose calldata is a standard token function. It
      * is a fact about the bytes, so it is set whatever the chain's
-     * capabilities; consumers read it only while `contractDecoding` is on.
+     * capabilities. The review shows it only while `contractDecoding` is on;
+     * the address-safety check reads it regardless.
      */
     call?: EvmStandardCall
 }

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-//
 // The buckets asserted here are exactly what the review screens render.
 import { describe, expect, it, vi } from 'vitest'
 import {

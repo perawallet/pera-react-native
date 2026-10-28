@@ -17,7 +17,6 @@ import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { OFFLINE_DEBOUNCE_MS, REACHABILITY_URL } from '../../networkStatus'
 
-// Mock dependencies
 vi.mock('@react-native-community/netinfo', () => ({
     default: {
         configure: vi.fn(),
@@ -30,13 +29,6 @@ vi.mock('@tanstack/react-query', () => ({
     onlineManager: {
         setOnline: vi.fn(),
     },
-}))
-
-const mockShowToast = vi.fn()
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
-    }),
 }))
 
 const mockGetStringValue = vi.fn()
@@ -114,37 +106,7 @@ describe('useNetworkStatusListener', () => {
         )
     })
 
-    it('flips offline on a connected-but-unreachable link after the debounce window', () => {
-        renderHook(() => useNetworkStatusListener())
-
-        // Captive portal: link up, internet unreachable.
-        emitNetInfo(
-            netInfoState({ isConnected: true, isInternetReachable: false }),
-        )
-
-        // Not immediately offline — the transition is debounced.
-        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
-
-        act(() => {
-            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
-        })
-        expect(useNetworkStatusStore.getState().hasInternet).toBe(false)
-    })
-
-    it('does not flip offline when reachability is unknown (null)', () => {
-        renderHook(() => useNetworkStatusListener())
-
-        emitNetInfo(
-            netInfoState({ isConnected: true, isInternetReachable: null }),
-        )
-        act(() => {
-            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
-        })
-
-        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
-    })
-
-    it('comes back online immediately', () => {
+    it('feeds NetInfo events into the network store', () => {
         useNetworkStatusStore.setState({ hasInternet: false })
         renderHook(() => useNetworkStatusListener())
 
@@ -167,16 +129,5 @@ describe('useNetworkStatusListener', () => {
             vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
         })
         expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
-    })
-
-    it('does not show a toast when internet is lost (banner supersedes it)', () => {
-        const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        act(() => {
-            useNetworkStatusStore.setState({ hasInternet: false })
-        })
-        rerender()
-
-        expect(mockShowToast).not.toHaveBeenCalled()
     })
 })

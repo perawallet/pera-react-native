@@ -75,8 +75,10 @@ const descriptor: ChainDescriptor = {
         supportsRekey: true,
         hasTokenApproval: false,
         requiresAssetOptIn: true,
+        confirmsOnSubmit: true,
     },
     explorer: {
+        name: 'Pera Explorer',
         accountUrl: (networkId, address) =>
             explorerUrl(networkId, `account/${address}`),
         transactionUrl: (networkId, txId) =>

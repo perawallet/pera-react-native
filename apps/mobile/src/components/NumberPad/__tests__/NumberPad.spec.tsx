@@ -10,29 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NumberPad } from '../NumberPad'
-
-// The global setup stubs the @components/core barrel with a guard-less
-// <button>, which would let the rapid-repeat test pass even without
-// allowRapidPress. Use the real PWTouchableOpacity so it can't; the rest
-// stay stubs.
-vi.mock('@components/core', async () => {
-    const { PWTouchableOpacity } = await vi.importActual<
-        typeof import('@components/core/PWTouchableOpacity')
-    >('@components/core/PWTouchableOpacity')
-    return {
-        PWTouchableOpacity,
-        PWText: ({ children }: { children?: React.ReactNode }) =>
-            React.createElement('span', null, children),
-        PWIcon: ({ name }: { name?: string }) =>
-            React.createElement('span', { 'data-testid': `icon_${name}` }),
-        PWView: ({ children }: { children?: React.ReactNode }) =>
-            React.createElement('div', null, children),
-    }
-})
 
 describe('NumberPad', () => {
     it('renders keys', () => {

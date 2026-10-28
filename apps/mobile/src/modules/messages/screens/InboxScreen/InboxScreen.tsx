@@ -35,6 +35,7 @@ export const InboxScreen = () => {
         isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
+        chainBadgeName,
         refetch,
         keyExtractor,
         handleInboxItemPress,
@@ -44,10 +45,11 @@ export const InboxScreen = () => {
         ({ item }: { item: InboxItemModel }) => (
             <InboxItem
                 item={item}
+                chainBadgeName={chainBadgeName}
                 onPress={() => handleInboxItemPress(item)}
             />
         ),
-        [handleInboxItemPress],
+        [handleInboxItemPress, chainBadgeName],
     )
 
     return (

@@ -63,6 +63,7 @@ import { AddParticipantContent } from '@modules/multisig/components/AddParticipa
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
+import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { MultisigInvitationDetailContent } from '@modules/messages/components/MultisigInvitationDetailContent'
 import { ConnectionApprovalSuccessView } from '@modules/walletconnect/components/ConnectionApprovalSuccessView'
 import { WalletConnectErrorContent } from '@modules/walletconnect/components/WalletConnectErrorContent'
@@ -430,6 +431,25 @@ export const getSheetSections = (): GallerySection[] => [
                         contents: (
                             <GallerySheetBoundary>
                                 <AsaVerificationInfoContent />
+                            </GallerySheetBoundary>
+                        ),
+                        options: {
+                            size: 'modal',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-inbox-info',
+                label: 'Inbox info',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <InboxInfoContent />
                             </GallerySheetBoundary>
                         ),
                         options: {

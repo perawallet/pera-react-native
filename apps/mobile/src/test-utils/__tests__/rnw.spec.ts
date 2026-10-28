@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DOUBLE_PRESS_GUARD_MS } from '@components/core/PWTouchableOpacity/PWTouchableOpacity'
 import {
     closestPressable,
@@ -32,6 +32,7 @@ const mount = (html: string): HTMLElement => {
 
 describe('rnw test helpers', () => {
     afterEach(() => {
+        vi.useRealTimers()
         document.body.innerHTML = ''
     })
 
@@ -94,29 +95,35 @@ describe('rnw test helpers', () => {
     })
 
     it('holds the press long enough before releasing it', async () => {
+        vi.useFakeTimers()
         const host = mount('<div tabindex="0"></div>')
         const target = host.firstElementChild!
-        const events: Array<{ type: string; at: number }> = []
-        target.addEventListener('mousedown', () =>
-            events.push({ type: 'down', at: Date.now() }),
-        )
-        target.addEventListener('mouseup', () =>
-            events.push({ type: 'up', at: Date.now() }),
-        )
+        const events: string[] = []
+        target.addEventListener('mousedown', () => events.push('down'))
+        target.addEventListener('mouseup', () => events.push('up'))
 
-        await longPress(target)
+        const pressing = longPress(target)
+        await vi.advanceTimersByTimeAsync(450)
+        expect(events).toEqual(['down'])
+        await vi.advanceTimersByTimeAsync(50)
+        await pressing
 
-        expect(events.map(event => event.type)).toEqual(['down', 'up'])
-        expect(events[1].at - events[0].at).toBeGreaterThanOrEqual(450)
+        expect(events).toEqual(['down', 'up'])
     })
 
     it('waits out the double-press guard', async () => {
-        const startedAt = Date.now()
+        vi.useFakeTimers()
+        let isDone = false
 
-        await waitPastDoublePressGuard()
+        const waiting = (async () => {
+            await waitPastDoublePressGuard()
+            isDone = true
+        })()
+        await vi.advanceTimersByTimeAsync(DOUBLE_PRESS_GUARD_MS)
+        expect(isDone).toBe(false)
+        await vi.advanceTimersByTimeAsync(10)
+        await waiting
 
-        expect(Date.now() - startedAt).toBeGreaterThanOrEqual(
-            DOUBLE_PRESS_GUARD_MS,
-        )
+        expect(isDone).toBe(true)
     })
 })

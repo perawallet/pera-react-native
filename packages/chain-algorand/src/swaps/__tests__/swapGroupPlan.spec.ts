@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, it, expect, vi } from 'vitest'
 import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
 import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'

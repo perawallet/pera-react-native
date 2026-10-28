@@ -10,15 +10,22 @@
  limitations under the License
  */
 
+import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     type InboxItem,
     useCleanupDuplicateMultisigInvitations,
     useInboxQuery,
 } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
-import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useHandleInboxItemPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
@@ -31,6 +38,8 @@ export type UseInboxScreenResult = {
     isIntegrityBlocked: boolean
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
+    /** Set once the wallet spans chains, so rows say which chain the inbox serves. */
+    chainBadgeName: Optional<string>
     refetch: () => void
     keyExtractor: (item: InboxItem, index: number) => string
     handleInboxItemPress: (item: InboxItem) => void
@@ -66,6 +75,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const handleInboxItemPress = useHandleInboxItemPress(scope)
     const isRegistrationPending = useIsDeviceRegistrationPending()
     const { hasInternet } = useNetworkStatus()
+    const isMultiChain = useAccountValueBasis(scope.chainId) === 'fiat'
 
     // Offline wins over a stale error: a paused, uncached fetch means there is
     // nothing to show yet, and an error surfacing while genuinely offline is
@@ -89,6 +99,9 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isIntegrityBlocked,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
+        chainBadgeName: isMultiChain
+            ? chainDisplayNameOf(scope.chainId)
+            : undefined,
         refetch: () => void refetch(),
         keyExtractor: getItemKey,
         handleInboxItemPress,
