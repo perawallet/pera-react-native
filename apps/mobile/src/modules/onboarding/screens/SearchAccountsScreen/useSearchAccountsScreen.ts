@@ -257,6 +257,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if ('mode' in params && params.mode === 'import') {
                 cancelImport()
             }
+            // Not showError: an unrecognised error would fall through to generic copy instead of this step's.
             errorToast(
                 t('onboarding.import_account.failed_title'),
                 t('onboarding.import_account.failed_body'),
