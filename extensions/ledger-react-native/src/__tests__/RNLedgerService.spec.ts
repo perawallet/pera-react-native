@@ -127,12 +127,16 @@ describe('RNLedgerService', () => {
         // path gets there first — a `connect` pre-flight or an explicit
         // subscribe. Capturing it here (rather than inside the test that
         // happens to trigger creation) keeps the holder populated no matter
-        // which test ran first.
+        // which test ran first. It reports the adapter on (async, like the
+        // native manager) so `connect` doesn't sit out the settle timeout.
         transportObserveStateMock.mockImplementation(
             (o: {
                 next: (e: { type: string; available: boolean }) => void
             }) => {
                 btObserverHolder.current = o
+                queueMicrotask(() =>
+                    o.next({ type: 'PoweredOn', available: true }),
+                )
                 return { unsubscribe: () => {} }
             },
         )
@@ -415,7 +419,7 @@ describe('RNLedgerService', () => {
         // delivered synchronously on subscribe.
         const observer = btObserverHolder.current!
         expect(observer).not.toBeNull()
-        expect(received[0]).toBe('unknown')
+        expect(received).toHaveLength(1)
 
         observer.next({ type: 'PoweredOff', available: false })
         observer.next({ type: 'PoweredOn', available: true })
@@ -430,7 +434,7 @@ describe('RNLedgerService', () => {
         expect(received).toContain('unsupported')
         expect(received).toContain('resetting')
         // Unrecognized states fall back to 'unknown'.
-        expect(received.filter(s => s === 'unknown').length).toBeGreaterThan(1)
+        expect(received.at(-1)).toBe('unknown')
 
         // After unsubscribe the listener stops receiving updates.
         unsubscribe()

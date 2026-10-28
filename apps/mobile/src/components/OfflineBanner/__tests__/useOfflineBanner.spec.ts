@@ -25,16 +25,6 @@ import {
 } from '@constants/ui'
 import { useOfflineBanner } from '../useOfflineBanner'
 
-// The `@modules/network` barrel also re-exports useNetworkStatusListener,
-// which imports the real @react-native-community/netinfo native module —
-// that module can't be parsed under vitest/jsdom, so it must be mocked
-// (same pattern used in useNetworkStatusListener.spec.ts).
-vi.mock('@react-native-community/netinfo', () => ({
-    default: {
-        addEventListener: vi.fn(),
-    },
-}))
-
 describe('useOfflineBanner', () => {
     beforeEach(() => {
         vi.useFakeTimers()

@@ -148,6 +148,7 @@ export const AccountAssetItemView = ({
     return (
         <AssetItemView
             asset={asset}
+            chainId={scope.chainId}
             right={showBalance ? balance : undefined}
             logoUrl={logoUrl}
             iconSize={iconSize}

@@ -11,7 +11,10 @@
  */
 
 import type { AccountChainOption } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 export type DisplayedChainOption<T extends AccountChainOption> = T & {
@@ -28,3 +31,14 @@ export const displayChainOption = <T extends AccountChainOption>(
         option.address &&
         addressCodecs.get(option.chainId).truncate(option.address),
 })
+
+// normalize throws on an address its codec can't parse, which would take a
+// whole list down at render; that one copies as stored.
+/** The address as the clipboard should hold it: normalized by the chain's codec (EIP-55 on EVM) when it parses. */
+export const chainAddressCopyValue = (
+    chainId: ChainId,
+    address: string,
+): string => {
+    const codec = addressCodecs.get(chainId)
+    return codec.isValid(address) ? codec.normalize(address) : address
+}

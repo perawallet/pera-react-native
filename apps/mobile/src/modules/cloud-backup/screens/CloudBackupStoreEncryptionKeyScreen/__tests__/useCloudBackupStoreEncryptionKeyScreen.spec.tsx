@@ -121,8 +121,6 @@ vi.mock('../../../components/ConfirmLeaveBackupSetupSheet', () => ({
     ConfirmLeaveBackupSetupSheet: () => null,
 }))
 
-vi.mock('@hooks/useLanguage')
-
 let onSelectDestination: (destination: string) => void = () => {}
 
 beforeEach(() => {

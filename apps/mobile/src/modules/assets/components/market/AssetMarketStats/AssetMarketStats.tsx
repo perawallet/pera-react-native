@@ -16,7 +16,7 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { toWholeUnits, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
@@ -38,14 +38,11 @@ export const AssetMarketStats = ({
             return '-'
         }
 
-        const totalSupplyMicroUnits = new Decimal(assetDetails.totalSupply ?? 0)
-        const totalSupply = totalSupplyMicroUnits.div(
-            Decimal.pow(10, assetDetails.decimals ?? 0),
-        )
+        const totalSupply = toWholeUnits(assetDetails.totalSupply, assetDetails)
         const { amount, unit } = formatWithUnits(totalSupply)
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
-    }, [assetDetails.totalSupply, assetDetails.decimals])
+    }, [assetDetails])
 
     return (
         <PWView style={styles.container}>

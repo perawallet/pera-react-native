@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 // Plain-JS spec (not .spec.tsx) deliberately: web-shims/ ships untyped JS —
 // it's a Metro-resolution-only boundary excluded from tsc's `include` glob
 // (apps/mobile/tsconfig.json only picks up **/*.ts(x)) — so this test mirrors

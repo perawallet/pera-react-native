@@ -7,6 +7,7 @@ import { defineConfig } from 'lanekeep'
 import amountTypes from './lanekeep/rules/amount-types.js'
 import conformanceWorkflowPaths from './lanekeep/rules/conformance-workflow-paths.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
+import domSpecEnvironment from './lanekeep/rules/dom-spec-environment.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
@@ -38,12 +39,14 @@ import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
+import noWorkspaceRequireInTests from './lanekeep/rules/no-workspace-require-in-tests.js'
 import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
 import submissionSeam from './lanekeep/rules/submission-seam.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
+import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
 
 export default defineConfig({
     // Every TS/JS file in the repo. A rule about shipped source narrows itself
@@ -118,6 +121,9 @@ export default defineConfig({
         noAssertionlessTest,
         noModuleComponentSpecs,
         noPrimitiveRetest,
+        domSpecEnvironment,
+        noWorkspaceRequireInTests,
+        vitestPoolConfig,
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,

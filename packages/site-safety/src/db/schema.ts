@@ -34,3 +34,19 @@ export const PhishingListDomainsSchema = sqliteTable(
         index('phishing_list_domains_domain_idx').on(table.domain),
     ],
 )
+
+export const PhishingListAddressesSchema = sqliteTable(
+    'phishing_list_addresses',
+    {
+        source: text('source').notNull().$type<PhishingListSourceId>(),
+        generation: integer('generation').notNull(),
+        /** A `toListedAddressKey` key. */
+        address: text('address').notNull(),
+    },
+    table => [
+        primaryKey({
+            columns: [table.source, table.generation, table.address],
+        }),
+        index('phishing_list_addresses_address_idx').on(table.address),
+    ],
+)

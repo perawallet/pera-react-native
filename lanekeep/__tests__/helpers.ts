@@ -105,17 +105,31 @@ export async function createRunner(
     }
 }
 
-/** Runs one rule over the fixtures matching `fixtureGlob`. */
+const ruleRuns = new Map<string, Promise<Violation[]>>()
+
+/**
+ * Runs one rule over the fixtures matching `fixtureGlob`. Memoized because
+ * each run is a cold `lanekeep check` and specs assert one fixture set from
+ * several tests; anything that edits files goes through `createRunner`.
+ */
 export async function runRule(
     rulePath: string,
     fixtureGlob: string,
 ): Promise<Violation[]> {
-    const runner = await createRunner(rulePath, fixtureGlob)
-    try {
-        return await runner.run()
-    } finally {
-        await runner.dispose()
+    const key = `${rulePath}\0${fixtureGlob}`
+    let run = ruleRuns.get(key)
+    if (!run) {
+        run = (async () => {
+            const runner = await createRunner(rulePath, fixtureGlob)
+            try {
+                return await runner.run()
+            } finally {
+                await runner.dispose()
+            }
+        })()
+        ruleRuns.set(key, run)
     }
+    return [...(await run)]
 }
 
 /**

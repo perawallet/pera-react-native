@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {

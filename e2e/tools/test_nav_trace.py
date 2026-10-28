@@ -65,3 +65,46 @@ def test_ios_file_reader_returns_only_new_lines_and_survives_restart():
     assert len(trace._read_ios_file(driver)) == 1
     driver.data = lines([1])
     assert len(trace._read_ios_file(driver)) == 1
+
+
+def test_missing_trace_and_nonpassing_runs_are_reported():
+    no_trace = {'flow': [], 'flags': [], 'status': 'PASS'}
+    skipped = {'flow': ['A'], 'flags': [], 'status': 'SKIP'}
+    findings = diff({'x': no_trace}, {'x': skipped})
+    assert any('no navigation trace' in message for _, message in findings)
+    assert any('SKIP' in message for _, message in findings)
+    assert diff({}, {})
+
+
+def test_malformed_trace_records_are_ignored():
+    records = [[], None, 1, {'event': 'focus', 't': 1},
+               {'event': 'focus', 'screen': 'A', 't': 'bad'},
+               {'event': 'snapshot', 'screens': [None], 't': 1}]
+    assert parse(['[E2E-NAV] ' + json.dumps(record) for record in records]) == []
+
+
+def test_clock_reset_does_not_report_negative_time_bounce():
+    assert red_flags([
+        {'event': 'focus', 'screen': 'A', 't': 500},
+        {'event': 'focus', 'screen': 'B', 't': 100},
+        {'event': 'focus', 'screen': 'A', 't': 200},
+    ]) == []
+
+
+def test_ios_restart_with_equal_sequence_is_detected():
+    import base64
+    from NavTrace import NavTrace
+
+    class Driver:
+        capabilities = {'bundleId': 'b'}
+        timestamp = 10
+
+        def pull_file(self, _):
+            line = '[E2E-NAV] ' + json.dumps({'event': 'focus', 'screen': 'A', 'seq': 1, 't': self.timestamp})
+            return base64.b64encode(line.encode())
+
+    trace, driver = NavTrace(), Driver()
+    assert len(trace._read_ios_file(driver)) == 1
+    assert not trace._read_ios_file(driver)
+    driver.timestamp = 20
+    assert len(trace._read_ios_file(driver)) == 1

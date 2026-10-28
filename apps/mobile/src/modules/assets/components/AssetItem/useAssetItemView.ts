@@ -18,13 +18,19 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
+    /** The asset's chain; an id that is an address on it shows truncated by its codec. */
+    chainId?: ChainId
 }
 
 type UseAssetItemViewResult = {
@@ -61,6 +67,14 @@ export const useAssetItemView = (
           ? getVerificationIcon(tier)
           : null
 
+    const chainId = options?.chainId
+    const shownAssetId =
+        chainId !== undefined &&
+        addressCodecs.has(chainId) &&
+        addressCodecs.get(chainId).isValid(asset.assetId)
+            ? addressCodecs.get(chainId).truncate(asset.assetId)
+            : asset.assetId
+
     const collectibleTitle = meta?.collectible?.title
     const collectionName = meta?.collectible?.collection?.name
 
@@ -69,8 +83,8 @@ export const useAssetItemView = (
     const displayName = isAlgo
         ? 'Algo'
         : isCollectible
-          ? collectibleTitle || asset.name || `Asset #${asset.assetId}`
-          : asset.name || `Asset #${asset.assetId}`
+          ? collectibleTitle || asset.name || `Asset #${shownAssetId}`
+          : asset.name || `Asset #${shownAssetId}`
 
     const subtitleLeading = isCollectible
         ? (collectionName ?? asset.unitName)
@@ -79,8 +93,8 @@ export const useAssetItemView = (
     const secondaryText = isAlgo
         ? (asset.unitName ?? '')
         : subtitleLeading
-          ? `${subtitleLeading} · ${asset.assetId}`
-          : asset.assetId
+          ? `${subtitleLeading} · ${shownAssetId}`
+          : shownAssetId
 
     const copyAssetId = useCallback(
         () => void copyToClipboard(String(asset.assetId)),

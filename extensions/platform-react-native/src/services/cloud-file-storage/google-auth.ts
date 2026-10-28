@@ -117,6 +117,7 @@ const authorizeOnIos = async (): Promise<string | null> => {
         throw new GoogleDriveAuthFailedError()
     }
 
+    // oxlint-disable-next-line no-restricted-globals -- Google's OAuth token endpoint is a third-party host, and platform code has no HTTP client
     const response = await fetch(TOKEN_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

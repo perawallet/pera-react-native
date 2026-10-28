@@ -17,13 +17,11 @@ import {
     hardwareDetailsOf,
     hdIndexOf,
     isLedgerAccount,
-    isNamedAfterAddress,
     useCapabilityChainResolver,
     useHdSeedGroups,
     useLedgerDeviceGroups,
 } from '@perawallet/wallet-core-accounts'
 import {
-    addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -35,22 +33,18 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { navigationRef } from '@routes/navigationRef'
 import {
     useAccountTypeLabel,
     type AccountTypeLabel,
 } from '@hooks/useAccountTypeLabel'
-import { displayChainOption } from '@utils/chainOptionDisplay'
+import {
+    chainAddressCopyValue,
+    displayChainOption,
+} from '@utils/chainOptionDisplay'
 import type { IconName } from '@components/core'
-
-export type AccountStructureChainAddress = {
-    chainId: ChainId
-    displayName: string
-    /** Truncated by the chain's codec. */
-    address: string
-    /** Normalized by the chain's codec (EIP-55 on EVM) when it parses, for the clipboard. */
-    copyValue: string
-}
+import type { ChainAddress } from '@components/ChainAddressList'
 
 export type AccountStructureRow = {
     account: WalletAccount
@@ -58,21 +52,7 @@ export type AccountStructureRow = {
     isViewing: boolean
     /** Not the sheet's own account, and on at least one shown chain. */
     canExpand: boolean
-    chains: AccountStructureChainAddress[]
-}
-
-// Unnamed accounts are stored under one of their addresses, on any chain they
-// hold, shown or not.
-const isNamedAfterOwnAddress = (account: WalletAccount): boolean =>
-    (Object.keys(account.chains) as ChainId[]).some(chainId =>
-        isNamedAfterAddress(account, chainId),
-    )
-
-// normalize throws on an address its codec can't parse, which would take the
-// whole sheet down at render; that one copies as stored.
-const copyValueOf = (chainId: ChainId, address: string): string => {
-    const codec = addressCodecs.get(chainId)
-    return codec.isValid(address) ? codec.normalize(address) : address
+    chains: ChainAddress[]
 }
 
 type UseAccountInfoCardParams = {
@@ -102,6 +82,7 @@ export const useAccountInfoCard = ({
     onClose,
 }: UseAccountInfoCardParams): UseAccountInfoCardResult => {
     const { t } = useLanguage()
+    const { getAccountName } = useAccountName()
     const [isExpanded, setIsExpanded] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<Optional<string>>()
 
@@ -194,29 +175,25 @@ export const useAccountInfoCard = ({
                     chainId: option.chainId,
                     displayName: displayed.displayName,
                     address: displayed.address ?? '',
-                    copyValue: copyValueOf(
+                    copyValue: chainAddressCopyValue(
                         option.chainId,
                         option.address ?? '',
                     ),
                 }
             })
-            const fallbackName =
-                member.id === structureGroup.firstAccount.id
-                    ? t('account_info.main_address')
-                    : t('account_info.sub_address')
             const isViewing = member.id === account.id
             return {
                 account: member,
-                name:
-                    member.name && !isNamedAfterOwnAddress(member)
-                        ? member.name
-                        : fallbackName,
+                name: getAccountName(
+                    member,
+                    options[0]?.chainId ?? LEGACY_CHAIN_ID,
+                ),
                 isViewing,
                 canExpand: !isViewing && chains.length > 0,
                 chains,
             }
         })
-    }, [structureGroup, switchedOff, account.id, t])
+    }, [structureGroup, switchedOff, account.id, getAccountName])
 
     const showStructure = isHDWallet || (isLedger && structureRows.length > 0)
 

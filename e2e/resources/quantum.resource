@@ -6,10 +6,10 @@ Resource            accounts.resource
 
 
 *** Variables ***
-${ADD_ACCOUNT_CREATE_QUANTUM}       xpath=//*[@resource-id='add_account_create_quantum_button' or @name='add_account_create_quantum_button' or @content-desc='add_account_create_quantum_button']
-${IMPORT_RECOVER_WALLET_BUTTON}     xpath=//*[@resource-id='import_account_options_recover_wallet_button' or @name='import_account_options_recover_wallet_button' or @content-desc='import_account_options_recover_wallet_button']
-${IMPORT_QUANTUM_BUTTON}            xpath=//*[@resource-id='import_account_quantum_button' or @name='import_account_quantum_button' or @content-desc='import_account_quantum_button']
-${IMPORT_QUANTUM_NOTE}              xpath=//*[@resource-id='import_account_quantum_note' or @name='import_account_quantum_note' or @content-desc='import_account_quantum_note']
+${ADD_ACCOUNT_CREATE_QUANTUM}       tid=add_account_create_quantum_button
+${IMPORT_RECOVER_WALLET_BUTTON}     tid=import_account_options_recover_wallet_button
+${IMPORT_QUANTUM_BUTTON}            tid=import_account_quantum_button
+${IMPORT_QUANTUM_NOTE}              tid=import_account_quantum_note
 ${IMPORT_WORD_INPUT_ID}                import_account_word_input_
 ${PASSPHRASE_WORD_ID}                  view_passphrase_bottom_sheet_word_
 ${QUANTUM_KEYGEN_TIMEOUT}           120s
@@ -42,12 +42,7 @@ Create Quantum Account
 Reveal Passphrase
     [Documentation]    Of the selected account. Test wallets only; never point this at a funded account.
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
-    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
-    FOR    ${row}    IN RANGE    4
-        ${row_locator}=    Passphrase Ack Row    ${row}
-        Tap    ${row_locator}
-    END
-    Tap    ${PASSPHRASE_ACK_REVEAL}
+    Acknowledge And Reveal Passphrase
     ${first_word}=    Indexed Row    ${PASSPHRASE_WORD_ID}    1
     Wait Until Page Contains Element    ${first_word}    timeout=20s
 
@@ -63,4 +58,4 @@ Indexed Row
     ...                a prefix cannot be concatenated onto a finished xpath, so the index is
     ...                applied while the xpath is built.
     [Arguments]    ${prefix}    ${index}
-    RETURN    xpath=//*[@resource-id='${prefix}${index}' or @name='${prefix}${index}' or @content-desc='${prefix}${index}']
+    RETURN    tid=${prefix}${index}

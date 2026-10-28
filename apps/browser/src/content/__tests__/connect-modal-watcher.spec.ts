@@ -106,8 +106,9 @@ describe('installConnectModalWatcher', () => {
         dispose()
         dispose = undefined
         const wrapper = appendModal()
-        // Give the observer a turn it should no longer be taking.
-        await new Promise(resolve => setTimeout(resolve, 20))
+        // The observer and its coalescing both run on microtasks, which a
+        // macrotask outlasts.
+        await new Promise(resolve => setTimeout(resolve, 0))
         expect(injectedRow(wrapper)).toBeNull()
     })
 })

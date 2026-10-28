@@ -73,7 +73,6 @@ describe('WealthTrend', () => {
                 period='one-week'
             />,
         )
-        // Should render empty fragment when pending
         expect(container.innerHTML).toBe('')
     })
 
@@ -122,7 +121,6 @@ describe('WealthTrend', () => {
                 period='one-week'
             />,
         )
-        // Should show percentage value
         expect(container.textContent).toContain('%')
     })
 

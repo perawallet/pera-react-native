@@ -18,7 +18,7 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets'
 import { NumberPad } from '@components/NumberPad'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { SendFundsInfoContent } from '../../../components/send-funds/SendFundsInfoContent'
@@ -56,6 +56,7 @@ export const InputScreen = () => {
         isCollectible,
     } = useInputScreen()
     const selectedAccount = useSelectedAccount()
+    const scope = useSendScope()
     const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -271,6 +272,7 @@ export const InputScreen = () => {
 
                 <AccountAssetItemView
                     accountBalance={accountAssetBalance}
+                    scope={scope}
                     style={styles.assetDisplay}
                 />
             </PWView>

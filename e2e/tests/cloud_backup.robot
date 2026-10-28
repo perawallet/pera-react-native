@@ -9,6 +9,7 @@ Resource            ../resources/cloud_backup.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           cloud-backup
 
 
@@ -90,9 +91,9 @@ A Wrong Word Is Refused On Submit
     ${wrong}=    Answer Verify Quiz    ${words}    wrong_index=0
     Tap    ${CB_VERIFY_PROCEED}
     Wait Until Page Contains Element    ${CB_VERIFY_WRONG_TOAST}    timeout=5s
-    ...    error=Submitting the wrong word "${wrong}" showed no "Incorrect selection" feedback.
+    ...    error=Submitting ${wrong}, which is not the word the quiz asked for, showed no "Incorrect selection" feedback.
     Page Should Contain Element    ${CB_VERIFY_SCREEN}
-    ...    message=Submitting the wrong word "${wrong}" left the verify screen.
+    ...    message=Submitting ${wrong}, which is not the word the quiz asked for, left the verify screen.
     Page Should Not Contain Element    ${CB_STORE_KEY_SCREEN}
     ...    message=A wrong quiz answer advanced to the store-encryption-key screen.
 

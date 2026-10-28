@@ -12,60 +12,64 @@ ${WALLET_NAME}                          E2E Onboarding
 # A public address with no key on the device; watching it needs no funds or secrets.
 ${WATCH_ADDRESS}                        UUZB34HTTJ6GM2XB44YSL333AWASFH7K3HSAK7R2AOJ4POGUXQSZIUM5XM
 
-${IMPORT_ACCOUNT_BUTTON}                xpath=//*[@resource-id='onboarding_import_account_button' or @name='onboarding_import_account_button' or @content-desc='onboarding_import_account_button']
-${ACCOUNT_SELECTION_BUTTON}             xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
-${ACCOUNT_MENU_ADD_BUTTON}              xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
-${ACCOUNT_OPTION_COPY_ADDRESS}          xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
-${ACCOUNT_ALGORAND_EXPAND}              xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
+${IMPORT_ACCOUNT_BUTTON}                tid=onboarding_import_account_button
+${ACCOUNT_SELECTION_BUTTON}             tid=account_selection_button
+${ACCOUNT_MENU_ADD_BUTTON}              tid=account_menu_add_account_button
+${ACCOUNT_OPTION_COPY_ADDRESS}          tid=account_network_algorand_copy
+# Every wallet account offers rename, whatever its chains; a multi-chain build can fold Algorand's
+# network row behind "See all", so that row cannot mark the sheet as open.
+${ACCOUNT_OPTION_RENAME}                tid=account_option_rename-account
+${ACCOUNT_ALGORAND_EXPAND}              tid=account_network_algorand_expand
 # The switcher row and the header trigger take their testID as accessibility label, which on iOS
 # hides the account name inside them; only the options sheet's title shows it on both platforms.
 ${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
-${MORE_BUTTON}                          xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
-${SCAN_REKEYED_OPTION}                  xpath=//*[@resource-id='account_option_scan-rekeyed' or @name='account_option_scan-rekeyed' or @content-desc='account_option_scan-rekeyed']
-${RESCAN_ADD_BUTTON}                    xpath=//*[@resource-id='rescan-rekeyed-add' or @name='rescan-rekeyed-add' or @content-desc='rescan-rekeyed-add']
-${RESCAN_SKIP_BUTTON}                   xpath=//*[@resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip' or @content-desc='rescan-rekeyed-skip']
+${MORE_BUTTON}                          tid=more_button
+${SCAN_REKEYED_OPTION}                  tid=account_option_scan-rekeyed
+${RESCAN_ADD_BUTTON}                    tid=rescan-rekeyed-add
+${RESCAN_SKIP_BUTTON}                   tid=rescan-rekeyed-skip
 
-${ADD_ACCOUNT_ADD_BUTTON}               xpath=//*[@resource-id='add_account_add_button' or @name='add_account_add_button' or @content-desc='add_account_add_button']
-${ADD_ACCOUNT_IMPORT_BUTTON}            xpath=//*[@resource-id='add_account_import_button' or @name='add_account_import_button' or @content-desc='add_account_import_button']
-${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        xpath=//*[@resource-id='add_account_see_other_options_button' or @name='add_account_see_other_options_button' or @content-desc='add_account_see_other_options_button']
-${ADD_ACCOUNT_WATCH_BUTTON}             xpath=//*[@resource-id='add_account_watch_button' or @name='add_account_watch_button' or @content-desc='add_account_watch_button']
-${ADD_ACCOUNT_ALGO25_BUTTON}            xpath=//*[@resource-id='add_account_create_algo25_button' or @name='add_account_create_algo25_button' or @content-desc='add_account_create_algo25_button']
+${ADD_ACCOUNT_ADD_BUTTON}               tid=add_account_add_button
+${ADD_ACCOUNT_IMPORT_BUTTON}            tid=add_account_import_button
+${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        tid=add_account_see_other_options_button
+${ADD_ACCOUNT_WATCH_BUTTON}             tid=add_account_watch_button
+${ADD_ACCOUNT_ALGO25_BUTTON}            tid=add_account_create_algo25_button
 # PWIcon and PWView pass testID through without an accessibility label, so Android exposes these
 # only as resource-id and iOS only as name.
-${ADD_ACCOUNT_CLOSE_BUTTON}             xpath=//*[@resource-id='add_account_close_button' or @name='add_account_close_button']
-${CONFETTI}                             xpath=//*[@resource-id='confetti_animation' or @name='confetti_animation']
-${REMOVE_ALL_SUCCESS_SHEET}             xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
+${ADD_ACCOUNT_CLOSE_BUTTON}             tid=add_account_close_button
+${CONFETTI}                             tid=confetti_animation
+${REMOVE_ALL_SUCCESS_SHEET}             tid=settings_delete_all_success_bottom_sheet
 
-${IMPORT_OPTION_RECOVER_WALLET}         xpath=//*[@resource-id='import_account_options_recover_wallet_button' or @name='import_account_options_recover_wallet_button' or @content-desc='import_account_options_recover_wallet_button']
-${IMPORT_OPTION_RECOVER_QR}             xpath=//*[@resource-id='import_account_options_recover_qr_button' or @name='import_account_options_recover_qr_button' or @content-desc='import_account_options_recover_qr_button']
-${IMPORT_OPTION_PAIR_LEDGER}            xpath=//*[@resource-id='import_account_options_pair_ledger_button' or @name='import_account_options_pair_ledger_button' or @content-desc='import_account_options_pair_ledger_button']
-${IMPORT_OPTION_PERA_WEB}               xpath=//*[@resource-id='import_account_options_pera_web_button' or @name='import_account_options_pera_web_button' or @content-desc='import_account_options_pera_web_button']
-${IMPORT_OPTION_ASB}                    xpath=//*[@resource-id='import_account_options_asb_button' or @name='import_account_options_asb_button' or @content-desc='import_account_options_asb_button']
-${RECOVER_UNIVERSAL_WALLET}             xpath=//*[@resource-id='import_options_hd_wallet_button' or @name='import_options_hd_wallet_button' or @content-desc='import_options_hd_wallet_button']
-${RECOVER_ALGO25}                       xpath=//*[@resource-id='import_options_algo25_button' or @name='import_options_algo25_button' or @content-desc='import_options_algo25_button']
-${IMPORT_INFO_RECOVER_BUTTON}           xpath=//*[@resource-id='import_info_recover_button' or @name='import_info_recover_button' or @content-desc='import_info_recover_button']
-${WORD_INPUT_0}                         xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']
-${IMPORT_ACCOUNT_IMPORT_BUTTON}         xpath=//*[@resource-id='import_account_import_button' or @name='import_account_import_button' or @content-desc='import_account_import_button']
-${SELECT_ADDRESSES_CONTINUE}            xpath=//*[@resource-id='import_select_addresses_continue_button' or @name='import_select_addresses_continue_button' or @content-desc='import_select_addresses_continue_button']
-${SELECT_ADDRESSES_ALL}                 xpath=//*[@resource-id='import_select_addresses_select_all_checkbox' or @name='import_select_addresses_select_all_checkbox' or @content-desc='import_select_addresses_select_all_checkbox']
-${REKEYED_CONTINUE}                     xpath=//*[@resource-id='import_rekeyed_addresses_continue_button' or @name='import_rekeyed_addresses_continue_button' or @content-desc='import_rekeyed_addresses_continue_button']
-${REKEYED_SKIP}                         xpath=//*[@resource-id='import_rekeyed_addresses_skip_button' or @name='import_rekeyed_addresses_skip_button' or @content-desc='import_rekeyed_addresses_skip_button']
+${IMPORT_OPTION_RECOVER_WALLET}         tid=import_account_options_recover_wallet_button
+${IMPORT_OPTION_RECOVER_QR}             tid=import_account_options_recover_qr_button
+${IMPORT_OPTION_PAIR_LEDGER}            tid=import_account_options_pair_ledger_button
+${IMPORT_OPTION_PERA_WEB}               tid=import_account_options_pera_web_button
+${IMPORT_OPTION_ASB}                    tid=import_account_options_asb_button
+${RECOVER_UNIVERSAL_WALLET}             tid=import_options_hd_wallet_button
+${RECOVER_ALGO25}                       tid=import_options_algo25_button
+${IMPORT_INFO_RECOVER_BUTTON}           tid=import_info_recover_button
+${WORD_INPUT_0}                         tid=import_account_word_input_0
+${IMPORT_ACCOUNT_IMPORT_BUTTON}         tid=import_account_import_button
+${SELECT_ADDRESSES_CONTINUE}            tid=import_select_addresses_continue_button
+${SELECT_ADDRESSES_ALL}                 tid=import_select_addresses_select_all_checkbox
+${REKEYED_CONTINUE}                     tid=import_rekeyed_addresses_continue_button
+${REKEYED_SKIP}                         tid=import_rekeyed_addresses_skip_button
 ${REKEYED_CHECKBOX_ANY}                 xpath=//*[starts-with(@content-desc,'import_rekeyed_addresses_item_checkbox_') or starts-with(@resource-id, 'import_rekeyed_addresses_item_checkbox_') or starts-with(@name,'import_rekeyed_addresses_item_checkbox_')]
-${ASB_INFO_CONTINUE}                    xpath=//*[@resource-id='asb_import_info_continue_button' or @name='asb_import_info_continue_button' or @content-desc='asb_import_info_continue_button']
-${ASB_PICK_FILE_BUTTON}                 xpath=//*[@resource-id='asb_import_backup_pick_file_button' or @name='asb_import_backup_pick_file_button' or @content-desc='asb_import_backup_pick_file_button']
+${ASB_INFO_CONTINUE}                    tid=asb_import_info_continue_button
+${ASB_PICK_FILE_BUTTON}                 tid=asb_import_backup_pick_file_button
+${LEDGER_PAIR_START_BUTTON}             tid=ledger_pair_primary_button
+${LEDGER_PAIR_INFO_BUTTON}              tid=ledger_pair_info_button
 
-# The watch info screen's Create button has no testID yet; this is the ID it needs.
-${WATCH_INFO_CREATE_BUTTON}             xpath=//*[@resource-id='watch_info_create_button' or @name='watch_info_create_button' or @content-desc='watch_info_create_button']
-${WATCH_ADDRESS_INPUT}                  xpath=//*[@resource-id='watch_account_address_input' or @name='watch_account_address_input' or @content-desc='watch_account_address_input']
-${WATCH_SUBMIT_BUTTON}                  xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
+${WATCH_INFO_CREATE_BUTTON}             tid=watch_info_create_button
+${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
+${WATCH_SUBMIT_BUTTON}                  tid=watch_account_submit_button
 
-${MENU_SETTINGS_BUTTON}                 xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
-${SETTINGS_DEVELOPER_ITEM}              xpath=//*[@resource-id='settings_item_developer_settings' or @name='settings_item_developer_settings' or @content-desc='settings_item_developer_settings']
-${REMOVE_ALL_ACCOUNTS_BUTTON}           xpath=//*[@resource-id='settings_remove_all_accounts_button' or @name='settings_remove_all_accounts_button' or @content-desc='settings_remove_all_accounts_button']
-${REMOVE_ALL_CONFIRM_BUTTON}            xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
-${DEVELOPER_NODE_ITEM}                  xpath=//*[@resource-id='developer_settings_node_item' or @name='developer_settings_node_item' or @content-desc='developer_settings_node_item']
-${NODE_DEV_MODE_SWITCH}                 xpath=//*[@resource-id='node_settings_developer_mode_switch' or @name='node_settings_developer_mode_switch' or @content-desc='node_settings_developer_mode_switch']
-${NODE_TESTNET_RADIO}                   xpath=//*[@resource-id='node_settings_algorand_testnet_radio' or @name='node_settings_algorand_testnet_radio' or @content-desc='node_settings_algorand_testnet_radio']
+${MENU_SETTINGS_BUTTON}                 tid=menu_settings_button
+${SETTINGS_DEVELOPER_ITEM}              tid=settings_item_developer_settings
+${REMOVE_ALL_ACCOUNTS_BUTTON}           tid=settings_remove_all_accounts_button
+${REMOVE_ALL_CONFIRM_BUTTON}            tid=settings_delete_all_confirm_button
+${DEVELOPER_NODE_ITEM}                  tid=developer_settings_node_item
+${NODE_DEV_MODE_SWITCH}                 tid=node_settings_developer_mode_switch
+${NODE_TESTNET_RADIO}                   tid=node_settings_algorand_testnet_radio
 
 
 *** Keywords ***
@@ -234,12 +238,12 @@ Selected Account Should Be Named
     # While a new account's overview loads, a skeleton overlay (no testID) covers the button panel and
     # takes taps without effect, so tap until the sheet opens.
     Wait Until Keyword Succeeds    30s    0.5s    Open Account Options Sheet
-    Wait Until Settled    ${ACCOUNT_OPTION_COPY_ADDRESS}
+    Wait Until Settled    ${ACCOUNT_OPTION_RENAME}
     Wait Until Page Contains    ${name}    timeout=10s
 
 Open Account Options Sheet
     Tap    ${MORE_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_OPTION_COPY_ADDRESS}    timeout=2s
+    Wait Until Page Contains Element    ${ACCOUNT_OPTION_RENAME}    timeout=2s
 
 Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
@@ -253,20 +257,11 @@ Open Node Settings
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}
-    Scroll Until Present    ${SETTINGS_DEVELOPER_ITEM}
+    Scroll Until Tappable    ${SETTINGS_DEVELOPER_ITEM}
     Tap    ${SETTINGS_DEVELOPER_ITEM}
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
     Tap    ${DEVELOPER_NODE_ITEM}
     Wait Until Page Contains Element    ${NODE_DEV_MODE_SWITCH}    timeout=15s
-
-Scroll Until Present
-    [Arguments]    ${locator}
-    FOR    ${i}    IN RANGE    6
-        ${present}=    Is Shown    ${locator}
-        IF    ${present}    RETURN
-        Swipe By Percent    50    75    50    30
-    END
-    Page Should Contain Element    ${locator}
 
 Is Shown
     [Arguments]    ${locator}

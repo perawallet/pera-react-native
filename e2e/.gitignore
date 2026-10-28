@@ -2,3 +2,5 @@ results/
 __pycache__/
 .venv/
 nav-flows.json
+.cache/
+tests/ZZProbe*.robot

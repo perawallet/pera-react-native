@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, test, expect, vi } from 'vitest'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { generateHDMasterKey } from '../hdwallet-utils'

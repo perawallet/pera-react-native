@@ -20,7 +20,7 @@ import {
     LEGACY_CHAIN_ID,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { Decimal } from 'decimal.js'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 
 export const useAssetTransferSummaryHeader = (
@@ -64,7 +64,7 @@ export const useAssetTransferSummaryHeader = (
     const { data: asset } = useSingleAssetDetailsQuery(assetId, scope)
 
     const amount = useMemo(() => {
-        return new Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
+        return baseUnitsToDisplayUnits(microAmount, asset?.decimals ?? 0)
     }, [microAmount, asset?.decimals])
 
     return {

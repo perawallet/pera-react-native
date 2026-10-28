@@ -22,6 +22,7 @@ import {
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-core-browser-runtime'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import { logger } from '@perawallet/wallet-core-shared'
 import { ensureOffscreenDocument } from './offscreen'
 
 export const CONNECTIONS_HEARTBEAT_ALARM = 'pera-connections-heartbeat'
@@ -103,10 +104,10 @@ export const installConnectionsApprovalRouter = ({
             })
             return true
         } catch (error) {
-            console.error(
-                `[pera] connections control '${command.kind}' failed:`,
+            logger.error('[pera] connections control failed', {
+                kind: command.kind,
                 error,
-            )
+            })
             return false
         }
     }
@@ -123,10 +124,9 @@ export const installConnectionsApprovalRouter = ({
                 peer,
             })
             .catch((error: unknown) => {
-                console.error(
-                    '[pera] delivery-failure notice failed to open:',
+                logger.error('[pera] delivery-failure notice failed to open', {
                     error,
-                )
+                })
             })
     }
 
@@ -227,9 +227,9 @@ export const installConnectionsApprovalRouter = ({
                         })
                         .catch((error: unknown) => {
                             // Nothing else answers the peer if the window never opened.
-                            console.error(
-                                '[pera] connection-proposal approval window failed to open:',
-                                error,
+                            logger.error(
+                                '[pera] connection-proposal approval window failed to open',
+                                { error },
                             )
                             void control({
                                 kind: 'reject-proposal',
@@ -281,9 +281,9 @@ export const installConnectionsApprovalRouter = ({
                             )
                         })
                         .catch((error: unknown) => {
-                            console.error(
-                                '[pera] connection-request approval window failed to open:',
-                                error,
+                            logger.error(
+                                '[pera] connection-request approval window failed to open',
+                                { error },
                             )
                             void control({
                                 kind: 'respond',
@@ -316,9 +316,9 @@ export const installConnectionsApprovalRouter = ({
                             activeNetwork: request.activeNetwork,
                         })
                         .catch((error: unknown) => {
-                            console.error(
-                                '[pera] connection-error surface failed to open:',
-                                error,
+                            logger.error(
+                                '[pera] connection-error surface failed to open',
+                                { error },
                             )
                         })
                         // The host holds one notice open at a time, so a surface that
@@ -354,10 +354,9 @@ export const installConnectionsHeartbeat = ({
                 periodInMinutes: CONNECTIONS_HEARTBEAT_PERIOD_MINUTES,
             })
         } catch (error) {
-            console.error(
-                '[pera] connections heartbeat alarm setup failed:',
+            logger.error('[pera] connections heartbeat alarm setup failed', {
                 error,
-            )
+            })
         }
     })()
 }

@@ -7,6 +7,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           send-receive
 
 
@@ -39,7 +40,7 @@ Choosing An Asset Opens Amount Entry
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
     Open Amount Entry
-    Element Should Be Disabled    ${SEND_NEXT_BUTTON}
+    Expect Element    ${SEND_NEXT_BUTTON}    disabled    timeout=0s
 
 Entered Amount Leads To Destination
     [Tags]    id:send.amount.numpad    p1    needs-funded    excludefromci
@@ -54,9 +55,9 @@ Max Fills The Amount
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
     Open Amount Entry
-    Element Should Be Disabled    ${SEND_NEXT_BUTTON}
+    Expect Element    ${SEND_NEXT_BUTTON}    disabled    timeout=0s
     Tap    ${SEND_MAX_BUTTON}
-    Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${SEND_NEXT_BUTTON}
+    Wait Until Keyword Succeeds    5s    0.5s    Expect Element    ${SEND_NEXT_BUTTON}    enabled    timeout=0s
 
 Own Address Leads To Confirmation
     [Tags]    id:send.confirm.reach    p1    needs-funded    excludefromci

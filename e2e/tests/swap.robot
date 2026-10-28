@@ -9,6 +9,7 @@ Resource            ../resources/swap.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           swap
 
 
@@ -149,7 +150,13 @@ Receive Picker Lists Swappable Assets
         Search Assets    USD
         Wait Until Page Contains Element    xpath=${RECEIVE_ASSET_ROW_ANY.replace('xpath=', '')} | ${NO_MATCHING_ASSETS.replace('xpath=', '')}
         ...    timeout=15s
-        Skip    The receive (DEX) asset list is empty on this run.
+        # Rows under a filter still show the picker listing what the DEX offers, which is all this
+        # case claims. Skipping on them too made it unpassable through this branch: it skipped
+        # whenever the unfiltered list was merely slow, and that is the half of its
+        # pass-one-run-skip-the-next that was ours rather than the backend's.
+        ${filtered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${RECEIVE_ASSET_ROW_ANY}
+        Skip If    not ${filtered}    The receive (DEX) asset list is empty on this run.
     END
     Close Picker Back To Form
 
@@ -444,7 +451,7 @@ Real ALGO To USDC Swap Completes And Lands In History
     ...    PERA_E2E_SWAP_ALLOW_SPEND is not 1; this case executes a real paid swap.
     Open Swap With Funded Account
     Open Confirmation
-    Slide To Confirm
+    Slide To Confirm    ${CONFIRM_SLIDE}
     # The sheet closes only after the swap is submitted and confirmed on chain.
     Wait Until Page Does Not Contain Element    ${CONFIRM_SLIDE}    timeout=120s
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=20s

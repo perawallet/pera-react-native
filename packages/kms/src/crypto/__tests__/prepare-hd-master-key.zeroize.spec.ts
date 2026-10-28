@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const seed = new Uint8Array(64).fill(7)

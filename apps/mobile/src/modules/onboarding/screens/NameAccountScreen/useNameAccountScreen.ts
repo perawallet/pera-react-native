@@ -33,6 +33,7 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes'
@@ -61,6 +62,7 @@ export const useNameAccountScreen = () => {
     const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
+    const { getAccountName } = useAccountName()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
@@ -112,12 +114,17 @@ export const useNameAccountScreen = () => {
         return hdSeedIds.size + otherAccountsCount
     }, [accounts, seedIdOf, scope.chainId])
 
-    const initialWalletName = account
-        ? getAccountDisplayName(account, chainId)
+    const accountTitle = account
+        ? getAccountName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
+    // A generated "Account #N" is left unstored, so it follows the language
+    // and isn't backed up as a name the user chose.
+    const generatedTitle =
+        account && accountTitle !== getAccountDisplayName(account, chainId)
+            ? accountTitle
+            : undefined
 
-    const [walletDisplay, setWalletDisplay] =
-        useState<string>(initialWalletName)
+    const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
 
     const handleNameChange = (value: string) => {
@@ -168,10 +175,12 @@ export const useNameAccountScreen = () => {
                       )
                     : undefined)
 
+            const name =
+                walletDisplay === generatedTitle ? undefined : walletDisplay
             if (stored) {
-                updateAccount({ ...stored, name: walletDisplay })
+                updateAccount({ ...stored, name })
             } else {
-                await saveAccount({ ...targetAccount, name: walletDisplay })
+                await saveAccount({ ...targetAccount, name })
             }
 
             trackEvent(OnboardingEvent.RegisterAccount, {
@@ -207,7 +216,7 @@ export const useNameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        numWallets,
+        accountTitle,
         account,
         chainId,
         enabledChainIds,

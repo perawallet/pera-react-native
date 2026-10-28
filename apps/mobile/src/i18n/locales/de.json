@@ -102,6 +102,11 @@
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
         "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
+        "not_listed": {
+            "title": "Noch nicht verfügbar",
+            "body": "Pera listet auf {{chain}} noch keine Assets.",
+            "body_all": "Pera listet auf diesen Netzwerken noch keine Assets."
+        },
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",
@@ -434,6 +439,7 @@
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
         "view_private_key": "Privaten Schlüssel anzeigen",
         "networks_title": "Netzwerke",
+        "networks_title_named": "{{name}} in jedem Netzwerk",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
         "add_network_success": "{{network}} hinzugefügt",
@@ -450,8 +456,7 @@
         "universal_wallet_subtitle": "Eine Wiederherstellungsphrase, alle Netzwerke",
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
-        "main_address": "Hauptadresse",
-        "sub_address": "Unteradresse",
+        "account_number": "Konto Nr. {{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
@@ -501,8 +506,10 @@
         "acknowledge": {
             "title": "Geheim halten. Sicher aufbewahren.",
             "description": "Bestätige Folgendes:",
+            "scope": "Diese Wiederherstellungsphrase kontrolliert deine Konten in allen Netzwerken: {{networks}}.",
             "row_screen": "Niemand kann meinen Bildschirm sehen.",
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
+            "row_share_all_networks": "Ich riskiere den Verlust meines gesamten Guthabens in allen Netzwerken, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
             "cta_reveal": "Wiederherstellungsphrase anzeigen",
@@ -512,7 +519,14 @@
             "title": "Passphrase",
             "body": "Notiere diese Wörter unbedingt in der richtigen Reihenfolge anhand der entsprechenden Nummern.",
             "error_title": "Passphrase konnte nicht abgerufen werden",
-            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+            "reach_title": "Adressen dieses Kontos"
+        },
+        "compatibility": {
+            "title": "Passphrase in anderen Wallets verwenden",
+            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Konten, die du später in Pera hinzufügst, erscheinen in diesen Wallets standardmäßig eventuell nicht.",
+            "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
     "reveal_private_key": {
@@ -739,6 +753,7 @@
             "available_count_one": "{{count}} aus dem Backup verfügbar",
             "device_title": "Konten",
             "device_subtitle": "Auf diesem Gerät verfügbar",
+            "networks_hint": "Dein Backup enthält alle Netzwerke jedes Kontos.",
             "add_from_backup_title": "Aus Backup hinzufügen",
             "add_from_backup_subtitle": "In deinem Cloud-Backup, nicht auf diesem Gerät",
             "not_backed_up_title": "Nicht gesichert",
@@ -1927,7 +1942,7 @@
         },
         "inbox": {
             "empty_title": "Keine ausstehenden Nachrichten",
-            "empty_body": "Du hast derzeit keine ausstehenden Nachrichten im Posteingang",
+            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, sowie Einladungen zu Gemeinschaftskonten und Signaturanfragen. Tokens in anderen Netzwerken kommen direkt in deinem Guthaben an.",
             "asa_requests_one": "1 eingehendes Asset",
             "asa_requests_other": "{{count}} eingehende Assets",
             "multisig_sign": {
@@ -1939,7 +1954,16 @@
                 "status_confirmed": "Bestätigt"
             },
             "invitation_title": "<0>Du wurdest eingeladen</0>, einem Gemeinschaftskonto {{address}} beizutreten",
-            "view_invitation_details": "Einladungsdetails anzeigen"
+            "view_invitation_details": "Einladungsdetails anzeigen",
+            "info": {
+                "title": "Über den Posteingang",
+                "algorand_title": "Algorand",
+                "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie beanspruchst oder ablehnst. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen kommen hier an.",
+                "other_networks_title": "Andere Netzwerke",
+                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets. Tokens, die dir dort gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
+                "find_tokens_body": "Du findest sie, indem du das Konto öffnest und dir seine Assets in diesem Netzwerk ansiehst.",
+                "learn_more": "Mehr erfahren"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset-Übertragungsanfragen",
@@ -2714,13 +2738,13 @@
             "cancel": "Abbrechen"
         }
     },
+    "chain_selection": {
+        "title": "Netzwerk wählen",
+        "add_action": "Hinzufügen"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Konto auswählen"
-        },
-        "chain_selection": {
-            "title": "Netzwerk wählen",
-            "add_action": "Hinzufügen"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",
@@ -2838,7 +2862,10 @@
             "title": "Asset auswählen",
             "search_placeholder": "Nach Asset-Name oder ID suchen",
             "no_results_title": "Keine passenden Assets",
-            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "empty_title": "Nichts zu senden auf {{network}}",
+            "empty_body": "Dieses Konto hat noch keine Assets auf {{network}}. Empfange welche, um mit dem Senden zu beginnen.",
+            "empty_receive_action": "Empfangen"
         },
         "bottom_sheet": {
             "no_account_title": "Kein Konto ausgewählt",
@@ -2923,13 +2950,17 @@
             "subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet.",
             "title_hardware": "Verbindung mit deinem Ledger-Gerät wird hergestellt",
             "subtitle_hardware": "Verbindung zu {{deviceName}} wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
-            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist."
+            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
+            "broadcast_subtitle": "Deine Transaktion wird an das Netzwerk {{network}} gesendet."
         },
         "success": {
             "title": "Transaktion verarbeitet",
             "asset_transferred_title": "Asset übertragen",
             "subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
+            "pending_title": "Transaktion gesendet",
+            "pending_subtitle": "Deine Transaktion wurde an das Netzwerk {{network}} gesendet und wartet auf Bestätigung.",
             "view_in_explorer": "Transaktionsdetails im Pera Explorer anzeigen",
+            "view_on_explorer": "Auf {{explorer}} anzeigen",
             "done": "Fertig"
         },
         "close_account": {
@@ -3342,6 +3373,23 @@
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
+        },
+        "address_safety": {
+            "listed_title": "Bekannte Betrugsadresse",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Wenn du signierst, könnte sie an deine Assets gelangen.",
+            "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "acknowledge": "Ich verstehe das Risiko und möchte trotzdem signieren",
+            "role": {
+                "recipient": "Empfänger",
+                "token_recipient": "Token-Empfänger",
+                "close_recipient": "Erhält das Restguthaben",
+                "new_authorizer": "Neue Signaturberechtigung",
+                "referenced_account": "Referenziertes Konto",
+                "target": "Vertrag",
+                "spender": "Berechtigte Adresse",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {

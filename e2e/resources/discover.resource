@@ -6,17 +6,17 @@ Resource            settings.resource
 
 *** Variables ***
 # Tabs other than Menu have no testID; both platforms expose the visible label.
-${DISCOVER_TAB}             xpath=//*[@resource-id='Discover' or @name='Discover' or @content-desc='Discover']
-${HOME_TAB}                 xpath=//*[@resource-id='Home' or @name='Home' or @content-desc='Home']
-${MORE_BUTTON}              xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
+${DISCOVER_TAB}             tid=Discover
+${HOME_TAB}                 tid=Home
+${MORE_BUTTON}              tid=more_button
 # The declaration's buttons have no testID (ConfirmActionContent takes no confirmTestID here).
 ${AGE_GATE_CONFIRM}         xpath=//*[@text='I am 18 or older' or @label='I am 18 or older']
-${AGE_GATE_RETRY}           xpath=//*[@resource-id='age-gate-retry' or @name='age-gate-retry' or @content-desc='age-gate-retry']
-${WEBVIEW_OFFLINE}          xpath=//*[@resource-id='pw-webview-offline' or @name='pw-webview-offline' or @content-desc='pw-webview-offline']
-${WEBVIEW_TIMEOUT}          xpath=//*[@resource-id='pw-webview-timeout' or @name='pw-webview-timeout' or @content-desc='pw-webview-timeout']
+${AGE_GATE_RETRY}           tid=age-gate-retry
+${WEBVIEW_OFFLINE}          tid=pw-webview-offline
+${WEBVIEW_TIMEOUT}          tid=pw-webview-timeout
 # The Debug Tools row to Manage Cache has no testID.
 ${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
-${CLEAR_ONE_TIME_FLAGS}         xpath=//*[@resource-id='manage_cache_clear_flags_button' or @name='manage_cache_clear_flags_button' or @content-desc='manage_cache_clear_flags_button']
+${CLEAR_ONE_TIME_FLAGS}         tid=manage_cache_clear_flags_button
 
 
 *** Keywords ***

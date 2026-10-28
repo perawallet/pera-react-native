@@ -610,6 +610,21 @@ registerPreview({
 })
 
 registerPreview({
+    id: 'comp-inbox-item-asa-chain-badge',
+    render: () => (
+        <InboxItem
+            item={{
+                type: 'asa_inbox',
+                data: mockAsaInbox,
+                createdAt: new Date(),
+            }}
+            chainBadgeName='Algorand'
+            onPress={() => undefined}
+        />
+    ),
+})
+
+registerPreview({
     id: 'comp-unread-indicator',
     render: () => (
         <PWView>
@@ -1194,6 +1209,11 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-inbox-item-asa',
                 label: 'InboxItem (asa_inbox)',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-inbox-item-asa-chain-badge',
+                label: 'InboxItem (asa_inbox, chain badge)',
                 launch: { kind: 'preview' },
             },
             {

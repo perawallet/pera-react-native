@@ -29,9 +29,10 @@ const choose = (file: File): void => {
     input.dispatchEvent(new Event('change'))
 }
 
-afterEach(() =>
-    document.querySelectorAll('input[type="file"]').forEach(el => el.remove()),
-)
+afterEach(() => {
+    vi.restoreAllMocks()
+    document.querySelectorAll('input[type="file"]').forEach(el => el.remove())
+})
 
 describe('pickTextFile', () => {
     test('reports the picked file without reading it', async () => {

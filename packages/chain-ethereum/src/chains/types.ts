@@ -40,6 +40,7 @@ export type EvmChainRow = {
         /** SLIP-44 coin type, as the backend's native CAIP-19 id names it. */
         slip44: string
     }
+    explorerName: string
     explorerBase: Readonly<Record<NetworkId, string>>
     fee: EvmFeeStrategy
     finality: ChainFinality

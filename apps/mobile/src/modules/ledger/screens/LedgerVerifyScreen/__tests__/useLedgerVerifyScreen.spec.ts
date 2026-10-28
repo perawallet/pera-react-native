@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import {
     authorityOf,
     hardwareDetailsOf,
@@ -272,7 +272,8 @@ describe('useLedgerVerifyScreen', () => {
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
 
-        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+        await act(async () => {})
+        expect(result.current.areAllVerified).toBe(true)
         expect(mockVerify).toHaveBeenCalledTimes(1)
         expect(mockVerify).toHaveBeenCalledWith(expect.anything(), 0)
         expect(mockConnect).toHaveBeenCalledWith('dev', 'algorand')
@@ -305,7 +306,8 @@ describe('useLedgerVerifyScreen', () => {
         }
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
-        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+        await act(async () => {})
+        expect(result.current.areAllVerified).toBe(true)
 
         act(() => {
             result.current.handleAdd()
@@ -349,17 +351,15 @@ describe('useLedgerVerifyScreen', () => {
 
         it('shows the added result instead of leaving for the wallet home', async () => {
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             act(() => {
                 result.current.handleAdd()
             })
 
-            await waitFor(() =>
-                expect(result.current.isAddedInHandoffTab).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.isAddedInHandoffTab).toBe(true)
             expect(
                 useAccountsStore
                     .getState()
@@ -416,7 +416,8 @@ describe('useLedgerVerifyScreen', () => {
         }
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
-        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+        await act(async () => {})
+        expect(result.current.areAllVerified).toBe(true)
 
         act(() => {
             result.current.handleAdd()
@@ -500,7 +501,8 @@ describe('useLedgerVerifyScreen', () => {
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
 
-        await waitFor(() => expect(result.current.errorPreset).toBeTruthy())
+        await act(async () => {})
+        expect(result.current.errorPreset).toBeTruthy()
         expect(result.current.areAllVerified).toBe(false)
         expect(result.current.verifiedIndices.size).toBe(0)
     })
@@ -528,9 +530,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -568,9 +569,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -605,9 +605,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -648,9 +647,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -692,9 +690,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -736,9 +733,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             await act(async () => {
                 result.current.handleAdd()
@@ -770,9 +766,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             act(() => {
                 result.current.handleAdd()
@@ -823,9 +818,8 @@ describe('useLedgerVerifyScreen', () => {
             }
 
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             act(() => {
                 result.current.handleAdd()
@@ -866,7 +860,8 @@ describe('useLedgerVerifyScreen', () => {
         }
 
         const { result } = renderHook(() => useLedgerVerifyScreen())
-        await waitFor(() => expect(result.current.areAllVerified).toBe(true))
+        await act(async () => {})
+        expect(result.current.areAllVerified).toBe(true)
         act(() => {
             result.current.handleAdd()
         })
@@ -913,9 +908,8 @@ describe('useLedgerVerifyScreen', () => {
                 })),
             }
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
             act(() => {
                 result.current.handleAdd()
             })
@@ -970,7 +964,8 @@ describe('useLedgerVerifyScreen', () => {
         it('verifies on the Ethereum app and creates a hardware account holding the device address', async () => {
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() => expect(mockExit).toHaveBeenCalled())
+            await act(async () => {})
+            expect(mockExit).toHaveBeenCalled()
             expect(mockConnect).toHaveBeenCalledWith('dev', 'ethereum')
             expect(mockSheetRequest).not.toHaveBeenCalled()
             const accounts = useAccountsStore.getState().accounts
@@ -990,9 +985,8 @@ describe('useLedgerVerifyScreen', () => {
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() =>
-                expect(mockSetConfetti).toHaveBeenCalledWith(true),
-            )
+            await act(async () => {})
+            expect(mockSetConfetti).toHaveBeenCalledWith(true)
             expect(sameWalletPrompts()).toEqual([
                 { appName: 'Algorand', failure: null },
             ])
@@ -1025,9 +1019,8 @@ describe('useLedgerVerifyScreen', () => {
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() =>
-                expect(useAccountsStore.getState().accounts).toHaveLength(2),
-            )
+            await act(async () => {})
+            expect(useAccountsStore.getState().accounts).toHaveLength(2)
             const [held, created] = useAccountsStore.getState().accounts
             expect(held.chains.ethereum).toBeUndefined()
             expect(created).toMatchObject({
@@ -1063,17 +1056,15 @@ describe('useLedgerVerifyScreen', () => {
                 ],
             }
             const { result } = renderHook(() => useLedgerVerifyScreen())
-            await waitFor(() =>
-                expect(result.current.areAllVerified).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.areAllVerified).toBe(true)
 
             act(() => {
                 result.current.handleAdd()
             })
 
-            await waitFor(() =>
-                expect(mockSetConfetti).toHaveBeenCalledWith(true),
-            )
+            await act(async () => {})
+            expect(mockSetConfetti).toHaveBeenCalledWith(true)
             expect(mockSheetRequest).not.toHaveBeenCalled()
             expect(mockProve).not.toHaveBeenCalled()
             const [account, ...rest] = useAccountsStore.getState().accounts
@@ -1102,9 +1093,8 @@ describe('useLedgerVerifyScreen', () => {
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() =>
-                expect(useAccountsStore.getState().accounts).toHaveLength(2),
-            )
+            await act(async () => {})
+            expect(useAccountsStore.getState().accounts).toHaveLength(2)
             expect(mockErrorPreset).toHaveBeenCalledWith(
                 readError,
                 expect.any(Function),
@@ -1129,12 +1119,11 @@ describe('useLedgerVerifyScreen', () => {
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() =>
-                expect(
-                    useAccountsStore.getState().accounts[0].chains.ethereum
-                        ?.address,
-                ).toBe(ETH_LEDGER_0.toLowerCase()),
-            )
+            await act(async () => {})
+            expect(
+                useAccountsStore.getState().accounts[0].chains.ethereum
+                    ?.address,
+            ).toBe(ETH_LEDGER_0.toLowerCase())
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
             expect(sameWalletPrompts()).toHaveLength(2)
             expect(mockProve).toHaveBeenCalledTimes(2)
@@ -1152,15 +1141,13 @@ describe('useLedgerVerifyScreen', () => {
 
             const result = await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() =>
-                expect(result.current.isReadingDevice).toBe(true),
-            )
+            await act(async () => {})
+            expect(result.current.isReadingDevice).toBe(true)
             await act(async () => {
                 answer(new Set(['hw-0']))
             })
-            await waitFor(() =>
-                expect(mockSetConfetti).toHaveBeenCalledWith(true),
-            )
+            await act(async () => {})
+            expect(mockSetConfetti).toHaveBeenCalledWith(true)
             expect(result.current.isReadingDevice).toBe(false)
         })
 
@@ -1170,7 +1157,8 @@ describe('useLedgerVerifyScreen', () => {
 
             await importOnEthereum(derived(ETH_LEDGER_0, 0))
 
-            await waitFor(() => expect(mockSheetRequest).toHaveBeenCalled())
+            await act(async () => {})
+            expect(mockSheetRequest).toHaveBeenCalled()
             await act(async () => {})
             expect(useAccountsStore.getState().accounts).toEqual([
                 ledgerOnAlgorand(0),
@@ -1187,9 +1175,8 @@ describe('useLedgerVerifyScreen', () => {
                 derived(ETH_LEDGER_1, 1),
             )
 
-            await waitFor(() =>
-                expect(mockSetConfetti).toHaveBeenCalledWith(true),
-            )
+            await act(async () => {})
+            expect(mockSetConfetti).toHaveBeenCalledWith(true)
             expect(mockProve).toHaveBeenCalledOnce()
             const created = useAccountsStore
                 .getState()

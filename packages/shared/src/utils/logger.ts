@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* oxlint-disable no-console -- the shared logger is the console sink every package's diagnostics route through */
+
 import { config } from '@perawallet/wallet-core-config'
 import { isExpectedError } from '../errors/expected'
 import {

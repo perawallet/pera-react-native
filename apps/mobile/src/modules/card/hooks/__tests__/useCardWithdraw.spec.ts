@@ -11,7 +11,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -114,6 +114,10 @@ describe('useCardWithdraw', () => {
         mocks.invalidatePending.mockResolvedValue(undefined)
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('requests a withdrawal from the owner in base units and refreshes the pending state', async () => {
         const { result } = renderHook(() => useCardWithdraw())
 
@@ -192,14 +196,21 @@ describe('useCardWithdraw', () => {
     })
 
     it('exposes the pending amount in display units and counts down to readiness', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
         mocks.pending = pendingCreatedAt(nowSeconds())
         const { result } = renderHook(() => useCardWithdraw())
 
         expect(result.current.pendingAmount.toFixed(2)).toBe('0.25')
         expect(result.current.isReady).toBe(false)
-        // wait time plus the block-time buffer, give or take the test's own clock.
-        expect(result.current.secondsUntilReady).toBeGreaterThanOrEqual(23)
-        expect(result.current.secondsUntilReady).toBeLessThanOrEqual(26)
+        // 20s wait time plus the 5s block-time buffer.
+        expect(result.current.secondsUntilReady).toBe(25)
+
+        act(() => {
+            vi.advanceTimersByTime(1000)
+        })
+
+        expect(result.current.secondsUntilReady).toBe(24)
     })
 
     it('is ready once the wait and buffer have elapsed', () => {

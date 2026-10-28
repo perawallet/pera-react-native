@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, test, expect, beforeAll, vi } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 

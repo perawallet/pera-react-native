@@ -25,7 +25,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AccountPicker } from '@components/AccountPicker'
 import {
-    needsReceiveChainSelection,
+    needsChainSelection,
     useReceiveFunds,
 } from '@modules/transactions/hooks'
 
@@ -54,7 +54,7 @@ export const AccountSelectionScreen = () => {
         (account: WalletAccount) => {
             setSelectedAccount(account)
             navigation.navigate(
-                needsReceiveChainSelection(optionsOf(account))
+                needsChainSelection(optionsOf(account))
                     ? 'ChainSelection'
                     : 'QRView',
             )

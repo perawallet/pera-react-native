@@ -289,14 +289,27 @@ describe('Flow: the account options sheet lists the account on each network', ()
         ).toBeTruthy()
     })
 
-    it('Given a multichain build, when the sheet opens, then the network rows are headed "Networks"', async () => {
+    it('Given a multichain build, when the sheet opens, then the network rows are headed by the account name', async () => {
         const account = await seedHdAccount()
 
         render(<AccountOptionsHost account={account} />)
 
         expect(
             (await screen.findByTestId('account_networks_title')).textContent,
-        ).toBe('account_options.networks_title')
+        ).toBe('account_options.networks_title_named')
+    })
+
+    it('Given an unnamed Universal Wallet account, when the sheet opens, then it is titled by its account number', async () => {
+        const seeded = await seedHdAccount()
+        const account = { ...seeded, name: undefined }
+        useAccountsStore.getState().setAccounts([account])
+
+        render(<AccountOptionsHost account={account} />)
+
+        expect(
+            (await screen.findByTestId('account_options_header-title'))
+                .textContent,
+        ).toBe('account_info.account_number')
     })
 
     it('Given an HD account, when the user taps "See wallet structure", then the structure opens as before', async () => {

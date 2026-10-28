@@ -32,6 +32,8 @@ export interface ReviewerContractFixtures {
     wrongNetworkGroup: SignableGroup
     /** Arbitrary data for a wallet account to sign. */
     messageGroup: SignableGroup
+    /** The chain's own address check. */
+    isValidAddress: (address: string) => boolean
 }
 
 const transactionsOf = (group: SignableGroup) =>
@@ -107,6 +109,21 @@ export const reviewerContractTests = (
                     await analyse(fixtures.plainGroup),
                 ),
             ).toBe(true)
+        })
+
+        it('names only addresses valid on its chain as the ones a review shows', () => {
+            const adapter = makeAdapter()
+            const reviewed = transactionsOf(fixtures.plainGroup).flatMap(
+                unsigned => {
+                    const native = adapter.toTransactionNative(unsigned)
+                    return native ? adapter.reviewedAddresses(native) : []
+                },
+            )
+
+            expect(reviewed.length).toBeGreaterThan(0)
+            for (const { address } of reviewed) {
+                expect(fixtures.isValidAddress(address)).toBe(true)
+            }
         })
 
         it("decides for the app's own contract call as the chain declares", async () => {

@@ -17,15 +17,21 @@ import { MultisigSignInboxItem } from './MultisigSignInboxItem'
 
 export type InboxItemProps = {
     item: InboxItemModel
+    chainBadgeName?: string
     onPress?: () => void
 }
 
-export const InboxItem = ({ item, onPress }: InboxItemProps) => {
+export const InboxItem = ({
+    item,
+    chainBadgeName,
+    onPress,
+}: InboxItemProps) => {
     switch (item.type) {
         case 'asa_inbox': {
             return (
                 <AsaInboxItem
                     item={item}
+                    chainBadgeName={chainBadgeName}
                     onPress={onPress}
                 />
             )
@@ -34,6 +40,7 @@ export const InboxItem = ({ item, onPress }: InboxItemProps) => {
             return (
                 <MultisigSignInboxItem
                     item={item}
+                    chainBadgeName={chainBadgeName}
                     onPress={onPress}
                 />
             )
@@ -42,6 +49,7 @@ export const InboxItem = ({ item, onPress }: InboxItemProps) => {
             return (
                 <MultisigInvitationInboxItem
                     item={item}
+                    chainBadgeName={chainBadgeName}
                     onPress={onPress}
                 />
             )

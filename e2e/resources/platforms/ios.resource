@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation       iOS adapter; see android.resource.
-Library             AppiumLibrary    run_on_failure=Nothing
+Library             ../libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             Collections
 Library             Process
 Library             String
@@ -16,7 +16,10 @@ ${IOS_WDA_PORT}         8100
 # Set it for dev-client runs: a plain relaunch can land on the launcher instead of the app.
 ${IOS_DEV_CLIENT_URL}   ${EMPTY}
 ${WEBVIEW}             xpath=//XCUIElementTypeWebView
-${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @name='tab_menu_button' or @content-desc='tab_menu_button']
+${MENU_TAB}             tid=tab_menu_button
+# One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource). A predicate, not an
+# xpath: this is polled every half second after each launch, and an xpath walks the whole tree.
+${STARTUP_PROMPT_ANY}   predicate=name IN {'pin_security_prompt_dont_ask_button', 'banners_carousel_modal_close', 'banner_prompt_close', 'analytics_consent_prompt_decline_button', 'biometrics_disabled_prompt_dismiss_button', 'legacy_quantum_prompt_dismiss_button'}
 
 
 *** Keywords ***
@@ -79,7 +82,7 @@ Enter Recovery Phrase
     [Arguments]    ${phrase}
     @{words}=    Split String    ${phrase}
     FOR    ${i}    ${word}    IN ENUMERATE    @{words}
-        Input Text    xpath=//*[@resource-id='import_account_word_input_${i}' or @name='import_account_word_input_${i}' or @content-desc='import_account_word_input_${i}']    ${word}
+        Input Text    tid=import_account_word_input_${i}    ${word}
     END
 
 Get Text In Container
@@ -98,9 +101,9 @@ Scroll Into View
     ...                (unrecognized selector), and mobile: scroll toVisible stops at its own count.
     # ${by} exists only to match the Android adapter's signature; xpath covers both here.
     [Arguments]    ${test_id}    ${by}=resourceId
-    Wait Until Page Contains Element    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    timeout=10s
+    Wait Until Page Contains Element    tid=${test_id}    timeout=10s
     FOR    ${i}    IN RANGE    8
-        ${visible}=    Get Element Attribute    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']    visible
+        ${visible}=    Get Element Attribute    tid=${test_id}    visible
         IF    $visible == 'true'    RETURN
         Swipe By Percent    50    75    50    35
     END

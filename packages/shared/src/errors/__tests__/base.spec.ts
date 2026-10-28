@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
@@ -49,6 +49,10 @@ describe('AppError', () => {
         mockDate = new Date('2025-01-20T12:00:00Z')
         vi.useFakeTimers()
         vi.setSystemTime(mockDate)
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     test('creates error with message', () => {

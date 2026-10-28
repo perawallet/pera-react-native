@@ -85,7 +85,8 @@ describe('Flow: One asset held on two chains, picked per network', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given USDC on Algorand and Ethereum, when the send picker expands its group and Ethereum is picked, then the send starts on Ethereum', async () => {
+    it('Given USDC on Algorand and Ethereum, when the send picker is on Ethereum, then Ethereum USDC is a plain row and picking it starts the send on Ethereum', async () => {
+        useSendFundsStore.getState().setChainId('ethereum')
         renderWithNavigation(AssetSelectionScreen, 'SelectAsset', {
             additionalScreens: [
                 { name: 'InputAmount', component: Stub },
@@ -93,15 +94,14 @@ describe('Flow: One asset held on two chains, picked per network', () => {
             ],
         })
 
-        const group = await screen.findByTestId('asset_group_row_usdc')
-        expect(screen.queryByTestId(`asset-list-item-${ETH_USDC}`)).toBeNull()
+        const ethUsdc = await screen.findByTestId(`asset-list-item-${ETH_USDC}`)
+        // One network folds nothing, and the other network's USDC isn't offered.
+        expect(screen.queryByTestId('asset_group_row_usdc')).toBeNull()
+        expect(
+            screen.queryByTestId(`asset-list-item-${USDC_TEST_ASSET.assetId}`),
+        ).toBeNull()
 
-        fireEvent.click(group)
-        // The collapsed group selected nothing.
-        expect(useSendFundsStore.getState().selectedAsset).toBeFalsy()
-        fireEvent.click(
-            await screen.findByTestId(`asset-list-item-${ETH_USDC}`),
-        )
+        fireEvent.click(ethUsdc)
 
         await waitFor(() => {
             expect(screen.getByTestId('next-step-stub')).toBeTruthy()

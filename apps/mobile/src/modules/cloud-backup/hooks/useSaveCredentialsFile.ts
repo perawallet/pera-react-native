@@ -11,22 +11,16 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { NoBackupCredentialsError } from '@perawallet/wallet-core-backup'
+import { useSaveBackupCredentialsFileMutation } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
-    saveCredentialsFile,
+    saveToDevice,
     type CredentialsFileSource,
     type MaybeBackupCredentials,
 } from '../storage'
-
-type SaveCredentialsFileVariables = {
-    destination: CredentialsFileSource
-    credentials: MaybeBackupCredentials
-}
 
 type UseSaveCredentialsFileResult = {
     /** Takes the credentials as the caller's store holds them and refuses the
@@ -45,15 +39,12 @@ export const useSaveCredentialsFile = (): UseSaveCredentialsFileResult => {
     const { showToast } = useToast()
     const { showError } = useErrorToast()
 
-    const { mutateAsync, isPending, variables } = useMutation({
-        throwOnError: false,
-        mutationFn: async ({
-            destination,
-            credentials: { salt, backupId },
-        }: SaveCredentialsFileVariables) => {
-            if (!salt || !backupId) throw new NoBackupCredentialsError()
-            return saveCredentialsFile(destination, { salt, backupId })
-        },
+    const {
+        saveCredentialsFile,
+        isPending,
+        destination: lastDestination,
+    } = useSaveBackupCredentialsFileMutation({
+        saveToDevice,
         onSuccess: result => {
             if (result === 'cancelled') return
             showToast(
@@ -89,20 +80,21 @@ export const useSaveCredentialsFile = (): UseSaveCredentialsFileResult => {
             isSavingRef.current = true
             try {
                 // `onError` reports it; callers await completion, not outcome.
-                await mutateAsync({ destination, credentials }).catch(
-                    () => undefined,
-                )
+                await saveCredentialsFile({
+                    destination,
+                    ...credentials,
+                }).catch(() => undefined)
             } finally {
                 isSavingRef.current = false
             }
         },
-        [mutateAsync],
+        [saveCredentialsFile],
     )
 
     // The device save is the OS picker itself, so it gets no overlay. On iOS the
     // overlay is a modal view controller, and Save to Files presented while it
     // animates in is dropped by UIKit, leaving `Share.open` pending forever.
-    const isSaving = isPending && variables?.destination !== 'device'
+    const isSaving = isPending && lastDestination !== 'device'
 
     return { saveCredentials, isSaving }
 }

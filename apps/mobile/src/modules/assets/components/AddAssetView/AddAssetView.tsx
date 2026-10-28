@@ -52,6 +52,7 @@ export const AddAssetView = ({
         isOffline,
         isIntegrityBlocked,
         isUnavailable,
+        unavailableTitle,
         unavailableBody,
         isFetchingNextPage,
         hasNextPage,
@@ -148,6 +149,7 @@ export const AddAssetView = ({
                         isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         isUnavailable={isUnavailable}
+                        unavailableTitle={unavailableTitle}
                         unavailableBody={unavailableBody}
                     >
                         <EmptyView

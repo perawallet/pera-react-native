@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* oxlint-disable no-console -- write failures go straight to Sentry; this line is that report's fallback when Sentry is off, and the shared logger would report them twice */
+
 import * as Sentry from '@sentry/browser'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 

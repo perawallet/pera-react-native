@@ -68,11 +68,8 @@ const makeSigned = (sender: string, receiver?: string): PeraSignedTransaction =>
         sig: new Uint8Array(),
     }) as unknown as PeraSignedTransaction
 
-const flushMicrotasks = async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
-}
+// A macrotask runs only after the mock-only background chain has drained.
+const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
 describe('submitAndAutoRefreshCore', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
@@ -114,8 +111,9 @@ describe('submitAndAutoRefreshCore', () => {
         expect(onConfirmed).not.toHaveBeenCalled()
 
         resolveConfirmation()
-        await flushMicrotasks()
-        expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet')
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
+        )
     })
 
     test('on successful confirmation, calls onConfirmed with extracted addresses and network', async () => {
@@ -133,10 +131,10 @@ describe('submitAndAutoRefreshCore', () => {
             onConfirmed,
             signedTxns: [makeSigned(WALLET, EXTERNAL)],
         })
-        await flushMicrotasks()
-
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'testnet'),
+        )
         expect(waitForConfirmation).toHaveBeenCalledWith('TX1')
-        expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'testnet')
     })
 
     test('on confirmation rejection, swallows the error and does not call onConfirmed', async () => {
@@ -156,7 +154,7 @@ describe('submitAndAutoRefreshCore', () => {
             onConfirmed,
             signedTxns: [makeSigned(WALLET, EXTERNAL)],
         })
-        await flushMicrotasks()
+        await settle()
 
         expect(result).toEqual({ txIds: ['TX1'] })
         expect(onConfirmed).not.toHaveBeenCalled()
@@ -192,7 +190,7 @@ describe('submitAndAutoRefreshCore', () => {
             onConfirmed,
             signedTxns: [signedWithoutTxId],
         })
-        await flushMicrotasks()
+        await settle()
 
         expect(result.txIds).toEqual([])
         expect(waitForConfirmation).not.toHaveBeenCalled()
@@ -214,7 +212,7 @@ describe('submitAndAutoRefreshCore', () => {
             onConfirmed,
             signedTxns: [makeSigned(EXTERNAL, 'OTHER_EXTERNAL')],
         })
-        await flushMicrotasks()
+        await settle()
 
         expect(waitForConfirmation).toHaveBeenCalled()
         expect(onConfirmed).not.toHaveBeenCalled()
@@ -281,11 +279,11 @@ describe('submitAndAutoRefreshCore', () => {
             onConfirmed,
             signedTxns: [signedWithTxId],
         })
-        await flushMicrotasks()
-
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
+        )
         expect(verifyTxnLanded).toHaveBeenCalledWith('LOCAL_TX')
         expect(result).toEqual({ txIds: ['LOCAL_TX'] })
-        expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet')
     })
 
     test('rethrows the unknown-outcome error after chain verification retries come up empty', async () => {
@@ -398,7 +396,7 @@ describe('submitAndAutoRefreshCore', () => {
     })
 })
 
-describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
+describe('submitAndAutoRefreshCore ledger', () => {
     let db: Database
     let teardown: () => void
 
@@ -442,6 +440,7 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         encodeSignedTransactions,
         waitForConfirmation: vi.fn().mockResolvedValue(undefined),
         verifyTxnLanded: vi.fn(),
+        sleep: vi.fn().mockResolvedValue(undefined),
         walletAddresses: [WALLET],
         network: 'mainnet',
         onConfirmed: vi.fn(),
@@ -478,7 +477,6 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
                 },
             }),
         )
-        await flushMicrotasks()
 
         // The ledger row exists while the POST is in flight — the write
         // strictly precedes the broadcast.
@@ -486,25 +484,31 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
 
         // The background confirmation then resolves the row to confirmed.
-        const all = await db.select().from(SubmissionAttemptsSchema).all()
-        expect(all).toHaveLength(1)
-        expect(all[0]).toMatchObject({
-            scope: 'algorand/mainnet',
-            flow: 'rekey',
-            sender: WALLET,
-            intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
-            chainData: { family: 'algorand', lastValid: 2000 },
-            status: 'confirmed',
+        await vi.waitFor(async () => {
+            const all = await db.select().from(SubmissionAttemptsSchema).all()
+            expect(all).toHaveLength(1)
+            expect(all[0]).toMatchObject({
+                scope: 'algorand/mainnet',
+                flow: 'rekey',
+                sender: WALLET,
+                intentKeyJson: JSON.stringify({
+                    kind: 'rekey',
+                    address: WALLET,
+                }),
+                chainData: { family: 'algorand', lastValid: 2000 },
+                status: 'confirmed',
+            })
         })
     })
 
     test('resolves the row to confirmed once the background confirmation settles', async () => {
         await submitAndAutoRefreshCore(baseInput())
-        await flushMicrotasks()
 
-        const all = await db.select().from(SubmissionAttemptsSchema).all()
-        expect(all).toHaveLength(1)
-        expect(all[0]).toMatchObject({ status: 'confirmed' })
+        await vi.waitFor(async () => {
+            const all = await db.select().from(SubmissionAttemptsSchema).all()
+            expect(all).toHaveLength(1)
+            expect(all[0]).toMatchObject({ status: 'confirmed' })
+        })
     })
 
     test('leaves the row open when the background confirmation wait fails', async () => {
@@ -512,7 +516,7 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
             .fn()
             .mockRejectedValue(new Error('timeout'))
         await submitAndAutoRefreshCore(baseInput({ waitForConfirmation }))
-        await flushMicrotasks()
+        await settle()
 
         const rows = await getOpenSubmissionAttempts({ db })
         expect(rows).toHaveLength(1)
@@ -588,12 +592,13 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         const result = await submitAndAutoRefreshCore(
             baseInput({ algokit, verifyTxnLanded }),
         )
-        await flushMicrotasks()
 
         expect(result).toEqual({ txIds: ['LOCAL_TX'] })
-        const rows = await db.select().from(SubmissionAttemptsSchema).all()
-        expect(rows).toHaveLength(1)
-        expect(rows[0]).toMatchObject({ status: 'confirmed' })
+        await vi.waitFor(async () => {
+            const rows = await db.select().from(SubmissionAttemptsSchema).all()
+            expect(rows).toHaveLength(1)
+            expect(rows[0]).toMatchObject({ status: 'confirmed' })
+        })
     })
 
     test('writes no row when no txid can be derived', async () => {
@@ -614,7 +619,7 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         await submitAndAutoRefreshCore(
             baseInput({ signedTxns: [signedWithoutTxId], algokit }),
         )
-        await flushMicrotasks()
+        await settle()
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows).toHaveLength(0)
@@ -627,7 +632,6 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         const result = await submitAndAutoRefreshCore(
             baseInput({ db: undefined, algokit }),
         )
-        await flushMicrotasks()
 
         expect(result).toEqual({ txIds: ['TX1'] })
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()

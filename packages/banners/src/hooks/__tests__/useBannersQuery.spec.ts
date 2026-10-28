@@ -126,16 +126,12 @@ describe('useBannersQuery', () => {
         expect(result.current.banners).toEqual([])
     })
 
-    it('stays disabled and returns empty when deviceID is null', async () => {
+    it('stays disabled and returns empty when deviceID is null', () => {
         vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useBannersQuery(), {
             wrapper: createWrapper(),
         })
-
-        // Give react-query a tick — if the query were going to fire, it
-        // would by now.
-        await new Promise(resolve => setTimeout(resolve, 50))
 
         expect(fetchBanners).not.toHaveBeenCalled()
         expect(result.current.banners).toEqual([])

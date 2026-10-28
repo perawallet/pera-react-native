@@ -195,7 +195,9 @@ const confirmSend = async () => {
     )
     await waitFor(
         () => expect(screen.getByTestId('send_success')).toBeTruthy(),
-        { timeout: 10_000 },
+        {
+            timeout: 10_000,
+        },
     )
 }
 
@@ -261,6 +263,13 @@ describe('Flow: send from an Ethereum account', () => {
         renderSendConfirmationStack()
         await confirmSend()
 
+        // Broadcast is not mined: the screen says submitted and names Etherscan.
+        expect(
+            screen.getByText('send_funds.success.pending_title'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('send_funds.success.view_on_explorer'),
+        ).toBeTruthy()
         expect(sentRawTransactions).toHaveLength(1)
         // Read back by the address its signature recovers to.
         expect((await sentRecord())?.summary).toMatchObject({

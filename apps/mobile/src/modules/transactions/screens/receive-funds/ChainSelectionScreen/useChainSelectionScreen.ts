@@ -10,77 +10,40 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import {
-    useAccountChainOptionsResolver,
-    type AccountChainOption,
-} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
-import { useEnableChainAction } from '@hooks/useEnableChainAction'
-import { useLanguage } from '@hooks/useLanguage'
-import {
-    displayChainOption,
-    type DisplayedChainOption,
-} from '@utils/chainOptionDisplay'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
+import {
+    useAccountChainSelection,
+    type UseAccountChainSelectionResult,
+} from '../../../hooks/chain-selection/useAccountChainSelection'
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
-/** `address` is truncated by the chain's codec for display. */
-export type ReceiveChainRow = DisplayedChainOption<AccountChainOption>
-
-export type UseChainSelectionScreenResult = {
-    rows: ReceiveChainRow[]
-    /** The chain being enabled while its address is derived; unset otherwise. */
-    enablingChainId: Optional<ChainId>
-    handleSelectChain: (chainId: ChainId) => void
-    handleAddChain: (chainId: ChainId) => void
-}
+export type UseChainSelectionScreenResult = UseAccountChainSelectionResult
 
 export const useChainSelectionScreen = (): UseChainSelectionScreenResult => {
     const { selectedAccount, setSelectedAccount, setChainId } =
         useReceiveFunds()
     const navigation =
         useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()
-    const optionsOf = useAccountChainOptionsResolver('receive')
-    const { t } = useLanguage()
-    const { enablingChainId, enableChain } = useEnableChainAction(
-        t('errors.general.title'),
-    )
-
-    const rows = useMemo(
-        (): ReceiveChainRow[] =>
-            selectedAccount
-                ? optionsOf(selectedAccount).map(displayChainOption)
-                : [],
-        [selectedAccount, optionsOf],
-    )
-    const rowByChain = useMemo(
-        () => new Map(rows.map(row => [row.chainId, row])),
-        [rows],
-    )
 
     const handleSelectChain = useCallback(
         (chainId: ChainId) => {
-            if (!rowByChain.get(chainId)?.isEnabled) return
             setChainId(chainId)
             navigation.navigate('QRView')
         },
-        [rowByChain, setChainId, navigation],
+        [setChainId, navigation],
     )
 
-    const handleAddChain = useCallback(
-        (chainId: ChainId) => {
-            const row = rowByChain.get(chainId)
-            if (!selectedAccount || !row || row.isEnabled) return
-            enableChain(selectedAccount.id, chainId, setSelectedAccount)
-        },
-        [rowByChain, selectedAccount, setSelectedAccount, enableChain],
-    )
-
-    return { rows, enablingChainId, handleSelectChain, handleAddChain }
+    // The receive store holds a copy of the account, so swap in the one that holds the added chain.
+    return useAccountChainSelection({
+        account: selectedAccount,
+        capability: 'receive',
+        onSelectChain: handleSelectChain,
+        onChainEnabled: setSelectedAccount,
+    })
 }

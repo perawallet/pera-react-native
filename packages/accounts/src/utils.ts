@@ -23,7 +23,12 @@ import type {
     WatchAccount,
 } from './models'
 import { accountsChainAdapters } from './chain-adapter'
-import { chainAccountOf, hasCustody } from './credentials/accessors'
+import {
+    chainAccountOf,
+    hardwareDeviceOf,
+    hasCustody,
+    hdIndexOf,
+} from './credentials/accessors'
 
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own format — legacy apps auto-named accounts with a 6+6
@@ -55,19 +60,32 @@ const isTruncationOfAddress = (name: string, address: string) => {
 }
 
 /**
- * The account's name is just its own address on `chainId`, full or any
- * `...`/`…` cut of it. That isn't a distinguishing label, so callers treat the
- * account as unnamed.
+ * The account's name is just its own address on one of its chains, full or
+ * any `...`/`…` cut of it. That isn't a distinguishing label, so callers treat
+ * the account as unnamed.
  */
-export const isNamedAfterAddress = (
-    account: WalletAccount,
-    chainId: ChainId,
-): boolean => {
-    const address = chainAccountOf(account, chainId)?.address
-    if (!account.name || !address) return false
-    return (
-        account.name === address || isTruncationOfAddress(account.name, address)
-    )
+export const isNamedAfterOwnAddress = (account: WalletAccount): boolean => {
+    const { name } = account
+    if (!name) return false
+    return Object.values(account.chains).some(entry => {
+        const address = entry?.address
+        return (
+            !!address &&
+            (name === address || isTruncationOfAddress(name, address))
+        )
+    })
+}
+
+/**
+ * The account's 1-based position in its seed or device, or `undefined` for
+ * custody with no index. HD accounts sum both axes: the app advances one at a
+ * time, so the other is 0 for every account it creates.
+ */
+export const accountNumberOf = (account: WalletAccount): number | undefined => {
+    const hd = hdIndexOf(account)
+    if (hd) return hd.account + hd.keyIndex + 1
+    const hardware = hardwareDeviceOf(account)
+    return hardware ? hardware.accountIndex + 1 : undefined
 }
 
 /** The account's name, or its address on `chainId` truncated by the chain's codec when it has none. */
@@ -79,7 +97,7 @@ export const getAccountDisplayName = (
     const address = chainAccountOf(account, chainId)?.address
     if (!address) return account.name || 'No Address Found'
     // Unnamed renders a single truncated address rather than the address twice.
-    if (account.name && !isNamedAfterAddress(account, chainId)) {
+    if (account.name && !isNamedAfterOwnAddress(account)) {
         return account.name
     }
     return addressCodecs.has(chainId)

@@ -16,6 +16,7 @@ import {
     accountRecordIdentity,
     accountRecordSeedReference,
     accountRecordType,
+    cachedRecordOverview,
     isNewerAccountRecord,
     mergeAccountRecord,
     orderAccountRecordChains,
@@ -178,6 +179,41 @@ describe('isNewerAccountRecord', () => {
         ['is absent', undefined],
     ])('is false for content %s', (_label, record) => {
         expect(isNewerAccountRecord(record)).toBe(false)
+    })
+})
+
+describe('cachedRecordOverview', () => {
+    it('lists each chain the record holds with its address, in record order', () => {
+        expect(
+            cachedRecordOverview(recordOf([hdWalletEntry, hdChainEntry])),
+        ).toEqual({
+            needsUpdate: false,
+            chains: [
+                { chain: 'algorand', address: 'ALGO' },
+                { chain: 'ethereum', address: '0xeth' },
+            ],
+        })
+    })
+
+    it("still lists a newer client's chains, and marks the record as needing an update", () => {
+        expect(
+            cachedRecordOverview(
+                recordOf([hdChainEntry], { formatVersion: 3 }),
+            ),
+        ).toEqual({
+            needsUpdate: true,
+            chains: [{ chain: 'ethereum', address: '0xeth' }],
+        })
+    })
+
+    it.each([
+        ['is absent', undefined],
+        ['is not a record', { chains: 'nope' }],
+    ])('is empty when the content %s', (_label, record) => {
+        expect(cachedRecordOverview(record)).toEqual({
+            needsUpdate: false,
+            chains: [],
+        })
     })
 })
 

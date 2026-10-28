@@ -10,68 +10,34 @@
  limitations under the License
  */
 
-import React from 'react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useProvenPasskeysQuery } from '../useProvenPasskeysQuery'
+import { describe, expect, it, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const { listPasskeysMock, provenMock } = vi.hoisted(() => ({
-    listPasskeysMock: vi.fn(),
-    provenMock: { current: [] as { credentialId: string }[] },
+const { useProvenPasskeysForBackupQueryMock } = vi.hoisted(() => ({
+    useProvenPasskeysForBackupQueryMock: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useListPasskeyMetadataForBackup: () => listPasskeysMock,
-    useProvenPasskeysStore: (selector: (s: unknown) => unknown) =>
-        selector({ provenPasskeys: provenMock.current }),
+    useProvenPasskeysForBackupQuery: useProvenPasskeysForBackupQueryMock,
 }))
 
-const renderWithClient = () => {
-    const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    })
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    )
-    return {
-        client,
-        ...renderHook(() => useProvenPasskeysQuery(), { wrapper }),
-    }
-}
+import { useProvenPasskeysQuery } from '../useProvenPasskeysQuery'
 
 describe('useProvenPasskeysQuery', () => {
-    beforeEach(() => {
-        listPasskeysMock.mockReset()
-        provenMock.current = []
-    })
+    it('asks the package for the legacy chain and returns its result as is', () => {
+        const packageResult = {
+            passkeys: [{ credentialId: 'a' }],
+            isLoading: false,
+            isResolved: true,
+        }
+        useProvenPasskeysForBackupQueryMock.mockReturnValue(packageResult)
 
-    it('caches a count, never the credentials', async () => {
-        listPasskeysMock.mockResolvedValue([{ credentialId: 'a' }])
+        const { result } = renderHook(() => useProvenPasskeysQuery())
 
-        const { client, result } = renderWithClient()
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(client.getQueryData(['cloud-backup', 'proven-passkeys'])).toBe(1)
-    })
-
-    it('reads the credentials from the store', async () => {
-        provenMock.current = [{ credentialId: 'a' }]
-        listPasskeysMock.mockResolvedValue([])
-
-        const { result } = renderWithClient()
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.passkeys).toEqual([{ credentialId: 'a' }])
-        expect(result.current.isResolved).toBe(true)
-    })
-
-    it('stays unresolved when the sweep fails with nothing cached', async () => {
-        listPasskeysMock.mockRejectedValue(new Error('keychain locked'))
-
-        const { result } = renderWithClient()
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.isResolved).toBe(false)
+        expect(useProvenPasskeysForBackupQueryMock).toHaveBeenCalledWith(
+            LEGACY_CHAIN_ID,
+        )
+        expect(result.current).toBe(packageResult)
     })
 })

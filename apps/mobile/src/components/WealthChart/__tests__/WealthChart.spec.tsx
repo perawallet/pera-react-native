@@ -11,7 +11,7 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
 import '../../../i18n'
 import { WealthChart } from '../WealthChart'

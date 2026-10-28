@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Android adapter. Everything platform-specific lives in this file and its iOS twin;
 ...                 tests and shared keywords never branch on the platform.
-Library             AppiumLibrary    run_on_failure=Nothing
+Library             ../libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             Collections
 Library             Process
 
@@ -16,6 +16,8 @@ ${ANDROID_UDID}         ${EMPTY}
 ${ANDROID_SYSTEM_PORT}  8201
 ${WEBVIEW}             xpath=//android.webkit.WebView
 ${MENU_TAB}             xpath=//*[@resource-id='tab_menu_button' or @content-desc='Menu' or @name='Menu']
+# One probe for every startup prompt in @{STARTUP_PROMPT_IDS} (app.resource).
+${STARTUP_PROMPT_ANY}   xpath=//*[@resource-id='pin_security_prompt_dont_ask_button' or @resource-id='banners_carousel_modal_close' or @resource-id='banner_prompt_close' or @resource-id='analytics_consent_prompt_decline_button' or @resource-id='biometrics_disabled_prompt_dismiss_button' or @resource-id='legacy_quantum_prompt_dismiss_button' or @content-desc='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @content-desc='banner_prompt_close' or @content-desc='analytics_consent_prompt_decline_button' or @content-desc='biometrics_disabled_prompt_dismiss_button' or @content-desc='legacy_quantum_prompt_dismiss_button']
 
 
 *** Keywords ***
@@ -36,8 +38,11 @@ Open Pera
     IF    $ANDROID_UDID    Set To Dictionary    ${caps}    udid=${ANDROID_UDID}
     Open Application    ${APPIUM_URL}    &{caps}
     # autoGrantPermissions only covers installs Appium makes; an adb-installed build would raise
-    # the notification dialog over the app on its next launch.
-    Execute Script    mobile: changePermissions    permissions=all    appPackage=${ANDROID_PACKAGE}    action=grant
+    # the notification dialog over the app on its next launch. BrowserStack installs through
+    # Appium and refuses this adb grant, which would otherwise fail every suite's setup.
+    ${granted}    ${error}=    Run Keyword And Ignore Error
+    ...    Execute Script    mobile: changePermissions    permissions=all    appPackage=${ANDROID_PACKAGE}    action=grant
+    IF    $granted != 'PASS'    Log    Permissions not granted (expected on BrowserStack): ${error}    level=WARN
 
 Dismiss Dev Client Intro
     # First launch of a dev client opens its developer menu over the app; Continue leaves the menu up.
@@ -48,6 +53,7 @@ Dismiss Dev Client Intro
     Press Keycode    4
 
 Restart Pera
+    Drain Nav Log
     Terminate Application    ${ANDROID_PACKAGE}
     Activate Application    ${ANDROID_PACKAGE}
 
@@ -61,7 +67,7 @@ Dismiss Keyboard
 Enter Recovery Phrase
     # The import screen spreads a pasted phrase across its word fields.
     [Arguments]    ${phrase}
-    Input Text    xpath=//*[@resource-id='import_account_word_input_0' or @name='import_account_word_input_0' or @content-desc='import_account_word_input_0']    ${phrase}
+    Input Text    tid=import_account_word_input_0    ${phrase}
 
 Get Text In Container
     # A testID-only container is a resource-id on Android, with its text in following siblings.
@@ -99,6 +105,7 @@ Close Sheet
 Open Deeplink Cold
     [Documentation]    Fires the link at a stopped app, so it cold-starts on it (Linking.getInitialURL).
     [Arguments]    ${url}
+    Drain Nav Log
     Terminate Application    ${ANDROID_PACKAGE}
     Open Deeplink    ${url}
 

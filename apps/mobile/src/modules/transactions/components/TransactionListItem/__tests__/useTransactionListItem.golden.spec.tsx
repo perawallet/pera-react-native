@@ -14,7 +14,7 @@
 // HISTORY-01 golden, and keep the glyph the row drew before it read summaries.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import type {
     LocalizedText,
     TransactionIconKind,
@@ -130,11 +130,7 @@ const PREVIOUS_ROW_ICONS: Record<
     unknown: ['state-proof', 'unknown'],
 }
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={new QueryClient()}>
-        {children}
-    </QueryClientProvider>
-)
+const wrapper = createQueryClientWrapper()
 
 // Read from the stored row, independently of the summary's display hint.
 const factsOf = ({ item }: HistorySummaryGolden, assetId: string) => {

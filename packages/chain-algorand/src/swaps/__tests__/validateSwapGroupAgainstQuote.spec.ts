@@ -155,10 +155,8 @@ describe('validateSwapGroupAgainstQuote', () => {
     })
 
     it('rejects a drain when the quote swapper does not match the group (Variant A no-op guard)', () => {
-        // A wrong swapper used to disable the validator entirely: `outflow` is
-        // only populated for matching senders, so a mismatch left it empty and
-        // the spend-ceiling loop ran zero times — a full drain passed. With
-        // fail-closed the mismatched sender throws first.
+        // `outflow` counts only the quote's swapper, so a mismatched swapper
+        // would otherwise leave the spend ceiling unchecked.
         const wrongSwapperQuote = {
             ...baseQuote,
             swapperAddress: 'WRONG_SWAPPER_ADDRESS',

@@ -10,45 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import {
-    useListPasskeyMetadataForBackup,
-    useProvenPasskeysStore,
-    type BackupPasskey,
+    useProvenPasskeysForBackupQuery,
+    type UseProvenPasskeysForBackupQueryResult,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-export type UseProvenPasskeysQueryResult = {
-    passkeys: BackupPasskey[]
-    isLoading: boolean
-    /** False while the list cannot be trusted: the sweep is still running, or
-     *  it failed and no earlier sync tick left a result behind. An empty list
-     *  read as fact renders as "0 passkeys, all in sync", which is the wrong
-     *  direction for a backup screen to guess in. */
-    isResolved: boolean
-}
-
-/** Re-deriving a credential costs a PBKDF2 per owning seed, so the sweep runs
- *  here and the store is the read side: a sync tick running the same sweep in
- *  the background refreshes an open screen without a refetch. */
-export const useProvenPasskeysQuery = (): UseProvenPasskeysQueryResult => {
-    const listPasskeyMetadata = useListPasskeyMetadataForBackup(LEGACY_CHAIN_ID)
-    const provenPasskeys = useProvenPasskeysStore(state => state.provenPasskeys)
-
-    const sweep = useCallback(
-        async () => (await listPasskeyMetadata()).length,
-        [listPasskeyMetadata],
-    )
-
-    const { isLoading, isError } = useQuery({
-        queryKey: ['cloud-backup', 'proven-passkeys'],
-        queryFn: sweep,
-    })
-
-    return {
-        passkeys: provenPasskeys,
-        isLoading,
-        isResolved: provenPasskeys.length > 0 || (!isLoading && !isError),
-    }
-}
+// The package takes the chain from its caller; this screen's passkeys are
+// still the legacy chain's.
+export const useProvenPasskeysQuery =
+    (): UseProvenPasskeysForBackupQueryResult =>
+        useProvenPasskeysForBackupQuery(LEGACY_CHAIN_ID)
