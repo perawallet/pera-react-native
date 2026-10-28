@@ -29,6 +29,10 @@ Packages default to the `node` environment. A spec that needs the DOM, usually o
 hook with `renderHook`, opts in with a `// @vitest-environment jsdom` comment after its license
 header.
 
+lanekeep enforces all three: `pera/vitest-pool-config` (the pool and the setup),
+`pera/dom-spec-environment` (the pragma), and `pera/no-workspace-require-in-tests`, because a mock
+that `require()`s an ESM workspace package passes on Node 24 and fails on CI's Node 22.
+
 ## What to test
 
 The pyramid for this repo, from most to least invested in:
