@@ -61,8 +61,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
         canOpenPeerUrl,
         handlePressUrl,
         deliveryError,
-        noAccountsNote,
         siteSafety,
+        noAccountsNote,
     } = useWcConnectScreen()
 
     const renderAccountRow = ({

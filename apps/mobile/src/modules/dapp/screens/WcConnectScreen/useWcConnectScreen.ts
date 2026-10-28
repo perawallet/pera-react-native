@@ -88,9 +88,9 @@ type UseWcConnectScreenResult = {
     handlePressUrl: () => void
     /** A decision failed to reach the bridge; the button stays spinning by design. */
     deliveryError: boolean
+    siteSafety: UseSiteSafetyGateResult
     /** Shown in place of the account list when no account can connect. */
     noAccountsNote: string
-    siteSafety: UseSiteSafetyGateResult
 }
 
 // The active account when it is signable, otherwise nothing pre-checked
@@ -249,7 +249,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         canOpenPeerUrl: toValidatedBrowserUrl(proposal?.peer.url) !== null,
         handlePressUrl,
         deliveryError,
-        noAccountsNote,
         siteSafety,
+        noAccountsNote,
     }
 }
