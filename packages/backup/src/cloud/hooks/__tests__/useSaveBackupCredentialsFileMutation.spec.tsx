@@ -121,12 +121,10 @@ describe('useSaveBackupCredentialsFileMutation', () => {
 
             expect(saveToDevice).not.toHaveBeenCalled()
             expect(cloudSave).not.toHaveBeenCalled()
-            expect(onError).toHaveBeenCalledWith(
+            expect(onError.mock.calls[0].slice(0, 2)).toEqual([
                 expect.any(NoBackupCredentialsError),
                 input,
-                undefined,
-                expect.anything(),
-            )
+            ])
         },
     )
 
@@ -137,12 +135,10 @@ describe('useSaveBackupCredentialsFileMutation', () => {
 
         await act(() => result.current.saveCredentialsFile(input))
 
-        expect(onSuccess).toHaveBeenCalledWith(
+        expect(onSuccess.mock.calls[0].slice(0, 2)).toEqual([
             'cancelled',
             input,
-            undefined,
-            expect.anything(),
-        )
+        ])
     })
 
     it('reports a writer rejection with the destination it was for', async () => {
@@ -155,12 +151,7 @@ describe('useSaveBackupCredentialsFileMutation', () => {
             result.current.saveCredentialsFile(input).catch(() => undefined),
         )
 
-        expect(onError).toHaveBeenCalledWith(
-            error,
-            input,
-            undefined,
-            expect.anything(),
-        )
+        expect(onError.mock.calls[0].slice(0, 2)).toEqual([error, input])
     })
 
     it('exposes pending and the destination while a save is in flight', async () => {

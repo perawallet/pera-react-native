@@ -15,12 +15,13 @@ description: Create a new React hook following Pera conventions
 
 ## 2. Determine Location
 
-| Scope                 | Location                                            |
-| --------------------- | --------------------------------------------------- |
-| Domain-level (shared) | `modules/[mod]/hooks/`                              |
-| Cross-domain          | `modules/[originDomain]/hooks/` (export via barrel) |
-| Screen-specific       | `modules/[mod]/screens/[Screen]/use[Screen].ts`     |
-| Component-specific    | Same folder as the component                        |
+| Scope                 | Location                                                   |
+| --------------------- | ---------------------------------------------------------- |
+| Query or mutation     | `packages/[pkg]/src/hooks/` (or the sub-domain's `hooks/`) |
+| Domain-level (shared) | `modules/[mod]/hooks/` (stores and presentation only)      |
+| Cross-domain          | `modules/[originDomain]/hooks/` (export via barrel)        |
+| Screen-specific       | `modules/[mod]/screens/[Screen]/use[Screen].ts`            |
+| Component-specific    | Same folder as the component                               |
 
 ## Steps for React Query Hook
 

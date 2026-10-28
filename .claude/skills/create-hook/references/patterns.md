@@ -158,13 +158,16 @@ export const useAccountScreen = () => {
 ## Domain Hook Directory Structure
 
 ```
-modules/accounts/
+packages/accounts/src/hooks/       ← Queries and mutations live in the package
+├── useAccountsQuery.ts
+├── useAccountBalanceQuery.ts
+├── useCreateAccountMutation.ts
+└── index.ts                       ← Barrel file
+
+apps/mobile/src/modules/accounts/
 ├── hooks/
-│   ├── useAccountsQuery.ts
-│   ├── useAccountBalanceQuery.ts
-│   ├── useCreateAccountMutation.ts
-│   ├── useAccountsStore.ts
-│   └── index.ts                   ← Barrel file
+│   ├── useAccountsStore.ts        ← App-side state and presentation hooks only
+│   └── index.ts
 ├── screens/
 └── components/
 ```

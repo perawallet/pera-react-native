@@ -12,8 +12,7 @@
 
 import { useQueries, type UseQueryResult } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchDelegatedAddresses } from '../chain-adapter'
-import { getDelegatedAddressesQueryKey } from './querykeys'
+import { delegatedAddressesQueryOptions } from './delegatedAddressesQueryOptions'
 
 export type UseAnyDelegatedAddressesQueryResult = {
     /** Some lookup found at least one address delegated to its account. */
@@ -36,12 +35,8 @@ export const useAnyDelegatedAddressesQuery = (
     scope: ChainScope,
 ): UseAnyDelegatedAddressesQueryResult =>
     useQueries({
-        // Shares its key with `useDelegatedAddressesQuery`, so a prior fetch
-        // for the same address is reused instead of doubling the round-trip.
-        queries: addresses.map(address => ({
-            queryKey: getDelegatedAddressesQueryKey(address, scope),
-            queryFn: () => fetchDelegatedAddresses(address, scope),
-            staleTime: 30_000,
-        })),
+        queries: addresses.map(address =>
+            delegatedAddressesQueryOptions(address, scope),
+        ),
         combine: combineLookups,
     })

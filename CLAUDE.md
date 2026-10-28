@@ -43,7 +43,7 @@ New lint rules: per-file syntax over linted source goes in oxlint (built-in, or 
 
 - **Complex logic MUST be extracted** from component body into a colocated `use[ComponentName]` hook
 - React Query is **REQUIRED** for all async requests; Zustand is **REQUIRED** for all local state
-- Query and mutation hooks live in their domain package's `src/hooks/`; app modules call them. `no-restricted-imports` in `apps/mobile/.oxlintrc.json` blocks the raw TanStack hooks under `src/modules/**` (`useQueryClient` is fine)
+- Query and mutation hooks live in their domain package's `hooks/` folder (`src/hooks/`, or the sub-domain's); app modules call them. `no-restricted-imports` in `apps/mobile/.oxlintrc.json` blocks the raw TanStack hooks under `src/modules/**` (`useQueryClient` is fine)
 - Cross-domain hooks: keep in origin domain, export via barrel, import via `@modules/[domain]`
 - Declare an explicit `Use[Name]QueryResult` return type; return safe defaults (`data ?? []`) rather than the raw query object
 

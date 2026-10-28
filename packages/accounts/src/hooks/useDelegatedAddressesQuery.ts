@@ -12,8 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchDelegatedAddresses } from '../chain-adapter'
-import { getDelegatedAddressesQueryKey } from './querykeys'
+import { delegatedAddressesQueryOptions } from './delegatedAddressesQueryOptions'
 
 type UseDelegatedAddressesQueryResult = {
     /** Addresses delegated to `address`; `undefined` until the query resolves */
@@ -28,14 +27,8 @@ export const useDelegatedAddressesQuery = (
     scope: ChainScope,
 ): UseDelegatedAddressesQueryResult => {
     const query = useQuery({
-        queryKey: getDelegatedAddressesQueryKey(address, scope),
-        queryFn: () => fetchDelegatedAddresses(address, scope),
+        ...delegatedAddressesQueryOptions(address, scope),
         enabled: !!address,
-        // 30s lets `prefetchLedgerAccountPreview`'s warm-up actually pay off
-        // for the short-lived Ledger import session without serving
-        // long-stale delegation data; rescan flows invalidate this key when
-        // fresher data is explicitly required.
-        staleTime: 30_000,
     })
 
     return {

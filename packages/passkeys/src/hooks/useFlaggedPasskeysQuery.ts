@@ -51,10 +51,6 @@ export const useFlaggedPasskeysQuery = (): UseFlaggedPasskeysQueryResult => {
 
     return {
         flaggedPasskeys: query.data?.flagged ?? NO_FLAGGED_PASSKEYS,
-        // `isSuccess` alone is not enough: the read resolves on every failure
-        // it can catch, so its own `isComplete` is the only thing separating
-        // "nothing is flagged" from "nothing could be read", and treating the
-        // second as the first is the one wrong answer that is irreversible.
         isComplete: query.isSuccess && query.data.isComplete,
     }
 }
