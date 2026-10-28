@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity } from '@components/core'
-import type { IconName } from '@components/core/PWIcon/constants'
+import {
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    type IconName,
+} from '@components/core'
 import { useStyles } from './styles'
 
 export type AssetSecurityTagVariant = 'neutral' | 'warning'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { drainOverflow } from '@components/core/PWText/overflowRegistry'
+import { drainOverflow } from '@components/core'
 
 import { getTourSteps } from './steps'
 import { runTourStep, TOUR_ERROR_MARKER } from './runTourStep'

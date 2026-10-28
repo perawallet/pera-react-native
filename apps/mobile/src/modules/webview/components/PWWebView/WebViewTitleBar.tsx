@@ -12,11 +12,8 @@
 
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { PWIcon } from '@components/core/PWIcon'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWTouchableOpacity, PWView, PWText } from '@components/core'
 import { useStyles } from './styles'
-import { PWText } from '@components/core/PWText'
 import { getTestProps } from '@utils/test-id-helper'
 import { getDisplayHost } from './getDisplayHost'
 

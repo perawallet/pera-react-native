@@ -22,7 +22,7 @@ import {
 } from '@modules/settings/screens/developer/gallery-catalog/launchGalleryEntry'
 import type { GalleryLaunch } from '@modules/settings/screens/developer/gallery-catalog/types'
 
-import { drainOverflow } from '@components/core/PWText/overflowRegistry'
+import { drainOverflow } from '@components/core'
 
 import { getTourStep } from './steps'
 import type { RunTourStepOutcome, RunTourStepParams } from '../types'
