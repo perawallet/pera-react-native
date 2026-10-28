@@ -14,9 +14,7 @@
 
 All external components (from `@rneui/themed`, `react-native`, third-party) **MUST** be wrapped in `PW`-prefixed components before use. These live in `apps/mobile/src/components/core/PW[Name]/`.
 
-**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
-
-`no-restricted-imports` fails a `@components/core/<subpath>` import outside `components/core` (tests are exempt). Files inside `components/core` import siblings by subpath, because a barrel import there would import itself.
+**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`. `no-restricted-imports` fails a `@components/core/<subpath>` import outside `components/core` (tests exempt); files inside it import siblings by subpath, because a barrel import there would import itself.
 
 Exception: basic layout primitives used only inside PW components. Loading spinners are `PWLoadingIndicator`.
 

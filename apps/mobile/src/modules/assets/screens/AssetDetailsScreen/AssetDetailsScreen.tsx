@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
 import { EmptyView } from '@components/EmptyView'
@@ -21,6 +20,7 @@ import type { AccountStackParamsList } from '@modules/accounts'
 import { createPWTabNavigator, PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
+import { useStyles } from './styles'
 import { useAssetDetailsScreen } from './useAssetDetailsScreen'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<

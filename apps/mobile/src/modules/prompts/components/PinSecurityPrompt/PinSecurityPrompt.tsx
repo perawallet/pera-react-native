@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { usePinSecurityPrompt } from './usePinSecurityPrompt'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PromptViewProps } from '@modules/prompts/models'
 import {
@@ -21,6 +19,8 @@ import {
     PWTouchableOpacity,
 } from '@components/core'
 import LockImage from '@assets/icons/lock.svg'
+import { usePinSecurityPrompt } from './usePinSecurityPrompt'
+import { useStyles } from './styles'
 
 export const PinSecurityPrompt = (props: PromptViewProps) => {
     const styles = useStyles()

@@ -98,9 +98,14 @@ describe('import/no-default-export', () => {
 })
 
 describe('no-restricted-imports', () => {
-    type RestrictedImports = [string, { paths: unknown[] }]
+    type RestrictedImports = [
+        string,
+        { paths: unknown[]; patterns?: unknown[] },
+    ]
+    const options = (override: OxlintOverride) =>
+        (override.rules['no-restricted-imports'] as RestrictedImports)[1]
     const paths = (override: OxlintOverride): unknown[] =>
-        (override.rules['no-restricted-imports'] as RestrictedImports)[1].paths
+        options(override).paths
 
     // A later override replaces the rule's options rather than merging them, so
     // a narrower block that drops one of the src/** bans silently lifts it there.
@@ -117,6 +122,29 @@ describe('no-restricted-imports', () => {
             expect(paths(override)).toEqual(
                 expect.arrayContaining(paths(general)),
             )
+        }
+    })
+
+    // Components under core import siblings by subpath, so only they go without the barrel pattern.
+    it('bans core subpath imports everywhere in mobile source but inside components/core', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'no-restricted-imports')
+        const [general, ...narrower] = overrides
+        const core = overrides.filter(
+            o =>
+                o.files.length === 1 && o.files[0] === 'src/components/core/**',
+        )
+
+        expect(core).toHaveLength(1)
+        expect(options(core[0]).patterns).toBeUndefined()
+        expect(overrides.indexOf(core[0])).toBeGreaterThan(0)
+
+        const barrel = options(general).patterns
+        expect(barrel).toEqual([
+            expect.objectContaining({ regex: '^@components/core/' }),
+        ])
+        for (const override of narrower.filter(o => o !== core[0])) {
+            expect(options(override).patterns).toEqual(barrel)
         }
     })
 })
