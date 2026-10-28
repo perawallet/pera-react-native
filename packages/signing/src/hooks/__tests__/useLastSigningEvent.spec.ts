@@ -110,19 +110,22 @@ describe('useLastSigningEvent', () => {
 
     it('keeps one bus subscription across re-renders with a fresh inline predicate', () => {
         const subscribe = vi.spyOn(signingEventBus, 'subscribe')
-        const { rerender } = renderHook(() =>
-            useLastSigningEvent(
-                (e: SigningLifecycleEvent): e is StartedEvent =>
-                    e.type === 'started',
-                'r1',
-            ),
-        )
+        try {
+            const { rerender } = renderHook(() =>
+                useLastSigningEvent(
+                    (e: SigningLifecycleEvent): e is StartedEvent =>
+                        e.type === 'started',
+                    'r1',
+                ),
+            )
 
-        rerender()
-        rerender()
+            rerender()
+            rerender()
 
-        expect(subscribe).toHaveBeenCalledTimes(1)
-        subscribe.mockRestore()
+            expect(subscribe).toHaveBeenCalledTimes(1)
+        } finally {
+            subscribe.mockRestore()
+        }
     })
 
     it('matches live events with the predicate from the latest render', () => {
