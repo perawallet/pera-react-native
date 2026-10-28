@@ -17,6 +17,7 @@ import {
     type ChainDescriptor,
     type ChainId,
     type ChainNetwork,
+    type EvmChainId,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
@@ -25,15 +26,12 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from '@packages/chain-algorand/src/capability-defaults'
-import { evmCapabilityDefaults as ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { evmCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
-
-const ethereumDescriptor = evmChainOf('ethereum').descriptor
-const ethereumAddressCodec = createEvmAddressCodec(evmChainOf('ethereum'))
 
 export const allCapabilities = (isEnabled: boolean): ChainCapabilities =>
     Object.fromEntries(
@@ -83,18 +81,23 @@ export const fixtureEthereumDescriptor: ChainDescriptor = {
 }
 
 /**
- * The unit registry starts with Algorand alone; this adds the real Ethereum
+ * The unit registry starts with Algorand alone; this adds an EVM chain's real
  * descriptor at its shipped defaults, read from source so specs that mock
  * `wallet-core-assets` don't load the Ethereum adapters.
  */
-export const registerEthereumChain = (): void => {
+export const registerEvmChain = (chainId: EvmChainId): void => {
     const { chains } = getProvider()
-    if (!chains.has(ETHEREUM_CHAIN_ID)) {
-        chains.register(ethereumDescriptor, ethereumCapabilityDefaults)
+    const chain = evmChainOf(chainId)
+    if (!chains.has(chainId)) {
+        chains.register(chain.descriptor, evmCapabilityDefaults)
     }
-    if (!addressCodecs.has(ETHEREUM_CHAIN_ID)) {
-        addressCodecs.register(ethereumAddressCodec)
+    if (!addressCodecs.has(chainId)) {
+        addressCodecs.register(createEvmAddressCodec(chain))
     }
+}
+
+export const registerEthereumChain = (): void => {
+    registerEvmChain('ethereum')
 }
 
 /** Back to the unit registry's starting point, Algorand alone at its shipped defaults. */

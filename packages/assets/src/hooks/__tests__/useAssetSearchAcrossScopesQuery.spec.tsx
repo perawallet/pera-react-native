@@ -18,6 +18,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters } from '../../chain-adapter'
+import { useAssetSearchAvailabilityStore } from '../../store/search-availability-store'
 import {
     fakeAssetsAdapter,
     registerFakeAssetsAdapter,
@@ -40,6 +41,7 @@ describe('useAssetSearchAcrossScopesQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useAssetSearchAvailabilityStore.getState().resetState()
         registerFakeAssetsAdapter({ search: algorandSearch })
         assetsChainAdapters.register(
             fakeAssetsAdapter({
@@ -85,6 +87,50 @@ describe('useAssetSearchAcrossScopesQuery', () => {
         })
         expect(result.current.hasNextPage).toBe(false)
         expect(ethereumSearch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not run, and is not loading, once every scope was found unavailable', () => {
+        const { markSearchUnavailable } =
+            useAssetSearchAvailabilityStore.getState()
+        const algorandReason = new Error('no services')
+        const ethereumReason = new Error('refused')
+        markSearchUnavailable(ALGORAND, algorandReason)
+        markSearchUnavailable(ETHEREUM, ethereumReason)
+
+        const { result } = renderHook(
+            () => useAssetSearchAcrossScopesQuery('usd', [ALGORAND, ETHEREUM]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        expect(result.current.isUnavailable).toBe(true)
+        expect(result.current.unavailableReasons).toEqual([
+            algorandReason,
+            ethereumReason,
+        ])
+        expect(result.current.isLoading).toBe(false)
+        expect(algorandSearch).not.toHaveBeenCalled()
+        expect(ethereumSearch).not.toHaveBeenCalled()
+    })
+
+    it('still runs while only some scopes were found unavailable', async () => {
+        const ethereumReason = new Error('refused')
+        useAssetSearchAvailabilityStore
+            .getState()
+            .markSearchUnavailable(ETHEREUM, ethereumReason)
+        algorandSearch.mockResolvedValue({
+            results: [asset('1')],
+            nextCursor: undefined,
+        })
+
+        const { result } = renderHook(
+            () => useAssetSearchAcrossScopesQuery('usd', [ALGORAND, ETHEREUM]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.results).toHaveLength(1))
+        expect(result.current.isUnavailable).toBe(false)
+        expect(result.current.unavailableReasons).toEqual([ethereumReason])
+        expect(ethereumSearch).not.toHaveBeenCalled()
     })
 
     it('passes the collectible flag to every scope', async () => {
