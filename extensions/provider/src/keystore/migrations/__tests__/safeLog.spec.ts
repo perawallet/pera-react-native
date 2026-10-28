@@ -11,6 +11,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 
 describe('safeWarn', () => {
@@ -18,18 +19,24 @@ describe('safeWarn', () => {
         vi.restoreAllMocks()
     })
 
-    it('forwards the message to console.warn', () => {
-        const consoleWarn = vi
-            .spyOn(console, 'warn')
-            .mockImplementation(() => {})
+    it('forwards the message to the shared logger', () => {
+        const loggerWarn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
         safeWarn('a warning')
 
-        expect(consoleWarn).toHaveBeenCalledWith('a warning')
+        expect(loggerWarn).toHaveBeenCalledWith('a warning')
     })
 
     it('does not throw when console.warn itself throws', () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        expect(() => safeWarn('a warning')).not.toThrow()
+    })
+
+    it('does not throw when the logger itself throws', () => {
+        vi.spyOn(logger, 'warn').mockImplementation(() => {
             throw new Error('LogBox is not ready')
         })
 

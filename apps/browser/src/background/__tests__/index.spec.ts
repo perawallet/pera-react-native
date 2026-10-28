@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { redactSensitiveContext } from '@perawallet/wallet-core-shared'
 
 const handleAutoLockAlarmMock = vi.fn().mockResolvedValue(undefined)
 const ensureOffscreenDocumentMock = vi.fn().mockResolvedValue(undefined)
@@ -18,6 +19,21 @@ const installConnectionsApprovalRouterMock = vi.fn()
 const installConnectionsHeartbeatMock = vi.fn()
 const handleIntegrityAlarmMock = vi.fn().mockResolvedValue(undefined)
 const handleEnrolDeadlineAlarmMock = vi.fn().mockResolvedValue(undefined)
+const loggerMock = vi.hoisted(() => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+}))
+
+// The suite calls vi.resetModules() before each import, so a spy installed on
+// the real logger would watch a stale instance.
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    logger: loggerMock,
+}))
 
 vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
@@ -59,6 +75,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         appEnvironment: 'development',
         appBuildNumber: '',
         backendAPIKey: '',
+        webIntegrityBearerEnabled: true,
     },
 }))
 
@@ -105,6 +122,7 @@ describe('background/index onAlarm routing', () => {
         ensureOffscreenDocumentMock.mockClear()
         handleIntegrityAlarmMock.mockClear()
         handleEnrolDeadlineAlarmMock.mockClear()
+        Object.values(loggerMock).forEach(fn => fn.mockClear())
 
         globalThis.chrome = {
             runtime: {
@@ -170,7 +188,6 @@ describe('background/index onAlarm routing', () => {
     // background sweep with nobody awaiting its result, not a dApp request
     // that needs an answer.
     it('does not leave an unhandled rejection when ensureOffscreenDocument fails on a heartbeat tick', async () => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         const boom = new Error('offscreen creation failed')
         ensureOffscreenDocumentMock.mockRejectedValueOnce(boom)
         const alarm = {
@@ -180,11 +197,24 @@ describe('background/index onAlarm routing', () => {
         expect(() => onAlarmListener(alarm)).not.toThrow()
 
         await vi.waitFor(() => {
-            expect(errorSpy).toHaveBeenCalledWith(
+            expect(loggerMock.error).toHaveBeenCalledWith(
                 expect.stringContaining('connections heartbeat'),
-                boom,
+                { error: boom },
             )
         })
-        errorSpy.mockRestore()
+    })
+
+    it('logs the resolved config under keys the logger does not redact', () => {
+        const context = {
+            appEnvironment: 'development',
+            build: '(local)',
+            integrityHeaderEnabled: true,
+        }
+
+        expect(loggerMock.info).toHaveBeenCalledWith(
+            '[pera] service worker config',
+            context,
+        )
+        expect(redactSensitiveContext(context)).toEqual(context)
     })
 })

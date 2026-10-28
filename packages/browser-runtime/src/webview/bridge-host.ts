@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import { WEBVIEW_BRIDGE_PORT_PREFIX } from './bridge-wire'
 
 export type DiscoverBridgeHost = {
@@ -45,9 +46,7 @@ export const createDiscoverBridgeHost = (params: {
             return // another mount's port — leave it alone
         }
         if (!params.trustedOrigins.includes(port.sender?.origin ?? '')) {
-            console.warn(
-                '[pera] discover bridge port rejected: origin mismatch',
-            )
+            logger.warn('[pera] discover bridge port rejected: origin mismatch')
             port.disconnect()
             return
         }

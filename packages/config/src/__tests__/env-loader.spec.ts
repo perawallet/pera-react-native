@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
+import { ZodError } from 'zod'
 import { loadEnvOverrides, getConfigWithEnvOverrides } from '../env-loader'
 import {
     EVM_CHAIN_NETWORKS,
@@ -473,20 +474,18 @@ describe('env-loader', () => {
             )
         })
 
-        test('logs error and throws when validation fails', () => {
-            const consoleErrorSpy = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
-
+        test('throws with the schema error as its cause', () => {
             process.env.MAINNET_BACKEND_URL = 'invalid-url'
 
-            expect(() => getConfigWithEnvOverrides(mockBaseConfig)).toThrow()
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                'Configuration validation failed with env overrides:',
-                expect.anything(),
-            )
+            let thrown: unknown
+            try {
+                getConfigWithEnvOverrides(mockBaseConfig)
+            } catch (error) {
+                thrown = error
+            }
 
-            consoleErrorSpy.mockRestore()
+            expect(thrown).toBeInstanceOf(Error)
+            expect((thrown as Error).cause).toBeInstanceOf(ZodError)
         })
 
         test('preserves all base config properties when only some are overridden', () => {

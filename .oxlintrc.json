@@ -240,6 +240,11 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "no-console": "error" }
+    },
+    {
       "files": ["packages/chain-algorand/**"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     },

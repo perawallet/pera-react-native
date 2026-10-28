@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* oxlint-disable no-console -- sqlite-wasm's stderr hook, in a worker bundle that deliberately imports nothing but sqlite-wasm */
+
 // Dedicated worker hosting sqlite-wasm over OPFS. The SyncAccessHandle pool VFS
 // needs no COOP/COEP/SharedArrayBuffer, but sync access handles only exist
 // inside dedicated workers — which is why the offscreen document spawns this
