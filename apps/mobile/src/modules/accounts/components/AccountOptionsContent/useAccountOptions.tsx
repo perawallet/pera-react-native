@@ -43,6 +43,7 @@ import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -61,6 +62,7 @@ import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
+import { useIsMultichain } from '../../hooks/useIsMultichain'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -88,6 +90,9 @@ export type RemoveConfirmView =
 type BackupChoice = 'delete' | 'keep'
 
 export type UseAccountOptionsResult = {
+    sheetTitle: string
+    /** Names the account when more than one chain is active. */
+    networksTitle: string
     /** Rename, notifications, remove, then the account's secret if it has one. */
     topActions: SheetOption[]
     sharedAccountOptions: SheetOption[]
@@ -128,6 +133,12 @@ export const useAccountOptions = ({
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const { getAccountName } = useAccountName()
+    const isMultichain = useIsMultichain()
+    const sheetTitle = getAccountName(account, accountChainId)
+    const networksTitle = isMultichain
+        ? t('account_options.networks_title_named', { name: sheetTitle })
+        : t('account_options.networks_title')
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
 
@@ -539,6 +550,8 @@ export const useAccountOptions = ({
     ])
 
     return {
+        sheetTitle,
+        networksTitle,
         topActions,
         sharedAccountOptions,
         networks,

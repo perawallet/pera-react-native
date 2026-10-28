@@ -138,6 +138,11 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+let mockIsMultichain = false
+vi.mock('../../../hooks/useIsMultichain', () => ({
+    useIsMultichain: () => mockIsMultichain,
+}))
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
@@ -307,6 +312,58 @@ describe('useAccountOptions', () => {
                     return false
                 }
             }
+        })
+    })
+
+    describe('titles', () => {
+        beforeEach(() => {
+            mockIsMultichain = false
+        })
+
+        const hdAccount = (name?: string): WalletAccount => ({
+            id: 'acc-hd',
+            chains: { algorand: { address: 'HDADDRESS', keyPairId: 'key-hd' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            name,
+        })
+
+        const titlesOf = (account: WalletAccount) => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current
+        }
+
+        it('titles an unnamed Universal Wallet account by its number', () => {
+            expect(titlesOf(hdAccount()).sheetTitle).toBe(
+                'account_info.account_number',
+            )
+        })
+
+        it('titles a named account by its name', () => {
+            expect(titlesOf(hdAccount('Savings')).sheetTitle).toBe('Savings')
+        })
+
+        it('heads the networks with the account name when several chains are on', () => {
+            mockIsMultichain = true
+
+            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
+                'account_options.networks_title_named',
+            )
+        })
+
+        it('keeps the plain networks heading on a single chain', () => {
+            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
+                'account_options.networks_title',
+            )
         })
     })
 
