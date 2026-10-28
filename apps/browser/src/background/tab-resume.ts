@@ -11,6 +11,7 @@
  */
 
 import { isTabResumeDoneMessage } from '@perawallet/wallet-core-browser-runtime'
+import { logger } from '@perawallet/wallet-core-shared'
 
 /**
  * Closes a tab that finished a flow handed over from the toolbar popup and
@@ -51,7 +52,7 @@ export const installTabResumeRoute = ({
                     await chromeLike.action.openPopup().catch(() => undefined)
                 }
             })().catch((error: unknown) => {
-                console.warn('[pera] closing the resume tab failed:', error)
+                logger.warn('[pera] closing the resume tab failed', { error })
             })
             return false
         },

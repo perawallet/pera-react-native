@@ -67,12 +67,9 @@ export function getConfigWithEnvOverrides(baseConfig: Config): Config {
     try {
         return configSchema.parse(mergedConfig)
     } catch (error) {
-        console.error(
-            'Configuration validation failed with env overrides:',
-            error,
-        )
         throw new Error(
             'Invalid configuration after applying environment variables',
+            { cause: error },
         )
     }
 }

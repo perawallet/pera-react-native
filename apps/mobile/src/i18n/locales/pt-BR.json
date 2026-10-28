@@ -2948,13 +2948,17 @@
             "subtitle": "Sua transação está sendo processada pela rede Algorand.",
             "title_hardware": "Conectando ao seu dispositivo Ledger",
             "subtitle_hardware": "Tentando conectar a {{deviceName}}. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
-            "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto."
+            "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
+            "broadcast_subtitle": "Sua transação está sendo enviada para a rede {{network}}."
         },
         "success": {
             "title": "Transação processada",
             "asset_transferred_title": "Ativo transferido",
             "subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
+            "pending_title": "Transação enviada",
+            "pending_subtitle": "Sua transação foi enviada para a rede {{network}} e está aguardando confirmação.",
             "view_in_explorer": "Ver detalhes da transação no Pera Explorer",
+            "view_on_explorer": "Ver no {{explorer}}",
             "done": "Concluir"
         },
         "close_account": {

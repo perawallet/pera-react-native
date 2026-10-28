@@ -56,6 +56,11 @@ export interface ChainProtocolFacts {
     hasTokenApproval: boolean
     /** An account must opt in to an asset before it can receive it. */
     requiresAssetOptIn: boolean
+    /**
+     * A send resolves only once the transaction is confirmed. False means it
+     * resolves on broadcast and can still be dropped or revert.
+     */
+    confirmsOnSubmit: boolean
     /** UTF-8 bytes a transaction's free-text note may hold; absent when the chain has no note field. */
     maxNoteBytes?: number
 }
@@ -69,6 +74,11 @@ export interface ExplorerUrlBuilders {
     transactionUrl(networkId: NetworkId, txId: string): string | undefined
     assetUrl(networkId: NetworkId, assetId: string): string | undefined
     collectibleUrl(networkId: NetworkId, assetId: string): string | undefined
+}
+
+export interface ChainExplorer extends ExplorerUrlBuilders {
+    /** A brand name ("Etherscan"), shown untranslated. */
+    name: string
 }
 
 export type ChainFinality =
@@ -87,7 +97,7 @@ export interface ChainDescriptor {
     nativeAsset: NativeAssetInfo
     signing: ChainSigning
     protocol: ChainProtocolFacts
-    explorer: ExplorerUrlBuilders
+    explorer: ChainExplorer
     finality: ChainFinality
     /** Schemes, without the `:`, that the chain's payment and deep links use. */
     uriSchemes: readonly string[]

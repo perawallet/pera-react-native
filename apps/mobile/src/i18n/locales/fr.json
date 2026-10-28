@@ -2932,13 +2932,17 @@
             "subtitle": "Votre transaction est en cours de traitement par le réseau Algorand.",
             "title_hardware": "Connexion à votre appareil Ledger",
             "subtitle_hardware": "Connexion à {{deviceName}} en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
-            "subtitle_hardware_noDevice": "Connexion à votre appareil Ledger en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte."
+            "subtitle_hardware_noDevice": "Connexion à votre appareil Ledger en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
+            "broadcast_subtitle": "Votre transaction est en cours d’envoi au réseau {{network}}."
         },
         "success": {
             "title": "Transaction traitée",
             "asset_transferred_title": "Actif transféré",
             "subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
+            "pending_title": "Transaction envoyée",
+            "pending_subtitle": "Votre transaction a été envoyée au réseau {{network}} et attend sa confirmation.",
             "view_in_explorer": "Voir le détail de la transaction dans Pera Explorer",
+            "view_on_explorer": "Voir sur {{explorer}}",
             "done": "Terminé"
         },
         "close_account": {

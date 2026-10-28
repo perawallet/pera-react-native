@@ -14,6 +14,7 @@ import {
     isWcPagePairMessage,
     sendConnectionsControlMessage,
 } from '@perawallet/wallet-core-browser-runtime'
+import { logger } from '@perawallet/wallet-core-shared'
 import { ensureOffscreenDocument } from './offscreen'
 
 // Every pairing is a live socket to a page-chosen bridge host in the offscreen
@@ -78,9 +79,9 @@ export const installConnectModalPairRoute = ({
             { ensureHost: ensureOffscreenDocumentLike, chromeLike },
         ).catch((error: unknown) => {
             // Nobody awaits this listener, so log rather than leave an unhandled rejection.
-            console.error(
-                '[pera] connect-modal pair ensure-offscreen/forward failed:',
-                error,
+            logger.error(
+                '[pera] connect-modal pair ensure-offscreen/forward failed',
+                { error },
             )
         })
         return false

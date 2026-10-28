@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import { createChromeDappTransport } from '../transport'
 import { DAPP_HOST_REQUEST_SCOPE, DAPP_HOST_RESPONSE_SCOPE } from '../dapp-wire'
 
@@ -141,6 +142,7 @@ describe('createChromeDappTransport', () => {
     })
 
     it('acks a request whose listener throws synchronously, without propagating', () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { chrome: chromeLike, listeners } = makeChrome()
         const listener = vi.fn(() => {
             throw new Error('listener preamble exploded')
@@ -153,6 +155,11 @@ describe('createChromeDappTransport', () => {
             listeners[0](hostRequest, SW_SENDER, sendResponse),
         ).not.toThrow()
         expect(sendResponse).toHaveBeenCalledWith({ ok: true })
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[pera] dapp request listener threw',
+            { error: expect.any(Error) },
+        )
+        warnSpy.mockRestore()
     })
 
     it('respond sends a host response addressed to the requesting tab and resolves on ack', async () => {
@@ -230,6 +237,7 @@ describe('createChromeDappTransport', () => {
     })
 
     it('notify is best-effort: an unacked or failed broadcast still resolves', async () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { chrome: chromeLike, sendMessage } = makeChrome()
         const notification = {
             jsonrpc: '2.0' as const,
@@ -250,6 +258,11 @@ describe('createChromeDappTransport', () => {
         await expect(
             transport.notify('https://a.example', notification),
         ).resolves.toBeUndefined()
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[pera] dapp notification was not delivered',
+            { error: expect.any(Error) },
+        )
+        warnSpy.mockRestore()
     })
 
     it('unsubscribing removes the runtime listener', () => {

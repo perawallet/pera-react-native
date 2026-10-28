@@ -13,7 +13,7 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useInvalidateAssetPrices } from '../useInvalidateAssetPrices'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
@@ -195,9 +195,8 @@ describe('useInvalidateAssetPrices', () => {
     })
 
     it('handles errors gracefully', () => {
-        // Create a spy to track console.error calls
-        const consoleErrorSpy = vi
-            .spyOn(console, 'error')
+        const loggerWarnSpy = vi
+            .spyOn(logger, 'warn')
             .mockImplementation(() => {})
 
         // Mock invalidateQueries to throw an error
@@ -212,13 +211,11 @@ describe('useInvalidateAssetPrices', () => {
         // Call the function - it should not throw
         result.current.invalidateAssetPrices()
 
-        // Verify that console.error was called with the error
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            'Error invalidating asset prices:',
-            expect.any(Error),
+        expect(loggerWarnSpy).toHaveBeenCalledWith(
+            'Error invalidating asset prices',
+            { error: expect.any(Error) },
         )
 
-        // Clean up
-        consoleErrorSpy.mockRestore()
+        loggerWarnSpy.mockRestore()
     })
 })

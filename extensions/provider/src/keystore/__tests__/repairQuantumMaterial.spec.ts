@@ -12,8 +12,9 @@
 
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore-core'
+import { logger } from '@perawallet/wallet-core-shared'
 
 // The package root executes native Keychain/Nitro bindings at import time,
 // which node cannot run. `driver.js` depends only on `@scure/base` and
@@ -47,6 +48,7 @@ const quantumChild = (overrides: Partial<Key> = {}): Key =>
 let keys: Key[]
 let material: Map<string, string>
 let regenerate: ReturnType<typeof vi.fn>
+let errorSpy: ReturnType<typeof vi.spyOn>
 
 const deps = (): QuantumMaterialRepairDeps => ({
     keys: () => keys,
@@ -56,12 +58,17 @@ const deps = (): QuantumMaterialRepairDeps => ({
 
 describe('repairQuantumMaterial', () => {
     beforeEach(() => {
+        errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
         keys = [quantumChild()]
         material = new Map()
         // The real engine seals material as a side effect of re-minting.
         regenerate = vi.fn(async (childId: string) => {
             material.set(`m/${childId}`, 'sealed')
         })
+    })
+
+    afterEach(() => {
+        errorSpy.mockRestore()
     })
 
     it('re-mints a quantum child that has no sealed material', async () => {
@@ -107,6 +114,25 @@ describe('repairQuantumMaterial', () => {
 
         expect(regenerate).not.toHaveBeenCalled()
         expect(result).toEqual({ repaired: 0, failed: 1 })
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[provider] quantum repair: child has no parent seed to re-derive from',
+            expect.objectContaining({ keyId: 'seed-1-quantum' }),
+        )
+    })
+
+    it('reports a child that could not be re-minted', async () => {
+        const failure = new Error('kms unavailable')
+        regenerate = vi.fn(async () => {
+            throw failure
+        })
+
+        const result = await repairQuantumMaterial(deps())
+
+        expect(result).toEqual({ repaired: 0, failed: 1 })
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[provider] quantum repair: child could not be re-minted',
+            { keyId: 'seed-1-quantum', error: failure },
+        )
     })
 
     // A different public key means a different address — the account would be
@@ -120,6 +146,10 @@ describe('repairQuantumMaterial', () => {
         const result = await repairQuantumMaterial(deps())
 
         expect(result).toEqual({ repaired: 0, failed: 1 })
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[provider] quantum repair: child re-derived to a different public key; its address would change',
+            expect.objectContaining({ keyId: 'seed-1-quantum' }),
+        )
     })
 
     it('keeps repairing after one child fails', async () => {
@@ -135,6 +165,10 @@ describe('repairQuantumMaterial', () => {
 
         expect(regenerate).toHaveBeenCalledWith('b-quantum', 'b', 'legacy')
         expect(result).toEqual({ repaired: 1, failed: 1 })
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[provider] quantum repair: child has no parent seed to re-derive from',
+            expect.objectContaining({ keyId: 'a-quantum' }),
+        )
     })
 
     it('re-mints a legacy child from the parent seed, without a derived seed', async () => {
@@ -206,5 +240,9 @@ describe('repairQuantumMaterial', () => {
 
         expect(regenerated).toBe(false)
         expect(result).toEqual({ repaired: 0, failed: 1 })
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[provider] quantum repair: child has no derivation marker; refusing to re-derive',
+            expect.objectContaining({ keyId: 'seed-3-quantum' }),
+        )
     })
 })

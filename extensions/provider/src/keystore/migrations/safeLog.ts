@@ -10,16 +10,18 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
+
 /**
  * Every revision in this directory resolves `up` no matter what a per-record
  * failure does — rejecting would reject `keystore.ready` and stop the app
  * booting, and since the ledger only writes after `up` resolves, the same
  * failure would re-run and re-fail on every subsequent launch. A diagnostic
- * `console.warn` on the way to that resolution must uphold the same
- * constraint: it cannot itself throw. It is not contractually total — React
- * Native reassigns it in dev builds only (`LogBox.js:112`, inside the
- * `if (__DEV__)` at `:66`; the release `else` at `:267` never touches
- * `console`), and that dev replacement calls `String(args[0])` and
+ * `logger.warn` on the way to that resolution must uphold the same
+ * constraint: it cannot itself throw. It writes through `console.warn`, which
+ * is not contractually total — React Native reassigns it in dev builds only
+ * (`LogBox.js:112`, inside the `if (__DEV__)` at `:66`; the release `else` at
+ * `:267` never touches `console`), and that dev replacement calls `String(args[0])` and
  * `originalConsoleWarn` outside its own `try` (`registerWarning`, `:243`/`:247`
  * vs the `try` at `:250`). Line numbers are `react-native@0.88.0`. Independent
  * of build, a thrown non-`Error` value with a throwing
@@ -40,7 +42,7 @@ export const safeErrorMessage = (error: unknown): string => {
 /** Never throws: a broken logger must not escape the `up` it's logging inside of. */
 export const safeWarn = (message: string): void => {
     try {
-        console.warn(message)
+        logger.warn(message)
     } catch {
         // no-op
     }

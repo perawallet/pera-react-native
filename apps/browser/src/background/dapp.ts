@@ -27,6 +27,7 @@ import {
     type DappProvider,
 } from '@perawallet/wallet-core-dapp/wire'
 import { isWithinDappPayloadBounds } from '@perawallet/wallet-core-dapp/bounds'
+import { logger } from '@perawallet/wallet-core-shared'
 import { ensureOffscreenDocument } from './offscreen'
 
 // The relay in the receiving tab filters by origin before the page sees
@@ -150,11 +151,12 @@ export const installDappPageRequestRoute = ({
             ).catch((error: unknown) => {
                 // The thrown error is synthetic (the host client discards the
                 // Chrome reason), so log the request context that makes it useful.
-                console.error(
-                    '[pera] dapp request could not reach the host:',
-                    { origin, method: request.method, id: request.id },
+                logger.error('[pera] dapp request could not reach the host', {
+                    origin,
+                    method: request.method,
+                    id: request.id,
                     error,
-                )
+                })
                 void deliverToTab(
                     chromeLike,
                     tabId,
@@ -169,10 +171,9 @@ export const installDappPageRequestRoute = ({
                         ),
                     },
                     reason =>
-                        console.warn(
+                        logger.warn(
                             '[pera] dapp failure notice could not reach tab',
-                            tabId,
-                            reason,
+                            { tabId, reason },
                         ),
                 )
             })
@@ -200,11 +201,10 @@ export const installDappHostResponseRoute = ({
             const returnTo = message.returnTo
             const delivery = returnTo
                 ? deliverToTab(chromeLike, returnTo.tabId, outbound, reason =>
-                      console.warn(
-                          '[pera] dapp response could not reach tab',
-                          returnTo.tabId,
+                      logger.warn('[pera] dapp response could not reach tab', {
+                          tabId: returnTo.tabId,
                           reason,
-                      ),
+                      }),
                   )
                 : broadcastToTabs(chromeLike, outbound)
             delivery.then(

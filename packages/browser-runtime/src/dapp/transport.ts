@@ -15,6 +15,7 @@ import type {
     DappProvider,
     JsonRpcNotification,
 } from '@perawallet/wallet-core-dapp/wire'
+import { logger } from '@perawallet/wallet-core-shared'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
 import {
     DAPP_HOST_RESPONSE_SCOPE,
@@ -87,7 +88,7 @@ export const createChromeDappTransport = ({
                     respond,
                 )
             } catch (error) {
-                console.warn('[pera] dapp request listener threw', error)
+                logger.warn('[pera] dapp request listener threw', { error })
             }
             return false
         }
@@ -104,7 +105,7 @@ export const createChromeDappTransport = ({
                 payload: notification,
             })
         } catch (error) {
-            console.warn('[pera] dapp notification was not delivered', error)
+            logger.warn('[pera] dapp notification was not delivered', { error })
         }
     },
 })

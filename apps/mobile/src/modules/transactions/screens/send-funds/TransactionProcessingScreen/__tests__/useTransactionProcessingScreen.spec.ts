@@ -11,6 +11,8 @@
  */
 
 import { act, renderHook, waitFor } from '@test-utils/render'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
@@ -203,6 +205,7 @@ const publishProposed = (
 
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
+        registerEthereumChain()
         registerAlgorandAccountsAdapter()
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
@@ -254,6 +257,24 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockCompleteTabResume).toHaveBeenCalledWith({
             title: 'send_funds.success.title',
             body: 'send_funds.success.subtitle',
+        })
+    })
+
+    it('hands an EVM send back to the popup as submitted, not processed', async () => {
+        registerEthereumAccountsAdapter()
+        sendScope.chainId = 'ethereum'
+        mockExecute.mockResolvedValueOnce('0xHASH')
+
+        const { result } = renderHook(() => useTransactionProcessingScreen())
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(result.current).toMatchObject({
+            isAwaitingConfirmation: true,
+            networkName: 'Ethereum',
+        })
+        expect(mockCompleteTabResume).toHaveBeenCalledWith({
+            title: 'send_funds.success.pending_title',
+            body: 'send_funds.success.pending_subtitle',
         })
     })
 
