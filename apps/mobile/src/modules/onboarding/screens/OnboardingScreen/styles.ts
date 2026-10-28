@@ -12,22 +12,20 @@
 
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
-import type { EdgeInsets } from 'react-native-safe-area-context'
 
-const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
-
-// welcome-background.webp intrinsic dimensions; hardcoded to avoid resolveAssetSource.
-const IMAGE_ASPECT_RATIO = 344 / 544
+// Design frame is 375x812 including the status bar: the title ends 308pt down,
+// and the header art (gradient and logo flattened per theme, fading into the
+// screen colour) is 375x492 at the very top.
+const TITLE_BOTTOM_SCREEN_RATIO = 308 / 812
+const HEADER_IMAGE_ASPECT_RATIO = 375 / 492
 
 type StyleProps = {
-    insets: EdgeInsets
+    screenWidth: number
     screenHeight: number
 }
 
 export const useStyles = makeStyles((theme, props: StyleProps) => {
-    const { insets, screenHeight } = props
-    const headerImageHeight =
-        screenHeight * HEADER_IMAGE_SCREEN_RATIO + insets.top
+    const { screenWidth, screenHeight } = props
 
     return {
         rootContainer: {
@@ -37,7 +35,7 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
         },
         headerContainer: {
             width: '100%',
-            height: headerImageHeight,
+            height: screenHeight * TITLE_BOTTOM_SCREEN_RATIO,
             position: 'relative',
         },
         headerTitle: {
@@ -51,10 +49,9 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
         headerImage: {
             position: 'absolute',
             top: 0,
-            right: 0,
-            height: headerImageHeight,
-            aspectRatio: IMAGE_ASPECT_RATIO,
-            resizeMode: 'contain',
+            left: 0,
+            width: screenWidth,
+            aspectRatio: HEADER_IMAGE_ASPECT_RATIO,
         },
         buttonTitle: {
             marginTop: theme.spacing.xl,
@@ -62,8 +59,6 @@ export const useStyles = makeStyles((theme, props: StyleProps) => {
             color: theme.colors.textGray,
         },
         mainContainer: {
-            backgroundColor: theme.colors.background,
-            color: theme.colors.textWhite,
             paddingHorizontal: theme.spacing.xl,
             flexDirection: 'column',
         },

@@ -14,7 +14,7 @@
 // capability must remove the element from the tree: nothing renders disabled.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 
 // MenuScreen reaches PWWebView through the @modules/webview barrel; the real
 // component drags in the native provider chain, which doesn't resolve under
@@ -80,7 +80,7 @@ describe('Flow: capability gating', () => {
             ).toBeTruthy()
         })
 
-        it('removes every Ledger row from the import options when ledger is off', async () => {
+        it('removes the Ledger row from the import options when ledger is off', async () => {
             await enableOverrides()
             setCapabilityOverrides({ ledger: false })
 
@@ -95,11 +95,6 @@ describe('Flow: capability gating', () => {
             expect(
                 screen.queryByTestId(
                     'import_account_options_pair_ledger_button',
-                ),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId(
-                    'import_account_options_pair_ledger_usb_button',
                 ),
             ).toBeNull()
         })
@@ -232,6 +227,11 @@ describe('Flow: capability gating', () => {
 
         it('offers the secure backup row at the defaults', () => {
             renderWithNavigation(ImportAccountOptionsScreen, 'ImportOptions')
+            fireEvent.click(
+                screen.getByTestId(
+                    'import_account_options_see_other_options_button',
+                ),
+            )
 
             expect(
                 screen.getByTestId('import_account_options_asb_button'),
@@ -243,11 +243,14 @@ describe('Flow: capability gating', () => {
             setCapabilityOverrides({ secureBackup: false })
 
             renderWithNavigation(ImportAccountOptionsScreen, 'ImportOptions')
+            fireEvent.click(
+                screen.getByTestId(
+                    'import_account_options_see_other_options_button',
+                ),
+            )
 
             expect(
-                screen.getByTestId(
-                    'import_account_options_recover_wallet_button',
-                ),
+                screen.getByTestId('import_account_options_pera_web_button'),
             ).toBeTruthy()
             expect(
                 screen.queryByTestId('import_account_options_asb_button'),
