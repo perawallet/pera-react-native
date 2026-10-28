@@ -22,6 +22,7 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
@@ -49,11 +50,21 @@ export const useSourceMetadataBadge = (
     const displayIcon = preferredIcon ?? project?.logoPng
     const displayName = metadata.name ?? project?.name
 
+    // Same inputs as the sign gate, so this reads its cached verdict.
+    const attestedOrigin = metadata.verification?.verifiedOrigin
+    const { verdict } = useSiteSafetyQuery({
+        urls: [metadata.url, verifiedOrigin, attestedOrigin],
+        isFlaggedByWalletConnectVerify:
+            metadata.verification?.status === 'scam',
+        isEnabled: !!(metadata.url || verifiedOrigin || attestedOrigin),
+    })
+
     // The lookup key (metadata.url) is peer-asserted, so a `verified` tier is
     // trusted only against the platform-observed origin.
     const verificationTier = resolveDisplayableVerificationTier(
         project,
         verifiedOrigin,
+        verdict.kind !== 'clear',
     )
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])

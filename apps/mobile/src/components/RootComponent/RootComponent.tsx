@@ -59,6 +59,7 @@ import {
 } from '@utils/app-state'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
+import { usePhishingListRefresh } from '@modules/site-safety/shell'
 import { config } from '@perawallet/wallet-core-config'
 
 export type RootComponentProps = {
@@ -86,6 +87,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     useNotificationDeeplinkListener()
     // Refresh the notification badge/inbox as soon as a foreground push lands.
     useNotificationReceivedListener()
+    usePhishingListRefresh()
 
     const handleBoundaryError = (error: string | Error) => {
         logger.critical(error, {

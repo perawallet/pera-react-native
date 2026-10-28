@@ -15,6 +15,7 @@ import { act, renderHook } from '@testing-library/react'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
+import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import {
     toOriginWarningMessage,
     useConnectionApprovalView,
@@ -185,6 +186,64 @@ describe('useConnectionApprovalView', () => {
         await act(() => result.current.handleConnect())
 
         expect(proposal.approve).toHaveBeenCalledWith(['AAAA'])
+    })
+
+    describe('site safety', () => {
+        afterEach(() => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: { kind: 'clear' },
+                isChecking: false,
+            })
+        })
+
+        it("checks every origin the proposal carries, with Verify's verdict", () => {
+            renderHook(() =>
+                useConnectionApprovalView(
+                    makeProposal({
+                        requesterOrigin: 'https://observed.example',
+                        peer: {
+                            name: 'Tinyman',
+                            url: 'https://tinyman.org',
+                            verification: {
+                                status: 'scam',
+                                verifiedOrigin: 'https://attested.example',
+                            },
+                        },
+                    }) as never,
+                ),
+            )
+
+            expect(useSiteSafetyQuery).toHaveBeenLastCalledWith({
+                urls: [
+                    'https://tinyman.org',
+                    'https://observed.example',
+                    'https://attested.example',
+                ],
+                isFlaggedByWalletConnectVerify: true,
+                isEnabled: true,
+            })
+        })
+
+        it('refuses to approve a blocked site', async () => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: {
+                    kind: 'blocked',
+                    host: 'tinyman.org',
+                    reason: 'phishing-list',
+                },
+                isChecking: false,
+            })
+            const proposal = makeProposal()
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposal as never),
+            )
+
+            act(() => result.current.handleAccountPress('acct-algo'))
+            await act(() => result.current.handleConnect())
+
+            expect(result.current.siteSafety.isApprovalAllowed).toBe(false)
+            expect(proposal.approve).not.toHaveBeenCalled()
+        })
     })
 
     it('rejects through the proposal on cancel', async () => {

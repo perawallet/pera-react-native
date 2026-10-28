@@ -747,6 +747,9 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../../packages/signing
+      '@perawallet/wallet-core-site-safety':
+        specifier: workspace:*
+        version: link:../../packages/site-safety
       '@perawallet/wallet-core-staking':
         specifier: workspace:*
         version: link:../../packages/staking

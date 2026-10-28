@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     useProjectByUrlQuery,
     type PeraProject,
     type UseProjectByUrlQueryResult,
 } from '@perawallet/wallet-core-projects'
+import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useSourceMetadataBadge } from '../useSourceMetadataBadge'
 
 // Keep the real `resolveDisplayableVerificationTier` so the actual trust logic
@@ -126,5 +127,65 @@ describe('useSourceMetadataBadge — observed origin vs claimed site', () => {
         )
 
         expect(result.current.requestOriginLabel).toBeUndefined()
+    })
+
+    describe('with a site warning', () => {
+        beforeEach(() => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: {
+                    kind: 'blocked',
+                    host: 'tinyman.org',
+                    reason: 'phishing-list',
+                },
+                isChecking: false,
+            })
+        })
+
+        afterEach(() => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: { kind: 'clear' },
+                isChecking: false,
+            })
+        })
+
+        it('shows suspicious even where the registry would verify the site', () => {
+            stubProjectQuery(verifiedTinyman)
+
+            const { result } = renderHook(() =>
+                useSourceMetadataBadge(
+                    { url: 'https://tinyman.org' },
+                    'https://tinyman.org',
+                ),
+            )
+
+            expect(result.current.verificationTier).toBe('suspicious')
+        })
+
+        it("checks the request's urls with Verify's verdict", () => {
+            stubProjectQuery(verifiedTinyman)
+
+            renderHook(() =>
+                useSourceMetadataBadge(
+                    {
+                        url: 'https://tinyman.org',
+                        verification: {
+                            status: 'scam',
+                            verifiedOrigin: 'https://attested.example',
+                        },
+                    },
+                    'https://observed.example',
+                ),
+            )
+
+            expect(useSiteSafetyQuery).toHaveBeenLastCalledWith({
+                urls: [
+                    'https://tinyman.org',
+                    'https://observed.example',
+                    'https://attested.example',
+                ],
+                isFlaggedByWalletConnectVerify: true,
+                isEnabled: true,
+            })
+        })
     })
 })

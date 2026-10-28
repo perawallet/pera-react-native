@@ -3262,6 +3262,25 @@
             "details_description": "Review the full metadata of this authentication request before approving."
         }
     },
+    "site_safety": {
+        "checking": "Checking this site…",
+        "blocked": {
+            "title": "This site is a known scam",
+            "body": "It is on a public list of phishing sites. Connecting or signing here could cost you your funds.",
+            "body_verify": "WalletConnect reports this site as a scam. Connecting or signing here could cost you your funds.",
+            "reject": "Reject and go back",
+            "continue_anyway": "Continue anyway",
+            "acknowledge": "I understand this site is reported as a scam and I could lose my funds",
+            "continue": "Continue to this site"
+        },
+        "look_alike": {
+            "title": "This site may be imitating another",
+            "body": "It looks like {{name}} ({{domain}}) but is a different site. Check the address before you continue.",
+            "acknowledge": "I understand this site is not {{name}}",
+            "continue": "Continue",
+            "reject": "Reject"
+        }
+    },
     "transactions": {
         "common": {
             "from": "From",

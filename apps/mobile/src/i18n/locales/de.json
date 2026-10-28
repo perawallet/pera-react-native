@@ -3254,6 +3254,25 @@
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
         }
     },
+    "site_safety": {
+        "checking": "Diese Seite wird geprüft…",
+        "blocked": {
+            "title": "Diese Seite ist als Betrug bekannt",
+            "body": "Sie steht auf einer öffentlichen Liste von Phishing-Seiten. Wenn du dich hier verbindest oder etwas signierst, kannst du dein Guthaben verlieren.",
+            "body_verify": "WalletConnect meldet diese Seite als Betrug. Wenn du dich hier verbindest oder etwas signierst, kannst du dein Guthaben verlieren.",
+            "reject": "Ablehnen und zurück",
+            "continue_anyway": "Trotzdem fortfahren",
+            "acknowledge": "Ich verstehe, dass diese Seite als Betrug gemeldet ist und ich mein Guthaben verlieren kann",
+            "continue": "Zu dieser Seite fortfahren"
+        },
+        "look_alike": {
+            "title": "Diese Seite gibt sich möglicherweise als eine andere aus",
+            "body": "Sie sieht aus wie {{name}} ({{domain}}), ist aber eine andere Seite. Prüfe die Adresse, bevor du fortfährst.",
+            "acknowledge": "Ich verstehe, dass diese Seite nicht {{name}} ist",
+            "continue": "Fortfahren",
+            "reject": "Ablehnen"
+        }
+    },
     "transactions": {
         "common": {
             "from": "Von",

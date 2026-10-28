@@ -41,6 +41,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
+import {
+    useSiteSafetyGate,
+    type UseSiteSafetyGateResult,
+} from '@modules/site-safety'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import { uniqueChainIds } from '../../utils/uniqueChainIds'
@@ -87,6 +91,7 @@ export type UseConnectionApprovalViewResult = {
     originWarning?: ConnectionOriginWarning
     /** Host of the transport-attested origin, for display. */
     verifiedOriginLabel?: string
+    siteSafety: UseSiteSafetyGateResult
 }
 
 const ORIGIN_WARNINGS: Record<
@@ -158,6 +163,17 @@ export const useConnectionApprovalView = (
     )
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
+    // Every origin the proposal carries: the claimed url, the one the browser
+    // or webview observed, and the one WalletConnect Verify attested.
+    const siteSafety = useSiteSafetyGate({
+        urls: [
+            proposal.peer.url,
+            proposal.requesterOrigin,
+            proposal.peer.verification?.verifiedOrigin,
+        ],
+        isFlaggedByWalletConnectVerify:
+            proposal.peer.verification?.status === 'scam',
+    })
     // Guards both handlers against a double-tap reaching `proposal` twice:
     // Connect has an async gap before `isConnecting` flips (the quantum-warning
     // await) and Cancel has no state-driven disabling at all.
@@ -206,8 +222,9 @@ export const useConnectionApprovalView = (
         }
     }, [rejectProposal])
 
+    const { isApprovalAllowed } = siteSafety
     const handleConnect = useCallback(async () => {
-        if (isHandlingRef.current) return
+        if (isHandlingRef.current || !isApprovalAllowed) return
         isHandlingRef.current = true
         try {
             // No expiry pre-check here: the handler owns that verdict and
@@ -282,6 +299,7 @@ export const useConnectionApprovalView = (
         proposal,
         accounts,
         selectedAccounts,
+        isApprovalAllowed,
         confirmQuantumDappUsage,
         rejectProposal,
         errorToast,
@@ -314,5 +332,6 @@ export const useConnectionApprovalView = (
         verifiedOriginLabel: toPeerHostLabel(
             proposal.peer.verification?.verifiedOrigin,
         ),
+        siteSafety,
     }
 }

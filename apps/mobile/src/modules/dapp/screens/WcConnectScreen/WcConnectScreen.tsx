@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
@@ -60,6 +61,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         canOpenPeerUrl,
         handlePressUrl,
         deliveryError,
+        siteSafety,
     } = useWcConnectScreen()
 
     const renderAccountRow = ({
@@ -92,55 +94,62 @@ export const WcConnectScreen = (): React.JSX.Element => {
 
     return (
         <PWScreen scroll='never'>
-            <PWFlatList
-                style={styles.container}
-                contentContainerStyle={styles.contentContainer}
-                data={accounts}
-                renderItem={renderAccountRow}
-                extraData={{ selected }}
-                ListHeaderComponent={
-                    <WcConnectHeader
-                        peer={peer}
-                        peerName={peerName}
-                        permissions={permissions}
-                        chainNetwork={chainNetwork}
-                        verificationTier={verificationTier}
-                        requesterOriginLabel={requesterOriginLabel}
-                        isRequesterOriginDistinct={isRequesterOriginDistinct}
-                        peerUrlLabel={peerUrlLabel}
-                        canOpenPeerUrl={canOpenPeerUrl}
-                        onPressUrl={handlePressUrl}
+            <SiteSafetyGate
+                gate={siteSafety}
+                onReject={handleCancel}
+            >
+                <PWFlatList
+                    style={styles.container}
+                    contentContainerStyle={styles.contentContainer}
+                    data={accounts}
+                    renderItem={renderAccountRow}
+                    extraData={{ selected }}
+                    ListHeaderComponent={
+                        <WcConnectHeader
+                            peer={peer}
+                            peerName={peerName}
+                            permissions={permissions}
+                            chainNetwork={chainNetwork}
+                            verificationTier={verificationTier}
+                            requesterOriginLabel={requesterOriginLabel}
+                            isRequesterOriginDistinct={
+                                isRequesterOriginDistinct
+                            }
+                            peerUrlLabel={peerUrlLabel}
+                            canOpenPeerUrl={canOpenPeerUrl}
+                            onPressUrl={handlePressUrl}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                />
+                {deliveryError && (
+                    <PWText
+                        variant='caption'
+                        style={localStyles.deliveryError}
+                        testID='wc-connect-delivery-error'
+                    >
+                        {t('dapp.approval.delivery_failed')}
+                    </PWText>
+                )}
+                <PWView style={styles.buttonContainer}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('common.cancel.label')}
+                        onPress={handleCancel}
+                        style={styles.cancelButton}
+                        testID='wc-connect-cancel'
                     />
-                }
-                showsVerticalScrollIndicator={false}
-            />
-            {deliveryError && (
-                <PWText
-                    variant='caption'
-                    style={localStyles.deliveryError}
-                    testID='wc-connect-delivery-error'
-                >
-                    {t('dapp.approval.delivery_failed')}
-                </PWText>
-            )}
-            <PWView style={styles.buttonContainer}>
-                <PWButton
-                    variant='secondary'
-                    title={t('common.cancel.label')}
-                    onPress={handleCancel}
-                    style={styles.cancelButton}
-                    testID='wc-connect-cancel'
-                />
-                <PWButton
-                    variant='primary'
-                    title={t('common.connect.label')}
-                    onPress={handleConnect}
-                    style={styles.connectButton}
-                    isDisabled={!canConnect}
-                    isLoading={isConnecting}
-                    testID='wc-connect-connect'
-                />
-            </PWView>
+                    <PWButton
+                        variant='primary'
+                        title={t('common.connect.label')}
+                        onPress={handleConnect}
+                        style={styles.connectButton}
+                        isDisabled={!canConnect}
+                        isLoading={isConnecting}
+                        testID='wc-connect-connect'
+                    />
+                </PWView>
+            </SiteSafetyGate>
         </PWScreen>
     )
 }

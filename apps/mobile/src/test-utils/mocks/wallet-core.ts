@@ -33,6 +33,17 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
     })),
 }))
 
+// The real check reads SQLite and loads megabytes of bundled lists; specs that
+// exercise it unmock this.
+vi.mock('@perawallet/wallet-core-site-safety', () => ({
+    useSiteSafetyQuery: vi.fn(() => ({
+        verdict: { kind: 'clear' },
+        isChecking: false,
+    })),
+    assessSiteSafety: vi.fn(async () => ({ kind: 'clear' })),
+    startPhishingListRefresh: vi.fn(() => () => {}),
+}))
+
 vi.mock('@perawallet/wallet-core-walletconnect', async () => {
     // The deep-link parser is a pure leaf the app needs for real. Loaded by path:
     // the package barrel registers stores at module-eval, which every spec's

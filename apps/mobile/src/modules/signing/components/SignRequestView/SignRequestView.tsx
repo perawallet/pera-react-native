@@ -30,7 +30,9 @@ import {
 import { PWButton, PWTouchableIcon, PWView } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { SiteSafetyGate } from '@modules/site-safety'
 import { useSignRequestFailure } from './useSignRequestFailure'
+import { useSignRequestSiteSafety } from './useSignRequestSiteSafety'
 import { useStyles } from './styles'
 
 export type SignRequestViewProps = {
@@ -82,7 +84,8 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const isDarkMode = useIsDarkMode()
-    const { removeSignRequest } = useSigningRequest()
+    const { removeSignRequest, rejectRequest } = useSigningRequest()
+    const siteSafety = useSignRequestSiteSafety(request)
     const { resolved } = useSigningPipeline()
     const failedEvent = useLastSigningEvent(
         (e): e is Extract<SigningLifecycleEvent, { type: 'failed' }> =>
@@ -169,28 +172,33 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                 style={styles.container}
                 testID='sign-request-view'
             >
-                <NavigationIndependentTree>
-                    {/* Theme the container so React Navigation's DefaultTheme
+                <SiteSafetyGate
+                    gate={siteSafety}
+                    onReject={() => rejectRequest(request)}
+                >
+                    <NavigationIndependentTree>
+                        {/* Theme the container so React Navigation's DefaultTheme
                         grey background (rgb(242,242,242)) doesn't paint the
                         signing scene — same fix as the send/receive sheets. */}
-                    <NavigationContainer
-                        theme={getNavigationTheme(
-                            isDarkMode ? 'dark' : 'light',
-                        )}
-                    >
-                        <SigningRoutes />
-                    </NavigationContainer>
-                </NavigationIndependentTree>
-                {isMultisigCosign && (
-                    <PWTouchableIcon
-                        name='cross'
-                        size='md'
-                        variant='primary'
-                        onPress={handleClose}
-                        containerStyle={styles.closeButton}
-                        testID='multisig_cosign_close_button'
-                    />
-                )}
+                        <NavigationContainer
+                            theme={getNavigationTheme(
+                                isDarkMode ? 'dark' : 'light',
+                            )}
+                        >
+                            <SigningRoutes />
+                        </NavigationContainer>
+                    </NavigationIndependentTree>
+                    {isMultisigCosign && (
+                        <PWTouchableIcon
+                            name='cross'
+                            size='md'
+                            variant='primary'
+                            onPress={handleClose}
+                            containerStyle={styles.closeButton}
+                            testID='multisig_cosign_close_button'
+                        />
+                    )}
+                </SiteSafetyGate>
             </PWView>
         </BaseErrorBoundary>
     )

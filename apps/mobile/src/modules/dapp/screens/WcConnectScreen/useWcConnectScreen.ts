@@ -34,6 +34,10 @@ import {
 } from '@perawallet/wallet-core-projects'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import {
+    useSiteSafetyGate,
+    type UseSiteSafetyGateResult,
+} from '@modules/site-safety'
+import {
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
 } from '@modules/webview'
@@ -80,6 +84,7 @@ type UseWcConnectScreenResult = {
     handlePressUrl: () => void
     /** A decision failed to reach the bridge; the button stays spinning by design. */
     deliveryError: boolean
+    siteSafety: UseSiteSafetyGateResult
 }
 
 // The active account when it is signable, otherwise nothing pre-checked
@@ -134,6 +139,11 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const registryScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccountId } = useSelectedAccountId()
 
+    // The page's claimed url and the tab the browser says sent the request.
+    const siteSafety = useSiteSafetyGate({
+        urls: [proposal?.peer.url, proposal?.requesterOrigin],
+    })
+
     const isArmed = useApprovalArming()
     const [selected, setSelected] = useState<Set<string>>(() => new Set())
 
@@ -163,13 +173,13 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     }, [])
 
     const handleConnect = useCallback((): void => {
-        if (!selected.size || !isArmed) return
+        if (!selected.size || !isArmed || !siteSafety.isApprovalAllowed) return
         setIsConnecting(true)
         // No `finally` reset: approve() settles the approval and the bridge closes
         // this window. A failed approve leaves the button spinning rather than
         // inviting a second grant against a half-completed handshake.
         void approve([...selected])
-    }, [approve, selected, isArmed])
+    }, [approve, selected, isArmed, siteSafety.isApprovalAllowed])
 
     const isRequesterOriginDistinct = isDistinctFromPeerUrl(
         proposal?.requesterOrigin,
@@ -187,6 +197,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const verificationTier = resolveDisplayableVerificationTier(
         project,
         isRequesterOriginDistinct ? undefined : proposal?.requesterOrigin,
+        siteSafety.verdict.kind !== 'clear',
     )
 
     const handleCancel = useCallback((): void => {
@@ -212,7 +223,8 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         accounts,
         selected,
         toggle,
-        canConnect: selected.size > 0 && isArmed,
+        canConnect:
+            selected.size > 0 && isArmed && siteSafety.isApprovalAllowed,
         isLoading,
         isConnecting,
         handleConnect,
@@ -221,5 +233,6 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         canOpenPeerUrl: toValidatedBrowserUrl(proposal?.peer.url) !== null,
         handlePressUrl,
         deliveryError,
+        siteSafety,
     }
 }

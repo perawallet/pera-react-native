@@ -3262,6 +3262,25 @@
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
         }
     },
+    "site_safety": {
+        "checking": "Bu site kontrol ediliyor…",
+        "blocked": {
+            "title": "Bu site bilinen bir dolandırıcılık sitesi",
+            "body": "Herkese açık bir oltalama sitesi listesinde yer alıyor. Burada bağlanman veya imzalaman varlıklarını kaybetmene yol açabilir.",
+            "body_verify": "WalletConnect bu siteyi dolandırıcılık olarak bildiriyor. Burada bağlanman veya imzalaman varlıklarını kaybetmene yol açabilir.",
+            "reject": "Reddet ve geri dön",
+            "continue_anyway": "Yine de devam et",
+            "acknowledge": "Bu sitenin dolandırıcılık olarak bildirildiğini ve varlıklarımı kaybedebileceğimi anlıyorum",
+            "continue": "Bu siteye devam et"
+        },
+        "look_alike": {
+            "title": "Bu site başka bir siteyi taklit ediyor olabilir",
+            "body": "{{name}} ({{domain}}) sitesine benziyor ama farklı bir site. Devam etmeden önce adresi kontrol et.",
+            "acknowledge": "Bu sitenin {{name}} olmadığını anlıyorum",
+            "continue": "Devam et",
+            "reject": "Reddet"
+        }
+    },
     "transactions": {
         "common": {
             "from": "Gönderen",

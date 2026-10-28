@@ -3262,6 +3262,25 @@
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."
         }
     },
+    "site_safety": {
+        "checking": "Comprobando este sitio…",
+        "blocked": {
+            "title": "Este sitio es una estafa conocida",
+            "body": "Está en una lista pública de sitios de phishing. Si te conectas o firmas aquí, podrías perder tus fondos.",
+            "body_verify": "WalletConnect informa de que este sitio es una estafa. Si te conectas o firmas aquí, podrías perder tus fondos.",
+            "reject": "Rechazar y volver",
+            "continue_anyway": "Continuar de todos modos",
+            "acknowledge": "Entiendo que este sitio está señalado como estafa y que podría perder mis fondos",
+            "continue": "Continuar a este sitio"
+        },
+        "look_alike": {
+            "title": "Este sitio podría estar imitando a otro",
+            "body": "Se parece a {{name}} ({{domain}}), pero es un sitio distinto. Revisa la dirección antes de continuar.",
+            "acknowledge": "Entiendo que este sitio no es {{name}}",
+            "continue": "Continuar",
+            "reject": "Rechazar"
+        }
+    },
     "transactions": {
         "common": {
             "from": "De",
