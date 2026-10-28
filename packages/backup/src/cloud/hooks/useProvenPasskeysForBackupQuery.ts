@@ -29,7 +29,8 @@ export type UseProvenPasskeysForBackupQueryResult = {
 
 /** Re-deriving a credential costs a PBKDF2 per owning seed, so the sweep runs
  *  here and the store is the read side: a sync tick running the same sweep in
- *  the background refreshes an open screen without a refetch. */
+ *  the background refreshes an open screen without a refetch. The store holds
+ *  one list, not one per chain, so only one chain may call this until it is. */
 export const useProvenPasskeysForBackupQuery = (
     chainId: ChainId,
 ): UseProvenPasskeysForBackupQueryResult => {

@@ -88,6 +88,30 @@ describe('import/no-default-export', () => {
     })
 })
 
+describe('no-restricted-imports', () => {
+    type RestrictedImports = [string, { paths: unknown[] }]
+    const paths = (override: OxlintOverride): unknown[] =>
+        (override.rules['no-restricted-imports'] as RestrictedImports)[1].paths
+
+    // A later override replaces the rule's options rather than merging them, so
+    // a narrower block that drops one of the src/** bans silently lifts it there.
+    it('repeats every src/** ban in each narrower mobile override', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const [general, ...narrower] = overridesWith(
+            mobile,
+            'no-restricted-imports',
+        )
+
+        expect(general.files).toEqual(['src/**'])
+        expect(narrower.length).toBeGreaterThan(0)
+        for (const override of narrower) {
+            expect(paths(override)).toEqual(
+                expect.arrayContaining(paths(general)),
+            )
+        }
+    })
+})
+
 describe('pera/no-hardcoded-ui-strings', () => {
     it('blocks in all mobile source, developer screens aside', () => {
         const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
