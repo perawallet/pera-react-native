@@ -1935,7 +1935,7 @@
         },
         "inbox": {
             "empty_title": "No hay mensajes pendientes",
-            "empty_body": "Ahora mismo no tienes mensajes pendientes en la bandeja",
+            "empty_body": "La bandeja guarda los activos de Algorand que te envían antes de que los hayas añadido. Los tokens de Ethereum, Base y otras redes EVM llegan directamente a tu saldo.",
             "asa_requests_one": "1 activo entrante",
             "asa_requests_other": "{{count}} activos entrantes",
             "multisig_sign": {
@@ -1947,7 +1947,16 @@
                 "status_confirmed": "Confirmada"
             },
             "invitation_title": "<0>Te han invitado</0> a unirte a una cuenta compartida {{address}}",
-            "view_invitation_details": "Ver detalles de la invitación"
+            "view_invitation_details": "Ver detalles de la invitación",
+            "info": {
+                "title": "Acerca de la bandeja",
+                "algorand_title": "Algorand",
+                "algorand_body": "Una cuenta de Algorand debe añadir un activo antes de poder tenerlo. Los activos que te envían antes de que los hayas añadido esperan aquí, en la bandeja, hasta que los aceptes o los rechaces.",
+                "evm_title": "Ethereum, Base y otras redes EVM",
+                "evm_body": "En las redes EVM no hace falta añadir los tokens. Los que te envían llegan directamente a tu saldo y nunca aparecen en la bandeja.",
+                "find_tokens_body": "Para verlos, abre la cuenta y revisa sus activos en esa red.",
+                "learn_more": "Más información"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Solicitudes de transferencia de activos",

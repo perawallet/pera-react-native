@@ -1935,7 +1935,7 @@
         },
         "inbox": {
             "empty_title": "Bekleyen mesaj yok",
-            "empty_body": "Şu anda gelen kutunda bekleyen mesaj yok",
+            "empty_body": "Gelen kutusu, opt-in olmadan önce sana gönderilen Algorand varlıklarını tutar. Ethereum, Base ve diğer EVM ağlarındaki token’lar doğrudan bakiyene gelir.",
             "asa_requests_one": "1 gelen varlık",
             "asa_requests_other": "{{count}} gelen varlık",
             "multisig_sign": {
@@ -1947,7 +1947,16 @@
                 "status_confirmed": "Onaylandı"
             },
             "invitation_title": "{{address}} paylaşılan hesabına katılmak için <0>davet edildin</0>",
-            "view_invitation_details": "Davet ayrıntılarını görüntüle"
+            "view_invitation_details": "Davet ayrıntılarını görüntüle",
+            "info": {
+                "title": "Gelen kutusu hakkında",
+                "algorand_title": "Algorand",
+                "algorand_body": "Bir Algorand hesabının bir varlığı tutabilmesi için önce o varlığa opt-in olması gerekir. Opt-in olmadan önce sana gönderilen varlıklar, sen kabul edene ya da reddedene kadar burada, gelen kutusunda bekler.",
+                "evm_title": "Ethereum, Base ve diğer EVM ağları",
+                "evm_body": "EVM ağlarında opt-in yoktur. Sana gönderilen token’lar doğrudan bakiyene gelir ve gelen kutusunda hiç görünmez.",
+                "find_tokens_body": "Onları görmek için hesabı aç ve o ağdaki varlıklarına bak.",
+                "learn_more": "Daha fazla bilgi"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Varlık transfer istekleri",

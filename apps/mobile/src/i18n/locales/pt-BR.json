@@ -1937,7 +1937,7 @@
         },
         "inbox": {
             "empty_title": "Nenhuma mensagem pendente",
-            "empty_body": "Você não tem nenhuma mensagem pendente na caixa de entrada",
+            "empty_body": "A caixa de entrada guarda os ativos da Algorand enviados a você antes de você fazer opt-in. Tokens na Ethereum, na Base e em outras redes EVM chegam direto ao seu saldo.",
             "asa_requests_zero": "{{count}} ativos a receber",
             "asa_requests_one": "1 ativo a receber",
             "asa_requests_other": "{{count}} ativos a receber",
@@ -1950,7 +1950,16 @@
                 "status_confirmed": "Confirmada"
             },
             "invitation_title": "<0>Você recebeu um convite</0> para participar de uma conta compartilhada {{address}}",
-            "view_invitation_details": "Ver detalhes do convite"
+            "view_invitation_details": "Ver detalhes do convite",
+            "info": {
+                "title": "Sobre a caixa de entrada",
+                "algorand_title": "Algorand",
+                "algorand_body": "Uma conta Algorand precisa fazer opt-in em um ativo antes de poder mantê-lo. Os ativos enviados a você antes do opt-in ficam aqui, na caixa de entrada, até você aceitá-los ou recusá-los.",
+                "evm_title": "Ethereum, Base e outras redes EVM",
+                "evm_body": "Redes EVM não têm opt-in. Os tokens enviados a você chegam direto ao seu saldo e nunca aparecem na caixa de entrada.",
+                "find_tokens_body": "Para vê-los, abra a conta e confira os ativos dela nessa rede.",
+                "learn_more": "Saiba mais"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Solicitações de transferência de ativos",

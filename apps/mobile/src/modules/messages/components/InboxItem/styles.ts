@@ -43,6 +43,13 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    titleRow: {
+        flexShrink: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     titleText: {
         flexShrink: 1,
         flexWrap: 'wrap',
