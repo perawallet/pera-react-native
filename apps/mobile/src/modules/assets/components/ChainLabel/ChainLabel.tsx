@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { StyleProp, ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
@@ -18,27 +19,38 @@ import { ChainIcon } from '@modules/chain-ui/icon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
+const SIZES = {
+    sm: { icon: 'xs', text: 'body' },
+    md: { icon: 'sm', text: 'bodyLarge' },
+} as const
+
 export type ChainLabelProps = {
     chainId: ChainId
+    size?: keyof typeof SIZES
+    style?: StyleProp<ViewStyle>
 }
 
-export const ChainLabel = ({ chainId }: ChainLabelProps) => {
+export const ChainLabel = ({
+    chainId,
+    size = 'sm',
+    style,
+}: ChainLabelProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <PWView
-            style={styles.chainLabel}
+            style={[styles.container, style]}
             testID={`chain_label_${chainId}`}
         >
             <ChainIcon
                 chainId={chainId}
-                size={getIconPixelSize(theme, 'xs')}
+                size={getIconPixelSize(theme, SIZES[size].icon)}
             />
             <PWText
-                variant='body'
-                style={styles.subtitle}
+                variant={SIZES[size].text}
+                style={styles.label}
                 numberOfLines={1}
             >
                 {t('account_details.assets.chain_network', {

@@ -28,6 +28,9 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
     },
+    chainLabel: {
+        marginBottom: theme.spacing.sm,
+    },
     headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
