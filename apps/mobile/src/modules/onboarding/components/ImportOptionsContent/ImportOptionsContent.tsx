@@ -25,7 +25,6 @@ import {
     PWView,
 } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { getTestProps } from '@utils/test-id-helper'
 import { useTranslation } from 'react-i18next'
 import { useStyles } from './styles'
 
@@ -72,7 +71,7 @@ export const ImportOptionsContent = () => {
                         key={option.testID}
                         onPress={() => resolve(option.seed)}
                         style={styles.optionBox}
-                        {...getTestProps(option.testID)}
+                        testID={option.testID}
                     >
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>

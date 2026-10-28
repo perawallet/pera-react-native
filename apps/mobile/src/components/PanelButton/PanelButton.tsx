@@ -23,7 +23,6 @@ import {
     type PWTouchableOpacityProps,
     PWText,
 } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
 
 export type PanelButtonProps = {
     leftIcon?: IconName
@@ -65,12 +64,12 @@ export const PanelButton = (props: PanelButtonProps) => {
     return (
         <PWTouchableOpacity
             onPress={onPress}
-            {...getTestProps(testID)}
+            testID={testID}
             {...rest}
         >
             <PWView
                 style={[style, themeStyle.buttonStyle]}
-                {...getTestProps(testID, 'view')}
+                testID={testID && `${testID}_view`}
             >
                 {!!leftIcon && (
                     <PWIcon
@@ -96,7 +95,7 @@ export const PanelButton = (props: PanelButtonProps) => {
                             // title to a single line holds the row height
                             // steady across devices and font scales.
                             truncate={!!badge}
-                            {...getTestProps(testID, 'text')}
+                            testID={testID && `${testID}_text`}
                         >
                             {title}
                         </PWText>
@@ -118,7 +117,7 @@ export const PanelButton = (props: PanelButtonProps) => {
                                         event?.stopPropagation?.()
                                         learnMore.onPress()
                                     }}
-                                    {...getTestProps(testID, 'learn_more')}
+                                    testID={testID && `${testID}_learn_more`}
                                 >
                                     {/*
                                       linkPositive keeps the teal link tone in

@@ -87,6 +87,8 @@ describe('pera/test-id-prop', () => {
                 o.excludeFiles,
                 o.rules['pera/test-id-prop'],
             ]),
-        ).toEqual([[['src/**/*.{ts,tsx}'], ['src/components/core/**'], 'error']])
+        ).toEqual([
+            [['src/**/*.{ts,tsx}'], ['src/components/core/**'], 'error'],
+        ])
     })
 })

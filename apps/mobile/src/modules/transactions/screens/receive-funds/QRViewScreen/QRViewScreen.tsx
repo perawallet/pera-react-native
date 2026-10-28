@@ -23,7 +23,6 @@ import { ChainIcon } from '@modules/chain-ui/icon'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useQRViewScreen } from './useQRViewScreen'
 import { useStyles } from './styles'
-import { getTestProps } from '@utils/test-id-helper'
 
 // Drawn over the QR's centre rather than through its logo prop, so the chain's
 // icon keeps ChainIcon's circular clip; ecl 'H' leaves the covered modules recoverable.
@@ -114,7 +113,7 @@ export const QRViewScreen = () => {
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.qrContainer}>
                     <QRCode
-                        {...getTestProps('receive_qr_code')}
+                        testID='receive_qr_code'
                         value={paymentUri}
                         size={qrSize}
                         color='black'

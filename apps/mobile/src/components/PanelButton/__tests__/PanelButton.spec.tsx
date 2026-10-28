@@ -71,6 +71,38 @@ describe('PanelButton', () => {
         expect(screen.getByTestId('panel_btn_view')).toBeTruthy()
     })
 
+    it('renders the row, view, title and learn-more IDs from its testID', () => {
+        render(
+            <PanelButton
+                testID='panel_btn'
+                title='Title'
+                titleWeight='h4'
+                learnMore={{ label: 'Learn more', onPress: () => {} }}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByTestId('panel_btn')).toBeTruthy()
+        expect(screen.getByTestId('panel_btn_view')).toBeTruthy()
+        expect(screen.getByTestId('panel_btn_text')).toBeTruthy()
+        expect(screen.getByTestId('panel_btn_learn_more')).toBeTruthy()
+    })
+
+    it('renders no derived IDs without a testID', () => {
+        render(
+            <PanelButton
+                title='Title'
+                titleWeight='h4'
+                learnMore={{ label: 'Learn more', onPress: () => {} }}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(
+            screen.queryAllByTestId(/_(view|text|learn_more)$/),
+        ).toHaveLength(0)
+    })
+
     it('renders a leading image when one is given', () => {
         render(
             <PanelButton
