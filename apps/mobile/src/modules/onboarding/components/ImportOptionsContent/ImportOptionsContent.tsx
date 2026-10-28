@@ -10,115 +10,52 @@
  limitations under the License
  */
 
-import React, { useMemo } from 'react'
-import {
-    offeredLocalKeyKinds,
-    type LocalKeySeed,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    PWChip,
-    PWIcon,
-    PWSheetLayout,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
+import type { LocalKeySeed } from '@perawallet/wallet-core-accounts'
+import { PWSheetLayout, PWView } from '@components/core'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetOptionCard } from '../SheetOptionCard'
+import {
+    useImportOptionsContent,
+    type UseImportOptionsContentParams,
+} from './useImportOptionsContent'
 import { useStyles } from './styles'
 
 export type ImportOptionsContentResult = LocalKeySeed
 
-export type ImportOptionsContentProps = Record<string, never>
+export type ImportOptionsContentProps = UseImportOptionsContentParams
 
-export const ImportOptionsContent = () => {
+export const ImportOptionsContent = (props: ImportOptionsContentProps) => {
     const styles = useStyles()
     const { t } = useTranslation()
     const { resolve } = useBottomSheetResult<ImportOptionsContentResult>()
-
-    // A kind with no recover option is offered only from the passphrase of
-    // a kind it shares a word count with.
-    const options = useMemo(
-        () =>
-            offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
-                ({ kind, options: { recover } }) =>
-                    recover
-                        ? [
-                              {
-                                  ...recover,
-                                  seed: kind.seed,
-                                  testID: `import_options_${recover.id}_button`,
-                                  chipVariant: recover.isSuggested
-                                      ? ('helper' as const)
-                                      : undefined,
-                              },
-                          ]
-                        : [],
-            ),
-        [],
-    )
+    const { options } = useImportOptionsContent(props)
 
     return (
         <PWSheetLayout
             header={
-                <SheetHeader title={t('onboarding.import_options.title')} />
+                <SheetHeader
+                    title={t('onboarding.import_options.title')}
+                    showClose
+                />
             }
         >
             <PWView style={styles.optionsContainer}>
                 {options.map(option => (
-                    <PWTouchableOpacity
+                    <SheetOptionCard
                         key={option.testID}
-                        onPress={() => resolve(option.seed)}
-                        style={styles.optionBox}
                         testID={option.testID}
-                    >
-                        <PWView style={styles.optionContent}>
-                            <PWView style={styles.optionTopContent}>
-                                <PWView style={styles.optionHeader}>
-                                    <PWView style={styles.optionTitleContainer}>
-                                        <PWText
-                                            variant='h4'
-                                            numberOfLines={2}
-                                            ellipsizeMode='tail'
-                                        >
-                                            {t(option.titleKey)}
-                                        </PWText>
-                                    </PWView>
-                                    <PWView style={styles.optionChipContainer}>
-                                        <PWChip
-                                            title={t(option.chipKey)}
-                                            variant={option.chipVariant}
-                                        />
-                                    </PWView>
-                                </PWView>
-                                <PWText
-                                    variant='body'
-                                    style={styles.optionBody}
-                                    numberOfLines={3}
-                                    ellipsizeMode='tail'
-                                >
-                                    {t(option.descriptionKey)}
-                                </PWText>
-                            </PWView>
-                            <PWText
-                                variant='link'
-                                style={styles.optionLink}
-                                numberOfLines={2}
-                                ellipsizeMode='tail'
-                            >
-                                {t(option.mnemonicInfoKey)}
-                            </PWText>
-                        </PWView>
-
-                        <PWView style={styles.rightIconContainer}>
-                            <PWIcon
-                                name='chevron-right'
-                                size='sm'
-                                variant='secondary'
-                            />
-                        </PWView>
-                    </PWTouchableOpacity>
+                        title={t(option.titleKey)}
+                        description={t(option.descriptionKey)}
+                        chip={
+                            option.chipKey && {
+                                label: t(option.chipKey),
+                                variant: option.chipVariant,
+                            }
+                        }
+                        onPress={() => resolve(option.seed)}
+                    />
                 ))}
             </PWView>
         </PWSheetLayout>

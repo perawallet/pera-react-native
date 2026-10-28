@@ -69,9 +69,12 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
             backgroundColor: 'transparent',
         },
         badgeContainerStyle: {
-            // Pins the badge right whether or not a learn-more link shares the
-            // row, so neither case needs its own justifyContent.
-            marginLeft: 'auto',
+            // With the row's gap this keeps at least lg between a wrapping
+            // title and the badge, and holds the badge on the title's first line.
+            marginLeft: theme.spacing.sm,
+            marginTop: theme.spacing.xs,
+            alignSelf: 'flex-start',
+            flexShrink: 0,
         },
         learnMoreStyle: {
             backgroundColor: 'transparent',

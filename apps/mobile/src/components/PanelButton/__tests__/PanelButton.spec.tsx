@@ -142,7 +142,7 @@ describe('PanelButton', () => {
         expect(screen.queryByText('NEW')).toBeNull()
     })
 
-    it('renders the learn-more link beside the badge and fires its own onPress without triggering the row onPress', () => {
+    it('renders the learn-more link with a badge and fires its own onPress without triggering the row onPress', () => {
         const onPress = vi.fn()
         const onLearnMore = vi.fn()
         render(

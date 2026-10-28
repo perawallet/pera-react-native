@@ -41,6 +41,8 @@ export type ChainUi = {
     wrongNetworkAddress?: WrongNetworkAddressCopy
     /** How the family's wallets import a recovery passphrase; unset, the other-wallets explainer skips the family. */
     passphraseCompatibilityKey?: I18nKey
+    /** Unset, the address search uses neutral copy that names no address format. */
+    addressSearchPlaceholder?: I18nKey
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

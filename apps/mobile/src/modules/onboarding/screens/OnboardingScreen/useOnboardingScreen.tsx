@@ -30,6 +30,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseOnboardingScreenResult = {
+    handleTermsPress: () => void
     handlePrivacyPress: () => void
     handleCreateAccount: () => void
     handleImportAccount: () => void
@@ -92,6 +93,13 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         })
         return accepted === true
     }, [needsAcceptance, requestBottomSheet])
+
+    const handleTermsPress = useCallback(() => {
+        pushWebView({
+            url: withLanguageParam(config.termsOfServiceUrl, currentLanguage),
+            id: 'terms-of-service',
+        })
+    }, [pushWebView, currentLanguage])
 
     const handlePrivacyPress = useCallback(() => {
         pushWebView({
@@ -157,6 +165,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     }, [ensureTermsAccepted, navigation, setIsOnboarding])
 
     return {
+        handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
         handleImportAccount,

@@ -76,6 +76,13 @@ const fakeFileFor = (contents: string) =>
 
 const openImportOptions = async () => {
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    fireEvent.click(
+        await waitFor(() =>
+            screen.getByTestId(
+                'import_account_options_see_other_options_button',
+            ),
+        ),
+    )
     await waitFor(() => screen.getByTestId('import_account_options_asb_button'))
 }
 

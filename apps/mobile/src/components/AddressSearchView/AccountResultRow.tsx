@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
@@ -20,12 +21,15 @@ type AccountResultRowProps = {
     account: WalletAccount
     showBalance: boolean
     chainId: ChainId
+    /** Shown after the address; the balance row badges itself. */
+    badges?: ReactNode
 }
 
 export const AccountResultRow = ({
     account,
     showBalance,
     chainId,
+    badges,
 }: AccountResultRowProps) => {
     const styles = useStyles()
 
@@ -34,6 +38,7 @@ export const AccountResultRow = ({
             <AccountDisplay
                 account={account}
                 chainId={chainId}
+                badges={badges}
                 showChevron={false}
                 style={styles.accountDisplay}
             />

@@ -14,6 +14,7 @@ import { PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useStyles } from './styles'
 import { AssetIcon } from '@components/AssetIcon'
+import { ChainBadge } from '@components/ChainBadge'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -28,6 +29,8 @@ export const SelectDestinationScreen = () => {
     const {
         selectedAsset,
         scope,
+        senderAddress,
+        chainBadgeName,
         handleSelected,
         isCheckingExternalOptIn,
         isAutoAdvancing,
@@ -61,6 +64,7 @@ export const SelectDestinationScreen = () => {
                     size='md'
                 />
                 <PWText>{selectedAsset.name}</PWText>
+                {!!chainBadgeName && <ChainBadge name={chainBadgeName} />}
             </PWView>
         ) : undefined,
     })
@@ -92,6 +96,7 @@ export const SelectDestinationScreen = () => {
             <AddressSearchView
                 onSelected={handleSelected}
                 scope={scope}
+                excludeAddress={senderAddress}
                 showClipboardPaste
                 sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
                 isSendingMultiChainAsset={

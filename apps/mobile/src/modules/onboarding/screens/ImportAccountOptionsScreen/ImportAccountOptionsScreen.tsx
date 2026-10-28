@@ -16,6 +16,8 @@ import { PanelButton } from '@components/PanelButton'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
+import type { AccountOption } from '@modules/onboarding/types'
+import { SeeOtherOptionsButton } from '../../components/SeeOtherOptionsButton'
 import { useImportAccountOptionsScreen } from './useImportAccountOptionsScreen'
 import { useStyles } from './styles'
 
@@ -23,33 +25,44 @@ export const ImportAccountOptionsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        options,
+        titleKey,
+        mainOptions,
+        otherOptions,
+        isOtherOptionsVisible,
+        handleToggleOtherOptions,
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
         isReadingCredentials,
     } = useImportAccountOptionsScreen()
 
+    const renderOption = (option: AccountOption) => (
+        <PanelButton
+            key={option.testID}
+            testID={option.testID}
+            title={t(option.titleKey)}
+            description={t(option.descriptionKey)}
+            titleWeight='h3'
+            leftIcon={option.leftIcon}
+            onPress={option.onPress}
+            disabled={option.isDisabled}
+        />
+    )
+
     return (
         <>
             <PWScreen>
-                <ScreenHeader
-                    title={t('onboarding.import_account_options.title')}
-                />
+                <ScreenHeader title={t(titleKey)} />
                 <PWView style={styles.mainContainer}>
-                    {options.map(option => (
-                        <PanelButton
-                            key={option.testID}
-                            testID={option.testID}
-                            title={t(option.titleKey)}
-                            description={t(option.descriptionKey)}
-                            titleWeight='h3'
-                            leftIcon={option.leftIcon}
-                            onPress={option.onPress}
-                            disabled={option.isDisabled}
-                        />
-                    ))}
+                    {mainOptions.map(renderOption)}
+                    {isOtherOptionsVisible && otherOptions.map(renderOption)}
                 </PWView>
+                {!isOtherOptionsVisible && otherOptions.length > 0 && (
+                    <SeeOtherOptionsButton
+                        onPress={handleToggleOtherOptions}
+                        testID='import_account_options_see_other_options_button'
+                    />
+                )}
             </PWScreen>
 
             <QRScannerView
