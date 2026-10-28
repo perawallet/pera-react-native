@@ -1,7 +1,22 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    // Pinned to the app's Kotlin version; the root classpath only carries kotlin-gradle-plugin.
+    classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10'
+    classpath 'org.jetbrains.kotlin:kotlin-serialization:2.2.10'
+  }
+}
+
 plugins {
   id 'com.android.library'
   id 'expo-module-gradle-plugin'
 }
+
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
 group = 'com.algorand.perarn.perawidgets'
 version = '0.1.0'
@@ -12,7 +27,20 @@ android {
     versionCode 1
     versionName "0.1.0"
   }
+  buildFeatures {
+    compose true
+  }
   lintOptions {
     abortOnError false
   }
+}
+
+dependencies {
+  implementation 'androidx.glance:glance-appwidget:1.2.0'
+  implementation platform('androidx.compose:compose-bom:2026.08.00')
+  implementation 'androidx.compose.material3:material3'
+  implementation 'androidx.activity:activity-compose:1.13.0'
+  implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0'
+
+  testImplementation 'junit:junit:4.13.2'
 }

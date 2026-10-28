@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "locale": "en",
+  "theme": "system",
+  "network": { "isMainnet": true, "label": "MainNet" },
+  "strings": { "updated": "Updated", "portfolio": "Portfolio", "algoPrice": "ALGO price" },
+  "priceFeed": { "backendUrl": "https://mainnet.api.perawallet.app", "apiKey": "test-key", "currencyCode": "USD" },
+  "portfolioFeed": {
+    "accounts": [
+      { "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main" },
+      { "address": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "name": "Savings" }
+    ],
+    "period": "one-week"
+  },
+  "assetOptions": [{ "assetId": "31566704", "name": "USDC", "unitName": "USDC" }],
+  "algoPrice": { "formatted": "$0.2012", "asOf": 1761500000000 },
+  "portfolio": { "state": "visible", "formatted": "$1,234.56", "algoFormatted": "6,135.20 ALGO", "asOf": 1761500000000 },
+  "nfts": {
+    "state": "visible",
+    "items": [{ "assetId": "12345678901234567890", "title": "Pera Cat", "imageKey": "12345678901234567890" }]
+  },
+  "backup": { "cloud": null, "passphrase": { "state": "backedUp", "title": "Passphrase", "detail": null } },
+  "inboxFeed": {
+    "deviceId": "device-1",
+    "addresses": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"],
+    "accountNames": [{ "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main" }],
+    "notifications": null
+  },
+  "receiveTargets": [
+    { "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main", "paymentUri": "algorand://AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "chain": "algorand:mainnet" }
+  ]
+}
