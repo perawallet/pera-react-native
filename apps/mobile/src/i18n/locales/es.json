@@ -3527,6 +3527,16 @@
             "speed_up": "Acelerar",
             "cancel": "Cancelar transacción",
             "review_notice": "Reemplaza la transacción {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Posible envenenamiento de direcciones",
+            "title": "Posible envenenamiento de direcciones",
+            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante. No la copies ni le envíes nada.",
+            "sender_label": "Esta dirección",
+            "reuse_title": "Esta dirección imita a una que conoces",
+            "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
+            "reuse_confirm": "Continuar de todos modos",
+            "reuse_cancel": "Cancelar"
         }
     },
     "tabbar": {

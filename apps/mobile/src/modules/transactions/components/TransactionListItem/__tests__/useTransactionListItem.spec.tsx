@@ -67,6 +67,13 @@ vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
     useReplaceTransaction: () => mockReplace,
 }))
 
+const mockOpenSuspectedPoisoningSheet = vi.hoisted(() => vi.fn())
+vi.mock('../../../hooks/address-safety/useSuspectedPoisoningSheet', () => ({
+    useSuspectedPoisoningSheet: () => ({
+        openSuspectedPoisoningSheet: mockOpenSuspectedPoisoningSheet,
+    }),
+}))
+
 vi.mock('../../../hooks/history/useCounterpartyName', () => ({
     useCounterpartyName: vi.fn(() => 'Counterparty'),
 }))
@@ -301,11 +308,19 @@ describe('useTransactionListItem with a record', () => {
         chainData: { family: 'evm' },
     }
 
-    const renderRecord = () => {
+    const suspectedPoisoning = {
+        transactionId: record.id,
+        counterparty: '0xbob',
+        imitates: { address: '0xb0b', source: 'contact' as const },
+    }
+
+    const renderRecord = (
+        params: { suspectedPoisoning?: typeof suspectedPoisoning } = {},
+    ) => {
         vi.mocked(useSelectedAccount).mockReturnValue({
             chains: { ethereum: { address: '0xalice' } },
         } as unknown as ReturnType<typeof useSelectedAccount>)
-        return renderHook(() => useTransactionListItem({ record }), {
+        return renderHook(() => useTransactionListItem({ record, ...params }), {
             wrapper,
         }).result.current
     }
@@ -346,5 +361,23 @@ describe('useTransactionListItem with a record', () => {
         row.handlePress?.()
 
         expect(mockReplace.handleReplace).toHaveBeenCalled()
+    })
+
+    it('is not marked unless suspected', () => {
+        expect(renderRecord().isSuspectedPoisoning).toBe(false)
+    })
+
+    it('explains a suspected record on press instead of opening anything else', () => {
+        mockReplace.canReplace = true
+        const row = renderRecord({ suspectedPoisoning })
+
+        row.handlePress?.()
+
+        expect(row.isSuspectedPoisoning).toBe(true)
+        expect(mockOpenSuspectedPoisoningSheet).toHaveBeenCalledWith(
+            suspectedPoisoning,
+            record.scope,
+        )
+        expect(mockReplace.handleReplace).not.toHaveBeenCalled()
     })
 })

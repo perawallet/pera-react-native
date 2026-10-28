@@ -3527,6 +3527,16 @@
             "speed_up": "Accélérer",
             "cancel": "Annuler la transaction",
             "review_notice": "Remplace la transaction {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Empoisonnement d’adresse suspecté",
+            "title": "Empoisonnement d’adresse suspecté",
+            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne la copiez pas et n’y envoyez rien.",
+            "sender_label": "Cette adresse",
+            "reuse_title": "Cette adresse imite une adresse que vous connaissez",
+            "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
+            "reuse_confirm": "Continuer quand même",
+            "reuse_cancel": "Annuler"
         }
     },
     "tabbar": {

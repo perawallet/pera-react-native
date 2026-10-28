@@ -30,6 +30,7 @@ import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
     useCsvExportMutation,
+    type SuspectedPoisoning,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { shareFile } from '@utils/shareFile'
@@ -117,6 +118,8 @@ export type UseAccountHistoryResult = {
     handleOpenFilter: () => Promise<void>
     /** Function to handle pressing a transaction item */
     handleTransactionPress: (transaction: TransactionHistoryItem) => void
+    /** Keyed by transaction id. */
+    suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
 }
 
 /**
@@ -180,6 +183,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoadFailed,
         isLoadUnavailable,
         isLoadIntegrityBlocked,
+        suspectedPoisoningById,
     } = useTransactionHistoryRows({
         accountAddress,
         scope,
@@ -256,10 +260,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                     scope,
                     transactionId: transaction.id,
                     historyTransaction: transaction,
+                    suspectedPoisoning: suspectedPoisoningById.get(
+                        transaction.id,
+                    ),
                 })
             }
         },
-        [navigation, scope],
+        [navigation, scope, suspectedPoisoningById],
     )
 
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
@@ -322,5 +329,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         customRange,
         handleOpenFilter,
         handleTransactionPress,
+        suspectedPoisoningById,
     }
 }

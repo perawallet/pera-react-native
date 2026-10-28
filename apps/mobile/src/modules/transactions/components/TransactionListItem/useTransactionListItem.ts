@@ -24,6 +24,7 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     summarizeHistoryItem,
+    type SuspectedPoisoning,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -32,6 +33,7 @@ import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSuspectedPoisoningSheet } from '../../hooks/address-safety/useSuspectedPoisoningSheet'
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
 import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
 import {
@@ -41,7 +43,7 @@ import {
     type AmountDisplay,
 } from './amounts'
 
-export type UseTransactionListItemParams =
+export type UseTransactionListItemParams = (
     | {
           transaction: TransactionHistoryItem
           onPress?: (transaction: TransactionHistoryItem) => void
@@ -49,6 +51,7 @@ export type UseTransactionListItemParams =
     // The details screen reads a cached history row, which a record has none of;
     // a pending one this wallet can re-price opens speed up and cancel instead.
     | { record: TransactionRecord }
+) & { suspectedPoisoning?: SuspectedPoisoning }
 
 export type UseTransactionListItemResult = {
     iconName: IconName
@@ -63,6 +66,7 @@ export type UseTransactionListItemResult = {
     handlePress: Optional<() => void>
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
+    isSuspectedPoisoning: boolean
 }
 
 export const useTransactionListItem = (
@@ -132,11 +136,22 @@ export const useTransactionListItem = (
         if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
 
+    const { suspectedPoisoning } = params
+    const { openSuspectedPoisoningSheet } = useSuspectedPoisoningSheet()
+    const handleSuspectedRecordPress = useCallback(() => {
+        if (suspectedPoisoning) {
+            openSuspectedPoisoningSheet(suspectedPoisoning, scope)
+        }
+    }, [openSuspectedPoisoningSheet, suspectedPoisoning, scope])
+
     const { canReplace, handleReplace } = useReplaceTransaction(record)
     const handleRecordPress = useCallback(() => {
         void handleReplace()
     }, [handleReplace])
-    const recordPress = canReplace ? handleRecordPress : undefined
+    const replacePress = canReplace ? handleRecordPress : undefined
+    const recordPress = suspectedPoisoning
+        ? handleSuspectedRecordPress
+        : replacePress
 
     const handleLongPress = useCallback(
         () => void copyToClipboard(id),
@@ -155,5 +170,6 @@ export const useTransactionListItem = (
         notice,
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
+        isSuspectedPoisoning: !!suspectedPoisoning,
     }
 }

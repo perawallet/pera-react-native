@@ -10,18 +10,25 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { fireEvent, render, screen, waitFor } from '@test-utils/render'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
     type Optional,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { PWText } from '@components/core'
+import { AddressReuseGuardProvider } from '@components/AddressReuseGuard'
 import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 import { AddressDisplay } from '../AddressDisplay'
+
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
 
 const mockUseAllAccounts = vi.fn(() => [] as unknown[])
 let mockContacts: { name: string; addresses: Record<string, string> }[] = []
@@ -210,6 +217,33 @@ describe('AddressDisplay', () => {
         expect(screen.getByTestId('trailing-slot')).toBeTruthy()
         expect(screen.queryByTestId('icon-copy')).toBeNull()
     })
+
+    it.each([
+        ['allowed', true],
+        ['refused', false],
+    ])(
+        'copies from the copy icon only when reuse is %s',
+        async (_, isAllowed) => {
+            const address = 'E'.repeat(58)
+            const confirmReuse = vi.fn().mockResolvedValue(isAllowed)
+            render(
+                <AddressReuseGuardProvider guard={{ confirmReuse }}>
+                    <AddressDisplay address={address} />
+                </AddressReuseGuardProvider>,
+            )
+
+            fireEvent.click(screen.getByTestId('icon-copy'))
+
+            await waitFor(() =>
+                expect(confirmReuse).toHaveBeenCalledWith(address),
+            )
+            await waitFor(() =>
+                expect(mockCopyToClipboard).toHaveBeenCalledTimes(
+                    isAllowed ? 1 : 0,
+                ),
+            )
+        },
+    )
 
     it('forwards arbitrary textProps to the contact name text', () => {
         const address = 'A'.repeat(58)
