@@ -24,10 +24,11 @@ description: Create a new React hook following Pera conventions
 
 ## Steps for React Query Hook
 
-1. Create hook file at `modules/[mod]/hooks/use[Name]Query.ts` or `use[Name]Mutation.ts`
+1. Create hook file at `packages/[pkg]/src/hooks/use[Name]Query.ts` or `use[Name]Mutation.ts`; app modules cannot import `useQuery`/`useMutation` themselves
 2. Define explicit param and result types (never expose `UseQueryResult` / `UseMutationResult`)
-3. Add to barrel file `modules/[mod]/hooks/index.ts`
-4. Create test at `modules/[mod]/hooks/__tests__/use[Name]Query.spec.ts`
+3. Add to barrel file `packages/[pkg]/src/hooks/index.ts`
+4. Create test at `packages/[pkg]/src/hooks/__tests__/use[Name]Query.spec.ts`
+5. Call the hook from the app module
 
 See `references/patterns.md` for query and mutation examples.
 

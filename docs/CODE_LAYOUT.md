@@ -72,8 +72,8 @@ Subcomponents live beside their parent and are not re-exported from the barrel.
 | Domain-level hooks (shared)     | `apps/mobile/src/modules/[module]/hooks/`                             |
 | Screen-specific hook            | Same folder as the screen (e.g., `AccountScreen/useAccountScreen.ts`) |
 | Component-specific hook         | Same folder as the component (e.g., `AccountCard/useAccountCard.ts`)  |
-| Data fetching hook (Query)      | `modules/[module]/hooks/use[Name]Query.ts`                            |
-| Mutation hook                   | `modules/[module]/hooks/use[Name]Mutation.ts`                         |
+| Data fetching hook (Query)      | `packages/[package]/src/hooks/use[Name]Query.ts`                      |
+| Mutation hook                   | `packages/[package]/src/hooks/use[Name]Mutation.ts`                   |
 | State management hook (Store)   | `modules/[module]/hooks/use[Name]Store.ts`                            |
 | Toast or navigation hook        | `apps/mobile/src/hooks/`                                              |
 | Secure storage implementation   | `extensions/platform-react-native/` (or `platform-chrome/`)           |

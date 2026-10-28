@@ -3,7 +3,7 @@
 ## React Query Hook Example (with explicit types)
 
 ```typescript
-// modules/accounts/hooks/useAccountsQuery.ts
+// packages/accounts/src/hooks/useAccountsQuery.ts
 import { useQuery } from '@tanstack/react-query'
 import { fetchAccounts } from '../api'
 import { accountQueryKeys } from '../queryKeys'
@@ -43,7 +43,7 @@ export const useAccountsQuery = (
 ## Mutation Hook Example
 
 ```typescript
-// modules/accounts/hooks/useCreateAccountMutation.ts
+// packages/accounts/src/hooks/useCreateAccountMutation.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createAccount } from '../api'
 import { accountQueryKeys } from '../queryKeys'
