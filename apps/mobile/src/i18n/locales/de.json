@@ -3329,6 +3329,7 @@
         "look_alike": {
             "title": "Diese Seite gibt sich möglicherweise als eine andere aus",
             "body": "Sie sieht aus wie {{name}} ({{domain}}), ist aber eine andere Seite. Prüfe die Adresse, bevor du fortfährst.",
+            "body_domain": "Sie sieht aus wie {{domain}}, ist aber eine andere Seite. Prüfe die Adresse, bevor du fortfährst.",
             "acknowledge": "Ich verstehe, dass diese Seite nicht {{name}} ist",
             "continue": "Fortfahren",
             "reject": "Ablehnen"

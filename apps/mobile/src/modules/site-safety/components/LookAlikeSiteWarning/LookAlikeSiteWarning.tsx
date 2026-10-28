@@ -73,10 +73,14 @@ export const LookAlikeSiteWarning = ({
                     style={styles.body}
                     {...getTestProps('site_look_alike_body')}
                 >
-                    {t('site_safety.look_alike.body', {
-                        name: imitates.name,
-                        domain: imitates.domain,
-                    })}
+                    {imitates.name === imitates.domain
+                        ? t('site_safety.look_alike.body_domain', {
+                              domain: imitates.domain,
+                          })
+                        : t('site_safety.look_alike.body', {
+                              name: imitates.name,
+                              domain: imitates.domain,
+                          })}
                 </PWText>
             </PWView>
             <PWView style={styles.actions}>

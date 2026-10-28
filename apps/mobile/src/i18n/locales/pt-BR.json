@@ -3354,6 +3354,7 @@
         "look_alike": {
             "title": "Este site pode estar imitando outro",
             "body": "Ele parece {{name}} ({{domain}}), mas é outro site. Confira o endereço antes de continuar.",
+            "body_domain": "Ele parece {{domain}}, mas é outro site. Confira o endereço antes de continuar.",
             "acknowledge": "Entendo que este site não é {{name}}",
             "continue": "Continuar",
             "reject": "Recusar"

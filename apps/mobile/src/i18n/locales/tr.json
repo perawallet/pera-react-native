@@ -3337,6 +3337,7 @@
         "look_alike": {
             "title": "Bu site başka bir siteyi taklit ediyor olabilir",
             "body": "{{name}} ({{domain}}) sitesine benziyor ama farklı bir site. Devam etmeden önce adresi kontrol et.",
+            "body_domain": "{{domain}} sitesine benziyor ama farklı bir site. Devam etmeden önce adresi kontrol et.",
             "acknowledge": "Bu sitenin {{name}} olmadığını anlıyorum",
             "continue": "Devam et",
             "reject": "Reddet"

@@ -3337,6 +3337,7 @@
         "look_alike": {
             "title": "This site may be imitating another",
             "body": "It looks like {{name}} ({{domain}}) but is a different site. Check the address before you continue.",
+            "body_domain": "It looks like {{domain}} but is a different site. Check the address before you continue.",
             "acknowledge": "I understand this site is not {{name}}",
             "continue": "Continue",
             "reject": "Reject"
