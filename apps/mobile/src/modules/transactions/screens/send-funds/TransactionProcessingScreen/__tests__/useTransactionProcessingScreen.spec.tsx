@@ -24,6 +24,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 const { mockTrackEvent, mockUseSendScope } = vi.hoisted(() => ({
     mockTrackEvent: vi.fn(),
@@ -127,6 +128,7 @@ describe('useTransactionProcessingScreen', () => {
     }
 
     beforeEach(() => {
+        registerEthereumChain()
         vi.clearAllMocks()
         mockUseSendScope.mockReturnValue({
             chainId: 'algorand',

@@ -40,6 +40,10 @@ type UseTransactionSuccessScreenResult = {
     /** Undefined on a network with no explorer, such as a custom one, so the CTA is hidden. */
     handleViewInExplorer: (() => void) | undefined
     variant: SuccessVariant
+    /** The send is only broadcast; History shows it confirm or fail. */
+    isAwaitingConfirmation: boolean
+    networkName: string
+    explorerName: string
 }
 
 export const useTransactionSuccessScreen =
@@ -54,9 +58,11 @@ export const useTransactionSuccessScreen =
             useSendFunds()
         const { onFinished: claimOnFinished } = useClaimAssets()
         const scope = useSendScope()
-        const explorerUrl = getChainDescriptor(
-            scope.chainId,
-        ).explorer.transactionUrl(scope.networkId, transactionId)
+        const descriptor = getChainDescriptor(scope.chainId)
+        const explorerUrl = descriptor.explorer.transactionUrl(
+            scope.networkId,
+            transactionId,
+        )
         const { pushWebView } = useWebView()
 
         const isClaimFlow =
@@ -98,5 +104,8 @@ export const useTransactionSuccessScreen =
             handleDone,
             handleViewInExplorer,
             variant,
+            isAwaitingConfirmation: !descriptor.protocol.confirmsOnSubmit,
+            networkName: descriptor.displayName,
+            explorerName: descriptor.explorer.name,
         }
     }

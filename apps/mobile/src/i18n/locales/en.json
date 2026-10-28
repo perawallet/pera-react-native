@@ -2932,13 +2932,17 @@
             "subtitle": "Your transaction is being processed by the Algorand network.",
             "title_hardware": "Connecting to your Ledger device",
             "subtitle_hardware": "Reaching out to {{deviceName}}. Make sure it is unlocked, in range, and that the {{appName}} app is open.",
-            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the {{appName}} app is open."
+            "subtitle_hardware_noDevice": "Reaching out to your Ledger device. Make sure it is unlocked, in range, and that the {{appName}} app is open.",
+            "broadcast_subtitle": "Your transaction is being sent to the {{network}} network."
         },
         "success": {
             "title": "Transaction Processed",
             "asset_transferred_title": "Asset Transferred",
             "subtitle": "Your transaction was successfully received by the Algorand network",
+            "pending_title": "Transaction Submitted",
+            "pending_subtitle": "Your transaction was sent to the {{network}} network and is waiting for confirmation.",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
+            "view_on_explorer": "View on {{explorer}}",
             "done": "Done"
         },
         "close_account": {

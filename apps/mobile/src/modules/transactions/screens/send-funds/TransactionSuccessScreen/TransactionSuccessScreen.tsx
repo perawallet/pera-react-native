@@ -33,18 +33,38 @@ const subtitleKey = {
 
 export const TransactionSuccessScreen = () => {
     const { t } = useLanguage()
-    const { handleDone, handleViewInExplorer, variant } =
-        useTransactionSuccessScreen()
+    const {
+        handleDone,
+        handleViewInExplorer,
+        variant,
+        isAwaitingConfirmation,
+        networkName,
+        explorerName,
+    } = useTransactionSuccessScreen()
 
     return (
         <PWResultView
             variant='success'
             testID='send_success'
-            title={t(titleKey[variant] ?? titleKey['payment'])}
-            body={t(subtitleKey[variant] ?? subtitleKey['payment'])}
+            title={
+                isAwaitingConfirmation
+                    ? t('send_funds.success.pending_title')
+                    : t(titleKey[variant] ?? titleKey['payment'])
+            }
+            body={
+                isAwaitingConfirmation
+                    ? t('send_funds.success.pending_subtitle', {
+                          network: networkName,
+                      })
+                    : t(subtitleKey[variant] ?? subtitleKey['payment'])
+            }
             linkAction={
                 handleViewInExplorer && {
-                    label: t('send_funds.success.view_in_explorer'),
+                    label: isAwaitingConfirmation
+                        ? t('send_funds.success.view_on_explorer', {
+                              explorer: explorerName,
+                          })
+                        : t('send_funds.success.view_in_explorer'),
                     onPress: handleViewInExplorer,
                 }
             }
