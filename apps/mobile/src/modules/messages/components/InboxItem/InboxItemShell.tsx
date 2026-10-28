@@ -11,8 +11,9 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import { ChainBadge } from '@components/ChainBadge'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { UnreadIndicator } from '../UnreadIndicator'
 import { isPendingAction } from './isPendingAction'
 import { useStyles } from './styles'
@@ -37,6 +38,8 @@ export type InboxItemShellProps = {
      * `top` pins them to the first line for multi-line `body` content.
      */
     align?: 'center' | 'top'
+    /** The chain every inbox item belongs to; shown as a badge only when the wallet spans chains. */
+    chainBadgeName?: string
     onPress?: () => void
     testID?: string
 }
@@ -48,6 +51,7 @@ export const InboxItemShell = ({
     subtitle,
     body,
     align = 'center',
+    chainBadgeName,
     onPress,
     testID,
 }: InboxItemShellProps) => {
@@ -55,6 +59,12 @@ export const InboxItemShell = ({
 
     const isTop = align === 'top'
     const indicator = <UnreadIndicator isUnread={isPendingAction(item)} />
+    const titleRow = (
+        <PWView style={styles.titleRow}>
+            <PWText style={styles.titleText}>{title}</PWText>
+            {chainBadgeName ? <ChainBadge name={chainBadgeName} /> : null}
+        </PWView>
+    )
 
     return (
         <PWTouchableOpacity
@@ -71,12 +81,12 @@ export const InboxItemShell = ({
             {icon}
             {isTop ? (
                 <PWView style={styles.content}>
-                    <PWText style={styles.titleText}>{title}</PWText>
+                    {titleRow}
                     {body}
                 </PWView>
             ) : (
                 <PWView style={styles.messageBox}>
-                    <PWText style={styles.titleText}>{title}</PWText>
+                    {titleRow}
                     {subtitle ? (
                         <PWText
                             variant='caption'
