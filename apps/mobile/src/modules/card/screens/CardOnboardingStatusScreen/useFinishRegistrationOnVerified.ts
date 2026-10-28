@@ -168,6 +168,13 @@ export const useFinishRegistrationOnVerified = (
 
     useEffect(() => {
         if (!isWaitingOnBaanx || !isFocused || isInFlightRef.current) return
+        if (loginAttempts.isLocked) return
+        // Without a password finalize returns before recording an attempt, so
+        // the budget would never stop it; only a sign-in can finish here.
+        if (!hasPassword) {
+            sendToSignIn()
+            return
+        }
         if (
             !canAttemptAutomaticLogin(loginAttempts, {
                 now: Date.now(),
@@ -182,8 +189,10 @@ export const useFinishRegistrationOnVerified = (
         isFocused,
         loginAttempts,
         hasAccountSignal,
+        hasPassword,
         now,
         runLogin,
+        sendToSignIn,
     ])
 
     const msUntilNext = msUntilNextLoginAttempt(loginAttempts, now)

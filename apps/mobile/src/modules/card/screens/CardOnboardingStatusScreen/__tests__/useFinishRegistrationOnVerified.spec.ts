@@ -23,11 +23,13 @@ import {
     type FinalizeRegistrationOutcome,
 } from '@perawallet/wallet-core-card'
 
-// Stands in for the real mutation, including its bookkeeping: every login it
-// runs is recorded against the budget, and a sign-in outcome drops the password.
+// Stands in for the real mutation, including its bookkeeping: without a
+// password it returns before logging in, every login it runs is recorded
+// against the budget, and a sign-in outcome drops the password.
 let mockOutcome: FinalizeRegistrationOutcome = 'not-ready'
 const mockFinalize = vi.fn(
     async ({ isAutomatic }: { email: string; isAutomatic: boolean }) => {
+        if (!useCardStore.getState().hasPassword) return 'password-required'
         useCardStore
             .getState()
             .recordLoginAttempt({ isAutomatic, at: Date.now() })
@@ -287,6 +289,32 @@ describe('useFinishRegistrationOnVerified', () => {
             finishesRegistration: true,
         })
         expect(mockInfoToast).toHaveBeenCalledTimes(1)
+    })
+
+    it('never loops logins without a password, even after leaving and returning to the checklist', async () => {
+        useCardStore.getState().setPassword(null)
+        const { rerender } = renderFinish(VERIFIED)
+        await flush()
+        expect(mockNavigate).toHaveBeenCalledTimes(1)
+
+        mockIsFocused = false
+        rerender(VERIFIED)
+        await flush()
+        mockIsFocused = true
+        rerender(VERIFIED)
+        await advance(60_000)
+
+        expect(mockFinalize).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not send a locked account to sign in', async () => {
+        useCardStore.getState().markLoginLocked()
+        renderFinish(VERIFIED)
+        await flush()
+
+        expect(mockFinalize).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('goes straight to sign in when no email is known', async () => {
