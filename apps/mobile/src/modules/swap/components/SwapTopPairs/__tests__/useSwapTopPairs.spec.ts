@@ -17,9 +17,9 @@ import { useSwapTopPairs } from '../useSwapTopPairs'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-const { mockTopPairsQuery, device } = vi.hoisted(() => ({
+const { mockTopPairsQuery, mockIsRestricted } = vi.hoisted(() => ({
     mockTopPairsQuery: vi.fn(),
-    device: { country: 'US', restrictedCountries: '["GB"]' },
+    mockIsRestricted: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -27,10 +27,7 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
         crypto_promotion_restricted_countries:
             'crypto_promotion_restricted_countries',
     },
-    useRemoteConfig: () => ({
-        getStringValue: (_key: string, fallback: string) =>
-            device.restrictedCountries ?? fallback,
-    }),
+    useIsDeviceCountryRestricted: mockIsRestricted,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -39,10 +36,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    usePeraProvider: () => ({
-        analytics: { logEvent: vi.fn() },
-        deviceInfo: { getDeviceCountry: () => device.country },
-    }),
+    usePeraProvider: () => ({ analytics: { logEvent: vi.fn() } }),
 }))
 
 const PAIR = {
@@ -53,8 +47,7 @@ const PAIR = {
 describe('useSwapTopPairs', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        device.country = 'US'
-        device.restrictedCountries = '["GB"]'
+        mockIsRestricted.mockReturnValue(false)
         mockTopPairsQuery.mockReturnValue({
             data: [PAIR],
             isLoading: false,
@@ -62,44 +55,18 @@ describe('useSwapTopPairs', () => {
         })
     })
 
-    it('fetches and returns top pairs outside the UK', () => {
+    it('fetches and returns top pairs outside the promotion-restricted countries', () => {
         const { result } = renderHook(() => useSwapTopPairs(SCOPE))
 
+        expect(mockIsRestricted).toHaveBeenCalledWith(
+            'crypto_promotion_restricted_countries',
+        )
         expect(mockTopPairsQuery).toHaveBeenCalledWith(SCOPE, 5, true)
         expect(result.current.pairs).toEqual([PAIR])
     })
 
-    it('allows UK pairs when the remote country list is empty', () => {
-        device.country = 'GB'
-        device.restrictedCountries = '[]'
-        const { result } = renderHook(() => useSwapTopPairs(SCOPE))
-        expect(mockTopPairsQuery).toHaveBeenCalledWith(SCOPE, 5, true)
-        expect(result.current.pairs).toEqual([PAIR])
-    })
-
-    it.each(['["US", "GB"]', '[" us "]'])(
-        'uses the remote country list %s',
-        countries => {
-            device.restrictedCountries = countries
-            const { result } = renderHook(() => useSwapTopPairs(SCOPE))
-            expect(mockTopPairsQuery).toHaveBeenCalledWith(SCOPE, 5, false)
-            expect(result.current.pairs).toEqual([])
-        },
-    )
-
-    it.each(['', 'invalid', '{}', '[1]'])(
-        'defaults to no restrictions for missing or malformed config %s',
-        countries => {
-            device.country = 'GB'
-            device.restrictedCountries = countries
-            const { result } = renderHook(() => useSwapTopPairs(SCOPE))
-            expect(mockTopPairsQuery).toHaveBeenCalledWith(SCOPE, 5, true)
-            expect(result.current.pairs).toEqual([PAIR])
-        },
-    )
-
-    it('skips the fetch and hides cached pairs in the UK', () => {
-        device.country = 'GB'
+    it('skips the fetch and hides cached pairs in a restricted country', () => {
+        mockIsRestricted.mockReturnValue(true)
 
         const { result } = renderHook(() => useSwapTopPairs(SCOPE))
 

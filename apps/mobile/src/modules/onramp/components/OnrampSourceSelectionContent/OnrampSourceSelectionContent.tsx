@@ -53,6 +53,7 @@ export const OnrampSourceSelectionContent = () => {
         canExpandFiat,
         fiatTokens,
         cryptoTokens,
+        hasCryptoSources,
         isFiat,
         duplicatedSymbols,
     } = useOnrampSourceSelection()
@@ -102,16 +103,18 @@ export const OnrampSourceSelectionContent = () => {
                             testID='onramp-source-search'
                         />
 
-                        <FilterSelection<OnrampSourceFilter>
-                            options={FILTERS.map(({ value, labelKey }) => ({
-                                value,
-                                label: t(labelKey),
-                                testID: `onramp-source-filter-${value}`,
-                            }))}
-                            selectedValue={filter}
-                            onSelect={setFilter}
-                            contentContainerStyle={styles.filterRow}
-                        />
+                        {hasCryptoSources && (
+                            <FilterSelection<OnrampSourceFilter>
+                                options={FILTERS.map(({ value, labelKey }) => ({
+                                    value,
+                                    label: t(labelKey),
+                                    testID: `onramp-source-filter-${value}`,
+                                }))}
+                                selectedValue={filter}
+                                onSelect={setFilter}
+                                contentContainerStyle={styles.filterRow}
+                            />
+                        )}
 
                         {isEmpty ? (
                             <PWView style={styles.centered}>

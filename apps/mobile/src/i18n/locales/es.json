@@ -3515,6 +3515,10 @@
             "title": "Top 5 swaps",
             "volume_24h": "Volumen (24 h)",
             "error": "No se pudieron cargar los swaps destacados"
+        },
+        "region_restricted": {
+            "title": "Swap no disponible",
+            "body": "Swap no está disponible en tu región."
         }
     },
     "onramp": {

@@ -32,6 +32,8 @@ export const RemoteConfigKeys = {
     enable_gift_cards: 'enable_gift_cards',
     crypto_promotion_restricted_countries:
         'crypto_promotion_restricted_countries',
+    xo_swap_restricted_countries: 'xo_swap_restricted_countries',
+    swap_restricted_countries: 'swap_restricted_countries',
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
@@ -101,6 +103,10 @@ export const RemoteConfigDefaults: Readonly<
     // Client device-region guard; the backend separately enforces IP restrictions.
     // JSON array of ISO country codes; [] disables the client restriction.
     crypto_promotion_restricted_countries: '[]',
+    // Same format. XO Swap, the crypto sources in Fund, leaves the listed countries.
+    xo_swap_restricted_countries: '[]',
+    // Same format. Swap leaves the listed countries entirely, XO Swap included.
+    swap_restricted_countries: '[]',
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '2',
