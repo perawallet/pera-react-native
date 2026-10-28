@@ -25,8 +25,10 @@ const mocks = vi.hoisted(() => ({
     accounts: [] as unknown[],
     options: [] as Option[],
     accountChainOptions: vi.fn(),
+    unreachableChainsNoteOf: vi.fn(),
     enableChain: vi.fn(),
     showError: vi.fn(),
+    showToast: vi.fn(),
     copyToClipboard: vi.fn(),
     trackEvent: vi.fn(),
     switchedOff: [] as string[],
@@ -36,6 +38,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     accountChainOptions: (...args: unknown[]) =>
         mocks.accountChainOptions(...args),
+    unreachableChainsNoteOf: (...args: unknown[]) =>
+        mocks.unreachableChainsNoteOf(...args),
     useAllAccounts: () => mocks.accounts,
     useEnableChain: () => mocks.enableChain,
 }))
@@ -62,6 +66,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         chains: {
+            list: () => [
+                { id: 'algorand' },
+                { id: 'ethereum' },
+                { id: 'base' },
+            ],
             get: (chainId: string) => ({
                 descriptor: {
                     family: chainId === 'algorand' ? 'algorand' : 'evm',
@@ -75,11 +84,20 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mocks.showError }),
 }))
 
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
+}))
+
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mocks.copyToClipboard }),
 }))
 
-vi.mock('@hooks/useLanguage')
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { network?: string }) =>
+            options?.network ? `${key}:${options.network}` : key,
+    }),
+}))
 
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics/events/contexts')),
@@ -111,6 +129,40 @@ describe('useAccountNetworks', () => {
         mocks.switchedOff = []
         mocks.receiveOff.clear()
         mocks.accountChainOptions.mockImplementation(() => mocks.options)
+        mocks.unreachableChainsNoteOf.mockReturnValue(null)
+    })
+
+    it("words the kind's note for the chains that are on but out of the account's reach", () => {
+        mocks.unreachableChainsNoteOf.mockReturnValue('kind.unreachable_note')
+        mocks.switchedOff = ['base']
+
+        const { result } = render()
+
+        expect(result.current.unreachableChainsNote).toBe(
+            'kind.unreachable_note',
+        )
+        expect(mocks.unreachableChainsNoteOf).toHaveBeenCalledWith(account, [
+            'algorand',
+            'ethereum',
+        ])
+    })
+
+    it('shows no note when the account reaches every chain that is on', () => {
+        const { result } = render()
+
+        expect(result.current.unreachableChainsNote).toBeNull()
+    })
+
+    it("checks the store's current account for the note, not the sheet's snapshot", () => {
+        const current = { ...account, chains: { ...account.chains } }
+        mocks.accounts = [current]
+
+        render()
+
+        expect(mocks.unreachableChainsNoteOf).toHaveBeenCalledWith(
+            current,
+            expect.any(Array),
+        )
     })
 
     it('shows an Algorand-only account as one enabled row with its truncated address and QR', () => {
@@ -182,7 +234,13 @@ describe('useAccountNetworks', () => {
         })
 
         expect(result.current.addingChainId).toBe('ethereum')
-        expect(mocks.enableChain).toHaveBeenCalledWith('hd', 'ethereum', 'user')
+        await waitFor(() =>
+            expect(mocks.enableChain).toHaveBeenCalledWith(
+                'hd',
+                'ethereum',
+                'user',
+            ),
+        )
         await waitFor(() =>
             expect(result.current.addingChainId).toBeUndefined(),
         )
@@ -207,6 +265,27 @@ describe('useAccountNetworks', () => {
         })
     })
 
+    it('confirms an added chain with a success toast in the open sheet', async () => {
+        mocks.options = [ALGORAND, ETHEREUM]
+        mocks.enableChain.mockResolvedValue({ ...account })
+        const { result } = render()
+
+        act(() => {
+            result.current.handleAddNetwork('ethereum' as ChainId)
+        })
+
+        await waitFor(() =>
+            expect(mocks.showToast).toHaveBeenCalledWith(
+                {
+                    title: 'account_options.add_network_success:Ethereum',
+                    body: '',
+                    type: 'success',
+                },
+                { notifier: undefined },
+            ),
+        )
+    })
+
     it('does nothing when Add lands on a chain the account is already on', () => {
         const { result } = render()
 
@@ -215,9 +294,10 @@ describe('useAccountNetworks', () => {
         })
 
         expect(mocks.enableChain).not.toHaveBeenCalled()
+        expect(mocks.showToast).not.toHaveBeenCalled()
     })
 
-    it('enables once when Add is tapped twice before it settles', () => {
+    it('enables once when Add is tapped twice before it settles', async () => {
         mocks.options = [ALGORAND, ETHEREUM]
         mocks.enableChain.mockReturnValue(new Promise(() => {}))
         const { result } = render()
@@ -227,7 +307,7 @@ describe('useAccountNetworks', () => {
             result.current.handleAddNetwork('ethereum' as ChainId)
         })
 
-        expect(mocks.enableChain).toHaveBeenCalledTimes(1)
+        await waitFor(() => expect(mocks.enableChain).toHaveBeenCalledTimes(1))
     })
 
     it('reports a failed Add and leaves the row to add again', async () => {
@@ -251,6 +331,7 @@ describe('useAccountNetworks', () => {
             expect(result.current.addingChainId).toBeUndefined(),
         )
         expect(result.current.visibleRows[1].isEnabled).toBe(false)
+        expect(mocks.showToast).not.toHaveBeenCalled()
     })
 
     it(`shows ${COLLAPSED_NETWORK_COUNT} rows until all networks are asked for`, () => {

@@ -17,10 +17,13 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useInfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon, chainUiFor } from '@modules/chain-ui'
 import type { AccountChainSectionProps } from '../../types/account-options-display'
+import { AccountTypeInfoContent } from '../AccountInfoCard/AccountTypeInfoContent'
 import { useStyles } from './styles'
 import type {
     AccountNetworkRow,
@@ -166,6 +169,44 @@ const AccountNetworkRowView = ({
     )
 }
 
+type UnreachableChainsNoteRowProps = {
+    note: string
+    account: WalletAccount
+}
+
+const UnreachableChainsNoteRow = ({
+    note,
+    account,
+}: UnreachableChainsNoteRowProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const { openInfo } = useInfoButton({
+        children: <AccountTypeInfoContent account={account} />,
+    })
+
+    return (
+        <PWView
+            style={styles.unreachableNote}
+            testID='account_networks_unreachable_note'
+        >
+            <PWText
+                variant='caption'
+                style={styles.unreachableNoteText}
+            >
+                {note}
+            </PWText>
+            <PWTouchableOpacity
+                onPress={openInfo}
+                testID='account_networks_unreachable_learn_more'
+            >
+                <PWText variant='link'>
+                    {t('account_type_info.learn_more')}
+                </PWText>
+            </PWTouchableOpacity>
+        </PWView>
+    )
+}
+
 export type AccountNetworkListProps = {
     networks: UseAccountNetworksResult
     onClose: () => void
@@ -215,6 +256,12 @@ export const AccountNetworkList = ({
                         size='sm'
                     />
                 </PWTouchableOpacity>
+            )}
+            {networks.unreachableChainsNote && (
+                <UnreachableChainsNoteRow
+                    note={networks.unreachableChainsNote}
+                    account={networks.account}
+                />
             )}
         </PWView>
     )

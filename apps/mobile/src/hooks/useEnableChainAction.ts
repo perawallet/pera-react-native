@@ -54,6 +54,8 @@ export const useEnableChainAction = (
             setEnablingChainId(chainId)
             void (async () => {
                 try {
+                    // Derivation blocks the JS thread; let the loading state paint first.
+                    await new Promise(resolve => requestAnimationFrame(resolve))
                     const account = await enable(accountId, chainId, 'user')
                     if (isMounted()) onEnabled?.(account)
                 } catch (error) {

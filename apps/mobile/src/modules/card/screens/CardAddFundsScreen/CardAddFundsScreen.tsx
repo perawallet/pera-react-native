@@ -74,6 +74,7 @@ export const CardAddFundsScreen = () => {
                         })}
                         amount={amount}
                         amountTestID='card-add-funds-amount'
+                        balanceTestID='card-add-funds-balance'
                         chip={
                             <>
                                 {sourceAsset && (
@@ -97,6 +98,7 @@ export const CardAddFundsScreen = () => {
                         <PWText
                             variant='body'
                             style={styles.mutedLabel}
+                            testID='card-add-funds-receive'
                         >
                             {secondaryDisplay}
                         </PWText>

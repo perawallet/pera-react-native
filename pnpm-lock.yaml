@@ -377,6 +377,106 @@ importers:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
+  apps/benchmarks:
+    dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../../packages/accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../../packages/assets
+      '@perawallet/wallet-core-background':
+        specifier: workspace:*
+        version: link:../../packages/background
+      '@perawallet/wallet-core-backup':
+        specifier: workspace:*
+        version: link:../../packages/backup
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../../packages/chain-algorand
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
+      '@perawallet/wallet-core-chain-ethereum':
+        specifier: workspace:*
+        version: link:../../packages/chain-ethereum
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../../packages/chain-shared
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@perawallet/wallet-core-device':
+        specifier: workspace:*
+        version: link:../../packages/device
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../../packages/kms
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../../packages/signing
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../../packages/transactions
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../../extensions/platform
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.3.0)
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
+      expo-clipboard:
+        specifier: 58.0.4
+        version: 58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      expo-device:
+        specifier: 'catalog:'
+        version: 58.0.5(expo@58.0.17)
+      expo-file-system:
+        specifier: 58.0.10
+        version: 58.0.10(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))
+      expo-splash-screen:
+        specifier: 58.0.11
+        version: 58.0.11(expo@58.0.17)(typescript@7.0.2)
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-native:
+        specifier: 0.88.0
+        version: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      '@types/react':
+        specifier: ~19.3.0
+        version: 19.3.0
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+
   apps/browser:
     dependencies:
       '@perawallet/wallet-core-accounts':
@@ -993,6 +1093,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.4.0
+      '@perawallet/benchmarks':
+        specifier: workspace:*
+        version: link:../benchmarks
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
@@ -2527,6 +2630,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-security':
+        specifier: workspace:*
+        version: link:../security
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

@@ -61,9 +61,13 @@ export const AccountInfoCard = ({
         accountType,
         showStructure,
         structureLabel,
+        structureSubtitle,
+        isMultichain,
         structureIcon,
-        structureAccounts,
-        structureMainAddress,
+        structureRows,
+        expandedRowId,
+        handleToggleRow,
+        scanLabel,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
 
@@ -157,9 +161,13 @@ export const AccountInfoCard = ({
                         {rekeyedTo && <PWDivider />}
                         <AccountStructureTree
                             label={structureLabel}
+                            subtitle={structureSubtitle}
                             icon={structureIcon}
-                            accounts={structureAccounts}
-                            mainAccountAddress={structureMainAddress}
+                            rows={structureRows}
+                            isMultichain={isMultichain}
+                            expandedRowId={expandedRowId}
+                            onToggleRow={handleToggleRow}
+                            scanLabel={scanLabel}
                             onScanAddresses={handleScanAddresses}
                         />
                     </ExpandablePanel>

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     trackEvent,
     AccountOptionsEvent,
@@ -580,7 +580,7 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('offers an HD account Ethereum to add, and adds it for the user', () => {
+        it('offers an HD account Ethereum to add, and adds it for the user', async () => {
             registerEthereumChain()
             mockEnableChain.mockReturnValue(new Promise(() => {}))
             const { result } = render(hdAccount)
@@ -594,10 +594,12 @@ describe('useAccountOptions', () => {
                 result.current.networks.handleAddNetwork(ETHEREUM_CHAIN_ID)
             })
 
-            expect(mockEnableChain).toHaveBeenCalledWith(
-                'acc-hd',
-                ETHEREUM_CHAIN_ID,
-                'user',
+            await waitFor(() =>
+                expect(mockEnableChain).toHaveBeenCalledWith(
+                    'acc-hd',
+                    ETHEREUM_CHAIN_ID,
+                    'user',
+                ),
             )
         })
 

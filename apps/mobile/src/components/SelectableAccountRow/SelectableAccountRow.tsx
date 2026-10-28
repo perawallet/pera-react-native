@@ -11,6 +11,7 @@
  */
 
 import { memo, useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWTouchableOpacity } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 
@@ -24,6 +25,7 @@ export type SelectableAccountRowProps = {
     onSelect: (account: WalletAccount) => void
     isHighlighted?: boolean
     testID?: string
+    chainId?: ChainId
 }
 
 const SelectableAccountRowComponent = ({
@@ -31,6 +33,7 @@ const SelectableAccountRowComponent = ({
     onSelect,
     isHighlighted,
     testID,
+    chainId,
 }: SelectableAccountRowProps) => {
     const handlePress = useCallback(
         () => onSelect(account),
@@ -45,6 +48,7 @@ const SelectableAccountRowComponent = ({
             <AccountWithBalance
                 account={account}
                 isHighlighted={isHighlighted}
+                chainId={chainId}
             />
         </PWTouchableOpacity>
     )

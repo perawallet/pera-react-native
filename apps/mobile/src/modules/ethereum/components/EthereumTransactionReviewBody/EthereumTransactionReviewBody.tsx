@@ -14,14 +14,13 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
-import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
+import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumReviewHeader } from './EthereumReviewHeader'
 import { useStyles } from './styles'
@@ -42,63 +41,23 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const { view, amount, maxFee, signingAccount, scope, collectible } =
+    const { maxFee, signingAccount, scope, standardCall, isTransfer } =
         presentation
-
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
 
     let details = null
-    if (view.kind === 'contract-call') {
+    if (standardCall && !isTransfer) {
+        details = <EthereumApprovalDetails presentation={presentation} />
+    } else if (!isTransfer) {
         details = <EthereumContractCallDetails presentation={presentation} />
-    } else if (view.token) {
+    } else {
         details = (
-            <KeyValueRow
-                testID='ethereum_review_asset'
-                title={t('transactions.common.asset')}
-            >
-                <PWView style={styles.asset}>
-                    {!!amount?.asset && (
-                        <PWText>{amount.asset.unitName}</PWText>
-                    )}
-                    <AddressDisplay
-                        address={view.token.contract}
-                        displayType='address-only'
-                    />
-                </PWView>
-            </KeyValueRow>
-        )
-    } else if (view.nft && collectible) {
-        details = (
-            <KeyValueRow
-                testID='ethereum_review_nft'
-                title={t('transactions.common.asset')}
-            >
-                <PWView style={styles.nft}>
-                    {!!amount?.asset && (
-                        <AssetIcon
-                            asset={amount.asset}
-                            shape='square'
-                            size='xl'
-                        />
-                    )}
-                    <PWView style={styles.asset}>
-                        <PWText>
-                            {t('transactions.list_item.nft_subtitle', {
-                                collection:
-                                    collectible.collectionName ??
-                                    view.nft.contract,
-                                tokenId: collectible.tokenId,
-                            })}
-                        </PWText>
-                        <AddressDisplay
-                            address={view.nft.contract}
-                            displayType='address-only'
-                        />
-                    </PWView>
-                </PWView>
-            </KeyValueRow>
+            <EthereumTransferAssetRows
+                presentation={presentation}
+                testIDPrefix='ethereum_review'
+            />
         )
     }
 
@@ -138,12 +97,18 @@ export const EthereumTransactionReviewBody = ({
                         <PWText style={styles.label}>
                             {t('send_funds.fee.max_fee')}
                         </PWText>
-                        <AssetAmount
-                            asset={maxFee.asset}
-                            value={maxFee.value}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
+                        {maxFee ? (
+                            <AssetAmount
+                                asset={maxFee.asset}
+                                value={maxFee.value}
+                                showSymbol
+                                ignorePrivacyMode
+                            />
+                        ) : (
+                            <PWText>
+                                {t('ethereum.batch.fee_when_reached')}
+                            </PWText>
+                        )}
                     </PWView>
                     <PWButton
                         testID='ethereum_view_details'

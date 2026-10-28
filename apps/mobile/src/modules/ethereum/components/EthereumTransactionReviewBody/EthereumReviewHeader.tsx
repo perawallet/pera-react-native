@@ -37,9 +37,14 @@ export const EthereumReviewHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { view, titleKey, iconName, counterparty, amount, isAmountLoading } =
-        presentation
-    const isTransfer = view.kind !== 'contract-call'
+    const {
+        titleKey,
+        iconName,
+        counterparty,
+        amount,
+        isAmountLoading,
+        isTransfer,
+    } = presentation
 
     return (
         <PWView style={styles.header}>
@@ -75,7 +80,7 @@ export const EthereumReviewHeader = ({
                 )}
             </PWView>
 
-            {isTransfer && (
+            {isTransfer && (!!amount || isAmountLoading) && (
                 <PWView style={styles.amountContainer}>
                     <AssetAmount
                         testID='ethereum_review_amount'

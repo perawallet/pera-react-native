@@ -39,6 +39,7 @@ export const CardAccountDetailsSheet = () => {
 
     return (
         <PWSheetLayout
+            testID='card_account_details_sheet'
             header={
                 <SheetHeader
                     title={t('peraCard.account_details.title')}

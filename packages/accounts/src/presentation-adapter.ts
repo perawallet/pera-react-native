@@ -26,6 +26,8 @@ export type AccountKindPresentation = {
     /** The glyph an account delegated to this kind shows; absent uses the generic one. */
     delegatedGlyph?: string
     supportUrl?: string
+    /** Why an account of this kind is missing from chains its custody can't reach; absent shows no note. */
+    unreachableChainsNoteKey?: I18nKey
 }
 
 /** What a kind's copy may depend on besides the kind. */

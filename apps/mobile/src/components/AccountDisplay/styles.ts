@@ -42,6 +42,18 @@ export const useStyles = makeStyles(
             text: {
                 color: theme.colors.textMain,
             },
+            // Wraps so a long secondary label pushes the badges to their own
+            // line instead of truncating them.
+            secondaryRow: {
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                columnGap: theme.spacing.xs,
+                rowGap: theme.spacing.xxs,
+            },
+            secondaryText: {
+                flexShrink: 1,
+            },
             // Card-art thumbnail shown in place of the account icon when the
             // `card` prop is set.
             cardThumb: {

@@ -16,9 +16,32 @@ import type { Address, Hex } from 'viem'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
 import { isRecord } from './adapter'
+import type { EvmStandardCall } from './standard-call-types'
 
 /** An Ethereum transaction as review and detail screens read it. */
-export type EthereumTransactionView = {
+export type EthereumTransactionView = EthereumTransactionViewBase &
+    (EthereumPricedView | EthereumPreviewView)
+
+/** The nonce, gas and fees the signature commits to. */
+export type EthereumPricedView = {
+    isPreview?: false
+    nonce: number
+    gas: bigint
+    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
+    fee: {
+        maxFeePerGas: Decimal
+        maxPriorityFeePerGas: Decimal
+        maxFee: Decimal
+    }
+}
+
+/**
+ * A later transaction of a batch, reviewed before it can be priced: its nonce,
+ * gas and fees are set only once the one before it has landed.
+ */
+export type EthereumPreviewView = { isPreview: true }
+
+type EthereumTransactionViewBase = {
     kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
     from: Address
     /** Absent for a contract creation. */
@@ -29,14 +52,6 @@ export type EthereumTransactionView = {
     data: Hex
     /** First four bytes of `data`; absent when `data` is shorter. */
     selector?: Hex
-    nonce: number
-    gas: bigint
-    /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
-    fee: {
-        maxFeePerGas: Decimal
-        maxPriorityFeePerGas: Decimal
-        maxFee: Decimal
-    }
     /** Only on a verified token transfer; `amount` in the token's base units. */
     token?: { contract: Address; to: Address; amount: Decimal }
     /**
@@ -52,6 +67,12 @@ export type EthereumTransactionView = {
         to: Address
         amount: Decimal
     }
+    /**
+     * Only on a contract call whose calldata is a standard token function. It
+     * is a fact about the bytes, so it is set whatever the chain's
+     * capabilities; consumers read it only while `contractDecoding` is on.
+     */
+    call?: EvmStandardCall
 }
 
 const KINDS: readonly string[] = [
@@ -88,6 +109,53 @@ const isNft = (value: unknown): boolean =>
     isAddressValue(value.to) &&
     Decimal.isDecimal(value.amount)
 
+const isDigits = (value: unknown): boolean =>
+    typeof value === 'string' && /^\d+$/.test(value)
+
+const isNftItem = (value: unknown): boolean =>
+    isRecord(value) &&
+    isDigits(value.tokenId) &&
+    Decimal.isDecimal(value.amount)
+
+const isTransferParties = (value: Record<string, unknown>): boolean =>
+    isAddressValue(value.from) && isAddressValue(value.to)
+
+const isStandardCall = (value: unknown): boolean => {
+    if (!isRecord(value) || !isAddressValue(value.contract)) return false
+    switch (value.kind) {
+        case 'transfer':
+        case 'transfer-from': {
+            return isTransferParties(value) && Decimal.isDecimal(value.value)
+        }
+        case 'erc721-safe-transfer': {
+            return isTransferParties(value) && isDigits(value.tokenId)
+        }
+        case 'erc1155-transfer': {
+            return (
+                isTransferParties(value) &&
+                Array.isArray(value.items) &&
+                value.items.length > 0 &&
+                value.items.every(isNftItem)
+            )
+        }
+        case 'approve':
+        case 'increase-allowance': {
+            return (
+                isAddressValue(value.spender) && Decimal.isDecimal(value.value)
+            )
+        }
+        case 'set-approval-for-all': {
+            return (
+                isAddressValue(value.operator) &&
+                typeof value.isApproved === 'boolean'
+            )
+        }
+        default: {
+            return false
+        }
+    }
+}
+
 const isFee = (value: unknown): boolean =>
     isRecord(value) &&
     Decimal.isDecimal(value.maxFeePerGas) &&
@@ -103,11 +171,15 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     Decimal.isDecimal(value.value) &&
     isHexValue(value.data) &&
     isOptional(value.selector, isHexValue) &&
-    typeof value.nonce === 'number' &&
-    typeof value.gas === 'bigint' &&
-    isFee(value.fee) &&
+    (value.isPreview === true ||
+        ((value.isPreview === undefined || value.isPreview === false) &&
+            typeof value.nonce === 'number' &&
+            typeof value.gas === 'bigint' &&
+            isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
-    (value.nft === undefined || isNft(value.nft))
+    (value.nft === undefined || isNft(value.nft)) &&
+    (value.call === undefined ||
+        (value.kind === 'contract-call' && isStandardCall(value.call)))
 
 export const toEthereumNative = (
     view: EthereumTransactionView,

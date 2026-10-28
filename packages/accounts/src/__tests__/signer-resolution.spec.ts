@@ -18,6 +18,7 @@ import {
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import {
+    canSignWith,
     getAuthAccount,
     getDelegatedAccount,
     resolveAuthAccount,
@@ -126,6 +127,14 @@ describe('signer resolution', () => {
         expect(() =>
             resolveSignerForAccount(a, [a], 'nowhere' as typeof FAKE_CHAIN_ID),
         ).toThrow(ChainAdapterNotRegisteredError)
+    })
+
+    it('cannot sign, rather than throwing, on a chain with no registered adapter', () => {
+        const a = account('A')
+
+        expect(canSignWith(a, [a], 'nowhere' as typeof FAKE_CHAIN_ID)).toBe(
+            false,
+        )
     })
 })
 

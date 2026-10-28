@@ -366,13 +366,16 @@ describe('useConnectionsProvider', () => {
         expect(mockUnwatchWalletNotices).toHaveBeenCalledTimes(1)
     })
 
-    it('hands the signing adapter the network-switch prompt', () => {
+    it('hands the signing adapter the network-switch prompt and the transaction view', () => {
         renderHook(() => useConnectionsProvider())
 
         expect(mockUseSigningAdapter).toHaveBeenCalledWith(
             expect.anything(),
             'algorand',
-            { confirmNetworkSwitch: expect.any(Function) },
+            {
+                confirmNetworkSwitch: expect.any(Function),
+                showTransaction: expect.any(Function),
+            },
         )
     })
 

@@ -128,6 +128,11 @@ export const bridgeTransactionReviewer = (
                 ...toDecodedTransactions(analysis),
                 warnings: analysis.warnings,
             }),
+        ...(reviewer.policy.matchesApprovedPreview && {
+            matchesApprovedPreview: reviewer.policy.matchesApprovedPreview.bind(
+                reviewer.policy,
+            ),
+        }),
     },
 })
 

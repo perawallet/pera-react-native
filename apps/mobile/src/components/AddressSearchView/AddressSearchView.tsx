@@ -113,6 +113,7 @@ export const AddressSearchView = ({
                             <AccountResultRow
                                 account={item.account}
                                 showBalance={showAccountBalance}
+                                chainId={scope.chainId}
                             />
                         </PWTouchableOpacity>
                     )

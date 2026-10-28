@@ -35,13 +35,15 @@ import {
     reconcileEthereumSubmissions,
     type SubmissionSettledHandlers,
 } from './reconcile'
+import { resumeEthereumCallBatches } from '../connect/callBatch/executor'
 import {
+    ETHEREUM_CONFIRMATION_TIMEOUT_MS,
     historyEntryOfSigned,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
 } from './submission'
 
-export const ETHEREUM_CONFIRMATION_TIMEOUT_MS = 3 * 60_000
+export { ETHEREUM_CONFIRMATION_TIMEOUT_MS }
 
 export type EthereumBroadcasterOptions = {
     confirmationTimeoutMs?: number
@@ -147,12 +149,19 @@ export const createEvmBroadcasterAdapter = (
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
         findStaleGroupReason: async () => null,
-        reconcileOpenSubmissions: () =>
-            reconcileEthereumSubmissions({
+        // Batches resume after the ledger is settled, since they read its
+        // verdicts; not awaited, as a batch can wait minutes on a receipt.
+        reconcileOpenSubmissions: async () => {
+            const summary = await reconcileEthereumSubmissions({
                 chain,
                 settleHandlers,
                 getClient: clientFor,
-            }),
+            })
+            void resumeEthereumCallBatches(ctx, chain, {
+                confirmationTimeoutMs: timeout,
+            })
+            return summary
+        },
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
         }),

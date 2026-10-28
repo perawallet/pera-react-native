@@ -33,6 +33,7 @@ import {
     clearActiveWalletConnectV1Delivery,
     setActiveWalletConnectV1Delivery,
 } from '@modules/walletconnect'
+import { useShowDappTransaction } from '../hooks'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useNetworkSwitchPrompt } from './useNetworkSwitchPrompt'
@@ -96,8 +97,10 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
     }, [])
 
     const confirmNetworkSwitch = useNetworkSwitchPrompt()
+    const showTransaction = useShowDappTransaction()
     useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID, {
         confirmNetworkSwitch,
+        showTransaction,
     })
     useEffect(() => watchWalletNotices(registry), [registry])
     useConnectionsBoot(registry)

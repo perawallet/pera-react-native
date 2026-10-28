@@ -34,6 +34,7 @@ import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
 import m0019 from './0019_chain_data_scope_columns.sql?raw'
 import m0020 from './0020_collectible_uniqueness_backfill.sql?raw'
 import m0021 from './0021_submission_attempts_replacement.sql?raw'
+import m0022 from './0022_transaction_batches.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -95,4 +96,6 @@ export const migrations: MigrationConfig = {
     '0020_collectible_uniqueness_backfill': m0020,
     // Nullable: Algorand attempts and attempts recorded before it carry neither.
     '0021_submission_attempts_replacement': m0021,
+    // Created empty; rows only exist once a batch's review is approved.
+    '0022_transaction_batches': m0022,
 }
