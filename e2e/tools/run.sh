@@ -53,14 +53,17 @@ case "$PLATFORM" in
       # The xcodebuild that hosts WebDriverAgent outlives the simulator and holds several GB.
       pkill -f "xcodebuild.*WebDriverAgent" >/dev/null 2>&1 || true
     fi
-    if ! adb devices | grep -q "device$"; then
+    # A named device is the caller's to provide; without adb there is nothing to boot with.
+    if [ -z "${ANDROID_UDID:-}" ] && command -v adb >/dev/null && ! adb devices | grep -q "device$"; then
       echo "booting ${ANDROID_AVD:-Pixel_9}"
       nohup emulator -avd "${ANDROID_AVD:-Pixel_9}" -no-snapshot-save -no-boot-anim \
         > "$OUT/emulator.log" 2>&1 &
+      booted=0
       for _ in $(seq 1 40); do
-        [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+        [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && { booted=1; break; }
         sleep 10
       done
+      [ "$booted" = 1 ] || { echo "emulator did not finish booting; see $OUT/emulator.log" >&2; exit 2; }
     fi
     # A Pixel image shows the keyboard's "Try out your stylus" education over the field a few
     # seconds after the keyboard opens. It is a full-screen InputMethod window, so Appium's dump
@@ -71,10 +74,12 @@ case "$PLATFORM" in
     ;;
   ios)
     [ "${E2E_ONE_DEVICE:-0}" = 1 ] && { adb emu kill >/dev/null 2>&1 || true; }
-    if [ -n "${IOS_UDID:-}" ] && ! xcrun simctl list devices booted | grep -q "$IOS_UDID"; then
-      echo "booting simulator $IOS_UDID"
-      xcrun simctl boot "$IOS_UDID" >/dev/null 2>&1 || true
-      sleep 15
+    # Only a simulator is booted here; a physical device's UDID is not in simctl's list.
+    # bootstatus -b boots it if needed and returns once it has finished booting.
+    if [ -n "${IOS_UDID:-}" ] && command -v xcrun >/dev/null \
+      && xcrun simctl list devices | grep -q "$IOS_UDID"; then
+      xcrun simctl bootstatus "$IOS_UDID" -b >/dev/null \
+        || { echo "simulator $IOS_UDID did not boot" >&2; exit 2; }
     fi
     ;;
 esac

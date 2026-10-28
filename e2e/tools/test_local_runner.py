@@ -39,3 +39,17 @@ sys.exit(7)
         assert f'{name}:{value}' in args
     assert args[-1] == str(out / 'suite-snapshot/tests')
     assert (out / 'suite-snapshot/resources/app.resource').exists()
+
+
+def test_local_runner_stops_when_the_emulator_never_boots(tmp_path):
+    stubs = tmp_path / 'stubs'
+    stubs.mkdir()
+    for name, body in {'adb': 'echo "List of devices attached"', 'emulator': ':', 'sleep': ':'}.items():
+        (stubs / name).write_text(f'#!/bin/sh\n{body}\n')
+        (stubs / name).chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if k != 'ANDROID_UDID'}
+    env.update(PATH=f'{stubs}:{os.environ["PATH"]}', E2E_VENV=str(tmp_path / 'missing'),
+               E2E_RESULTS_DIR=str(tmp_path / 'results'))
+    result = subprocess.run(['bash', str(RUNNER), 'android'], env=env, capture_output=True, text=True)
+    assert result.returncode == 2
+    assert 'did not finish booting' in result.stderr
