@@ -14,7 +14,10 @@ package com.algorand.perarn.perawidgets
 import android.content.Context
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import com.algorand.perarn.perawidgets.refresh.WidgetUpdater
+import com.algorand.perarn.perawidgets.refresh.shouldRedraw
 import java.io.File
+import kotlinx.coroutines.launch
 
 private const val PREFERENCES = "pera_widgets"
 private const val SNAPSHOT_KEY = "snapshot"
@@ -27,6 +30,11 @@ class PeraWidgetsModule : Module() {
   private val imagesDirectory: File
     get() = File(context.filesDir, IMAGES_FOLDER)
 
+  private fun redrawAll() {
+    val appContext = context.applicationContext
+    WidgetUpdater.scope.launch { WidgetUpdater.updateAll(appContext) }
+  }
+
   override fun definition() = ModuleDefinition {
     Name("PeraWidgets")
 
@@ -34,14 +42,23 @@ class PeraWidgetsModule : Module() {
     Events("onScanRequested")
 
     AsyncFunction("writeSnapshot") { json: String ->
-      context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-        .edit().putString(SNAPSHOT_KEY, json).apply()
+      val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+      val previous = preferences.getString(SNAPSHOT_KEY, null)
+      preferences.edit().putString(SNAPSHOT_KEY, json).apply()
+      if (shouldRedraw(previous, json)) redrawAll()
     }
 
     AsyncFunction("clearSnapshot") {
       context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
         .edit().remove(SNAPSHOT_KEY).apply()
       imagesDirectory.deleteRecursively()
+      WidgetUpdater.clearWalletData(context)
+      val appContext = context.applicationContext
+      // Wiped again under the fetch lock: a fetch already in flight would otherwise store its quote after this.
+      WidgetUpdater.scope.launch {
+        WidgetUpdater.forgetWalletData(appContext)
+        WidgetUpdater.updateAll(appContext)
+      }
     }
 
     // No Android widget renders images yet, so nothing is downloaded: report

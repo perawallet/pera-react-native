@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/portfolio_widget_preview_bg"
+  android:padding="14dp">
+
+  <ImageView
+    android:id="@+id/preview_logo"
+    android:layout_width="18dp"
+    android:layout_height="18dp"
+    android:layout_alignParentTop="true"
+    android:layout_alignParentEnd="true"
+    android:contentDescription="@null"
+    android:src="@drawable/pera_logo" />
+
+  <TextView
+    android:id="@+id/preview_title"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentTop="true"
+    android:layout_alignParentStart="true"
+    android:text="@string/price_name"
+    android:textColor="#71717A"
+    android:textSize="12sp" />
+
+  <TextView
+    android:id="@+id/preview_amount"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_below="@id/preview_title"
+    android:layout_marginTop="4dp"
+    android:text="$0.2341"
+    android:textColor="#18181B"
+    android:textSize="20sp"
+    android:textStyle="bold" />
+
+  <TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_below="@id/preview_amount"
+    android:text="▲ 3.2% 24h"
+    android:textColor="#71717A"
+    android:textSize="12sp" />
+</RelativeLayout>

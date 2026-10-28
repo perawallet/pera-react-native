@@ -13,10 +13,7 @@ package com.algorand.perarn.perawidgets.format
 
 import java.time.Instant
 import java.time.ZoneId
-import java.time.chrono.IsoChronology
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
-import java.time.format.FormatStyle
 import java.util.Locale
 
 /**
@@ -24,35 +21,33 @@ import java.util.Locale
  * longer today. A time stays true between redraws, which Android widgets can't do every minute.
  */
 object UpdatedTime {
-    const val TIME_SKELETON = "jmm"
-    const val DAY_AND_TIME_SKELETON = "dMMMjmm"
+    const val TIME_24 = "Hmm"
+    const val DAY_AND_TIME_24 = "dMMMHmm"
+    const val TIME_12 = "hmm"
+    const val DAY_AND_TIME_12 = "dMMMhmm"
 
     // Needs the Android framework, so only production passes it; JVM tests inject patterns.
     val androidPatterns: (Locale, String) -> String = { locale, skeleton ->
         android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
     }
 
-    // Approximates the skeletons without the framework, for callers that don't supply patterns.
-    val jvmPatterns: (Locale, String) -> String = { locale, skeleton ->
-        val time = DateTimeFormatterBuilder.getLocalizedDateTimePattern(
-            null, FormatStyle.SHORT, IsoChronology.INSTANCE, locale,
-        )
-        if (skeleton == TIME_SKELETON) time else "d MMM $time"
-    }
-
     fun text(
         date: Instant,
         now: Instant,
         locale: Locale,
-        zone: ZoneId = ZoneId.systemDefault(),
-        patterns: (Locale, String) -> String = jvmPatterns,
+        zone: ZoneId,
+        // The phone's 12/24-hour switch, which the locale's own "j" skeleton would ignore.
+        is24Hour: Boolean,
+        patterns: (Locale, String) -> String,
     ): String {
         // The data's clock can run slightly ahead of the phone's; never show a time still to come.
         val shown = minOf(date, now).atZone(zone)
-        val skeleton = if (shown.toLocalDate() == now.atZone(zone).toLocalDate()) {
-            TIME_SKELETON
-        } else {
-            DAY_AND_TIME_SKELETON
+        val isToday = shown.toLocalDate() == now.atZone(zone).toLocalDate()
+        val skeleton = when {
+            isToday && is24Hour -> TIME_24
+            isToday -> TIME_12
+            is24Hour -> DAY_AND_TIME_24
+            else -> DAY_AND_TIME_12
         }
         return DateTimeFormatter.ofPattern(patterns(locale, skeleton), locale).format(shown)
     }

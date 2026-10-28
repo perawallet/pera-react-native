@@ -1,2 +1,45 @@
-<manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <activity
+      android:name="com.algorand.perarn.perawidgets.config.WidgetConfigActivity"
+      android:exported="true"
+      android:theme="@android:style/Theme.Material.Light.NoActionBar">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+      </intent-filter>
+    </activity>
+    <receiver
+      android:name="com.algorand.perarn.perawidgets.widgets.PortfolioWidgetReceiver"
+      android:exported="true"
+      android:label="@string/portfolio_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/portfolio_widget_info" />
+    </receiver>
+    <receiver
+      android:name="com.algorand.perarn.perawidgets.widgets.PriceWidgetReceiver"
+      android:exported="true"
+      android:label="@string/price_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/price_widget_info" />
+    </receiver>
+    <receiver
+      android:name="com.algorand.perarn.perawidgets.widgets.ReceiveWidgetReceiver"
+      android:exported="true"
+      android:label="@string/receive_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/receive_widget_info" />
+    </receiver>
+  </application>
 </manifest>

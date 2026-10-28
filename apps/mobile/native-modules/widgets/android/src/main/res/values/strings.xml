@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="portfolio_name">Portfolio</string>
+  <string name="portfolio_description">Your total portfolio value.</string>
+  <string name="price_name">Price</string>
+  <string name="price_description">A verified asset’s price and its 24h change.</string>
+  <string name="receive_name">Receive QR</string>
+  <string name="receive_description">Show an account’s QR code to receive funds.</string>
+  <string name="options_chart_period">Chart period</string>
+  <string name="options_period_default">Default</string>
+  <string name="options_period_one_day">1 day</string>
+  <string name="options_period_one_week">1 week</string>
+  <string name="options_period_one_month">1 month</string>
+  <string name="options_period_one_year">1 year</string>
+  <string name="options_show_chart">Show chart</string>
+  <string name="options_account">Account</string>
+  <string name="options_show_inverse">Show asset per currency</string>
+  <string name="options_asset">Asset</string>
+  <string name="options_currency">Currency</string>
+  <string name="options_default">Default</string>
+  <string name="options_portfolio">Portfolio</string>
+  <string name="options_add_widget">Add widget</string>
+  <string name="options_hint">Opens when you add the widget, and from long-press → Customize</string>
+</resources>

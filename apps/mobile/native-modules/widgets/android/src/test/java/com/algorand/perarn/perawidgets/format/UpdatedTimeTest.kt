@@ -19,24 +19,37 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 
 class UpdatedTimeTest {
+    // Stands in for getBestDateTimePattern: the skeleton's hour letter decides the clock.
+    private val jvmPatterns: (Locale, String) -> String = { _, skeleton ->
+        when (skeleton) {
+            UpdatedTime.TIME_24 -> "HH:mm"
+            UpdatedTime.TIME_12 -> "h:mm a"
+            UpdatedTime.DAY_AND_TIME_24 -> "d MMM HH:mm"
+            else -> "d MMM h:mm a"
+        }
+    }
+
     private val utc = ZoneId.of("UTC")
     private val updated = Instant.parse("2026-10-27T14:05:00Z")
 
     private fun normalize(s: String) = s.replace('\u202F', ' ').replace('\u00A0', ' ')
 
-    private fun text(now: Instant, locale: Locale) = normalize(UpdatedTime.text(updated, now, locale, utc))
+    private fun text(now: Instant, locale: Locale, is24Hour: Boolean = true) =
+        normalize(UpdatedTime.text(updated, now, locale, utc, is24Hour, jvmPatterns))
 
-    private fun withPatterns(now: Instant, locale: Locale, patterns: Map<String, String>) = normalize(
-        UpdatedTime.text(updated, now, locale, utc) { _, skeleton -> patterns.getValue(skeleton) },
+    private fun withPatterns(now: Instant, locale: Locale, patterns: Map<String, String>, is24Hour: Boolean = true) = normalize(
+        UpdatedTime.text(updated, now, locale, utc, is24Hour) { _, skeleton -> patterns.getValue(skeleton) },
     )
 
     @Test fun showsOnlyTheTimeTheSameDay() =
         assertEquals("14:05", text(updated.plusSeconds(3 * 3600), Locale.UK))
 
-    @Test fun followsTheLanguagesClock() {
+    @Test fun followsThePhones24HourSwitchForTheSameLocale() {
         val now = updated.plusSeconds(60)
-        assertEquals("2:05 PM", text(now, Locale.US))
-        assertEquals("14:05", text(now, Locale.GERMANY))
+        assertEquals("14:05", text(now, Locale.US, is24Hour = true))
+        assertEquals("2:05 PM", text(now, Locale.US, is24Hour = false))
+        assertEquals("27 Oct 14:05", text(tomorrow, Locale.US, is24Hour = true))
+        assertEquals("27 Oct 2:05 PM", text(tomorrow, Locale.US, is24Hour = false))
     }
 
     @Test fun addsTheDayOnceItIsNoLongerToday() {
@@ -50,15 +63,16 @@ class UpdatedTimeTest {
     private val tomorrow = updated.plusSeconds(12 * 3600)
 
     @Test fun usesTheSuppliedLocalizedPatterns() {
-        fun patterns(day: String, time: String) = mapOf("jmm" to time, "dMMMjmm" to day)
-        assertEquals("27 Oct 14:05", withPatterns(tomorrow, Locale.UK, patterns("d MMM HH:mm", "HH:mm")))
-        assertEquals("27. Okt., 14:05", withPatterns(tomorrow, Locale.GERMANY, patterns("d. MMM, HH:mm", "HH:mm")))
-        assertEquals("Oct 27, 2:05 PM", withPatterns(tomorrow, Locale.US, patterns("MMM d, h:mm a", "h:mm a")))
-        assertEquals("2:05 PM", withPatterns(updated.plusSeconds(60), Locale.US, patterns("MMM d, h:mm a", "h:mm a")))
+        fun patterns24(day: String, time: String) = mapOf(UpdatedTime.TIME_24 to time, UpdatedTime.DAY_AND_TIME_24 to day)
+        fun patterns12(day: String, time: String) = mapOf(UpdatedTime.TIME_12 to time, UpdatedTime.DAY_AND_TIME_12 to day)
+        assertEquals("27 Oct 14:05", withPatterns(tomorrow, Locale.UK, patterns24("d MMM HH:mm", "HH:mm")))
+        assertEquals("27. Okt., 14:05", withPatterns(tomorrow, Locale.GERMANY, patterns24("d. MMM, HH:mm", "HH:mm")))
+        assertEquals("Oct 27, 2:05 PM", withPatterns(tomorrow, Locale.US, patterns12("MMM d, h:mm a", "h:mm a"), is24Hour = false))
+        assertEquals("2:05 PM", withPatterns(updated.plusSeconds(60), Locale.US, patterns12("MMM d, h:mm a", "h:mm a"), is24Hour = false))
     }
 
     @Test fun keepsLiteralWordsOfThePattern() {
-        val shown = withPatterns(tomorrow, Locale.forLanguageTag("pt-BR"), mapOf("dMMMjmm" to "d 'de' MMM HH:mm"))
+        val shown = withPatterns(tomorrow, Locale.forLanguageTag("pt-BR"), mapOf(UpdatedTime.DAY_AND_TIME_24 to "d 'de' MMM HH:mm"))
         assertTrue(shown, shown.startsWith("27 de out") && shown.endsWith("14:05"))
     }
 }
