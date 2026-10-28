@@ -13,6 +13,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useBackupAccountRow } from '../useBackupAccountRow'
 
 const state = vi.hoisted(() => ({
@@ -61,6 +62,8 @@ const HD_ACCOUNT = {
     },
 } as unknown as WalletAccount
 
+const BASE = { address: 'ALGO', fallbackChainId: 'algorand' as ChainId }
+
 describe('useBackupAccountRow', () => {
     beforeEach(() => {
         state.isMultichain = true
@@ -70,7 +73,7 @@ describe('useBackupAccountRow', () => {
 
     it("lists every network a device account is on, with each one's address", () => {
         const { result } = renderHook(() =>
-            useBackupAccountRow({ account: HD_ACCOUNT }),
+            useBackupAccountRow({ ...BASE, account: HD_ACCOUNT }),
         )
 
         expect(result.current.chainIds).toEqual([
@@ -90,7 +93,7 @@ describe('useBackupAccountRow', () => {
         state.switchedOff = ['base']
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ account: HD_ACCOUNT }),
+            useBackupAccountRow({ ...BASE, account: HD_ACCOUNT }),
         )
 
         expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
@@ -103,7 +106,11 @@ describe('useBackupAccountRow', () => {
         } as unknown as WalletAccount
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ account: ledger }),
+            useBackupAccountRow({
+                ...BASE,
+                address: 'LEDGER',
+                account: ledger,
+            }),
         )
 
         expect(result.current.chainIds).toEqual(['algorand'])
@@ -112,6 +119,7 @@ describe('useBackupAccountRow', () => {
     it("lists a backup-only account's networks from its record, in registry order, skipping one this build doesn't know", () => {
         const { result } = renderHook(() =>
             useBackupAccountRow({
+                ...BASE,
                 backupChains: [
                     { chain: 'base', address: '0xeth' },
                     { chain: 'algorand', address: 'ALGO' },
@@ -124,9 +132,22 @@ describe('useBackupAccountRow', () => {
         expect(result.current.chains[1]?.copyValue).toBe('copy:0xeth')
     })
 
+    it('places a backup-only item from before records, which names no chain, on the fallback chain', () => {
+        const { result } = renderHook(() =>
+            useBackupAccountRow({ ...BASE, address: 'OLD', backupChains: [] }),
+        )
+
+        expect(result.current.chains).toEqual([
+            expect.objectContaining({
+                chainId: 'algorand',
+                copyValue: 'copy:OLD',
+            }),
+        ])
+    })
+
     it('expands and collapses on toggle', () => {
         const { result } = renderHook(() =>
-            useBackupAccountRow({ account: HD_ACCOUNT }),
+            useBackupAccountRow({ ...BASE, account: HD_ACCOUNT }),
         )
 
         expect(result.current.canExpand).toBe(true)
@@ -140,7 +161,7 @@ describe('useBackupAccountRow', () => {
         state.isMultichain = false
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ account: HD_ACCOUNT }),
+            useBackupAccountRow({ ...BASE, account: HD_ACCOUNT }),
         )
 
         expect(result.current.canExpand).toBe(false)

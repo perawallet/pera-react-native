@@ -40,7 +40,10 @@ export const AccountSummaryLine = ({
     )
 
     return (
-        <PWView style={styles.line}>
+        <PWView
+            style={styles.line}
+            testID={`backup_account_summary_${value.kind}`}
+        >
             <PWText
                 variant='body'
                 style={styles.text}

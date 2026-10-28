@@ -27,9 +27,13 @@ import {
 } from '@utils/chainOptionDisplay'
 
 type UseBackupAccountRowParams = {
+    /** The account's backup item key. */
+    address: string
     account?: WalletAccount
     /** For an account only the backup holds: its record's chains. */
     backupChains?: CachedRecordChain[]
+    /** The chain an item written before records lives on; such an item names none. */
+    fallbackChainId: ChainId
 }
 
 type UseBackupAccountRowResult = {
@@ -43,8 +47,10 @@ type UseBackupAccountRowResult = {
 }
 
 export const useBackupAccountRow = ({
+    address,
     account,
     backupChains,
+    fallbackChainId,
 }: UseBackupAccountRowParams): UseBackupAccountRowResult => {
     const isMultichain = useIsMultichain()
     const registeredChainIds = useRegisteredChainIds()
@@ -60,11 +66,21 @@ export const useBackupAccountRow = ({
                     : [],
             )
         }
+        const entries = backupChains?.length
+            ? backupChains
+            : [{ chain: fallbackChainId, address }]
         return registeredChainIds.filter(isOn).flatMap(chainId => {
-            const entry = backupChains?.find(({ chain }) => chain === chainId)
+            const entry = entries.find(({ chain }) => chain === chainId)
             return entry ? [toChainAddress(chainId, entry.address)] : []
         })
-    }, [account, backupChains, registeredChainIds, switchedOff])
+    }, [
+        account,
+        backupChains,
+        address,
+        fallbackChainId,
+        registeredChainIds,
+        switchedOff,
+    ])
 
     const chainIds = useMemo(() => chains.map(chain => chain.chainId), [chains])
     const canExpand = isMultichain && chains.length > 0
