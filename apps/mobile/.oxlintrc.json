@@ -278,6 +278,11 @@
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-deep-relative-imports": "error" }
     }
   ]
 }
