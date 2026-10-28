@@ -35,7 +35,7 @@ export type AccountAssetSelectionListProps = {
     emptyResultBody: string
     /** See `useAccountAssetSelectionList`'s `chainId`. */
     chainId?: ChainId
-    /** Shown when the list has nothing to offer and no search term is active. */
+    /** Shown when the list has nothing to offer, no search term is active and the read didn't fail. */
     emptyView?: ReactElement
 }
 
@@ -61,6 +61,7 @@ export const AccountAssetSelectionList = ({
         setSearchFilter,
         debouncedSearchFilter,
         isLoading,
+        isError,
     } = useAccountAssetSelectionList({
         isVisible,
         excludeAssetId,
@@ -108,7 +109,7 @@ export const AccountAssetSelectionList = ({
                         title={emptyResultTitle}
                         body={emptyResultBody}
                     />
-                ) : (
+                ) : isError ? undefined : (
                     emptyView
                 )
             }

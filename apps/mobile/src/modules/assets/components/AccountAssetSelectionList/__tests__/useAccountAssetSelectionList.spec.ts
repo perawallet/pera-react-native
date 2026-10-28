@@ -21,7 +21,7 @@ const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
-    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useAccountChainId: () => 'algorand',
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
@@ -232,5 +232,20 @@ describe('useAccountAssetSelectionList', () => {
                 item => `${item.scope.chainId}:${item.assetId}`,
             ),
         ).toEqual(['ethereum:native', 'ethereum:0xTOKEN'])
+    })
+
+    it('says when the balance read failed, so an empty list is not read as an empty account', () => {
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map(),
+            isPending: false,
+            isError: true,
+        })
+
+        const { result } = renderHook(() =>
+            useAccountAssetSelectionList({ chainId: 'ethereum' }),
+        )
+
+        expect(result.current.filteredBalanceData).toEqual([])
+        expect(result.current.isError).toBe(true)
     })
 })

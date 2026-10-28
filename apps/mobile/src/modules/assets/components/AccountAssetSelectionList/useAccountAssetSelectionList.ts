@@ -15,7 +15,7 @@ import {
     type AssetWithAccountBalance,
     type ChainAssetBalance,
     useAccountBalancesQuery,
-    useAccountScope,
+    useAccountChainId,
     useSelectedAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -45,6 +45,8 @@ type UseAccountAssetSelectionListResult = {
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
     isLoading: boolean
+    /** The balance read failed, so an empty list says nothing about what the account holds. */
+    isError: boolean
 }
 
 export const useAccountAssetSelectionList = ({
@@ -54,12 +56,12 @@ export const useAccountAssetSelectionList = ({
     chainId,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
-    const ownScope = useAccountScope(selectedAccount, LEGACY_CHAIN_ID)
-    const scope = useSelectedScope(chainId ?? ownScope.chainId)
+    const ownChainId = useAccountChainId(selectedAccount, LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId ?? ownChainId)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
-    const { accountBalances, isPending } = useAccountBalancesQuery(
+    const { accountBalances, isPending, isError } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
         scope,
     )
@@ -110,5 +112,6 @@ export const useAccountAssetSelectionList = ({
         setSearchFilter,
         debouncedSearchFilter,
         isLoading: isPending,
+        isError,
     }
 }
