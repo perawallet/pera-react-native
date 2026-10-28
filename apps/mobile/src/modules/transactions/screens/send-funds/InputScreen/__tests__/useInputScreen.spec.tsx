@@ -316,6 +316,17 @@ describe('useInputScreen', () => {
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
+    it("exposes the send's scope so the header shows the account on that chain", () => {
+        mockSendScope.current = { chainId: 'ethereum', networkId: 'mainnet' }
+
+        const { result } = renderHook(() => useInputScreen())
+
+        expect(result.current.scope).toEqual({
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+    })
+
     it("shows the chain's MAX and balance in display units", () => {
         const { result } = renderHook(() => useInputScreen())
 
