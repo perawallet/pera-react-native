@@ -11,7 +11,9 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { APPROVAL_SUCCESS_CLOSE_DELAY_MS } from '@constants/ui'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 import { useDappRequest } from '../useDappRequest.web'
 
 const sendMessage = vi.fn()
@@ -37,6 +39,11 @@ beforeEach(() => {
     // resolving, so stub it or every subsequent render/cleanup in the suite
     // breaks.
     vi.spyOn(window, 'close').mockImplementation(() => {})
+})
+
+afterEach(() => {
+    vi.useRealTimers()
+    useApprovalConfirmedStore.getState().resetState()
 })
 
 describe('useDappRequest', () => {
@@ -72,6 +79,67 @@ describe('useDappRequest', () => {
                 approvedAddresses: ['ADDR'],
             }),
         )
+    })
+
+    describe('after a delivered approve', () => {
+        const approveDelivered = async (): Promise<
+            ReturnType<
+                typeof renderHook<ReturnType<typeof useDappRequest>, void>
+            >
+        > => {
+            sendMessage.mockResolvedValueOnce({
+                requestId: 'q1',
+                origin: 'https://x.com',
+                kind: 'connection-proposal',
+            })
+            const rendered = renderHook(() => useDappRequest())
+            await waitFor(() =>
+                expect(rendered.result.current.approval).not.toBeNull(),
+            )
+            vi.useFakeTimers()
+            sendMessage.mockResolvedValueOnce({ ok: true })
+            void rendered.result.current.approve(['ADDR'])
+            await vi.advanceTimersByTimeAsync(0)
+            return rendered
+        }
+
+        it('shows the confirmed state and closes the window only after the delay', async () => {
+            await approveDelivered()
+
+            expect(sendMessage).toHaveBeenLastCalledWith(
+                expect.objectContaining({ kind: 'resolve-approval' }),
+            )
+            expect(useApprovalConfirmedStore.getState().isConfirmed).toBe(true)
+            expect(window.close).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(APPROVAL_SUCCESS_CLOSE_DELAY_MS)
+            expect(window.close).toHaveBeenCalledTimes(1)
+        })
+
+        it('sends no reject when the window is closed during the delay', async () => {
+            await approveDelivered()
+            sendMessage.mockClear()
+
+            window.dispatchEvent(new Event('pagehide'))
+
+            expect(sendMessage).not.toHaveBeenCalled()
+        })
+    })
+
+    it('reject() closes the window at once, without the confirmed state', async () => {
+        sendMessage.mockResolvedValueOnce({
+            requestId: 'q1',
+            origin: 'https://x.com',
+            kind: 'connection-proposal',
+        })
+        sendMessage.mockResolvedValueOnce({ ok: true })
+        const { result } = renderHook(() => useDappRequest())
+        await waitFor(() => expect(result.current.approval).not.toBeNull())
+
+        await act(async () => result.current.reject())
+
+        expect(window.close).toHaveBeenCalledTimes(1)
+        expect(useApprovalConfirmedStore.getState().isConfirmed).toBe(false)
     })
 
     it('reject() posts reject-approval', async () => {
