@@ -35,6 +35,7 @@ export const RESET_PRESERVED_TABLES = [
     'transaction_batches',
     'review_approvals',
     'phishing_list_domains',
+    'phishing_list_addresses',
 ] as const
 
 export type InitializeDatabaseOptions = {

@@ -21,7 +21,8 @@ import { assessSiteSafety } from '../assess'
 import { countGenerationRows } from '../db/repository'
 import { ensurePhishingListsSeeded } from '../seed'
 import { usePhishingListStore } from '../store/store'
-import { FIXTURE_SNAPSHOT } from './fixtures'
+import { findPhishingListedAddresses } from '../listedAddresses'
+import { BUNDLED_SCAM_ADDRESS, FIXTURE_SNAPSHOT } from './fixtures'
 
 const database = vi.hoisted(() => ({ current: null as Database | null }))
 vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
@@ -86,6 +87,22 @@ describe('ensurePhishingListsSeeded', () => {
             await assessSiteSafety({ urls: ['https://bundled-phish.example'] }),
         ).toEqual({ kind: 'clear' })
         expect(usePhishingListStore.getState().sources).toEqual({})
+    })
+
+    it('seeds the bundled scam addresses and counts them as the darklist’s rows', async () => {
+        await ensurePhishingListsSeeded({ loadSnapshot })
+
+        const darklist = usePhishingListStore.getState().sources['mew-darklist']
+        expect(darklist).toMatchObject({ origin: 'bundled' })
+        expect(
+            await countGenerationRows({
+                source: 'mew-darklist',
+                generation: darklist!.generation,
+            }),
+        ).toBe(1)
+        expect(
+            await findPhishingListedAddresses([BUNDLED_SCAM_ADDRESS]),
+        ).toEqual([BUNDLED_SCAM_ADDRESS.toLowerCase()])
     })
 
     it('does not reseed lists that already have rows', async () => {

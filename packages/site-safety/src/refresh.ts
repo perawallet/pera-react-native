@@ -22,7 +22,7 @@ import type {
     PhishingListSource,
     PhishingListSourceId,
 } from './models'
-import { PHISHING_LIST_SOURCES } from './sources'
+import { isCompleteList, PHISHING_LIST_SOURCES } from './sources'
 import { usePhishingListStore } from './store/store'
 
 /** A source whose last successful check is older than this is due. */
@@ -93,10 +93,11 @@ const refreshSource = async (
     }
 
     const entries = raw === undefined ? undefined : source.parse(raw)
-    if (!entries || entries.deny.length < source.minimumDenyEntries) {
+    if (!entries || !isCompleteList(source, entries)) {
         logger.warn('[site-safety] phishing list download was malformed', {
             source: source.id,
             denyEntries: entries?.deny.length,
+            addressEntries: entries?.addresses.length,
         })
         return 'malformed'
     }

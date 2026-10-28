@@ -34,6 +34,23 @@ export const metaMaskConfig = ({
 
 export const polkadotList = (deny: string[]) => ({ allow: [], deny })
 
+/** Enough distinct EVM addresses to clear the darklist's truncation floor. */
+export const evmAddressList = (count: number, offset = 0): string[] =>
+    Array.from(
+        { length: count },
+        (_, i) => `0x${(i + offset).toString(16).padStart(40, '0')}`,
+    )
+
+export const mewDarklist = (addresses: string[]) =>
+    addresses.map(address => ({
+        address,
+        comment: 'Phishing wallet',
+        date: '2020-01-01',
+    }))
+
+/** A checksummed address on the bundled fixture darklist. */
+export const BUNDLED_SCAM_ADDRESS = '0x09750ad360fdb7A2ee23669C4503c974D86D8694'
+
 export const FIXTURE_SNAPSHOT: PhishingListSnapshot = {
     generatedAt: '2026-01-01T00:00:00.000Z',
     sources: {
@@ -41,11 +58,19 @@ export const FIXTURE_SNAPSHOT: PhishingListSnapshot = {
             deny: 'bundled-phish.example\nshared-phish.example',
             allow: 'allowed.example',
             impersonationTargets: 'cryptokitties.co',
+            addresses: '',
         },
         polkadot: {
             deny: 'bundled-dot.example',
             allow: '',
             impersonationTargets: '',
+            addresses: '',
+        },
+        'mew-darklist': {
+            deny: '',
+            allow: '',
+            impersonationTargets: '',
+            addresses: '0x09750ad360fdb7a2ee23669c4503c974d86d8694',
         },
     },
 }

@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { normalizeListedAddresses } from './addresses'
 import { toSiteHost } from './host'
 import type { PhishingListEntries, PhishingListSource } from './models'
 
@@ -47,6 +48,7 @@ export const parseMetaMaskPhishingConfig = (
         deny: normalizeListedHosts(parsed.data.blacklist),
         allow: normalizeListedHosts(parsed.data.whitelist),
         impersonationTargets: normalizeListedHosts(parsed.data.fuzzylist),
+        addresses: [],
     }
 }
 
@@ -61,8 +63,34 @@ export const parsePolkadotPhishingList = (
         deny: normalizeListedHosts(parsed.data.deny),
         allow: [],
         impersonationTargets: [],
+        addresses: [],
     }
 }
+
+const mewDarklistSchema = z.array(z.object({ address: z.string() }))
+
+export const parseMewDarklist = (
+    raw: unknown,
+): PhishingListEntries | undefined => {
+    const parsed = mewDarklistSchema.safeParse(raw)
+    if (!parsed.success) return undefined
+    return {
+        deny: [],
+        allow: [],
+        impersonationTargets: [],
+        addresses: normalizeListedAddresses(
+            parsed.data.map(entry => entry.address),
+        ),
+    }
+}
+
+/** False for a download too short to be the whole list. */
+export const isCompleteList = (
+    source: PhishingListSource,
+    entries: PhishingListEntries,
+): boolean =>
+    entries.deny.length >= source.minimumDenyEntries &&
+    entries.addresses.length >= source.minimumAddressEntries
 
 /**
  * Free, community-maintained lists, fetched from fixed URLs so nothing about the
@@ -74,6 +102,7 @@ export const PHISHING_LIST_SOURCES: readonly PhishingListSource[] = [
         url: 'https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/main/src/config.json',
         licence: 'DBAD-1.2 (MetaMask/eth-phishing-detect)',
         minimumDenyEntries: 50_000,
+        minimumAddressEntries: 0,
         parse: parseMetaMaskPhishingConfig,
     },
     {
@@ -81,6 +110,15 @@ export const PHISHING_LIST_SOURCES: readonly PhishingListSource[] = [
         url: 'https://raw.githubusercontent.com/polkadot-js/phishing/master/all.json',
         licence: 'Apache-2.0 (polkadot-js/phishing)',
         minimumDenyEntries: 20_000,
+        minimumAddressEntries: 0,
         parse: parsePolkadotPhishingList,
+    },
+    {
+        id: 'mew-darklist',
+        url: 'https://raw.githubusercontent.com/MyEtherWallet/ethereum-lists/master/src/addresses/addresses-darklist.json',
+        licence: 'MIT (MyEtherWallet/ethereum-lists)',
+        minimumDenyEntries: 0,
+        minimumAddressEntries: 500,
+        parse: parseMewDarklist,
     },
 ]
