@@ -24,7 +24,6 @@ import type {
 } from '@perawallet/wallet-core-signing'
 import { useListedAddressesQuery } from '@perawallet/wallet-core-site-safety'
 import type { KnownAddress } from '@perawallet/wallet-core-transactions'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     useAddressWarningAcknowledgementStore,
     useRequestAddressSafety,
@@ -40,7 +39,9 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     ...(await importOriginal<object>()),
     useSigningRequest: () => ({ currentRequest: signing.currentRequest }),
     useSigningPipeline: () => ({ allTransactions: signing.allTransactions }),
-    chainIdOfSignRequest: (request: { chainId: ChainId }) => request.chainId,
+    chainIdOfSignRequest: (request: { scope: { chainId: ChainId } }) =>
+        request.scope.chainId,
+    scopeOfSignRequest: (request: { scope: unknown }) => request.scope,
     reviewedAddressesOf: (_chainId: ChainId, transaction: TransactionNative) =>
         (transaction as unknown as { reviewed: ReviewedAddress[] }).reviewed,
     resolveAllSignerAddresses: () => [SIGNER],
@@ -105,9 +106,17 @@ const ROLES: ReviewedAddressRole[] = [
 const requestOn = (
     chainId: ChainId,
     reviewed: ReviewedAddress[][],
-    { id = 'request-1', sourceType = 'walletconnect' } = {},
+    {
+        id = 'request-1',
+        sourceType = 'walletconnect',
+        networkId = 'mainnet',
+    } = {},
 ) => {
-    signing.currentRequest = { id, chainId, sourceType }
+    signing.currentRequest = {
+        id,
+        sourceType,
+        scope: { chainId, networkId },
+    }
     signing.allTransactions = reviewed.map(addresses => ({
         family: chainId === 'algorand' ? 'algorand' : 'evm',
         reviewed: addresses,
@@ -116,7 +125,6 @@ const requestOn = (
 
 describe('useRequestAddressSafety', () => {
     beforeEach(() => {
-        registerEthereumChain()
         addressCodecs.reset()
         addressCodecs.register(fakeCodec('algorand'))
         addressCodecs.register(fakeCodec('ethereum'))
@@ -222,6 +230,40 @@ describe('useRequestAddressSafety', () => {
         })
         expect(result.current.flaggedAddresses).toHaveLength(1)
         expect(result.current.isChecking).toBe(false)
+    })
+
+    it("reads known addresses on the request's own network", () => {
+        requestOn('ethereum', [[{ address: STRANGER, role: 'target' }]], {
+            networkId: 'testnet',
+        })
+
+        renderHook(() => useRequestAddressSafety())
+
+        expect(known.params).toMatchObject({
+            scope: { chainId: 'ethereum', networkId: 'testnet' },
+        })
+    })
+
+    it('checks nothing for a request that names no network', () => {
+        signing.currentRequest = {
+            id: 'request-1',
+            sourceType: 'walletconnect',
+            scope: undefined,
+        }
+        signing.allTransactions = []
+
+        const { result } = renderHook(() =>
+            useRequestAddressSafety({
+                addresses: [{ address: LISTED, role: 'spender' }],
+            }),
+        )
+
+        expect(result.current.flaggedAddresses).toEqual([])
+        expect(result.current.isConfirmBlocked).toBe(false)
+        expect(known.params).toMatchObject({
+            scope: undefined,
+            isEnabled: false,
+        })
     })
 
     it('holds Confirm while the lists are still being read', () => {

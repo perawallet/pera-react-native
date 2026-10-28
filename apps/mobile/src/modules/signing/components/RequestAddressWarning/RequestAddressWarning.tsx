@@ -143,10 +143,13 @@ export const RequestAddressWarning = ({
     const { flaggedAddresses, scope, isAcknowledged, toggleAcknowledged } =
         useRequestAddressSafety({ addresses })
 
-    if (flaggedAddresses.length === 0) return null
+    if (!scope || flaggedAddresses.length === 0) return null
 
     const hasListed = flaggedAddresses.some(
         ({ assessment }) => assessment.kind === 'listed',
+    )
+    const hasLookAlike = flaggedAddresses.some(
+        ({ assessment }) => assessment.kind === 'look-alike',
     )
 
     return (

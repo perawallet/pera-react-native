@@ -14,17 +14,16 @@ import { useCallback, useMemo } from 'react'
 import { create } from 'zustand'
 import {
     addressCodecs,
-    CHAIN_IDS,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     chainIdOfSignRequest,
     isExternalCallbackSource,
     resolveAllSignerAddresses,
     reviewedAddressesOf,
+    scopeOfSignRequest,
     useSigningPipeline,
     useSigningRequest,
     type ReviewedAddress,
@@ -45,7 +44,8 @@ export type FlaggedRequestAddress = {
 
 export type UseRequestAddressSafetyResult = {
     flaggedAddresses: FlaggedRequestAddress[]
-    scope: ChainScope
+    /** The network the request was built for; undefined when it names none. */
+    scope: Optional<ChainScope>
     isChecking: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
@@ -114,12 +114,10 @@ export const useRequestAddressSafety = ({
         state => state.setAcknowledgedRequestId,
     )
 
-    const chainId = currentRequest
-        ? chainIdOfSignRequest(currentRequest)
+    const scope = currentRequest
+        ? scopeOfSignRequest(currentRequest)
         : undefined
-    // With no request there is nothing to check, so any chain keeps the hooks
-    // below in order.
-    const scope = useSelectedScope(chainId ?? CHAIN_IDS[0])
+    const chainId = scope?.chainId
     const isDappRequest =
         !!currentRequest && isExternalCallbackSource(currentRequest.sourceType)
 
