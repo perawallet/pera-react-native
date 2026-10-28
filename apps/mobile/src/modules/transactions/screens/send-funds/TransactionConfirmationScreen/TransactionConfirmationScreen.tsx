@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWScreen, PWView } from '@components/core'
+import { PWButton, PWDivider, PWScreen, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -39,6 +39,7 @@ export const TransactionConfirmationScreen = () => {
         selectedAccount,
         selectedAssetId,
         scope,
+        networkName,
         feeAmount,
         feePresets,
         isFeePending,
@@ -130,6 +131,7 @@ export const TransactionConfirmationScreen = () => {
                     <KeyValueRow title={t('send_funds.confirmation.account')}>
                         <AccountDisplay
                             account={selectedAccount}
+                            chainId={scope.chainId}
                             showChevron={false}
                         />
                     </KeyValueRow>
@@ -155,6 +157,13 @@ export const TransactionConfirmationScreen = () => {
                                 testID='send_save_recipient_contact_button'
                             />
                         ) : null}
+                    </KeyValueRow>
+                )}
+                {!!networkName && (
+                    <KeyValueRow title={t('send_funds.confirmation.network')}>
+                        <PWText testID='send_confirm_network'>
+                            {networkName}
+                        </PWText>
                     </KeyValueRow>
                 )}
                 <FeeSection
