@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
@@ -18,12 +18,15 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isMessageRequest,
+    reviewedMessageAddressesOf,
     useLastSigningEvent,
     useSigningPipeline,
+    type ReviewedAddress,
     type SignRequestSource,
     type SigningLifecycleEvent,
 } from '@perawallet/wallet-core-signing'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 
 type UseMessageSigningScreenResult = {
     summary: Nullable<MessageSummary>
@@ -32,6 +35,10 @@ type UseMessageSigningScreenResult = {
     sourceMetadata: Optional<SignRequestSource>
     verifiedOrigin: Optional<string>
     isPending: boolean
+    /** Every address the signed message names, recognised as a permit or not. */
+    reviewedAddresses: ReviewedAddress[]
+    /** A flagged address in the request still waits on the user's acknowledgement. */
+    isConfirmBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
 }
@@ -48,25 +55,38 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         currentRequest?.id,
     )
 
+    const summary =
+        resolved?.kind.type === 'message' ? resolved.kind.summary : null
+    const message =
+        currentRequest && isMessageRequest(currentRequest)
+            ? currentRequest.message
+            : null
+    const reviewedAddresses = useMemo(
+        () => (message ? reviewedMessageAddressesOf(message) : []),
+        [message],
+    )
+    const { isConfirmBlocked } = useRequestAddressSafety({
+        addresses: reviewedAddresses,
+    })
+
     const handleApprove = useCallback(() => {
+        if (isConfirmBlocked) return
         pipeline.next()
-    }, [pipeline])
+    }, [pipeline, isConfirmBlocked])
 
     const handleReject = useCallback(() => {
         pipeline.fail()
     }, [pipeline])
 
     return {
-        summary:
-            resolved?.kind.type === 'message' ? resolved.kind.summary : null,
-        scope:
-            currentRequest && isMessageRequest(currentRequest)
-                ? currentRequest.message.scope
-                : null,
+        summary,
+        scope: message?.scope ?? null,
         signerAccount: resolved?.signerAccount ?? null,
         sourceMetadata: currentRequest?.sourceMetadata,
         verifiedOrigin: currentRequest?.verifiedOrigin,
         isPending: pipeline.isLoading || !!signingStarted,
+        reviewedAddresses,
+        isConfirmBlocked,
         handleApprove,
         handleReject,
     }

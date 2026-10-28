@@ -3342,6 +3342,23 @@
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
+        },
+        "address_safety": {
+            "listed_title": "Bekannte Betrugsadresse",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Wenn du signierst, könnte sie an deine Assets gelangen.",
+            "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "acknowledge": "Ich verstehe das Risiko und möchte trotzdem signieren",
+            "role": {
+                "recipient": "Empfänger",
+                "token_recipient": "Token-Empfänger",
+                "close_recipient": "Erhält das Restguthaben",
+                "new_authorizer": "Neue Signaturberechtigung",
+                "referenced_account": "Referenziertes Konto",
+                "target": "Vertrag",
+                "spender": "Berechtigte Adresse",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {

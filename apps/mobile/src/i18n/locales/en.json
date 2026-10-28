@@ -3350,6 +3350,23 @@
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
+        },
+        "address_safety": {
+            "listed_title": "Known scam address",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "look_alike_title": "This request names an address that imitates one you know",
+            "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
+            "acknowledge": "I understand the risk and want to sign anyway",
+            "role": {
+                "recipient": "Recipient",
+                "token_recipient": "Token recipient",
+                "close_recipient": "Receives the remaining balance",
+                "new_authorizer": "New signing authority",
+                "referenced_account": "Referenced account",
+                "target": "Contract",
+                "spender": "Spender",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {
