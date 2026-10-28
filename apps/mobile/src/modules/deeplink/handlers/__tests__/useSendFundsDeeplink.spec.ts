@@ -21,6 +21,7 @@ const { mockRequestByType, sendFundsStore } = vi.hoisted(() => ({
         setDestination: vi.fn(),
         setNote: vi.fn(),
         setSelectedAsset: vi.fn(),
+        setChainId: vi.fn(),
         setCanSelectAsset: vi.fn(),
         setAmount: vi.fn(),
         setPendingAmountBaseUnits: vi.fn(),
@@ -71,6 +72,24 @@ describe('useSendFundsDeeplink', () => {
             { asset: { chainId: 'algorand', assetId: '0' } },
             expect.any(Object),
         )
+    })
+
+    it("opens on the link's network when no asset names it", () => {
+        const { result } = renderHook(() => useSendFundsDeeplink())
+
+        result.current({ chainId: 'algorand', destination: 'RECEIVER' })
+
+        expect(sendFundsStore.setChainId).toHaveBeenCalledWith('algorand')
+        expect(sendFundsStore.setSelectedAsset).not.toHaveBeenCalled()
+        expect(sendFundsStore.setCanSelectAsset).not.toHaveBeenCalled()
+    })
+
+    it('leaves the network to the user when the link names none', () => {
+        const { result } = renderHook(() => useSendFundsDeeplink())
+
+        result.current({ destination: 'RECEIVER' })
+
+        expect(sendFundsStore.setChainId).not.toHaveBeenCalled()
     })
 
     it('stores a base-units amount as digits for the input step to convert', () => {

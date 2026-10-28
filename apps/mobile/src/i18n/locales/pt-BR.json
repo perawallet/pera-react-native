@@ -1938,7 +1938,7 @@
         },
         "inbox": {
             "empty_title": "Nenhuma mensagem pendente",
-            "empty_body": "Você não tem nenhuma mensagem pendente na caixa de entrada",
+            "empty_body": "A caixa de entrada guarda os ativos da Algorand enviados a você antes de você fazer opt-in, além de convites para contas compartilhadas e solicitações de assinatura. Tokens em outras redes chegam direto ao seu saldo.",
             "asa_requests_zero": "{{count}} ativos a receber",
             "asa_requests_one": "1 ativo a receber",
             "asa_requests_other": "{{count}} ativos a receber",
@@ -1951,7 +1951,16 @@
                 "status_confirmed": "Confirmada"
             },
             "invitation_title": "<0>Você recebeu um convite</0> para participar de uma conta compartilhada {{address}}",
-            "view_invitation_details": "Ver detalhes do convite"
+            "view_invitation_details": "Ver detalhes do convite",
+            "info": {
+                "title": "Sobre a caixa de entrada",
+                "algorand_title": "Algorand",
+                "algorand_body": "Uma conta Algorand precisa fazer opt-in em um ativo antes de poder mantê-lo. Os ativos enviados a você antes do opt-in ficam aqui, na caixa de entrada, até você recebê-los ou recusá-los. Convites para contas compartilhadas e solicitações de assinatura também chegam aqui.",
+                "other_networks_title": "Outras redes",
+                "other_networks_body": "Redes como Ethereum e Base não têm opt-in. Os tokens enviados a você nelas chegam direto ao seu saldo e nunca aparecem na caixa de entrada.",
+                "find_tokens_body": "Para vê-los, abra a conta e confira os ativos dela nessa rede.",
+                "learn_more": "Saiba mais"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Solicitações de transferência de ativos",
@@ -2739,13 +2748,13 @@
             "cancel": "Cancelar"
         }
     },
+    "chain_selection": {
+        "title": "Escolher rede",
+        "add_action": "Adicionar"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Selecionar conta"
-        },
-        "chain_selection": {
-            "title": "Escolher rede",
-            "add_action": "Adicionar"
         },
         "qrview": {
             "error_title": "Nenhuma conta selecionada",
@@ -2863,7 +2872,10 @@
             "title": "Selecionar ativo",
             "search_placeholder": "Buscar por nome ou ID do ativo",
             "no_results_title": "Nenhum ativo encontrado",
-            "no_results_body": "Nenhum ativo corresponde à sua busca"
+            "no_results_body": "Nenhum ativo corresponde à sua busca",
+            "empty_title": "Nada para enviar na rede {{network}}",
+            "empty_body": "Esta conta ainda não tem ativos na rede {{network}}. Receba alguns para começar a enviar.",
+            "empty_receive_action": "Receber"
         },
         "bottom_sheet": {
             "no_account_title": "Nenhuma conta selecionada",

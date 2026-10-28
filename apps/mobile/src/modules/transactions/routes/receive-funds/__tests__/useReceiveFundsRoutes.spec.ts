@@ -29,11 +29,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@modules/transactions/hooks', async () => ({
     useReceiveFunds: () => state.receive,
-    needsReceiveChainSelection: (
+    needsChainSelection: (
         await vi.importActual<
-            typeof import('../../../hooks/receive-funds/receiveChainSelection')
-        >('../../../hooks/receive-funds/receiveChainSelection')
-    ).needsReceiveChainSelection,
+            typeof import('../../../hooks/chain-selection/needsChainSelection')
+        >('../../../hooks/chain-selection/needsChainSelection')
+    ).needsChainSelection,
 }))
 
 describe('useReceiveFundsRoutes', () => {

@@ -184,6 +184,39 @@
       }
     },
     {
+      "files": ["src/modules/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "zustand/middleware",
+                "importNames": ["persist", "createJSONStorage"],
+                "message": "Persist through guardedPersist from @perawallet/wallet-core-shared, which quarantines state it cannot restore instead of letting the next write erase it."
+              },
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["ActivityIndicator"],
+                "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "@tanstack/react-query",
+                "importNames": ["useQuery", "useQueries", "useInfiniteQuery", "useSuspenseQuery", "useSuspenseQueries", "useSuspenseInfiniteQuery", "useMutation"],
+                "message": "Put this query or mutation in its domain package as a named use…Query/use…Mutation hook with a declared result type, and call that hook here. useQueryClient stays allowed."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
       "rules": { "import/no-default-export": "error" }

@@ -22,11 +22,13 @@ type MultisigSignItem = Extract<InboxItemModel, { type: 'multisig_sign' }>
 
 export type MultisigSignInboxItemProps = {
     item: MultisigSignItem
+    chainBadgeName?: string
     onPress?: () => void
 }
 
 export const MultisigSignInboxItem = ({
     item,
+    chainBadgeName,
     onPress,
 }: MultisigSignInboxItemProps) => {
     const styles = useStyles()
@@ -53,6 +55,7 @@ export const MultisigSignInboxItem = ({
     return (
         <InboxItemShell
             item={item}
+            chainBadgeName={chainBadgeName}
             align='top'
             onPress={onPress}
             testID='multisig_sign_inbox_item'

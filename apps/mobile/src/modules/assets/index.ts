@@ -41,7 +41,6 @@ export {
     buildGroupedHoldingItems,
     groupedHoldingItemKey,
     isMainnetScope,
-    spansChains,
     type AssetGroupItem,
     type GroupableHolding,
     type GroupableHoldingAdapter,

@@ -355,6 +355,7 @@ const {
     mockSetDestination,
     mockSetSelectedAsset,
     mockSetCanSelectAsset,
+    mockSetChainId,
     mockSetNote,
     mockSetAmount,
     mockSendFundsReset,
@@ -364,6 +365,7 @@ const {
     mockSetDestination: vi.fn(),
     mockSetSelectedAsset: vi.fn(),
     mockSetCanSelectAsset: vi.fn(),
+    mockSetChainId: vi.fn(),
     mockSetNote: vi.fn(),
     mockSetAmount: vi.fn(),
     mockSendFundsReset: vi.fn(),
@@ -458,6 +460,7 @@ vi.mock('@modules/transactions', () => ({
             setDestination: mockSetDestination,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setChainId: mockSetChainId,
             setNote: mockSetNote,
             setAmount: mockSetAmount,
             setPendingAmountBaseUnits: mockSetPendingAmountBaseUnits,
@@ -2384,9 +2387,12 @@ describe('useDeepLink', () => {
                 autoCreateContainer: false,
             },
         )
+        // The link names its network, so the send opens that network's picker.
+        expect(mockSetChainId).toHaveBeenCalledWith('algorand')
+        expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 
-    it("names the link chain's native asset when the sender's first chain is another one, so send opens on the link's chain", async () => {
+    it("opens the link chain's asset picker when the sender's first chain is another one, so any asset there can be sent", async () => {
         sendAccount.resolution = {
             kind: 'single',
             account: {
@@ -2414,9 +2420,12 @@ describe('useDeepLink', () => {
 
         expect(mockRequestByType).toHaveBeenCalledWith(
             'send-funds',
-            { asset: { chainId: 'ethereum', assetId: 'native' } },
+            { asset: undefined },
             expect.anything(),
         )
+        expect(mockSetChainId).toHaveBeenCalledWith('ethereum')
+        expect(mockSetSelectedAsset).not.toHaveBeenCalled()
+        expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 
     it('should open account-actions bottom sheet for ADDRESS_ACTIONS deeplink', async () => {

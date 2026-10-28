@@ -11,12 +11,12 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { createQueryClientWrapper } from '@test-utils/render'
+import { renderHook } from '@testing-library/react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>()
-const mockFetchRekeyedAddresses = vi.fn()
+const mockUseAnyDelegatedAddressesQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -26,8 +26,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        fetchDelegatedAddresses: (...args: unknown[]) =>
-            mockFetchRekeyedAddresses(...args),
+        useAnyDelegatedAddressesQuery: (...args: unknown[]) =>
+            mockUseAnyDelegatedAddressesQuery(...args),
     }
 })
 
@@ -63,21 +63,29 @@ const canonicalAccount = (id: string, address: string): WalletAccount => ({
     chains: { algorand: { address, keyPairId: `${id}-quantum-pqk1` } },
 })
 
+const lookups = (result: {
+    hasDelegatedAddresses: boolean
+    isEveryLookupSuccessful: boolean
+}) => mockUseAnyDelegatedAddressesQuery.mockReturnValue(result)
+
 describe('useLegacyQuantumPrompt', () => {
     beforeEach(() => {
         mockUseAllAccounts.mockReset()
-        mockFetchRekeyedAddresses.mockReset()
+        mockUseAnyDelegatedAddressesQuery.mockReset()
         mockGetKey.mockReset()
+        lookups({ hasDelegatedAddresses: false, isEveryLookupSuccessful: true })
     })
 
     test('is not due when the wallet holds no quantum accounts', () => {
         mockUseAllAccounts.mockReturnValue([])
 
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(() => useLegacyQuantumPrompt())
 
         expect(result.current.isDue).toBe(false)
+        expect(mockUseAnyDelegatedAddressesQuery).toHaveBeenCalledWith(
+            [],
+            expect.anything(),
+        )
     })
 
     test('is not due when every quantum account is canonical', () => {
@@ -88,9 +96,7 @@ describe('useLegacyQuantumPrompt', () => {
             metadata: { pqDerivation: 'pqk1' },
         })
 
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(() => useLegacyQuantumPrompt())
 
         expect(result.current.isDue).toBe(false)
     })
@@ -102,13 +108,14 @@ describe('useLegacyQuantumPrompt', () => {
             type: 'falcon-1024',
             metadata: { pqDerivation: 'legacy' },
         })
-        mockFetchRekeyedAddresses.mockResolvedValue([])
 
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(() => useLegacyQuantumPrompt())
 
         expect(result.current.isDue).toBe(true)
+        expect(mockUseAnyDelegatedAddressesQuery).toHaveBeenCalledWith(
+            ['ADDR1'],
+            expect.objectContaining({ chainId: LEGACY_CHAIN_ID }),
+        )
     })
 
     // Fail closed: a child a migration failed to stamp reads as legacy at the
@@ -120,97 +127,35 @@ describe('useLegacyQuantumPrompt', () => {
             type: 'falcon-1024',
             metadata: {},
         })
-        mockFetchRekeyedAddresses.mockResolvedValue([])
 
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(() => useLegacyQuantumPrompt())
 
         expect(result.current.isDue).toBe(true)
     })
 
-    test('uses the plain copy once every legacy account proves no dependents', async () => {
-        const accounts = [
-            legacyAccount('a1', 'ADDR1'),
-            legacyAccount('a2', 'ADDR2'),
-        ]
-        mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({
-            type: 'falcon-1024',
-            metadata: { pqDerivation: 'legacy' },
-        })
-        mockFetchRekeyedAddresses.mockResolvedValue([])
+    describe.each([
+        ['every legacy account proves no dependents', false, true, false],
+        ['a legacy account has a dependent', true, true, true],
+        ['a lookup is unproven', false, false, true],
+    ])(
+        'when %s',
+        (_name, hasDelegatedAddresses, isEveryLookupSuccessful, expected) => {
+            test(`uses the ${expected ? 'dependent-aware' : 'plain'} copy`, () => {
+                mockUseAllAccounts.mockReturnValue([
+                    legacyAccount('a1', 'ADDR1'),
+                ])
+                mockGetKey.mockReturnValue({
+                    type: 'falcon-1024',
+                    metadata: { pqDerivation: 'legacy' },
+                })
+                lookups({ hasDelegatedAddresses, isEveryLookupSuccessful })
 
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
+                const { result } = renderHook(() => useLegacyQuantumPrompt())
 
-        await waitFor(() =>
-            expect(result.current.shouldUseDependentAwareCopy).toBe(false),
-        )
-    })
-
-    test('aggregates with OR: one dependent among several accounts is enough', async () => {
-        const accounts = [
-            legacyAccount('a1', 'ADDR1'),
-            legacyAccount('a2', 'ADDR2'),
-        ]
-        mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({
-            type: 'falcon-1024',
-            metadata: { pqDerivation: 'legacy' },
-        })
-        mockFetchRekeyedAddresses.mockImplementation(async (address: string) =>
-            address === 'ADDR2' ? ['SOME_DEPENDENT'] : [],
-        )
-
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
-
-        await waitFor(() =>
-            expect(result.current.shouldUseDependentAwareCopy).toBe(true),
-        )
-    })
-
-    test('aggregates with OR: one failed lookup among several accounts is enough', async () => {
-        const accounts = [
-            legacyAccount('a1', 'ADDR1'),
-            legacyAccount('a2', 'ADDR2'),
-        ]
-        mockUseAllAccounts.mockReturnValue(accounts)
-        mockGetKey.mockReturnValue({
-            type: 'falcon-1024',
-            metadata: { pqDerivation: 'legacy' },
-        })
-        mockFetchRekeyedAddresses.mockImplementation(async (address: string) =>
-            address === 'ADDR2'
-                ? Promise.reject(new Error('indexer down'))
-                : [],
-        )
-
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
-
-        await waitFor(() =>
-            expect(result.current.shouldUseDependentAwareCopy).toBe(true),
-        )
-    })
-
-    test('uses the dependent-aware copy while a lookup is still in flight', () => {
-        const account = legacyAccount('a1', 'ADDR1')
-        mockUseAllAccounts.mockReturnValue([account])
-        mockGetKey.mockReturnValue({
-            type: 'falcon-1024',
-            metadata: { pqDerivation: 'legacy' },
-        })
-        mockFetchRekeyedAddresses.mockReturnValue(new Promise(() => {}))
-
-        const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: createQueryClientWrapper(),
-        })
-
-        expect(result.current.shouldUseDependentAwareCopy).toBe(true)
-    })
+                expect(result.current.shouldUseDependentAwareCopy).toBe(
+                    expected,
+                )
+            })
+        },
+    )
 })

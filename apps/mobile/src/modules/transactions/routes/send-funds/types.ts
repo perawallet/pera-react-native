@@ -14,6 +14,7 @@ import type { StackScreenProps } from '@react-navigation/stack'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type SendFundsStackParamList = {
+    ChainSelection: undefined
     AssetSelection: undefined
     InputAmount: undefined
     SelectDestination: undefined

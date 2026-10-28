@@ -1936,7 +1936,7 @@
         },
         "inbox": {
             "empty_title": "Aucun message en attente",
-            "empty_body": "Vous n’avez actuellement aucun message en attente dans votre boîte de réception",
+            "empty_body": "La boîte de réception contient les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in, ainsi que les invitations à des comptes partagés et les demandes de signature. Les tokens sur les autres réseaux arrivent directement dans votre solde.",
             "asa_requests_one": "1 actif entrant",
             "asa_requests_other": "{{count}} actifs entrants",
             "multisig_sign": {
@@ -1948,7 +1948,16 @@
                 "status_confirmed": "Confirmée"
             },
             "invitation_title": "<0>Vous avez reçu une invitation</0> à rejoindre un compte partagé {{address}}",
-            "view_invitation_details": "Voir les détails de l’invitation"
+            "view_invitation_details": "Voir les détails de l’invitation",
+            "info": {
+                "title": "À propos de la boîte de réception",
+                "algorand_title": "Algorand",
+                "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
+                "other_networks_title": "Autres réseaux",
+                "other_networks_body": "Les réseaux comme Ethereum et Base n’ont pas d’opt-in. Les tokens qui vous y sont envoyés arrivent directement dans votre solde et n’apparaissent jamais dans la boîte de réception.",
+                "find_tokens_body": "Pour les voir, ouvrez le compte et consultez ses actifs sur ce réseau.",
+                "learn_more": "En savoir plus"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Demandes de transfert d’actifs",
@@ -2723,13 +2732,13 @@
             "cancel": "Annuler"
         }
     },
+    "chain_selection": {
+        "title": "Choisir un réseau",
+        "add_action": "Ajouter"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Sélectionner un compte"
-        },
-        "chain_selection": {
-            "title": "Choisir un réseau",
-            "add_action": "Ajouter"
         },
         "qrview": {
             "error_title": "Aucun compte sélectionné",
@@ -2847,7 +2856,10 @@
             "title": "Sélectionner un actif",
             "search_placeholder": "Rechercher par nom ou ID d’actif",
             "no_results_title": "Aucun actif correspondant",
-            "no_results_body": "Aucun actif ne correspond à votre recherche"
+            "no_results_body": "Aucun actif ne correspond à votre recherche",
+            "empty_title": "Rien à envoyer sur {{network}}",
+            "empty_body": "Ce compte n’a pas encore d’actifs sur {{network}}. Recevez-en pour commencer à envoyer.",
+            "empty_receive_action": "Recevoir"
         },
         "bottom_sheet": {
             "no_account_title": "Aucun compte sélectionné",

@@ -1936,7 +1936,7 @@
         },
         "inbox": {
             "empty_title": "No pending messages",
-            "empty_body": "You do not currently have any pending inbox messages",
+            "empty_body": "The inbox holds Algorand assets sent to you before you’ve opted in, along with shared account invitations and signature requests. Tokens on other networks arrive directly in your balance.",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_sign": {
@@ -1948,7 +1948,16 @@
                 "status_confirmed": "Confirmed"
             },
             "invitation_title": "<0>You've been invited</0> to join a shared account {{address}}",
-            "view_invitation_details": "View invitation details"
+            "view_invitation_details": "View invitation details",
+            "info": {
+                "title": "About the inbox",
+                "algorand_title": "Algorand",
+                "algorand_body": "An Algorand account must opt in to an asset before it can hold it. Assets sent to you before you’ve opted in wait here, in the inbox, until you claim or reject them. Shared account invitations and signature requests arrive here too.",
+                "other_networks_title": "Other networks",
+                "other_networks_body": "Networks such as Ethereum and Base have no opt-in. Tokens sent to you there arrive directly in your balance and never appear in the inbox.",
+                "find_tokens_body": "To see them, open the account and check its assets on that network.",
+                "learn_more": "Learn more"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -2723,13 +2732,13 @@
             "cancel": "Cancel"
         }
     },
+    "chain_selection": {
+        "title": "Choose Network",
+        "add_action": "Add"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
-        },
-        "chain_selection": {
-            "title": "Choose Network",
-            "add_action": "Add"
         },
         "qrview": {
             "error_title": "No Account Selected",
@@ -2847,7 +2856,10 @@
             "title": "Select Asset",
             "search_placeholder": "Search by asset name or ID",
             "no_results_title": "No Matching Assets",
-            "no_results_body": "No assets matched your search term"
+            "no_results_body": "No assets matched your search term",
+            "empty_title": "Nothing to send on {{network}}",
+            "empty_body": "This account has no assets on {{network}} yet. Receive some to start sending.",
+            "empty_receive_action": "Receive"
         },
         "bottom_sheet": {
             "no_account_title": "No Account Selected",
