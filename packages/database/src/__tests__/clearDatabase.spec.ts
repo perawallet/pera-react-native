@@ -13,7 +13,8 @@
 import { describe, it, expect } from 'vitest'
 import { sql } from 'drizzle-orm'
 import { createTestDatabase } from '../test-utils'
-import { clearDatabase } from '../database'
+import { RESET_PRESERVED_TABLES, clearDatabase } from '../database'
+import { migrations, runMigrations } from '../index'
 
 describe('clearDatabase', () => {
     it('deletes all rows from user tables', async () => {
@@ -91,6 +92,36 @@ describe('clearDatabase', () => {
 
             expect(await db.all(sql`SELECT * FROM accounts`)).toHaveLength(0)
             expect(await db.all(sql`SELECT * FROM ledger`)).toHaveLength(1)
+        } finally {
+            teardown()
+        }
+    })
+
+    it('keeps the submission ledger, its running batches and their approvals through a recovery reset', async () => {
+        const { db, teardown } = createTestDatabase()
+        try {
+            await runMigrations(db, migrations)
+            await db.run(
+                sql`INSERT INTO submission_attempts (id, scope, tx_ids_json, flow, status, created_at) VALUES ('a', 'ethereum/mainnet', '[]', 'batch', 'submitted', 1)`,
+            )
+            await db.run(
+                sql`INSERT INTO transaction_batches (id, batch_id, scope, sender, approval_token, payload_json, tx_ids_json, position, outcome, created_at, updated_at) VALUES ('b', 'id', 'ethereum/mainnet', '0xA', 't', '{}', '[]', 0, 'running', 1, 1)`,
+            )
+            await db.run(
+                sql`INSERT INTO review_approvals (id, scope, transactions_json, created_at) VALUES ('t', 'ethereum/mainnet', '[]', 1)`,
+            )
+
+            await clearDatabase(db, { keep: RESET_PRESERVED_TABLES })
+
+            expect(
+                await db.all(sql`SELECT * FROM submission_attempts`),
+            ).toHaveLength(1)
+            expect(
+                await db.all(sql`SELECT * FROM transaction_batches`),
+            ).toHaveLength(1)
+            expect(
+                await db.all(sql`SELECT * FROM review_approvals`),
+            ).toHaveLength(1)
         } finally {
             teardown()
         }

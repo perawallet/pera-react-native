@@ -19,6 +19,7 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '../dappRequest'
+import { DappRequestCodedError } from '../errors'
 import { validateRawMessage } from '../validate'
 import type { RawInboundMessage, WalletOperationType } from '../models'
 
@@ -83,19 +84,22 @@ describe('validateRawMessage', () => {
         dappRequestChainAdapters.register(fixtureAdapter)
     })
 
-    it.each(['send-transaction', 'sign-message', 'sign-typed-data'] as const)(
-        'refuses a %s request as unsupported',
-        type => {
-            const result = validateRawMessage(request(type, ['0x']))
+    it.each([
+        'send-transaction',
+        'sign-message',
+        'sign-typed-data',
+        'send-batch',
+        'show-batch',
+    ] as const)('refuses a %s request as unsupported', type => {
+        const result = validateRawMessage(request(type, ['0x']))
 
-            expect(result.ok).toBe(false)
-            if (!result.ok) {
-                expect(result.error).toMatchObject({
-                    code: 'unsupported-operation',
-                })
-            }
-        },
-    )
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toMatchObject({
+                code: 'unsupported-operation',
+            })
+        }
+    })
 
     describe('switch-network', () => {
         const switchable: DappRequestChainAdapter = {
@@ -140,6 +144,87 @@ describe('validateRawMessage', () => {
                 expect(result.error).toMatchObject({ code: 'invalid-payload' })
             }
         })
+    })
+
+    describe('send-batch', () => {
+        const validate = vi.fn()
+
+        beforeEach(() => {
+            validate.mockReset()
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...fixtureAdapter,
+                sendBatch: {
+                    validate,
+                    prepare: vi.fn(),
+                    start: vi.fn(),
+                    locate: vi.fn(),
+                },
+            })
+        })
+
+        it("carries the chain's validated batch, and hands the validator the session accounts", () => {
+            validate.mockReturnValue({ ok: true, request: { calls: 2 } })
+
+            const result = validateRawMessage(
+                request('send-batch', { from: 'AAAA' }),
+            )
+
+            expect(validate).toHaveBeenCalledWith({ from: 'AAAA' }, ['AAAA'])
+            expect(result).toMatchObject({
+                ok: true,
+                message: {
+                    operation: { type: 'send-batch', request: { calls: 2 } },
+                },
+            })
+        })
+
+        it("refuses with the chain's own wire code when the chain picks one", () => {
+            validate.mockReturnValue({
+                ok: false,
+                failure: 'coded',
+                code: 5710,
+                message: 'wrong chain',
+            })
+
+            const result = validateRawMessage(request('send-batch', {}))
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toBeInstanceOf(DappRequestCodedError)
+                expect(result.error).toMatchObject({
+                    wireCode: 5710,
+                    message: 'wrong chain',
+                })
+            }
+        })
+
+        it('carries a batch id to show', () => {
+            const result = validateRawMessage(
+                request('show-batch', { batchId: 'batch-1' }),
+            )
+
+            expect(result).toMatchObject({
+                ok: true,
+                message: {
+                    operation: { type: 'show-batch', batchId: 'batch-1' },
+                },
+            })
+        })
+
+        it.each([{}, { batchId: '' }, { batchId: 7 }, null])(
+            'refuses a batch to show without an id: %o',
+            params => {
+                const result = validateRawMessage(request('show-batch', params))
+
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toMatchObject({
+                        code: 'invalid-payload',
+                    })
+                }
+            },
+        )
     })
 
     describe('send-transaction', () => {

@@ -28,7 +28,7 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { algorandHistoryDataOf } from '../../history-data'
-import { flatHistoryItem } from './history-item'
+import { flatHistoryItem } from '../../../test-utils/history-item'
 import {
     CLOSE_AMOUNT_PATH,
     CLOSE_TO_PATH,

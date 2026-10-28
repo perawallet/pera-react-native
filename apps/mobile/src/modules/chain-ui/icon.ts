@@ -12,3 +12,7 @@
 
 // A separate entry so the assets barrel can draw chain icons without loading the registry.
 export { ChainIcon, type ChainIconProps } from './components/ChainIcon'
+export {
+    ChainIconStack,
+    type ChainIconStackProps,
+} from './components/ChainIconStack'

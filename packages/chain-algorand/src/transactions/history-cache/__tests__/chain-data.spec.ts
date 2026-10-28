@@ -32,7 +32,10 @@ import {
     type AlgorandHistoryData,
 } from '../../history-data'
 import { algorandHistoryChainData } from '../chain-data'
-import { flatHistoryItem, type FlatHistoryItem } from './history-item'
+import {
+    flatHistoryItem,
+    type FlatHistoryItem,
+} from '../../../test-utils/history-item'
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 const ADDRESS = 'ACCT1'

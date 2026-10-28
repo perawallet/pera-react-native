@@ -15,7 +15,10 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { DappRequestChainAdapter } from '../dappRequest'
+import {
+    dappRequestWireCodeOf,
+    type DappRequestChainAdapter,
+} from '../dappRequest'
 import { WALLET_OPERATION_TYPES } from '../models'
 
 export interface DappRequestContractFixtures {
@@ -187,14 +190,17 @@ export const dappRequestContractTests = (
                         ).not.toBeNull()
                     })
 
-                    it('routes every other served method to public data', () => {
+                    it('routes every other served method to public data, or to showing a batch, never to signing', () => {
                         const publicMethods = v2.methods.filter(
                             method => !v2.signingMethods.includes(method),
                         )
                         for (const method of publicMethods) {
-                            expect(v2.handleRequest(method, []).kind).toBe(
-                                'public-data',
-                            )
+                            const route = v2.handleRequest(method, [])
+                            if (route.kind === 'operation') {
+                                expect(route.type).toBe('show-batch')
+                            } else {
+                                expect(route.kind).toBe('public-data')
+                            }
                         }
                     })
 
@@ -204,17 +210,28 @@ export const dappRequestContractTests = (
                         )
                     })
 
-                    it('answers public data for no addresses on a network with a CAIP-2 id', () => {
+                    // A refusal in the chain's own wire code is an answer too;
+                    // only null refuses as naming another chain.
+                    it('answers public data for no addresses on a network with a CAIP-2 id', async () => {
                         const publicMethods = v2.methods.filter(
                             method => !v2.signingMethods.includes(method),
                         )
                         for (const method of publicMethods) {
                             const route = v2.handleRequest(method, [])
                             if (route.kind !== 'public-data') continue
-                            const answer = route.answer(
-                                [],
-                                fixtures.walletConnect.networkWithCaip2,
-                            )
+                            const answer = await Promise.resolve()
+                                .then(() =>
+                                    route.answer(
+                                        [],
+                                        fixtures.walletConnect.networkWithCaip2,
+                                    ),
+                                )
+                                .catch((error: Error) => {
+                                    expect(
+                                        dappRequestWireCodeOf(error),
+                                    ).toEqual(expect.any(Number))
+                                    return error
+                                })
                             expect(answer).not.toBeNull()
                             expect(answer).not.toBeUndefined()
                         }

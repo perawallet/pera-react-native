@@ -24,6 +24,8 @@ describe('wallet operation vocabulary', () => {
             'sign-message',
             'sign-typed-data',
             'switch-network',
+            'send-batch',
+            'show-batch',
         ])
     })
 })

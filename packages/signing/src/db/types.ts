@@ -12,6 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type {
+    ChainScope,
     ChainSubmissionData,
     ChainTransactionData,
     TransactionSummary,
@@ -85,6 +86,13 @@ export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
  */
 export const STALE_OPEN_ATTEMPT_MS = 60 * 60 * 1000
 
+/**
+ * How long a review the user approved can vouch for a transaction signed with
+ * no review screen. A batch still running past it fails rather than signing on
+ * an approval that old.
+ */
+export const REVIEW_APPROVAL_TTL_MS = 24 * 60 * 60 * 1000
+
 export type SubmissionFlow =
     | 'pipeline'
     | 'rekey'
@@ -93,6 +101,7 @@ export type SubmissionFlow =
     | 'cosign'
     | 'sign-and-submit'
     | 'generic'
+    | 'batch'
 
 /**
  * Stable identity of a logical operation, used to match a rebuild/retry
@@ -145,4 +154,38 @@ export type UnsyncedSubmissionSpend = SubmissionAttempt & {
     maxFee: Decimal | null
     /** Null when the attempt recorded none, or it can't be read. */
     historyEntry: SubmissionHistoryEntry | null
+}
+
+/**
+ * - `running`: the transaction at `position` is being built, sent or awaited.
+ * - `confirmed`: every transaction landed.
+ * - `reverted`: the transaction at `position` landed and reverted; none after it was sent.
+ * - `failed`: the transaction at `position` never landed (refused, dropped,
+ *   replaced or unbuildable); none after it was sent.
+ */
+export type TransactionBatchOutcome =
+    | 'running'
+    | 'confirmed'
+    | 'reverted'
+    | 'failed'
+
+export interface TransactionBatch {
+    id: string
+    /** The id the requester tracks the batch by. */
+    batchId: string
+    scope: ChainScope
+    sender: string
+    /** The review the user approved the batch on; see `ReviewApprovalRef`. */
+    approvalToken: string
+    /** Owned by the chain that recorded the batch; only it reads this. */
+    payload: unknown
+    /** `txIds[i]` is the hash of position i, recorded before it was sent. */
+    txIds: string[]
+    /** Hex of the signed transaction at `position` until it lands; null otherwise. */
+    signedRaw: string | null
+    /** The transaction being run, or where the run stopped. */
+    position: number
+    outcome: TransactionBatchOutcome
+    createdAt: number
+    updatedAt: number
 }

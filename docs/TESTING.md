@@ -161,9 +161,9 @@ aliased separately to its real source so consumers still get types and constants
 
 ### algod and indexer via algokit-utils
 
-`algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly (verified in
-`apps/mobile/src/__integration__/algokit-smoke.spec.ts`). Handler factories for the common algod and
-indexer endpoints live in `packages/chain-algorand/src/blockchain/msw-handlers.ts` and are re-exported via
+`algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly. Handler
+factories for the common algod and indexer endpoints live in
+`packages/chain-algorand/src/blockchain/msw-handlers.ts` and are re-exported via
 `@perawallet/wallet-core-chain-algorand/test-handlers`:
 
 ```typescript
@@ -250,7 +250,11 @@ which only work on a real device.
 - `PWTouchableOpacity` swallows a second press within its double-press guard. A flow that presses
   the same re-rendered button twice calls `waitPastDoublePressGuard()` between the presses.
 - Re-query an element inside `waitFor` rather than holding a reference across renders: real
-  layouts remount subtrees, and a detached node keeps its stale attributes.
+  layouts remount subtrees, and a detached node keeps its stale attributes. To wait for a button to
+  enable, use `findEnabledByTestId` from `rnw.ts`, which does that re-query on every poll.
+- To prove something did not happen, wait for the signal that the path has settled (the error toast,
+  the mutation's rejection, a ready-only element), then assert the absence. A fixed sleep passes on a
+  fast machine and proves nothing on a slow one; keep one only where the path has no such signal.
 - Components render what they render: `PWChip` upper-cases its title, and a `PWImage` shows up as
   the `expo-image` stub's `<img>`.
 - For text inputs use `fireEvent.change(input, { target: { value: '…' } })`. `fireEvent.changeText`
@@ -310,6 +314,12 @@ describes, not the test that uses it, so it stays reusable.
 
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
 BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
+
+## On-device benchmarks
+
+Timing and heap for the wallet's own operations on a real device (startup work, queries, sync, import,
+cloud backup, signing) live in a separate benchmark app, not in the test suites. See
+`apps/benchmarks/README.md`.
 
 ## Locale tour (i18n screenshot QA)
 

@@ -11,7 +11,13 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
 // The card chain ids are empty in the test env, and AutoDraw fails closed
@@ -126,7 +132,11 @@ import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboarding
 import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
 import { SigningOverlays } from '@modules/signing/shell'
-import { isElementDisabled } from '@test-utils/rnw'
+import {
+    findEnabledByTestId,
+    isElementDisabled,
+    waitPastDoublePressGuard,
+} from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -166,7 +176,7 @@ const seedFundingSigner = async (): Promise<void> => {
     resetTestKeystore()
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -391,13 +401,12 @@ describe('Flow: Card onboarding — select funding type', () => {
         // Sign + create + approve land on the 'authorize' step; a second
         // Proceed tap navigates to the LSig approval screen.
         await waitFor(() => expect(approvalBody).not.toBeNull())
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
-            expect(
-                screen.queryByTestId('card-auto-funding-signing-confirm'),
-            ).toBeTruthy()
-        })
-        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
+        await findEnabledByTestId('card-create-signing-proceed')
+        await waitPastDoublePressGuard()
+        fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
+        fireEvent.click(
+            await screen.findByTestId('card-auto-funding-signing-confirm'),
+        )
 
         await waitFor(() => expect(lsigBody).not.toBeNull())
         expect(approvalBody).toEqual(
@@ -502,13 +511,12 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
-            expect(
-                screen.queryByTestId('card-auto-funding-signing-confirm'),
-            ).toBeTruthy()
-        })
-        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
+        await findEnabledByTestId('card-create-signing-proceed')
+        await waitPastDoublePressGuard()
+        fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
+        fireEvent.click(
+            await screen.findByTestId('card-auto-funding-signing-confirm'),
+        )
 
         // The LSig POST fails; the screen surfaces the error and lets the
         // user retry rather than auto-degrading. Manual only persists once

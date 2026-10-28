@@ -37,6 +37,7 @@ type UseAccountDisplayParams = {
     account: Optional<WalletAccount>
     compact: boolean
     showAccountType: boolean
+    alwaysShowAccountType?: boolean
     iconSize: AccountIconSize
     chainId?: ChainId
 }
@@ -54,6 +55,7 @@ export const useAccountDisplay = ({
     account,
     compact,
     showAccountType,
+    alwaysShowAccountType = false,
     iconSize,
     chainId,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
@@ -86,7 +88,8 @@ export const useAccountDisplay = ({
 
     const hasName = Boolean(nfdName) || displayName !== address
     const showTypeAsSecondary =
-        showAccountType && !hasName && Boolean(accountTypeLabel)
+        (alwaysShowAccountType || (showAccountType && !hasName)) &&
+        Boolean(accountTypeLabel)
     const rawSecondary = showTypeAsSecondary
         ? accountTypeLabel
         : (nfdName ?? address)

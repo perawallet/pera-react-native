@@ -3,6 +3,7 @@ packages:
   - packages/*
   - extensions/*
   - conformance
+  - conformance-evm
 
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.2

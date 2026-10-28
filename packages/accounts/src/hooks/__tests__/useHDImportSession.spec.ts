@@ -10,13 +10,20 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import {
+    describe,
+    test,
+    expect,
+    beforeEach,
+    vi,
+    type MockInstance,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHDImportSession } from '../useHDImportSession'
 import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
-import type { LocalAccount } from '../../models'
+import type { AccountsState, LocalAccount } from '../../models'
 import { buildAccount, addressOn } from '../../credentials'
 import {
     fakeAccountsChain,
@@ -72,10 +79,17 @@ const discovered = (): LocalAccount =>
     })
 
 describe('useHDImportSession', () => {
+    let discoverWalletAccounts: MockInstance<
+        AccountsState['discoverWalletAccounts']
+    >
+
     beforeEach(() => {
         vi.clearAllMocks()
         useHDImportSessionStore.getState().resetState()
         useAccountsStore.setState({ accounts: [] })
+        discoverWalletAccounts = vi
+            .spyOn(useAccountsStore.getState(), 'discoverWalletAccounts')
+            .mockResolvedValue([])
         prepareMock.mockResolvedValue({
             keyId: 'w-1',
             rootKey: new Uint8Array(96).fill(7),
@@ -148,27 +162,77 @@ describe('useHDImportSession', () => {
         expect(useHDImportSessionStore.getState().pending).toBeNull()
     })
 
-    test("commitImport looks for activity on each committed account's other chains", async () => {
-        const discoverChains = vi
-            .spyOn(useAccountsStore.getState(), 'discoverChains')
-            .mockResolvedValue([])
+    test('commitImport walks the wallet across every chain once, declining nothing when every offered index was kept', async () => {
         const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
             await result.current.prepareImport({ mnemonicIndices: INDICES })
         })
-        const selected = [discovered()]
+        useHDImportSessionStore
+            .getState()
+            .recordDiscovered('w-1', [{ account: 1, keyIndex: 0 }])
 
         await act(async () => {
             await result.current.commitImport({
                 walletKeyId: 'w-1',
-                selectedAccounts: selected,
+                selectedAccounts: [discovered()],
             })
         })
 
-        expect(discoverChains).toHaveBeenCalledExactlyOnceWith(selected[0].id)
+        expect(discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith('w-1', {
+            declinedIndexes: [],
+            rootKey: expect.any(Uint8Array),
+        })
     })
 
-    test('commitImport persists and returns each account with its default chains, then looks for activity', async () => {
+    test("commitImport hands the walk its own copy of the root key, untouched by the session's reset", async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const sessionRootKey =
+            useHDImportSessionStore.getState().pending!.rootKey
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        const walkRootKey = discoverWalletAccounts.mock.calls[0][1]?.rootKey
+        expect(walkRootKey).not.toBe(sessionRootKey)
+        expect(walkRootKey).toEqual(new Uint8Array(96).fill(7))
+        expect(sessionRootKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    test('commitImport passes the offered indexes the user left unselected as declined', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        useHDImportSessionStore.getState().recordDiscovered('w-1', [
+            { account: 0, keyIndex: 0 },
+            { account: 1, keyIndex: 0 },
+            { account: 1, keyIndex: 3 },
+        ])
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        expect(discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith('w-1', {
+            declinedIndexes: [
+                { account: 0, keyIndex: 0 },
+                { account: 1, keyIndex: 3 },
+            ],
+            rootKey: expect.any(Uint8Array),
+        })
+    })
+
+    test('commitImport persists and returns each account with its default chains, then walks the wallet', async () => {
         const order: string[] = []
         withDefaultChainsMock.mockImplementationOnce(async draft => {
             order.push('defaults')
@@ -180,10 +244,7 @@ describe('useHDImportSession', () => {
                 },
             }
         })
-        vi.spyOn(
-            useAccountsStore.getState(),
-            'discoverChains',
-        ).mockImplementation(async () => {
+        discoverWalletAccounts.mockImplementation(async () => {
             order.push('discover')
             return []
         })
@@ -275,6 +336,31 @@ describe('useHDImportSession', () => {
         expect(found.map(account => account.custody)).toEqual([
             { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
         ])
+        expect(
+            useHDImportSessionStore.getState().pending?.discoveredIndexes,
+        ).toEqual([{ account: 0, keyIndex: 0 }])
+    })
+
+    test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        let found: LocalAccount[] = []
+        await act(async () => {
+            found = await result.current.discoverImportAccounts({
+                walletKeyId: 'w-1',
+            })
+        })
+        useAccountsStore.setState({ accounts: [{ ...found[0], id: 'held' }] })
+
+        await act(async () => {
+            await result.current.discoverImportAccounts({ walletKeyId: 'w-1' })
+        })
+
+        expect(
+            useHDImportSessionStore.getState().pending?.discoveredIndexes,
+        ).toEqual([])
     })
 
     test('discoverImportAccounts refuses a wallet the session did not prepare', async () => {

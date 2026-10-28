@@ -17,34 +17,35 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { CopyableText } from '@components/CopyableText'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/useLanguage'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import { AccountIcon } from '@components/AccountIcon'
+import { AccountStructureTreeRow } from './AccountStructureTreeRow'
+import type { AccountStructureRow } from './useAccountInfoCard'
 
 type AccountStructureTreeProps = {
     label: string
+    subtitle?: string
     icon: IconName
-    accounts: WalletAccount[]
-    mainAccountAddress: string
+    rows: AccountStructureRow[]
+    isMultichain: boolean
+    expandedRowId: Optional<string>
+    onToggleRow: (accountId: string) => void
+    scanLabel: string
     onScanAddresses: () => void
 }
 
 export const AccountStructureTree = ({
     label,
+    subtitle,
     icon,
-    accounts,
-    mainAccountAddress,
+    rows,
+    isMultichain,
+    expandedRowId,
+    onToggleRow,
+    scanLabel,
     onScanAddresses,
 }: AccountStructureTreeProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
 
     return (
         <PWView style={styles.treeContainer}>
@@ -56,58 +57,29 @@ export const AccountStructureTree = ({
                         variant='primary'
                     />
                 </PWView>
-                <PWText variant='bodyLarge'>{label}</PWText>
+                <PWView style={styles.walletInfo}>
+                    <PWText variant='bodyLarge'>{label}</PWText>
+                    {subtitle && (
+                        <PWText
+                            variant='body'
+                            style={styles.walletSubtitle}
+                        >
+                            {subtitle}
+                        </PWText>
+                    )}
+                </PWView>
             </PWView>
 
-            {accounts.map((account, index) => {
-                const address =
-                    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
-                const isMain = address === mainAccountAddress
-                const truncated = truncateAlgorandAddress(address)
-                const hasRealName = !!account.name && account.name !== truncated
-                const fallbackLabel = isMain
-                    ? t('account_info.main_address')
-                    : t('account_info.sub_address')
-                const isLast = index === accounts.length - 1
-
-                return (
-                    <PWView
-                        // A multisig can list the same address more than once,
-                        // so address alone isn't a unique key.
-                        key={`${address}-${index}`}
-                        style={styles.accountRowWithConnector}
-                    >
-                        <PWView style={styles.connectorContainer}>
-                            <PWView
-                                style={[
-                                    styles.connectorVertical,
-                                    isLast && styles.connectorVerticalLast,
-                                ]}
-                            />
-                            <PWView style={styles.connectorHorizontal} />
-                        </PWView>
-                        <PWView style={styles.accountRow}>
-                            <AccountIcon
-                                account={account}
-                                size='lg'
-                            />
-                            <PWView style={styles.accountInfo}>
-                                <PWText variant='bodyLarge'>
-                                    {hasRealName ? account.name : fallbackLabel}
-                                </PWText>
-                                <CopyableText copyValue={address}>
-                                    <PWText
-                                        variant='body'
-                                        style={styles.addressText}
-                                    >
-                                        {truncated}
-                                    </PWText>
-                                </CopyableText>
-                            </PWView>
-                        </PWView>
-                    </PWView>
-                )
-            })}
+            {rows.map((row, index) => (
+                <AccountStructureTreeRow
+                    key={row.account.id}
+                    row={row}
+                    isMultichain={isMultichain}
+                    isLast={index === rows.length - 1}
+                    isExpanded={expandedRowId === row.account.id}
+                    onToggle={onToggleRow}
+                />
+            ))}
 
             <PWTouchableOpacity
                 style={styles.scanButton}
@@ -122,7 +94,7 @@ export const AccountStructureTree = ({
                     variant='link'
                     style={styles.scanButtonText}
                 >
-                    {t('account_info.scan_new_addresses')}
+                    {scanLabel}
                 </PWText>
             </PWTouchableOpacity>
         </PWView>

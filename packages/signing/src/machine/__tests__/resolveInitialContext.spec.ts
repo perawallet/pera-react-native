@@ -44,6 +44,7 @@ import {
     registerFakeTransactionPlanner,
 } from '../../__tests__/transactions'
 
+import { recordReviewApproval } from '../../db/repository'
 import { resolveInitialContext } from '../actions'
 import { plannerChainAdapters } from '../../chain-adapter'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
@@ -167,6 +168,11 @@ describe('resolveInitialContext — group integrity validation', () => {
     })
 })
 
+vi.mock('../../db/repository', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../db/repository')>()),
+    recordReviewApproval: vi.fn(async () => 'recorded-token'),
+}))
+
 describe('resolveInitialContext — source callbacks', () => {
     it('threads reject and approveSignedBytes from a walletconnect request into source metadata', () => {
         // Multisig sync-flow handoff: createMultisigProposeTransport reads
@@ -236,6 +242,82 @@ describe('resolveInitialContext — source callbacks', () => {
         } as never)
 
         expect(txApprove).toHaveBeenCalledWith(signed, undefined)
+    })
+
+    describe('a review listing transactions to sign later', () => {
+        const following = [neutralPayment(userAddr, 2n)]
+        const deliver = async (
+            sourceType: 'walletconnect' | 'local',
+            followingTxs: TransactionSignRequest['followingTxs'],
+        ) => {
+            const txApprove = vi.fn(async () => undefined)
+            const request: TransactionSignRequest = {
+                id: 'req-batch',
+                type: 'transactions',
+                transport: 'callback',
+                sourceType,
+                txs: [neutralPayment(userAddr, 1n)],
+                followingTxs,
+                approve: txApprove,
+            }
+            const context = resolveInitialContext(baseInput(request))
+            const signed = [{ sig: new Uint8Array([1]) }] as never
+            await context.signableGroups![0].source.callbacks?.approve?.({
+                signedData: { type: 'signed-transactions', signed },
+            } as never)
+            return { txApprove, request, signed }
+        }
+
+        beforeEach(() => {
+            vi.mocked(recordReviewApproval).mockClear()
+        })
+
+        it('records everything the user approved when they approve it, and hands the caller its token', async () => {
+            const { txApprove, request, signed } = await deliver(
+                'walletconnect',
+                following,
+            )
+
+            expect(recordReviewApproval).toHaveBeenCalledWith({
+                scope: request.txs[0].scope,
+                transactions: [...request.txs, ...following],
+            })
+            expect(txApprove).toHaveBeenCalledWith(signed, undefined, {
+                token: 'recorded-token',
+            })
+        })
+
+        it('records a batch of one, whose review lists nothing after its first transaction', async () => {
+            const { txApprove, request, signed } = await deliver(
+                'walletconnect',
+                [],
+            )
+
+            expect(recordReviewApproval).toHaveBeenCalledWith({
+                scope: request.txs[0].scope,
+                transactions: request.txs,
+            })
+            expect(txApprove).toHaveBeenCalledWith(signed, undefined, {
+                token: 'recorded-token',
+            })
+        })
+
+        it('records nothing for a request that is no batch', async () => {
+            const { txApprove, signed } = await deliver(
+                'walletconnect',
+                undefined,
+            )
+
+            expect(recordReviewApproval).not.toHaveBeenCalled()
+            expect(txApprove).toHaveBeenCalledWith(signed, undefined)
+        })
+
+        it('records nothing for a source no one reviews', async () => {
+            const { txApprove, signed } = await deliver('local', following)
+
+            expect(recordReviewApproval).not.toHaveBeenCalled()
+            expect(txApprove).toHaveBeenCalledWith(signed, undefined)
+        })
     })
 
     it('hands the transport submission receipt to the transaction approve callback', async () => {

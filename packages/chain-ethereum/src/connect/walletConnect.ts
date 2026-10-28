@@ -10,16 +10,34 @@
  limitations under the License
  */
 
-import { bytesToHex, hexToBigInt, isHex, numberToHex } from 'viem'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import {
+    bytesToHex,
+    getAddress,
+    hexToBigInt,
+    isAddress,
+    isHex,
+    numberToHex,
+} from 'viem'
+import type { Hex } from 'viem'
 import type {
-    DappRequestChainAdapter,
-    DappRequestFailure,
-    WalletConnectRequestRoute,
+    ChainContext,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    DappRequestCodedError,
+    type DappRequestChainAdapter,
+    type DappRequestFailure,
+    type WalletConnectRequestRoute,
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import { refuseUnsupportedSendCalls } from './callBatch/params'
+import {
+    ethereumWalletCapabilities,
+    findEthereumCallBatch,
+    readEthereumCallsStatus,
+} from './callBatch/status'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
 
@@ -31,6 +49,10 @@ export const ETHEREUM_WC_V2_METHOD = {
     accounts: 'eth_accounts',
     requestAccounts: 'eth_requestAccounts',
     chainId: 'eth_chainId',
+    getCapabilities: 'wallet_getCapabilities',
+    sendCalls: 'wallet_sendCalls',
+    getCallsStatus: 'wallet_getCallsStatus',
+    showCallsStatus: 'wallet_showCallsStatus',
     // Named so it routes `unsupported`, but never listed: no user-added or
     // additional EVM chain.
     addChain: 'wallet_addEthereumChain',
@@ -111,18 +133,74 @@ const SIGNING_METHODS = [
     ETHEREUM_WC_V2_METHOD.personalSign,
     ETHEREUM_WC_V2_METHOD.signTypedDataV4,
     ETHEREUM_WC_V2_METHOD.switchChain,
+    ETHEREUM_WC_V2_METHOD.sendCalls,
 ] as const
 
-// eth_signTransaction, eth_sendRawTransaction, eth_sign and the EIP-5792
-// wallet_* methods are deliberately absent: they route `unsupported`.
+// eth_signTransaction, eth_sendRawTransaction and eth_sign are deliberately
+// absent: they route `unsupported`.
 const METHODS = [
     ...SIGNING_METHODS,
     ETHEREUM_WC_V2_METHOD.accounts,
     ETHEREUM_WC_V2_METHOD.requestAccounts,
     ETHEREUM_WC_V2_METHOD.chainId,
+    ETHEREUM_WC_V2_METHOD.getCapabilities,
+    ETHEREUM_WC_V2_METHOD.getCallsStatus,
+    ETHEREUM_WC_V2_METHOD.showCallsStatus,
 ] as const
 
+const invalidParams = (message: string): DappRequestCodedError =>
+    new DappRequestCodedError(EIP_1193_CODE['invalid-params'], message)
+
+// `[address, chainIds?]`; an account the session doesn't hold is refused, as
+// EIP-5792 asks.
+const answerCapabilities =
+    (chain: EvmChain, params: unknown) => (addresses: readonly string[]) => {
+        const [address, chainIds] = Array.isArray(params)
+            ? (params as unknown[])
+            : []
+        if (
+            typeof address !== 'string' ||
+            !isAddress(address) ||
+            !addresses.some(
+                held =>
+                    isAddress(held) && getAddress(held) === getAddress(address),
+            )
+        ) {
+            throw new DappRequestCodedError(
+                EIP_1193_CODE['unauthorized-account'],
+                'The address is not an account of this session',
+            )
+        }
+        if (
+            chainIds !== undefined &&
+            !(
+                Array.isArray(chainIds) &&
+                chainIds.every(chainId => isHex(chainId, { strict: true }))
+            )
+        ) {
+            throw invalidParams('chainIds must be hex chain ids')
+        }
+        return ethereumWalletCapabilities(chain, chainIds as Hex[] | undefined)
+    }
+
+const answerCallsStatus =
+    (ctx: ChainContext, chain: EvmChain, params: unknown) =>
+    async (addresses: readonly string[]) => {
+        const id = firstPositional(params)
+        if (typeof id !== 'string') throw invalidParams('Expected [id]')
+        const batch = await findEthereumCallBatch(chain, id, addresses)
+        return readEthereumCallsStatus(ctx, chain, batch)
+    }
+
+const routeSendCalls = (params: unknown): WalletConnectRequestRoute => {
+    const refusal = refuseUnsupportedSendCalls(params)
+    return refusal
+        ? { kind: 'refused', error: refusal }
+        : { kind: 'operation', type: 'send-batch', params }
+}
+
 const createV2 = (
+    ctx: ChainContext,
     chain: EvmChain,
 ): NonNullable<DappRequestChainAdapter['walletConnect']['v2']> => ({
     methods: METHODS,
@@ -144,6 +222,28 @@ const createV2 = (
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
                 return routeSwitch(chain, params)
+            }
+            case ETHEREUM_WC_V2_METHOD.sendCalls: {
+                return routeSendCalls(params)
+            }
+            case ETHEREUM_WC_V2_METHOD.showCallsStatus: {
+                return {
+                    kind: 'operation',
+                    type: 'show-batch',
+                    params: { batchId: firstPositional(params) },
+                }
+            }
+            case ETHEREUM_WC_V2_METHOD.getCapabilities: {
+                return {
+                    kind: 'public-data',
+                    answer: answerCapabilities(chain, params),
+                }
+            }
+            case ETHEREUM_WC_V2_METHOD.getCallsStatus: {
+                return {
+                    kind: 'public-data',
+                    answer: answerCallsStatus(ctx, chain, params),
+                }
             }
             case ETHEREUM_WC_V2_METHOD.accounts:
             case ETHEREUM_WC_V2_METHOD.requestAccounts: {
@@ -182,6 +282,7 @@ const createV2 = (
 })
 
 export const createEvmWalletConnectSupport = (
+    ctx: ChainContext,
     chain: EvmChain,
 ): DappRequestChainAdapter['walletConnect'] => ({
     namespace: ETHEREUM_CAIP2_NAMESPACE,
@@ -190,6 +291,8 @@ export const createEvmWalletConnectSupport = (
     toWireResult: result => {
         if (result.type === 'send-transaction') return result.txId
         if (result.type === 'switch-network') return null
+        if (result.type === 'send-batch') return { id: result.batchId }
+        if (result.type === 'show-batch') return null
         if (
             result.type === 'sign-message' ||
             result.type === 'sign-typed-data'
@@ -199,5 +302,5 @@ export const createEvmWalletConnectSupport = (
         throw new Error(`An EVM chain answers no ${result.type} result`)
     },
     toWireErrorCode: failure => EIP_1193_CODE[failure],
-    v2: createV2(chain),
+    v2: createV2(ctx, chain),
 })

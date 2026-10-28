@@ -207,16 +207,42 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
-    it('navigates to ImportSelectAddresses on success', async () => {
-        mockDiscoverAccounts.mockResolvedValue([])
+    it('navigates to ImportSelectAddresses when several HD accounts are discovered', async () => {
+        const discovered = [0, 1].map(keyIndex => ({
+            id: `hd-${keyIndex}`,
+            chains: { algorand: { address: `ADDRESS_${keyIndex}` } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex },
+            },
+        }))
+        mockDiscoverAccounts.mockResolvedValue(discovered)
 
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
             expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
-                accounts: expect.any(Array),
+                accounts: discovered,
             })
         })
+    })
+
+    it('shows the error toast and goes back when the HD search answers with no accounts', async () => {
+        mockDiscoverAccounts.mockResolvedValue([])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith({
+                type: 'error',
+                title: 'onboarding.import_account.failed_title',
+                body: 'onboarding.import_account.failed_body',
+            })
+            expect(mockGoBack).toHaveBeenCalled()
+        })
+        expect(mockReplace).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('selects the imported account, scans for rekeyed accounts, and exits when only one HD account is discovered with no rekeys', async () => {

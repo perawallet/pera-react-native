@@ -17,7 +17,7 @@ import {
     EMPTY_ALGORAND_HISTORY_DATA,
 } from '../history-data'
 import { summarizeAlgorandHistoryItem } from '../summarize'
-import { ALGORAND_HISTORY_SUMMARY_GOLDENS } from './history-summary-goldens'
+import { ALGORAND_HISTORY_SUMMARY_GOLDENS } from '../../test-utils/history-summary-goldens'
 
 describe('summarizeAlgorandHistoryItem', () => {
     it.each(ALGORAND_HISTORY_SUMMARY_GOLDENS)(

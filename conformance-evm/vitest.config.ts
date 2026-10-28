@@ -1,0 +1,67 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { resolve } from 'node:path'
+import { defineConfig } from 'vitest/config'
+
+const pkg = (name: string, dir: string): [string, string] => [
+    `@perawallet/${name}`,
+    resolve(import.meta.dirname, `../packages/${dir}/src`),
+]
+
+export default defineConfig({
+    resolve: {
+        alias: Object.fromEntries([
+            pkg('wallet-core-chain-ethereum', 'chain-ethereum'),
+            pkg('wallet-core-chain-contract', 'chain-contract'),
+            pkg('wallet-core-chain-shared', 'chain-shared'),
+            pkg('wallet-core-accounts', 'accounts'),
+            pkg('wallet-core-assets', 'assets'),
+            pkg('wallet-core-config', 'config'),
+            pkg('wallet-core-kms', 'kms'),
+            pkg('wallet-core-signing', 'signing'),
+            pkg('wallet-core-shared', 'shared'),
+            pkg('wallet-core-transactions', 'transactions'),
+            // Before the provider entry below, which would otherwise claim this
+            // subpath. The package exports no subpaths; this shim is the one the
+            // provider's keystore signs secp256k1 with.
+            [
+                '@perawallet/wallet-extension-provider/keystore/shims/secp256k1',
+                resolve(
+                    import.meta.dirname,
+                    '../extensions/provider/src/keystore/shims/secp256k1/index.ts',
+                ),
+            ],
+            // Without it, `environment: 'node'` externalizes this bare specifier to
+            // the built provider, whose react-native-mmkv import Node cannot load,
+            // and an externalized module bypasses vitest.setup.ts's vi.mock.
+            [
+                '@perawallet/wallet-extension-provider',
+                resolve(
+                    import.meta.dirname,
+                    '../extensions/provider/src/index.ts',
+                ),
+            ],
+        ]),
+    },
+    test: {
+        name: 'conformance-evm',
+        environment: 'node',
+        globals: true,
+        include: ['src/**/*.spec.ts'],
+        // Chain state is shared across files; parallel runs race on account balances.
+        fileParallelism: false,
+        testTimeout: 120_000,
+        hookTimeout: 120_000,
+        setupFiles: ['./vitest.setup.ts'],
+    },
+})

@@ -417,6 +417,7 @@
         "networks_title": "Réseaux",
         "add_network": "Ajouter",
         "add_network_error": "Impossible d’ajouter ce réseau",
+        "add_network_success": "Réseau {{network}} ajouté",
         "see_all_networks": "Voir tous les réseaux",
         "view_passphrase": "Voir la passphrase",
         "network_options": "Plus d’options"
@@ -426,6 +427,9 @@
         "see_wallet_structure": "Voir la structure du wallet",
         "hide_wallet_structure": "Masquer la structure du wallet",
         "scan_new_addresses": "Scanner de nouvelles adresses",
+        "scan_new_accounts": "Scanner de nouveaux comptes {{network}}",
+        "universal_wallet_subtitle": "Une passphrase, tous les réseaux",
+        "viewing": "Actuel",
         "wallet_label": "Wallet n° {{number}}",
         "main_address": "Adresse principale",
         "sub_address": "Sous-adresse",
@@ -447,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Compte Algo25",
-        "standard_description": "Votre compte est un compte Algorand standard. Il n’a pas fait l’objet d’un rekey et n’est pas associé à un appareil Ledger. Il a été ajouté à votre wallet avec ses clés.",
+        "standard_description": "Votre compte est un compte Algorand standard. Il n’a pas fait l’objet d’un rekey et n’est pas associé à un appareil Ledger. Il a été ajouté à votre wallet avec ses clés. Les comptes Algo25 ne prennent en charge qu’Algorand. Pour utiliser Ethereum ou Base, créez un Universal Wallet.",
+        "standard_unreachable_chains_note": "Les autres réseaux ne sont pas disponibles pour les comptes Algo25.",
         "ledger_title": "Compte Ledger",
         "ledger_description": "Votre compte est un compte Ledger. Il a été ajouté à votre wallet directement depuis l’appareil physique. Toutes les transactions de ce compte doivent être confirmées sur votre Ledger.",
         "watch_title": "Compte de suivi",
@@ -2384,6 +2389,7 @@
         "last_7_days": "Derniers 7 jours",
         "last_30_days": "Derniers 30 jours",
         "last_year": "Dernière année",
+        "partial_total": "Exclut les avoirs sans prix",
         "info": {
             "title": "Comment nous calculons la valeur du portfolio",
             "body": "La valeur totale du portfolio est calculée en additionnant la valeur de tous les actifs et des Algo disponibles sur vos comptes, hors comptes de suivi.\n\nLes valeurs des actifs sont calculées à partir de cours quotidiens fournis par plusieurs partenaires de l’écosystème.  Certaines valeurs d’actifs n’étant pas disponibles, la valeur totale du portfolio doit être considérée comme une estimation."
@@ -2650,6 +2656,7 @@
         "qrview": {
             "error_title": "Aucun compte sélectionné",
             "error_body": "Aucun compte n’a été sélectionné, veuillez d’abord sélectionner un compte",
+            "chain_unavailable_title": "{{chain}} n’est pas disponible pour ce compte",
             "copy_address": "Copier l’adresse",
             "share": "Partager l’adresse"
         }
@@ -3174,6 +3181,15 @@
             "deadline_label": "Date limite",
             "never": "Jamais"
         },
+        "collection_approval": {
+            "warning": "Cela permet à l'opérateur de transférer tous les éléments que vous détenez dans cette collection, y compris ceux que vous recevrez plus tard, jusqu'à ce que vous révoquiez cette autorisation.",
+            "operator_label": "Opérateur",
+            "operator_caption": "Opérateur : {{address}}",
+            "collection_label": "Collection"
+        },
+        "token_approval": {
+            "revoke_note": "Cela retire à l'adresse l'autorisation de déplacer cet actif."
+        },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
             "description": "Une demande de signature de données est une demande de signature de données arbitraires. Elle est couramment utilisée par les services pour vérifier la propriété d’un compte et n’entraîne aucuns frais.",
@@ -3301,6 +3317,8 @@
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
             "contract_call": "Appel de contrat",
+            "approval": "Autorisation",
+            "revoke_approval": "Révoquer l'autorisation",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3481,6 +3499,7 @@
             "permissions_sign_transaction": "Demander la signature de transactions",
             "permissions_sign_data": "Demander la signature de données arbitraires",
             "accounts_title": "SÉLECTIONNER LES COMPTES",
+            "no_accounts": "Aucun de vos comptes ne peut se connecter sur ce réseau.",
             "success_sheet_title": "Connexion établie avec {{name}}",
             "success_sheet_body": "Veuillez retourner dans {{name}} pour continuer et terminer votre opération. Vous trouverez toutes les sessions connectées dans la page de paramètres dédiée.",
             "success_sheet_return_to_dapp": "Retourner dans {{name}}",
@@ -4435,5 +4454,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum et réseaux EVM"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "Frais estimés lorsque le tour de cet appel arrivera"
+        }
     }
 }

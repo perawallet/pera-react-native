@@ -54,6 +54,8 @@ export const NETWORK_PARTITIONED_TABLES = [
     'account_transactions',
     'nfd_cache',
     'submission_attempts',
+    'transaction_batches',
+    'review_approvals',
 ] as const
 
 /**

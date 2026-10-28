@@ -10,50 +10,16 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    selectChainNetworkId,
-    useNetworkStore,
-} from '@perawallet/wallet-core-chain-shared'
-import { chainAccountOf } from '../credentials/accessors'
 import type { ChainEnabledBy, WalletAccount } from '../models'
 import { useAccountsStore } from '../store'
-import { syncAndEnrichNewAccount } from '../sync/account-syncer'
 
 /**
- * Enables a chain on an account and syncs the new address right away. The
- * background sync would pick it up on its next tick, but only then.
+ * Enables a chain on an account. `useSyncNewAccounts`, mounted at the app
+ * root, syncs the new address right away.
  */
 export const useEnableChain = (): ((
     accountId: string,
     chainId: ChainId,
     enabledBy: ChainEnabledBy,
-) => Promise<WalletAccount>) => {
-    const queryClient = useQueryClient()
-    return useCallback(
-        async (accountId, chainId, enabledBy) => {
-            const { accounts, enableChain } = useAccountsStore.getState()
-            const wasEnabled = accounts.some(
-                account =>
-                    account.id === accountId &&
-                    chainAccountOf(account, chainId) !== undefined,
-            )
-            const account = await enableChain(accountId, chainId, enabledBy)
-            const address = chainAccountOf(account, chainId)?.address
-            if (!wasEnabled && address !== undefined) {
-                const scope = {
-                    chainId,
-                    networkId: selectChainNetworkId(
-                        useNetworkStore.getState(),
-                        chainId,
-                    ),
-                }
-                void syncAndEnrichNewAccount(address, scope, queryClient)
-            }
-            return account
-        },
-        [queryClient],
-    )
-}
+) => Promise<WalletAccount>) => useAccountsStore(state => state.enableChain)

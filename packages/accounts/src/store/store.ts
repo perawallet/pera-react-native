@@ -20,6 +20,7 @@ import {
     type ChainAccount,
     type EnableChainOptions,
     type HardwareWalletDetails,
+    type HdIndex,
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
@@ -52,6 +53,7 @@ import { kmsCore, zeroBytes } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountsChainAdapters,
+    deriveHdKeyForAccount,
     type DecodedAccountRecord,
 } from '../chain-adapter'
 import {
@@ -66,6 +68,8 @@ import {
     findHardwareHolder,
     findPathHolder,
     hardwareJoinCandidates,
+    hdDiscoveryChains,
+    hdIndexOf,
     isKeyReferenced,
     seedMintableScheme,
     seedOf,
@@ -83,6 +87,12 @@ import {
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
 } from '../errors'
+import {
+    discoverWalletActivity,
+    hdPathKey,
+    type ProbedHdIndex,
+} from '../hd-walk'
+import { isKeyClaimed, isKeyClaimedByOthers, trackWalk } from '../key-claims'
 import { useAccountChainStateStore } from './accountChainState'
 import {
     isHardwareWalletAccount,
@@ -569,7 +579,7 @@ const firstHeldAddress = (account: WalletAccount): string | undefined =>
 const resolveChainEntry = async (
     account: WalletAccount,
     chainId: ChainId,
-    { deviceAddress }: EnableChainOptions = {},
+    { deviceAddress, claimOwner }: EnableChainOptions = {},
 ): Promise<ChainAccount> => {
     const { networkId } = scopeOn(chainId)
     const { custody } = account
@@ -579,15 +589,13 @@ const resolveChainEntry = async (
         if (scheme === undefined || walletId === undefined) {
             throw new WalletCannotDeriveError(walletId ?? account.id, chainId)
         }
-        const { address, keyPairId } = await keyDerivations
-            .get(chainId)
-            .deriveAccount(
-                kmsCore,
-                walletId,
-                custody.hd.account,
-                custody.hd.keyIndex,
-                { scheme, networkId },
-            )
+        const { address, keyPairId } = await deriveHdKeyForAccount(
+            chainId,
+            walletId,
+            custody.hd,
+            { scheme, networkId },
+            claimOwner,
+        )
         return { address, keyPairId }
     }
     if (custody.kind === 'local' && custody.seed === null) {
@@ -652,8 +660,8 @@ const probeChainEntries = async (
                 )
                 return undefined
             }
-            // The contract says the probe never rejects; one that does still
-            // reads as inactive rather than losing every other chain's answer.
+            // A probe that couldn't be made reads as inactive rather than
+            // losing every other chain's answer.
             const activity = await accountsChainAdapters
                 .get(chainId)
                 .checkActivity([entry.address], scopeOn(chainId))
@@ -809,6 +817,35 @@ const moveToHardware = (
     })
     return true
 }
+
+/**
+ * The local HD account at `index`: the one `walletId` holds there, or, when the
+ * same seed was imported again under another id, the one at that index that
+ * holds an address derived there.
+ */
+const hdHolderAt = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    index: HdIndex,
+    derived: AccountChains,
+): WalletAccount | undefined =>
+    findPathHolder(accounts, walletId, index) ??
+    accounts.find(account => {
+        const held = hdIndexOf(account)
+        return (
+            held?.account === index.account &&
+            held.keyIndex === index.keyIndex &&
+            (Object.entries(derived) as [ChainId, ChainAccount][]).some(
+                ([chainId, entry]) => {
+                    const address = chainAccountOf(account, chainId)?.address
+                    return (
+                        address !== undefined &&
+                        isSameAddress(chainId, address, entry.address)
+                    )
+                },
+            )
+        )
+    })
 
 const accountQueues = new Map<string, Promise<unknown>>()
 
@@ -1150,6 +1187,128 @@ export const useAccountsStore: UseBoundStore<
                         return []
                     }
                 }),
+            discoverWalletAccounts: (walletId, options = {}) =>
+                queuedFor(`wallet:${walletId}`, () =>
+                    trackWalk(async () => {
+                        // Every flow deriving a key for an account claims it,
+                        // as it stores the account only after deriving.
+                        const removeUnclaimedKeys = (keyPairIds: string[]) =>
+                            removeUnreferencedKeys(
+                                get().accounts,
+                                keyPairIds.filter(id => !isKeyClaimed(id)),
+                            )
+                        let probed: ProbedHdIndex[] = []
+                        // Only the probes read the root key; the adds derive
+                        // through the keystore, so it is zeroed before them.
+                        try {
+                            probed = await discoverWalletActivity({
+                                walletId,
+                                chainIds: hdDiscoveryChains(),
+                                onUnusedKeys: removeUnclaimedKeys,
+                                rootKey: options.rootKey,
+                                heldAccountIndex: Math.max(
+                                    -1,
+                                    ...get().accounts.flatMap(account =>
+                                        seedOf(account) === walletId
+                                            ? (hdIndexOf(account)?.account ??
+                                              [])
+                                            : [],
+                                    ),
+                                ),
+                            })
+                        } catch (error) {
+                            logger.warn(
+                                `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+                            )
+                        } finally {
+                            zeroBytes(options.rootKey)
+                        }
+                        const declined = new Set(
+                            (options.declinedIndexes ?? []).map(hdPathKey),
+                        )
+                        const changedIds = new Set<string>()
+                        const walkClaims = {}
+                        for (const { index, derived, active } of probed) {
+                            const additions = declined.has(hdPathKey(index))
+                                ? []
+                                : (Object.entries(active) as [
+                                      ChainId,
+                                      ChainAccount,
+                                  ][])
+                            for (const [chainId, entry] of additions) {
+                                const holder = hdHolderAt(
+                                    get().accounts,
+                                    walletId,
+                                    index,
+                                    derived,
+                                )
+                                if (holder && chainAccountOf(holder, chainId)) {
+                                    continue
+                                }
+                                try {
+                                    const account = holder
+                                        ? await get().enableChain(
+                                              holder.id,
+                                              chainId,
+                                              'discovery',
+                                              {
+                                                  expectedAddress:
+                                                      entry.address,
+                                                  claimOwner: walkClaims,
+                                              },
+                                          )
+                                        : await get().addChainAccount(
+                                              walletId,
+                                              chainId,
+                                              index,
+                                              undefined,
+                                              entry.address,
+                                              'discovery',
+                                              walkClaims,
+                                          )
+                                    changedIds.add(account.id)
+                                } catch (error) {
+                                    if (
+                                        !(
+                                            error instanceof
+                                            DuplicateAccountError
+                                        )
+                                    ) {
+                                        logger.warn(
+                                            `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                        )
+                                    }
+                                    // The failed add's own claim would keep the
+                                    // key forever; another flow's claim must not.
+                                    // An entry derived in memory has no id, but
+                                    // the add saved its key all the same.
+                                    const keyPairId = accountsChainAdapters
+                                        .get(chainId)
+                                        .hdKeyPairId(walletId, index)
+                                    if (
+                                        !isKeyClaimedByOthers(
+                                            keyPairId,
+                                            walkClaims,
+                                        )
+                                    ) {
+                                        await removeUnreferencedKey(
+                                            get().accounts,
+                                            keyPairId,
+                                        )
+                                    }
+                                }
+                            }
+                            await removeUnclaimedKeys(
+                                Object.values(derived).flatMap(entry =>
+                                    entry?.keyPairId ? [entry.keyPairId] : [],
+                                ),
+                            )
+                        }
+                        return get().accounts.filter(account =>
+                            changedIds.has(account.id),
+                        )
+                    }),
+                ),
             addChainAccount: async (
                 walletId,
                 chainId,
@@ -1157,6 +1316,7 @@ export const useAccountsStore: UseBoundStore<
                 name,
                 expectedAddress,
                 enabledBy = 'created',
+                claimOwner,
             ) => {
                 const scheme = seedMintableScheme(chainId)
                 if (
@@ -1169,15 +1329,13 @@ export const useAccountsStore: UseBoundStore<
                     useNetworkStore.getState(),
                     chainId,
                 )
-                const { address, keyPairId } = await keyDerivations
-                    .get(chainId)
-                    .deriveAccount(
-                        kmsCore,
-                        walletId,
-                        index.account,
-                        index.keyIndex,
-                        { scheme, networkId },
-                    )
+                const { address, keyPairId } = await deriveHdKeyForAccount(
+                    chainId,
+                    walletId,
+                    index,
+                    { scheme, networkId },
+                    claimOwner,
+                )
 
                 assertExpectedAddress(chainId, address, expectedAddress)
 

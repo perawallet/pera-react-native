@@ -22,7 +22,7 @@ import {
     dappRequestChainAdapters,
     type DappRequestValidation,
 } from './dappRequest'
-import { ConnectionsError } from './errors'
+import { ConnectionsError, DappRequestCodedError } from './errors'
 import type {
     InboundMessage,
     RawInboundMessage,
@@ -103,18 +103,25 @@ const unserved = (type: string): ValidationOutcome => ({
     ),
 })
 
-const refused = ({
-    failure,
-    message,
-}: Extract<DappRequestValidation, { ok: false }>): ValidationOutcome => ({
-    ok: false,
-    error: new ConnectionsError(
-        failure === 'unauthorized-account'
-            ? 'unauthorized-account'
-            : 'invalid-payload',
-        message,
-    ),
-})
+const refused = (
+    refusal: Extract<DappRequestValidation, { ok: false }>,
+): ValidationOutcome => {
+    if (refusal.failure === 'coded') {
+        return {
+            ok: false,
+            error: new DappRequestCodedError(refusal.code, refusal.message),
+        }
+    }
+    return {
+        ok: false,
+        error: new ConnectionsError(
+            refusal.failure === 'unauthorized-account'
+                ? 'unauthorized-account'
+                : 'invalid-payload',
+            refusal.message,
+        ),
+    }
+}
 
 export const validateRawMessage = (
     raw: RawInboundMessage,
@@ -147,6 +154,37 @@ export const validateRawMessage = (
             type: 'send-transaction',
             request: result.request,
         })
+    }
+
+    if (rawOperation.type === 'send-batch') {
+        const { sendBatch } = dappRequestChainAdapters.get(raw.chainId)
+        if (!sendBatch) return unserved(rawOperation.type)
+        const result = sendBatch.validate(
+            rawOperation.params,
+            raw.authorizedAccounts,
+        )
+        if (!result.ok) return refused(result)
+        return accepted(raw, { type: 'send-batch', request: result.request })
+    }
+
+    if (rawOperation.type === 'show-batch') {
+        const { sendBatch } = dappRequestChainAdapters.get(raw.chainId)
+        if (!sendBatch) return unserved(rawOperation.type)
+        const { params } = rawOperation
+        const batchId =
+            typeof params === 'object' && params !== null
+                ? (params as { batchId?: unknown }).batchId
+                : undefined
+        if (typeof batchId !== 'string' || batchId.length === 0) {
+            return {
+                ok: false,
+                error: new ConnectionsError(
+                    'invalid-payload',
+                    'Expected a batch id',
+                ),
+            }
+        }
+        return accepted(raw, { type: 'show-batch', batchId })
     }
 
     if (rawOperation.type === 'switch-network') {

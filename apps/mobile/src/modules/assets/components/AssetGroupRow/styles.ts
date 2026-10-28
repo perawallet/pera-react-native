@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
 
-// Matches the design's 20px chain icons and "+N" chip.
-export const CHAIN_ICON_SIZE = 20
-
 export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.sm,
@@ -51,6 +48,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: theme.spacing.sm,
         marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
     },
     networksToggle: {
@@ -63,38 +61,6 @@ export const useStyles = makeStyles(theme => ({
         ...getFontWeightVariant(theme, 'h4', 500),
         color: theme.colors.positive,
         flexShrink: 1,
-    },
-    chainIconStack: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginLeft: theme.spacing.sm,
-    },
-    // Overlaps the icon before it; the ring in the row's background keeps the two distinct.
-    stackedChainIcon: {
-        marginLeft: -theme.spacing.xs,
-        borderWidth: theme.borders.md,
-        borderColor: theme.colors.background,
-        borderRadius: theme.borderRadius.full,
-    },
-    // Sits inside the same ring as the icons, so it matches their size and stays
-    // distinct from the icon it overlaps.
-    moreChains: {
-        width: CHAIN_ICON_SIZE,
-        height: CHAIN_ICON_SIZE,
-        borderRadius: theme.borderRadius.full,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        backgroundColor: theme.colors.background,
-    },
-    moreChainsLabel: {
-        color: theme.colors.textGray,
-    },
-    chainLabel: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
     },
     chevronExpanded: {
         transform: [{ rotate: '180deg' }],

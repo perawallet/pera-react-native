@@ -156,6 +156,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 })
 
                 if (!discoveredAccounts) return
+                // Empty only when no activity probe answered: fail as import does
+                // rather than offer a selection screen with nothing on it.
+                if (discoveredAccounts.length === 0) {
+                    throw new Error('HD discovery returned no accounts')
+                }
 
                 if (discoveredAccounts.length === 1) {
                     if (createIfEmpty) {

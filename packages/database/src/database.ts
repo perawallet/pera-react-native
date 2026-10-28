@@ -24,9 +24,15 @@ const DATABASE_NAME = 'pera.db'
 
 let instance: Database | null = null
 
-// The submission ledger is the only table not rebuilt by a resync: losing it
-// strands in-flight broadcasts the reconciler would otherwise settle.
-const RESET_PRESERVED_TABLES = ['submission_attempts'] as const
+// The submission ledger, its batches and the reviews that approved them are
+// the only tables not rebuilt by a resync: losing them strands in-flight
+// broadcasts the reconciler would otherwise settle, and batches part-way
+// through their transactions.
+export const RESET_PRESERVED_TABLES = [
+    'submission_attempts',
+    'transaction_batches',
+    'review_approvals',
+] as const
 
 export type InitializeDatabaseOptions = {
     // Opt-in per platform: only a host with a per-statement timeout can fail a

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-// the Pera backend types an asset as a collectible only once its
+// The Pera backend types an asset as a collectible only once its
 // crawler has fetched the media, which lands seconds to hours after a mint.
-// The app caches that first "standard_asset" answer, so a minted NFT showed
-// up as a plain token — and the 7-day asset TTL kept it that way. Viewing the
+// The app caches that first "standard_asset" answer, and the 7-day asset TTL
+// would keep a fresh mint showing as a plain token. Viewing the
 // account must re-ask while the asset is still newly seen and move it into
 // the gallery.
 

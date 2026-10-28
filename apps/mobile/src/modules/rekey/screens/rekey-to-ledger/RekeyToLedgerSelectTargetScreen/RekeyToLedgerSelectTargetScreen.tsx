@@ -18,7 +18,8 @@ import { useRekeyToLedgerSelectTargetScreen } from './useRekeyToLedgerSelectTarg
 
 export const RekeyToLedgerSelectTargetScreen = () => {
     const { t } = useLanguage()
-    const { targets, handleSelect } = useRekeyToLedgerSelectTargetScreen()
+    const { targets, chainId, handleSelect } =
+        useRekeyToLedgerSelectTargetScreen()
 
     return (
         <PWScreen
@@ -35,6 +36,7 @@ export const RekeyToLedgerSelectTargetScreen = () => {
                 onSelect={handleSelect}
                 emptyBody={t('rekey.to_ledger.select.empty')}
                 rowTestIDPrefix='rekey-target-row'
+                chainId={chainId}
             />
         </PWScreen>
     )

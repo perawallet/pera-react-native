@@ -47,6 +47,7 @@ import { isPlannerSigned } from './utils/isPlannerSigned'
 import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 import { broadcasterChainAdapters } from '../broadcaster'
+import { isTransactionRequest } from '../models'
 import {
     localKeySignerAdapterFor,
     plannerAdapterForScope,
@@ -337,6 +338,9 @@ export const signingMachine = setup({
                     isHeadless: !isInteractiveSource(
                         context.request.sourceType,
                     ),
+                    reviewApproval: isTransactionRequest(context.request)
+                        ? context.request.reviewApproval
+                        : undefined,
                 }),
                 onDone: {
                     target: 'awaiting_user',

@@ -400,7 +400,7 @@ describe('ethereumLedgerAppDriver', () => {
                 accounts: [ledger],
             })
             const bytes = await open().signMessage(3, item.devicePayload!)
-            const signed = messages.assemble(request, [
+            const signed = await messages.assemble(request, [
                 {
                     requestIndex: 0,
                     signer: item.signer,

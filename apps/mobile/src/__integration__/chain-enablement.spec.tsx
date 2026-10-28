@@ -19,22 +19,38 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, type RequestHandler } from 'msw'
 
 import {
     chainAccountOf,
+    getAccountHoldings,
     useAccountsStore,
+    useSyncNewAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
     EVM_CHAIN_NETWORKS,
+    keyDerivations,
     type ChainId,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { useKMS, type HDWalletKeyResult } from '@perawallet/wallet-core-kms'
+import {
+    evmRpcHandlers,
+    peraEvmHandlers,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import {
+    kmsCore,
+    useKMS,
+    type HDWalletKeyResult,
+} from '@perawallet/wallet-core-kms'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -42,6 +58,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { server } from '@test-utils/msw-server'
+import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { isElementDisabled } from '@test-utils/rnw'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
@@ -94,7 +111,16 @@ const TEST_PRIVATE_KEY_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
 /** Every JSON-RPC method each chain's node received. */
 const rpcCalls = new Map<string, string[]>()
 
-const handlersFor = (activeChains: readonly ChainId[]): RequestHandler[] =>
+type AddressActivity = {
+    address: string
+    nonce: `0x${string}`
+    balance: `0x${string}`
+}
+
+const handlersFor = (
+    activeChains: readonly ChainId[],
+    activeAddress?: AddressActivity,
+): RequestHandler[] =>
     EVM_CHAINS.flatMap(chainId => {
         const url = rpcUrlOf(chainId)
         const [mainnet] = EVM_CHAIN_NETWORKS[chainId].networks
@@ -120,18 +146,56 @@ const handlersFor = (activeChains: readonly ChainId[]): RequestHandler[] =>
                 rpcUrl: url,
                 responses: {
                     eth_chainId: `0x${mainnet!.eip155ChainId.toString(16)}`,
-                    eth_getTransactionCount: activeChains.includes(chainId)
-                        ? '0x1'
-                        : '0x0',
+                    eth_getTransactionCount: activeAddress
+                        ? params =>
+                              isActiveAddress(activeAddress, chainId, params)
+                                  ? activeAddress.nonce
+                                  : '0x0'
+                        : activeChains.includes(chainId)
+                          ? '0x1'
+                          : '0x0',
+                    ...(activeAddress && {
+                        eth_getBalance: (params: readonly unknown[]) =>
+                            isActiveAddress(activeAddress, chainId, params)
+                                ? activeAddress.balance
+                                : '0x0',
+                    }),
                 },
             }),
         ]
     })
 
-const seedEthereumOnlyHdAccount = async (): Promise<WalletAccount> => {
+// Only `activeChains`' node reports the address; every other address and node is empty.
+let activeChainsForAddress: readonly ChainId[] = []
+const isActiveAddress = (
+    { address }: AddressActivity,
+    chainId: ChainId,
+    params: readonly unknown[],
+) =>
+    activeChainsForAddress.includes(chainId) &&
+    String(params[0]).toLowerCase() === address.toLowerCase()
+
+const SyncNewAccountsHost = () => {
+    useSyncNewAccounts()
+    return null
+}
+
+const seedHdWalletKey = async (): Promise<string> => {
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
     await waitFor(async () => {
+        rootKey = await kms.current.createHDWalletKey({
+            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+        })
+        expect(rootKey).not.toBeNull()
+    })
+    return rootKey!.seedKey.id
+}
+
+const seedEthereumOnlyHdAccount = async (): Promise<WalletAccount> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let rootKey: HDWalletKeyResult | null = null
+    await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
             mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
         })
@@ -160,17 +224,30 @@ describe('Flow: an account enables chains as it is used on them', () => {
         await resetTestDatabase()
         resetTestKeystore()
         rpcCalls.clear()
+        activeChainsForAddress = []
         useAccountsStore.getState().setAccounts([])
         useReceiveFundsStore.getState().reset()
     })
 
-    it('Given an HD account on Ethereum alone, when the user adds Base on Choose Network, then Base joins it at the same address, the list stays open, and the Base row opens its QR', async () => {
+    it('Given an HD account on Ethereum alone whose address holds ETH on Base, when the user adds Base on Choose Network, then Base joins it at the same address, its Base balance is stored, the list stays open, and the Base row opens its QR', async () => {
         server.use(...handlersFor([]))
         const account = await seedEthereumOnlyHdAccount()
         const ethereumAddress = chainAccountOf(account, 'ethereum')!.address
+        activeChainsForAddress = ['base']
+        server.use(
+            ...handlersFor([], {
+                address: ethereumAddress,
+                nonce: '0x1',
+                // 1 ETH, in wei.
+                balance: '0xde0b6b3a7640000',
+            }),
+            ...peraEvmHandlers(),
+        )
         useReceiveFundsStore.getState().setSelectedAccount(account)
         useReceiveFundsStore.getState().setCanSelectAccount(false)
 
+        // The app root mounts the watcher that syncs a newly enabled chain.
+        render(<SyncNewAccountsHost />)
         renderWithNavigation(ChainSelectionScreen, 'ChainSelection', {
             additionalScreens: [{ name: 'QRView', component: QRViewScreen }],
         })
@@ -218,12 +295,16 @@ describe('Flow: an account enables chains as it is used on them', () => {
             enabledBy: 'user',
         })
         await waitFor(
-            () =>
-                expect(rpcCalls.get('base')).toEqual(
-                    expect.arrayContaining([
-                        expect.stringMatching(/^eth_(call|getBalance)$/),
-                    ]),
-                ),
+            async () => {
+                const holdings = await getAccountHoldings({
+                    accountAddress: ethereumAddress,
+                    scope: { chainId: 'base', networkId: 'mainnet' },
+                })
+                // Holdings are stored in base units: 1 ETH in wei.
+                expect(
+                    holdings.map(({ amount }) => amount.toString()),
+                ).toContain('1000000000000000000')
+            },
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
     })
@@ -287,5 +368,55 @@ describe('Flow: an account enables chains as it is used on them', () => {
             ).toBe(true),
         )
         expect(useAccountsStore.getState().accounts).toEqual([imported])
+    })
+
+    it('Given an HD account on Algorand alone whose Ethereum address holds ETH, when discovery adds Ethereum to it, then its Ethereum balance is read and stored without waiting for the background poll', async () => {
+        const walletId = await seedHdWalletKey()
+        await useAccountsStore
+            .getState()
+            .addChainAccount(
+                walletId,
+                'algorand',
+                { account: 0, keyIndex: 0 },
+                'HD',
+            )
+        const { address: ethereumAddress } = await keyDerivations
+            .get('ethereum')
+            .deriveAccount(kmsCore, walletId, 0, 0, {
+                scheme: 'secp256k1',
+                networkId: 'mainnet',
+            })
+        activeChainsForAddress = ['ethereum']
+        server.use(
+            ...handlersFor([], {
+                address: ethereumAddress,
+                nonce: '0x3',
+                // 1.5 ETH, in wei.
+                balance: '0x14d1120d7b160000',
+            }),
+            ...peraEvmHandlers(),
+        )
+        render(<SyncNewAccountsHost />)
+        await useAccountsStore.getState().discoverWalletAccounts(walletId)
+
+        const [account] = useAccountsStore.getState().accounts
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(chainAccountOf(account!, 'ethereum')).toMatchObject({
+            address: ethereumAddress,
+            enabledBy: 'discovery',
+        })
+        await waitFor(
+            async () => {
+                const holdings = await getAccountHoldings({
+                    accountAddress: ethereumAddress,
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                })
+                // Holdings are stored in base units: 1.5 ETH in wei.
+                expect(
+                    holdings.map(({ amount }) => amount.toString()),
+                ).toContain('1500000000000000000')
+            },
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
     })
 })

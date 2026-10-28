@@ -25,11 +25,17 @@ import {
     type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { EvmChain } from '../chains/types'
-import { readEvmTransaction } from './adapter'
+import { isRecord, readEvmTransaction } from './adapter'
 import { createEthereumReviewer, ethereumViewOf } from './review'
 import { toEthereumNative } from './transaction-view'
 
-// Ethereum has no atomic groups, so every transaction is its own item.
+const isPreview = (transaction: TransactionNative): boolean =>
+    isRecord(transaction.transaction) &&
+    transaction.transaction.isPreview === true
+
+// Ethereum has no atomic groups, so every transaction is its own item. A batch
+// preview isn't signed by this review, but the wallet signs it later, so it
+// isn't someone else's.
 const toItems = (
     transactions: TransactionNative[],
     signableIndices?: ReadonlySet<number>,
@@ -38,7 +44,10 @@ const toItems = (
         type: 'transaction',
         transaction,
         groupIndex,
-        isExternal: signableIndices ? !signableIndices.has(groupIndex) : false,
+        isExternal:
+            signableIndices !== undefined &&
+            !signableIndices.has(groupIndex) &&
+            !isPreview(transaction),
     }))
 
 // Only hex payloads are read as text; anything not cleanly printable UTF-8 shows as hex, never lossy.

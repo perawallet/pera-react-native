@@ -75,12 +75,17 @@ export const getSignerFor = (
     return r.kind === 'ok' ? r.signer : null
 }
 
-/** Unlike `getSignerFor`, `account` need not be present in `accounts`. */
+/**
+ * Unlike `getSignerFor`, `account` need not be present in `accounts`. False on
+ * a chain this build doesn't register, which a stored account can still hold.
+ */
 export const canSignWith = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): boolean => resolveSignerForAccount(account, accounts, chainId).kind === 'ok'
+): boolean =>
+    accountsChainAdapters.has(chainId) &&
+    resolveSignerForAccount(account, accounts, chainId).kind === 'ok'
 
 /**
  * The account's address on each listed chain where it has an entry and

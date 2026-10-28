@@ -53,6 +53,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies
@@ -69,6 +70,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       # Restore and save in one step, so an exact hit saves nothing. Browser
@@ -110,6 +112,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           fail-on-cache-miss: true
 

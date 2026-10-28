@@ -143,9 +143,43 @@ describe('PWTapToConfirm', () => {
             expect(onConfirm).not.toHaveBeenCalled()
         })
 
-        // Ignoring the early press would leave it armed, so a third click
-        // arriving just after the delay would still sign.
-        it('never confirms under steady rapid clicking', () => {
+        it('keeps it armed when a tap lands during the wait', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            act(() => {
+                vi.advanceTimersByTime(200)
+            })
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            act(() => {
+                vi.advanceTimersByTime(MIN_DELAY_MS)
+            })
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+
+            expect(onConfirm).toHaveBeenCalledTimes(1)
+        })
+
+        it('restarts the wait from a tap that lands during it', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            act(() => {
+                vi.advanceTimersByTime(200)
+            })
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            act(() => {
+                vi.advanceTimersByTime(MIN_DELAY_MS - 100)
+            })
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+
+            expect(onConfirm).not.toHaveBeenCalled()
+        })
+
+        it('never confirms during a rapid burst', () => {
             const { onConfirm } = renderTapToConfirm({
                 minConfirmDelayMs: MIN_DELAY_MS,
             })
@@ -158,6 +192,70 @@ describe('PWTapToConfirm', () => {
             }
 
             expect(onConfirm).not.toHaveBeenCalled()
+        })
+
+        it('reports busy to assistive tech while the wait runs', () => {
+            renderTapToConfirm({ minConfirmDelayMs: MIN_DELAY_MS })
+            const control = screen.getByTestId('tap-confirm')
+
+            fireEvent.click(control)
+            expect(control.getAttribute('aria-busy')).toBe('true')
+
+            act(() => {
+                vi.advanceTimersByTime(MIN_DELAY_MS)
+            })
+            expect(control.getAttribute('aria-busy')).not.toBe('true')
+        })
+
+        it('never confirms a burst that lands before React re-renders', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+            const control = screen.getByTestId('tap-confirm')
+
+            act(() => {
+                for (let i = 0; i < 10; i++) fireEvent.click(control)
+            })
+
+            expect(onConfirm).not.toHaveBeenCalled()
+        })
+
+        describe('with a longer armed timeout', () => {
+            const ARMED_TIMEOUT_MS = 3000
+
+            it('counts the timeout from the last tap', () => {
+                const { onConfirm } = renderTapToConfirm({
+                    minConfirmDelayMs: MIN_DELAY_MS,
+                    armedTimeoutMs: ARMED_TIMEOUT_MS,
+                })
+
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+                act(() => {
+                    vi.advanceTimersByTime(300)
+                })
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+                act(() => {
+                    vi.advanceTimersByTime(ARMED_TIMEOUT_MS - 100)
+                })
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+
+                expect(onConfirm).toHaveBeenCalledTimes(1)
+            })
+
+            it('disarms once the timeout passes without a tap', () => {
+                const { onConfirm } = renderTapToConfirm({
+                    minConfirmDelayMs: MIN_DELAY_MS,
+                    armedTimeoutMs: ARMED_TIMEOUT_MS,
+                })
+
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+                act(() => {
+                    vi.advanceTimersByTime(ARMED_TIMEOUT_MS + 100)
+                })
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+
+                expect(onConfirm).not.toHaveBeenCalled()
+            })
         })
     })
 

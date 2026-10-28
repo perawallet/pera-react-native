@@ -28,6 +28,11 @@ export const useStyles = makeStyles(
             contentContainer: {
                 paddingBottom: theme.spacing.xl,
             },
+            noAccounts: {
+                marginTop: theme.spacing.lg,
+                textAlign: 'center',
+                color: theme.colors.textGray,
+            },
             icon: {
                 width: theme.spacing['4xl'],
                 height: theme.spacing['4xl'],

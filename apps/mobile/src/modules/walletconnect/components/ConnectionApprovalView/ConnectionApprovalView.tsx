@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
-import { PWButton, PWFlatList, PWView } from '@components/core'
+import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
@@ -42,6 +42,7 @@ export const ConnectionApprovalView = ({
         peerUrlLabel,
         canOpenPeerUrl,
         handlePressUrl,
+        noAccountsNote,
         originWarning,
         verifiedOriginLabel,
     } = useConnectionApprovalView(proposal)
@@ -77,6 +78,14 @@ export const ConnectionApprovalView = ({
                         originWarning={originWarning}
                         verifiedOriginLabel={verifiedOriginLabel}
                     />
+                }
+                ListEmptyComponent={
+                    <PWText
+                        style={styles.noAccounts}
+                        testID='wc_connection_no_accounts'
+                    >
+                        {noAccountsNote}
+                    </PWText>
                 }
                 showsVerticalScrollIndicator={false}
                 inBottomSheet

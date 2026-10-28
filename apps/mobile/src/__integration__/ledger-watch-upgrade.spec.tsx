@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
@@ -80,16 +80,9 @@ const selectRowAndReachAddButton = async () => {
         screen.getByTestId('ledger_select_accounts_continue_button'),
     )
 
-    return waitFor(
-        () => {
-            const btn = screen.getByTestId(
-                'ledger_verify_add_accounts_button',
-            ) as HTMLButtonElement
-            expect(isElementDisabled(btn)).toBe(false)
-            return btn
-        },
-        { timeout: 10_000 },
-    )
+    return findEnabledByTestId('ledger_verify_add_accounts_button', {
+        timeout: 10_000,
+    })
 }
 
 describe('Flow: Ledger import upgrades a watch account', () => {

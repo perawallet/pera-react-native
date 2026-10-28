@@ -47,4 +47,22 @@ describe('reviewGroupOf', () => {
     it('shows `txs` on a chain with no planner', () => {
         expect(reviewGroupOf(request)).toEqual({ transactions: txs })
     })
+
+    it('shows the following transactions after `txs` and marks only `txs` signable', () => {
+        const following = [
+            makeUnsignedTransaction('FROM'),
+            makeUnsignedTransaction('FROM'),
+        ]
+        const batch: TransactionSignRequest = {
+            ...request,
+            followingTxs: following,
+        }
+
+        const group = reviewGroupOf(batch)
+
+        expect(group.transactions).toEqual([...txs, ...following])
+        expect(group.signableIndices).toEqual([0])
+        // The signing sheet's display cache compares these arrays by identity.
+        expect(reviewGroupOf(batch)).toBe(group)
+    })
 })

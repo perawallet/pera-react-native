@@ -16,6 +16,7 @@ import {
     deferToNextCycle,
     isPromiseLike,
     mapWithConcurrency,
+    settleBatch,
     withTimeout,
 } from '../async'
 
@@ -362,5 +363,46 @@ describe('mapWithConcurrency', () => {
             { status: 'fulfilled', value: 1 },
             { status: 'fulfilled', value: 2 },
         ])
+    })
+})
+
+describe('settleBatch', () => {
+    it('resolves every read in order', async () => {
+        await expect(
+            settleBatch([1, 2, 3], async n => n * 10, 0),
+        ).resolves.toEqual([10, 20, 30])
+    })
+
+    it('reads a failure as the fallback when another read answered', async () => {
+        await expect(
+            settleBatch(
+                [1, 2],
+                async n => {
+                    if (n === 1) throw new Error('flaky')
+                    return true
+                },
+                false,
+            ),
+        ).resolves.toEqual([false, true])
+    })
+
+    it('rejects with the first failure when every read fails', async () => {
+        const first = new Error('offline')
+
+        await expect(
+            settleBatch(
+                [1, 2],
+                async n => {
+                    throw n === 1 ? first : new Error('also offline')
+                },
+                false,
+            ),
+        ).rejects.toBe(first)
+    })
+
+    it('resolves empty for no items', async () => {
+        await expect(settleBatch([], async () => true, false)).resolves.toEqual(
+            [],
+        )
     })
 })

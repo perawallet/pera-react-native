@@ -417,6 +417,7 @@
         "networks_title": "Redes",
         "add_network": "Añadir",
         "add_network_error": "No se pudo añadir esta red",
+        "add_network_success": "Red {{network}} añadida",
         "see_all_networks": "Ver todas las redes",
         "view_passphrase": "Ver passphrase",
         "network_options": "Más opciones"
@@ -426,6 +427,9 @@
         "see_wallet_structure": "Ver estructura del wallet",
         "hide_wallet_structure": "Ocultar estructura del wallet",
         "scan_new_addresses": "Buscar direcciones nuevas",
+        "scan_new_accounts": "Buscar cuentas nuevas de {{network}}",
+        "universal_wallet_subtitle": "Una passphrase, todas las redes",
+        "viewing": "Actual",
         "wallet_label": "Wallet n.º {{number}}",
         "main_address": "Dirección principal",
         "sub_address": "Subdirección",
@@ -447,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
-        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves.",
+        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves. Las cuentas Algo25 solo admiten Algorand. Para usar Ethereum o Base, crea una Wallet universal.",
+        "standard_unreachable_chains_note": "Otras redes no están disponibles para las cuentas Algo25.",
         "ledger_title": "Cuenta Ledger",
         "ledger_description": "Tu cuenta es una cuenta Ledger. Se añadió a tu wallet directamente desde el dispositivo de hardware. Todas las transacciones de esta cuenta deben confirmarse en tu Ledger.",
         "watch_title": "Cuenta de observación",
@@ -2384,6 +2389,7 @@
         "last_7_days": "Últimos 7 días",
         "last_30_days": "Últimos 30 días",
         "last_year": "Último año",
+        "partial_total": "Excluye tenencias sin precio",
         "info": {
             "title": "Cómo calculamos el valor del portafolio",
             "body": "El valor total del portafolio se calcula sumando el valor de todos tus activos y el Algo disponible en tus cuentas, excluyendo las cuentas de observación.\n\nLos valores de los activos se calculan a partir de los valores diarios obtenidos de varios socios del ecosistema.  Como algunos valores de activos no están disponibles, el valor total del portafolio debe considerarse una estimación."
@@ -2650,6 +2656,7 @@
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
             "error_body": "No se ha seleccionado ninguna cuenta, selecciona una primero",
+            "chain_unavailable_title": "{{chain}} no está disponible para esta cuenta",
             "copy_address": "Copiar dirección",
             "share": "Compartir dirección"
         }
@@ -3174,6 +3181,15 @@
             "deadline_label": "Fecha límite",
             "never": "Nunca"
         },
+        "collection_approval": {
+            "warning": "Esto permite al operador transferir todos los artículos que tienes en esta colección, incluidos los que recibas después, hasta que lo revoques.",
+            "operator_label": "Operador",
+            "operator_caption": "Operador: {{address}}",
+            "collection_label": "Colección"
+        },
+        "token_approval": {
+            "revoke_note": "Esto retira el permiso de la dirección para mover este activo."
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguien",
             "description": "Una solicitud de firma de datos es una petición para firmar datos arbitrarios. Los servicios la usan habitualmente para verificar la propiedad de una cuenta y no conlleva ninguna comisión.",
@@ -3301,6 +3317,8 @@
             "asset_freeze": "Congelación de activo",
             "app_call": "Llamada a app",
             "contract_call": "Llamada a contrato",
+            "approval": "Aprobación",
+            "revoke_approval": "Revocar aprobación",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3481,6 +3499,7 @@
             "permissions_sign_transaction": "Solicitar la firma de transacciones",
             "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
             "accounts_title": "SELECCIONAR CUENTAS",
+            "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "success_sheet_return_to_dapp": "Volver a {{name}}",
@@ -4435,5 +4454,10 @@
     "chain_families": {
         "algorand": "Algorand",
         "evm": "Ethereum y redes EVM"
+    },
+    "ethereum": {
+        "batch": {
+            "fee_when_reached": "La comisión se estima cuando llegue el turno de esta llamada"
+        }
     }
 }

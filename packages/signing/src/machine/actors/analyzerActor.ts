@@ -11,6 +11,13 @@
  */
 
 import { fromPromise } from 'xstate'
+import {
+    toScopeKey,
+    type UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { getReviewApproval } from '../../db/repository'
+import { REVIEW_APPROVAL_TTL_MS } from '../../db/types'
+import type { ReviewApprovalRef } from '../../models'
 import type {
     SignableGroup,
     SignableAnalysis,
@@ -18,13 +25,59 @@ import type {
 } from '../../pipeline/types'
 import { reviewGroup } from '../../pipeline/composeAnalysis'
 import { ReviewRequiredError } from '../../pipeline/errors'
-import { reviewerFor } from '../../pipeline/transactionReviewerBridge'
+import {
+    reviewerFor,
+    type GroupReviewer,
+} from '../../pipeline/transactionReviewerBridge'
 
 export type AnalyzerActorInput = {
     groups: SignableGroup[]
     context: AnalysisContext
     /** No review screen will show this request, so the chain's policy decides. */
     isHeadless: boolean
+    /** See `UnsignedTransactionSignRequest.reviewApproval`. */
+    reviewApproval?: ReviewApprovalRef
+}
+
+// Each transaction must match what the approved review showed at the position
+// the request names for it, so a review can't vouch for one it never showed.
+const matchesApprovedReview = (
+    reviewer: GroupReviewer,
+    group: SignableGroup,
+    positions: readonly number[],
+    shown: readonly UnsignedTransaction[],
+): boolean => {
+    const { matchesApprovedPreview } = reviewer.policy
+    if (!matchesApprovedPreview) return false
+    if (group.data.type !== 'transactions') return false
+    const { transactions } = group.data
+    return (
+        transactions.length > 0 &&
+        transactions.every((transaction, index) => {
+            const position = positions[group.originalIndices?.[index] ?? index]
+            const preview = position === undefined ? undefined : shown[position]
+            return (
+                preview !== undefined &&
+                matchesApprovedPreview(transaction, preview)
+            )
+        })
+    )
+}
+
+// Read from the pipeline's own record, never from the request, and only for
+// the network the request signs on and while the approval is fresh.
+const approvedReviewOf = async (
+    input: AnalyzerActorInput,
+): Promise<UnsignedTransaction[] | undefined> => {
+    if (!input.reviewApproval) return undefined
+    const approval = await getReviewApproval({
+        token: input.reviewApproval.token,
+    })
+    return approval &&
+        toScopeKey(approval.scope) === toScopeKey(input.context.scope) &&
+        Date.now() - approval.createdAt <= REVIEW_APPROVAL_TTL_MS
+        ? approval.transactions
+        : undefined
 }
 
 /**
@@ -45,9 +98,24 @@ export const analyzerActor = fromPromise<
         input.groups.map(group => reviewGroup(reviewer, group, input.context)),
     )
     if (!input.isHeadless) return analyses
-    const refused = analyses.filter(
-        analysis => !reviewer.policy.autoApproveLocal(analysis),
-    )
+    const turnedDown = analyses
+        .map((analysis, index) => ({ analysis, group: input.groups[index] }))
+        .filter(({ analysis }) => !reviewer.policy.autoApproveLocal(analysis))
+    const shown =
+        turnedDown.length > 0 ? await approvedReviewOf(input) : undefined
+    const refused = turnedDown
+        .filter(
+            ({ group }) =>
+                !shown ||
+                !input.reviewApproval ||
+                !matchesApprovedReview(
+                    reviewer,
+                    group,
+                    input.reviewApproval.positions,
+                    shown,
+                ),
+        )
+        .map(({ analysis }) => analysis)
     if (refused.length > 0) {
         throw new ReviewRequiredError(
             refused.flatMap(analysis => analysis.warnings.map(w => w.type)),

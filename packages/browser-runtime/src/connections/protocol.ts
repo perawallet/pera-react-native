@@ -100,9 +100,25 @@ export type WireWalletOperationResult =
           signatures: string[]
       }
 
+// The browser registers no chain that sends a batch for a dApp, and nothing
+// carries a batch's bigints across a message hop.
+const UNSERVED_TYPES = ['send-batch', 'show-batch'] as const
+
+type UnservedType = (typeof UNSERVED_TYPES)[number]
+
+const isUnserved = <T extends { type: string }>(
+    value: T,
+): value is Extract<T, { type: UnservedType }> =>
+    (UNSERVED_TYPES as readonly string[]).includes(value.type)
+
+const refuseUnserved = (type: UnservedType): never => {
+    throw new Error(`${type} cannot cross a browser message hop`)
+}
+
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
+    if (isUnserved(operation)) return refuseUnserved(operation.type)
     if (operation.type === 'send-transaction') {
         return {
             type: 'send-transaction',
@@ -159,6 +175,7 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
+    if (isUnserved(result)) return refuseUnserved(result.type)
     if (result.type === 'send-transaction') return result
     if (result.type === 'sign-transactions') return result
     if (result.type === 'switch-network') return result

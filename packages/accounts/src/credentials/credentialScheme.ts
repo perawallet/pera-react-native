@@ -77,8 +77,11 @@ export const credentialScheme = (
                     ? localKeyKindOf(chain.id, custody.seed)
                     : (localKeyKindOf(chain.id, loaded) ??
                       localKeyKindOf(chain.id, null))
+            // A chain may declare no standalone kind and still import raw keys.
+            const standaloneScheme = () =>
+                custody.seed === null ? chain.signing.rawKeySchemes[0] : null
             const scheme = accountsChainAdapters.has(chain.id)
-                ? (kindOf()?.signingScheme ?? null)
+                ? (kindOf()?.signingScheme ?? standaloneScheme() ?? null)
                 : primary
             return scheme && chain.signing.schemes.includes(scheme)
                 ? scheme

@@ -21,6 +21,13 @@ import {
     validateEthereumSendTransaction,
     type EthereumSendTransactionRequest,
 } from './sendTransaction'
+import { startEthereumCallBatch } from './callBatch/executor'
+import {
+    validateEthereumSendCalls,
+    type EthereumCallBatchRequest,
+} from './callBatch/params'
+import { prepareEthereumCallBatch } from './callBatch/prepare'
+import { findEthereumCallBatch, reachedCallTxIdOf } from './callBatch/status'
 import { createEvmWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
@@ -53,7 +60,7 @@ export const createEthereumDappRequestAdapter = (
 
     emptySignaturesFor: () => ({}),
 
-    walletConnect: createEvmWalletConnectSupport(chain),
+    walletConnect: createEvmWalletConnectSupport(ctx, chain),
 
     validateTransactionPayload: () => ({
         ok: false,
@@ -88,5 +95,34 @@ export const createEthereumDappRequestAdapter = (
                 chain,
                 request as EthereumSendTransactionRequest,
             ),
+    },
+
+    sendBatch: {
+        validate: (params, authorizedAccounts) =>
+            validateEthereumSendCalls(params, {
+                authorizedAccounts,
+                eip155ChainId: eip155ChainIdOfNetwork(
+                    chain,
+                    ctx.getScope().networkId,
+                ),
+            }),
+        // `validate` is the only producer of the request.
+        prepare: request =>
+            prepareEthereumCallBatch(
+                ctx,
+                chain,
+                request as EthereumCallBatchRequest,
+            ),
+        start: (prepared, first, approval) =>
+            startEthereumCallBatch(ctx, chain, prepared, first, approval),
+        locate: async (batchId, authorizedAccounts) => {
+            const batch = await findEthereumCallBatch(
+                chain,
+                batchId,
+                authorizedAccounts,
+            )
+            const txId = reachedCallTxIdOf(batch)
+            return txId === undefined ? null : { scope: batch.scope, txId }
+        },
     },
 })

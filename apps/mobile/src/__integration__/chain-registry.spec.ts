@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { chainModule } from '@perawallet/wallet-core-chain-algorand'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { initRuntime as initNativeRuntime } from '../bootstrap/preReact'
 import { initRuntime as initWebShellRuntime } from '../bootstrap/preReact.web'
 
@@ -55,6 +56,12 @@ const expectAssetsAdapterForEveryChain = (): void => {
 }
 
 describe('chain registry', () => {
+    afterEach(() => {
+        getProvider().chains.reset()
+        assetsChainAdapters.reset()
+        registerChainAdapters()
+    })
+
     it('holds the Algorand chain after the integration setup registers it', () => {
         const { chains } = getProvider()
 

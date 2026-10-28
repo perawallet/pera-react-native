@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -48,8 +47,6 @@ const statefulStatus = (initial: string) => {
 const renderDetails = () => renderWithNavigation(PeraCardDetails, 'CardDetails')
 
 describe('Flow: Card frozen state', () => {
-    beforeEach(() => vi.mocked(Notifier.showNotification).mockClear())
-
     it('shows the Card Frozen banner on the Card Details tab when the card is frozen', async () => {
         server.use(
             http.get('*/v1/card/status', () =>
@@ -86,7 +83,9 @@ describe('Flow: Card frozen state', () => {
 
         renderDetails()
 
-        await waitFor(() => expect(status).toHaveBeenCalled())
+        // The reveal button only renders once the loaded status says the card is ready.
+        await screen.findByTestId('pera_card_reveal_button')
+        expect(status).toHaveBeenCalled()
         expect(screen.queryByTestId('card_frozen_banner')).toBeNull()
     })
 

@@ -1,0 +1,70 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "burnGas",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "panic",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "revertBare",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "revertWithCustomError",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "revertWithReason",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "sink",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "error",
+      "name": "ConformanceError",
+      "inputs": [
+        {
+          "name": "code",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b506101728061001c5f395ff3fe608060405234801561000f575f5ffd5b5060043610610060575f3560e01c806346fc4bb1146100645780634700d3051461006e5780635b2dd10014610088578063b9554c5914610090578063c74e820e14610098578063d5dd8596146100a0575b5f5ffd5b61006c6100a7565b005b6100766100c8565b60405190815260200160405180910390f35b61006c6100db565b61006c610119565b6100765f5481565b61006c5f5ffd5b604051632712e75360e01b8152602a60048201526024015b60405180910390fd5b5f806100d581600161012f565b91505090565b60405162461bcd60e51b815260206004820152601360248201527231b7b73337b936b0b731b29d103932b0b9b7b760691b60448201526064016100bf565b5f5b6101248161014e565b5f819055905061011b565b5f8261014957634e487b7160e01b5f52601260045260245ffd5b500490565b5f6001820161016b57634e487b7160e01b5f52601160045260245ffd5b506001019056"
+}

@@ -92,10 +92,7 @@ const fixtureAdapter: AccountsChainAdapter = {
                     async address =>
                         [
                             address,
-                            await getAccount(address).then(
-                                account => account !== null,
-                                () => false,
-                            ),
+                            (await getAccount(address)) !== null,
                         ] as const,
                 ),
             ),

@@ -33,7 +33,11 @@ import {
 import { getAssetById, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { ETHEREUM } from '../../__tests__/evm-chains'
-import { createEthereumReviewer, type CallRecogniser } from '../review'
+import {
+    createEthereumReviewer,
+    ethereumViewOf,
+    type CallRecogniser,
+} from '../review'
 import { readEthereumNative } from '../transaction-view'
 import { SENDER, TRANSFER } from './fixtures'
 
@@ -81,6 +85,14 @@ const APPROVE: TransactionSerializableEIP1559 = {
     value: 0n,
     data: APPROVE_DATA,
     gas: 60_000n,
+}
+
+// No standard token function has this selector.
+const NON_STANDARD_DATA: Hex = '0x5ae401dc'
+
+const NON_STANDARD_CALL: TransactionSerializableEIP1559 = {
+    ...APPROVE,
+    data: NON_STANDARD_DATA,
 }
 
 const TOKEN_TRANSFER: TransactionSerializableEIP1559 = {
@@ -719,7 +731,7 @@ describe('ethereumReviewerAdapter', () => {
             }
 
             const reviewed = await review(
-                [unsigned(APPROVE)],
+                [unsigned(NON_STANDARD_CALL)],
                 context,
                 reviewer,
             )
@@ -727,7 +739,7 @@ describe('ethereumReviewerAdapter', () => {
             expect(recogniseCall).toHaveBeenCalledTimes(1)
             expect(recogniseCall).toHaveBeenCalledWith({
                 to: TOKEN,
-                data: APPROVE_DATA,
+                data: NON_STANDARD_DATA,
                 value: 0n,
             })
             expect(reviewed.transactions[0].summary.kind).toBe('contract-call')
@@ -765,5 +777,163 @@ describe('ethereumReviewerAdapter', () => {
             ])
             expect(reviewer.policy.autoApproveLocal(reviewed)).toBe(false)
         })
+    })
+})
+
+describe("a dApp's standard token calls", () => {
+    const DECODING: ReviewContext = {
+        ...CONTEXT,
+        capabilities: { ...evmCapabilityDefaults, contractDecoding: true },
+    }
+    const REVOKE: TransactionSerializableEIP1559 = {
+        ...APPROVE,
+        data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [SPENDER, 0n],
+        }),
+    }
+    const SET_APPROVAL_FOR_ALL: TransactionSerializableEIP1559 = {
+        ...APPROVE,
+        to: NFT_CONTRACT,
+        data: encodeFunctionData({
+            abi: erc721Abi,
+            functionName: 'setApprovalForAll',
+            args: [SPENDER, true],
+        }),
+    }
+
+    it('carry the decoded call on their view, which stays a contract call', () => {
+        const view = ethereumViewOf(unsigned(APPROVE), ETHEREUM)
+
+        expect(view).toMatchObject({
+            kind: 'contract-call',
+            call: {
+                kind: 'approve',
+                contract: TOKEN,
+                spender: SPENDER,
+                value: new Decimal(maxUint256.toString()),
+            },
+        })
+    })
+
+    describe('with contractDecoding on', () => {
+        it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(APPROVE),
+                DECODING,
+            )
+
+            expect(summary).toEqual({
+                kind: 'approval',
+                title: { key: 'transactions.list_item.approval' },
+                direction: 'none',
+                counterparty: SPENDER,
+                icon: 'approval',
+            })
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({
+                    type: 'token-approval',
+                    severity: 'danger',
+                }),
+            ])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it('reviews a collection-wide grant with a danger warning', async () => {
+            const { reviewed } = await reviewOne(
+                unsigned(SET_APPROVAL_FOR_ALL),
+                DECODING,
+            )
+
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({
+                    type: 'token-approval',
+                    severity: 'danger',
+                }),
+            ])
+        })
+
+        it('reviews a revocation without a warning', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(REVOKE),
+                DECODING,
+            )
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+            expect(reviewed.warnings).toEqual([])
+        })
+
+        it('reviews a token transfer as a send without a warning, and still never signs it unreviewed', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(TOKEN_TRANSFER),
+                DECODING,
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'token-transfer',
+                counterparty: RECIPIENT,
+                amount: {
+                    assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                    value: new Decimal(TOKEN_UNITS.toString()),
+                },
+            })
+            expect(reviewed.warnings).toEqual([])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it('reads nothing from a call the wallet built', async () => {
+            const { reviewed, summary } = await reviewOne(unsigned(APPROVE), {
+                ...DECODING,
+                isWalletBuilt: true,
+            })
+
+            expect(summary.kind).toBe('contract-call')
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+        })
+
+        it('keeps a call that is not a standard function unrecognised', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(NON_STANDARD_CALL),
+                DECODING,
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+        })
+    })
+
+    describe('with contractDecoding off', () => {
+        it.each([
+            ['an approve', APPROVE],
+            ['a revocation', REVOKE],
+            ['a collection approval', SET_APPROVAL_FOR_ALL],
+            ['a token transfer', TOKEN_TRANSFER],
+        ])(
+            'reviews %s as an unrecognised contract call, as before',
+            async (_, transaction) => {
+                const { reviewed, summary } = await reviewOne(
+                    unsigned(transaction),
+                )
+
+                expect(summary.kind).toBe('contract-call')
+                expect(reviewed.warnings).toEqual([
+                    expect.objectContaining({ type: 'unknown-contract' }),
+                ])
+                expect(
+                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+                ).toBe(false)
+            },
+        )
     })
 })

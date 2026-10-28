@@ -34,6 +34,14 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         right: 0,
         bottom: 0,
         borderRadius: theme.borderRadius.full,
+        // Clips the wait fill to the pill; the root can't, as the lottie overflows it.
+        overflow: 'hidden',
+    },
+    waitFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
     },
     fillLayer: {
         position: 'absolute',
