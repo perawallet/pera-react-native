@@ -48,6 +48,7 @@ const PanelScreen = () => (
             account: ACCOUNT,
             openSendFunds: () => undefined,
             openReceiveFunds: () => undefined,
+            openReceiveFundsOn: () => undefined,
             openAccountOptions: () => undefined,
         }}
     >

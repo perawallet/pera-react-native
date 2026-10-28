@@ -345,6 +345,8 @@
             "empty_body": "Vous n’avez aucun actif lié à ce compte",
             "nomatch_title": "Aucun actif correspondant",
             "nomatch_body": "Aucun actif ne correspond à votre recherche",
+            "funding_title": "Commencez sur {{network}}",
+            "funding_body": "Déposez des fonds pour commencer à utiliser ce réseau. Vous aurez besoin d’un peu de {{nativeSymbol}} sur {{network}} pour payer les frais de réseau.",
             "network_filter_all": "Tous",
             "see_networks": "Voir les réseaux",
             "hide_networks": "Masquer les réseaux",

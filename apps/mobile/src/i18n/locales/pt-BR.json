@@ -345,6 +345,8 @@
             "empty_body": "Você não tem ativos vinculados a esta conta",
             "nomatch_title": "Nenhum ativo encontrado",
             "nomatch_body": "Nenhum ativo corresponde à sua busca",
+            "funding_title": "Comece em {{network}}",
+            "funding_body": "Deposite fundos para começar a usar esta rede. Você vai precisar de um pouco de {{nativeSymbol}} em {{network}} para pagar as taxas de rede.",
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",

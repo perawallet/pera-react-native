@@ -12,12 +12,15 @@
 
 import { createContext, useContext } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewModalResult = {
     account: WalletAccount
     openSendFunds: () => void
     openReceiveFunds: () => void
+    /** Opens receive straight on the chain's QR for `account`, which must already hold the chain. */
+    openReceiveFundsOn: (account: WalletAccount, chainId: ChainId) => void
     openAccountOptions: () => void
 }
 
