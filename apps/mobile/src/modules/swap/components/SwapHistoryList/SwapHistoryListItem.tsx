@@ -12,6 +12,7 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
+import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import {
@@ -48,6 +49,7 @@ export const SwapHistoryListItem = ({
 }: SwapHistoryListItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
+    const { t } = useLanguage()
 
     const inDecimals = item.assetIn.decimals ?? 0
     const outDecimals = item.assetOut.decimals ?? 0
@@ -77,14 +79,10 @@ export const SwapHistoryListItem = ({
                     style={styles.itemDescription}
                 >
                     <Trans
+                        t={t}
                         i18nKey='swap.history.list.item.description'
                         components={[
-                            <PWText
-                                key='amount-in'
-                                variant='body'
-                            >
-                                {amountInLabel}
-                            </PWText>,
+                            <PWText key='amount-in'>{amountInLabel}</PWText>,
                             <PWText
                                 key='amount-out'
                                 variant='bodySemibold'

@@ -27,9 +27,10 @@ a missing key fails, and so does an extra one.
    Never translate a variable name.
 4. Preserve rich-text tags exactly: `<0>…</0>`, `<1>…</1>`. The numbers map to
    React components, and renumbering mis-renders. You may move a tagged span to
-   respect target word order, but the tag must still wrap the same content. A self-closing `<0/>` stands for a component that renders its own
-   content, such as an amount. Keep it self-closing and move it whole; `<0></0>`
-   renders it blank.
+   respect target word order, but the tag must still wrap the same content. A
+   self-closing `<0/>` stands for a component that renders its own content, such
+   as an amount. Keep it self-closing and move it whole; `<0></0>` hands the
+   component empty children, which blanks any component that renders them.
 5. Never translate brand or protocol names: Pera, Pera Wallet, Algorand,
    Algo, ALGO, ASA, MainNet, TestNet, WalletConnect, Ledger, Bidali, Meld,
    Discover, Pera Card, Vault, Face ID, Touch ID.
