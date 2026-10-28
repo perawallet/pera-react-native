@@ -114,7 +114,7 @@ export const usePasskeyUnlockSetup = ({
     const hasTrackedViewRef = useRef(false)
     const { requireVaultPassword } = useRequireVaultPassword()
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { successToast, errorToast } = useToast()
 
     const setStatus = useCallback((next: PasskeyUnlockSetupStatus): void => {
         statusRef.current = next
@@ -165,21 +165,16 @@ export const usePasskeyUnlockSetup = ({
     const reportInToast = useCallback(
         (failure: PasskeyUnlockSetupFailure | null): void => {
             if (!failure) {
-                showToast({
-                    title: t('vault.passkey_setup.success_title'),
-                    body: t('vault.passkey_setup.success_body'),
-                    type: 'success',
-                })
+                successToast(
+                    t('vault.passkey_setup.success_title'),
+                    t('vault.passkey_setup.success_body'),
+                )
                 return
             }
             const copy = PASSKEY_SETUP_FAILURE_COPY[failure]
-            showToast({
-                title: t(copy.error),
-                body: copy.hint ? t(copy.hint.body) : '',
-                type: 'error',
-            })
+            errorToast(t(copy.error), copy.hint ? t(copy.hint.body) : '')
         },
-        [showToast, t],
+        [successToast, errorToast, t],
     )
 
     const enableWithSession = useCallback(async (): Promise<void> => {

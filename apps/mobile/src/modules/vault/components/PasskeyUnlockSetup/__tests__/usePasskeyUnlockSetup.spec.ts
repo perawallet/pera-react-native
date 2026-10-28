@@ -51,7 +51,8 @@ const mocks = vi.hoisted(() => {
         enablePasskeyUnlock: vi.fn(),
         requireVaultPassword: vi.fn(),
         trackEvent: vi.fn(),
-        showToast: vi.fn(),
+        successToast: vi.fn(),
+        errorToast: vi.fn(),
         MockInvalidPasswordError,
         MockPasskeyPrfUnsupportedError,
         MockVaultReauthRequiredError,
@@ -74,7 +75,10 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 vi.mock('@hooks/useLanguage')
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mocks.showToast }),
+    useToast: () => ({
+        successToast: mocks.successToast,
+        errorToast: mocks.errorToast,
+    }),
 }))
 vi.mock('../../../hooks/useRequireVaultPassword', () => ({
     useRequireVaultPassword: () => ({
@@ -272,7 +276,7 @@ describe('usePasskeyUnlockSetup', () => {
             await act(() => result.current.enableWithSession())
 
             expect(result.current.status).toBe('enabled')
-            expect(mocks.showToast).not.toHaveBeenCalled()
+            expect(mocks.successToast).not.toHaveBeenCalled()
         })
 
         describe('when the surface closes itself for the password sheet', () => {
@@ -306,11 +310,10 @@ describe('usePasskeyUnlockSetup', () => {
 
                 await act(() => result.current.enableWithSession())
 
-                expect(mocks.showToast).toHaveBeenCalledWith({
-                    title: 'vault.passkey_setup.success_title',
-                    body: 'vault.passkey_setup.success_body',
-                    type: 'success',
-                })
+                expect(mocks.successToast).toHaveBeenCalledWith(
+                    'vault.passkey_setup.success_title',
+                    'vault.passkey_setup.success_body',
+                )
             })
 
             it('reports a failed retry in a toast with its hint', async () => {
@@ -321,11 +324,10 @@ describe('usePasskeyUnlockSetup', () => {
 
                 await act(() => result.current.enableWithSession())
 
-                expect(mocks.showToast).toHaveBeenCalledWith({
-                    title: 'vault.passkey_setup.error_not_saved',
-                    body: 'vault.passkey_setup.hint_not_saved_body',
-                    type: 'error',
-                })
+                expect(mocks.errorToast).toHaveBeenCalledWith(
+                    'vault.passkey_setup.error_not_saved',
+                    'vault.passkey_setup.hint_not_saved_body',
+                )
                 expect(failEvents()).toHaveLength(1)
             })
 
@@ -335,7 +337,7 @@ describe('usePasskeyUnlockSetup', () => {
 
                 await act(() => result.current.enableWithSession())
 
-                expect(mocks.showToast).not.toHaveBeenCalled()
+                expect(mocks.successToast).not.toHaveBeenCalled()
                 expect(failEvents()).toEqual([])
             })
         })
