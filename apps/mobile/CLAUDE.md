@@ -16,6 +16,8 @@ All external components (from `@rneui/themed`, `react-native`, third-party) **MU
 
 **ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
 
+`no-restricted-imports` fails a `@components/core/<subpath>` import outside `components/core` (tests are exempt). Files inside `components/core` import siblings by subpath, because a barrel import there would import itself.
+
 Exception: basic layout primitives used only inside PW components. Loading spinners are `PWLoadingIndicator`.
 
 ### Component Locations
