@@ -2723,13 +2723,13 @@
             "cancel": "Cancel"
         }
     },
+    "chain_selection": {
+        "title": "Choose Network",
+        "add_action": "Add"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
-        },
-        "chain_selection": {
-            "title": "Choose Network",
-            "add_action": "Add"
         },
         "qrview": {
             "error_title": "No Account Selected",
@@ -2847,7 +2847,10 @@
             "title": "Select Asset",
             "search_placeholder": "Search by asset name or ID",
             "no_results_title": "No Matching Assets",
-            "no_results_body": "No assets matched your search term"
+            "no_results_body": "No assets matched your search term",
+            "empty_title": "Nothing to send on {{network}}",
+            "empty_body": "This account has no assets on {{network}} yet. Receive some to start sending.",
+            "empty_receive_action": "Receive"
         },
         "bottom_sheet": {
             "no_account_title": "No Account Selected",

@@ -12,7 +12,7 @@
 
 import { useAccountChainOptionsResolver } from '@perawallet/wallet-core-accounts'
 import {
-    needsReceiveChainSelection,
+    needsChainSelection,
     useReceiveFunds,
 } from '@modules/transactions/hooks'
 import type { ReceiveFundsStackParamList } from './types'
@@ -29,6 +29,6 @@ export const useReceiveFundsRoutes = (): UseReceiveFundsRoutesResult => {
     if (chainId !== undefined) return { initialRouteName: 'QRView' }
     const needsChain =
         selectedAccount !== undefined &&
-        needsReceiveChainSelection(optionsOf(selectedAccount))
+        needsChainSelection(optionsOf(selectedAccount))
     return { initialRouteName: needsChain ? 'ChainSelection' : 'QRView' }
 }

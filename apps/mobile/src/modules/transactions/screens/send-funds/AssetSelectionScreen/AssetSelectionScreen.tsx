@@ -10,19 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
-import type {
-    AssetWithAccountBalance,
-    ChainAssetBalance,
-} from '@perawallet/wallet-core-accounts'
-import { isUniqueCollectible } from '@perawallet/wallet-core-assets'
-import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useSendFunds } from '@modules/transactions/hooks'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { PWButton } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetSelectionList } from '@modules/assets'
+import { useAssetSelectionScreen } from './useAssetSelectionScreen'
 
 const hasBalanceFilter = (item: AssetWithAccountBalance) => {
     return item.amount.gt(new Decimal(0))
@@ -30,27 +24,13 @@ const hasBalanceFilter = (item: AssetWithAccountBalance) => {
 
 export const AssetSelectionScreen = () => {
     const { t } = useLanguage()
-    const { setSelectedAsset, setAmount } = useSendFunds()
-    const navigation =
-        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-
-    const handleAssetSelected = useCallback(
-        (item: ChainAssetBalance) => {
-            setSelectedAsset({
-                chainId: item.scope.chainId,
-                assetId: item.assetId,
-            })
-            // Unique collectibles have a fixed quantity of 1, so prefill
-            // the amount and skip straight to picking a destination.
-            if (item.asset && isUniqueCollectible(item.asset)) {
-                setAmount(new Decimal(1))
-                navigation.navigate('SelectDestination')
-                return
-            }
-            navigation.navigate('InputAmount')
-        },
-        [navigation, setSelectedAsset, setAmount],
-    )
+    const {
+        chainId,
+        networkName,
+        canReceive,
+        handleAssetSelected,
+        handleReceive,
+    } = useAssetSelectionScreen()
 
     return (
         <AccountAssetSelectionList
@@ -63,7 +43,32 @@ export const AssetSelectionScreen = () => {
             emptyResultTitle={t('send_funds.asset_selection.no_results_title')}
             emptyResultBody={t('send_funds.asset_selection.no_results_body')}
             filterAsset={hasBalanceFilter}
-            isAcrossChains
+            chainId={chainId}
+            emptyView={
+                <EmptyView
+                    title={t('send_funds.asset_selection.empty_title', {
+                        network: networkName,
+                    })}
+                    body={t('send_funds.asset_selection.empty_body', {
+                        network: networkName,
+                    })}
+                    shouldTruncateBody={false}
+                    button={
+                        canReceive ? (
+                            <PWButton
+                                title={t(
+                                    'send_funds.asset_selection.empty_receive_action',
+                                )}
+                                icon='inflow'
+                                variant='primary'
+                                onPress={handleReceive}
+                                testID='send_empty_receive_button'
+                            />
+                        ) : undefined
+                    }
+                    testID='send_asset_empty_state'
+                />
+            }
         />
     )
 }

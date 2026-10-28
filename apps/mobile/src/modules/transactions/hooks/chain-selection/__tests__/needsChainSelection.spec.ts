@@ -12,23 +12,21 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { needsReceiveChainSelection } from '../receiveChainSelection'
+import { needsChainSelection } from '../needsChainSelection'
 
 const option = (chainId: string, isEnabled: boolean) => ({
     chainId: chainId as ChainId,
     isEnabled,
 })
 
-describe('needsReceiveChainSelection', () => {
+describe('needsChainSelection', () => {
     it('goes straight to the QR for a single enabled chain', () => {
-        expect(needsReceiveChainSelection([option('algorand', true)])).toBe(
-            false,
-        )
+        expect(needsChainSelection([option('algorand', true)])).toBe(false)
     })
 
     it('asks when there is more than one chain to receive on', () => {
         expect(
-            needsReceiveChainSelection([
+            needsChainSelection([
                 option('ethereum', true),
                 option('base', false),
             ]),
@@ -36,6 +34,6 @@ describe('needsReceiveChainSelection', () => {
     })
 
     it('asks when the only option still has to be enabled', () => {
-        expect(needsReceiveChainSelection([option('base', false)])).toBe(true)
+        expect(needsChainSelection([option('base', false)])).toBe(true)
     })
 })

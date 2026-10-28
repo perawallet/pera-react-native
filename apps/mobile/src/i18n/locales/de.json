@@ -2715,13 +2715,13 @@
             "cancel": "Abbrechen"
         }
     },
+    "chain_selection": {
+        "title": "Netzwerk wählen",
+        "add_action": "Hinzufügen"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Konto auswählen"
-        },
-        "chain_selection": {
-            "title": "Netzwerk wählen",
-            "add_action": "Hinzufügen"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",
@@ -2839,7 +2839,10 @@
             "title": "Asset auswählen",
             "search_placeholder": "Nach Asset-Name oder ID suchen",
             "no_results_title": "Keine passenden Assets",
-            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "empty_title": "Nichts zu senden auf {{network}}",
+            "empty_body": "Dieses Konto hat noch keine Assets auf {{network}}. Empfange welche, um mit dem Senden zu beginnen.",
+            "empty_receive_action": "Empfangen"
         },
         "bottom_sheet": {
             "no_account_title": "Kein Konto ausgewählt",

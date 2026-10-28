@@ -72,7 +72,7 @@ export const ReceiveFundsRoutes = () => {
                 name='ChainSelection'
                 component={ChainSelectionScreen}
                 options={{
-                    title: 'receive_funds.chain_selection.title',
+                    title: 'chain_selection.title',
                     ...(canSelectAccount
                         ? {}
                         : {
