@@ -31,6 +31,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
         rpId,
         userName,
         isBusy,
+        isConfirmed,
         canApprove,
         error,
         approve,
@@ -86,12 +87,17 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                     title={t('dapp.passkey.decline_button')}
                     onPress={() => void decline()}
                     style={styles.declineButton}
-                    isDisabled={isBusy}
+                    isDisabled={isBusy || isConfirmed}
                     testID='dapp-passkey-decline'
                 />
                 <PWButton
                     variant='primary'
-                    title={t('dapp.passkey.approve_button')}
+                    title={
+                        isConfirmed
+                            ? undefined
+                            : t('dapp.passkey.approve_button')
+                    }
+                    icon={isConfirmed ? 'check' : undefined}
                     onPress={() => void approve()}
                     style={styles.approveButton}
                     isLoading={isBusy}

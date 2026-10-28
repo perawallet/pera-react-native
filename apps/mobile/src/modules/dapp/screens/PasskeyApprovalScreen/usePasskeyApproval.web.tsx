@@ -46,6 +46,10 @@ import {
     type PasskeyChoice,
 } from '../../components/PasskeyChooserContent'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
+import {
+    showConfirmedThenClose,
+    useApprovalConfirmedStore,
+} from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { toPeerDisplayText } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -99,6 +103,8 @@ type UsePasskeyApprovalResult = {
     userName?: string
     origin: string
     isBusy: boolean
+    /** The credential reached the page; shown briefly before the window closes. */
+    isConfirmed: boolean
     /** False until the window is armed (see useApprovalArming) or while busy. */
     canApprove: boolean
     error: string | null
@@ -114,12 +120,13 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     const [isBusy, setIsBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const isArmed = useApprovalArming()
+    const isConfirmed = useApprovalConfirmedStore(state => state.isConfirmed)
 
     const passkeyApproval = asPasskeyApproval(approval)
 
     const approve = useCallback(async (): Promise<void> => {
         const current = asPasskeyApproval(approval)
-        if (!requestId || !current || !isArmed) return
+        if (!requestId || !current || !isArmed || isConfirmed) return
         setIsBusy(true)
         setError(null)
         // CRITICAL: `current.origin` is the browser-stamped frame origin the
@@ -194,7 +201,6 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
                           context,
                       )
             await resolvePasskey(requestId, credential)
-            window.close()
         } catch (e) {
             // Never leave the dapp's request unsettled: an authenticator
             // failure (SecurityError, InvalidStateError, NotAllowedError, …)
@@ -205,13 +211,16 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
             const reason = e instanceof Error ? e.name : 'UnknownError'
             setError(t('dapp.passkey.error'))
             await rejectPasskey(requestId, reason)
+            return
         } finally {
             setIsBusy(false)
         }
+        await showConfirmedThenClose()
     }, [
         requestId,
         approval,
         isArmed,
+        isConfirmed,
         requireVaultPassword,
         requestBottomSheet,
         t,
@@ -230,6 +239,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         userName: toPeerDisplayText(passkeyApproval?.userName) || undefined,
         origin: passkeyApproval?.origin ?? '',
         isBusy,
+        isConfirmed,
         canApprove: isArmed && !isBusy,
         error,
         approve,
