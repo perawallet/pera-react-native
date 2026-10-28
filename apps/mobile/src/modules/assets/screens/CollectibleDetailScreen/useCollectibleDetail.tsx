@@ -156,7 +156,7 @@ export const useCollectibleDetail = (
     const isOptedIn = assetBalance != null
     const isOwned = isOptedIn && assetAmount.greaterThan(0)
     const isOptedInNotOwned = isOptedIn && !isOwned
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { showError } = useErrorToast()
 
     const explorerUrl =
@@ -280,14 +280,9 @@ export const useCollectibleDetail = (
                 type: 'success',
             })
         } catch {
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible image-copy error; bespoke localized title preserved
-            showToast({
-                title: t('asset_details.collectible.image_copy_failed'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('asset_details.collectible.image_copy_failed'), '')
         }
-    }, [assetId, getImageUrl, showToast, t])
+    }, [assetId, getImageUrl, showToast, errorToast, t])
 
     const handleSaveImage = useCallback(async () => {
         if (!saveableMediaUrl) return
@@ -309,24 +304,15 @@ export const useCollectibleDetail = (
             })
         } catch (err) {
             if (err instanceof MediaPermissionDeniedError) {
-                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible permission-denied error; bespoke localized title preserved
-                showToast({
-                    title: t(
-                        'asset_details.collectible.media_permission_denied',
-                    ),
-                    body: '',
-                    type: 'error',
-                })
+                errorToast(
+                    t('asset_details.collectible.media_permission_denied'),
+                    '',
+                )
                 return
             }
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
-            showToast({
-                title: t('asset_details.collectible.media_save_failed'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('asset_details.collectible.media_save_failed'), '')
         }
-    }, [assetId, saveableMediaUrl, saveableMedia, showToast, t])
+    }, [assetId, saveableMediaUrl, saveableMedia, showToast, errorToast, t])
 
     const handleSharePressed = useCallback(() => {
         const url = getChainDescriptor(scope.chainId).explorer.collectibleUrl(

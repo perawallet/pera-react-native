@@ -14,6 +14,7 @@ import { Linking } from 'react-native'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 
 const mocks = vi.hoisted(() => ({
     approve: vi.fn(),
@@ -391,6 +392,35 @@ describe('useWcConnectScreen', () => {
             )
 
             expect(result.current.verificationTier).toBe('suspicious')
+        })
+    })
+
+    describe('once the grant is delivered', () => {
+        afterEach(() => {
+            useApprovalConfirmedStore.getState().resetState()
+        })
+
+        it('swaps the spinner for the confirmed state', () => {
+            const { result } = render()
+            act(() => result.current.toggle('BBBB'))
+            act(() => result.current.handleConnect())
+            expect(result.current.isConnecting).toBe(true)
+
+            act(() => useApprovalConfirmedStore.getState().setConfirmed())
+
+            expect(result.current.isConfirmed).toBe(true)
+            expect(result.current.isConnecting).toBe(false)
+        })
+
+        it('does not approve a second time from the confirmed button', () => {
+            const { result } = render()
+            act(() => result.current.toggle('BBBB'))
+            act(() => result.current.handleConnect())
+            act(() => useApprovalConfirmedStore.getState().setConfirmed())
+
+            act(() => result.current.handleConnect())
+
+            expect(mocks.approve).toHaveBeenCalledTimes(1)
         })
     })
 

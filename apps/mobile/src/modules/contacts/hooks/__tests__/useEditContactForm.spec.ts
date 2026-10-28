@@ -26,7 +26,7 @@ const replaceMock = vi.fn()
 // Overridable per test: default (below) reflects the in-app path (a contact
 // selected in the app, no route params); deeplink tests override the return.
 const useContactsMock = vi.fn()
-const showToastMock = vi.fn()
+const errorToastMock = vi.fn()
 const isContactBackedUpMock = vi.fn((_id: string) => false)
 const isCloudBackupEnabledMock = vi.fn(() => false)
 const deleteContactFromBackupMock = vi.fn(
@@ -85,7 +85,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({ errorToast: errorToastMock }),
 }))
 
 // Stub the underlying form hook so tests can control `isValid` / observe
@@ -437,8 +437,9 @@ describe('useEditContactForm', () => {
 
             expect(deleteContactMock).not.toHaveBeenCalled()
             expect(replaceMock).not.toHaveBeenCalled()
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(errorToastMock).toHaveBeenCalledWith(
+                'cloud_backup.contacts.delete_error',
+                '',
             )
         })
 
@@ -449,9 +450,7 @@ describe('useEditContactForm', () => {
             await act(() => result.current.removeContact('delete'))
 
             expect(deleteContactMock).toHaveBeenCalledWith(ALICE_ID)
-            expect(showToastMock).not.toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
-            )
+            expect(errorToastMock).not.toHaveBeenCalled()
         })
     })
 })

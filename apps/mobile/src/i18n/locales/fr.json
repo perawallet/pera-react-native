@@ -747,6 +747,7 @@
             "available_count_one": "{{count}} disponible depuis la sauvegarde",
             "device_title": "Comptes",
             "device_subtitle": "Disponibles sur cet appareil",
+            "networks_hint": "Votre sauvegarde inclut tous les réseaux de chaque compte.",
             "add_from_backup_title": "Ajouter depuis la sauvegarde",
             "add_from_backup_subtitle": "Dans votre Cloud Backup, pas sur cet appareil",
             "not_backed_up_title": "Non sauvegardés",

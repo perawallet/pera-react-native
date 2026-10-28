@@ -6,6 +6,7 @@ Suite Setup         Run Keywords    Start Pera With Wallet    AND    Acknowledge
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           onramp
 
 

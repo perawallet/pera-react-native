@@ -28,6 +28,7 @@ import { shareText } from '@utils/shareText'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 const mockShowError = vi.fn()
 const mockOpenURL = vi.fn().mockResolvedValue(true)
 const mockOptOut = vi.fn()
@@ -93,7 +94,10 @@ vi.mock('@hooks/useClipboard', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({
+        showToast: mockShowToast,
+        errorToast: mockErrorToast,
+    }),
 }))
 
 vi.mock('@hooks/useErrorToast', () => ({
@@ -582,8 +586,9 @@ describe('useCollectibleDetail', () => {
 
             await result.current.handleCopyImage()
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'asset_details.collectible.image_copy_failed',
+                '',
             )
         })
     })
@@ -633,11 +638,9 @@ describe('useCollectibleDetail', () => {
 
             await result.current.handleSaveImage()
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'asset_details.collectible.media_permission_denied',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'asset_details.collectible.media_permission_denied',
+                '',
             )
         })
 
@@ -650,11 +653,9 @@ describe('useCollectibleDetail', () => {
 
             await result.current.handleSaveImage()
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'asset_details.collectible.media_save_failed',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'asset_details.collectible.media_save_failed',
+                '',
             )
         })
     })

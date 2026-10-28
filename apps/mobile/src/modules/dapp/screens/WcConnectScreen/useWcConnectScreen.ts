@@ -45,6 +45,7 @@ import {
     toValidatedBrowserUrl,
 } from '@modules/webview'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -79,6 +80,8 @@ type UseWcConnectScreenResult = {
     canConnect: boolean
     isLoading: boolean
     isConnecting: boolean
+    /** The grant reached the dApp; shown briefly before the window closes. */
+    isConfirmed: boolean
     handleConnect: () => void
     handleCancel: () => void
     /** The dApp-asserted url's host (punycode); rendered as text, never trusted. */
@@ -175,6 +178,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         setSelected(initialSelection(selectedAccountId, accounts, chainId))
     }, [proposal, selectedAccountId, accounts, chainId])
     const [isConnecting, setIsConnecting] = useState(false)
+    const isConfirmed = useApprovalConfirmedStore(state => state.isConfirmed)
 
     const toggle = useCallback((address: string): void => {
         setSelected(prev => {
@@ -189,13 +193,19 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     }, [])
 
     const handleConnect = useCallback((): void => {
-        if (!selected.size || !isArmed || !siteSafety.isApprovalAllowed) return
+        if (
+            !selected.size ||
+            !isArmed ||
+            !siteSafety.isApprovalAllowed ||
+            isConnecting
+        )
+            return
         setIsConnecting(true)
-        // No `finally` reset: approve() settles the approval and the bridge closes
-        // this window. A failed approve leaves the button spinning rather than
+        // No `finally` reset: approve() settles the approval and closes this
+        // window. A failed approve leaves the button spinning rather than
         // inviting a second grant against a half-completed handshake.
         void approve([...selected])
-    }, [approve, selected, isArmed, siteSafety.isApprovalAllowed])
+    }, [approve, selected, isArmed, siteSafety.isApprovalAllowed, isConnecting])
 
     const isRequesterOriginDistinct = isDistinctFromPeerUrl(
         proposal?.requesterOrigin,
@@ -242,7 +252,8 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         canConnect:
             selected.size > 0 && isArmed && siteSafety.isApprovalAllowed,
         isLoading,
-        isConnecting,
+        isConnecting: isConnecting && !isConfirmed,
+        isConfirmed,
         handleConnect,
         handleCancel,
         peerUrlLabel: toPeerHostLabel(proposal?.peer.url),

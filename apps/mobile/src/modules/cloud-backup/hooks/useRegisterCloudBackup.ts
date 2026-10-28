@@ -24,7 +24,7 @@ type UseRegisterCloudBackupResult = {
 
 export const useRegisterCloudBackup = (): UseRegisterCloudBackupResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
 
@@ -33,11 +33,7 @@ export const useRegisterCloudBackup = (): UseRegisterCloudBackupResult => {
         // holds in state; a push would keep them live behind the next screen.
         onSuccess: () => navigation.replace('CloudBackupStoreEncryptionKey'),
         onError: () => {
-            showToast({
-                title: t('cloud_backup.enable.error'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('cloud_backup.enable.error'), '')
         },
     })
 

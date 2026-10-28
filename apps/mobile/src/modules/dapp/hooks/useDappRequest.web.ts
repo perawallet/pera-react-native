@@ -20,6 +20,7 @@ import {
     resolveApproval,
     type PendingApproval,
 } from '@perawallet/wallet-core-browser-runtime'
+import { showConfirmedThenClose } from '@hooks/useApprovalConfirmedStore.web'
 
 type UseDappRequestResult = {
     requestId: string | null
@@ -97,7 +98,9 @@ export const useDappRequest = (): UseDappRequestResult => {
                 setDeliveryError(true)
                 return
             }
-            window.close()
+            // settledRef stays set through the delay, so a user close then
+            // sends no pagehide reject.
+            await showConfirmedThenClose()
         },
         [requestId],
     )

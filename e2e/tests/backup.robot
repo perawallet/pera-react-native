@@ -8,6 +8,7 @@ Resource            ../resources/backup.resource
 Suite Setup         Open Pera
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           backup
 
 

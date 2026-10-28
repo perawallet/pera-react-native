@@ -7,6 +7,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Open Settings
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           settings
 
 
@@ -43,10 +44,16 @@ Asset Freeze Support Toggles On And Off
 Theme Can Be Switched
     [Tags]    id:settings.theme.switch    p1
     Open Theme Settings
-    Tap    ${THEME_LIGHT_RADIO}
-    Tap    ${THEME_DARK_RADIO}
-    Tap    ${THEME_SYSTEM_RADIO}
-    Wait Until Page Contains Element    ${THEME_LIGHT_RADIO}    timeout=10s
+    ${original}=    Current Theme
+    TRY
+        FOR    ${theme}    IN    light    dark    system
+            Tap    tid=settings_theme_${theme}_radio
+            Theme Should Be Selected    ${theme}
+        END
+    FINALLY
+        Tap    tid=settings_theme_${original}_radio
+        Theme Should Be Selected    ${original}
+    END
 
 Notifications Settings Open
     [Tags]    id:settings.notifications.open    p1
@@ -68,13 +75,16 @@ Developer Mode Lists The Test Networks
     Wait Until Page Contains Element    ${NODE_SETTINGS_SCREEN}    timeout=15s
     Wait Until Page Contains Element    ${NODE_DEVELOPER_MODE_SWITCH}    timeout=15s
     ${was_on}=    Switch Is On    ${NODE_DEVELOPER_MODE_SWITCH}
-    IF    not ${was_on}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
-    Wait Until Page Contains Element    ${NODE_TESTNET_RADIO}    timeout=15s
-    Page Should Contain Element    ${NODE_BETANET_RADIO}
-    IF    not ${was_on}
-        # Developer mode moves the whole app off mainnet; leave it as found.
-        Tap    ${NODE_DEVELOPER_MODE_SWITCH}
-        Wait Until Page Does Not Contain Element    ${NODE_CHAIN_NETWORKS}    timeout=10s
+    TRY
+        IF    not ${was_on}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
+        Wait Until Page Contains Element    ${NODE_TESTNET_RADIO}    timeout=15s
+        Page Should Contain Element    ${NODE_BETANET_RADIO}
+    FINALLY
+        IF    not ${was_on}
+            ${now}=    Switch Is On    ${NODE_DEVELOPER_MODE_SWITCH}
+            IF    ${now}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
+            Wait Until Page Does Not Contain Element    ${NODE_CHAIN_NETWORKS}    timeout=10s
+        END
     END
 
 Currency Search Keeps Only Matches
@@ -88,11 +98,16 @@ Currency Search Keeps Only Matches
 Selected Currency Is Saved
     [Tags]    id:settings.currency.select    p1
     Open Currency Settings
-    Select Currency    EUR
-    Tap Back
-    Open Currency Settings
-    Main Currency Should Be    EUR
-    Select Currency    USD
+    TRY
+        Select Currency    EUR
+        Tap Back
+        Open Currency Settings
+        Main Currency Should Be    EUR
+    FINALLY
+        Open Settings
+        Open Currency Settings
+        Select Currency    USD
+    END
 
 Rate App Sheet Opens And Closes
     [Tags]    id:settings.support.rate-sheet    p2
@@ -124,14 +139,25 @@ Privacy Policy Opens In A Webview
 Expanding A Flag Reveals Its Override
     [Tags]    id:settings.feature-flags.expand    p1
     Open Feature Flags
-    ${was_expanded}=    Set Cloud Backup Flag Expanded    ${False}
-    Set Cloud Backup Flag Expanded    ${True}
-    Switch Should Be    ${FLAG_OVERRIDE_CLOUD_BACKUP}    ${False}
-    Set Cloud Backup Flag Expanded    ${was_expanded}
+    ${was_expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${FLAG_OVERRIDE_CLOUD_BACKUP}
+    ${was_on}=    Set Variable    ${False}
+    IF    ${was_expanded}
+        ${was_on}=    Switch Is On    ${FLAG_OVERRIDE_CLOUD_BACKUP}
+    END
+    TRY
+        Set Cloud Backup Flag Expanded    ${False}
+        Set Cloud Backup Flag Expanded    ${True}
+        Switch Should Be    ${FLAG_OVERRIDE_CLOUD_BACKUP}    ${False}
+    FINALLY
+        Restore Cloud Backup Override    ${was_expanded}    ${was_on}
+    END
 
 Flag Override Reports Its New Value
     [Tags]    id:settings.feature-flags.override    p1
     Open Feature Flags
     ${was_expanded}=    Set Cloud Backup Flag Expanded    ${True}
-    Flip Switch And Back    ${FLAG_OVERRIDE_CLOUD_BACKUP}
-    Set Cloud Backup Flag Expanded    ${was_expanded}
+    TRY
+        Flip Switch And Back    ${FLAG_OVERRIDE_CLOUD_BACKUP}
+    FINALLY
+        Set Cloud Backup Flag Expanded    ${was_expanded}
+    END

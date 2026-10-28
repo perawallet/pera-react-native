@@ -77,7 +77,7 @@ export const useSelectDestinationScreen = () => {
     // destination once the chain itself vouches for it; nothing here
     // trusts the search result or a cache.
     const scope = useSendScope()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { t } = useLanguage()
     const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
     const verificationRef = useRef<AbortController | null>(null)
@@ -100,21 +100,20 @@ export const useSelectDestinationScreen = () => {
                     void resolveDestination(address)
                     return
                 }
-                showToast({
-                    title: t(
+                errorToast(
+                    t(
                         verification === 'mismatch'
                             ? 'send_funds.destination.nfd_mismatch_title'
                             : 'send_funds.destination.nfd_unavailable_title',
                         { name },
                     ),
-                    body: t(
+                    t(
                         verification === 'mismatch'
                             ? 'send_funds.destination.nfd_mismatch_body'
                             : 'send_funds.destination.nfd_unavailable_body',
                         { name },
                     ),
-                    type: 'error',
-                })
+                )
             } catch (error) {
                 if (controller.signal.aborted) return
                 throw error
@@ -122,7 +121,7 @@ export const useSelectDestinationScreen = () => {
                 if (!controller.signal.aborted) setIsVerifyingNfd(false)
             }
         },
-        [scope, resolveDestination, showToast, t],
+        [scope, resolveDestination, errorToast, t],
     )
 
     const handleSelected = useCallback(

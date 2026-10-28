@@ -37,7 +37,7 @@ export const useBiometricsDisabledPrompt =
             enableBiometrics,
         } = useBiometrics()
         const { t } = useLanguage()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
 
         const enable = useCallback(async (): Promise<void> => {
             const result = await enableBiometrics({
@@ -58,11 +58,10 @@ export const useBiometricsDisabledPrompt =
                 result.reason === 'weak-biometric' ||
                 result.reason === 'unconfirmed'
             ) {
-                showToast({
-                    title: t('security.biometrics_disabled.unavailable_title'),
-                    body: t('security.biometrics_disabled.unavailable_body'),
-                    type: 'error',
-                })
+                errorToast(
+                    t('security.biometrics_disabled.unavailable_title'),
+                    t('security.biometrics_disabled.unavailable_body'),
+                )
                 return
             }
 
@@ -70,7 +69,7 @@ export const useBiometricsDisabledPrompt =
             // answers of a sort, and neither is worth re-offering on the next
             // unlock.
             acknowledgeBiometricsDisabled()
-        }, [acknowledgeBiometricsDisabled, enableBiometrics, showToast, t])
+        }, [acknowledgeBiometricsDisabled, enableBiometrics, errorToast, t])
 
         return {
             isDue: disabledReason !== null,

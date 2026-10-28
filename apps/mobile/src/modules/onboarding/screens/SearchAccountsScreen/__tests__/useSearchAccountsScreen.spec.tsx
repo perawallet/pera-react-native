@@ -17,6 +17,7 @@ import type { SearchAccountsParams } from '../../../routes/types'
 
 const {
     mockShowToast,
+    mockErrorToast,
     mockGoBack,
     mockReplace,
     mockDiscoverAccounts,
@@ -31,6 +32,7 @@ const {
     mockRouteParams,
 } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
+    mockErrorToast: vi.fn(),
     mockGoBack: vi.fn(),
     mockReplace: vi.fn(),
     mockDiscoverAccounts: vi.fn(),
@@ -76,6 +78,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -198,11 +201,10 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith({
-                type: 'error',
-                title: 'onboarding.import_account.failed_title',
-                body: 'onboarding.import_account.failed_body',
-            })
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_body',
+            )
             expect(mockGoBack).toHaveBeenCalled()
         })
     })
@@ -234,11 +236,10 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith({
-                type: 'error',
-                title: 'onboarding.import_account.failed_title',
-                body: 'onboarding.import_account.failed_body',
-            })
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_body',
+            )
             expect(mockGoBack).toHaveBeenCalled()
         })
         expect(mockReplace).not.toHaveBeenCalled()
@@ -489,8 +490,9 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_body',
             )
             expect(mockGoBack).toHaveBeenCalled()
         })
@@ -538,11 +540,10 @@ describe('useSearchAccountsScreen', () => {
 
         await waitFor(() => {
             expect(mockCancelImport).toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith({
-                type: 'error',
-                title: 'onboarding.import_account.failed_title',
-                body: 'onboarding.import_account.failed_body',
-            })
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_body',
+            )
             expect(mockGoBack).toHaveBeenCalled()
             expect(mockReplace).not.toHaveBeenCalled()
         })
@@ -559,11 +560,10 @@ describe('useSearchAccountsScreen', () => {
 
         await waitFor(() => {
             expect(mockCancelImport).toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith({
-                type: 'error',
-                title: 'onboarding.import_account.failed_title',
-                body: 'onboarding.import_account.failed_body',
-            })
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_body',
+            )
             expect(mockGoBack).toHaveBeenCalled()
         })
     })
@@ -706,11 +706,7 @@ describe('useSearchAccountsScreen', () => {
                 account: algo25Account,
             })
         })
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'onboarding.import_account.failed_title',
-            }),
-        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockGoBack).not.toHaveBeenCalled()
     })
 

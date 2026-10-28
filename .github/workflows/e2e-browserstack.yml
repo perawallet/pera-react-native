@@ -1,0 +1,204 @@
+name: E2E / BrowserStack
+
+# Runs the device suite (e2e/) on BrowserStack App Automate against builds already uploaded there, by
+# their bs:// ids: E2E builds (E2E_FIXTURES=1, which must never reach a store), the iOS one patched by
+# tools/qa/patch-ipa-for-browserstack.sh. The job's result is the suite's verdict, not the SDK's.
+
+on:
+    # Native build workflows can call this with freshly uploaded E2E app IDs on main.
+    workflow_call:
+        inputs:
+            android_app:
+                type: string
+                default: ''
+            ios_app:
+                type: string
+                default: ''
+            include:
+                type: string
+                default: ''
+            profile:
+                type: string
+                default: full
+            reuse_sessions:
+                type: boolean
+                default: false
+            android_device:
+                type: string
+                default: ''
+            ios_device:
+                type: string
+                default: ''
+        secrets:
+            BROWSERSTACK_USERNAME:
+                required: true
+            BROWSERSTACK_ACCESS_KEY:
+                required: true
+    # Dormant until the repository's E2E_ANDROID_APP/E2E_IOS_APP variables name E2E builds.
+    schedule:
+        - cron: '17 2 * * *'
+    workflow_dispatch:
+        inputs:
+            profile:
+                description: Full coverage or the critical p0 journeys
+                type: choice
+                options: [full, critical]
+                default: full
+            reuse_sessions:
+                description: Experimental warm sessions for compatible small suites
+                type: boolean
+                default: false
+            android_app:
+                description: bs:// id of the Android E2E build (empty skips Android)
+                required: false
+            ios_app:
+                description: bs:// id of the iOS E2E build (empty skips iOS)
+                required: false
+            include:
+                description: Run only the cases with this Robot tag (empty runs every suite)
+                required: false
+            android_device:
+                description: Android device as <name>@<os version>, e.g. Google Pixel 8@14.0 (empty keeps the config's)
+                required: false
+            ios_device:
+                description: iOS device as <name>@<os version>, e.g. iPhone SE 2022@15 (empty keeps the config's)
+                required: false
+
+permissions:
+    contents: read
+
+# The BrowserStack plan's parallel sessions are shared by the whole account, the release smoke
+# gates included, so a second run waits for this one rather than piling sessions into the queue.
+# GitHub keeps one pending run per group and cancels the older one, so a caller (whose
+# github.workflow is its own name) queues apart and a manual dispatch cannot cancel it.
+concurrency:
+    group: e2e-browserstack-${{ github.workflow }}
+    cancel-in-progress: false
+
+jobs:
+    configuration:
+        runs-on: ubuntu-24.04
+        outputs:
+            enabled: ${{ steps.validate.outputs.enabled }}
+        steps:
+            - name: Validate the requested run
+              id: validate
+              env:
+                  EVENT: ${{ github.event_name }}
+                  ANDROID_APP: ${{ inputs.android_app }}
+                  IOS_APP: ${{ inputs.ios_app }}
+                  DEFAULT_ANDROID_APP: ${{ vars.E2E_ANDROID_APP }}
+                  DEFAULT_IOS_APP: ${{ vars.E2E_IOS_APP }}
+                  PROFILE: ${{ inputs.profile || 'full' }}
+                  INCLUDE: ${{ inputs.include }}
+              run: |
+                  set -euo pipefail
+                  if [ "$EVENT" = schedule ] && [ -z "$ANDROID_APP$IOS_APP" ]; then
+                    ANDROID_APP="$DEFAULT_ANDROID_APP" IOS_APP="$DEFAULT_IOS_APP"
+                    if [ -z "$ANDROID_APP$IOS_APP" ]; then
+                      echo 'Nightly E2E is not configured: set E2E_ANDROID_APP and/or E2E_IOS_APP to uploaded E2E builds.' >>"$GITHUB_STEP_SUMMARY"
+                      echo 'enabled=false' >>"$GITHUB_OUTPUT"
+                      exit 0
+                    fi
+                  fi
+                  if [ -z "$ANDROID_APP$IOS_APP" ]; then echo 'At least one app ID is required' >&2; exit 2; fi
+                  for app in "$ANDROID_APP" "$IOS_APP"; do
+                    if [ -n "$app" ] && [[ ! "$app" =~ ^bs://[A-Za-z0-9]+$ ]]; then
+                      echo 'Expected a bs:// app ID' >&2; exit 2
+                    fi
+                  done
+                  case "$PROFILE" in full | critical) ;; *) echo 'Unknown profile' >&2; exit 2 ;; esac
+                  if [ "$PROFILE" = critical ] && [ -n "$INCLUDE" ]; then
+                    echo 'Use profile=full with include, or profile=critical without include' >&2
+                    exit 2
+                  fi
+                  echo 'enabled=true' >>"$GITHUB_OUTPUT"
+
+    e2e:
+        needs: configuration
+        if: needs.configuration.outputs.enabled == 'true'
+        name: ${{ matrix.platform }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 240
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [android, ios]
+        steps:
+            - name: Pick the build
+              id: app
+              env:
+                  PLATFORM: ${{ matrix.platform }}
+                  ANDROID_APP: ${{ inputs.android_app }}
+                  IOS_APP: ${{ inputs.ios_app }}
+                  ANDROID_DEVICE: ${{ inputs.android_device }}
+                  IOS_DEVICE: ${{ inputs.ios_device }}
+                  EVENT: ${{ github.event_name }}
+                  DEFAULT_ANDROID_APP: ${{ vars.E2E_ANDROID_APP }}
+                  DEFAULT_IOS_APP: ${{ vars.E2E_IOS_APP }}
+              run: |
+                  if [ "$EVENT" = schedule ] && [ -z "$ANDROID_APP$IOS_APP" ]; then ANDROID_APP="$DEFAULT_ANDROID_APP" IOS_APP="$DEFAULT_IOS_APP"; fi
+                  if [ "$PLATFORM" = android ]; then app="$ANDROID_APP" device="$ANDROID_DEVICE"; else app="$IOS_APP" device="$IOS_DEVICE"; fi
+                  echo "app=$app" >>"$GITHUB_OUTPUT"
+                  echo "device=$device" >>"$GITHUB_OUTPUT"
+
+            - name: Checkout
+              if: steps.app.outputs.app != ''
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install the e2e venv
+              if: steps.app.outputs.app != ''
+              run: |
+                  python3 -m venv e2e/.venv
+                  e2e/.venv/bin/pip install --quiet -r e2e/requirements-browserstack.txt
+
+            - name: Restore duration samples
+              if: steps.app.outputs.app != ''
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: e2e/.cache/timings-${{ matrix.platform }}.json
+                  key: e2e-timings-v1-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+                  restore-keys: e2e-timings-v1-${{ matrix.platform }}-
+
+            - name: Run the suite
+              if: steps.app.outputs.app != ''
+              env:
+                  BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+                  BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+                  BROWSERSTACK_BUILD_NAME: e2e ${{ matrix.platform }} ${{ github.ref_name }}
+                  E2E_RESULTS_DIR: ${{ github.workspace }}/e2e-results
+                  E2E_DEVICE: ${{ steps.app.outputs.device }}
+                  # Two per platform: four of the plan's five sessions, one left for a smoke gate.
+                  E2E_PARALLEL: 2
+                  PLATFORM: ${{ matrix.platform }}
+                  APP: ${{ steps.app.outputs.app }}
+                  INCLUDE: ${{ inputs.include }}
+                  PROFILE: ${{ inputs.profile || 'full' }}
+                  E2E_SESSION_REUSE: ${{ inputs.reuse_sessions && '1' || '0' }}
+              run: |
+                  args=()
+                  if [ "$PROFILE" = critical ]; then INCLUDE=p0; fi
+                  if [ -n "$INCLUDE" ]; then args=(--include "$INCLUDE"); fi
+                  e2e/tools/browserstack.sh "$PLATFORM" "$APP" ${args[@]+"${args[@]}"}
+
+            - name: Publish scheduling metrics
+              if: always() && steps.app.outputs.app != ''
+              run: |
+                  if [ -f e2e-results/run-metrics.md ]; then cat e2e-results/run-metrics.md >>"$GITHUB_STEP_SUMMARY"; fi
+
+            - name: Save duration samples
+              if: always() && steps.app.outputs.app != '' && hashFiles(format('e2e/.cache/timings-{0}.json', matrix.platform)) != ''
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: e2e/.cache/timings-${{ matrix.platform }}.json
+                  key: e2e-timings-v1-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+            - name: Upload the results
+              if: always() && steps.app.outputs.app != ''
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: e2e-${{ matrix.platform }}
+                  path: e2e-results
+                  if-no-files-found: warn

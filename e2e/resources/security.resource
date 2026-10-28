@@ -16,21 +16,21 @@ ${CURRENT_PIN}                  ${REGULAR_PIN}
 # AUTO_LOCK_TIMEOUT_MS is 2 minutes and the lock only arms once the background time exceeds it.
 ${AUTO_LOCK_BACKGROUND}         125
 
-${MENU_SETTINGS_BUTTON}         xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
-${SETTINGS_ITEM_SECURITY}       xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
+${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
+${SETTINGS_ITEM_SECURITY}       tid=settings_item_security
 ${PIN_TOGGLE_ID}                settings_security_pin_toggle
 ${DURESS_TOGGLE_ID}             settings_security_duress_pin_toggle
 ${SHAKE_TOGGLE_ID}              settings_security_shake_to_lock_toggle
-${PIN_TOGGLE}                   xpath=//*[@resource-id='${PIN_TOGGLE_ID}' or @name='${PIN_TOGGLE_ID}' or @content-desc='${PIN_TOGGLE_ID}']
-${DURESS_TOGGLE}                xpath=//*[@resource-id='${DURESS_TOGGLE_ID}' or @name='${DURESS_TOGGLE_ID}' or @content-desc='${DURESS_TOGGLE_ID}']
-${SHAKE_TOGGLE}                 xpath=//*[@resource-id='${SHAKE_TOGGLE_ID}' or @name='${SHAKE_TOGGLE_ID}' or @content-desc='${SHAKE_TOGGLE_ID}']
-${REKEY_TOGGLE}                 xpath=//*[@resource-id='settings_security_rekey_toggle' or @name='settings_security_rekey_toggle' or @content-desc='settings_security_rekey_toggle']
-${CHANGE_PIN_BUTTON}            xpath=//*[@resource-id='settings_security_change_pin_button' or @name='settings_security_change_pin_button' or @content-desc='settings_security_change_pin_button']
+${PIN_TOGGLE}                   tid=${PIN_TOGGLE_ID}
+${DURESS_TOGGLE}                tid=${DURESS_TOGGLE_ID}
+${SHAKE_TOGGLE}                 tid=${SHAKE_TOGGLE_ID}
+${REKEY_TOGGLE}                 tid=settings_security_rekey_toggle
+${CHANGE_PIN_BUTTON}            tid=settings_security_change_pin_button
 # A bare testID on the sheet's container: a resource-id on Android, a name on iOS.
-${PIN_SHEET}                    xpath=//*[@resource-id='settings_security_pin_edit_view' or @name='settings_security_pin_edit_view']
-${PIN_SHEET_CLOSE}              xpath=//*[@resource-id='close-button' or @name='close-button' or @content-desc='close-button']
-${LOCKOUT_VIEW}                 xpath=//*[@resource-id='security_lockout_view' or @name='security_lockout_view']
-${LOCKOUT_RESET_BUTTON}         xpath=//*[@resource-id='security_lockout_reset_button' or @name='security_lockout_reset_button' or @content-desc='security_lockout_reset_button']
+${PIN_SHEET}                    tid=settings_security_pin_edit_view
+${PIN_SHEET_CLOSE}              tid=close-button
+${LOCKOUT_VIEW}                 tid=security_lockout_view
+${LOCKOUT_RESET_BUTTON}         tid=security_lockout_reset_button
 # The PIN steps and the lock screen carry no testID, only their title (security.pin.* in en.json).
 # Android exposes text as @text, iOS as @label; multi-line titles are matched on their first line.
 ${PIN_SETUP_TITLE}              xpath=//*[contains(@text,'Choose your') or contains(@label,'Choose your')]
@@ -41,25 +41,6 @@ ${PIN_LOGGING_IN}               xpath=//*[contains(@text,'Logging in') or contai
 
 
 *** Keywords ***
-Switch Locator
-    [Documentation]    A switch in the given state. Android reports it as checked, iOS as value 1/0.
-    [Arguments]    ${test_id}    ${on}
-    IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${test_id}' or @resource-id='${test_id}' or @name='${test_id}') and (@checked='true' or @value='1')]
-    END
-    RETURN    xpath=//*[(@content-desc='${test_id}' or @resource-id='${test_id}' or @name='${test_id}') and (@checked='false' or @value='0')]
-
-Switch Is On
-    [Arguments]    ${test_id}
-    ${locator}=    Switch Locator    ${test_id}    ${True}
-    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-    RETURN    ${on}
-
-Switch Should Turn
-    [Arguments]    ${test_id}    ${on}
-    ${locator}=    Switch Locator    ${test_id}    ${on}
-    Wait Until Page Contains Element    ${locator}    timeout=10s
-
 Start On Security
     [Documentation]    Security screen, whatever the last case left: locked, wiped back to a decoy
     ...                wallet, or dropped to onboarding by a failed wipe. Sets no PIN, so a case that
@@ -114,7 +95,7 @@ Reveal On Security Screen
     [Documentation]    The advanced switches sit at the bottom of the screen and Android only reports
     ...                what is on screen.
     [Arguments]    ${test_id}
-    ${shown}=    Run Keyword And Return Status    Page Should Contain Element    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']
+    ${shown}=    Run Keyword And Return Status    Page Should Contain Element    tid=${test_id}
     IF    ${shown}    RETURN    ${True}
     # The advanced panel starts collapsed when no advanced flag or setting is on; the switch is
     # then not rendered at all, so there is nothing to scroll to.
@@ -126,9 +107,9 @@ Reveal On Security Screen
 Enter Pin
     [Documentation]    The pad advances by itself on the sixth digit.
     [Arguments]    ${pin}
-    Wait Until Page Contains Element    xpath=//*[@resource-id='numpad_key_0' or @name='numpad_key_0' or @content-desc='numpad_key_0']    timeout=15s
+    Wait Until Page Contains Element    tid=numpad_key_0    timeout=15s
     FOR    ${digit}    IN    @{{ list($pin) }}
-        Tap    xpath=//*[@resource-id='numpad_key_${digit}' or @name='numpad_key_${digit}' or @content-desc='numpad_key_${digit}']
+        Tap    tid=numpad_key_${digit}
     END
 
 Set Regular Pin
@@ -155,7 +136,7 @@ Set Duress Pin
     [Arguments]    ${pin}
     Start Duress Pin Setup
     Enter New Pin Twice    ${pin}
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${True}
 
 Disable Duress Pin
     [Documentation]    Turning duress off asks for the regular PIN first, so someone holding an
@@ -165,7 +146,7 @@ Disable Duress Pin
     Wait Until Page Contains Element    ${PIN_VERIFY_TITLE}    timeout=15s
     Enter Pin    ${REGULAR_PIN}
     Wait Until Page Does Not Contain Element    ${PIN_SHEET}    timeout=15s
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${False}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${False}
 
 Ensure Duress Pin Off
     ${present}=    Reveal On Security Screen    ${DURESS_TOGGLE_ID}
@@ -213,9 +194,9 @@ Clear Pin Pad
     [Documentation]    The pad keeps typed digits across attempts and has no testID on its dots, so a
     ...                tap lost or doubled under load would shift every later PIN. Start each lock
     ...                screen entry from an empty pad.
-    Wait Until Page Contains Element    xpath=//*[@resource-id='numpad_key_delete' or @name='numpad_key_delete' or @content-desc='numpad_key_delete']    timeout=15s
+    Wait Until Page Contains Element    tid=numpad_key_delete    timeout=15s
     FOR    ${i}    IN RANGE    6
-        Click Element    xpath=//*[@resource-id='numpad_key_delete' or @name='numpad_key_delete' or @content-desc='numpad_key_delete']
+        Click Element    tid=numpad_key_delete
     END
 
 Unlock With Pin
@@ -262,7 +243,7 @@ Regular Pin Should Still Be Set
     ...    error=The regular PIN is gone, so a wipe ran when it should not have.
 
 Wallet Should Have Been Wiped
-    Switch Should Turn    ${PIN_TOGGLE_ID}    ${False}
+    Switch Should Be    ${PIN_TOGGLE_ID}    ${False}
     # The switch also reads off for a moment before the PIN record loads.
     ${pin_set}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${CHANGE_PIN_BUTTON}    timeout=3s

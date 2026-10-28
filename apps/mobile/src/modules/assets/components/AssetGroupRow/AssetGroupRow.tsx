@@ -104,6 +104,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                     <CurrencyAmount
                         currency={fiat.displayCurrency}
                         assetId={null}
+                        isFiat
                         value={fiat.value}
                         precision='compact'
                         showSymbol

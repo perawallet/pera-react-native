@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useToast } from '../useToast'
-import { Notifier } from 'react-native-notifier'
+import { Notifier, type NotifierRoot } from 'react-native-notifier'
 
 vi.mock('react-native-notifier', () => ({
     Notifier: {
@@ -192,6 +192,32 @@ describe('useToast', () => {
                 }),
             }),
         )
+    })
+
+    it('errorToast forwards options to showToast', () => {
+        const notifier = {
+            showNotification: vi.fn(),
+            hideNotification: vi.fn(),
+        }
+        const { result } = renderHook(() => useToast())
+
+        act(() => {
+            result.current.errorToast('T', 'B', {
+                notifier: notifier as unknown as NotifierRoot,
+                delayLength: 'short',
+            })
+            vi.advanceTimersByTime(299)
+        })
+        expect(notifier.showNotification).not.toHaveBeenCalled()
+
+        act(() => {
+            vi.advanceTimersByTime(1)
+        })
+
+        expect(notifier.showNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ title: 'T', description: 'B' }),
+        )
+        expect(Notifier.showNotification).not.toHaveBeenCalled()
     })
 
     it('successToast shows success-styled notification', () => {

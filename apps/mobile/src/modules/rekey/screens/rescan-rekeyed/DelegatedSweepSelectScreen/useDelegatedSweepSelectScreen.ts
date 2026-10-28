@@ -61,7 +61,7 @@ export const useDelegatedSweepSelectScreen =
         const { scanAll, importFromSweep } = useRescanDelegatedAccounts(scope)
         const signingAccounts = useSigningAccounts(scope.chainId)
         const { showError } = useErrorToast()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
         const { t } = useLanguage()
 
         // Freeze the key set at entry. Importing sweep candidates writes the
@@ -181,11 +181,10 @@ export const useDelegatedSweepSelectScreen =
                 // Nothing was persisted — every selected address was invalid
                 // or already in the wallet. Surface it instead of silently
                 // navigating home as if the import succeeded.
-                showToast({
-                    title: t('rekey.rescan.nothing_imported_title'),
-                    body: t('rekey.rescan.nothing_imported_body'),
-                    type: 'error',
-                })
+                errorToast(
+                    t('rekey.rescan.nothing_imported_title'),
+                    t('rekey.rescan.nothing_imported_body'),
+                )
             } catch (error) {
                 showError(error)
             } finally {
@@ -197,7 +196,7 @@ export const useDelegatedSweepSelectScreen =
             candidates,
             selectedAddresses,
             showError,
-            showToast,
+            errorToast,
             t,
         ])
 

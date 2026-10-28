@@ -7,6 +7,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           transactions
 
 
@@ -32,6 +33,13 @@ NFTs Tab Shows The Empty State On A New Account
 Bell Opens The Notifications Center
     [Tags]    id:transactions.notifications.open    p0    rc
     Open Notifications Center
+
+Inbox Shows The Empty State On A New Account
+    [Tags]    id:transactions.inbox.empty    p1
+    Open Notifications Center
+    Tap    ${INBOX_TAB}
+    Wait Until Page Contains Element    ${INBOX_EMPTY_STATE}    timeout=30s
+    Page Should Not Contain Element    ${ASA_INBOX_ITEM}
 
 Funded History Lists Real Transactions
     [Tags]    id:transactions.history.rows    p0    needs-funded    excludefromci

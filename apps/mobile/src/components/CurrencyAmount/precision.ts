@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
-import { DEFAULT_PRECISION, type Maybe } from '@perawallet/wallet-core-shared'
+import { Decimal } from 'decimal.js'
+import {
+    DEFAULT_PRECISION,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Detailed max decimals for a preferred-currency value (fiat OR ALGO). 6 is
@@ -26,7 +30,9 @@ export const PREFERRED_MAX_PRECISION = 6
  * - `noDecimal` — whole units / counts (e.g. NFT quantity): 0 dp.
  * - `compact` — a dense list/row or a summary total, asset OR preferred: a fixed
  * {@link DEFAULT_PRECISION} dp, extended only for amounts that would
- * otherwise round to zero (see {@link resolveCompactPrecision}).
+ * otherwise round to zero (see {@link resolveCompactPrecision}). A fiat amount
+ * never extends: a non-zero one under a cent renders as `< 0.01` (`> -0.01`
+ * when negative; see {@link resolveFiatFloor}).
  * - `assetFull` — an asset amount on a detail surface: trims
  * {@link DEFAULT_PRECISION} → the asset's own `decimals`. Collectibles /
  * 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
@@ -103,4 +109,30 @@ export const resolvePrecision = (
             }
         }
     }
+}
+
+const FIAT_DISPLAY_FLOOR = new Decimal(10).pow(-DEFAULT_PRECISION)
+
+/**
+ * The smallest fiat amount a `compact` figure shows. A non-zero fiat amount
+ * under it reads as "< 0.01" instead of extending to its first significant
+ * digit, which only suits crypto. The floor keeps the amount's sign, so a
+ * small loss gives -0.01 and reads as a lower bound ("> -0.01") rather than
+ * losing its minus. `null` when the amount renders normally.
+ */
+export const resolveFiatFloor = (
+    variant: PrecisionVariant,
+    isFiat: boolean,
+    value: Maybe<Decimal>,
+): Nullable<Decimal> => {
+    if (
+        variant !== 'compact' ||
+        !isFiat ||
+        value == null ||
+        value.isZero() ||
+        !value.abs().lt(FIAT_DISPLAY_FLOOR)
+    ) {
+        return null
+    }
+    return value.isNegative() ? FIAT_DISPLAY_FLOOR.neg() : FIAT_DISPLAY_FLOOR
 }

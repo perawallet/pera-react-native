@@ -20,6 +20,7 @@ const {
     reviewMock,
     busyItemsMock,
     showToastMock,
+    errorToastMock,
     showErrorMock,
     reviewActionMock,
     kindMock,
@@ -40,6 +41,7 @@ const {
     },
     busyItemsMock: { current: [] as string[] },
     showToastMock: vi.fn(),
+    errorToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
         async (_variables: {
@@ -101,7 +103,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({
+        showToast: showToastMock,
+        errorToast: errorToastMock,
+    }),
 }))
 
 vi.mock('@hooks/useErrorToast', () => ({
@@ -231,8 +236,9 @@ describe('useBackupAccountReview', () => {
         act(() => result.current.addFromBackup('GONE'))
 
         await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(errorToastMock).toHaveBeenCalledWith(
+                'cloud_backup.accounts.add_error',
+                '',
             ),
         )
     })
@@ -245,6 +251,7 @@ describe('useBackupAccountReview', () => {
 
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
+        expect(errorToastMock).not.toHaveBeenCalled()
         expect(showToastMock).not.toHaveBeenCalled()
     })
 })

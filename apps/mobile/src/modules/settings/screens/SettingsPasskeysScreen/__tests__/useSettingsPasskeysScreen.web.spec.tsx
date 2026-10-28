@@ -97,7 +97,10 @@ vi.mock('@hooks/useCapability', async () =>
 )
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mocks.showToast }),
+    useToast: () => ({
+        showToast: mocks.showToast,
+        errorToast: mocks.showToast,
+    }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({

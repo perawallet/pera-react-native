@@ -23,7 +23,7 @@ type UseDisableCloudBackupResult = {
 
 export const useDisableCloudBackup = (): UseDisableCloudBackupResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const goHome = useGoToCloudBackupHome()
 
     const mutation = useDisableCloudBackupMutation({
@@ -36,11 +36,7 @@ export const useDisableCloudBackup = (): UseDisableCloudBackupResult => {
             goHome()
         },
         onError: () => {
-            showToast({
-                title: t('cloud_backup.turn_off.error'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('cloud_backup.turn_off.error'), '')
         },
     })
 

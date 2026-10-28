@@ -747,6 +747,7 @@
             "available_count_one": "{{count}} disponível no backup",
             "device_title": "Contas",
             "device_subtitle": "Disponíveis neste dispositivo",
+            "networks_hint": "Seu backup inclui todas as redes de cada conta.",
             "add_from_backup_title": "Adicionar do backup",
             "add_from_backup_subtitle": "No seu Cloud Backup, não neste dispositivo",
             "not_backed_up_title": "Sem backup",
