@@ -113,7 +113,9 @@ function scanLeaves(ctx: RuleContext, node: Node, acc: Leaves): void {
 function isArithmeticOperator(ctx: RuleContext, node: Node): boolean {
     const operator = ctx
         .children(node)
-        .find(c => !ctx.isNamed(c) && ARITHMETIC_OPERATORS.has(ctx.kind(c) ?? ''))
+        .find(
+            c => !ctx.isNamed(c) && ARITHMETIC_OPERATORS.has(ctx.kind(c) ?? ''),
+        )
     return operator !== undefined
 }
 
@@ -156,10 +158,7 @@ const calleeName = (ctx: RuleContext, call: Node): string | undefined => {
     return ctx.text(callee)
 }
 
-function classify(
-    ctx: RuleContext,
-    reference: Node,
-): ConstantSink | undefined {
+function classify(ctx: RuleContext, reference: Node): ConstantSink | undefined {
     for (const ancestor of ctx.ancestors(reference)) {
         switch (ctx.kind(ancestor)) {
             case 'call_expression': {

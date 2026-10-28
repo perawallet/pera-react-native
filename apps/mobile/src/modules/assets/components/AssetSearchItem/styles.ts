@@ -13,8 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 import { ASSET_LIST_ITEM_MIN_HEIGHT } from '@constants/ui'
 
-const ACTION_SIZE = 36
-
 export const useStyles = makeStyles(theme => ({
     container: {
         paddingVertical: theme.spacing.md,
@@ -22,9 +20,9 @@ export const useStyles = makeStyles(theme => ({
         minHeight: ASSET_LIST_ITEM_MIN_HEIGHT,
     },
     actionButton: {
-        width: ACTION_SIZE,
-        height: ACTION_SIZE,
-        borderRadius: ACTION_SIZE / 2,
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
@@ -33,6 +31,7 @@ export const useStyles = makeStyles(theme => ({
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
         // Align under the text: row left-padding + AssetIcon 'xl' (3xl) + itemContainer gap (lg)
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: row padding (lg), asset icon (3xl) and row gap (lg)
         marginLeft: theme.spacing.lg + theme.spacing['3xl'] + theme.spacing.lg,
     },
 }))

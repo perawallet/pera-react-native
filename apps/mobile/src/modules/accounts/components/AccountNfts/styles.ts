@@ -24,6 +24,7 @@ export const useStyles = makeStyles(theme => ({
     listSeparator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: thumbnail width (3xl) plus the row gap (md)
         marginLeft: theme.spacing['3xl'] + theme.spacing.md,
     },
     // FlashList has no columnWrapperStyle, so grid spacing rides on the cells.
@@ -32,10 +33,10 @@ export const useStyles = makeStyles(theme => ({
     },
     // Half-gap on each cell's inner edge -> xl between columns, outer edges flush.
     gridColumnLeft: {
-        paddingRight: theme.spacing.xl / 2,
+        paddingRight: theme.spacing.md,
     },
     gridColumnRight: {
-        paddingLeft: theme.spacing.xl / 2,
+        paddingLeft: theme.spacing.md,
     },
     // Skeletons trace the real layouts: two square tiles per row in grid mode,
     // thumbnail-plus-two-lines in list mode.

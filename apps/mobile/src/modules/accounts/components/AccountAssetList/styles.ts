@@ -31,6 +31,7 @@ export const useStyles = makeStyles(theme => ({
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
         // Starts at the text column: the xl asset icon (3xl) plus the row gap (lg).
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: asset icon width (3xl) plus the row gap (lg)
         marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
     },
     headerContainer: {

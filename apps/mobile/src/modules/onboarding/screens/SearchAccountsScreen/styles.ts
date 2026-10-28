@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 // Sizes pulled from Figma node 110459:26125.
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: separator dot diameter
 const DOT_SIZE = 3
 const DOT_GAP = 12
 
@@ -36,7 +37,7 @@ export const useStyles = makeStyles(theme => ({
     dot: {
         width: DOT_SIZE,
         height: DOT_SIZE,
-        borderRadius: DOT_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
     },
     dot1: {
         backgroundColor: theme.colors.layerGray,

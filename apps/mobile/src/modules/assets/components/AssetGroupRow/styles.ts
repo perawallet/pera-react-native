@@ -49,6 +49,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: theme.spacing.sm,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: asset icon width (3xl) plus the row gap (lg)
         marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
     },
     networksToggle: {

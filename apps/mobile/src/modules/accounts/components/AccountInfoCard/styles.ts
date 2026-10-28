@@ -12,10 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const WALLET_CIRCLE_SIZE = 36
 const CONNECTOR_INDENT = 18
-const CONNECTOR_HORIZONTAL_WIDTH = 16
-const CONNECTOR_COLUMN_WIDTH = 24
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: scan button min height (40)
 const SCAN_BUTTON_HEIGHT = 40
 
 export const useStyles = makeStyles(theme => ({
@@ -74,7 +72,7 @@ export const useStyles = makeStyles(theme => ({
     toggleButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs + 2,
+        gap: theme.spacing.xs,
     },
     toggleText: {
         color: theme.colors.textGray,
@@ -99,9 +97,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     walletCircle: {
-        width: WALLET_CIRCLE_SIZE,
-        height: WALLET_CIRCLE_SIZE,
-        borderRadius: WALLET_CIRCLE_SIZE / 2,
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
@@ -109,7 +107,7 @@ export const useStyles = makeStyles(theme => ({
     connectorContainer: {
         position: 'relative',
         alignSelf: 'stretch',
-        width: CONNECTOR_INDENT + CONNECTOR_COLUMN_WIDTH,
+        width: CONNECTOR_INDENT + theme.spacing.xl,
     },
     connectorVertical: {
         position: 'absolute',
@@ -127,7 +125,7 @@ export const useStyles = makeStyles(theme => ({
         position: 'absolute',
         top: '50%',
         left: CONNECTOR_INDENT,
-        width: CONNECTOR_HORIZONTAL_WIDTH,
+        width: theme.spacing.lg,
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGray,
     },
@@ -182,7 +180,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.xs,
-        marginLeft: CONNECTOR_INDENT + CONNECTOR_COLUMN_WIDTH,
+        marginLeft: CONNECTOR_INDENT + theme.spacing.xl,
     },
     scanButtonText: {
         flexShrink: 1,

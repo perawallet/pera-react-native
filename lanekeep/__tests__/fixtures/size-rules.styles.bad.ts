@@ -18,7 +18,9 @@ export const useStyles = makeStyles(theme => {
         tall: { height: theme.spacing.xxl * 4 },
         sum: { marginTop: theme.spacing['3xl'] + theme.spacing.lg },
         nested: { gap: (theme.spacing.xl + 2 * theme.spacing.sm) / 2 },
-        chain: { top: theme.spacing.lg + theme.spacing['3xl'] + theme.spacing.lg },
+        chain: {
+            top: theme.spacing.lg + theme.spacing['3xl'] + theme.spacing.lg,
+        },
         border: { borderWidth: theme.borders.sm * 2 },
     }
 })

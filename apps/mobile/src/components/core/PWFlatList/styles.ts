@@ -32,6 +32,7 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
         backgroundColor: theme.colors.layerGrayLighter,
         // Inset past the standard leading icon (width xxl + row gap lg) to
         // align with row content.
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: leading icon width (xxl) plus the row gap (lg)
         marginLeft: theme.spacing.xxl + theme.spacing.lg,
     },
     cardSeparator: {

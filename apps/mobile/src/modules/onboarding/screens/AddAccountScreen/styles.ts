@@ -13,7 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import type { EdgeInsets } from 'react-native-safe-area-context'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork width
 const HEADER_IMAGE_WIDTH = 137
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork height
 const HEADER_IMAGE_HEIGHT = 217
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {

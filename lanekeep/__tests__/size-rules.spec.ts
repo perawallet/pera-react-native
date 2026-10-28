@@ -9,8 +9,7 @@ const FIXTURES = 'lanekeep/__tests__/fixtures/size-rules.*'
 const good = (file: string): boolean => /size-rules\.[a-z]+\.good\./.test(file)
 
 describe('pera/no-numeric-sizes', () => {
-    const run = () =>
-        runRule('lanekeep/rules/no-numeric-sizes.ts', FIXTURES)
+    const run = () => runRule('lanekeep/rules/no-numeric-sizes.ts', FIXTURES)
 
     it('reports token arithmetic, numeric JSX size props and size constants that feed styles', async () => {
         const found = await run()
@@ -28,8 +27,8 @@ describe('pera/no-numeric-sizes', () => {
             'size-rules.styles.bad.ts:18',
             'size-rules.styles.bad.ts:19',
             'size-rules.styles.bad.ts:20',
-            'size-rules.styles.bad.ts:21',
             'size-rules.styles.bad.ts:22',
+            'size-rules.styles.bad.ts:24',
         ])
     })
 
@@ -59,9 +58,9 @@ describe('pera/no-numeric-sizes', () => {
     it('leaves typography constants to pera/no-typography-in-styles', async () => {
         const found = await run()
 
-        expect(found.filter(v => /FONT_SIZE|LINE_HEIGHT/.test(v.message))).toEqual(
-            [],
-        )
+        expect(
+            found.filter(v => /FONT_SIZE|LINE_HEIGHT/.test(v.message)),
+        ).toEqual([])
     })
 
     it('allows inset arithmetic, a lone negated token, a 0 size and a suppressed prop', async () => {

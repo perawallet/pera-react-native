@@ -19,6 +19,7 @@ import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: info illustration artwork size
 const ILLUSTRATION_SIZE = 160
 
 export type PWInfoViewIllustration = ComponentType<{
