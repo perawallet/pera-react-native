@@ -21,7 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
-import { ReceiveFundsRoutes } from '../../../routes/receive-funds'
+import { ReceiveFundsRoutes } from '@modules/transactions/routes/receive-funds'
 import { useReceiveFundsContent } from './useReceiveFundsContent'
 
 export type ReceiveFundsContentProps = {

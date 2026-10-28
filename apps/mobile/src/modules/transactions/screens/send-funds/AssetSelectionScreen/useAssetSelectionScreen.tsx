@@ -28,8 +28,8 @@ import {
     useSendFunds,
     useSendScope,
 } from '@modules/transactions/hooks'
-import { ReceiveFundsContent } from '../../../components/receive-funds/ReceiveFundsContent'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 export type UseAssetSelectionScreenResult = {
     chainId: ChainId
