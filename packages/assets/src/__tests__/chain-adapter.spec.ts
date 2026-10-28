@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
@@ -38,6 +38,7 @@ import {
     type AssetsChainAdapter,
 } from '../chain-adapter'
 import type { DisplayableAsset } from '../models'
+import { useAssetSearchAvailabilityStore } from '../store/search-availability-store'
 import { fetchAndPersistPrices } from '../sync/price-syncer'
 import {
     FAKE_NATIVE_ASSET,
@@ -201,6 +202,10 @@ describe('scope wrappers', () => {
 })
 
 describe('searchAssetsAcrossScopes', () => {
+    beforeEach(() => {
+        useAssetSearchAvailabilityStore.getState().resetState()
+    })
+
     const ALGORAND = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
     const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
     const asset = (assetId: string): DisplayableAsset => ({ assetId })
@@ -378,6 +383,61 @@ describe('searchAssetsAcrossScopes', () => {
             await expect(
                 searchAssetsAcrossScopes({ query: '' }, [ALGORAND, ETHEREUM]),
             ).rejects.toBe(failure)
+        })
+
+        it('is not asked again once refused, and still rejects with the same refusal when it is the only scope', async () => {
+            const first = refusal()
+            const ethereumSearch = vi.fn().mockRejectedValue(first)
+            registerBoth(vi.fn(), ethereumSearch)
+
+            await expect(
+                searchAssetsAcrossScopes({ query: '' }, [ETHEREUM]),
+            ).rejects.toBe(first)
+            await expect(
+                searchAssetsAcrossScopes({ query: 'dai' }, [ETHEREUM]),
+            ).rejects.toBe(first)
+
+            expect(ethereumSearch).toHaveBeenCalledTimes(1)
+        })
+
+        it('is skipped beside another scope whose hits still return, and is not named as failed', async () => {
+            const ethereumSearch = vi.fn().mockRejectedValue(refusal())
+            const algorandSearch = vi.fn().mockResolvedValue({
+                results: [asset('1')],
+                nextCursor: undefined,
+            })
+            registerBoth(algorandSearch, ethereumSearch)
+            await searchAssetsAcrossScopes({ query: '' }, [ETHEREUM]).catch(
+                () => undefined,
+            )
+
+            const page = await searchAssetsAcrossScopes({ query: '' }, [
+                ALGORAND,
+                ETHEREUM,
+            ])
+
+            expect(page.results).toEqual([
+                { scope: ALGORAND, asset: asset('1') },
+            ])
+            expect(page.failedScopes).toEqual([])
+            expect(ethereumSearch).toHaveBeenCalledTimes(1)
+        })
+
+        it.each([
+            ['a plain failure', new Error('down')],
+            ['an offline failure', new PeraNetworkError('offline')],
+        ])('does not remember %s', async (_case, failure) => {
+            const ethereumSearch = vi.fn().mockRejectedValue(failure)
+            registerBoth(vi.fn(), ethereumSearch)
+
+            await expect(
+                searchAssetsAcrossScopes({ query: '' }, [ETHEREUM]),
+            ).rejects.toBe(failure)
+            await expect(
+                searchAssetsAcrossScopes({ query: '' }, [ETHEREUM]),
+            ).rejects.toBe(failure)
+
+            expect(ethereumSearch).toHaveBeenCalledTimes(2)
         })
     })
 })
