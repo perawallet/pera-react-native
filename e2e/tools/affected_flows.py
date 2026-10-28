@@ -42,6 +42,14 @@ EVERYTHING = (
     "apps/mobile/src/modules/bottom-sheet/",
     "apps/mobile/src/modules/prompts/",
     "apps/mobile/src/modules/migration/",
+    # Every suite starts through onboarding, the PIN unlock and a fixture deeplink.
+    "apps/mobile/src/modules/onboarding/",
+    "apps/mobile/src/modules/security/",
+    "apps/mobile/src/modules/deeplink/hooks/",
+    "apps/mobile/src/modules/deeplink/handlers/index",
+    "apps/mobile/src/modules/deeplink/core",
+    "apps/mobile/src/modules/deeplink/parser",
+    "apps/mobile/src/modules/deeplink/navigateToScreen",
     "apps/mobile/src/modules/deeplink/handlers/useE2eFixtureDeeplink",
     "apps/mobile/src/modules/deeplink/handlers/e2eNavTracer",
     "apps/mobile/src/modules/deeplink/dev-e2e-fixture-parser",
@@ -55,10 +63,13 @@ EVERYTHING = (
     "apps/mobile/babel.config.js",
     "apps/mobile/package.json",
     "apps/mobile/index.js",
+    "apps/mobile/shim.js",
     "apps/mobile/entry.native.js",
     "extensions/platform/",
     "extensions/platform-react-native/",
     "extensions/provider/",
+    "packages/accounts/",
+    "packages/security/",
     "packages/config/",
     "packages/shared/",
     "packages/chain-contract/",
@@ -72,6 +83,7 @@ EVERYTHING = (
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
+    "turbo.json",
     ".npmrc",
     "patches/",
     "e2e/resources/app.resource",
@@ -79,10 +91,15 @@ EVERYTHING = (
     "e2e/resources/libraries/",
     "e2e/tools/run.sh",
     "e2e/tools/browserstack.sh",
+    "e2e/tools/selected_suites.py",
+    "e2e/tools/verify_results.py",
+    "e2e/tools/schedule.py",
+    "e2e/tools/JobFilter.py",
     "e2e/requirements",
     "e2e/browserstack-",
     ".github/workflows/e2e-browserstack.yml",
     "tools/qa/",
+    "ci/jobs/smoke.sh",
 )
 
 # apps/mobile/src/modules/<name>/ -> suites. A module absent here reaches suites only through
@@ -106,12 +123,10 @@ MODULES = {
     "messages": ["transactions"],
     "multisig": ["multisig"],
     "network": ["settings", "send_receive", "assets"],
-    "onboarding": ["onboarding", "accounts", "quantum", "card", "persistence", "backup"],
     "onramp": ["onramp"],
     "projects": ["stake"],
     "rekey": ["rekey", "multisig"],
-    "search": [],
-    "security": ["security", "device", "deeplinks", "settings"],
+    "search": ["assets", "deeplinks"],
     "settings": ["settings", "persistence", "cloud_backup", "discover", "stake", "onboarding"],
     "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey"],
     "staking": ["stake"],
@@ -125,7 +140,6 @@ MODULES = {
 
 # packages/<name>/ and extensions/<name>/ -> suites, for the logic under those modules.
 PACKAGES = {
-    "accounts": ["accounts", "persistence", "onboarding", "multisig", "rekey", "quantum"],
     "age-gate": ["discover", "onramp", "stake", "swap"],
     "arc0027": ["walletconnect"],
     "asa-inbox": ["transactions"],
@@ -151,8 +165,7 @@ PACKAGES = {
     "onramp": ["onramp"],
     "passkeys": ["settings", "cloud_backup"],
     "projects": ["stake"],
-    "search": [],
-    "security": ["security", "device"],
+    "search": ["assets", "deeplinks"],
     "settings": ["settings", "persistence"],
     "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey"],
     "staking": ["stake"],
@@ -161,9 +174,37 @@ PACKAGES = {
     "walletconnect": ["walletconnect", "settings"],
 }
 
-# Nothing under these reaches a device flow.
+# Nothing under these reaches a device flow. Any other path that matches no rule runs every suite.
 IGNORED = (
     "docs/",
+    ".claude/",
+    ".github/",
+    ".bitrise/",
+    ".vscode/",
+    "ci/",
+    "tools/",
+    "README.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "CODEOWNERS",
+    "LICENSE.txt",
+    "lanekeep.config.ts",
+    ".oxlintrc",
+    ".oxfmtrc",
+    ".fallowrc",
+    ".gitleaks.toml",
+    ".gitignore",
+    ".tool-versions",
+    "apps/mobile/__tests__/",
+    "apps/mobile/__mocks__/",
+    "apps/mobile/fastlane/",
+    "apps/mobile/Gemfile",
+    "apps/mobile/vitest",
+    "apps/mobile/entry.web.js",
+    "apps/mobile/README.md",
+    "apps/mobile/CLAUDE.md",
+    "apps/mobile/.oxlintrc.json",
+    "apps/mobile/.gitignore",
     "apps/browser/",
     "apps/mobile/src/__integration__/",
     "apps/mobile/src/__tests__/",
@@ -184,7 +225,9 @@ LOCATOR_RE = re.compile(r"tid=([A-Za-z0-9_\-]+)")
 ATTR_RE = re.compile(r"@(?:resource-id|name|content-desc)='([A-Za-z0-9_\-]+)'")
 PREFIX_RE = re.compile(r"starts-with\(@(?:resource-id|name|content-desc),\s*'([A-Za-z0-9_\-]+)'")
 RESOURCE_RE = re.compile(r"^Resource\s+(\S+)", re.M)
-TAGS_RE = re.compile(r"^Test Tags\s+(\S+)", re.M)
+TAGS_RE = re.compile(r"^Test Tags\s+(.+)$", re.M)
+# browserstack.sh excludes these; a suite tagged with one runs on a local device only.
+CLOUD_EXCLUDED = {"slow", "needs-funded", "excludefromci", "device-shell"}
 CASE_TAGS_RE = re.compile(r"^\s+\[Tags\]\s+(.+)$", re.M)
 
 
@@ -208,7 +251,8 @@ def load_suites(e2e_dir=E2E_DIR):
             continue
         suite = name[:-6]
         text = _read(os.path.join(tests_dir, name))
-        tags = TAGS_RE.search(text)
+        found_tags = TAGS_RE.search(text)
+        tags = found_tags.group(1).split() if found_tags else [suite]
         case_tags = [t.split() for t in CASE_TAGS_RE.findall(text)]
         resources = set()
         pending = [os.path.normpath(os.path.join(tests_dir, r)) for r in RESOURCE_RE.findall(text)]
@@ -228,7 +272,8 @@ def load_suites(e2e_dir=E2E_DIR):
                 (prefixes if found.endswith(("_", "-")) else ids).add(found)
             prefixes.update(PREFIX_RE.findall(body))
         suites[suite] = {
-            "tag": tags.group(1) if tags else suite,
+            "tag": tags[0],
+            "cloud": not CLOUD_EXCLUDED & set(tags),
             "resources": {os.path.relpath(r, e2e_dir).replace(os.sep, "/") for r in resources},
             "ids": ids,
             "prefixes": prefixes,
@@ -238,11 +283,19 @@ def load_suites(e2e_dir=E2E_DIR):
     return suites
 
 
-def declared_ids(path, repo_dir=REPO_DIR):
+def declared_ids(path, repo_dir=REPO_DIR, base=None):
     full = os.path.join(repo_dir, path)
-    if not os.path.exists(full) or not path.endswith((".ts", ".tsx")):
+    if not path.endswith((".ts", ".tsx")):
         return set()
-    return set(TEST_ID_RE.findall(_read(full)))
+    ids = set(TEST_ID_RE.findall(_read(full))) if os.path.isfile(full) else set()
+    if base:
+        previous = subprocess.run(
+            ["git", "show", f"{base}:{path}"], cwd=repo_dir,
+            capture_output=True, text=True, check=False,
+        )
+        if previous.returncode == 0:
+            ids.update(TEST_ID_RE.findall(previous.stdout))
+    return ids
 
 
 def _matching_suites(ids, suites):
@@ -255,7 +308,7 @@ def _matching_suites(ids, suites):
     return hits
 
 
-def classify(files, suites, repo_dir=REPO_DIR):
+def classify(files, suites, repo_dir=REPO_DIR, base=None):
     """Returns (selected, reasons, everything): the suites to run, why, and whether every suite is."""
     selected, reasons, everything = set(), {}, []
 
@@ -268,10 +321,12 @@ def classify(files, suites, repo_dir=REPO_DIR):
             reasons[suite].append(why)
 
     for path in files:
-        if any(path.startswith(p) for p in IGNORED) or _is_test_file(path):
+        if _is_test_file(path):
             continue
         if any(path.startswith(p) for p in EVERYTHING):
             everything.append(path)
+            continue
+        if any(path.startswith(p) for p in IGNORED):
             continue
         if path.startswith("e2e/tests/") and path.endswith(".robot"):
             select(os.path.basename(path)[:-6], path)
@@ -285,18 +340,25 @@ def classify(files, suites, repo_dir=REPO_DIR):
         if path.startswith("e2e/"):
             continue
         parts = path.split("/")
-        for suite, matched in _matching_suites(declared_ids(path, repo_dir), suites).items():
+        id_matches = _matching_suites(declared_ids(path, repo_dir, base), suites)
+        for suite, matched in id_matches.items():
             select(suite, f"{path} declares {', '.join(sorted(matched))}")
         if path.startswith("apps/mobile/src/modules/") and len(parts) > 4:
+            if parts[4] not in MODULES:
+                everything.append(path)
             for suite in MODULES.get(parts[4], []):
                 select(suite, f"module {parts[4]}")
         elif path.startswith(("packages/", "extensions/")) and len(parts) > 2:
+            if parts[1] not in PACKAGES:
+                everything.append(path)
             for suite in PACKAGES.get(parts[1], []):
                 select(suite, f"{parts[0]}/{parts[1]}")
         elif path.startswith("apps/mobile/src/components/"):
             # A shared component with no testID a suite knows can still sit on every screen.
-            if not _matching_suites(declared_ids(path, repo_dir), suites):
+            if not id_matches:
                 everything.append(path)
+        else:
+            everything.append(path)
     if everything:
         selected = set(suites)
     return selected, reasons, everything
@@ -332,7 +394,13 @@ def render_markdown(selected, reasons, everything, suites, files_count):
         include = include_expression(selected, suites)
     lines += ["", "Run them:"]
     if include:
-        lines.append(f"- BrowserStack: the `E2E / BrowserStack` workflow with `include` = `{include}`")
+        cloud = {s for s in selected if suites[s]["cloud"]}
+        if cloud:
+            lines.append(f"- BrowserStack: the `E2E / BrowserStack` workflow with `include` = "
+                         f"`{include_expression(cloud, suites)}`")
+        if cloud != selected:
+            local = ", ".join(f"`{s}`" for s in sorted(selected - cloud))
+            lines.append(f"- Local device only (BrowserStack excludes them): {local}")
         lines.append(f"- A device: `e2e/tools/run.sh <android|ios> --include {include}`")
     else:
         lines.append("- BrowserStack: the `E2E / BrowserStack` workflow with `include` left empty")
@@ -342,7 +410,8 @@ def render_markdown(selected, reasons, everything, suites, files_count):
 
 def changed_files(base, repo_dir=REPO_DIR):
     out = subprocess.run(
-        ["git", "diff", "--name-only", "--merge-base", base, "HEAD"],
+        # A rename must list its old path too, so the old module and ids are still mapped.
+        ["git", "diff", "--name-only", "--no-renames", "--merge-base", base, "HEAD"],
         cwd=repo_dir, capture_output=True, text=True, check=True,
     ).stdout
     return [line.strip() for line in out.splitlines() if line.strip()]
@@ -350,7 +419,7 @@ def changed_files(base, repo_dir=REPO_DIR):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--base", default="origin/main", help="git ref to diff HEAD against")
+    parser.add_argument("--base", help="base git ref; also reads removed/renamed testIDs from this ref")
     parser.add_argument("--files", help="file with one changed path per line, or - for stdin")
     parser.add_argument("--format", choices=["md", "json"], default="md")
     args = parser.parse_args(argv)
@@ -359,9 +428,11 @@ def main(argv=None):
         source = sys.stdin if args.files == "-" else open(args.files)
         files = [line.strip() for line in source if line.strip()]
     else:
-        files = changed_files(args.base)
+        files = changed_files(args.base or "origin/main")
     suites = load_suites()
-    selected, reasons, everything = classify(files, suites)
+    selected, reasons, everything = classify(
+        files, suites, base=args.base or (None if args.files else "origin/main")
+    )
     if args.format == "json":
         print(json.dumps({
             "suites": sorted(selected),

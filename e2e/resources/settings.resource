@@ -86,10 +86,14 @@ Flip Switch And Back
     [Documentation]    Proves the switch changes state both ways and leaves it as it was found.
     [Arguments]    ${locator}
     ${was_on}=    Switch Is On    ${locator}
-    Tap    ${locator}
-    Switch Should Be    ${locator}    ${{ not $was_on }}
-    Tap    ${locator}
-    Switch Should Be    ${locator}    ${was_on}
+    TRY
+        Tap    ${locator}
+        Switch Should Be    ${locator}    ${{ not $was_on }}
+    FINALLY
+        ${now}=    Switch Is On    ${locator}
+        IF    $now != $was_on    Tap    ${locator}
+        Switch Should Be    ${locator}    ${was_on}
+    END
 
 Open Security Settings
     Open From Settings    ${SETTINGS_ITEM_SECURITY}    ${SECURITY_PIN_TOGGLE}
@@ -105,6 +109,13 @@ Expand Advanced Security
 
 Open Theme Settings
     Open From Settings    ${SETTINGS_ITEM_THEME}    ${THEME_SYSTEM_RADIO}
+
+Current Theme
+    FOR    ${theme}    IN    system    light    dark
+        ${selected}=    Switch Is On    tid=settings_theme_${theme}_radio
+        IF    ${selected}    RETURN    ${theme}
+    END
+    Fail    No theme radio is selected.
 
 Open Currency Settings
     [Documentation]    Reaching the screen is the app's part; filling it is the backend's.
@@ -122,6 +133,7 @@ Open Currency Settings
 Search Currency
     [Arguments]    ${term}
     Tap    ${CURRENCY_SEARCH_INPUT}
+    Clear Text    ${CURRENCY_SEARCH_INPUT}
     Input Text    ${CURRENCY_SEARCH_INPUT}    ${term}
     # With the keyboard up, the first tap on a result only dismisses the keyboard.
     Dismiss Keyboard
@@ -181,6 +193,15 @@ Set Cloud Backup Flag Expanded
         Wait Until Page Does Not Contain Element    ${FLAG_OVERRIDE_CLOUD_BACKUP}    timeout=10s
     END
     RETURN    ${now}
+
+Restore Cloud Backup Override
+    [Arguments]    ${expanded}    ${on}
+    Set Cloud Backup Flag Expanded    ${expanded}
+    IF    ${expanded}
+        ${now}=    Switch Is On    ${FLAG_OVERRIDE_CLOUD_BACKUP}
+        IF    $now != $on    Tap    ${FLAG_OVERRIDE_CLOUD_BACKUP}
+        Switch Should Be    ${FLAG_OVERRIDE_CLOUD_BACKUP}    ${on}
+    END
 
 Tap Backdrop Above
     [Documentation]    Closes a short sheet by tapping the dimmed backdrop halfway above it. Hardware

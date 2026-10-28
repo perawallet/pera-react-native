@@ -119,12 +119,20 @@ Next Should Be Refused For Lack Of Funds
 Paste Link
     [Documentation]    Menu > Paste a Link: the in-app entry that accepts what the QR scanner accepts.
     [Arguments]    ${text}
+    Open Paste Link
+    Submit Pasted Link    ${text}
+
+Open Paste Link
     Go Home
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_PASTE_LINK_BUTTON}    timeout=15s
     Wait Until Settled    ${MENU_PASTE_LINK_BUTTON}
     Tap    ${MENU_PASTE_LINK_BUTTON}
     Wait Until Settled    ${PASTE_LINK_INPUT}
+
+Submit Pasted Link
+    [Arguments]    ${text}
+    Clear Text    ${PASTE_LINK_INPUT}
     Input Text    ${PASTE_LINK_INPUT}    ${text}
     Dismiss Keyboard
     Wait Until Settled    ${PASTE_LINK_SUBMIT}

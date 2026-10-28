@@ -257,7 +257,7 @@ Open Node Settings
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}
-    Scroll Until Present    ${SETTINGS_DEVELOPER_ITEM}
+    Scroll Until Tappable    ${SETTINGS_DEVELOPER_ITEM}
     Tap    ${SETTINGS_DEVELOPER_ITEM}
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
     Tap    ${DEVELOPER_NODE_ITEM}

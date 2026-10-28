@@ -7,6 +7,7 @@ Suite Setup         Start Pera For WalletConnect
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           walletconnect    needs-harness    excludefromci
 
 

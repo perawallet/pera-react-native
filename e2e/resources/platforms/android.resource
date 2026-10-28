@@ -40,8 +40,9 @@ Open Pera
     # autoGrantPermissions only covers installs Appium makes; an adb-installed build would raise
     # the notification dialog over the app on its next launch. BrowserStack installs through
     # Appium and refuses this adb grant, which would otherwise fail every suite's setup.
-    Run Keyword And Ignore Error
+    ${granted}    ${error}=    Run Keyword And Ignore Error
     ...    Execute Script    mobile: changePermissions    permissions=all    appPackage=${ANDROID_PACKAGE}    action=grant
+    IF    $granted != 'PASS'    Log    Permissions not granted (expected on BrowserStack): ${error}    level=WARN
 
 Dismiss Dev Client Intro
     # First launch of a dev client opens its developer menu over the app; Continue leaves the menu up.
@@ -52,6 +53,7 @@ Dismiss Dev Client Intro
     Press Keycode    4
 
 Restart Pera
+    Drain Nav Log
     Terminate Application    ${ANDROID_PACKAGE}
     Activate Application    ${ANDROID_PACKAGE}
 
@@ -103,6 +105,7 @@ Close Sheet
 Open Deeplink Cold
     [Documentation]    Fires the link at a stopped app, so it cold-starts on it (Linking.getInitialURL).
     [Arguments]    ${url}
+    Drain Nav Log
     Terminate Application    ${ANDROID_PACKAGE}
     Open Deeplink    ${url}
 

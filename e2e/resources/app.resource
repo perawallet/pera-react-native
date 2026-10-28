@@ -30,7 +30,7 @@ ${SETTINGS_SCREEN}              tid=settings_screen
 ${SETTINGS_SECURITY_ITEM}       tid=settings_item_security
 ${DELETE_ALL_SUCCESS_SHEET}     tid=settings_delete_all_success_bottom_sheet
 # Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
-${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_')]
+${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_') or @name='paste-link-input' or @resource-id='paste-link-input']
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @resource-id='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @resource-id='tab_menu_button' or @name='numpad_key_1' or @content-desc='numpad_key_1' or @resource-id='numpad_key_1']
 ${PIN_PAD_KEY}                  tid=numpad_key_1
@@ -41,12 +41,21 @@ ${SHEET_BACKDROP}                tid=Bottom sheet backdrop
 @{E2E_PINS}                     123456    445566
 ${FIXTURE_URL}                  perawallet://app/dev/e2e-fixture
 ${FIXTURE_SETTLE}               1.5s
+${E2E_TEST_TIMEOUT}             5 minutes
+${E2E_REUSE_SESSION}            ${False}
 
 
 *** Keywords ***
 Start Pera With Wallet
     [Documentation]    Fixtures need an account to exist, and creating one stays a UI journey so the
     ...                fixture hook never handles key material. Reuses the wallet when one is there.
+    IF    ${E2E_REUSE_SESSION}
+        ${open}=    Run Keyword And Return Status    Get Appium SessionId
+        IF    ${open}
+            Go Home
+            RETURN
+        END
+    END
     Open Pera
     # A relaunch shows the app's real start screen rather than whatever a previous run left up.
     Relaunch Pera
@@ -180,8 +189,16 @@ Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can
     ...                be on screen: Android blacks those screens out, but iOS does not.
     IF    '${TEST STATUS}' != 'FAIL'    RETURN
-    ${secret}=    Run Keyword And Return Status    Page Should Contain Element    ${SECRET_SCREEN}
-    IF    ${secret}
+    # Get Webelements raises when nothing matches, which is the usual, screenshot-safe case.
+    TRY
+        ${secret}=    Get Webelements    ${SECRET_SCREEN}
+    EXCEPT    *did not match any elements*    type=GLOB
+        ${secret}=    Create List
+    EXCEPT
+        Log    Screenshot skipped: the screen could not be inspected for recovery phrases.    level=WARN
+        RETURN
+    END
+    IF    $secret
         Log    Screenshot skipped: a recovery phrase may be on screen.    level=WARN
     ELSE
         Run Keyword And Ignore Error    Capture Page Screenshot
@@ -266,13 +283,26 @@ Wait Until Settled
     ...                slides in, and a tap at their moving position lands on the backdrop and closes it.
     [Arguments]    ${locator}
     Wait Until Page Contains Element    ${locator}    timeout=15s
-    ${last}=    Get Element Location    ${locator}
+    ${last}=    Element Bounds    ${locator}
+    ${stable}=    Set Variable    ${0}
     FOR    ${i}    IN RANGE    30
         Sleep    0.15s
-        ${now}=    Get Element Location    ${locator}
-        IF    $now == $last    RETURN
+        ${now}=    Element Bounds    ${locator}
+        IF    $now == $last
+            ${stable}=    Evaluate    $stable + 1
+            IF    $stable >= 3    RETURN
+        ELSE
+            ${stable}=    Set Variable    ${0}
+        END
         ${last}=    Set Variable    ${now}
     END
+    Fail    ${locator} did not stop moving or resizing.
+
+Element Bounds
+    [Arguments]    ${locator}
+    ${element}=    Get Webelement    ${locator}
+    ${bounds}=    Evaluate    $element.rect
+    RETURN    ${bounds}
 
 Tap If Present
     [Arguments]    ${locator}
@@ -295,6 +325,8 @@ Tap If Shown
     IF    ${shown}    Tap    ${locator}
 
 Close Pera
+    # Only the planner's warm allowlist enables this; WarmSession closes at the job root.
+    IF    ${E2E_REUSE_SESSION}    RETURN
     Close All Applications
 
 Scroll Until Present
@@ -333,13 +365,13 @@ Bare Test Id
 
 Switch Locator
     [Documentation]    A switch (or radio) in the given state. Android reports it as checked; iOS as
-    ...                value 1/0 for a switch and "checked"/"unchecked" for a radio.
+    ...                value 1/0 for a switch, and for a radio a joined value such as "radio button, checked".
     [Arguments]    ${locator}    ${on}
     ${id}=    Bare Test Id    ${locator}
     IF    ${on}
-        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1' or @value='checked')]
+        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1' or (contains(@value,'checked') and not(contains(@value,'unchecked'))))]
     END
-    RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0' or @value='unchecked')]
+    RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0' or contains(@value,'unchecked'))]
 
 Switch Is On
     [Arguments]    ${locator}
@@ -358,12 +390,19 @@ Scroll Until Tappable
     ...                tapping it there lands on whatever is at its off-screen coordinates instead.
     [Arguments]    ${locator}
     ${height}=    Get Window Height
+    ${width}=    Get Window Width
     FOR    ${i}    IN RANGE    6
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
         IF    ${present}
             ${location}=    Get Element Location    ${locator}
             ${size}=    Get Element Size    ${locator}
-            IF    ${location}[y] + ${size}[height] / 2 < ${height} * 0.95    RETURN
+            ${x}=    Evaluate    $location['x'] + $size['width'] / 2
+            ${y}=    Evaluate    $location['y'] + $size['height'] / 2
+            IF    0 < $x < $width and $height * 0.1 < $y < $height * 0.95 and $size['width'] > 0 and $size['height'] > 0
+                ${element}=    Get Webelement    ${locator}
+                ${visible}=    Call Method    ${element}    is_displayed
+                IF    ${visible}    RETURN
+            END
         END
         Swipe By Percent    50    75    50    35    duration=600ms
     END
@@ -402,11 +441,10 @@ Text Under
     [Documentation]    The text a container renders, gathered from its child text nodes. Reading a
     ...                container directly gives back an empty string on Android.
     [Arguments]    ${locator}
-    # The locator carries its strategy prefix; the descendant step has to go on the xpath itself.
-    ${path}=    Set Variable    ${{ $locator.split('=', 1)[1] if $locator.startswith('xpath=') else $locator }}
-    ${found}    ${nodes}=    Run Keyword And Ignore Error    Get Webelements
-    ...    xpath=(${path})//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
-    IF    '${found}' != 'PASS'    RETURN    ${EMPTY}
+    # Resolve the container through Appium first so tid= and XPath both work.
+    ${container}=    Get Webelement    ${locator}
+    ${nodes}=    Call Method    ${container}    find_elements    xpath
+    ...    .//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
     @{parts}=    Create List
     FOR    ${node}    IN    @{nodes}
         ${text}=    Get Text    ${node}

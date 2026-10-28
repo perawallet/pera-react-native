@@ -7,6 +7,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           transactions
 
 

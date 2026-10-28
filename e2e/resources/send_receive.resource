@@ -62,8 +62,8 @@ Use Funded Testnet Account
     ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${row}
     IF    not ${known}    Import Funded Account
     Select Account    ${row}
-    ${funded}=    Run Keyword And Return Status    Page Should Contain Element    ${SEND_BUTTON}
-    IF    not ${funded}    Set Testnet    ${True}
+    # Send also exists on mainnet. Its presence cannot prove that a funded send is on testnet.
+    Set Testnet    ${True}
     Wait Until Page Contains Element    ${SEND_BUTTON}    timeout=60s
 
 Leave Funded Testnet Account
@@ -123,9 +123,9 @@ Pick Funded Address
     Wait Until Page Contains Element    ${IMPORT_SELECT_CONTINUE}    timeout=60s
     ${checkbox}=    Set Variable    tid=import_select_addresses_item_checkbox_${FUNDED_ADDRESS}
     Wait Until Page Contains Element    ${checkbox}    timeout=30s
-    ${ready}=    Run Keyword And Return Status    Element Should Be Enabled    ${IMPORT_SELECT_CONTINUE}
+    ${ready}=    Run Keyword And Return Status    Expect Element    ${IMPORT_SELECT_CONTINUE}    enabled    timeout=0s
     IF    not ${ready}    Tap    ${checkbox}
-    Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${IMPORT_SELECT_CONTINUE}
+    Wait Until Keyword Succeeds    5s    0.5s    Expect Element    ${IMPORT_SELECT_CONTINUE}    enabled    timeout=0s
     Tap    ${IMPORT_SELECT_CONTINUE}
 
 Open Node Settings
@@ -133,7 +133,7 @@ Open Node Settings
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}
-    Scroll Until Present    ${SETTINGS_DEVELOPER_ITEM}
+    Scroll Until Tappable    ${SETTINGS_DEVELOPER_ITEM}
     Tap    ${SETTINGS_DEVELOPER_ITEM}
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
     Tap    ${DEVELOPER_NODE_ITEM}
@@ -147,6 +147,7 @@ Set Testnet
         IF    not ${listed}    Tap    ${DEVELOPER_MODE_SWITCH}
         Wait Until Page Contains Element    ${TESTNET_RADIO}    timeout=15s
         Tap    ${TESTNET_RADIO}
+        Switch Should Be    ${TESTNET_RADIO}    ${True}
     ELSE IF    ${listed}
         Tap    ${DEVELOPER_MODE_SWITCH}
         Wait Until Page Does Not Contain Element    ${TESTNET_RADIO}    timeout=15s
@@ -179,7 +180,7 @@ Open Amount Entry
 
 Enter Amount
     [Arguments]    ${amount}
-    Element Should Be Disabled    ${SEND_NEXT_BUTTON}
+    Expect Element    ${SEND_NEXT_BUTTON}    disabled    timeout=0s
     @{chars}=    Split String To Characters    ${amount}
     FOR    ${c}    IN    @{chars}
         IF    $c == '.'
@@ -188,7 +189,7 @@ Enter Amount
             Tap    tid=numpad_key_${c}
         END
     END
-    Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${SEND_NEXT_BUTTON}
+    Wait Until Keyword Succeeds    5s    0.5s    Expect Element    ${SEND_NEXT_BUTTON}    enabled    timeout=0s
 
 Open Destination
     Tap    ${SEND_NEXT_BUTTON}

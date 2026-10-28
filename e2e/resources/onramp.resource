@@ -29,5 +29,5 @@ Acknowledge Onramp Introduction
 
 History Page Should Be Off Screen
     [Documentation]    Off-screen pager pages leave the Android tree but stay in the iOS tree as hidden.
-    ${shown}=    Run Keyword And Return Status    Element Should Be Visible    ${ONRAMP_HISTORY_FILTER_ALL}
+    ${shown}=    Run Keyword And Return Status    Expect Element    ${ONRAMP_HISTORY_FILTER_ALL}    visible    timeout=0s
     Should Not Be True    ${shown}    The history page is still showing.

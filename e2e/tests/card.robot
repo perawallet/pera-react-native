@@ -8,6 +8,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           card
 
 
@@ -39,3 +40,30 @@ Create Account Starts At The Email Step
     Tap    ${CARD_INTRO_CREATE_BUTTON}
     Wait Until Page Contains Element    ${CARD_ONBOARDING_EMAIL_INPUT}    timeout=20s
     Page Should Contain Element    ${CARD_ONBOARDING_COUNTRY_FIELD}
+
+Sign In Requires A Valid Email And A Password
+    [Tags]    id:card.sign-in.validation    p1
+    Open Card Sign In
+    Expect Element    ${CARD_SIGN_IN_SUBMIT}    disabled    timeout=5s
+    Input Text    ${CARD_SIGN_IN_EMAIL_INPUT}    invalid-email
+    Input Text    ${CARD_SIGN_IN_PASSWORD_INPUT}    e2e-validation-only
+    Expect Element    ${CARD_SIGN_IN_SUBMIT}    disabled    timeout=5s
+    Clear Text    ${CARD_SIGN_IN_EMAIL_INPUT}
+    Input Text    ${CARD_SIGN_IN_EMAIL_INPUT}    e2e@example.invalid
+    Expect Element    ${CARD_SIGN_IN_SUBMIT}    enabled    timeout=5s
+    Clear Text    ${CARD_SIGN_IN_PASSWORD_INPUT}
+    Expect Element    ${CARD_SIGN_IN_SUBMIT}    disabled    timeout=5s
+
+Password Reset Requires A Valid Email
+    [Tags]    id:card.forgot-password.validation    p1
+    Open Card Sign In
+    Tap    ${CARD_SIGN_IN_FORGOT_PASSWORD}
+    Wait Until Settled    ${CARD_FORGOT_PASSWORD_EMAIL}
+    Expect Element    ${CARD_FORGOT_PASSWORD_SUBMIT}    disabled    timeout=5s
+    Input Text    ${CARD_FORGOT_PASSWORD_EMAIL}    invalid-email
+    Expect Element    ${CARD_FORGOT_PASSWORD_SUBMIT}    disabled    timeout=5s
+    Clear Text    ${CARD_FORGOT_PASSWORD_EMAIL}
+    Input Text    ${CARD_FORGOT_PASSWORD_EMAIL}    e2e@example.invalid
+    Expect Element    ${CARD_FORGOT_PASSWORD_SUBMIT}    enabled    timeout=5s
+    Clear Text    ${CARD_FORGOT_PASSWORD_EMAIL}
+    Expect Element    ${CARD_FORGOT_PASSWORD_SUBMIT}    disabled    timeout=5s

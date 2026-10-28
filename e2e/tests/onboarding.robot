@@ -8,6 +8,7 @@ Resource            ../resources/onboarding.resource
 Suite Setup         Open Pera
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           onboarding
 
 
@@ -54,7 +55,7 @@ Algorand Secure Backup Option Opens Its Import Flow
     [Tags]    id:onboarding.import.asb-entry    p1
     Start Without Wallet
     Open Import Options From Welcome
-    Scroll Until Present    ${IMPORT_OPTION_ASB}
+    Scroll Until Tappable    ${IMPORT_OPTION_ASB}
     Tap    ${IMPORT_OPTION_ASB}
     Wait Until Page Contains Element    ${ASB_INFO_CONTINUE}    timeout=20s
     Tap    ${ASB_INFO_CONTINUE}
@@ -137,7 +138,7 @@ Algo25 Account Is Created From Other Options
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
-    Scroll Until Present    ${ADD_ACCOUNT_ALGO25_BUTTON}
+    Scroll Until Tappable    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Tap    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
@@ -164,8 +165,12 @@ Watch Account Is Added From An Address
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
+    Scroll Until Tappable    ${ADD_ACCOUNT_WATCH_BUTTON}
+    # The option opens at the bottom edge, partly under the system navigation bar that takes the tap.
+    Swipe By Percent    50    70    50    40
+    Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}
     Tap    ${ADD_ACCOUNT_WATCH_BUTTON}
-    Wait Until Page Contains Element    ${WATCH_INFO_CREATE_BUTTON}    timeout=15s
+    Wait Until Settled    ${WATCH_INFO_CREATE_BUTTON}
     Tap    ${WATCH_INFO_CREATE_BUTTON}
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}

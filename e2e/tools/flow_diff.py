@@ -12,6 +12,8 @@ import sys
 
 def diff(android, ios):
     findings = []
+    if not android and not ios:
+        return [("(run)", "neither platform recorded any scenarios")]
     for scenario in sorted(android.keys() | ios.keys()):
         a, i = android.get(scenario), ios.get(scenario)
         if not a or not i:
@@ -20,6 +22,10 @@ def diff(android, ios):
         if a["flow"] and i["flow"] and a["flow"] != i["flow"]:
             findings.append((scenario, "flow differs:\n    android " + " > ".join(a["flow"]) + "\n    ios     " + " > ".join(i["flow"])))
         for platform, run in (("android", a), ("ios", i)):
+            if not run["flow"]:
+                findings.append((scenario, f"{platform} has no navigation trace"))
+            if run.get("status") != "PASS":
+                findings.append((scenario, f"{platform} status is {run.get('status', 'MISSING')}"))
             findings += [(scenario, f"{platform} {flag}") for flag in run["flags"]]
     return findings
 

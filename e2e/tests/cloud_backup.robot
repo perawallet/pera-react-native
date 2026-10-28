@@ -9,6 +9,7 @@ Resource            ../resources/cloud_backup.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           cloud-backup
 
 

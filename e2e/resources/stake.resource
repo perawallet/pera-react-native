@@ -73,7 +73,7 @@ Accept Should Be Disabled Before Scrolling
     FOR    ${i}    IN RANGE    45
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_ACCEPT}
         IF    ${present}
-            Element Should Be Disabled    ${STAKING_DISCLAIMER_ACCEPT}
+            Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    disabled    timeout=0s
             RETURN
         END
         Swipe    start_x=${x}    start_y=${{ int(${h} * 0.7) }}    end_x=${x}    end_y=${{ int(${h} * 0.65) }}    duration=400ms
@@ -83,11 +83,11 @@ Accept Should Be Disabled Before Scrolling
 Scroll Disclaimer To The End
     Wait Until Settled    ${STAKING_DISCLAIMER_TITLE}
     FOR    ${i}    IN RANGE    6
-        ${enabled}=    Run Keyword And Return Status    Element Should Be Enabled    ${STAKING_DISCLAIMER_ACCEPT}
+        ${enabled}=    Run Keyword And Return Status    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s
         IF    ${enabled}    RETURN
         Swipe By Percent    50    80    50    25    duration=400ms
     END
-    Element Should Be Enabled    ${STAKING_DISCLAIMER_ACCEPT}
+    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s
 
 Close Disclaimer
     [Documentation]    Scrolled to the end, a downward swipe can scroll the text back instead of

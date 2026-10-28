@@ -5,6 +5,7 @@ Resource            accounts.resource
 
 
 *** Variables ***
+${E2E_EXPECT_CARD}                  ${False}
 ${ADD_ACCOUNT_PERA_CARD_BUTTON}     tid=add_account_pera_card_button
 ${CARD_INTRO_CREATE_BUTTON}         tid=pera_card_intro_create_button
 ${CARD_INTRO_LOGIN_BUTTON}          tid=pera_card_intro_login_button
@@ -25,11 +26,15 @@ ${CARD_ONBOARDING_COUNTRY_FIELD}    tid=card-onboarding-country-field
 *** Keywords ***
 Open Pera Card Intro
     [Documentation]    Add Account offers Pera Card only while the feature is on for the build and
-    ...                no card session exists, so a build without it skips here.
+    ...                no card session exists, so a build without it skips here. Pass
+    ...                --variable E2E_EXPECT_CARD:True where the feature is on, so a missing entry fails.
     Open Account Switcher
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
     ${offered}=    Run Keyword And Return Status    Scroll Until Tappable    ${ADD_ACCOUNT_PERA_CARD_BUTTON}
+    IF    ${E2E_EXPECT_CARD}
+        Should Be True    ${offered}    Add Account offers no Pera Card entry although E2E_EXPECT_CARD is set.
+    END
     Skip If    not ${offered}    Add Account offers no Pera Card entry: the feature is off for this build.
     Tap    ${ADD_ACCOUNT_PERA_CARD_BUTTON}
     Wait Until Settled    ${CARD_INTRO_CREATE_BUTTON}

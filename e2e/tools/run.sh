@@ -12,14 +12,20 @@ set -euo pipefail
 
 PLATFORM="${1:?usage: tools/run.sh <android|ios> [robot args...]}"
 shift || true
+case "$PLATFORM" in
+  android | ios) ;;
+  *) echo "unknown platform: $PLATFORM" >&2; exit 2 ;;
+esac
 
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STAMP="$(date +%Y%m%d-%H%M%S)"
-OUT="$E2E_DIR/results/$PLATFORM-$STAMP"
-SNAPSHOT="$(mktemp -d)/e2e"
-PYTHON="$E2E_DIR/.venv/bin/python"
+mkdir -p "$E2E_DIR/results"
+OUT="${E2E_RESULTS_DIR:-$(mktemp -d "$E2E_DIR/results/$PLATFORM-$(date +%Y%m%d-%H%M%S)-XXXXXX")}"
+PYTHON="${E2E_VENV:-$E2E_DIR/.venv}/bin/python"
 
 mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
+[ -z "$(ls -A "$OUT")" ] || { echo "Results directory must be empty: $OUT" >&2; exit 2; }
+SNAPSHOT="$OUT/suite-snapshot"
 # Everything the run reads, nothing it writes.
 mkdir -p "$SNAPSHOT"
 cp -R "$E2E_DIR/tests" "$E2E_DIR/resources" "$SNAPSHOT/"
@@ -33,26 +39,32 @@ free_port() {
 }
 
 DEVICE=()
+[ -z "${APPIUM_URL:-}" ] || DEVICE+=(--variable "APPIUM_URL:$APPIUM_URL")
 case "$PLATFORM" in
   android)
-    [ -n "${ANDROID_UDID:-}" ] && DEVICE=(--variable "ANDROID_UDID:$ANDROID_UDID")
+    [ -n "${ANDROID_UDID:-}" ] && DEVICE+=(--variable "ANDROID_UDID:$ANDROID_UDID")
     DEVICE+=(--variable "ANDROID_SYSTEM_PORT:${ANDROID_SYSTEM_PORT:-$(free_port)}")
+    for name in ANDROID_PACKAGE ANDROID_ACTIVITY; do
+      [ -z "${!name:-}" ] || DEVICE+=(--variable "$name:${!name}")
+    done
     ;;
   ios)
-    [ -n "${IOS_UDID:-}" ] && DEVICE=(--variable "IOS_UDID:$IOS_UDID")
+    [ -n "${IOS_UDID:-}" ] && DEVICE+=(--variable "IOS_UDID:$IOS_UDID")
     DEVICE+=(--variable "IOS_WDA_PORT:${IOS_WDA_PORT:-$(free_port)}")
+    for name in IOS_BUNDLE_ID IOS_DEV_CLIENT_URL; do
+      [ -z "${!name:-}" ] || DEVICE+=(--variable "$name:${!name}")
+    done
     ;;
-  *) echo "unknown platform: $PLATFORM" >&2; exit 2 ;;
 esac
 
 echo "running $PLATFORM from snapshot $SNAPSHOT -> $OUT"
 set +e
 "$PYTHON" -m robot \
   --exclude slow --exclude needs-funded \
+  --variable "E2E_TEST_TIMEOUT:${E2E_TEST_TIMEOUT:-5 minutes}" \
   --variable "PLATFORM:$PLATFORM" "${DEVICE[@]}" "$@" \
   --outputdir "$OUT" "$SNAPSHOT/tests"
 STATUS=$?
 set -e
-rm -rf "$(dirname "$SNAPSHOT")"
 echo "$PLATFORM finished with status $STATUS; results in $OUT"
 exit $STATUS

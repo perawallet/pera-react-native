@@ -16,10 +16,12 @@ class _Collect(ResultVisitor):
 
     def visit_test(self, test):
         ids = [t[3:] for t in test.tags if t.startswith("id:")]
-        for scenario in ids:
-            self.status[scenario] = test.status
-        if not ids:
-            self.status[f"(untagged) {test.longname}"] = test.status
+        if len(ids) != 1 or not ids[0]:
+            raise ValueError(f"{test.longname}: expected exactly one nonempty id: tag")
+        scenario = ids[0]
+        if scenario in self.status:
+            raise ValueError(f"Duplicate scenario id: {scenario}")
+        self.status[scenario] = test.status
 
 
 def collect(path):
@@ -41,7 +43,7 @@ def main(android_xml, ios_xml):
     print("| Scenario | Android | iOS |\n|---|---|---|")
     for scenario, a, i, _ in rows:
         print(f"| {scenario} | {a} | {i} |")
-    return 0 if all(ok for *_, ok in rows) else 1
+    return 0 if rows and all(ok for *_, ok in rows) else 1
 
 
 if __name__ == "__main__":

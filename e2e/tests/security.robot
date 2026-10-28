@@ -9,6 +9,7 @@ Suite Setup         Run Keywords    Start Pera With Wallet    AND    Turn Pin Of
 Suite Teardown      Run Keywords    Turn Pin Off    AND    Close Pera
 Test Setup          Start On Security
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           security
 
 

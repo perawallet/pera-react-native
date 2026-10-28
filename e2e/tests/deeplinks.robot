@@ -8,6 +8,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           deeplinks
 
 
@@ -100,6 +101,23 @@ Pasted Text That Is Not A Link Is Refused In Place
     Page Should Contain Element    ${PASTE_LINK_INPUT}
     Close Sheet
     Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=10s
+
+Empty And Whitespace Pasted Links Cannot Be Submitted
+    [Tags]    id:deeplinks.paste.empty-disabled    p1
+    Open Paste Link
+    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
+    Input Text    ${PASTE_LINK_INPUT}    ${SPACE}${SPACE}${SPACE}
+    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
+
+An Invalid Pasted Link Can Be Corrected
+    [Tags]    id:deeplinks.paste.correct-invalid    p1
+    Start With No Contacts
+    Paste Link    not a link at all
+    Wait Until Page Contains Element    ${PASTE_LINK_ERROR}    timeout=10s
+    Submit Pasted Link    ${ADD_CONTACT_LINK}
+    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=15s
+    Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=15s
+    Input Should Hold    contact_name_input    ${LINK_LABEL}
 
 Link Fired While Locked Waits For The PIN
     [Tags]    id:deeplinks.locked.resumes-after-unlock    p1

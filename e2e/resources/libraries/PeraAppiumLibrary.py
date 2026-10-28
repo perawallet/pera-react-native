@@ -14,6 +14,9 @@ class PeraAppiumLibrary(AppiumLibrary):
         self._element_finder._strategies["tid"] = self._find_by_test_id
 
     def _find_by_test_id(self, application, criteria, tag, constraints):
+        # The id goes into a selector string unescaped; name the bad id instead of a selector error.
+        if any(c in criteria for c in "'\"\\"):
+            raise ValueError(f"tid= cannot contain quotes or backslashes: {criteria}")
         if application.capabilities.get("platformName", "").lower() == "android":
             # testID is the bare resource-id, which `id=` never matches: UiAutomator2 prefixes it
             # with the package. content-desc covers views that carry the ID as their label. Both

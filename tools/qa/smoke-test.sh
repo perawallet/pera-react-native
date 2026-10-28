@@ -70,6 +70,8 @@ UV_VERSION="${UV_VERSION:-0.12.2}"
 # Outside the scratch dir: the Robot report matters most when the run fails,
 # and the trap below would take it with the venv.
 RESULTS_DIR="${SMOKE_RESULTS_DIR:-$PWD/smoke-results}"
+# The runner refuses a non-empty directory; a rerun replaces the default one's old results.
+[ -n "${SMOKE_RESULTS_DIR:-}" ] || rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
 WORK_DIR=$(mktemp -d)
@@ -91,11 +93,13 @@ uv pip install --quiet --python "$WORK_DIR/venv/bin/python" \
 
 echo "--- Running '$SMOKE_TAG' from $SMOKE_SUITE"
 export BROWSERSTACK_BUILD_NAME="RN smoke ${APP_VERSION:-local} ${PLATFORM}"
+RUNNER_STATUS=0
 E2E_VENV="$WORK_DIR/venv" E2E_RESULTS_DIR="$RESULTS_DIR" \
   "$ROOT_DIR/e2e/tools/browserstack.sh" "$PLATFORM" "$ARTIFACT" \
-  --include "$SMOKE_TAG" "$SMOKE_SUITE" || true
+  --include "$SMOKE_TAG" "$SMOKE_SUITE" || RUNNER_STATUS=$?
 
 VERDICT=$("$ROOT_DIR/tools/qa/smoke-verdict.sh" "$RESULTS_DIR") || true
+if [ "$RUNNER_STATUS" -ne 0 ]; then VERDICT=fail; fi
 # Written for the Bitrise publish step, which runs in a separate shell with no
 # e2e venv and so cannot re-derive this itself.
 printf '%s' "$VERDICT" >"$RESULTS_DIR/verdict"
