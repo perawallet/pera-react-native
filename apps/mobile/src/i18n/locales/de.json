@@ -2924,13 +2924,17 @@
             "subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet.",
             "title_hardware": "Verbindung mit deinem Ledger-Gerät wird hergestellt",
             "subtitle_hardware": "Verbindung zu {{deviceName}} wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
-            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist."
+            "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
+            "broadcast_subtitle": "Deine Transaktion wird an das Netzwerk {{network}} gesendet."
         },
         "success": {
             "title": "Transaktion verarbeitet",
             "asset_transferred_title": "Asset übertragen",
             "subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
+            "pending_title": "Transaktion gesendet",
+            "pending_subtitle": "Deine Transaktion wurde an das Netzwerk {{network}} gesendet und wartet auf Bestätigung.",
             "view_in_explorer": "Transaktionsdetails im Pera Explorer anzeigen",
+            "view_on_explorer": "Auf {{explorer}} anzeigen",
             "done": "Fertig"
         },
         "close_account": {

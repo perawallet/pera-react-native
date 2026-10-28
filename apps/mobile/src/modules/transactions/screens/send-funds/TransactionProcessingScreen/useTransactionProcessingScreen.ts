@@ -33,6 +33,7 @@ import {
     useSigningEvent,
 } from '@perawallet/wallet-core-signing'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
@@ -54,11 +55,15 @@ export type UseTransactionProcessingScreenResult = {
     hardwareDeviceName: string | null
     /** The device app the send's chain opens; null unless `isHardwareSender`. */
     ledgerAppName: string | null
+    isAwaitingConfirmation: boolean
+    networkName: string
 }
 
 export const useTransactionProcessingScreen =
     (): UseTransactionProcessingScreenResult => {
         const scope = useSendScope()
+        const descriptor = getChainDescriptor(scope.chainId)
+        const isAwaitingConfirmation = !descriptor.protocol.confirmsOnSubmit
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -185,10 +190,22 @@ export const useTransactionProcessingScreen =
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
                     })
-                    completeTabResume({
-                        title: t('send_funds.success.title'),
-                        body: t('send_funds.success.subtitle'),
-                    })
+                    completeTabResume(
+                        isAwaitingConfirmation
+                            ? {
+                                  title: t('send_funds.success.pending_title'),
+                                  body: t(
+                                      'send_funds.success.pending_subtitle',
+                                      {
+                                          network: descriptor.displayName,
+                                      },
+                                  ),
+                              }
+                            : {
+                                  title: t('send_funds.success.title'),
+                                  body: t('send_funds.success.subtitle'),
+                              },
+                    )
                 })
                 .catch(error => {
                     if (error instanceof UserRejectedSigningError) {
@@ -237,5 +254,11 @@ export const useTransactionProcessingScreen =
             [isHardwareSender, scope.chainId],
         )
 
-        return { isHardwareSender, hardwareDeviceName, ledgerAppName }
+        return {
+            isHardwareSender,
+            hardwareDeviceName,
+            ledgerAppName,
+            isAwaitingConfirmation,
+            networkName: descriptor.displayName,
+        }
     }
