@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export type PhishingListSourceId = 'metamask' | 'polkadot'
+export type PhishingListSourceId = 'metamask' | 'polkadot' | 'mew-darklist'
 
 export type PhishingListEntryKind = 'deny' | 'allow' | 'impersonation-target'
 
@@ -19,6 +19,8 @@ export type PhishingListEntries = {
     deny: string[]
     allow: string[]
     impersonationTargets: string[]
+    /** Scam addresses as `toListedAddressKey` keys. */
+    addresses: string[]
 }
 
 export type PhishingListSource = {
@@ -27,6 +29,8 @@ export type PhishingListSource = {
     licence: string
     /** A download with fewer deny entries is treated as truncated. */
     minimumDenyEntries: number
+    /** A download with fewer addresses is treated as truncated. */
+    minimumAddressEntries: number
     parse(raw: unknown): PhishingListEntries | undefined
 }
 
@@ -35,7 +39,12 @@ export type PhishingListSnapshot = {
     generatedAt: string
     sources: Record<
         PhishingListSourceId,
-        { deny: string; allow: string; impersonationTargets: string }
+        {
+            deny: string
+            allow: string
+            impersonationTargets: string
+            addresses: string
+        }
     >
 }
 

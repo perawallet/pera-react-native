@@ -3367,6 +3367,23 @@
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
+        },
+        "address_safety": {
+            "listed_title": "Bilinen dolandırıcılık adresi",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. İmzalarsan varlıkların bu adrese geçebilir.",
+            "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",
+            "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
+            "acknowledge": "Riski anlıyorum ve yine de imzalamak istiyorum",
+            "role": {
+                "recipient": "Alıcı",
+                "token_recipient": "Token alıcısı",
+                "close_recipient": "Kalan bakiyeyi alır",
+                "new_authorizer": "Yeni imza yetkilisi",
+                "referenced_account": "Başvurulan hesap",
+                "target": "Sözleşme",
+                "spender": "Yetkili adres",
+                "operator": "Operatör"
+            }
         }
     },
     "site_safety": {

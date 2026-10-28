@@ -86,6 +86,25 @@ describe('useTrustedCounterpartiesQuery', () => {
         expect(result.current.data).toEqual([paid('A-PAYEE'), paid('B-PAYEE')])
     })
 
+    it('reads no history without a scope', () => {
+        const { result } = renderHook(
+            () =>
+                useTrustedCounterpartiesQuery({
+                    senderAddress: 'A',
+                    accountAddresses: ['A'],
+                    scope: undefined,
+                }),
+            { wrapper: wrapper(queryClient) },
+        )
+
+        expect(result.current).toEqual({
+            data: [],
+            isPending: false,
+            hasSenderHistory: false,
+        })
+        expect(fetchTrustedCounterparties).not.toHaveBeenCalled()
+    })
+
     it("is pending while the sender's history loads", () => {
         vi.mocked(fetchTrustedCounterparties).mockImplementation(never)
 

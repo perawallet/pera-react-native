@@ -50,6 +50,7 @@ export const fakeMessageSignerAdapter = ({
     signsVerifiably: vi.fn(() => true),
     supports: vi.fn(() => true),
     describe: vi.fn(notStubbed('describe')),
+    reviewedAddresses: vi.fn(() => []),
     plan: vi.fn(notStubbed('plan')),
     assemble: vi.fn(notStubbed('assemble')),
     ...(authData === null ? {} : { authData: fakeAuthDataSigner(authData) }),

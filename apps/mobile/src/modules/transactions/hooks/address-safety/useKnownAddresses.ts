@@ -29,7 +29,8 @@ import {
 } from '@perawallet/wallet-core-transactions'
 
 export type UseKnownAddressesParams = {
-    scope: ChainScope
+    /** Undefined knows no address, for a request that names no network. */
+    scope: Optional<ChainScope>
     /** Only this account's history counts toward `isPending`; the others are best effort. */
     senderAddress: Optional<string>
     /** Gates the history read; wallet and contact addresses are always known. */
@@ -56,6 +57,7 @@ export const useKnownAddresses = ({
 }: UseKnownAddressesParams): UseKnownAddressesResult => {
     const accounts = useAllAccounts()
     const contacts = useContactsStore(state => state.contacts)
+    const chainId = scope?.chainId
 
     // Every wallet address is one the user compares by its ends, but only the
     // ones they sign for vouch for their counterparties: a watched address's
@@ -63,42 +65,45 @@ export const useKnownAddresses = ({
     const walletAddresses = useMemo<KnownAddress[]>(
         () =>
             accounts.flatMap(account => {
-                const address = chainAccountOf(account, scope.chainId)?.address
+                if (!chainId) return []
+                const address = chainAccountOf(account, chainId)?.address
                 if (!address) return []
                 return [
                     {
                         address,
-                        source: canSignWith(account, accounts, scope.chainId)
+                        source: canSignWith(account, accounts, chainId)
                             ? 'own-account'
                             : 'watched-account',
                         name: account.name,
                     },
                 ]
             }),
-        [accounts, scope.chainId],
+        [accounts, chainId],
     )
 
     const contactAddresses = useMemo<KnownAddress[]>(() => {
-        const { family } = getChainDescriptor(scope.chainId)
+        if (!chainId) return []
+        const { family } = getChainDescriptor(chainId)
         return contacts.flatMap(contact => {
             const address = contact.addresses[family]
             return address
                 ? [{ address, source: 'contact', name: contact.name }]
                 : []
         })
-    }, [contacts, scope.chainId])
+    }, [contacts, chainId])
 
     const accountAddresses = useMemo(() => {
-        const codec = addressCodecs.has(scope.chainId)
-            ? addressCodecs.get(scope.chainId)
-            : undefined
+        const codec =
+            chainId && addressCodecs.has(chainId)
+                ? addressCodecs.get(chainId)
+                : undefined
         const isRead = (address: string) =>
             !isSenderHistoryOnly ||
             (!!senderAddress && !!codec?.areEqual(address, senderAddress))
         return walletAddresses.flatMap(({ address, source }) =>
             source === 'own-account' && isRead(address) ? [address] : [],
         )
-    }, [walletAddresses, isSenderHistoryOnly, senderAddress, scope.chainId])
+    }, [walletAddresses, isSenderHistoryOnly, senderAddress, chainId])
     const {
         data: counterparties,
         isPending,

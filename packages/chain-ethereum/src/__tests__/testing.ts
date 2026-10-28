@@ -41,7 +41,9 @@ export {
     typedDataMessageRequest,
 } from '../signing/messages'
 export {
+    DAI_PERMIT_TYPED_DATA,
     MAIL_TYPED_DATA,
+    PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
     PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,
     ERC20_TRANSFER,

@@ -27,6 +27,7 @@ import {
 import type { EvmChain } from '../chains/types'
 import { isRecord, readEvmTransaction } from './adapter'
 import { createEthereumReviewer, ethereumViewOf } from './review'
+import { ethereumReviewedAddresses } from './reviewed-addresses'
 import { toEthereumNative } from './transaction-view'
 
 const isPreview = (transaction: TransactionNative): boolean =>
@@ -87,6 +88,7 @@ export const createEvmSigningReviewerAdapter = (
     // No rekeying on Ethereum.
     getDelegatedUnsignableReason: () => null,
     decodeArbitraryDataForDisplay,
+    reviewedAddresses: ethereumReviewedAddresses,
     toTransactionNative: transaction => {
         if (!('payload' in transaction)) return null
         const view = ethereumViewOf(transaction, chain)
