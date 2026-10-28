@@ -23,31 +23,42 @@ import {
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useRoute } from '@react-navigation/native'
 
+import { Decimal } from 'decimal.js'
+import { QueryClient } from '@tanstack/react-query'
 import {
+    insertAssetHolding,
+    refreshAccountHoldings,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockCrossChainAssetGroups } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { http, HttpResponse } from 'msw'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { waitPastDoublePressGuard } from '@test-utils/rnw'
 import {
     resetTestDatabase,
+    seedAlgorandAccountState,
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
+import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
 import {
+    ALGO_SCOPE,
     ETH_USDC,
     LOOKALIKE,
     seedHoldings,
     TWO_CHAIN_ACCOUNT,
     USDC_GROUP,
 } from './__fixtures__/multichainHoldings'
-import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const BASE_RPC_URL = vi.hoisted(() => 'https://base.rpc.test/')
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -57,8 +68,18 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         ...actual,
         config: {
             ...actual.config,
-            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+            chains: {
+                enabled: ['algorand', 'ethereum', 'base'],
+                capabilities: {},
+            },
         },
+        // Base's node is always configured, and answers every read with a failure.
+        chainEndpointsFor: (
+            chainId: Parameters<typeof actual.chainEndpointsFor>[0],
+        ) =>
+            chainId === 'base'
+                ? { mainnet: BASE_RPC_URL, sepolia: BASE_RPC_URL }
+                : actual.chainEndpointsFor(chainId),
     }
 })
 
@@ -69,6 +90,34 @@ const ALGORAND_ACCOUNT: WalletAccount = {
         algorand: { address: ALGO25_TEST_ADDRESS, keyPairId: 'a-key' },
     },
     name: 'Algo only',
+}
+
+const BASE_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+
+const THREE_CHAIN_ACCOUNT: WalletAccount = {
+    ...TWO_CHAIN_ACCOUNT,
+    id: 'three-chains',
+    chains: {
+        ...TWO_CHAIN_ACCOUNT.chains,
+        base: { address: BASE_ADDRESS, keyPairId: 'b-key' },
+    },
+}
+
+// Algorand holds nothing here, Ethereum is funded.
+const EMPTY_ALGORAND_ACCOUNT: WalletAccount = {
+    ...TWO_CHAIN_ACCOUNT,
+    id: 'empty-algorand',
+    chains: {
+        ...TWO_CHAIN_ACCOUNT.chains,
+        algorand: { address: HD_TEST_ADDRESS, keyPairId: 'a2-key' },
+    },
+}
+
+const openReceiveFundsOn = vi.fn()
+
+const TabBarStub = () => {
+    const route = useRoute() as unknown as { params: { screen: string } }
+    return <span data-testid='tab_bar_stub'>{route.params.screen}</span>
 }
 
 const AssetDetailsStub = () => {
@@ -82,13 +131,27 @@ const AssetDetailsStub = () => {
     )
 }
 
-const renderList = (account: WalletAccount) =>
+const renderList = (account: WalletAccount, queryClient?: QueryClient) =>
     renderWithNavigation(
-        () => <AccountAssetList account={account} />,
+        () => (
+            <AccountOverviewModalContext.Provider
+                value={{
+                    account,
+                    openSendFunds: vi.fn(),
+                    openReceiveFunds: vi.fn(),
+                    openReceiveFundsOn,
+                    openAccountOptions: vi.fn(),
+                }}
+            >
+                <AccountAssetList account={account} />
+            </AccountOverviewModalContext.Provider>
+        ),
         'AccountAssetListHost',
         {
+            queryClient,
             additionalScreens: [
                 { name: 'AssetDetails', component: AssetDetailsStub },
+                { name: 'TabBar', component: TabBarStub },
             ],
         },
     )
@@ -109,6 +172,7 @@ describe("Flow: One account's assets across chains", () => {
     })
 
     beforeEach(async () => {
+        openReceiveFundsOn.mockClear()
         await resetTestDatabase()
         useRemoteConfigStore.getState().resetState()
         resetListView()
@@ -214,6 +278,105 @@ describe("Flow: One account's assets across chains", () => {
         expect(
             screen.queryByTestId(`asset_row_${USDC_TEST_ASSET.assetId}`),
         ).toBeNull()
+    })
+
+    it("Given Base was just added and its first read fails, when its chip is selected, then Base's native token shows at zero without a funding prompt, and No Matching Assets only follows a search", async () => {
+        server.use(http.post(BASE_RPC_URL, () => HttpResponse.error()))
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        renderList(THREE_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+
+        fireEvent.click(screen.getByTestId('asset_network_filter_base'))
+
+        const native = await screen.findByTestId('asset_row_native')
+        expect(within(native).getByText(/0\.00/)).toBeTruthy()
+        // The read failed, so the zero is a placeholder, not an unfunded balance.
+        expect(screen.queryByTestId('network_funding_state')).toBeNull()
+        expect(
+            screen.queryByText('account_details.assets.nomatch_title'),
+        ).toBeNull()
+
+        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
+            target: { value: 'no such asset' },
+        })
+
+        expect(
+            await screen.findByText('account_details.assets.nomatch_title'),
+        ).toBeTruthy()
+    })
+
+    it("Given Base was just added with nothing on it, when its chip is selected, then the native token shows at zero under a Get started prompt whose Receive opens Base's QR, and the prompt goes once a balance arrives", async () => {
+        server.use(...evmRpcHandlers({ rpcUrl: BASE_RPC_URL }))
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false, gcTime: 0 } },
+        })
+        renderList(THREE_CHAIN_ACCOUNT, queryClient)
+        await screen.findByTestId('asset_group_row_usdc')
+
+        fireEvent.click(screen.getByTestId('asset_network_filter_base'))
+
+        const native = await screen.findByTestId('asset_row_native')
+        expect(within(native).getByText(/0\.00/)).toBeTruthy()
+        const prompt = await screen.findByTestId('network_funding_state')
+        expect(prompt.textContent).toContain(
+            'account_details.assets.funding_title',
+        )
+        // Nothing buys or swaps onto Base in this build.
+        expect(screen.queryByTestId('network_funding_buy_button')).toBeNull()
+        expect(screen.queryByTestId('network_funding_swap_button')).toBeNull()
+        expect(
+            screen.queryByText('account_details.assets.nomatch_title'),
+        ).toBeNull()
+
+        fireEvent.click(screen.getByTestId('network_funding_receive_button'))
+        expect(openReceiveFundsOn).toHaveBeenCalledWith(
+            THREE_CHAIN_ACCOUNT,
+            'base',
+        )
+
+        await refreshAccountHoldings({
+            accountAddress: BASE_ADDRESS,
+            scope: { chainId: 'base', networkId: 'mainnet' },
+            holdings: [
+                {
+                    assetId: 'native',
+                    amount: new Decimal('1000000000000000000'),
+                },
+            ],
+        })
+        await act(() =>
+            queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+        )
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('network_funding_state')).toBeNull()
+        })
+    })
+
+    it('Given an Algorand account holding nothing, when its Algorand chip is selected, then the prompt offers Buy, which opens Fund', async () => {
+        await seedAlgorandAccountState({
+            accountAddress: HD_TEST_ADDRESS,
+            scope: ALGO_SCOPE,
+            nativeBalance: new Decimal(0),
+        })
+        await insertAssetHolding({
+            accountAddress: HD_TEST_ADDRESS,
+            assetId: '0',
+            scope: ALGO_SCOPE,
+            amount: new Decimal(0),
+        })
+        useAccountsStore.getState().setAccounts([EMPTY_ALGORAND_ACCOUNT])
+        renderList(EMPTY_ALGORAND_ACCOUNT)
+        await screen.findByTestId('asset_network_filter_algorand')
+
+        fireEvent.click(screen.getByTestId('asset_network_filter_algorand'))
+
+        fireEvent.click(await screen.findByTestId('network_funding_buy_button'))
+
+        expect((await screen.findByTestId('tab_bar_stub')).textContent).toBe(
+            'Fund',
+        )
     })
 
     it('Given a search by contract address, when it is typed, then the matching holding is found', async () => {

@@ -25,6 +25,7 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import {
     useAccountAssetsQuery,
+    useHoldingsRefreshStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type AssetGroup } from '@perawallet/wallet-core-assets'
@@ -122,7 +123,11 @@ const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
         isPending: false,
         isPlaceholderData: false,
     },
-    mockPreferences: { assetSortMode: 'balanceDesc' },
+    mockPreferences: {
+        assetSortMode: 'balanceDesc',
+        hideZeroBalance: false,
+        displayNfts: true,
+    },
 }))
 
 // Watch accounts sign nothing; a test flips this to reach the swipe rules.
@@ -196,8 +201,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         useAssetPreferencesStore: vi.fn(
             (selector: (state: unknown) => unknown) =>
                 selector({
-                    hideZeroBalance: false,
-                    displayNfts: true,
+                    hideZeroBalance: mockPreferences.hideZeroBalance,
+                    displayNfts: mockPreferences.displayNfts,
                     displayOptedInNfts: true,
                     assetSortMode: mockPreferences.assetSortMode,
                 }),
@@ -239,7 +244,10 @@ describe('useAccountAssetList', () => {
         mockAssetsQuery.isPending = false
         mockAssetsQuery.isPlaceholderData = false
         mockPreferences.assetSortMode = 'balanceDesc'
+        mockPreferences.hideZeroBalance = false
+        mockPreferences.displayNfts = true
         mockCanSign.current = false
+        useHoldingsRefreshStore.getState().resetState()
         useAssetListViewStore.setState({
             selectedChainId: null,
             expandedGroupIds: [],
@@ -257,6 +265,39 @@ describe('useAccountAssetList', () => {
 
     const lastQuerySources = () =>
         vi.mocked(useAccountAssetsQuery).mock.lastCall?.[0]
+
+    describe('empty state', () => {
+        it('reads as empty, not as a failed search, while a filter is on and no search is typed', () => {
+            mockPreferences.displayNfts = false
+            mockPreferences.hideZeroBalance = true
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(result.current.getEmptyTitle()).toBe(
+                'account_details.assets.empty_title',
+            )
+            expect(result.current.getEmptyBody()).toBe(
+                'account_details.assets.empty_body',
+            )
+        })
+
+        it('reads as a failed search once a search is typed', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            act(() => result.current.setSearchFilter('zzz'))
+
+            expect(result.current.getEmptyTitle()).toBe(
+                'account_details.assets.nomatch_title',
+            )
+            expect(result.current.getEmptyBody()).toBe(
+                'account_details.assets.nomatch_body',
+            )
+        })
+    })
 
     it('offers asset management only while the manageAssets capability is on', () => {
         const { result } = renderHook(() =>
@@ -474,6 +515,123 @@ describe('useAccountAssetList', () => {
             act(() => setChainEnabled('algorand', false))
 
             expect(result.current.items).toEqual([])
+        })
+    })
+
+    describe('funding state', () => {
+        const zeroNative = () => makeHolding('native', ETHEREUM_MAINNET)
+        const onEthereumChip = () => {
+            registerEthereum()
+            useAssetListViewStore.getState().setSelectedChainId('ethereum')
+            return renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+        }
+
+        it('is offered for the selected network when its only row is the native asset at zero', () => {
+            mockAssetsQuery.holdings = [zeroNative()]
+
+            const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBe('ethereum')
+        })
+
+        it('goes once a balance arrives', () => {
+            mockAssetsQuery.holdings = [zeroNative()]
+            const { result, rerender } = onEthereumChip()
+            expect(result.current.fundingChainId).toBe('ethereum')
+
+            mockAssetsQuery.holdings = [
+                { ...zeroNative(), amount: new Decimal(1) },
+            ]
+            rerender()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it('is not offered once the network holds another row', () => {
+            mockAssetsQuery.holdings = [
+                zeroNative(),
+                makeHolding('0xTOKEN', ETHEREUM_MAINNET),
+            ]
+
+            const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it('is not offered when the lone row is not the native asset', () => {
+            mockAssetsQuery.holdings = [
+                makeHolding('0xTOKEN', ETHEREUM_MAINNET),
+            ]
+
+            const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it('is not offered on All', () => {
+            registerEthereum()
+            mockAssetsQuery.holdings = [zeroNative()]
+
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it('is not offered while a search is typed', () => {
+            mockAssetsQuery.holdings = [zeroNative()]
+            const { result } = onEthereumChip()
+
+            act(() => result.current.setSearchFilter('eth'))
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it.each([
+            ['while the read is pending', { isPending: true }],
+            [
+                'while the rows are the previous request',
+                { isPlaceholderData: true },
+            ],
+        ])('is not offered %s', (_name, state) => {
+            mockAssetsQuery.holdings = [zeroNative()]
+            Object.assign(mockAssetsQuery, state)
+
+            const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it("is not offered while the network's last read failed, since the zero may not be its balance", () => {
+            mockAssetsQuery.holdings = [zeroNative()]
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(ETHEREUM_MAINNET, ETH_ADDRESS, true)
+
+            const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it("keeps the network's zero native row through Hide zero balances, on a network chip only", () => {
+            mockPreferences.hideZeroBalance = true
+            mockAssetsQuery.holdings = [zeroNative()]
+
+            onEthereumChip()
+            expect(
+                vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters,
+            ).toEqual(expect.objectContaining({ keepZeroNative: true }))
+
+            act(() => useAssetListViewStore.getState().setSelectedChainId(null))
+            renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+            expect(
+                vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters,
+            ).toEqual(expect.objectContaining({ keepZeroNative: false }))
         })
     })
 

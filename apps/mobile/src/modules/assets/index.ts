@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+export {
+    useAssetActionButtons,
+    type UseAssetActionButtonsResult,
+} from './components/holdings/AssetActionButtons/useAssetActionButtons'
 export { AccountAssetSelectionList } from './components/AccountAssetSelectionList'
 export { AddAssetContent } from './components/AddAssetContent'
 export {
