@@ -16,7 +16,6 @@ import {
     consumePendingAccountRollback,
     chainAccountOf,
     findAccountByAddressOn,
-    getAccountDisplayName,
     preferDefaultChain,
     hdIndexOf,
     isHardwareWalletAccount,
@@ -33,6 +32,7 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes'
@@ -61,6 +61,7 @@ export const useNameAccountScreen = () => {
     const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
+    const { getAccountName } = useAccountName()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
@@ -112,12 +113,11 @@ export const useNameAccountScreen = () => {
         return hdSeedIds.size + otherAccountsCount
     }, [accounts, seedIdOf, scope.chainId])
 
-    const initialWalletName = account
-        ? getAccountDisplayName(account, chainId)
+    const accountTitle = account
+        ? getAccountName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
 
-    const [walletDisplay, setWalletDisplay] =
-        useState<string>(initialWalletName)
+    const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
 
     const handleNameChange = (value: string) => {
@@ -207,7 +207,7 @@ export const useNameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        numWallets,
+        accountTitle,
         account,
         chainId,
         enabledChainIds,
