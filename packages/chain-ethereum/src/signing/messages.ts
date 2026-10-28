@@ -251,11 +251,13 @@ const typedDataTree = (typedData: TypedDataDefinition): MessageTreeNode[] => {
     ]
 }
 
-const ROLE_BY_FIELD_NAME: Record<string, ReviewedAddressRole> = {
-    spender: 'spender',
-    operator: 'operator',
-    verifyingContract: 'target',
-}
+// A Map, not an object: field names are the dApp's, and `constructor` or
+// `toString` would otherwise resolve to an inherited member.
+const ROLE_BY_FIELD_NAME: ReadonlyMap<string, ReviewedAddressRole> = new Map([
+    ['spender', 'spender'],
+    ['operator', 'operator'],
+    ['verifyingContract', 'target'],
+])
 
 // Read by the schema like the tree, so a permit the parser doesn't recognise
 // (DAI's `holder/spender/expiry/allowed`, a Permit2 with no readable deadline)
@@ -286,7 +288,7 @@ const schemaAddresses = (
     return [
         {
             address: value,
-            role: ROLE_BY_FIELD_NAME[name] ?? 'referenced-account',
+            role: ROLE_BY_FIELD_NAME.get(name) ?? 'referenced-account',
         },
     ]
 }

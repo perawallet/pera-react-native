@@ -427,6 +427,24 @@ describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
         ])
     })
 
+    it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+        'reads a field named %s as a referenced account',
+        fieldName => {
+            const request = typed({
+                domain: { name: 'Fixture', chainId: 1 },
+                types: { Grant: [{ name: fieldName, type: 'address' }] },
+                primaryType: 'Grant',
+                message: JSON.parse(
+                    JSON.stringify({ [fieldName]: PERMIT_SPENDER }),
+                ),
+            })
+
+            expect(adapter.reviewedAddresses(request)).toEqual([
+                { address: PERMIT_SPENDER, role: 'referenced-account' },
+            ])
+        },
+    )
+
     it('skips an address field holding something that is not an address', () => {
         const request = typed({
             ...DAI_PERMIT_TYPED_DATA,
