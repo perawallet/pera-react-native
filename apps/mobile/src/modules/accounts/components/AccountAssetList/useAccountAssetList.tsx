@@ -60,6 +60,7 @@ import {
     type GroupedHoldingItem,
 } from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
@@ -160,7 +161,6 @@ export const useAccountAssetList = ({
         .map(({ scope: { chainId } }) => chainId)
         .join()
     const isChainSwitchedOff = sources.length === 0
-    const storedChainId = useAssetListViewStore(state => state.selectedChainId)
     const setSelectedChainId = useAssetListViewStore(
         state => state.setSelectedChainId,
     )
@@ -170,13 +170,8 @@ export const useAccountAssetList = ({
     const toggleGroupExpanded = useAssetListViewStore(
         state => state.toggleGroupExpanded,
     )
-    // Derived, never written back: viewing an account without the stored chain
-    // shows All, and the next account that has it shows it again.
-    const selectedChainId =
-        storedChainId !== null &&
-        sources.some(source => source.scope.chainId === storedChainId)
-            ? storedChainId
-            : null
+    const selectedSource = useSelectedNetworkSource(sources)
+    const selectedChainId = selectedSource?.scope.chainId ?? null
     const querySources = useMemo(
         () =>
             selectedChainId === null

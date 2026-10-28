@@ -283,6 +283,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_on_network_body": "No transactions yet on {{network}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
