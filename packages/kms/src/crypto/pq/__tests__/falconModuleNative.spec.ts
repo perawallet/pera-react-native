@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, expect, test, vi } from 'vitest'
 
 // Pins the on-device accessor's EAGER import, which is the inverse of the

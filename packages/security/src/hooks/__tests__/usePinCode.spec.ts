@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
@@ -50,6 +51,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         monotonicClock: { now: () => clockMock.current?.now() ?? null },
     }),
 }))
+
+vi.mock('../../pbkdf2', async importOriginal =>
+    (await import('../../__tests__/fastPbkdf2')).fastPbkdf2(
+        await importOriginal(),
+    ),
+)
 
 vi.mock('../../pinRecord', async importOriginal => {
     const actual = await importOriginal<typeof import('../../pinRecord')>()

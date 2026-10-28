@@ -11,8 +11,7 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { renderHook } from '@testing-library/react'
 import { backupCredentialsFileName } from '@perawallet/wallet-core-backup'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -120,18 +119,10 @@ beforeEach(() => {
     cloudSave().mockResolvedValue('saved')
 })
 
-const renderStoreHook = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
+const renderStoreHook = () =>
+    renderHook(() => useStoreBackupCredentials(), {
+        wrapper: createQueryClientWrapper(),
     })
-    return renderHook(() => useStoreBackupCredentials(), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-            <QueryClientProvider client={queryClient}>
-                {children}
-            </QueryClientProvider>
-        ),
-    })
-}
 
 const store = async (options?: { hasVerifiedPin?: boolean }) => {
     const { result } = renderStoreHook()

@@ -15,16 +15,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { PWTabBar } from '../PWTabBar'
 import { Animated } from 'react-native'
 
-vi.mock('@react-navigation/material-top-tabs', () => ({
-    createMaterialTopTabNavigator: vi.fn(),
-}))
-
-vi.mock('react-native-tab-view', () => ({
-    TabView: () => null,
-    TabBar: () => null,
-    SceneMap: () => null,
-}))
-
 describe('PWTabBar', () => {
     const mockNavigation = {
         navigate: vi.fn(),
@@ -48,7 +38,6 @@ describe('PWTabBar', () => {
         },
     }
 
-    // Mock position as an Animated.Value
     const mockPosition = new Animated.Value(0)
 
     it('renders all tabs with correct labels', () => {

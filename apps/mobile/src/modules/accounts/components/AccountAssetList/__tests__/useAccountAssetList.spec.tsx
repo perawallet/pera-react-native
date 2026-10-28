@@ -657,14 +657,13 @@ describe('useAccountAssetList', () => {
             )
         })
 
-        it('passes the search through to the read', async () => {
+        it('passes the search through to the read', () => {
             registerEthereum()
             const { result } = renderHook(() =>
                 useAccountAssetList({ account: twoChainAccount, t: mockT }),
             )
 
             act(() => result.current.setSearchFilter('0xA0'))
-            await act(() => new Promise(resolve => setTimeout(resolve, 200)))
 
             expect(vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]).toEqual(
                 expect.objectContaining({ search: '0xA0' }),

@@ -11,18 +11,21 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
+// Initialise i18n so t() resolves real strings in this test's module graph.
+import '../../../i18n'
 import { TabLabel } from '../TabLabel'
 
 describe('TabLabel', () => {
-    it('renders with translated text', () => {
-        const { container } = render(
+    it('renders the translated label', () => {
+        render(
             <TabLabel
                 labelKey={i18nKey('common.ok.label')}
                 active={true}
             />,
         )
-        expect(container).toBeTruthy()
+
+        expect(screen.getByText('Ok')).toBeTruthy()
     })
 })

@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-// jsdom's Uint8Array isn't the one algosdk's encoder checks for, so a quantum
-// envelope only encodes under node.
-// @vitest-environment node
-
 import { describe, expect, it } from 'vitest'
 import nacl from 'tweetnacl'
 import { Address } from 'algosdk'

@@ -192,9 +192,9 @@ describe('webauthn-relay', () => {
         window.addEventListener('res-dead', e => responses.push(e))
 
         dispatchRequest('req-dead', 'id-1')
-        await new Promise(r => setTimeout(r, 10))
+        // The callback runs inside sendMessage, so its verdict is in once it's called.
+        await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1))
 
-        expect(sendMessage).toHaveBeenCalledTimes(1)
         expect(responses.length).toBe(0)
 
         vi.unstubAllGlobals()
@@ -215,7 +215,8 @@ describe('webauthn-relay', () => {
         dispatchHandshake('req2', 'res2')
         sendMessage.mockClear()
         dispatchRequest('req2', 'id-2')
-        await new Promise(r => setTimeout(r, 10))
+        // The relay settles on microtasks only; a macrotask outlasts them all.
+        await new Promise(r => setTimeout(r, 0))
         expect(sendMessage).not.toHaveBeenCalled()
 
         vi.unstubAllGlobals()

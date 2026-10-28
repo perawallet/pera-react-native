@@ -58,6 +58,18 @@ const arbitraryResult = {
     signers: [{ address: 'ADDR' }],
 } as unknown as SigningResult
 
+// An unknown-outcome failure re-checks the chain after a 2s delay before rethrowing.
+const expectSubmissionError = async (send: () => Promise<unknown>) => {
+    vi.useFakeTimers()
+    try {
+        const sent = expect(send()).rejects.toThrow(SubmissionError)
+        await vi.runAllTimersAsync()
+        await sent
+    } finally {
+        vi.useRealTimers()
+    }
+}
+
 describe('createAlgodTransport', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
@@ -169,9 +181,9 @@ describe('createAlgodTransport', () => {
         }
         const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
-        await expect(
+        await expectSubmissionError(() =>
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toThrow(SubmissionError)
+        )
     })
 
     test('forwards non-Error rejections as classified SubmissionErrors', async () => {
@@ -186,9 +198,9 @@ describe('createAlgodTransport', () => {
         }
         const transport = createAlgodTransport(algokit, ALGORAND_TESTNET)
 
-        await expect(
+        await expectSubmissionError(() =>
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toThrow(SubmissionError)
+        )
     })
 
     test("aborts with ScopeChangedError when Algorand's network switches", async () => {
@@ -268,8 +280,8 @@ describe('createAlgodTransport', () => {
             callbacks: { approve },
         }
 
-        await expect(transport.send(transactionResult, source)).rejects.toThrow(
-            SubmissionError,
+        await expectSubmissionError(() =>
+            transport.send(transactionResult, source),
         )
         expect(approve).not.toHaveBeenCalled()
     })

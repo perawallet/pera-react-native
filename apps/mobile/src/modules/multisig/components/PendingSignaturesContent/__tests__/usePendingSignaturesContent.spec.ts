@@ -206,6 +206,10 @@ describe('usePendingSignaturesContent', () => {
         refetchMock.mockClear()
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('derives signedCount, signer rows and waiting banner for a pending request', () => {
         usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
         mockQueryReturn(buildSignRequest())

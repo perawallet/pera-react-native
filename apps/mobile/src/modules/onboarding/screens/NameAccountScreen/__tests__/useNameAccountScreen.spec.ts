@@ -21,7 +21,6 @@ const mockSaveAccount = vi.fn()
 const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
-const mockShowToast = vi.fn()
 const mockUpdateAccount = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 
@@ -52,13 +51,6 @@ vi.mock('@react-navigation/native', async () => {
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
     trackEvent: mockTrackEvent,
-}))
-
-vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({
-        navigate: vi.fn(),
-        replace: vi.fn(),
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -103,12 +95,6 @@ const mockShowError = vi.fn()
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({
         showError: mockShowError,
-    }),
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
     }),
 }))
 

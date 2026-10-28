@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, test, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
@@ -72,7 +73,7 @@ vi.mock('../../utils/createAlgorandClient', async importOriginal => {
     }
 })
 
-describe('services/blockchain/hooks', () => {
+describe('useAlgorandClient', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useSelectedScope as Mock).mockReturnValue({

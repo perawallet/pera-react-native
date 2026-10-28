@@ -10,39 +10,27 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 
 const store = new Map<string, string>()
+const keyValueStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, value),
+    removeItem: (key: string) => {
+        store.delete(key)
+    },
+}
+
+// Persisted state from one test would otherwise rehydrate into the next.
+beforeEach(() => {
+    store.clear()
+})
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    WithPlatformExtension: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
+    WithPlatformExtension: () => ({ keyValueStorage }),
+    getPlatformServices: () => ({ keyValueStorage }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
+    getProvider: () => ({ keyValueStorage }),
 }))

@@ -12,10 +12,10 @@
 
 import { vi } from 'vitest'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    messageSignerChainAdapters,
-    type AuthDataSigner,
-    type MessageSignerChainAdapter,
+import { messageSignerChainAdapters } from '../chain-adapter'
+import type {
+    AuthDataSigner,
+    MessageSignerChainAdapter,
 } from '../message-signer'
 
 const notStubbed = (member: string) => () => {

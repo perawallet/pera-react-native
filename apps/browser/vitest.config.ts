@@ -53,7 +53,7 @@ export default defineConfig({
     },
     test: {
         globals: true,
-        environment: 'jsdom',
+        environment: 'node',
         testTimeout: 15_000,
         include: [
             'web-shims/**/*.spec.{js,jsx,ts,tsx}',

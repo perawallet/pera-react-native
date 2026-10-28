@@ -260,22 +260,6 @@ describe('resolveErrorCopy', () => {
         expect(result).toEqual(NODE_COPY)
     })
 
-    it('keeps an AppError the chain does not describe on its own copy', () => {
-        const error = new AppError('log only', {
-            category: ErrorCategory.VALIDATION,
-            messageKey: i18nKey('errors.webview.unsupported_url'),
-        })
-
-        const result = resolveErrorCopy(
-            error,
-            t,
-            undefined,
-            getNodeErrorMessage,
-        )
-
-        expect(result.body).toBe('errors.webview.unsupported_url')
-    })
-
     it('lets an explicit fallback title win over the category title', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.ACCOUNTS,

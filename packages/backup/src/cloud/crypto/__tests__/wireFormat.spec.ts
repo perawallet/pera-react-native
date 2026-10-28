@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { base32nopad } from '@scure/base'
 import nacl from 'tweetnacl'

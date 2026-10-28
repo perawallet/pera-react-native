@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, expect, test, vi } from 'vitest'
 
 // Guards the startup crash "Property '__filename' doesn't exist": falcon-1024's

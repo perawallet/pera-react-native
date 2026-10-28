@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 // Wrap the two slot verifications so tests can count hashing work — the
@@ -21,6 +22,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         monotonicClock: { now: () => ({ bootId: 'boot-1', elapsedMs: 1000 }) },
     }),
 }))
+
+vi.mock('../../pbkdf2', async importOriginal =>
+    (await import('../../__tests__/fastPbkdf2')).fastPbkdf2(
+        await importOriginal(),
+    ),
+)
 
 vi.mock('../../pinRecord', async importOriginal => {
     const actual = await importOriginal<typeof import('../../pinRecord')>()

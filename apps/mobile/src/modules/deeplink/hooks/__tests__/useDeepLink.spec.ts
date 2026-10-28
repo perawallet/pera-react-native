@@ -303,10 +303,6 @@ const { mockPushWebView } = vi.hoisted(() => ({
     mockPushWebView: vi.fn(),
 }))
 
-vi.mock('@modules/webview/hooks', () => ({
-    useWebView: () => ({ pushWebView: mockPushWebView }),
-}))
-
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
@@ -363,7 +359,6 @@ const {
     mockSetNote,
     mockSetAmount,
     mockSendFundsReset,
-    SendFundsContentMock,
 } = vi.hoisted(() => ({
     mockRequestByType: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
@@ -374,7 +369,6 @@ const {
     mockSetNote: vi.fn(),
     mockSetAmount: vi.fn(),
     mockSendFundsReset: vi.fn(),
-    SendFundsContentMock: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -430,16 +424,6 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
 
 vi.mock('@hooks/useIsGiftCardsEnabled', () => ({
     useIsGiftCardsEnabled: mockIsGiftCardsEnabled,
-}))
-
-// Mock SendFundsContent / BidaliContent so the deeplink test doesn't pull in
-// their full navigator trees (heavy imports not needed for these assertions).
-vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
-    SendFundsContent: SendFundsContentMock,
-}))
-
-vi.mock('@modules/gift-card/components/BidaliContent', () => ({
-    BidaliContent: vi.fn(),
 }))
 
 const { mockRunTourStep } = vi.hoisted(() => ({
@@ -586,7 +570,8 @@ describe('useDeepLink', () => {
         })
 
         expect(onError).toHaveBeenCalledTimes(1)
-        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        await vi.advanceTimersByTimeAsync(400)
+        expect(mockErrorToast).toHaveBeenCalled()
     })
 
     it('should handle ADD_CONTACT deeplink', async () => {
@@ -662,11 +647,10 @@ describe('useDeepLink', () => {
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'deeplink.error.title_network_mismatch',
-                'deeplink.error.body_network_mismatch',
-            ),
+        await vi.advanceTimersByTimeAsync(400)
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'deeplink.error.title_network_mismatch',
+            'deeplink.error.body_network_mismatch',
         )
     })
 
@@ -688,11 +672,10 @@ describe('useDeepLink', () => {
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'deeplink.error.title_network_mismatch',
-                'deeplink.error.body_network_mismatch',
-            ),
+        await vi.advanceTimersByTimeAsync(400)
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'deeplink.error.title_network_mismatch',
+            'deeplink.error.body_network_mismatch',
         )
     })
 
@@ -1657,11 +1640,10 @@ describe('useDeepLink', () => {
                 expect(onSuccess).not.toHaveBeenCalled()
                 expect(mockNavigate).not.toHaveBeenCalled()
                 expect(mockRequestByType).not.toHaveBeenCalled()
-                await vi.waitFor(() =>
-                    expect(mockErrorToast).toHaveBeenCalledWith(
-                        'deeplink.error.title_unsupported',
-                        'deeplink.error.body_unsupported_on_chain',
-                    ),
+                await vi.advanceTimersByTimeAsync(400)
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_unsupported',
+                    'deeplink.error.body_unsupported_on_chain',
                 )
             },
         )
@@ -2578,7 +2560,8 @@ describe('useDeepLink', () => {
 
             // Deeplink errors surface via the in-app toast notifier,
             // deferred by ~400ms to let the QR Modal close first.
-            await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalled()
             expect(mockBuildChainAction).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
@@ -2617,11 +2600,10 @@ describe('useDeepLink', () => {
 
             await dispatch()
 
-            await vi.waitFor(() =>
-                expect(mockErrorToast).toHaveBeenCalledWith(
-                    'deeplink.error.title_keyreg',
-                    'deeplink.error.body_keyreg',
-                ),
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_keyreg',
+                'deeplink.error.body_keyreg',
             )
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
@@ -2946,11 +2928,10 @@ describe('useDeepLink', () => {
             expect(onError).toHaveBeenCalledTimes(1)
             expect(onSuccess).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
-            await vi.waitFor(() =>
-                expect(mockErrorToast).toHaveBeenCalledWith(
-                    'deeplink.error.title_no_account',
-                    'deeplink.error.body_no_account',
-                ),
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_no_account',
+                'deeplink.error.body_no_account',
             )
         })
 
@@ -3007,11 +2988,10 @@ describe('useDeepLink', () => {
             expect(onError).toHaveBeenCalledTimes(1)
             expect(mockSetDestination).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
-            await vi.waitFor(() =>
-                expect(mockErrorToast).toHaveBeenCalledWith(
-                    'deeplink.error.title_network_mismatch',
-                    'deeplink.error.body_network_mismatch',
-                ),
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_network_mismatch',
+                'deeplink.error.body_network_mismatch',
             )
         })
 
@@ -3023,11 +3003,10 @@ describe('useDeepLink', () => {
 
             expect(onError).toHaveBeenCalledTimes(1)
             expect(mockRequestByType).not.toHaveBeenCalled()
-            await vi.waitFor(() =>
-                expect(mockErrorToast).toHaveBeenCalledWith(
-                    'deeplink.error.title_unsupported',
-                    'deeplink.error.body_unsupported_on_chain',
-                ),
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_unsupported',
+                'deeplink.error.body_unsupported_on_chain',
             )
         })
 
@@ -3043,11 +3022,10 @@ describe('useDeepLink', () => {
 
             expect(onError).toHaveBeenCalledTimes(1)
             expect(mockRequestByType).not.toHaveBeenCalled()
-            await vi.waitFor(() =>
-                expect(mockErrorToast).toHaveBeenCalledWith(
-                    'deeplink.error.title_unsupported',
-                    'deeplink.error.body_unsupported_on_chain',
-                ),
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_unsupported',
+                'deeplink.error.body_unsupported_on_chain',
             )
         })
 
@@ -3099,11 +3077,10 @@ describe('useDeepLink', () => {
 
                 expect(onError).toHaveBeenCalledTimes(1)
                 expect(mockRequestByType).not.toHaveBeenCalled()
-                await vi.waitFor(() =>
-                    expect(mockErrorToast).toHaveBeenCalledWith(
-                        'deeplink.error.title_unsupported',
-                        'deeplink.error.body_unsupported_on_chain',
-                    ),
+                await vi.advanceTimersByTimeAsync(400)
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'deeplink.error.title_unsupported',
+                    'deeplink.error.body_unsupported_on_chain',
                 )
             })
         })
@@ -3126,7 +3103,7 @@ describe('useDeepLink', () => {
             })
 
             const { onError } = await dispatch('ethereum:x', 'notification')
-            await new Promise(resolve => setTimeout(resolve, 450))
+            await vi.advanceTimersByTimeAsync(450)
 
             expect(mockErrorToast).not.toHaveBeenCalled()
             expect(onError).toHaveBeenCalledTimes(1)

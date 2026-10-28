@@ -39,30 +39,32 @@ describe('WalletConnectPermissionError', () => {
 
 describe('walletconnect error copy', () => {
     it.each([
-        [
-            WalletConnectInvalidSessionError,
-            'errors.walletconnect.invalid_session_body',
-        ],
-        [
-            WalletConnectSignRequestError,
-            'errors.walletconnect.sign_request_body',
-        ],
-        [WalletConnectPermissionError, 'errors.walletconnect.permission_body'],
-        [
-            WalletConnectInvalidNetworkError,
-            'errors.walletconnect.invalid_network_body',
-        ],
-        [
-            WalletConnectConnectionTimeoutError,
-            'errors.walletconnect.connection_timeout_body',
-        ],
-        [
-            WalletConnectSessionRequestExpiredError,
-            'errors.walletconnect.session_request_expired_body',
-        ],
-    ])('$name declares its own key', (ErrorClass, expectedKey) => {
-        expect(new ErrorClass().metadata.messageKey).toBe(expectedKey)
-    })
+        {
+            ErrorClass: WalletConnectInvalidSessionError,
+            expectedKey: 'errors.walletconnect.invalid_session_body',
+        },
+        {
+            ErrorClass: WalletConnectSignRequestError,
+            expectedKey: 'errors.walletconnect.sign_request_body',
+        },
+        {
+            ErrorClass: WalletConnectInvalidNetworkError,
+            expectedKey: 'errors.walletconnect.invalid_network_body',
+        },
+        {
+            ErrorClass: WalletConnectConnectionTimeoutError,
+            expectedKey: 'errors.walletconnect.connection_timeout_body',
+        },
+        {
+            ErrorClass: WalletConnectSessionRequestExpiredError,
+            expectedKey: 'errors.walletconnect.session_request_expired_body',
+        },
+    ])(
+        '$ErrorClass.name declares its own key',
+        ({ ErrorClass, expectedKey }) => {
+            expect(new ErrorClass().metadata.messageKey).toBe(expectedKey)
+        },
+    )
 
     it('falls back to walletconnect-specific copy, not errors.general', () => {
         const error = new WalletConnectError('internal detail')

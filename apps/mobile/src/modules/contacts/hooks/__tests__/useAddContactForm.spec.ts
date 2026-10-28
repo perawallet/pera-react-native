@@ -45,26 +45,9 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParamsRef.params }),
 }))
 
-vi.mock('@hooks/useLanguage')
-
 vi.mock('../../utils/contactFamily', () => ({
     contactFamilyOf: (chainId?: string) =>
         chainId === 'ethereum' ? 'evm' : 'algorand',
-}))
-
-vi.mock('@hooks/useImagePicker', () => ({
-    useImagePicker: () => ({
-        pickFromGallery: vi.fn().mockResolvedValue(null),
-    }),
-}))
-
-vi.mock('@hooks/useNfdResolve', () => ({
-    useNfdResolve: () => ({
-        resolvedAddress: '',
-        isNfdResolved: false,
-        isNfdResolving: false,
-        nfdName: undefined,
-    }),
 }))
 
 // Stub useContactForm so tests can control `isValid` / observe `setError`

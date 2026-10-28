@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePinCode } from '@perawallet/wallet-core-security'
@@ -103,9 +103,8 @@ describe('useAutoLockListener', () => {
     it('should check PIN enabled on mount', async () => {
         renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(mockCheckPinEnabled).toHaveBeenCalled()
-        })
+        await act(async () => {})
+        expect(mockCheckPinEnabled).toHaveBeenCalled()
     })
 
     describe('mirroring the guard overlay into the security store', () => {
@@ -117,9 +116,8 @@ describe('useAutoLockListener', () => {
 
             expect(lastMirroredValue()).toBe(true)
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
             expect(lastMirroredValue()).toBe(false)
         })
 
@@ -128,9 +126,8 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isLocked).toBe(true)
-            })
+            await act(async () => {})
+            expect(result.current.isLocked).toBe(true)
             expect(lastMirroredValue()).toBe(true)
 
             act(() => {
@@ -143,9 +140,8 @@ describe('useAutoLockListener', () => {
             mockCheckPinEnabled.mockResolvedValue(true)
 
             const { result, unmount } = renderHook(() => useAutoLockListener())
-            await waitFor(() => {
-                expect(result.current.isLocked).toBe(true)
-            })
+            await act(async () => {})
+            expect(result.current.isLocked).toBe(true)
 
             unmount()
 
@@ -165,9 +161,8 @@ describe('useAutoLockListener', () => {
 
             expect(heldValue()).toBe(true)
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
             expect(heldValue()).toBe(false)
         })
 
@@ -176,9 +171,8 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isLocked).toBe(true)
-            })
+            await act(async () => {})
+            expect(result.current.isLocked).toBe(true)
             expect(heldValue()).toBe(true)
 
             act(() => {
@@ -191,9 +185,8 @@ describe('useAutoLockListener', () => {
             mockCheckPinEnabled.mockResolvedValue(true)
 
             const { result, unmount } = renderHook(() => useAutoLockListener())
-            await waitFor(() => {
-                expect(result.current.isLocked).toBe(true)
-            })
+            await act(async () => {})
+            expect(result.current.isLocked).toBe(true)
             expect(heldValue()).toBe(true)
 
             unmount()
@@ -207,9 +200,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         expect(result.current.isLocked).toBe(false)
     })
@@ -219,9 +211,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
     })
 
     it('should set isLocked to false when PIN is disabled on initialization', async () => {
@@ -229,10 +220,9 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(false)
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(false)
+        expect(result.current.isChecking).toBe(false)
     })
 
     it('should not crash when initial PIN check fails', async () => {
@@ -242,9 +232,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         expect(result.current.isLocked).toBe(false)
     })
@@ -254,9 +243,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
 
         act(() => {
             result.current.unlock()
@@ -273,9 +261,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
 
         await act(async () => {
             await result.current.handleResetData()
@@ -303,10 +290,9 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
+        expect(result.current.isChecking).toBe(false)
 
         // Simulate the iOS biometric prompt round-trip: the prompt makes the
         // app go through inactive/background and back to active before the
@@ -317,9 +303,8 @@ describe('useAutoLockListener', () => {
             appStateChangeHandler?.('active')
         })
 
-        await waitFor(() => {
-            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
-        })
+        await act(async () => {})
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
 
         expect(result.current.isLocked).toBe(true)
     })
@@ -330,19 +315,17 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
+        expect(result.current.isChecking).toBe(false)
 
         act(() => {
             appStateChangeHandler?.('background')
             appStateChangeHandler?.('active')
         })
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         expect(result.current.isLocked).toBe(true)
         expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
@@ -351,9 +334,8 @@ describe('useAutoLockListener', () => {
     it('should ignore inactive to active transition noise on Android', async () => {
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         act(() => {
             appStateChangeHandler?.('inactive')
@@ -367,9 +349,8 @@ describe('useAutoLockListener', () => {
             appStateChangeHandler?.('active')
         })
 
-        await waitFor(() => {
-            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
-        })
+        await act(async () => {})
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
     })
 
     it('coalesces a foreground check that arrives mid-check into one non-overlapping re-run', async () => {
@@ -383,9 +364,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         act(() => {
             appStateChangeHandler?.('background')
@@ -404,18 +384,16 @@ describe('useAutoLockListener', () => {
         })
 
         // The coalesced re-run only starts once the first check settles.
-        await waitFor(() => {
-            expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
-        })
+        await act(async () => {})
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
         expect(result.current.isChecking).toBe(true)
 
         act(() => {
             resolvers[1]?.(false)
         })
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
     })
 
     it('should remove AppState listener on unmount', () => {
@@ -437,9 +415,8 @@ describe('useAutoLockListener', () => {
         )
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         const handleAppStateChange = getAppStateChangeHandler()
 
@@ -448,10 +425,9 @@ describe('useAutoLockListener', () => {
             handleAppStateChange('active')
         })
 
-        await waitFor(() => {
-            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+        expect(result.current.isChecking).toBe(false)
 
         expect(result.current.isLocked).toBe(false)
     })
@@ -461,18 +437,16 @@ describe('useAutoLockListener', () => {
 
         const { result, rerender } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
         expect(result.current.isLocked).toBe(false)
 
         mockCheckPinEnabled.mockResolvedValue(true)
         securityStoreState.lockRequestVersion = 1
         rerender()
 
-        await waitFor(() => {
-            expect(result.current.isLocked).toBe(true)
-        })
+        await act(async () => {})
+        expect(result.current.isLocked).toBe(true)
     })
 
     it('should not lock on a lock request when no PIN is enabled', async () => {
@@ -480,16 +454,14 @@ describe('useAutoLockListener', () => {
 
         const { result, rerender } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         securityStoreState.lockRequestVersion = 1
         rerender()
 
-        await waitFor(() => {
-            expect(mockCheckPinEnabled.mock.calls.length).toBeGreaterThan(1)
-        })
+        await act(async () => {})
+        expect(mockCheckPinEnabled.mock.calls.length).toBeGreaterThan(1)
         expect(result.current.isLocked).toBe(false)
     })
 
@@ -519,9 +491,8 @@ describe('useAutoLockListener', () => {
 
         const { result } = renderHook(() => useAutoLockListener())
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
 
         // A silent-push cold launch (or the route-tree remount) can mount the
         // guard while the app is already backgrounded — the first foreground
@@ -536,9 +507,8 @@ describe('useAutoLockListener', () => {
             resolveCheck(false)
         })
 
-        await waitFor(() => {
-            expect(result.current.isChecking).toBe(false)
-        })
+        await act(async () => {})
+        expect(result.current.isChecking).toBe(false)
     })
 
     describe('on iOS', () => {
@@ -549,9 +519,8 @@ describe('useAutoLockListener', () => {
         it('re-checks the lock on inactive->active without hiding the app behind the checking overlay', async () => {
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             // A notification banner or Face ID prompt drives inactive->active
             // without the app ever leaving the screen. Raising the checking
@@ -564,9 +533,8 @@ describe('useAutoLockListener', () => {
 
             expect(result.current.isChecking).toBe(false)
 
-            await waitFor(() => {
-                expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
-            })
+            await act(async () => {})
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
 
             expect(result.current.isChecking).toBe(false)
         })
@@ -576,18 +544,16 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             act(() => {
                 appStateChangeHandler?.('inactive')
                 appStateChangeHandler?.('active')
             })
 
-            await waitFor(() => {
-                expect(result.current.isLocked).toBe(true)
-            })
+            await act(async () => {})
+            expect(result.current.isLocked).toBe(true)
         })
 
         it('raises the checking overlay when returning from a real background', async () => {
@@ -601,9 +567,8 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             // iOS leaves through inactive and returns through inactive, so the
             // background hop is the only thing that distinguishes a real
@@ -621,17 +586,15 @@ describe('useAutoLockListener', () => {
                 resolveCheck(false)
             })
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
         })
 
         it('does not leave the overlay flag stuck after a real background, so a later banner stays hidden', async () => {
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             act(() => {
                 appStateChangeHandler?.('inactive')
@@ -640,9 +603,8 @@ describe('useAutoLockListener', () => {
                 appStateChangeHandler?.('active')
             })
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             act(() => {
                 appStateChangeHandler?.('inactive')
@@ -663,9 +625,8 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             // A banner starts a check (no overlay, since it's not a real
             // background) while it is still pending.
@@ -688,18 +649,16 @@ describe('useAutoLockListener', () => {
                 resolvers[0]?.(false)
             })
 
-            await waitFor(() => {
-                expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
-            })
+            await act(async () => {})
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
             expect(result.current.isChecking).toBe(true)
 
             await act(async () => {
                 resolvers[1]?.(false)
             })
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
         })
 
         it('does not flash the overlay on a banner following a coalesced real-background check', async () => {
@@ -713,9 +672,8 @@ describe('useAutoLockListener', () => {
 
             const { result } = renderHook(() => useAutoLockListener())
 
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             act(() => {
                 appStateChangeHandler?.('inactive')
@@ -732,16 +690,14 @@ describe('useAutoLockListener', () => {
             await act(async () => {
                 resolvers[0]?.(false)
             })
-            await waitFor(() => {
-                expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
-            })
+            await act(async () => {})
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
 
             await act(async () => {
                 resolvers[1]?.(false)
             })
-            await waitFor(() => {
-                expect(result.current.isChecking).toBe(false)
-            })
+            await act(async () => {})
+            expect(result.current.isChecking).toBe(false)
 
             // A later, unrelated banner must not see a stale flag from the
             // earlier real background.

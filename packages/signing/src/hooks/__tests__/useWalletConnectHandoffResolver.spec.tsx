@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -567,7 +568,9 @@ describe('useWalletConnectHandoffResolver', () => {
             { wrapper },
         )
 
-        await new Promise(resolve => setTimeout(resolve, 20))
+        const queries = queryClient.getQueryCache().getAll()
+        expect(queries).toHaveLength(1)
+        expect(queries[0].isDisabled()).toBe(true)
         expect(mocks.getSignRequestsWithSignatures).not.toHaveBeenCalled()
     })
 

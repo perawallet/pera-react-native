@@ -16,10 +16,13 @@ import {
     canSignWith,
     getDelegatedAccount,
     getSignerFor,
+    isAuthorityDowngrade,
     isMultisigUnsignable,
     delegateTransitionFor,
+    resolveAuthAccount,
     resolveSignerFor,
     useAccountChainStateStore,
+    DelegationTargetNotFoundError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -27,6 +30,7 @@ import {
     hardwareAccount,
     hdAccount,
     multisigAccount,
+    quantumAccount,
     watchAccount,
     type AlgorandAccountOptions,
 } from '../../__tests__/algorandAccounts'
@@ -70,6 +74,8 @@ const watch = (address: string, authority?: string) =>
     authority
         ? rekeyedTo(watchAccount(address), authority)
         : watchAccount(address)
+
+const quantum = (address: string) => quantumAccount(address)
 
 describe('getDelegatedAccount', () => {
     it('returns null when the address is not in the wallet', () => {
@@ -267,6 +273,43 @@ describe('canSignWith', () => {
         const ms = multisig('M', ['P1', 'P2'])
         expect(canSignWith(ms, [ms, participant], ALGORAND_CHAIN_ID)).toBe(true)
     })
+
+    it('returns false for an HD account without a keyPairId', () => {
+        const a = hdAccount('A', { keyPairId: null })
+        expect(canSignWith(a, [a], ALGORAND_CHAIN_ID)).toBe(false)
+    })
+
+    it('returns true when rekeyed to a hardware account', () => {
+        const auth = hardware('S')
+        const a = watch('A', 'S')
+        expect(canSignWith(a, [a, auth], ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    it('resolves a single rekey hop only, not a chain', () => {
+        const root = algo25('ROOT')
+        const middle = watch('MIDDLE', 'ROOT')
+        const leaf = watch('LEAF', 'MIDDLE')
+        const accounts = [root, middle, leaf]
+        expect(canSignWith(leaf, accounts, ALGORAND_CHAIN_ID)).toBe(false)
+        expect(canSignWith(middle, accounts, ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    it('does not recurse on a cyclic auth chain', () => {
+        const a = watch('A', 'B')
+        const b = watch('B', 'A')
+        expect(canSignWith(a, [a, b], ALGORAND_CHAIN_ID)).toBe(false)
+    })
+
+    it('returns true for a quantum account', () => {
+        const a = quantum('F')
+        expect(canSignWith(a, [a], ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    it('returns true when rekeyed to a quantum account', () => {
+        const auth = quantum('FAUTH')
+        const a = watch('A', 'FAUTH')
+        expect(canSignWith(a, [a, auth], ALGORAND_CHAIN_ID)).toBe(true)
+    })
 })
 
 describe('delegateTransitionFor', () => {
@@ -444,5 +487,106 @@ describe('isMultisigUnsignable', () => {
                 ALGORAND_CHAIN_ID,
             ),
         ).toBe(false)
+    })
+})
+
+describe('isAuthorityDowngrade', () => {
+    const isDowngrade = (
+        source: WalletAccount,
+        target: WalletAccount,
+        accounts: WalletAccount[],
+    ) => isAuthorityDowngrade(source, target, accounts, ALGORAND_CHAIN_ID)
+
+    it('is a downgrade from a quantum source to an Ed25519 target', () => {
+        const source = quantum('F')
+        const target = algo25('A')
+        const hdTarget = hdWallet('H')
+        expect(isDowngrade(source, target, [source, target])).toBe(true)
+        expect(isDowngrade(source, hdTarget, [source, hdTarget])).toBe(true)
+    })
+
+    it('is a downgrade from a quantum source to a hardware target', () => {
+        const source = quantum('F')
+        const target = hardware('L')
+        expect(isDowngrade(source, target, [source, target])).toBe(true)
+    })
+
+    it('is not a downgrade from a quantum source to a quantum target', () => {
+        const source = quantum('F1')
+        const target = quantum('F2')
+        expect(isDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    it('is not a downgrade from an Ed25519 source to a quantum target', () => {
+        const source = algo25('A')
+        const target = quantum('F')
+        expect(isDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    it('is not a downgrade from an Ed25519 source to an Ed25519 target', () => {
+        const source = algo25('A')
+        const target = hdWallet('H')
+        expect(isDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    it('is not a downgrade to a target whose effective auth is quantum', () => {
+        const source = quantum('F1')
+        const quantumAuth = quantum('FAUTH')
+        const target = watch('T', 'FAUTH')
+        expect(isDowngrade(source, target, [source, target, quantumAuth])).toBe(
+            false,
+        )
+    })
+
+    it('is a downgrade from an Ed25519 source rekeyed to a quantum auth to an Ed25519 target', () => {
+        // The account's own kind stays Ed25519, but its effective signer is quantum.
+        const quantumAuth = quantum('FAUTH')
+        const source = rekeyedTo(algo25('A'), 'FAUTH')
+        const target = algo25('B')
+        expect(isDowngrade(source, target, [source, target, quantumAuth])).toBe(
+            true,
+        )
+    })
+
+    it('is not a downgrade from a quantum source already rekeyed to an Ed25519 auth', () => {
+        const ed25519Auth = algo25('EAUTH')
+        const source = rekeyedTo(quantum('F'), 'EAUTH')
+        const target = algo25('B')
+        expect(isDowngrade(source, target, [source, target, ed25519Auth])).toBe(
+            false,
+        )
+    })
+
+    it('is not a downgrade when the source auth is not held locally', () => {
+        const source = rekeyedTo(quantum('F'), 'MISSING')
+        const target = algo25('B')
+        expect(isDowngrade(source, target, [source, target])).toBe(false)
+    })
+})
+
+describe('resolveAuthAccount', () => {
+    it('returns the account itself when not rekeyed', () => {
+        const a = algo25('A')
+        expect(resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toBe(a)
+    })
+
+    it('walks a single rekey hop', () => {
+        const a = rekeyedTo(algo25('A'), 'B')
+        const b = algo25('B')
+        expect(resolveAuthAccount(a, [a, b], ALGORAND_CHAIN_ID)).toBe(b)
+    })
+
+    it('resolves a single hop only, not the terminal of the chain', () => {
+        const a = rekeyedTo(hardware('A'), 'B')
+        const b = rekeyedTo(hardware('B'), 'C')
+        const c = hardware('C')
+        expect(resolveAuthAccount(a, [a, b, c], ALGORAND_CHAIN_ID)).toBe(b)
+    })
+
+    it('throws DelegationTargetNotFoundError when the auth account is not held', () => {
+        const a = rekeyedTo(algo25('A'), 'MISSING')
+        expect(() => resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toThrow(
+            DelegationTargetNotFoundError,
+        )
     })
 })
