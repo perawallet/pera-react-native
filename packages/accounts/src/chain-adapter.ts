@@ -46,6 +46,7 @@ import type {
     LocalCustody,
     WalletAccount,
 } from './models'
+import { deriveClaimedKey, type ClaimOwner } from './key-claims'
 import type { SignerResolution } from './signer-resolution'
 
 /**
@@ -355,8 +356,9 @@ export interface AccountsChainAdapter {
      */
     accountExists(address: string, scope: ChainScope): Promise<boolean>
     /**
-     * Batch activity probe for HD discovery. Never rejects: a failed probe
-     * reads as inactive so the gap limit still ends the scan.
+     * Batch activity probe for HD discovery. Rejects when the batch can't be
+     * checked at all, so "no activity" and "unknown" stay apart; the walks read
+     * a rejected batch as inactive, so the gap limit still ends the scan.
      */
     checkActivity(
         addresses: string[],
@@ -459,21 +461,52 @@ export const hdDeriveOpts = (scope: ChainScope): DeriveOpts => {
     return { scheme: hdKind.signingScheme, networkId: scope.networkId }
 }
 
+/**
+ * Runs `derive`, which saves the HD child at `index` of `seedKeyId` on
+ * `chainId` for an account that will hold it, claimed as {@link deriveClaimedKey}
+ * describes. Every flow that derives an HD key and stores its account
+ * afterwards must go through this.
+ */
+export const deriveClaimedHdKey = <T extends { keyPairId: string }>(
+    chainId: ChainId,
+    seedKeyId: string,
+    index: HdIndex,
+    derive: () => Promise<T>,
+    owner?: ClaimOwner,
+): Promise<T> =>
+    deriveClaimedKey(
+        accountsChainAdapters.has(chainId)
+            ? accountsChainAdapters.get(chainId).hdKeyPairId(seedKeyId, index)
+            : undefined,
+        derive,
+        owner,
+    )
+
+/** Derives the HD child at `index` through the chain's registered `KeyDerivation`, claimed. */
+export const deriveHdKeyForAccount = async (
+    chainId: ChainId,
+    seedKeyId: string,
+    { account, keyIndex }: HdIndex,
+    opts: DeriveOpts,
+    owner?: ClaimOwner,
+) =>
+    deriveClaimedHdKey(
+        chainId,
+        seedKeyId,
+        { account, keyIndex },
+        () =>
+            keyDerivations
+                .get(chainId)
+                .deriveAccount(kmsCore, seedKeyId, account, keyIndex, opts),
+        owner,
+    )
+
 /** Derives the HD child through the chain's registered `KeyDerivation`. */
 export const deriveHdAccount = async (
     scope: ChainScope,
     seedKeyId: string,
-    { account, keyIndex }: HdIndex,
-) =>
-    keyDerivations
-        .get(scope.chainId)
-        .deriveAccount(
-            kmsCore,
-            seedKeyId,
-            account,
-            keyIndex,
-            hdDeriveOpts(scope),
-        )
+    index: HdIndex,
+) => deriveHdKeyForAccount(scope.chainId, seedKeyId, index, hdDeriveOpts(scope))
 
 /** Throws {@link SingleKeyAccountsUnsupportedError} on a chain without single-key accounts. */
 export const requireSingleKeyAccounts = (

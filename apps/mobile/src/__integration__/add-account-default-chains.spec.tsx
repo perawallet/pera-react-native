@@ -30,9 +30,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     EVM_CHAIN_NETWORKS,
+    keyDerivations,
     type ChainId,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
@@ -62,6 +64,7 @@ import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScre
 
 import {
     HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -104,7 +107,11 @@ const TEST_PRIVATE_KEY =
 const TEST_PRIVATE_KEY_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
 const WATCH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 
-const handlersFor = (activeChains: readonly ChainId[]): RequestHandler[] =>
+/** `activeAddress` narrows the activity to that one address, as a seed's walk needs a gap to end. */
+const handlersFor = (
+    activeChains: readonly ChainId[],
+    activeAddress?: string,
+): RequestHandler[] =>
     EVM_CHAINS.flatMap(chainId => {
         const url = `https://${chainId}.rpc.test/`
         const [mainnet] = EVM_CHAIN_NETWORKS[chainId].networks
@@ -114,13 +121,38 @@ const handlersFor = (activeChains: readonly ChainId[]): RequestHandler[] =>
                 rpcUrl: url,
                 responses: {
                     eth_chainId: `0x${mainnet!.eip155ChainId.toString(16)}`,
-                    eth_getTransactionCount: activeChains.includes(chainId)
-                        ? '0x1'
-                        : '0x0',
+                    eth_getTransactionCount: params =>
+                        activeChains.includes(chainId) &&
+                        (activeAddress === undefined ||
+                            String(params[0]).toLowerCase() ===
+                                activeAddress.toLowerCase())
+                            ? '0x1'
+                            : '0x0',
                 },
             }),
         ]
     })
+
+// The seed's Ethereum address at its first index, read through a throwaway
+// copy of the seed: secp256k1 keys derive only inside the keystore.
+const firstHdEthereumAddress = async (): Promise<string> => {
+    const { result: kms } = renderHook(() => useKMS())
+    const rootKey = await waitFor(async () => {
+        const created = await kms.current.createHDWalletKey({
+            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+        })
+        expect(created).not.toBeNull()
+        return created!
+    })
+    const { address } = await keyDerivations
+        .get('ethereum')
+        .deriveAccount(kmsCore, rootKey.seedKey.id, 0, 0, {
+            scheme: 'secp256k1',
+            networkId: 'mainnet',
+        })
+    resetTestKeystore()
+    return address
+}
 
 const nameAccountScreen = { name: 'NameAccount', component: NameAccountScreen }
 const importPrivateKeyScreen = {
@@ -245,7 +277,12 @@ describe('Flow: adding an account lands it on its default chains', () => {
     })
 
     it('Given a recovery phrase active on Ethereum and Base, when it is imported, then one account holds Algorand and Ethereum, and Base joins through discovery', async () => {
-        server.use(...handlersFor(['ethereum', 'base']))
+        server.use(
+            ...handlersFor(
+                ['ethereum', 'base'],
+                await firstHdEthereumAddress(),
+            ),
+        )
         renderWithNavigation(OnboardingScreen, 'Onboarding', {
             additionalScreens: [
                 importAccountOptionsScreen,

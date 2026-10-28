@@ -51,7 +51,7 @@ describe('useEnableChain', () => {
             ])
     })
 
-    test('enables the chain and syncs the new address on that chain right away', async () => {
+    test('enables the chain, leaving its sync to the root watcher', async () => {
         const { result } = renderHook(() => useEnableChain(), { wrapper })
 
         let account: Awaited<ReturnType<typeof result.current>> | undefined
@@ -60,20 +60,6 @@ describe('useEnableChain', () => {
         })
 
         expect(account?.chains[BASE]?.enabledBy).toBe('user')
-        expect(syncAndEnrichNewAccount).toHaveBeenCalledExactlyOnceWith(
-            EVM_KEY_ADDRESS,
-            { chainId: BASE, networkId: 'mainnet' },
-            client,
-        )
-    })
-
-    test('syncs nothing for a chain the account was already on', async () => {
-        const { result } = renderHook(() => useEnableChain(), { wrapper })
-
-        await act(async () => {
-            await result.current('watch', ETHEREUM, 'user')
-        })
-
         expect(syncAndEnrichNewAccount).not.toHaveBeenCalled()
     })
 })
