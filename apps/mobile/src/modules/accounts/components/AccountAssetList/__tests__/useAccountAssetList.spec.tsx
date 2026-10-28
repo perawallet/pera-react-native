@@ -25,6 +25,7 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import {
     useAccountAssetsQuery,
+    useAccountChainStateStore,
     useHoldingsRefreshStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -248,6 +249,7 @@ describe('useAccountAssetList', () => {
         mockPreferences.displayNfts = true
         mockCanSign.current = false
         useHoldingsRefreshStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
         useAssetListViewStore.setState({
             selectedChainId: null,
             expandedGroupIds: [],
@@ -520,8 +522,17 @@ describe('useAccountAssetList', () => {
 
     describe('funding state', () => {
         const zeroNative = () => makeHolding('native', ETHEREUM_MAINNET)
-        const onEthereumChip = () => {
+        // A successful read is what makes a stored zero the balance.
+        const recordRead = () =>
+            useAccountChainStateStore
+                .getState()
+                .setAccountChainState(ETHEREUM_MAINNET, ETH_ADDRESS, {
+                    family: 'evm',
+                    nonce: { latest: 0, pending: 0 },
+                })
+        const onEthereumChip = ({ hasRead = true } = {}) => {
             registerEthereum()
+            if (hasRead) recordRead()
             useAssetListViewStore.getState().setSelectedChainId('ethereum')
             return renderHook(() =>
                 useAccountAssetList({ account: twoChainAccount, t: mockT }),
@@ -601,6 +612,14 @@ describe('useAccountAssetList', () => {
             Object.assign(mockAssetsQuery, state)
 
             const { result } = onEthereumChip()
+
+            expect(result.current.fundingChainId).toBeNull()
+        })
+
+        it('is not offered over a placeholder zero that no read has confirmed, such as one saved before a restart', () => {
+            mockAssetsQuery.holdings = [zeroNative()]
+
+            const { result } = onEthereumChip({ hasRead: false })
 
             expect(result.current.fundingChainId).toBeNull()
         })

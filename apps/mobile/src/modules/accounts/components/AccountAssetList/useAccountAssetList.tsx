@@ -19,6 +19,7 @@ import {
     useAccountAssetsQuery,
     useAccountHoldingSources,
     useCanSignWith,
+    useHasAccountChainState,
     useIsHoldingsRefreshFailed,
     assetFromHoldingLiteRow,
     accountChainIdOf,
@@ -432,12 +433,18 @@ export const useAccountAssetList = ({
         selectedSource?.scope ?? scope,
         selectedSource?.address ?? '',
     )
-    // The lone row is the native asset at zero: a failed read leaves the same
-    // row as a placeholder, so it must not read as an unfunded network.
+    const hasRead = useHasAccountChainState(
+        selectedSource?.scope ?? scope,
+        selectedSource?.address ?? '',
+    )
+    // The lone row is the native asset at zero: a failed first read leaves the
+    // same row as a saved placeholder, so it reads as unfunded only once a read
+    // has succeeded. That signal survives a restart; the failed flag does not.
     const fundingChainId =
         selectedChainId !== null &&
         !isPending &&
         !isPlaceholderData &&
+        hasRead &&
         !isRefreshFailed &&
         searchFilter.length === 0 &&
         holdings.length === 1 &&
